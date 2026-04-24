@@ -1,0 +1,7 @@
+User-Agent: *
+Allow: /
+
+Disallow: /dashboard/*
+Disallow: /api/*
+
+Sitemap: https://goblin.dev/sitemap.xml

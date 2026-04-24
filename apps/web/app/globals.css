@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@theme {
+  --color-goblin-moss: #2D4A2B;
+  --color-goblin-ochre: #D4A94A;
+  --color-goblin-cream: #F7F4ED;
+  --color-goblin-bark: #3A2E1F;
+  --color-goblin-slate: #2A2A2A;
+  --color-goblin-gray: #6B6B6B;
+  --color-goblin-light: #EDE8DC;
+  --color-goblin-good: #4A7C3B;
+  --color-goblin-warn: #B85C3C;
+}
+
+:root {
+  --goblin-moss: #2D4A2B;
+  --goblin-ochre: #D4A94A;
+  --goblin-cream: #F7F4ED;
+  --goblin-bark: #3A2E1F;
+  --goblin-slate: #2A2A2A;
+  --goblin-gray: #6B6B6B;
+  --goblin-light: #EDE8DC;
+  --goblin-good: #4A7C3B;
+  --goblin-warn: #B85C3C;
+}
+
+body {
+  background-color: var(--goblin-cream);
+  color: var(--goblin-slate);
+  font-family: var(--font-inter), system-ui, sans-serif;
+}
