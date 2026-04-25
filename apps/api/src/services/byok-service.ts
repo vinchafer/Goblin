@@ -1,5 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
 import type { ByokProvider, CreateByokKey, ByokKey } from '@goblin/shared/src/schemas';
+import { getSupabaseAdmin } from '../lib/supabase';
 import { encryptData, decryptData } from './encryption';
 
 async function testKey(provider: ByokProvider, rawKey: string): Promise<{ valid: boolean; error?: string }> {
@@ -47,10 +47,7 @@ export async function createKey(
   label: string,
   rawKey: string
 ): Promise<ByokKey> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const supabase = getSupabaseAdmin();
 
   // Check rate limit: max 5 keys per provider
   const { count } = await supabase
@@ -88,10 +85,7 @@ export async function createKey(
 }
 
 export async function listKeys(userId: string): Promise<ByokKey[]> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const supabase = getSupabaseAdmin();
 
   const { data } = await supabase
     .from('byok_keys')
@@ -103,10 +97,7 @@ export async function listKeys(userId: string): Promise<ByokKey[]> {
 }
 
 export async function revokeKey(userId: string, keyId: string): Promise<void> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const supabase = getSupabaseAdmin();
 
   await supabase
     .from('byok_keys')
@@ -117,10 +108,7 @@ export async function revokeKey(userId: string, keyId: string): Promise<void> {
 }
 
 export async function getActiveKey(userId: string, provider: ByokProvider): Promise<string | null> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const supabase = getSupabaseAdmin();
 
   const { data } = await supabase
     .from('byok_keys')

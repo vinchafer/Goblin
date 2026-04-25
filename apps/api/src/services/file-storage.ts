@@ -1,15 +1,11 @@
-import { createClient } from '@supabase/supabase-js';
 import JSZip from 'jszip';
+import { getSupabaseAdmin } from '../lib/supabase';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 const BUCKET_NAME = 'project-files';
 
 export async function saveFile(projectId: string, path: string, content: string): Promise<void> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-
+  const supabase = getSupabaseAdmin();
   const fullPath = `${projectId}/${path}`;
 
   await supabase.storage
@@ -21,10 +17,7 @@ export async function saveFile(projectId: string, path: string, content: string)
 }
 
 export async function getFile(projectId: string, path: string): Promise<string | null> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const supabase = getSupabaseAdmin();
 
   const { data } = await supabase.storage
     .from(BUCKET_NAME)
@@ -57,11 +50,7 @@ async function listFilesRecursive(
 }
 
 export async function listFiles(projectId: string): Promise<string[]> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-
+  const supabase = getSupabaseAdmin();
   const fullPaths = await listFilesRecursive(supabase, BUCKET_NAME, projectId);
   
   // Strip off the leading projectId prefix
@@ -69,10 +58,7 @@ export async function listFiles(projectId: string): Promise<string[]> {
 }
 
 export async function deleteFile(projectId: string, path: string): Promise<void> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const supabase = getSupabaseAdmin();
 
   await supabase.storage
     .from(BUCKET_NAME)

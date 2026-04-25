@@ -1,3 +1,20 @@
+// Startup validation — fail fast with clear error messages
+const REQUIRED_ENV = [
+  'SUPABASE_URL',
+  'SUPABASE_SERVICE_ROLE_KEY',
+  'SUPABASE_JWT_SECRET',
+  'ENCRYPTION_KEY',
+]
+
+const missing = REQUIRED_ENV.filter(key => !process.env[key])
+if (missing.length > 0) {
+  console.error('❌ Missing required environment variables:', missing.join(', '))
+  console.error('Copy .env.example to .env and fill in the values.')
+  process.exit(1)
+}
+
+console.log('✅ Environment validation passed')
+
 import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import { serve } from '@hono/node-server';
@@ -7,12 +24,14 @@ import { billing } from './routes/billing';
 import { projects } from './routes/projects';
 import { github } from './routes/github';
 import { byokKeys as byok } from './routes/byok-keys';
+import { health } from './routes/health';
 
 const app = new Hono();
 
 app.use('*', cors({
   origin: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-  credentials: true
+  allowHeaders: ['Content-Type', 'Authorization'],
+  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 }));
 
 app.onError((err, c) => {
@@ -23,14 +42,7 @@ app.onError((err, c) => {
   }, status);
 });
 
-app.get('/health', (c) => {
-  return c.json({
-    status: 'ok',
-    service: 'goblin-api',
-    timestamp: new Date().toISOString()
-  });
-});
-
+app.route('/health', health);
 app.route('/api/chat', chat);
 app.route('/api/byok-keys', byok);
 app.route('/api/projects', projects);

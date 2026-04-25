@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdmin } from '../lib/supabase';
 import { PROJECT_GENERATOR_SYSTEM_PROMPT } from '../prompts/project-generator';
 import { getActiveKey } from './byok-service';
 import { saveFile } from './file-storage';
@@ -19,10 +19,7 @@ export async function generateProject(
   byokKeyId: string,
   stream: SSEStreamingApi
 ): Promise<void> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const supabase = getSupabaseAdmin();
 
   // Update project status
   await supabase

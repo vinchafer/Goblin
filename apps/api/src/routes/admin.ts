@@ -1,5 +1,5 @@
 import { Hono } from 'hono';
-import { supabaseAdmin } from '../lib/supabase';
+import { getSupabaseAdmin } from '../lib/supabase';
 
 const admin = new Hono();
 
@@ -15,7 +15,8 @@ admin.use('*', async (c, next) => {
 });
 
 admin.get('/analytics', async (c) => {
-  const { data } = await supabaseAdmin
+  const supabase = getSupabaseAdmin();
+  const { data } = await supabase
     .from('analytics_summary')
     .select('*')
     .single();

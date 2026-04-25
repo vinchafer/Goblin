@@ -3,7 +3,7 @@
 
 -- Enable required extensions
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
-CREATE EXTENSION IF NOT EXISTS uuid-ossp;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- ============================================================================
 -- 1. Users Table (extends Supabase auth.users)

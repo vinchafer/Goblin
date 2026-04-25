@@ -1,13 +1,10 @@
 import { Octokit } from '@octokit/rest';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdmin } from '../lib/supabase';
 import { encryptData, decryptData } from './encryption';
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
-
 export async function getDecryptedAccessToken(userId: string): Promise<string | null> {
+  const supabase = getSupabaseAdmin();
+
   const { data, error } = await supabase
     .from('users')
     .select('github_access_token_encrypted')
@@ -95,6 +92,8 @@ export async function pushFiles(accessToken: string, owner: string, repo: string
 }
 
 export async function disconnectGitHub(userId: string): Promise<void> {
+  const supabase = getSupabaseAdmin();
+
   await supabase
     .from('users')
     .update({
@@ -106,6 +105,7 @@ export async function disconnectGitHub(userId: string): Promise<void> {
 }
 
 export async function saveGitHubConnection(userId: string, accessToken: string, username: string): Promise<void> {
+  const supabase = getSupabaseAdmin();
   const encryptedToken = encryptData(accessToken);
 
   await supabase

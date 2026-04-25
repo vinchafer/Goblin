@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdmin } from '../lib/supabase';
 import { decryptData } from './encryption';
 
 interface StreamCompletionParams {
@@ -17,10 +17,7 @@ export async function* streamCompletion({
   chatHistory,
   modelPreference
 }: StreamCompletionParams): AsyncGenerator<string, void, unknown> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const supabase = getSupabaseAdmin();
 
   const { data: byokKey } = await supabase
     .from('byok_keys')

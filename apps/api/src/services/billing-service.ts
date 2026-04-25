@@ -1,17 +1,22 @@
 import Stripe from 'stripe';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdmin } from '../lib/supabase';
 import { PLANS, getPlanFromPriceId } from '../config/plans';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { 
-  apiVersion: '2024-06-20' 
-});
+let _stripe: Stripe | null = null;
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+function getStripe(): Stripe {
+  if (!_stripe) {
+    _stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+      apiVersion: '2024-06-20'
+    });
+  }
+  return _stripe;
+}
 
 export async function createCheckoutSession(userId: string, targetPlan: string): Promise<string> {
+  const supabase = getSupabaseAdmin();
+  const stripe = getStripe();
+
   const { data: user, error } = await supabase
     .from('users')
     .select('email, stripe_customer_id')
@@ -44,6 +49,9 @@ export async function createCheckoutSession(userId: string, targetPlan: string):
 }
 
 export async function createPortalSession(userId: string): Promise<string> {
+  const supabase = getSupabaseAdmin();
+  const stripe = getStripe();
+
   const { data: user, error } = await supabase
     .from('users')
     .select('stripe_customer_id')
@@ -63,6 +71,7 @@ export async function createPortalSession(userId: string): Promise<string> {
 }
 
 export async function handleSubscriptionCreated(subscription: Stripe.Subscription): Promise<void> {
+  const supabase = getSupabaseAdmin();
   const userId = subscription.metadata.userId;
   const priceId = subscription.items.data[0]?.price.id || '';
   const plan = getPlanFromPriceId(priceId) || 'seed';
@@ -81,6 +90,7 @@ export async function handleSubscriptionCreated(subscription: Stripe.Subscriptio
 }
 
 export async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Promise<void> {
+  const supabase = getSupabaseAdmin();
   const priceId = subscription.items.data[0]?.price.id || '';
   const plan = getPlanFromPriceId(priceId) || 'seed';
   const planConfig = PLANS[plan] ?? PLANS.seed!;
@@ -96,6 +106,8 @@ export async function handleSubscriptionUpdated(subscription: Stripe.Subscriptio
 }
 
 export async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Promise<void> {
+  const supabase = getSupabaseAdmin();
+
   await supabase
     .from('users')
     .update({
@@ -107,6 +119,8 @@ export async function handleSubscriptionDeleted(subscription: Stripe.Subscriptio
 }
 
 export async function resetMonthlyUsage(userId: string): Promise<void> {
+  const supabase = getSupabaseAdmin();
+
   await supabase
     .from('users')
     .update({ monthly_requests_used: 0 })

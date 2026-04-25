@@ -1,4 +1,6 @@
 node_modules
+*.txt
+supabase/.temp
 .next
 dist
 .env
