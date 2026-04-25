@@ -9,13 +9,14 @@ interface ProjectPageProps {
 }
 
 export default async function ProjectPage({ params }: ProjectPageProps) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
+  // @ts-ignore supabase-js v2.104 / ssr v0.5 type mismatch
   const { data: project } = await supabase
     .from('projects')
     .select('*')
     .eq('id', params.id)
-    .single();
+    .single() as unknown as { data: { id: string; name: string; description: string | null } | null };
 
   if (!project) {
     notFound();

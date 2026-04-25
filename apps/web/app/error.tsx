@@ -1,44 +1,35 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect } from "react";
 
 export default function Error({
   error,
-  reset
+  reset,
 }: {
   error: Error & { digest?: string };
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error(error);
+    console.error('[APP ERROR]', error.message, error.digest);
   }, [error]);
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 text-center">
-      <h1 className="text-6xl font-bold mb-4" style={{ fontFamily: 'Fraunces, Georgia, serif', color: 'var(--goblin-moss)' }}>
-        Whoops
-      </h1>
-      <p className="text-lg mb-6 max-w-md" style={{ color: 'var(--goblin-gray)' }}>
-        Your goblin got confused. Refresh and try again.
-      </p>
-
-      <div className="flex gap-4">
+    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--goblin-cream)' }}>
+      <div className="max-w-md text-center p-6 space-y-4">
+        <div className="text-6xl mb-4">🤕</div>
+        <h2 className="text-2xl font-semibold" style={{ color: 'var(--goblin-bark)' }}>
+          Something went wrong
+        </h2>
+        <p style={{ color: 'var(--goblin-warn)' }}>
+          Your goblin got confused. Try refreshing.
+        </p>
         <button
           onClick={() => reset()}
-          className="px-6 py-2.5 rounded-lg font-medium"
-          style={{ backgroundColor: 'var(--goblin-moss)', color: 'white' }}
+          className="px-6 py-2.5 rounded-lg font-medium text-white"
+          style={{ backgroundColor: 'var(--goblin-moss)' }}
         >
-          Try again
+          Refresh
         </button>
-
-        <Link
-          href="/"
-          className="px-6 py-2.5 rounded-lg font-medium border"
-          style={{ borderColor: 'var(--goblin-moss)', color: 'var(--goblin-moss)' }}
-        >
-          Go home
-        </Link>
       </div>
     </div>
   );

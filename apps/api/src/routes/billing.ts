@@ -7,10 +7,12 @@ import {
   createPortalSession,
   handleSubscriptionCreated,
   handleSubscriptionUpdated,
-  handleSubscriptionDeleted
+  handleSubscriptionDeleted,
+  resetMonthlyUsage
 } from '../services/billing-service';
 
-const billing = new Hono();
+type Variables = { userId: string }
+const billing = new Hono<{ Variables: Variables }>();
 
 billing.post('/create-checkout-session', authMiddleware, async (c) => {
   const userId = c.get('userId');
@@ -62,6 +64,19 @@ billing.post('/webhook', async (c) => {
       case 'customer.subscription.deleted':
         await handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
         break;
+
+      case 'invoice.paid': {
+        const invoice = event.data.object as Stripe.Invoice;
+        if (invoice.subscription) {
+          const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+          const sub = await stripe.subscriptions.retrieve(invoice.subscription as string);
+          const userId = sub.metadata.userId;
+          if (userId) {
+            await resetMonthlyUsage(userId);
+          }
+        }
+        break;
+      }
     }
 
     return c.json({ received: true });

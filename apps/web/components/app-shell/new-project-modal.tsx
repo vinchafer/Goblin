@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { X } from "lucide-react";
+import { X, Loader2 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import type { Project } from "@goblin/shared/src/schemas";
 
 const COLOR_PRESETS = [
   "#2D4A2B", "#D4A94A", "#B85C3C", "#4A7C3B", "#6B6B6B"
@@ -9,13 +11,18 @@ const COLOR_PRESETS = [
 
 interface NewProjectModalProps {
   onClose: () => void;
+  onProjectCreated?: (project: Project) => void;
 }
 
-export function NewProjectModal({ onClose }: NewProjectModalProps) {
+export function NewProjectModal({ onClose, onProjectCreated }: NewProjectModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [selectedColor, setSelectedColor] = useState(COLOR_PRESETS[1]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const supabase = createClient();
 
   useEffect(() => {
     dialogRef.current?.showModal();
@@ -26,10 +33,52 @@ export function NewProjectModal({ onClose }: NewProjectModalProps) {
     onClose();
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Will POST to /api/projects in next phase
-    handleClose();
+    
+    if (!name.trim()) return;
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+
+      if (!token) {
+        throw new Error('Not authenticated');
+      }
+
+      const response = await fetch('/api/projects', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name: name.trim(),
+          description: description.trim() || undefined,
+          color: selectedColor
+        })
+      });
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'Failed to create project');
+      }
+
+      const project = await response.json();
+      
+      if (onProjectCreated) {
+        onProjectCreated(project);
+      }
+      
+      handleClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create project');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -100,13 +149,18 @@ export function NewProjectModal({ onClose }: NewProjectModalProps) {
                   onClick={() => setSelectedColor(color)}
                   className={`w-8 h-8 rounded-full transition-transform ${selectedColor === color ? 'scale-110 ring-2 ring-offset-2' : ''}`}
                   style={{
-                    backgroundColor: color,
-                    ringColor: 'var(--goblin-moss)'
+                    backgroundColor: color
                   }}
                 />
               ))}
             </div>
           </div>
+
+          {error && (
+            <p className="text-sm" style={{ color: 'var(--goblin-warn)' }}>
+              {error}
+            </p>
+          )}
         </div>
 
         <div className="flex justify-end gap-3 mt-6">
@@ -120,11 +174,12 @@ export function NewProjectModal({ onClose }: NewProjectModalProps) {
           </button>
           <button
             type="submit"
-            disabled={!name}
-            className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50"
+            disabled={!name || loading}
+            className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50 flex items-center gap-2"
             style={{ backgroundColor: 'var(--goblin-moss)' }}
           >
-            Create Project
+            {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+            {loading ? 'Creating...' : 'Create Project'}
           </button>
         </div>
       </form>

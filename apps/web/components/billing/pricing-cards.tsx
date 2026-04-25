@@ -1,6 +1,7 @@
 "use client";
 
 import { Check } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 const PLANS = {
   seed: {
@@ -42,11 +43,13 @@ const PLANS = {
 };
 
 interface PricingCardsProps {
-  currentPlan: string;
-  onUpgrade: (plan: string) => void;
+  currentPlan?: string;
+  showUpgrade?: boolean;
+  onUpgrade?: (plan: string) => void | Promise<unknown>;
 }
 
-export function PricingCards({ currentPlan, onUpgrade }: PricingCardsProps) {
+export function PricingCards({ currentPlan, showUpgrade = true }: PricingCardsProps) {
+  const supabase = createClient();
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       {Object.entries(PLANS).map(([planId, plan]) => {
@@ -80,15 +83,40 @@ export function PricingCards({ currentPlan, onUpgrade }: PricingCardsProps) {
               <button disabled className="w-full py-2.5 rounded-lg text-sm font-medium opacity-50" style={{ backgroundColor: 'var(--goblin-light)', color: 'var(--goblin-gray)' }}>
                 Current Plan
               </button>
-            ) : (
-              <button
-                onClick={() => onUpgrade(planId)}
-                className="w-full py-2.5 rounded-lg text-sm font-medium"
-                style={{ backgroundColor: 'var(--goblin-moss)', color: 'white' }}
-              >
-                Upgrade
-              </button>
-            )}
+             ) : (
+               <button
+                 onClick={async () => {
+                   if (showUpgrade) {
+                     // Dashboard context: call API directly
+                     const { data } = await supabase.auth.getSession();
+                     const token = data.session?.access_token;
+                     
+                     if (token) {
+                       const response = await fetch('/api/billing/create-checkout-session', {
+                         method: 'POST',
+                         headers: {
+                           'Content-Type': 'application/json',
+                           'Authorization': `Bearer ${token}`
+                         },
+                         body: JSON.stringify({ plan: planId })
+                       });
+                       
+                       if (response.ok) {
+                         const result = await response.json();
+                         window.location.href = result.url;
+                       }
+                     }
+                   } else {
+                     // Landing page context: redirect to login
+                     window.location.href = `/login?plan=${planId}`;
+                   }
+                 }}
+                 className="w-full py-2.5 rounded-lg text-sm font-medium"
+                 style={{ backgroundColor: 'var(--goblin-moss)', color: 'white' }}
+               >
+                 {showUpgrade ? 'Upgrade' : 'Get started'}
+               </button>
+             )}
           </div>
         );
       })}

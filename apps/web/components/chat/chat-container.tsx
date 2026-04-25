@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { MessageList } from "./message-list";
 import { ChatInput } from "./chat-input";
 import { createClient } from "@/lib/supabase/client";
@@ -13,15 +13,12 @@ interface ChatContainerProps {
 export function ChatContainer({ projectId }: ChatContainerProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
-  const [currentStreamingMessage, setCurrentStreamingMessage] = useState("");
-  const supabase = createClient();
-  const eventSourceRef = useRef<EventSource | null>(null);
+  const [streamingText, setStreamingText] = useState("");
+  
+  const streamAccumRef = useRef("");
+  const supabase = useMemo(() => createClient(), []);
 
-  useEffect(() => {
-    loadMessages();
-  }, [projectId]);
-
-  async function loadMessages() {
+  const loadMessages = useCallback(async () => {
     const { data } = await supabase
       .from('chat_messages')
       .select('*')
@@ -29,13 +26,18 @@ export function ChatContainer({ projectId }: ChatContainerProps) {
       .order('created_at', { ascending: true });
     
     setMessages(data || []);
-  }
+  }, [projectId, supabase]);
+
+  useEffect(() => {
+    loadMessages();
+  }, [loadMessages]);
 
   async function handleSendMessage(content: string) {
     if (isStreaming || !content.trim()) return;
 
     setIsStreaming(true);
-    setCurrentStreamingMessage("");
+    streamAccumRef.current = "";
+    setStreamingText("");
 
     const userMessage: ChatMessage = {
       id: crypto.randomUUID(),
@@ -44,47 +46,88 @@ export function ChatContainer({ projectId }: ChatContainerProps) {
       content: content.trim(),
       model_used: null,
       source_tier: null,
-      created_at: new Date().toISOString()
+      created_at: new Date()
     };
 
     setMessages(prev => [...prev, userMessage]);
 
-    const es = new EventSource(`/api/chat/stream?projectId=${projectId}&message=${encodeURIComponent(content)}`);
-    eventSourceRef.current = es;
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
 
-    es.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      
-      if (data.type === 'token') {
-        setCurrentStreamingMessage(prev => prev + data.content);
-      } else if (data.type === 'message_end') {
-        setMessages(prev => [...prev, {
-          id: data.messageId,
-          project_id: projectId,
-          role: "assistant",
-          content: currentStreamingMessage,
-          model_used: data.model_used,
-          source_tier: data.source_tier,
-          created_at: new Date().toISOString()
-        }]);
-        setCurrentStreamingMessage("");
+      if (!token) {
         setIsStreaming(false);
-        es.close();
+        return;
       }
-    };
 
-    es.onerror = () => {
-      es.close();
+      const response = await fetch('/api/chat/stream', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ projectId, message: content })
+      });
+
+      if (!response.ok) {
+        setIsStreaming(false);
+        return;
+      }
+
+      const reader = response.body!.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          
+          try {
+            const jsonStr = line.slice(6);
+            const parsed = JSON.parse(jsonStr);
+            
+            if (parsed.type === 'token') {
+              streamAccumRef.current += parsed.content;
+              setStreamingText(streamAccumRef.current);
+            } else if (parsed.type === 'message_end') {
+              setMessages(prev => [...prev, {
+                id: parsed.messageId,
+                project_id: projectId,
+                role: 'assistant',
+                content: streamAccumRef.current,
+                model_used: parsed.model_used,
+                source_tier: parsed.source_tier,
+                created_at: new Date()
+              }]);
+              setStreamingText('');
+              streamAccumRef.current = '';
+              setIsStreaming(false);
+            }
+          } catch {
+            // Ignore parse errors
+          }
+        }
+      }
+    } catch {
+      // Error handled silently, streaming state reset
+    } finally {
       setIsStreaming(false);
-    };
+    }
   }
 
   return (
     <div className="h-full flex flex-col max-w-4xl mx-auto w-full px-4 py-6">
-      <MessageList 
-        messages={messages} 
+      <MessageList
+        messages={messages}
         isStreaming={isStreaming}
-        currentStreamingMessage={currentStreamingMessage}
+        currentStreamingMessage={streamingText}
       />
       <ChatInput onSend={handleSendMessage} disabled={isStreaming} />
     </div>

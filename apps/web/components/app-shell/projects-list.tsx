@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from 'next/navigation';
 import { Plus, Circle } from "lucide-react";
 import { useApp } from "@/contexts/app-context";
 import type { Project } from "@goblin/shared/src/schemas";
@@ -8,10 +9,12 @@ import { NewProjectModal } from "./new-project-modal";
 
 interface ProjectsListProps {
   projects: Project[];
+  onProjectCreated?: (project: Project) => void;
 }
 
-export function ProjectsList({ projects }: ProjectsListProps) {
+export function ProjectsList({ projects, onProjectCreated }: ProjectsListProps) {
   const { activeProject, setActiveProject } = useApp();
+  const router = useRouter();
   const [modalOpen, setModalOpen] = useState(false);
 
   const formatRelativeTime = (date: Date | string) => {
@@ -37,7 +40,10 @@ export function ProjectsList({ projects }: ProjectsListProps) {
         {projects.map(project => (
           <button
             key={project.id}
-            onClick={() => setActiveProject(project)}
+            onClick={() => {
+              setActiveProject(project);
+              router.push(`/dashboard/project/${project.id}`);
+            }}
             className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${activeProject?.id === project.id ? '' : 'hover:bg-gray-100'}`}
             style={{
               backgroundColor: activeProject?.id === project.id ? 'rgba(212, 169, 74, 0.1)' : 'transparent'
@@ -69,7 +75,12 @@ export function ProjectsList({ projects }: ProjectsListProps) {
         New Project
       </button>
 
-      {modalOpen && <NewProjectModal onClose={() => setModalOpen(false)} />}
+      {modalOpen && (
+        <NewProjectModal 
+          onClose={() => setModalOpen(false)}
+          onProjectCreated={onProjectCreated}
+        />
+      )}
     </div>
   );
 }

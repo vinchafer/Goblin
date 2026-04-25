@@ -31,7 +31,7 @@ export function PushToGitHubModal({ open, onClose, projectId, defaultName }: Pus
       const session = await supabase.auth.getSession();
       const accessToken = session.data.session?.access_token;
 
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/github/push`, {
+      const response = await fetch(`/api/github/push`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

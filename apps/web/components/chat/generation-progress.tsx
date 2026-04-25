@@ -1,47 +1,123 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, CheckCircle, File } from "lucide-react";
+import { Loader2, CheckCircle, AlertCircle } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { useBuildStatus } from "@/contexts/build-context";
 
 interface GenerationProgressProps {
   projectId: string;
+  byokKeyId: string;
+  prompt: string;
   onComplete: () => void;
 }
 
-export function GenerationProgress({ projectId, onComplete }: GenerationProgressProps) {
+export function GenerationProgress({ projectId, byokKeyId, prompt, onComplete }: GenerationProgressProps) {
   const [status, setStatus] = useState<'planning' | 'generating' | 'complete' | 'error'>('planning');
   const [currentFile, setCurrentFile] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [fileCount, setFileCount] = useState(0);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  
+  const { setBuildStatus } = useBuildStatus();
+  const supabase = createClient();
 
   useEffect(() => {
-    // This will be connected to SSE stream from chat container
-    const fakeProgress = async () => {
-      await new Promise(r => setTimeout(r, 1000));
-      setStatus('planning');
-      await new Promise(r => setTimeout(r, 1500));
-      setStatus('generating');
+    async function startGeneration() {
+      try {
+        const { data } = await supabase.auth.getSession();
+        const token = data.session?.access_token;
 
-      const files = ['package.json', 'app/page.tsx', 'README.md', 'tailwind.config.ts'];
-      for (let i = 0; i < files.length; i++) {
-        setCurrentFile(files[i]);
-        setProgress(Math.round(((i + 1) / files.length) * 100));
-        await new Promise(r => setTimeout(r, 800));
+        if (!token) {
+          throw new Error('Not authenticated');
+        }
+
+        const response = await fetch(`/api/projects/${projectId}/generate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({ prompt, byokKeyId })
+        });
+
+        if (!response.ok) {
+          throw new Error('Generation failed');
+        }
+
+        const reader = response.body!.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+
+            try {
+              const jsonStr = line.slice(6);
+              const parsed = JSON.parse(jsonStr);
+
+              if (parsed.type === 'planning') {
+                setStatus('planning');
+                setBuildStatus({ 
+                  isBuilding: true, 
+                  progress: 5, 
+                  currentAction: 'Planning structure...' 
+                });
+              } else if (parsed.type === 'generating_file') {
+                setStatus('generating');
+                setCurrentFile(parsed.path);
+                setProgress(parsed.progress);
+                setBuildStatus({ 
+                  isBuilding: true, 
+                  progress: parsed.progress, 
+                  currentAction: `Generating ${parsed.path}` 
+                });
+              } else if (parsed.type === 'complete') {
+                setFileCount(parsed.fileCount);
+                setStatus('complete');
+                setBuildStatus({ 
+                  isBuilding: true, 
+                  progress: 100, 
+                  currentAction: 'Complete' 
+                });
+                
+                setTimeout(() => {
+                  setBuildStatus({ isBuilding: false, progress: 0, currentAction: '' });
+                  onComplete();
+                }, 2000);
+              } else if (parsed.type === 'error') {
+                throw new Error(parsed.message);
+              }
+            } catch {
+              // Ignore parse errors
+            }
+          }
+        }
+      } catch (err) {
+        setStatus('error');
+        setErrorMessage(err instanceof Error ? err.message : 'Generation failed');
+        setBuildStatus({ isBuilding: false, progress: 0, currentAction: '' });
       }
+    }
 
-      setFileCount(files.length);
-      setStatus('complete');
-      setTimeout(onComplete, 1500);
-    };
-
-    fakeProgress();
-  }, [onComplete]);
+    startGeneration();
+  }, [projectId, byokKeyId, prompt, onComplete, supabase, setBuildStatus]);
 
   return (
     <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 w-96 rounded-xl shadow-xl border p-4" style={{ backgroundColor: 'white', borderColor: 'var(--goblin-light)' }}>
       <div className="flex items-center gap-3 mb-3">
         {status === 'complete' ? (
           <CheckCircle className="w-5 h-5" style={{ color: 'var(--goblin-good)' }} />
+        ) : status === 'error' ? (
+          <AlertCircle className="w-5 h-5" style={{ color: 'var(--goblin-warn)' }} />
         ) : (
           <Loader2 className="w-5 h-5 animate-spin" style={{ color: 'var(--goblin-moss)' }} />
         )}
@@ -49,10 +125,11 @@ export function GenerationProgress({ projectId, onComplete }: GenerationProgress
           {status === 'planning' && 'Planning project structure...'}
           {status === 'generating' && `Generating ${currentFile}`}
           {status === 'complete' && `✓ ${fileCount} files generated`}
+          {status === 'error' && errorMessage}
         </span>
       </div>
 
-      {status === 'generating' && (
+      {(status === 'generating' || status === 'planning') && (
         <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'var(--goblin-light)' }}>
           <div
             className="h-full rounded-full transition-all duration-300"

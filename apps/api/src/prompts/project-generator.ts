@@ -15,7 +15,7 @@ INSTRUCTIONS:
    - README.md with setup instructions
    - package.json with correct dependencies and scripts
 5. Maximum 15 files total. Keep it focused and high quality.
-6. Output ONLY valid JSON wrapped in ```json and ``` fences. No other text.
+6. Output ONLY valid JSON wrapped in \`\`\`json and \`\`\` fences. No other text.
 7. Every file must have complete, working content. No placeholders.
 
 RESPONSE FORMAT:

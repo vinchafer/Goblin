@@ -2,35 +2,38 @@ import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 import { PLANS, getPlanFromPriceId } from '../config/plans';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2024-06-20'
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, { 
+  apiVersion: '2024-06-20' 
 });
 
-export async function createCheckoutSession(userId: string, targetPlan: string): Promise<string> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
-  const { data: user } = await supabase
+export async function createCheckoutSession(userId: string, targetPlan: string): Promise<string> {
+  const { data: user, error } = await supabase
     .from('users')
     .select('email, stripe_customer_id')
     .eq('id', userId)
     .single();
 
-  const plan = PLANS[targetPlan];
+  if (error || !user) {
+    throw new Error('User not found');
+  }
 
   const session = await stripe.checkout.sessions.create({
-    customer: user.stripe_customer_id || undefined,
-    customer_email: user.stripe_customer_id ? undefined : user.email,
-    payment_method_types: ['card'],
-    line_items: [{
-      price: plan.stripePriceId,
-      quantity: 1
-    }],
+    customer: user.stripe_customer_id ?? undefined,
+    customer_email: !user.stripe_customer_id ? user.email : undefined,
     mode: 'subscription',
-    success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/settings/billing/success?session_id={CHECKOUT_SESSION_ID}`,
-    cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/settings/billing`,
+    line_items: [
+      {
+        price: PLANS[targetPlan as keyof typeof PLANS]?.stripePriceId,
+        quantity: 1
+      }
+    ],
+    success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing?success=true`,
+    cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing?canceled=true`,
     metadata: {
       userId,
       plan: targetPlan
@@ -41,35 +44,29 @@ export async function createCheckoutSession(userId: string, targetPlan: string):
 }
 
 export async function createPortalSession(userId: string): Promise<string> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-
-  const { data: user } = await supabase
+  const { data: user, error } = await supabase
     .from('users')
     .select('stripe_customer_id')
     .eq('id', userId)
     .single();
 
+  if (error || !user || !user.stripe_customer_id) {
+    throw new Error('No billing account found. Please subscribe first.');
+  }
+
   const session = await stripe.billingPortal.sessions.create({
     customer: user.stripe_customer_id,
-    return_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/settings/billing`
+    return_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing`
   });
 
   return session.url;
 }
 
 export async function handleSubscriptionCreated(subscription: Stripe.Subscription): Promise<void> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-
   const userId = subscription.metadata.userId;
-  const priceId = subscription.items.data[0].price.id;
+  const priceId = subscription.items.data[0]?.price.id || '';
   const plan = getPlanFromPriceId(priceId) || 'seed';
-  const planConfig = PLANS[plan];
+  const planConfig = PLANS[plan] ?? PLANS.seed!;
 
   await supabase
     .from('users')
@@ -84,14 +81,9 @@ export async function handleSubscriptionCreated(subscription: Stripe.Subscriptio
 }
 
 export async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Promise<void> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-
-  const priceId = subscription.items.data[0].price.id;
+  const priceId = subscription.items.data[0]?.price.id || '';
   const plan = getPlanFromPriceId(priceId) || 'seed';
-  const planConfig = PLANS[plan];
+  const planConfig = PLANS[plan] ?? PLANS.seed!;
 
   await supabase
     .from('users')
@@ -104,27 +96,17 @@ export async function handleSubscriptionUpdated(subscription: Stripe.Subscriptio
 }
 
 export async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Promise<void> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-
   await supabase
     .from('users')
     .update({
       plan: 'seed',
-      monthly_limit: PLANS.seed.monthlyRequests,
+      monthly_limit: PLANS.seed!.monthlyRequests,
       stripe_subscription_id: null
     })
     .eq('stripe_subscription_id', subscription.id);
 }
 
 export async function resetMonthlyUsage(userId: string): Promise<void> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-
   await supabase
     .from('users')
     .update({ monthly_requests_used: 0 })

@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { PROJECT_GENERATOR_SYSTEM_PROMPT } from '../prompts/project-generator';
 import { getActiveKey } from './byok-service';
 import { saveFile } from './file-storage';
-import type { Context } from 'hono';
+import type { SSEStreamingApi } from 'hono/streaming';
 
 interface GenerationResult {
   projectType: string;
@@ -17,7 +17,7 @@ export async function generateProject(
   projectId: string,
   prompt: string,
   byokKeyId: string,
-  stream: Context['stream']
+  stream: SSEStreamingApi
 ): Promise<void> {
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -71,18 +71,19 @@ export async function generateProject(
     });
 
     // Parse response
-    const content = response.content[0].type === 'text' ? response.content[0].text : '';
+    const firstContent = response.content[0];
+    const content = firstContent?.type === 'text' ? firstContent.text : '';
     const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/);
 
     if (!jsonMatch) {
       throw new Error('Failed to parse generation response');
     }
 
-    const result: GenerationResult = JSON.parse(jsonMatch[1]);
+    const result: GenerationResult = JSON.parse(jsonMatch[1] ?? '{}');
 
     // Save all files
     for (let i = 0; i < result.files.length; i++) {
-      const file = result.files[i];
+      const file = result.files[i]!;
       await stream.writeSSE({
         data: JSON.stringify({
           type: 'generating_file',
@@ -104,15 +105,17 @@ export async function generateProject(
       .eq('id', projectId);
 
     // Update agent run
-    await supabase
-      .from('agent_runs')
-      .update({
-        status: 'success',
-        input_tokens: response.usage.input_tokens,
-        output_tokens: response.usage.output_tokens,
-        completed_at: new Date().toISOString()
-      })
-      .eq('id', agentRun.id);
+    if (agentRun) {
+      await supabase
+        .from('agent_runs')
+        .update({
+          status: 'success',
+          input_tokens: response.usage.input_tokens,
+          output_tokens: response.usage.output_tokens,
+          completed_at: new Date().toISOString()
+        })
+        .eq('id', agentRun.id);
+    }
 
     await stream.writeSSE({
       data: JSON.stringify({
@@ -128,13 +131,15 @@ export async function generateProject(
       .update({ status: 'generation_failed' })
       .eq('id', projectId);
 
-    await supabase
-      .from('agent_runs')
-      .update({
-        status: 'failed',
-        error: err instanceof Error ? err.message : 'Unknown error'
-      })
-      .eq('id', agentRun.id);
+    if (agentRun) {
+      await supabase
+        .from('agent_runs')
+        .update({
+          status: 'failed',
+          error: err instanceof Error ? err.message : 'Unknown error'
+        })
+        .eq('id', agentRun.id);
+    }
 
     await stream.writeSSE({
       data: JSON.stringify({

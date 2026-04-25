@@ -11,6 +11,8 @@ export interface AppModel {
   name: string;
   tier: ModelTier;
   icon: string;
+  available?: boolean;
+  badge?: string;
 }
 
 interface AppContextType {

@@ -1,33 +1,45 @@
-import { createClient } from '@supabase/supabase-js';
+import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from 'crypto';
 
-const MASTER_KEY = process.env.GOBLIN_MASTER_KEY!;
-
-export async function encryptKey(plaintext: string): Promise<Buffer> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
-
-  const { data } = await supabase.rpc('pgp_sym_encrypt', {
-    data: plaintext,
-    key: MASTER_KEY,
-    cipher_algo: 'aes-256-cbc'
-  });
-
-  return Buffer.from(data, 'base64');
+const masterKey = process.env.ENCRYPTION_KEY;
+if (!masterKey) {
+  throw new Error('ENCRYPTION_KEY environment variable is required');
 }
 
-export async function decryptKey(encrypted: Buffer): Promise<string> {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+const key = scryptSync(masterKey, 'goblin-salt-v1', 32);
 
-  const { data } = await supabase.rpc('pgp_sym_decrypt', {
-    data: encrypted.toString('base64'),
-    key: MASTER_KEY,
-    cipher_algo: 'aes-256-cbc'
-  });
+export function encryptData(plaintext: string): string {
+  const iv = randomBytes(16);
+  const cipher = createCipheriv('aes-256-gcm', key, iv);
 
-  return data;
+  const ciphertext = Buffer.concat([
+    cipher.update(plaintext, 'utf8'),
+    cipher.final()
+  ]);
+
+  const authTag = cipher.getAuthTag();
+  const combined = Buffer.concat([iv, authTag, ciphertext]);
+
+  return combined.toString('base64');
+}
+
+export function decryptData(encryptedBase64: string): string {
+  try {
+    const combined = Buffer.from(encryptedBase64, 'base64');
+
+    const iv = combined.subarray(0, 16);
+    const authTag = combined.subarray(16, 32);
+    const ciphertext = combined.subarray(32);
+
+    const decipher = createDecipheriv('aes-256-gcm', key, iv);
+    decipher.setAuthTag(authTag);
+
+    const plaintext = Buffer.concat([
+      decipher.update(ciphertext),
+      decipher.final()
+    ]);
+
+    return plaintext.toString('utf8');
+  } catch (error) {
+    throw new Error('Decryption failed — key may be invalid or data is corrupted');
+  }
 }

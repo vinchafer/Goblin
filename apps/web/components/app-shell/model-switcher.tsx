@@ -5,12 +5,13 @@ import { ChevronDown, Bot, Zap, Key } from "lucide-react";
 import { useApp, type AppModel, type ModelTier } from "@/contexts/app-context";
 
 const MODELS: AppModel[] = [
-  { id: "qwen-coder-32b", name: "Qwen Coder 32B", tier: "hosted", icon: "🤖" },
-  { id: "qwen-coder-14b", name: "Qwen Coder 14B", tier: "hosted", icon: "🤖" },
-  { id: "gemini-2-flash", name: "Gemini 2.0 Flash", tier: "free", icon: "⚡" },
-  { id: "llama-3.3-70b", name: "Llama 3.3 70B", tier: "free", icon: "🦙" },
-  { id: "claude-sonnet", name: "Claude Sonnet", tier: "byok", icon: "🔑" },
-  { id: "gpt-4o", name: "GPT-4o", tier: "byok", icon: "🔑" },
+  { id: "claude-sonnet-4-6", name: "Claude Sonnet 4.6", tier: "byok", icon: "🔑", available: true },
+  { id: "claude-opus-4-7", name: "Claude Opus 4.7", tier: "byok", icon: "🔑", available: true },
+  { id: "gpt-4o", name: "GPT-4o", tier: "byok", icon: "🔑", available: true },
+  { id: "qwen-coder-32b", name: "Qwen Coder 32B", tier: "hosted", icon: "🤖", available: false, badge: "Phase 3" },
+  { id: "qwen-coder-14b", name: "Qwen Coder 14B (fast)", tier: "hosted", icon: "🤖", available: false, badge: "Phase 3" },
+  { id: "gemini-2-flash", name: "Gemini 2.0 Flash", tier: "free", icon: "⚡", available: false, badge: "Phase 2" },
+  { id: "llama-3.3-70b", name: "Llama 3.3 70B (Groq)", tier: "free", icon: "🦙", available: false, badge: "Phase 2" },
 ];
 
 const TIER_LABELS: Record<ModelTier, string> = {
@@ -62,14 +63,24 @@ export function ModelSwitcher() {
                 <button
                   key={model.id}
                   onClick={() => {
-                    setActiveModel(model);
-                    setOpen(false);
+                    if (model.available) {
+                      setActiveModel(model);
+                      localStorage.setItem('goblin_active_model', JSON.stringify(model));
+                      setOpen(false);
+                    }
                   }}
-                  className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 hover:bg-gray-50 ${activeModel.id === model.id ? 'bg-gray-50' : ''}`}
+                  className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 ${model.available ? 'hover:bg-gray-50' : 'opacity-50 cursor-not-allowed'} ${activeModel.id === model.id ? 'bg-gray-50' : ''}`}
                 >
                   <span>{model.icon}</span>
-                  <span style={{ color: 'var(--goblin-slate)' }}>{model.name}</span>
-                  {activeModel.id === model.id && (
+                  <span style={{ color: model.available ? 'var(--goblin-slate)' : 'var(--goblin-gray)' }}>{model.name}</span>
+                  
+                  {model.badge && (
+                    <span className="ml-auto text-xs px-1.5 py-0.5 rounded" style={{ backgroundColor: 'var(--goblin-light)', color: 'var(--goblin-gray)' }}>
+                      {model.badge}
+                    </span>
+                  )}
+                  
+                  {activeModel.id === model.id && !model.badge && (
                     <span className="ml-auto w-2 h-2 rounded-full" style={{ backgroundColor: TIER_COLORS[tier as ModelTier] }} />
                   )}
                 </button>

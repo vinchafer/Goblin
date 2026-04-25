@@ -4,14 +4,15 @@ import { UsageDisplay } from "@/components/billing/usage-display";
 import { PricingCards } from "@/components/billing/pricing-cards";
 
 export default async function BillingSettingsPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: user } = await supabase.auth.getUser();
 
+  // @ts-ignore supabase-js v2.104 / ssr v0.5 type mismatch
   const { data: userData } = await supabase
     .from('users')
-    .select('plan, monthly_requests_used, monthly_limit, stripe_subscription_id, subscription_current_period_end')
-    .eq('id', user.user?.id)
-    .single();
+    .select('*')
+    .eq('id', user.user?.id ?? '')
+    .single() as unknown as { data: { plan: string; monthly_requests_used: number; monthly_limit: number; stripe_subscription_id: string | null; subscription_current_period_end: string | null } | null };
 
   const hasSubscription = !!userData?.stripe_subscription_id;
   const currentPlan = userData?.plan || 'seed';

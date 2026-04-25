@@ -1,11 +1,10 @@
 "use client";
 
 import { Loader2 } from "lucide-react";
+import { useBuildStatus } from "@/contexts/build-context";
 
 export function BuildStatus() {
-  const isBuilding = false;
-  const progress = 42;
-  const currentAction = "Generating auth flow...";
+  const { isBuilding, progress, currentAction } = useBuildStatus();
 
   return (
     <div className="p-4 border-t" style={{ borderColor: 'var(--goblin-light)' }}>

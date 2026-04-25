@@ -15,9 +15,15 @@ export interface Database {
           email: string
           plan: "seed" | "craft" | "forge"
           stripe_customer_id: string | null
+          stripe_subscription_id: string | null
           monthly_requests_used: number
           monthly_requests_limit: number
+          monthly_limit: number
           billing_cycle_start: string
+          subscription_current_period_end: string | null
+          github_username: string | null
+          github_access_token_encrypted: string | null
+          github_connected_at: string | null
           created_at: string
         }
         Insert: {
@@ -25,9 +31,15 @@ export interface Database {
           email: string
           plan?: "seed" | "craft" | "forge"
           stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
           monthly_requests_used?: number
           monthly_requests_limit?: number
+          monthly_limit?: number
           billing_cycle_start?: string
+          subscription_current_period_end?: string | null
+          github_username?: string | null
+          github_access_token_encrypted?: string | null
+          github_connected_at?: string | null
           created_at?: string
         }
         Update: {
@@ -35,9 +47,15 @@ export interface Database {
           email?: string
           plan?: "seed" | "craft" | "forge"
           stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
           monthly_requests_used?: number
           monthly_requests_limit?: number
+          monthly_limit?: number
           billing_cycle_start?: string
+          subscription_current_period_end?: string | null
+          github_username?: string | null
+          github_access_token_encrypted?: string | null
+          github_connected_at?: string | null
           created_at?: string
         }
       }
@@ -82,7 +100,10 @@ export interface Database {
           color: string
           github_repo: string | null
           model_preferences: Json
+          status: string | null
           last_active: string
+          last_generated: string | null
+          storage_path: string | null
           created_at: string
         }
         Insert: {
@@ -93,7 +114,10 @@ export interface Database {
           color?: string
           github_repo?: string | null
           model_preferences?: Json
+          status?: string | null
           last_active?: string
+          last_generated?: string | null
+          storage_path?: string | null
           created_at?: string
         }
         Update: {
@@ -104,7 +128,10 @@ export interface Database {
           color?: string
           github_repo?: string | null
           model_preferences?: Json
+          status?: string | null
           last_active?: string
+          last_generated?: string | null
+          storage_path?: string | null
           created_at?: string
         }
       }

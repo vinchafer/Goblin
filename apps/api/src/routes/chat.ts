@@ -3,15 +3,16 @@ import { streamSSE } from 'hono/streaming';
 import { createClient } from '@supabase/supabase-js';
 import { streamCompletion } from '../services/model-router';
 import { authMiddleware } from '../middleware/auth';
+import { usageLimitMiddleware } from '../middleware/usage-limit';
 
-const chat = new Hono();
+type Variables = { userId: string }
+const chat = new Hono<{ Variables: Variables }>();
 
 chat.use('*', authMiddleware);
 
-chat.get('/stream', async (c) => {
+chat.post('/stream', usageLimitMiddleware, async (c) => {
   const userId = c.get('userId');
-  const projectId = c.req.query('projectId');
-  const message = c.req.query('message');
+  const { projectId, message } = await c.req.json();
 
   if (!projectId || !message) {
     return c.json({ error: 'Missing parameters' }, 400);

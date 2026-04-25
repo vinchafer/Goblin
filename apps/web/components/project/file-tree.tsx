@@ -56,6 +56,7 @@ function buildTree(paths: string[]) {
 
     for (let i = 0; i < parts.length; i++) {
       const part = parts[i];
+      if (!part) continue;
       if (!current[part]) {
         current[part] = i === parts.length - 1 ? null : {};
       }

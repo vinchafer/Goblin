@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { createClient } from '@supabase/supabase-js';
-import { decryptKey } from './encryption';
+import { decryptData } from './encryption';
 
 interface StreamCompletionParams {
   userId: string;
@@ -34,7 +34,7 @@ export async function* streamCompletion({
     throw new Error('Add your Anthropic key to chat');
   }
 
-  const apiKey = await decryptKey(byokKey.key_encrypted);
+  const apiKey = decryptData(byokKey.key_encrypted);
   const anthropic = new Anthropic({ apiKey });
 
   const { data: agentRun } = await supabase
@@ -52,7 +52,10 @@ export async function* streamCompletion({
   const stream = anthropic.messages.stream({
     model: 'claude-3-5-sonnet-20240620',
     max_tokens: 4096,
-    messages: [...chatHistory, { role: 'user', content: message }]
+    messages: [
+      ...chatHistory.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
+      { role: 'user' as const, content: message }
+    ]
   });
 
   let fullResponse = '';
@@ -60,7 +63,7 @@ export async function* streamCompletion({
   let outputTokens = 0;
 
   for await (const event of stream) {
-    if (event.type === 'content_block_delta') {
+    if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
       const token = event.delta.text;
       fullResponse += token;
       outputTokens++;

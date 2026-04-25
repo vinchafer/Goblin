@@ -1,41 +1,54 @@
-import Link from "next/link";
+"use client";
 
 export function Hero() {
   return (
-    <section className="min-h-screen flex flex-col items-center justify-center px-4 relative overflow-hidden">
-      <div className="absolute inset-0 opacity-5" style={{
-        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
-      }} />
-
-      <div className="max-w-4xl text-center relative z-10">
-        <h1
-          className="text-8xl md:text-[12rem] font-bold mb-6 tracking-tight"
-          style={{ fontFamily: 'Fraunces, Georgia, serif', color: 'var(--goblin-moss)' }}
+    <section className="pt-24 pb-32 px-4" style={{ backgroundColor: 'var(--goblin-cream)' }}>
+      <div className="max-w-4xl mx-auto text-center space-y-8">
+        <h1 
+          className="font-fraunces font-bold leading-tight"
+          style={{ 
+            fontSize: 'clamp(48px, 8vw, 72px)',
+            color: 'var(--goblin-bark)'
+          }}
         >
-          Goblin
+          Build weird stuff.
+          <br />
+          Deploy from anywhere.
         </h1>
 
-        <p className="text-xl md:text-2xl mb-10 max-w-xl mx-auto" style={{ color: 'var(--goblin-slate)' }}>
-          The cloud workshop where vibe coders ship.
+        <p 
+          className="text-xl max-w-2xl mx-auto"
+          style={{ color: 'var(--goblin-slate)' }}
+        >
+          Your AI workshop in the cloud. No token panic. No laptop limits.
+          <br />
+          Your goblin handles the rest.
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-          <Link
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+          <a
             href="/login"
-            className="px-8 py-3 rounded-lg font-medium"
-            style={{ backgroundColor: 'var(--goblin-moss)', color: 'white' }}
+            className="px-8 py-3 rounded-lg font-medium text-white"
+            style={{ backgroundColor: 'var(--goblin-moss)' }}
           >
-            Start building
-          </Link>
-
-          <button className="px-8 py-3 rounded-lg font-medium border" style={{ borderColor: 'var(--goblin-moss)', color: 'var(--goblin-moss)' }}>
+            Start building free
+          </a>
+          <a
+            href="#how-it-works"
+            className="px-8 py-3 rounded-lg font-medium"
+            style={{ color: 'var(--goblin-moss)' }}
+          >
             See how it works
-          </button>
+          </a>
         </div>
 
-        <p className="text-sm max-w-md mx-auto" style={{ color: 'var(--goblin-gray)' }}>
-          No laptop setup. No token panic. Your goblin handles it.
-        </p>
+        <div className="pt-8 flex flex-wrap items-center justify-center gap-6 text-sm" style={{ color: 'var(--goblin-gray)' }}>
+          <span>Fair-use unlimited inference</span>
+          <span className="text-xl">·</span>
+          <span>BYOK support</span>
+          <span className="text-xl">·</span>
+          <span>GitHub push</span>
+        </div>
       </div>
     </section>
   );

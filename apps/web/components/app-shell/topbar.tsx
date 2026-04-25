@@ -5,11 +5,11 @@ import { ModelSwitcher } from "./model-switcher";
 import { Settings, LogOut } from "lucide-react";
 import { useState } from "react";
 
-const TABS: { id: AppTab; label: string; comingSoon?: boolean }[] = [
+const TABS: { id: AppTab; label: string; comingSoon?: boolean; tooltip?: string }[] = [
   { id: "chat", label: "Chat" },
-  { id: "code", label: "Code", comingSoon: true },
-  { id: "preview", label: "Preview", comingSoon: true },
-  { id: "server", label: "Server", comingSoon: true }
+  { id: "code", label: "Code" },
+  { id: "preview", label: "Preview", comingSoon: true, tooltip: "Coming soon" },
+  { id: "server", label: "Server", comingSoon: true, tooltip: "Coming soon" }
 ];
 
 export function Topbar() {

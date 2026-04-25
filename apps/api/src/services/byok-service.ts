@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import type { ByokProvider, CreateByokKey, ByokKey } from '@goblin/shared/src/schemas';
-import { encryptKey, decryptKey } from './encryption';
+import { encryptData, decryptData } from './encryption';
 
 async function testKey(provider: ByokProvider, rawKey: string): Promise<{ valid: boolean; error?: string }> {
   const controller = new AbortController();
@@ -70,7 +70,7 @@ export async function createKey(
     throw new Error(testResult.error || 'Invalid key');
   }
 
-  const encrypted = await encryptKey(rawKey);
+  const encrypted = encryptData(rawKey);
 
   const { data } = await supabase
     .from('byok_keys')
@@ -134,7 +134,7 @@ export async function getActiveKey(userId: string, provider: ByokProvider): Prom
 
   if (!data) return null;
 
-  return decryptKey(data.key_encrypted);
+  return decryptData(data.key_encrypted);
 }
 
 export { testKey };

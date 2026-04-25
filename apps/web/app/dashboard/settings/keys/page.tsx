@@ -3,7 +3,7 @@ import { SettingsLayout } from "@/components/settings/settings-layout";
 import { KeysList } from "@/components/settings/keys-list";
 
 export default async function KeysSettingsPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: keys } = await supabase
     .from('byok_keys')

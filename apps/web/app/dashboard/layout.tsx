@@ -8,14 +8,14 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const supabase = createClient();
+  const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
 
   const { data: projects } = await supabase
     .from('projects')
     .select('*')
-    .eq('user_id', user?.id)
+    .eq('user_id', user?.id ?? '')
     .order('last_active', { ascending: false });
 
   return (
