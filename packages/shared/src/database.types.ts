@@ -63,7 +63,7 @@ export interface Database {
         Row: {
           id: string
           user_id: string
-          provider: "anthropic" | "openai" | "together" | "fireworks"
+          provider: "anthropic" | "openai" | "google" | "groq" | "mistral" | "deepseek" | "xai" | "together" | "fireworks"
           label: string | null
           key_encrypted: Buffer
           status: "active" | "expired" | "revoked"
@@ -73,7 +73,7 @@ export interface Database {
         Insert: {
           id?: string
           user_id: string
-          provider: "anthropic" | "openai" | "together" | "fireworks"
+          provider: "anthropic" | "openai" | "google" | "groq" | "mistral" | "deepseek" | "xai" | "together" | "fireworks"
           label?: string | null
           key_encrypted: Buffer
           status?: "active" | "expired" | "revoked"
@@ -83,7 +83,7 @@ export interface Database {
         Update: {
           id?: string
           user_id?: string
-          provider?: "anthropic" | "openai" | "together" | "fireworks"
+          provider?: "anthropic" | "openai" | "google" | "groq" | "mistral" | "deepseek" | "xai" | "together" | "fireworks"
           label?: string | null
           key_encrypted?: Buffer
           status?: "active" | "expired" | "revoked"
@@ -203,6 +203,105 @@ export interface Database {
           status?: "pending" | "running" | "success" | "failed"
           created_at?: string
           completed_at?: string | null
+        }
+      }
+      code_injections: {
+        Row: {
+          id: string
+          project_id: string
+          message_id: string | null
+          user_id: string
+          payload: string
+          payload_type: "code" | "prompt" | "mixed"
+          filename_hint: string | null
+          applied_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          project_id: string
+          message_id?: string | null
+          user_id: string
+          payload: string
+          payload_type: "code" | "prompt" | "mixed"
+          filename_hint?: string | null
+          applied_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          project_id?: string
+          message_id?: string | null
+          user_id?: string
+          payload?: string
+          payload_type?: "code" | "prompt" | "mixed"
+          filename_hint?: string | null
+          applied_at?: string | null
+          created_at?: string
+        }
+      }
+      models: {
+        Row: {
+          id: string
+          name: string
+          slug: string
+          provider: string
+          layer: "goblin_hosted" | "free_api" | "byok"
+          description: string | null
+          tags: string[]
+          requires_key: boolean
+          available: boolean
+          phase: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          slug: string
+          provider: string
+          layer: "goblin_hosted" | "free_api" | "byok"
+          description?: string | null
+          tags?: string[]
+          requires_key?: boolean
+          available?: boolean
+          phase?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          slug?: string
+          provider?: string
+          layer?: "goblin_hosted" | "free_api" | "byok"
+          description?: string | null
+          tags?: string[]
+          requires_key?: boolean
+          available?: boolean
+          phase?: number
+          created_at?: string
+        }
+      }
+      push_subscriptions: {
+        Row: {
+          id: string
+          user_id: string
+          endpoint: string
+          keys: { p256dh: string; auth: string }
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          endpoint: string
+          keys: { p256dh: string; auth: string }
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          endpoint?: string
+          keys?: { p256dh: string; auth: string }
+          created_at?: string
         }
       }
     }

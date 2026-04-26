@@ -5,7 +5,7 @@ import { randomUUID } from 'crypto';
 import { authMiddleware } from '../middleware/auth';
 import { generateProject } from '../services/project-generator';
 import { createZip, listFiles, getFile } from '../services/file-storage';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdmin } from '../lib/supabase';
 
 type Variables = { userId: string }
 const projects = new Hono<{ Variables: Variables }>();
@@ -22,10 +22,7 @@ const CreateProjectSchema = z.object({
 projects.get('/', async (c) => {
   const userId = c.get('userId');
   
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const supabase = getSupabaseAdmin();
 
   const { data, error } = await supabase
     .from('projects')
@@ -50,10 +47,7 @@ projects.post('/', async (c) => {
     return c.json({ error: 'Invalid project data' }, 400);
   }
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const supabase = getSupabaseAdmin();
 
   const projectId = randomUUID();
 
@@ -83,10 +77,7 @@ projects.delete('/:id', async (c) => {
   const userId = c.get('userId');
   const projectId = c.req.param('id');
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const supabase = getSupabaseAdmin();
 
   // Verify ownership
   const { data: project, error: checkError } = await supabase
@@ -113,10 +104,7 @@ projects.post('/:id/generate', async (c) => {
   const userId = c.get('userId');
   const projectId = c.req.param('id');
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const supabase = getSupabaseAdmin();
 
   // Verify ownership
   const { data: project, error: checkError } = await supabase
@@ -162,10 +150,7 @@ projects.get('/:id/files', async (c) => {
   const userId = c.get('userId');
   const projectId = c.req.param('id');
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const supabase = getSupabaseAdmin();
 
   // Verify ownership
   const { data: project, error: checkError } = await supabase
@@ -193,10 +178,7 @@ projects.get('/:id/files/*', async (c) => {
     return c.json({ error: 'File path required' }, 400);
   }
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const supabase = getSupabaseAdmin();
 
   // Verify ownership
   const { data: project, error: checkError } = await supabase
@@ -224,10 +206,7 @@ projects.get('/:id/download', async (c) => {
   const userId = c.get('userId');
   const projectId = c.req.param('id');
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const supabase = getSupabaseAdmin();
 
   // Verify ownership
   const { data: project, error: checkError } = await supabase
@@ -256,10 +235,7 @@ projects.get('/:id/pending-injections', async (c) => {
   const userId = c.get('userId');
   const projectId = c.req.param('id');
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const supabase = getSupabaseAdmin();
 
   // Verify ownership
   const { data: project, error: checkError } = await supabase
