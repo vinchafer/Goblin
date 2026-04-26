@@ -92,7 +92,8 @@ export function PricingCards({ currentPlan, showUpgrade = true }: PricingCardsPr
                      const token = data.session?.access_token;
                      
                      if (token) {
-                       const response = await fetch('/api/billing/create-checkout-session', {
+                       const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
+                       const response = await fetch(`${apiBase}/api/billing/create-checkout-session`, {
                          method: 'POST',
                          headers: {
                            'Content-Type': 'application/json',
