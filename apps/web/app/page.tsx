@@ -22,7 +22,7 @@ export default function LandingPage() {
         <h2 className="text-3xl md:text-4xl font-semibold text-center mb-12" style={{ color: 'var(--goblin-slate)' }}>
           Pick your goblin's appetite.
         </h2>
-        <PricingCards currentPlan="seed" onUpgrade={() => {}} />
+        <PricingCards currentPlan="seed" />
         <p className="text-center mt-6 text-sm" style={{ color: 'var(--goblin-gray)' }}>
           No contracts. Cancel in one click. Keep your code.
         </p>

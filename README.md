@@ -16,6 +16,9 @@ The Cloud Workshop for Builders
 # Install dependencies
 pnpm install
 
+# Validate environment variables
+npx tsx scripts/validate-env.ts
+
 # Start development servers
 pnpm dev
 
@@ -27,6 +30,9 @@ pnpm typecheck
 
 # Run lint across all workspaces
 pnpm lint
+
+# Run smoke test (requires running API server)
+npx tsx scripts/smoke-test.ts
 ```
 
 ## Services
@@ -85,3 +91,31 @@ pnpm lint
 | Forge  | $39   | 3000             |
 
 All plans include unlimited projects and GitHub push integration.
+
+## 🚀 Deployment
+
+### Vercel (Frontend)
+
+The `vercel.json` at the repo root configures the Next.js frontend deployment.
+API routes are proxied to the standalone API server.
+
+### Railway / Docker (API)
+
+The API server runs as a standalone Node.js process. See `apps/api/Dockerfile`
+and `apps/api/railway.json` for deployment configuration.
+
+### Environment Variables
+
+Copy `.env.example` to `.env` and fill in all required values. Run the
+validation script to check your setup:
+
+```bash
+npx tsx scripts/validate-env.ts
+```
+
+## 📜 Scripts
+
+| Script | Description |
+|--------|-------------|
+| `scripts/validate-env.ts` | Validates all required environment variables |
+| `scripts/smoke-test.ts` | End-to-end test: user → project → chat → cleanup |
