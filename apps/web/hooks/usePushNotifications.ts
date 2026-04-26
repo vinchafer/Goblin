@@ -64,7 +64,8 @@ export function usePushNotifications() {
     });
 
     // Send subscription to API
-    const res = await fetch("/api/notifications/subscribe", {
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
+    const res = await fetch(`${apiBase}/api/notifications/subscribe`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ subscription }),
@@ -85,7 +86,8 @@ export function usePushNotifications() {
     await subscription.unsubscribe();
 
     // Notify API
-    await fetch("/api/notifications/unsubscribe", {
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
+    await fetch(`${apiBase}/api/notifications/unsubscribe`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ endpoint: subscription.endpoint }),
