@@ -39,7 +39,7 @@ export async function* streamCompletion({
     .insert({
       user_id: userId,
       project_id: projectId,
-      model_used: 'claude-sonnet-4-6',
+      model_used: 'claude-sonnet-4-20250514',
       source_tier: 'byok',
       status: 'running'
     })
@@ -47,7 +47,7 @@ export async function* streamCompletion({
     .single();
 
   const stream = anthropic.messages.stream({
-    model: 'claude-sonnet-4-6',
+    model: 'claude-sonnet-4-20250514',
     max_tokens: 4096,
     messages: [
       ...chatHistory.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),

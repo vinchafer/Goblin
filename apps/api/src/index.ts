@@ -1,6 +1,6 @@
 // Startup validation — fail fast with clear error messages
 const REQUIRED_ENV = [
-  'SUPABASE_URL',
+  'NEXT_PUBLIC_SUPABASE_URL',
   'SUPABASE_SERVICE_ROLE_KEY',
   'SUPABASE_JWT_SECRET',
   'ENCRYPTION_KEY',

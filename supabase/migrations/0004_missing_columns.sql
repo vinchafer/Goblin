@@ -16,3 +16,7 @@ ALTER TABLE agent_runs
 
 -- Index for subscription lookups in webhook handler
 CREATE INDEX IF NOT EXISTS idx_users_stripe_sub ON users(stripe_subscription_id);
+
+-- Update the existing monthly_requests_limit default to align with monthly_limit
+-- monthly_limit is the working column used by billing-service and usage-limit
+-- monthly_requests_limit stays for backwards compatibility

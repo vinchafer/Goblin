@@ -239,10 +239,12 @@ projects.get('/:id/download', async (c) => {
 
   const zipBuffer = await createZip(projectId);
 
-  c.header('Content-Type', 'application/zip');
-  c.header('Content-Disposition', `attachment; filename="project-${projectId}.zip"`);
-
-  return c.body(zipBuffer as unknown as null);
+  return new Response(new Uint8Array(zipBuffer), {
+    headers: {
+      'Content-Type': 'application/zip',
+      'Content-Disposition': `attachment; filename="project-${projectId}.zip"`
+    }
+  });
 });
 
 // Get pending code injections for a project

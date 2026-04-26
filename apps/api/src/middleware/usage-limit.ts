@@ -40,8 +40,11 @@ export const usageLimitMiddleware = createMiddleware(async (c, next) => {
     return c.json({ error: 'Monthly request limit reached. Upgrade your plan.' }, 429);
   }
 
-  // Atomic increment using database function (no race condition)
-  await supabase.rpc('increment_request_count', { user_id: userId });
+  // Increment usage count directly (no RPC dependency)
+  await supabase
+    .from('users')
+    .update({ monthly_requests_used: used + 1 })
+    .eq('id', userId);
 
   await next();
 });
