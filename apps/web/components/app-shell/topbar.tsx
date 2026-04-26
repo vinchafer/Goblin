@@ -18,7 +18,7 @@ interface TopbarProps {
 }
 
 export function Topbar({ onToggleSidebar, sidebarOpen }: TopbarProps) {
-  const { activeProject, activeTab, setActiveTab } = useApp();
+  const { activeProject, activeTab, setActiveTab, injectionCount } = useApp();
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
@@ -67,6 +67,12 @@ export function Topbar({ onToggleSidebar, sidebarOpen }: TopbarProps) {
             >
               {tab.label}
               {tab.comingSoon && <span className="ml-1 text-xs">Soon</span>}
+              {tab.id === 'code' && activeTab !== 'code' && injectionCount > 0 && (
+                <span
+                  className="absolute top-1.5 right-0.5 w-2 h-2 rounded-full"
+                  style={{ backgroundColor: '#D4A94A' }}
+                />
+              )}
               {activeTab === tab.id && (
                 <span
                   className="absolute bottom-0 left-0 right-0 h-0.5"

@@ -252,7 +252,7 @@ projects.get('/:id/pending-injections', async (c) => {
   // Fetch pending injections
   const { data: injections, error: fetchError } = await supabase
     .from('code_injections')
-    .select('id, payload, payload_type, created_at')
+    .select('id, payload, payload_type, filename_hint, created_at')
     .eq('project_id', projectId)
     .is('applied_at', null)
     .order('created_at', { ascending: false });
@@ -275,6 +275,7 @@ projects.get('/:id/pending-injections', async (c) => {
       id: i.id,
       payload: i.payload,
       payloadType: i.payload_type,
+      filenameHint: i.filename_hint ?? undefined,
       createdAt: i.created_at,
     })),
   });

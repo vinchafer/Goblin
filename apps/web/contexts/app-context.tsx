@@ -10,6 +10,7 @@ export interface PendingInjection {
   id: string;
   payload: string;
   payloadType: "code" | "prompt" | "mixed";
+  filenameHint?: string;
   createdAt: string;
 }
 
@@ -31,7 +32,9 @@ interface AppContextType {
   setActiveModel: (model: AppModel) => void;
   pendingInjections: PendingInjection[];
   setPendingInjections: (injections: PendingInjection[]) => void;
+  addInjection: (injection: PendingInjection) => void;
   clearPendingInjections: () => void;
+  injectionCount: number;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -49,6 +52,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [activeModel, setActiveModel] = useState<AppModel>(DEFAULT_MODEL);
   const [pendingInjections, setPendingInjections] = useState<PendingInjection[]>([]);
   const clearPendingInjections = useCallback(() => setPendingInjections([]), []);
+  const addInjection = useCallback((injection: PendingInjection) => {
+    setPendingInjections(prev => {
+      if (prev.some(i => i.id === injection.id)) return prev;
+      return [...prev, injection];
+    });
+  }, []);
+  const injectionCount = pendingInjections.length;
 
   return (
     <AppContext.Provider value={{
@@ -60,7 +70,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setActiveModel,
       pendingInjections,
       setPendingInjections,
+      addInjection,
       clearPendingInjections,
+      injectionCount,
     }}>
       {children}
     </AppContext.Provider>
