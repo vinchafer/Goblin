@@ -60,7 +60,8 @@ export function ChatContainer({ projectId }: ChatContainerProps) {
         return;
       }
 
-      const response = await fetch('/api/chat/stream', {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
+      const response = await fetch(`${apiBase}/api/chat/stream`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

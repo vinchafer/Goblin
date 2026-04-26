@@ -66,6 +66,13 @@ export function MessageContent({ content, messageId, role }: MessageContentProps
   );
 }
 
+const LANG_TO_EXT: Record<string, string> = {
+  typescript: 'ts', javascript: 'js', tsx: 'tsx', jsx: 'jsx',
+  python: 'py', rust: 'rs', go: 'go', java: 'java',
+  css: 'css', scss: 'scss', html: 'html', json: 'json',
+  sql: 'sql', bash: 'sh', shell: 'sh', yaml: 'yml', markdown: 'md',
+};
+
 function CodeBlock({ language, value, messageId }: { language: string; value: string; messageId?: string }) {
   const [copied, setCopied] = useState(false);
 
@@ -74,6 +81,8 @@ function CodeBlock({ language, value, messageId }: { language: string; value: st
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  const filenameHint = LANG_TO_EXT[language] ? `file.${LANG_TO_EXT[language]}` : undefined;
 
   return (
     <div className="relative my-3 rounded-lg overflow-hidden">
@@ -93,13 +102,13 @@ function CodeBlock({ language, value, messageId }: { language: string; value: st
           {value}
         </SyntaxHighlighter>
       </div>
-      {/* Send to Code button below each code block */}
       {messageId && (
         <SendToCodeButton
           payload={value}
           payloadType="code"
           messageId={messageId}
-          label={`→ Send to Code`}
+          filename={filenameHint}
+          label="→ Send to Code"
         />
       )}
     </div>
@@ -110,10 +119,11 @@ interface SendToCodeButtonProps {
   payload: string;
   payloadType: "code" | "prompt" | "mixed";
   messageId: string;
+  filename?: string;
   label: string;
 }
 
-function SendToCodeButton({ payload, payloadType, messageId, label }: SendToCodeButtonProps) {
+function SendToCodeButton({ payload, payloadType, messageId, filename, label }: SendToCodeButtonProps) {
   const [status, setStatus] = useState<"idle" | "loading" | "sent">("idle");
   const params = useParams();
   const projectId = params?.id as string;
@@ -133,7 +143,8 @@ function SendToCodeButton({ payload, payloadType, messageId, label }: SendToCode
         return;
       }
 
-      const response = await fetch("/api/chat/send-to-code", {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
+      const response = await fetch(`${apiBase}/api/chat/send-to-code`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -144,6 +155,7 @@ function SendToCodeButton({ payload, payloadType, messageId, label }: SendToCode
           messageId,
           payload,
           payloadType,
+          filename,
         }),
       });
 

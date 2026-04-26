@@ -10,10 +10,9 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   const { id } = await params;
   const supabase = await createClient();
 
-  // @ts-ignore supabase-js v2.104 / ssr v0.5 type mismatch
   const { data: project } = await supabase
     .from('projects')
-    .select('*')
+    .select('id, name, description')
     .eq('id', id)
     .single() as unknown as { data: { id: string; name: string; description: string | null } | null };
 
