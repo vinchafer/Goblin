@@ -7,29 +7,40 @@ export function BuildStatus() {
   const { isBuilding, progress, currentAction } = useBuildStatus();
 
   return (
-    <div className="p-4 border-t" style={{ borderColor: 'var(--goblin-light)' }}>
-      <span className="text-xs font-semibold uppercase tracking-wide mb-3 block" style={{ color: 'var(--goblin-gray)' }}>
-        Build Status
+    <div
+      className="px-3 py-3 border-t"
+      style={{ borderColor: "var(--goblin-border)" }}
+    >
+      <span
+        className="text-[10px] font-medium uppercase tracking-widest mb-2 block"
+        style={{ color: "var(--goblin-meta)", fontFamily: "var(--font-dm-sans)" }}
+      >
+        Build
       </span>
 
       {isBuilding ? (
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Loader2 className="w-4 h-4 animate-spin" style={{ color: 'var(--goblin-ochre)' }} />
-            <span className="text-sm" style={{ color: 'var(--goblin-slate)' }}>{currentAction}</span>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" style={{ color: "var(--goblin-ochre)" }} />
+            <span
+              className="text-xs truncate"
+              style={{ color: "var(--goblin-bark)", fontFamily: "var(--font-jetbrains-mono)" }}
+            >
+              {currentAction}
+            </span>
           </div>
-          <div className="h-1.5 rounded-full" style={{ backgroundColor: 'var(--goblin-light)' }}>
+          <div className="h-1 rounded-full" style={{ backgroundColor: "var(--goblin-border)" }}>
             <div
               className="h-full rounded-full transition-all duration-300"
-              style={{
-                width: `${progress}%`,
-                backgroundColor: 'var(--goblin-ochre)'
-              }}
+              style={{ width: `${progress}%`, backgroundColor: "var(--goblin-ochre)" }}
             />
           </div>
         </div>
       ) : (
-        <span className="text-sm" style={{ color: 'var(--goblin-gray)' }}>
+        <span
+          className="text-xs"
+          style={{ color: "var(--goblin-meta)", fontFamily: "var(--font-dm-sans)" }}
+        >
           No active builds
         </span>
       )}

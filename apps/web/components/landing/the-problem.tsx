@@ -1,45 +1,87 @@
-import { Cpu, Zap, Monitor, Settings } from "lucide-react";
-
 export function TheProblem() {
   const problems = [
     {
-      icon: <Cpu className="w-6 h-6" />,
-      title: "Hardware blocked",
-      description: "You shouldn't need a $3000 laptop just to run an LLM."
-    },
-    {
-      icon: <Zap className="w-6 h-6" />,
+      emoji: "⚡",
       title: "Token panic",
-      description: "Counting tokens every 10 minutes instead of shipping code."
+      description: "Claude Pro locks you out after 2 hours. Mid-flow."
     },
     {
-      icon: <Monitor className="w-6 h-6" />,
-      title: "Stuck to your desk",
-      description: "Why can't you build from your phone on the train?"
+      emoji: "💻",
+      title: "Hardware wall",
+      description: "Running powerful models needs 48GB+ VRAM. Most don't have that."
     },
     {
-      icon: <Settings className="w-6 h-6" />,
+      emoji: "📋",
+      title: "Copy-paste hell",
+      description: "Chat → copy → switch → paste. Every. Single. Time."
+    },
+    {
+      emoji: "🔩",
       title: "IDE overwhelm",
-      description: "17 extensions just to get started. Where's the fun?"
+      description: "Cursor wasn't built for builders who just want to ship."
     }
   ];
 
   return (
-    <section className="py-24 px-4 max-w-6xl mx-auto">
-      <h2 className="text-3xl md:text-4xl font-semibold text-center mb-16" style={{ color: 'var(--goblin-slate)' }}>
-        Building with AI shouldn't require a $3k laptop.
-      </h2>
+    <section
+      id="why-goblin"
+      className="py-24 px-4"
+      style={{ backgroundColor: "var(--goblin-moss)" }}
+    >
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-16 space-y-3">
+          <p
+            className="text-sm font-medium tracking-widest uppercase"
+            style={{
+              color: "var(--goblin-ochre)",
+              fontFamily: "var(--font-dm-sans)"
+            }}
+          >
+            The problem
+          </p>
+          <h2
+            className="font-fraunces font-bold text-white"
+            style={{ fontSize: "clamp(28px, 5vw, 48px)" }}
+          >
+            Building with AI shouldn&apos;t feel like this.
+          </h2>
+        </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {problems.map((problem, i) => (
-          <div key={i} className="p-6 rounded-xl border" style={{ borderColor: 'var(--goblin-light)' }}>
-            <div className="w-12 h-12 rounded-lg mb-4 flex items-center justify-center" style={{ backgroundColor: 'var(--goblin-light)' }}>
-              <div style={{ color: 'var(--goblin-warn)' }}>{problem.icon}</div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {problems.map((p, i) => (
+            <div
+              key={i}
+              className="p-6 rounded-xl transition-all duration-200"
+              style={{
+                backgroundColor: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.08)"
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(201,147,58,0.3)";
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(255,255,255,0.08)";
+              }}
+            >
+              <div className="text-3xl mb-4">{p.emoji}</div>
+              <h3
+                className="font-semibold text-white mb-2"
+                style={{ fontFamily: "var(--font-dm-sans)" }}
+              >
+                {p.title}
+              </h3>
+              <p
+                className="text-sm leading-relaxed"
+                style={{
+                  color: "rgba(255,255,255,0.55)",
+                  fontFamily: "var(--font-dm-sans)"
+                }}
+              >
+                {p.description}
+              </p>
             </div>
-            <h3 className="font-semibold text-lg mb-2" style={{ color: 'var(--goblin-slate)' }}>{problem.title}</h3>
-            <p className="text-sm" style={{ color: 'var(--goblin-gray)' }}>{problem.description}</p>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </section>
   );

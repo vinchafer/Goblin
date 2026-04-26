@@ -5,42 +5,42 @@ import { createClient } from "@/lib/supabase/client";
 
 const PLANS = {
   seed: {
-    name: 'Seed',
+    name: "Seed",
     price: 9,
-    monthlyRequests: 200,
     features: [
-      '200 monthly requests',
-      'Unlimited projects',
-      'GitHub push integration',
-      'Community support'
+      "200 monthly requests",
+      "Unlimited projects",
+      "GitHub push integration",
+      "Community support"
     ]
   },
   craft: {
-    name: 'Craft',
+    name: "Craft",
     price: 19,
-    monthlyRequests: 800,
+    popular: true,
     features: [
-      '800 monthly requests',
-      'Unlimited projects',
-      'GitHub push integration',
-      'Priority support',
-      'Priority model access'
+      "800 monthly requests",
+      "Unlimited projects",
+      "GitHub push integration",
+      "Priority support",
+      "Priority model access"
     ]
   },
   forge: {
-    name: 'Forge',
+    name: "Forge",
     price: 39,
-    monthlyRequests: 3000,
     features: [
-      '3000 monthly requests',
-      'Unlimited projects',
-      'GitHub push integration',
-      'Dedicated support',
-      'Beta features access',
-      'Custom model fine-tuning'
+      "3000 monthly requests",
+      "Unlimited projects",
+      "GitHub push integration",
+      "Dedicated support",
+      "Beta features access",
+      "Custom model fine-tuning"
     ]
   }
-};
+} as const;
+
+type PlanId = keyof typeof PLANS;
 
 interface PricingCardsProps {
   currentPlan?: string;
@@ -50,74 +50,150 @@ interface PricingCardsProps {
 
 export function PricingCards({ currentPlan, showUpgrade = true }: PricingCardsProps) {
   const supabase = createClient();
+
+  const handleUpgrade = async (planId: string) => {
+    if (!showUpgrade) {
+      window.location.href = `/login?plan=${planId}`;
+      return;
+    }
+    const { data } = await supabase.auth.getSession();
+    const token = data.session?.access_token;
+    if (!token) return;
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || "";
+    const response = await fetch(`${apiBase}/api/billing/create-checkout-session`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify({ plan: planId })
+    });
+    if (response.ok) {
+      const result = await response.json();
+      window.location.href = result.url;
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-      {Object.entries(PLANS).map(([planId, plan]) => {
+      {(Object.entries(PLANS) as [PlanId, typeof PLANS[PlanId]][]).map(([planId, plan]) => {
         const isCurrentPlan = currentPlan === planId;
+        const isPopular = "popular" in plan && plan.popular;
 
         return (
           <div
             key={planId}
-            className="border rounded-xl p-5 relative"
-            style={{ borderColor: isCurrentPlan ? 'var(--goblin-ochre)' : 'var(--goblin-light)' }}
+            className="relative rounded-2xl p-6 flex flex-col"
+            style={{
+              border: isPopular
+                ? "2px solid var(--goblin-moss)"
+                : `1px solid var(--goblin-border)`,
+              backgroundColor: "#fff"
+            }}
           >
-            {isCurrentPlan && (
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-xs font-medium" style={{ backgroundColor: 'var(--goblin-ochre)', color: 'white' }}>
+            {/* Popular badge */}
+            {isPopular && (
+              <div
+                className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-semibold text-white"
+                style={{
+                  backgroundColor: "var(--goblin-moss)",
+                  fontFamily: "var(--font-dm-sans)"
+                }}
+              >
+                Most popular
+              </div>
+            )}
+
+            {/* Current plan badge */}
+            {isCurrentPlan && !isPopular && (
+              <div
+                className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-semibold text-white"
+                style={{
+                  backgroundColor: "var(--goblin-ochre)",
+                  fontFamily: "var(--font-dm-sans)"
+                }}
+              >
                 Current Plan
               </div>
             )}
 
-            <h3 className="text-xl font-semibold mb-2" style={{ color: 'var(--goblin-moss)' }}>{plan.name}</h3>
-            <div className="text-3xl font-bold mb-4" style={{ color: 'var(--goblin-ochre)' }}>${plan.price}<span className="text-sm font-normal" style={{ color: 'var(--goblin-gray)' }}>/month</span></div>
+            <h3
+              className="font-fraunces font-bold text-xl mb-1"
+              style={{ color: "var(--goblin-bark)" }}
+            >
+              {plan.name}
+            </h3>
 
-            <ul className="space-y-2 mb-6">
+            <div className="mb-5">
+              <span
+                className="font-fraunces font-bold text-4xl"
+                style={{ color: isPopular ? "var(--goblin-moss)" : "var(--goblin-bark)" }}
+              >
+                ${plan.price}
+              </span>
+              <span
+                className="text-sm ml-1"
+                style={{ color: "var(--goblin-meta)", fontFamily: "var(--font-dm-sans)" }}
+              >
+                /month
+              </span>
+            </div>
+
+            <ul className="space-y-2.5 mb-8 flex-1">
               {plan.features.map((feature, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm" style={{ color: 'var(--goblin-slate)' }}>
-                  <Check className="w-4 h-4 mt-0.5 flex-shrink-0" style={{ color: 'var(--goblin-moss)' }} />
-                  {feature}
+                <li key={i} className="flex items-start gap-2.5">
+                  <span
+                    className="w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5"
+                    style={{ backgroundColor: "var(--goblin-moss)" }}
+                  >
+                    <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
+                  </span>
+                  <span
+                    className="text-sm"
+                    style={{ color: "var(--goblin-text)", fontFamily: "var(--font-dm-sans)" }}
+                  >
+                    {feature}
+                  </span>
                 </li>
               ))}
             </ul>
 
             {isCurrentPlan ? (
-              <button disabled className="w-full py-2.5 rounded-lg text-sm font-medium opacity-50" style={{ backgroundColor: 'var(--goblin-light)', color: 'var(--goblin-gray)' }}>
+              <button
+                disabled
+                className="w-full py-3 rounded-xl text-sm font-medium opacity-50 border"
+                style={{
+                  borderColor: "var(--goblin-border)",
+                  color: "var(--goblin-meta)",
+                  fontFamily: "var(--font-dm-sans)"
+                }}
+              >
                 Current Plan
               </button>
-             ) : (
-               <button
-                 onClick={async () => {
-                   if (showUpgrade) {
-                     // Dashboard context: call API directly
-                     const { data } = await supabase.auth.getSession();
-                     const token = data.session?.access_token;
-                     
-                     if (token) {
-                       const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
-                       const response = await fetch(`${apiBase}/api/billing/create-checkout-session`, {
-                         method: 'POST',
-                         headers: {
-                           'Content-Type': 'application/json',
-                           'Authorization': `Bearer ${token}`
-                         },
-                         body: JSON.stringify({ plan: planId })
-                       });
-                       
-                       if (response.ok) {
-                         const result = await response.json();
-                         window.location.href = result.url;
-                       }
-                     }
-                   } else {
-                     // Landing page context: redirect to login
-                     window.location.href = `/login?plan=${planId}`;
-                   }
-                 }}
-                 className="w-full py-2.5 rounded-lg text-sm font-medium"
-                 style={{ backgroundColor: 'var(--goblin-moss)', color: 'white' }}
-               >
-                 {showUpgrade ? 'Upgrade' : 'Get started'}
-               </button>
-             )}
+            ) : (
+              <button
+                onClick={() => handleUpgrade(planId)}
+                className="w-full py-3 rounded-xl text-sm font-medium transition-colors"
+                style={{
+                  backgroundColor: isPopular ? "var(--goblin-moss)" : "transparent",
+                  color: isPopular ? "#fff" : "var(--goblin-moss)",
+                  border: isPopular ? "none" : `1px solid var(--goblin-moss)`,
+                  fontFamily: "var(--font-dm-sans)"
+                }}
+                onMouseEnter={(e) => {
+                  if (isPopular) {
+                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--goblin-moss2)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (isPopular) {
+                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--goblin-moss)";
+                  }
+                }}
+              >
+                {showUpgrade ? "Upgrade" : "Get started"}
+              </button>
+            )}
           </div>
         );
       })}

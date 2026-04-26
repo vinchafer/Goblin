@@ -10,10 +10,10 @@ interface SidebarProps {
 export function Sidebar({ projects }: SidebarProps) {
   return (
     <aside
-      className="w-72 flex flex-col border-r shrink-0"
+      className="w-[220px] flex flex-col border-r shrink-0 overflow-hidden"
       style={{
-        backgroundColor: 'var(--goblin-cream)',
-        borderColor: 'var(--goblin-light)'
+        backgroundColor: "var(--goblin-cream)",
+        borderColor: "var(--goblin-border)"
       }}
     >
       <ProjectsList projects={projects} />

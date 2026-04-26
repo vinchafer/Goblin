@@ -9,26 +9,34 @@ interface ModelStatus {
 }
 
 interface UsageData {
-  plan: 'seed' | 'craft' | 'forge';
+  plan: "seed" | "craft" | "forge";
   monthly_requests_used: number;
   monthly_limit: number;
 }
 
-const PROVIDER_LABELS: Record<string, string> = {
-  anthropic: "Claude (BYOK)",
-  openai: "OpenAI (BYOK)",
-  google: "Gemini (BYOK)",
-  groq: "Groq (BYOK)",
-  mistral: "Mistral (BYOK)",
-  deepseek: "DeepSeek (BYOK)",
-  xai: "xAI (BYOK)",
-  together: "Together (BYOK)",
-};
+const PROVIDER_ROWS = [
+  { key: "goblin", label: "Goblin Hosted", type: "hosted" },
+  { key: "freeApiPool", label: "Free-API Pool", type: "free" },
+  { key: "anthropic", label: "BYOK Anthropic", type: "byok" },
+  { key: "openai", label: "BYOK OpenAI", type: "byok" },
+] as const;
 
-const FREE_LABELS: Record<string, string> = {
-  gemini: "Gemini (Free)",
-  groq: "Groq (Free)",
-};
+type StatusDot = "ochre" | "green" | "gray";
+
+function Dot({ status }: { status: StatusDot }) {
+  const color =
+    status === "ochre"
+      ? "var(--goblin-ochre)"
+      : status === "green"
+      ? "#22c55e"
+      : "rgba(0,0,0,0.2)";
+  return (
+    <span
+      className="w-1.5 h-1.5 rounded-full shrink-0"
+      style={{ backgroundColor: color, display: "inline-block" }}
+    />
+  );
+}
 
 export function UsageIndicators() {
   const [loading, setLoading] = useState(true);
@@ -41,138 +49,98 @@ export function UsageIndicators() {
       try {
         const { data } = await supabase.auth.getSession();
         const token = data.session?.access_token;
-        
         if (!token) return;
 
-        // Fetch usage data
-        const usageRes = await fetch('/api/usage', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (usageRes.ok) {
-          setUsage(await usageRes.json());
-        }
+        const [usageRes, statusRes] = await Promise.all([
+          fetch("/api/usage", { headers: { Authorization: `Bearer ${token}` } }),
+          fetch("/api/models/status", { headers: { Authorization: `Bearer ${token}` } })
+        ]);
 
-        // Fetch model status
-        const statusRes = await fetch('/api/models/status', {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (statusRes.ok) {
-          setModelStatus(await statusRes.json());
-        }
+        if (usageRes.ok) setUsage(await usageRes.json());
+        if (statusRes.ok) setModelStatus(await statusRes.json());
       } catch {
-        // Silently fail
+        // silently fail
       } finally {
         setLoading(false);
       }
     }
-
     fetchData();
   }, [supabase]);
 
-  const percentage = usage ? Math.min(100, (usage.monthly_requests_used / usage.monthly_limit) * 100) : 0;
+  const pct = usage
+    ? Math.min(100, (usage.monthly_requests_used / usage.monthly_limit) * 100)
+    : 0;
 
-  if (loading) {
-    return (
-      <div className="p-4 border-t" style={{ borderColor: 'var(--goblin-light)' }}>
-        <span className="text-xs font-semibold uppercase tracking-wide mb-3 block" style={{ color: 'var(--goblin-gray)' }}>
-          Usage
-        </span>
-        <div className="space-y-3">
-          <div className="h-8 bg-gray-100 animate-pulse rounded" />
-          <div className="h-8 bg-gray-100 animate-pulse rounded" />
-          <div className="h-8 bg-gray-100 animate-pulse rounded" />
-        </div>
-      </div>
-    );
-  }
+  const getStatus = (key: string, type: string): StatusDot => {
+    if (type === "hosted") return "gray";
+    if (type === "free") return "green";
+    if (type === "byok") return modelStatus?.byok[key] ? "ochre" : "gray";
+    return "gray";
+  };
 
   return (
-    <div className="p-4 border-t" style={{ borderColor: 'var(--goblin-light)' }}>
-      <span className="text-xs font-semibold uppercase tracking-wide mb-3 block" style={{ color: 'var(--goblin-gray)' }}>
+    <div
+      className="px-3 py-3 border-t"
+      style={{ borderColor: "var(--goblin-border)" }}
+    >
+      <span
+        className="text-[10px] font-medium uppercase tracking-widest mb-2 block"
+        style={{ color: "var(--goblin-meta)", fontFamily: "var(--font-dm-sans)" }}
+      >
         Usage
       </span>
 
-      <div className="space-y-3">
-        {/* Monthly Requests */}
-        <div>
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-sm" style={{ color: 'var(--goblin-slate)' }}>Monthly Requests</span>
-            <span className="text-xs" style={{ color: 'var(--goblin-gray)' }}>
-              {usage?.monthly_requests_used || 0} / {usage?.monthly_limit || 200}
-            </span>
-          </div>
-          <div className="h-1.5 rounded-full" style={{ backgroundColor: 'var(--goblin-light)' }}>
-            <div 
-              className="h-full rounded-full transition-all duration-300" 
-              style={{ 
-                width: `${percentage}%`,
-                backgroundColor: percentage > 90 ? 'var(--goblin-warn)' : 'var(--goblin-moss)' 
-              }} 
-            />
-          </div>
+      {loading ? (
+        <div className="space-y-2">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-4 rounded animate-pulse" style={{ backgroundColor: "var(--goblin-border)" }} />
+          ))}
         </div>
+      ) : (
+        <div className="space-y-2">
+          {/* Monthly requests bar */}
+          <div>
+            <div className="flex items-center justify-between mb-1">
+              <span
+                className="text-[11px]"
+                style={{ color: "var(--goblin-bark)", fontFamily: "var(--font-dm-sans)" }}
+              >
+                Monthly
+              </span>
+              <span
+                className="text-[10px]"
+                style={{ color: "var(--goblin-meta)", fontFamily: "var(--font-dm-sans)" }}
+              >
+                {usage?.monthly_requests_used ?? 0}/{usage?.monthly_limit ?? 200}
+              </span>
+            </div>
+            <div className="h-1 rounded-full" style={{ backgroundColor: "var(--goblin-border)" }}>
+              <div
+                className="h-full rounded-full transition-all duration-300"
+                style={{
+                  width: `${pct}%`,
+                  backgroundColor: pct > 90 ? "var(--goblin-warn)" : "var(--goblin-moss)"
+                }}
+              />
+            </div>
+          </div>
 
-        {/* BYOK Providers */}
-        {modelStatus?.byok && Object.entries(PROVIDER_LABELS).map(([provider, label]) => {
-          const connected = modelStatus.byok[provider] || false;
-          return (
-            <div key={provider}>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-sm" style={{ color: 'var(--goblin-slate)' }}>{label}</span>
-                <span className="text-xs" style={{ color: connected ? 'var(--goblin-moss)' : 'var(--goblin-gray)' }}>
-                  {connected ? 'Connected' : 'Not connected'}
+          {/* Provider status dots */}
+          <div className="space-y-1 pt-1">
+            {PROVIDER_ROWS.map(({ key, label, type }) => (
+              <div key={key} className="flex items-center gap-2">
+                <Dot status={getStatus(key, type)} />
+                <span
+                  className="text-[11px]"
+                  style={{ color: "var(--goblin-meta)", fontFamily: "var(--font-dm-sans)" }}
+                >
+                  {label}
                 </span>
               </div>
-              <div className="h-1.5 rounded-full" style={{ backgroundColor: 'var(--goblin-light)' }}>
-                <div 
-                  className="h-full rounded-full" 
-                  style={{ 
-                    width: connected ? '100%' : '0%',
-                    backgroundColor: 'var(--goblin-moss)' 
-                  }} 
-                />
-              </div>
-            </div>
-          );
-        })}
-
-        {/* Free API Providers */}
-        {modelStatus?.freeApi && Object.entries(FREE_LABELS).map(([provider, label]) => {
-          const free = modelStatus.freeApi[provider];
-          const available = free?.available ?? true;
-          const used = free?.usedToday ?? 0;
-          const limit = free?.limit ?? 50;
-          const freePct = Math.min(100, (used / limit) * 100);
-          return (
-            <div key={`free-${provider}`}>
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-sm" style={{ color: 'var(--goblin-slate)' }}>{label}</span>
-                <span className="text-xs" style={{ color: available ? 'var(--goblin-moss)' : 'var(--goblin-warn)' }}>
-                  {used} / {limit}
-                </span>
-              </div>
-              <div className="h-1.5 rounded-full" style={{ backgroundColor: 'var(--goblin-light)' }}>
-                <div 
-                  className="h-full rounded-full transition-all duration-300" 
-                  style={{ 
-                    width: `${freePct}%`,
-                    backgroundColor: freePct > 90 ? 'var(--goblin-warn)' : 'var(--goblin-moss)' 
-                  }} 
-                />
-              </div>
-            </div>
-          );
-        })}
-
-        {/* Goblin Hosted */}
-        <div>
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-sm" style={{ color: 'var(--goblin-slate)' }}>Goblin Hosted</span>
-            <span className="text-xs" style={{ color: 'var(--goblin-gray)' }}>Available Phase 3</span>
+            ))}
           </div>
-          <div className="h-1.5 rounded-full opacity-50" style={{ backgroundColor: 'var(--goblin-light)' }} />
         </div>
-      </div>
+      )}
     </div>
   );
 }

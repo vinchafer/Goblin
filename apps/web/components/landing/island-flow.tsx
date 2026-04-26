@@ -5,96 +5,143 @@ import { Smartphone, MessageSquare, ArrowRight, Hammer, Github, Rocket, Bell, Gl
 interface FlowStep {
   icon: React.ReactNode;
   label: string;
+  sub?: string;
   highlight?: boolean;
 }
 
-export function IslandFlow() {
-  const steps: FlowStep[] = [
-    { icon: <Smartphone className="w-5 h-5" />, label: "Open Goblin" },
-    { icon: <MessageSquare className="w-5 h-5" />, label: "Chat or Voice" },
-    { icon: <ArrowRight className="w-5 h-5" />, label: "Send to Code", highlight: true },
-    { icon: <Hammer className="w-5 h-5" />, label: "Build" },
-    { icon: <Github className="w-5 h-5" />, label: "Push to GitHub" },
-    { icon: <Rocket className="w-5 h-5" />, label: "Vercel Deploy" },
-    { icon: <Bell className="w-5 h-5" />, label: "Push Notification", highlight: true },
-    { icon: <Globe className="w-5 h-5" />, label: "Preview" },
-  ];
+const STEPS: FlowStep[] = [
+  { icon: <Smartphone className="w-5 h-5" />, label: "Open Goblin", sub: "Santorini, Greece" },
+  { icon: <MessageSquare className="w-5 h-5" />, label: "Chat / Voice" },
+  { icon: <ArrowRight className="w-5 h-5" />, label: "Send to Code", highlight: true },
+  { icon: <Hammer className="w-5 h-5" />, label: "Build" },
+  { icon: <Github className="w-5 h-5" />, label: "GitHub" },
+  { icon: <Rocket className="w-5 h-5" />, label: "Vercel", sub: "~34 seconds" },
+  { icon: <Bell className="w-5 h-5" />, label: "Push Notif", highlight: true },
+  { icon: <Globe className="w-5 h-5" />, label: "Preview" },
+];
 
+export function IslandFlow() {
   return (
-    <section className="py-24 px-4" style={{ backgroundColor: '#111' }}>
+    <section className="py-24 px-4" style={{ backgroundColor: "#111111" }}>
       <div className="max-w-6xl mx-auto">
-        {/* Headline */}
-        <div className="text-center mb-16 space-y-4">
-          <h2 className="text-3xl md:text-4xl font-semibold" style={{ color: '#fff' }}>
-            The Island Flow
+        <div className="text-center mb-16 space-y-3">
+          <h2
+            className="font-fraunces font-bold text-white"
+            style={{ fontSize: "clamp(28px, 5vw, 48px)" }}
+          >
+            From beach to{" "}
+            <em style={{ color: "var(--goblin-ochre)" }}>deployed.</em>
           </h2>
-          <p className="text-lg max-w-2xl mx-auto" style={{ color: '#999' }}>
-            Build your SaaS from a beach in Santorini.
-            <br />
-            No laptop. No copy-paste. No token panic.
+          <p
+            className="text-lg max-w-xl mx-auto"
+            style={{ color: "rgba(255,255,255,0.45)", fontFamily: "var(--font-dm-sans)" }}
+          >
+            Build your SaaS from a beach. No laptop. No copy-paste. No token panic.
           </p>
         </div>
 
-        {/* Flow steps — horizontal on desktop, vertical on mobile */}
-        <div className="flex flex-col md:flex-row items-center justify-center gap-0 md:gap-0">
-          {steps.map((step, i) => (
-            <div key={i} className="flex flex-col md:flex-row items-center w-full md:w-auto">
-              {/* Step card */}
-              <div className="flex flex-col items-center gap-3 p-4 w-full md:w-32">
+        {/* Desktop: horizontal row */}
+        <div className="hidden md:flex items-center justify-center">
+          {STEPS.map((step, i) => (
+            <div key={i} className="flex items-center">
+              {/* Step */}
+              <div className="flex flex-col items-center gap-2 w-28">
                 <div
-                  className="w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-300"
+                  className="w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-200"
                   style={{
-                    backgroundColor: step.highlight ? 'var(--goblin-ochre)' : '#222',
-                    color: step.highlight ? '#111' : '#888',
-                    boxShadow: step.highlight ? '0 0 20px rgba(212, 169, 74, 0.3)' : 'none',
+                    backgroundColor: step.highlight ? "rgba(201,147,58,0.1)" : "#1e1e1e",
+                    border: step.highlight
+                      ? "1px solid var(--goblin-ochre)"
+                      : "1px solid rgba(255,255,255,0.08)",
+                    color: step.highlight ? "var(--goblin-ochre)" : "rgba(255,255,255,0.5)"
                   }}
                 >
                   {step.icon}
                 </div>
                 <span
-                  className="text-xs text-center font-medium leading-tight"
+                  className="text-xs text-center font-medium"
                   style={{
-                    color: step.highlight ? 'var(--goblin-ochre)' : '#888',
+                    color: step.highlight ? "var(--goblin-ochre)" : "rgba(255,255,255,0.5)",
+                    fontFamily: "var(--font-dm-sans)"
                   }}
                 >
                   {step.label}
                 </span>
-                {step.highlight && (
+                {step.sub && (
                   <span
-                    className="text-[10px] px-2 py-0.5 rounded-full font-bold"
-                    style={{ backgroundColor: 'var(--goblin-ochre)', color: '#111' }}
+                    className="text-[10px] text-center"
+                    style={{ color: "rgba(255,255,255,0.3)", fontFamily: "var(--font-dm-sans)" }}
                   >
-                    ★
+                    {step.sub}
                   </span>
                 )}
               </div>
 
-              {/* Connector arrow (not after last step) */}
-              {i < steps.length - 1 && (
-                <div className="flex items-center justify-center py-2 md:py-0 md:px-1">
-                  {/* Vertical arrow on mobile, horizontal on desktop */}
-                  <div className="md:hidden flex flex-col items-center gap-0">
-                    <div className="w-0.5 h-6" style={{ backgroundColor: 'var(--goblin-moss)' }} />
-                    <div style={{ color: 'var(--goblin-moss)', fontSize: '10px' }}>▼</div>
-                  </div>
-                  <div className="hidden md:flex items-center gap-0">
-                    <div className="h-0.5 w-8" style={{ backgroundColor: 'var(--goblin-moss)' }} />
-                    <div style={{ color: 'var(--goblin-moss)', fontSize: '10px' }}>▶</div>
-                  </div>
+              {/* Connector */}
+              {i < STEPS.length - 1 && (
+                <div className="flex items-center mx-1">
+                  <div className="h-px w-6" style={{ backgroundColor: "var(--goblin-moss)" }} />
+                  <span style={{ color: "var(--goblin-moss)", fontSize: "10px" }}>▶</span>
                 </div>
               )}
             </div>
           ))}
         </div>
 
-        {/* Bottom caption */}
-        <div className="text-center mt-16">
-          <p className="text-sm" style={{ color: '#666' }}>
-            From idea to live site in under 2 minutes.
-            <br />
-            <span style={{ color: 'var(--goblin-ochre)' }}>✦</span> Your goblin handles the rest.
-          </p>
+        {/* Mobile: vertical */}
+        <div className="flex md:hidden flex-col items-center gap-0">
+          {STEPS.map((step, i) => (
+            <div key={i} className="flex flex-col items-center">
+              <div className="flex items-center gap-4 w-full max-w-xs">
+                <div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0"
+                  style={{
+                    backgroundColor: step.highlight ? "rgba(201,147,58,0.1)" : "#1e1e1e",
+                    border: step.highlight
+                      ? "1px solid var(--goblin-ochre)"
+                      : "1px solid rgba(255,255,255,0.08)",
+                    color: step.highlight ? "var(--goblin-ochre)" : "rgba(255,255,255,0.5)"
+                  }}
+                >
+                  {step.icon}
+                </div>
+                <div>
+                  <span
+                    className="text-sm font-medium"
+                    style={{
+                      color: step.highlight ? "var(--goblin-ochre)" : "rgba(255,255,255,0.6)",
+                      fontFamily: "var(--font-dm-sans)"
+                    }}
+                  >
+                    {step.label}
+                  </span>
+                  {step.sub && (
+                    <p
+                      className="text-xs mt-0.5"
+                      style={{ color: "rgba(255,255,255,0.3)", fontFamily: "var(--font-dm-sans)" }}
+                    >
+                      {step.sub}
+                    </p>
+                  )}
+                </div>
+              </div>
+              {i < STEPS.length - 1 && (
+                <div className="flex flex-col items-center py-1">
+                  <div className="w-px h-5" style={{ backgroundColor: "var(--goblin-moss)" }} />
+                  <span style={{ color: "var(--goblin-moss)", fontSize: "9px" }}>▼</span>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
+
+        <p
+          className="text-center mt-12 text-sm"
+          style={{ color: "rgba(255,255,255,0.35)", fontFamily: "var(--font-dm-sans)" }}
+        >
+          From idea to live site in under 2 minutes.{" "}
+          <span style={{ color: "var(--goblin-ochre)" }}>✦</span> Your goblin handles the rest.
+        </p>
       </div>
     </section>
   );
