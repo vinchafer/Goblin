@@ -3,19 +3,18 @@ import { createClient } from "@/lib/supabase/server";
 import { ProjectWorkspace } from "@/components/project/project-workspace";
 
 interface ProjectPageProps {
-  params: {
-    id: string;
-  };
+  params: Promise<{ id: string }>;
 }
 
 export default async function ProjectPage({ params }: ProjectPageProps) {
+  const { id } = await params;
   const supabase = await createClient();
 
   // @ts-ignore supabase-js v2.104 / ssr v0.5 type mismatch
   const { data: project } = await supabase
     .from('projects')
     .select('*')
-    .eq('id', params.id)
+    .eq('id', id)
     .single() as unknown as { data: { id: string; name: string; description: string | null } | null };
 
   if (!project) {
@@ -30,8 +29,8 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           <p className="text-sm mt-1" style={{ color: 'var(--goblin-gray)' }}>{project.description}</p>
         )}
       </div>
-      
-      <ProjectWorkspace projectId={params.id} />
+
+      <ProjectWorkspace projectId={id} />
     </div>
   );
 }
