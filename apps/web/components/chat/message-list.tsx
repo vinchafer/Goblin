@@ -35,7 +35,7 @@ export function MessageList({ messages, isStreaming, currentStreamingMessage }: 
           )}
 
           <div
-            className={`max-w-2xl px-4 py-3 rounded-2xl ${message.role === 'user' ? 'rounded-tr-none' : 'rounded-tl-none'}`}
+            className={`max-w-[88%] md:max-w-2xl px-4 py-3 rounded-2xl ${message.role === 'user' ? 'rounded-tr-none' : 'rounded-tl-none'}`}
             style={{
               backgroundColor: message.role === 'user' ? 'rgba(212, 169, 74, 0.1)' : 'white',
               border: message.role === 'assistant' ? '1px solid var(--goblin-light)' : 'none'
@@ -57,7 +57,7 @@ export function MessageList({ messages, isStreaming, currentStreamingMessage }: 
           <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--goblin-moss)' }}>
             <Bot className="w-4 h-4 text-white" />
           </div>
-          <div className="max-w-2xl px-4 py-3 rounded-2xl rounded-tl-none bg-white" style={{ border: '1px solid var(--goblin-light)' }}>
+          <div className="max-w-[88%] md:max-w-2xl px-4 py-3 rounded-2xl rounded-tl-none bg-white" style={{ border: '1px solid var(--goblin-light)' }}>
             {currentStreamingMessage ? (
               <MessageContent content={currentStreamingMessage} role="assistant" />
             ) : (

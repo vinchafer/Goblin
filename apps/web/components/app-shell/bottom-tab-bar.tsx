@@ -11,7 +11,7 @@ const TABS: { id: AppTab; label: string; icon: React.ReactNode; comingSoon?: boo
 ];
 
 export function BottomTabBar() {
-  const { activeTab, setActiveTab } = useApp();
+  const { activeTab, setActiveTab, injectionCount } = useApp();
 
   return (
     <nav
@@ -31,7 +31,12 @@ export function BottomTabBar() {
             color: activeTab === tab.id ? 'var(--goblin-moss)' : 'var(--goblin-gray)'
           }}
         >
-          {tab.icon}
+          <span className="relative">
+            {tab.icon}
+            {tab.id === 'code' && activeTab !== 'code' && injectionCount > 0 && (
+              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full" style={{ backgroundColor: '#D4A94A' }} />
+            )}
+          </span>
           <span className="text-[10px] font-medium leading-none">
             {tab.label}
             {tab.comingSoon && <span className="ml-0.5 text-[9px]">Soon</span>}

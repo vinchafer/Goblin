@@ -132,7 +132,7 @@ export function ChatContainer({ projectId }: ChatContainerProps) {
           currentStreamingMessage={streamingText}
         />
       </div>
-      <div className="sticky bottom-0 pt-2" style={{ backgroundColor: 'var(--goblin-cream)' }}>
+      <div className="sticky bottom-0 pt-2 safe-bottom" style={{ backgroundColor: 'var(--goblin-cream)' }}>
         <ChatInput onSend={handleSendMessage} disabled={isStreaming} />
       </div>
     </div>

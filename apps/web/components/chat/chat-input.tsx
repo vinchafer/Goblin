@@ -53,7 +53,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
         <button
           onClick={handleSubmit}
           disabled={disabled || !value.trim()}
-          className="absolute right-3 bottom-3 w-8 h-8 rounded-lg flex items-center justify-center disabled:opacity-50"
+          className="absolute right-2 bottom-2 w-10 h-10 rounded-lg flex items-center justify-center disabled:opacity-50 touch-manipulation"
           style={{ backgroundColor: 'var(--goblin-moss)' }}
         >
           <Send className="w-4 h-4 text-white" />

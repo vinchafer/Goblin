@@ -39,7 +39,7 @@ export function DashboardShell({ projects, children }: DashboardShellProps) {
   }, [closeSidebar]);
 
   return (
-    <div className="h-screen flex flex-col">
+    <div className="h-[100dvh] flex flex-col">
       <Topbar onToggleSidebar={toggleSidebar} sidebarOpen={sidebarOpen} />
       <div className="flex flex-1 overflow-hidden">
         {/* Desktop sidebar — always visible on md+ */}
