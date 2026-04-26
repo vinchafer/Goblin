@@ -1,11 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { GitHubConnectButton } from "./github-connect-button";
 
-export default async function IntegrationsPage({ searchParams }: { searchParams: { [key: string]: string | string[] | undefined } }) {
+export default async function IntegrationsPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
+  const params = await searchParams;
   const supabase = await createClient();
 
   const { data: { user } } = await supabase.auth.getUser();
-  
+
   // @ts-ignore supabase-js v2.104 / ssr v0.5 type mismatch
   const { data: profile } = await supabase
     .from('users')
@@ -14,7 +15,7 @@ export default async function IntegrationsPage({ searchParams }: { searchParams:
     .single() as unknown as { data: { github_username: string | null } | null };
 
   const githubConnected = !!profile?.github_username;
-  const success = searchParams.github === 'connected';
+  const success = params.github === 'connected';
 
   return (
     <div className="max-w-2xl">
