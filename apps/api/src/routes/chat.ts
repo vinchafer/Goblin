@@ -10,6 +10,36 @@ const chat = new Hono<{ Variables: Variables }>();
 
 chat.use('*', authMiddleware);
 
+chat.get('/:projectId/history', async (c) => {
+  const userId = c.get('userId');
+  const projectId = c.req.param('projectId');
+
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  const { data: project } = await supabase
+    .from('projects')
+    .select('id')
+    .eq('id', projectId)
+    .eq('user_id', userId)
+    .single();
+
+  if (!project) return c.json({ error: 'Project not found' }, 404);
+
+  const { data, error } = await supabase
+    .from('chat_messages')
+    .select('*')
+    .eq('project_id', projectId)
+    .order('created_at', { ascending: true })
+    .limit(200);
+
+  if (error) return c.json({ error: 'Failed to fetch history' }, 500);
+
+  return c.json(data || []);
+});
+
 chat.post('/stream', usageLimitMiddleware, async (c) => {
   const userId = c.get('userId');
   const { projectId, message } = await c.req.json();

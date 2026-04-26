@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { z } from 'zod';
+import { randomUUID } from 'crypto';
 import { authMiddleware } from '../middleware/auth';
 import { generateProject } from '../services/project-generator';
 import { createZip, listFiles, getFile } from '../services/file-storage';
@@ -54,15 +55,18 @@ projects.post('/', async (c) => {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
+  const projectId = randomUUID();
+
   const { data, error } = await supabase
     .from('projects')
     .insert({
+      id: projectId,
       user_id: userId,
       name: result.data.name,
       description: result.data.description ?? null,
       color: result.data.color ?? '#2D4A2B',
       status: 'idle',
-      storage_path: `projects/${userId}`
+      storage_path: `projects/${projectId}`
     })
     .select()
     .single();

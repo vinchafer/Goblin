@@ -8,6 +8,35 @@ const models = new Hono<{ Variables: Variables }>();
 
 models.use('*', authMiddleware);
 
+// GET /api/models — DB-driven model list (falls back to static list)
+models.get('/', async (c) => {
+  try {
+    const supabase = getSupabaseAdmin();
+    const { data, error } = await supabase
+      .from('models')
+      .select('*')
+      .eq('available', true)
+      .order('phase', { ascending: true });
+
+    if (!error && data && data.length > 0) {
+      return c.json(data);
+    }
+  } catch {
+    // DB table may not exist yet — fall through to static list
+  }
+
+  // Static fallback: Phase 1 BYOK models
+  return c.json([
+    { id: 'claude-sonnet-4-6', name: 'Claude Sonnet 4.6', slug: 'claude-sonnet-4-6', provider: 'anthropic', layer: 'byok', description: 'Fast, capable. Best for most coding tasks.', tags: ['coding', 'fast'], requires_key: true, available: true, phase: 1 },
+    { id: 'claude-opus-4-7', name: 'Claude Opus 4.7', slug: 'claude-opus-4-7', provider: 'anthropic', layer: 'byok', description: 'Most powerful. Best for complex reasoning.', tags: ['reasoning', 'coding'], requires_key: true, available: true, phase: 1 },
+    { id: 'gpt-4o', name: 'GPT-4o', slug: 'gpt-4o', provider: 'openai', layer: 'byok', description: 'OpenAI flagship. Strong at code and instruction following.', tags: ['coding', 'fast'], requires_key: true, available: true, phase: 1 },
+    { id: 'deepseek-chat', name: 'DeepSeek V3', slug: 'deepseek/deepseek-chat', provider: 'deepseek', layer: 'byok', description: 'Best price/performance for coding. Near GPT-4 quality.', tags: ['coding', 'fast'], requires_key: true, available: true, phase: 1 },
+    { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', slug: 'gemini/gemini-2.0-flash', provider: 'google', layer: 'byok', description: 'Very fast. Great for quick iterations.', tags: ['fast'], requires_key: true, available: true, phase: 1 },
+    { id: 'llama-3.3-70b-versatile', name: 'Llama 3.3 70B (Groq)', slug: 'groq/llama-3.3-70b-versatile', provider: 'groq', layer: 'byok', description: 'Open-source 70B. Extremely fast via Groq inference.', tags: ['fast', 'coding'], requires_key: true, available: true, phase: 1 },
+    { id: 'qwen-coder-32b', name: 'Qwen Coder 32B', slug: 'qwen-coder-32b', provider: 'goblin', layer: 'goblin_hosted', description: 'Goblin-hosted. No key required. Best for coding tasks.', tags: ['coding', 'hosted'], requires_key: false, available: false, phase: 3 },
+  ]);
+});
+
 // GET /api/models/status — returns BYOK key status and free API availability
 models.get('/status', async (c) => {
   const userId = c.get('userId') as string;

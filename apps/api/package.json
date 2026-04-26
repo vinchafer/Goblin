@@ -18,11 +18,14 @@
     "stripe": "^16.0.0",
     "@octokit/rest": "^21.0.0",
     "jszip": "^3.10.1",
+    "web-push": "^3.6.7",
+    "@aws-sdk/client-s3": "^3.600.0",
     "@goblin/shared": "workspace:*"
   },
   "devDependencies": {
     "tsx": "^4.19.0",
     "typescript": "^5.6.0",
-    "@types/node": "^22.0.0"
+    "@types/node": "^22.0.0",
+    "@types/web-push": "^3.6.3"
   }
 }
