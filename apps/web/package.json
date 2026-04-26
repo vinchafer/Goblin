@@ -10,23 +10,23 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "next": "15.0.0",
-    "react": "19.0.0",
-    "react-dom": "19.0.0",
-    "lucide-react": "^0.400.0",
+    "@goblin/shared": "workspace:*",
     "@supabase/ssr": "^0.6.0",
     "@supabase/supabase-js": "^2.45.0",
+    "lucide-react": "^0.400.0",
+    "next": "15.3.2",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
     "react-markdown": "^9.0.1",
-    "react-syntax-highlighter": "^15.5.0",
-    "@goblin/shared": "workspace:*"
+    "react-syntax-highlighter": "^15.5.0"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.0.0",
     "@types/react": "19.0.0",
     "@types/react-dom": "19.0.0",
     "@types/react-syntax-highlighter": "^15.5.13",
-    "tailwindcss": "^4.0.0",
-    "@tailwindcss/postcss": "^4.0.0",
+    "autoprefixer": "^10",
     "postcss": "^8",
-    "autoprefixer": "^10"
+    "tailwindcss": "^4.0.0"
   }
 }
