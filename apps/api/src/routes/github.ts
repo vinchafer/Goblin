@@ -5,7 +5,7 @@ import { authMiddleware } from '../middleware/auth';
 import { getAuthUrl, exchangeCodeForToken, getUsername } from '../services/github-oauth';
 import { createRepo, pushFiles, disconnectGitHub, saveGitHubConnection, getDecryptedAccessToken } from '../services/github-service';
 import { listFiles, getFile } from '../services/file-storage';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdmin } from '../lib/supabase';
 import { sendPushNotification } from './notifications';
 
 type Variables = { userId: string }
@@ -20,10 +20,7 @@ github.post('/connect', async (c) => {
   const userId = c.get('userId');
   const state = randomUUID();
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const supabase = getSupabaseAdmin();
 
   await supabase
     .from('oauth_states')
@@ -42,10 +39,7 @@ github.get('/callback', async (c) => {
     return c.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard/settings/integrations?error=invalid_request`);
   }
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const supabase = getSupabaseAdmin();
 
   // Validate state
   const { data: oauthState, error } = await supabase
@@ -93,10 +87,7 @@ github.post('/push', async (c) => {
     return c.json({ error: 'Invalid request' }, 400);
   }
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+  const supabase = getSupabaseAdmin();
 
   // Verify project ownership
   const { data: project, error: projectError } = await supabase

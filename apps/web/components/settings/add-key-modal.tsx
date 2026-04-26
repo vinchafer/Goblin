@@ -22,8 +22,21 @@ interface AddKeyModalProps {
   onKeyAdded: (key: ByokKey) => void;
 }
 
+type ByokProviderKey = 'anthropic' | 'openai' | 'google' | 'groq' | 'mistral' | 'deepseek' | 'xai' | 'together';
+
+const PROVIDERS: { id: ByokProviderKey; label: string }[] = [
+  { id: 'anthropic', label: 'Anthropic' },
+  { id: 'openai',    label: 'OpenAI' },
+  { id: 'google',    label: 'Google' },
+  { id: 'groq',      label: 'Groq' },
+  { id: 'mistral',   label: 'Mistral' },
+  { id: 'deepseek',  label: 'DeepSeek' },
+  { id: 'xai',       label: 'xAI' },
+  { id: 'together',  label: 'Together' },
+];
+
 export function AddKeyModal({ open, onClose, onKeyAdded }: AddKeyModalProps) {
-  const [provider, setProvider] = useState<'anthropic' | 'openai'>('anthropic');
+  const [provider, setProvider] = useState<ByokProviderKey>('anthropic');
   const [label, setLabel] = useState('');
   const [key, setKey] = useState('');
   const [showKey, setShowKey] = useState(false);
@@ -93,19 +106,20 @@ export function AddKeyModal({ open, onClose, onKeyAdded }: AddKeyModalProps) {
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div>
             <label className="block text-sm font-medium mb-2" style={{ color: 'var(--goblin-slate)' }}>Provider</label>
-            <div className="flex gap-2">
-              {['anthropic', 'openai'].map(p => (
+            <div className="grid grid-cols-4 gap-1.5">
+              {PROVIDERS.map(p => (
                 <button
-                  key={p}
+                  key={p.id}
                   type="button"
-                  onClick={() => setProvider(p as 'anthropic' | 'openai')}
-                  className="flex-1 py-2 px-3 rounded-lg font-medium transition-colors"
+                  onClick={() => setProvider(p.id)}
+                  className="py-1.5 px-2 rounded-lg text-xs font-medium transition-colors"
                   style={{
-                    backgroundColor: provider === p ? 'rgba(45, 74, 43, 0.1)' : 'var(--goblin-light)',
-                    color: provider === p ? 'var(--goblin-moss)' : 'var(--goblin-gray)'
+                    backgroundColor: provider === p.id ? 'rgba(45, 74, 43, 0.1)' : 'var(--goblin-light)',
+                    color: provider === p.id ? 'var(--goblin-moss)' : 'var(--goblin-gray)',
+                    border: provider === p.id ? '1px solid rgba(45,74,43,0.3)' : '1px solid transparent',
                   }}
                 >
-                  {p.charAt(0).toUpperCase() + p.slice(1)}
+                  {p.label}
                 </button>
               ))}
             </div>
