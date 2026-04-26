@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { ChatContainer } from "@/components/chat/chat-container";
+import { ProjectWorkspace } from "@/components/project/project-workspace";
 
 interface ProjectPageProps {
   params: {
@@ -31,7 +31,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
         )}
       </div>
       
-      <ChatContainer projectId={params.id} />
+      <ProjectWorkspace projectId={params.id} />
     </div>
   );
 }

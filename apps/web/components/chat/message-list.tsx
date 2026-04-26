@@ -41,7 +41,7 @@ export function MessageList({ messages, isStreaming, currentStreamingMessage }: 
               border: message.role === 'assistant' ? '1px solid var(--goblin-light)' : 'none'
             }}
           >
-            <MessageContent content={message.content} />
+            <MessageContent content={message.content} messageId={message.id} role={message.role} />
           </div>
 
           {message.role === 'user' && (
@@ -59,7 +59,7 @@ export function MessageList({ messages, isStreaming, currentStreamingMessage }: 
           </div>
           <div className="max-w-2xl px-4 py-3 rounded-2xl rounded-tl-none bg-white" style={{ border: '1px solid var(--goblin-light)' }}>
             {currentStreamingMessage ? (
-              <MessageContent content={currentStreamingMessage} />
+              <MessageContent content={currentStreamingMessage} role="assistant" />
             ) : (
               <div className="flex items-center gap-1 h-6">
                 <span className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--goblin-moss)', animationDelay: '0ms' }} />

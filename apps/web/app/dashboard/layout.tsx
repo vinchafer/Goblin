@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { AppProvider } from "@/contexts/app-context";
-import { Topbar } from "@/components/app-shell/topbar";
-import { Sidebar } from "@/components/app-shell/sidebar";
+import { DashboardShell } from "@/components/app-shell/dashboard-shell";
+import type { Project } from "@goblin/shared/src/schemas";
 
 export default async function DashboardLayout({
   children
@@ -20,15 +20,9 @@ export default async function DashboardLayout({
 
   return (
     <AppProvider>
-      <div className="h-screen flex flex-col">
-        <Topbar />
-        <div className="flex flex-1 overflow-hidden">
-          <Sidebar projects={projects || []} />
-          <main className="flex-1 overflow-auto" style={{ backgroundColor: 'var(--goblin-cream)' }}>
-            {children}
-          </main>
-        </div>
-      </div>
+      <DashboardShell projects={(projects as Project[]) || []}>
+        {children}
+      </DashboardShell>
     </AppProvider>
   );
 }

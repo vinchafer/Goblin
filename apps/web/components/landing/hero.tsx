@@ -7,7 +7,7 @@ export function Hero() {
         <h1 
           className="font-fraunces font-bold leading-tight"
           style={{ 
-            fontSize: 'clamp(48px, 8vw, 72px)',
+            fontSize: 'clamp(36px, 8vw, 72px)',
             color: 'var(--goblin-bark)'
           }}
         >
@@ -28,7 +28,7 @@ export function Hero() {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
           <a
             href="/login"
-            className="px-8 py-3 rounded-lg font-medium text-white"
+            className="w-full sm:w-auto px-8 py-3 rounded-lg font-medium text-white text-center min-h-[44px] flex items-center justify-center"
             style={{ backgroundColor: 'var(--goblin-moss)' }}
           >
             Start building free

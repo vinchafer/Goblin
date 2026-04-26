@@ -72,7 +72,7 @@ chat.post('/stream', usageLimitMiddleware, async (c) => {
             project_id: projectId,
             role: 'assistant',
             content: fullResponse,
-            model_used: 'claude-3-5-sonnet-20240620',
+            model_used: 'claude-sonnet-4-6',
             source_tier: 'byok'
           })
           .select()
@@ -82,7 +82,7 @@ chat.post('/stream', usageLimitMiddleware, async (c) => {
           data: JSON.stringify({
             type: 'message_end',
             messageId: assistantMessage.id,
-            model_used: 'claude-3-5-sonnet-20240620',
+            model_used: 'claude-sonnet-4-6',
             source_tier: 'byok'
           })
         });

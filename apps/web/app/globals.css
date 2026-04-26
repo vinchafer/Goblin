@@ -33,3 +33,22 @@ body {
   padding: 0;
   min-height: 100vh;
 }
+
+/* Slide-in animation for mobile drawer */
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-in-left {
+  animation: slideInLeft 0.25s ease-out;
+}
+
+/* Safe area padding for bottom tab bar on notched devices */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}

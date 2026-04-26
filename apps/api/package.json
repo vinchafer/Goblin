@@ -11,16 +11,20 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "hono": "^4.6.0",
-    "@hono/node-server": "^1.12.0",
-    "zod": "^3.23.0",
-    "@supabase/supabase-js": "^2.45.0",
     "@anthropic-ai/sdk": "^0.27.0",
+    "@aws-sdk/client-s3": "^3.1037.0",
+    "@aws-sdk/s3-request-presigner": "^3.1037.0",
+    "@goblin/shared": "workspace:*",
+    "@hono/node-server": "^1.12.0",
+    "@octokit/rest": "^21.0.0",
+    "@supabase/supabase-js": "^2.45.0",
+    "@types/web-push": "^3.6.4",
+    "hono": "^4.6.0",
+    "jszip": "^3.10.1",
     "openai": "^4.52.0",
     "stripe": "^16.0.0",
-    "@octokit/rest": "^21.0.0",
-    "jszip": "^3.10.1",
-    "@goblin/shared": "workspace:*"
+    "web-push": "^3.6.7",
+    "zod": "^3.23.0"
   },
   "devDependencies": {
     "@types/node": "^22",

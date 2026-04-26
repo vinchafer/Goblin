@@ -1,9 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { X, Eye, EyeOff, AlertTriangle, Loader2 } from "lucide-react";
+import { X, Eye, EyeOff, AlertTriangle, Loader2, ExternalLink } from "lucide-react";
 import type { ByokKey } from "@goblin/shared/src/schemas";
 import { createClient } from "@/lib/supabase/client";
+
+const PROVIDER_KEY_URLS: Record<string, { url: string; label: string }> = {
+  anthropic: { url: 'https://console.anthropic.com/settings/keys', label: 'Anthropic Console' },
+  openai: { url: 'https://platform.openai.com/api-keys', label: 'OpenAI Platform' },
+  google: { url: 'https://aistudio.google.com/app/apikey', label: 'Google AI Studio' },
+  groq: { url: 'https://console.groq.com/keys', label: 'Groq Console' },
+  mistral: { url: 'https://console.mistral.ai/api-keys/', label: 'Mistral Console' },
+  deepseek: { url: 'https://platform.deepseek.com/api_keys', label: 'DeepSeek Platform' },
+  xai: { url: 'https://console.x.ai/', label: 'xAI Console' },
+  together: { url: 'https://api.together.xyz/settings/api-keys', label: 'Together AI' },
+};
 
 interface AddKeyModalProps {
   open: boolean;
@@ -144,6 +155,21 @@ export function AddKeyModal({ open, onClose, onKeyAdded }: AddKeyModalProps) {
                 Never share this key publicly.
               </p>
             </div>
+
+            {PROVIDER_KEY_URLS[provider] && (
+              <div className="mt-2 text-xs">
+                <span style={{ color: 'var(--goblin-gray)' }}>Don't have a key? Get one at </span>
+                <a
+                  href={PROVIDER_KEY_URLS[provider].url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 font-medium hover:underline"
+                  style={{ color: 'var(--goblin-moss)' }}
+                >
+                  {PROVIDER_KEY_URLS[provider].label} <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            )}
           </div>
 
           {error && (

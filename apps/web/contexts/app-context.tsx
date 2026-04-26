@@ -1,10 +1,17 @@
 "use client";
 
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
 import type { Project } from "@goblin/shared/src/schemas";
 
 export type AppTab = "chat" | "code" | "preview" | "server";
 export type ModelTier = "hosted" | "free" | "byok";
+
+export interface PendingInjection {
+  id: string;
+  payload: string;
+  payloadType: "code" | "prompt" | "mixed";
+  createdAt: string;
+}
 
 export interface AppModel {
   id: string;
@@ -22,6 +29,9 @@ interface AppContextType {
   setActiveTab: (tab: AppTab) => void;
   activeModel: AppModel;
   setActiveModel: (model: AppModel) => void;
+  pendingInjections: PendingInjection[];
+  setPendingInjections: (injections: PendingInjection[]) => void;
+  clearPendingInjections: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -37,6 +47,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [activeProject, setActiveProject] = useState<Project | null>(null);
   const [activeTab, setActiveTab] = useState<AppTab>("chat");
   const [activeModel, setActiveModel] = useState<AppModel>(DEFAULT_MODEL);
+  const [pendingInjections, setPendingInjections] = useState<PendingInjection[]>([]);
+  const clearPendingInjections = useCallback(() => setPendingInjections([]), []);
 
   return (
     <AppContext.Provider value={{
@@ -45,7 +57,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       activeTab,
       setActiveTab,
       activeModel,
-      setActiveModel
+      setActiveModel,
+      pendingInjections,
+      setPendingInjections,
+      clearPendingInjections,
     }}>
       {children}
     </AppContext.Provider>

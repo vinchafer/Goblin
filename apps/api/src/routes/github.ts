@@ -6,6 +6,7 @@ import { getAuthUrl, exchangeCodeForToken, getUsername } from '../services/githu
 import { createRepo, pushFiles, disconnectGitHub, saveGitHubConnection, getDecryptedAccessToken } from '../services/github-service';
 import { listFiles, getFile } from '../services/file-storage';
 import { createClient } from '@supabase/supabase-js';
+import { sendPushNotification } from './notifications';
 
 type Variables = { userId: string }
 const github = new Hono<{ Variables: Variables }>();
@@ -141,6 +142,21 @@ github.post('/push', async (c) => {
     });
     
     await pushFiles(accessToken, repo.owner.login, repo.name, fileMap);
+
+    // Update project with GitHub repo URL
+    const repoUrl = `https://github.com/${repo.owner.login}/${repo.name}`;
+    await supabase
+      .from('projects')
+      .update({ github_repo: repoUrl })
+      .eq('id', result.data.projectId)
+      .eq('user_id', userId);
+
+    // Send push notification
+    sendPushNotification(userId, {
+      title: 'Goblin',
+      body: `✅ ${result.data.name} pushed to GitHub`,
+      url: `/dashboard/project/${result.data.projectId}`
+    }).catch(err => console.error('Failed to send push notification:', err));
 
     return c.json({ success: true, url: repo.html_url });
   } catch (err) {

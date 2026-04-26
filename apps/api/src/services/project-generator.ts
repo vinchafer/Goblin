@@ -33,7 +33,7 @@ export async function generateProject(
     .insert({
       user_id: userId,
       project_id: projectId,
-      model_used: 'claude-3-5-sonnet-20240620',
+      model_used: 'claude-sonnet-4-6',
       source_tier: 'byok',
       run_type: 'project_generation',
       status: 'running'
@@ -61,7 +61,7 @@ export async function generateProject(
     });
 
     const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20240620',
+      model: 'claude-sonnet-4-6',
       max_tokens: 8192,
       messages: [{ role: 'user', content: prompt }],
       system: systemPrompt

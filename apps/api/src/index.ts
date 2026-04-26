@@ -25,6 +25,9 @@ import { projects } from './routes/projects';
 import { github } from './routes/github';
 import { byokKeys as byok } from './routes/byok-keys';
 import { health } from './routes/health';
+import { sendToCode } from './routes/send-to-code';
+import { notifications } from './routes/notifications';
+import { models } from './routes/models';
 
 const app = new Hono();
 
@@ -48,6 +51,9 @@ app.route('/api/byok-keys', byok);
 app.route('/api/projects', projects);
 app.route('/api/github', github);
 app.route('/api/billing', billing);
+app.route('/api/chat/send-to-code', sendToCode);
+app.route('/api/notifications', notifications);
+app.route('/api/models', models);
 
 const port = parseInt(process.env.API_PORT || '3001', 10);
 console.log(`Goblin API starting on port ${port}`);

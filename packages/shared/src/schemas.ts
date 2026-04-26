@@ -20,7 +20,16 @@ export const ChatMessageSchema = z.object({
   created_at: z.coerce.date()
 });
 
-export const ByokProviderSchema = z.enum(["anthropic", "openai"]);
+export const ByokProviderSchema = z.enum([
+  "anthropic",
+  "openai",
+  "google",
+  "groq",
+  "mistral",
+  "deepseek",
+  "xai",
+  "together",
+]);
 
 export const CreateByokKeySchema = z.object({
   provider: ByokProviderSchema,

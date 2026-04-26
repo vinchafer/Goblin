@@ -43,7 +43,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
           disabled={disabled}
           placeholder="Tell your goblin what to build..."
           rows={1}
-          className="w-full px-4 py-3 pr-12 bg-transparent resize-none focus:outline-none"
+          className="w-full px-4 py-3 pr-12 bg-transparent resize-none focus:outline-none text-base"
           style={{
             color: 'var(--goblin-slate)',
             minHeight: '56px',

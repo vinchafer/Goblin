@@ -61,7 +61,7 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-2xl border p-8 w-full max-w-md shadow-sm" style={{ borderColor: 'var(--goblin-light)' }}>
+    <form onSubmit={handleSubmit} className="bg-white rounded-2xl border p-6 sm:p-8 w-full max-w-[380px] shadow-sm" style={{ borderColor: 'var(--goblin-light)' }}>
       <div className="mb-6">
         <label htmlFor="email" className="block text-sm font-medium mb-2" style={{ color: 'var(--goblin-slate)' }}>
           Email address
@@ -75,7 +75,7 @@ export function LoginForm() {
             onChange={(e) => setEmail(e.target.value)}
             required
             placeholder="you@example.com"
-            className="w-full pl-10 pr-4 py-3 rounded-lg border focus:outline-none focus:ring-2"
+            className="w-full pl-10 pr-4 py-3 rounded-lg border focus:outline-none focus:ring-2 text-base"
             style={{
               borderColor: 'var(--goblin-light)',
               backgroundColor: 'white',

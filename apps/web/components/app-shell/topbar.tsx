@@ -2,7 +2,7 @@
 
 import { useApp, type AppTab } from "@/contexts/app-context";
 import { ModelSwitcher } from "./model-switcher";
-import { Settings, LogOut } from "lucide-react";
+import { Settings, LogOut, Menu, X } from "lucide-react";
 import { useState } from "react";
 
 const TABS: { id: AppTab; label: string; comingSoon?: boolean; tooltip?: string }[] = [
@@ -12,7 +12,12 @@ const TABS: { id: AppTab; label: string; comingSoon?: boolean; tooltip?: string 
   { id: "server", label: "Server", comingSoon: true, tooltip: "Coming soon" }
 ];
 
-export function Topbar() {
+interface TopbarProps {
+  onToggleSidebar?: () => void;
+  sidebarOpen?: boolean;
+}
+
+export function Topbar({ onToggleSidebar, sidebarOpen }: TopbarProps) {
   const { activeProject, activeTab, setActiveTab } = useApp();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -24,7 +29,17 @@ export function Topbar() {
         borderColor: 'var(--goblin-light)'
       }}
     >
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-3">
+        {/* Hamburger for mobile */}
+        <button
+          onClick={onToggleSidebar}
+          className="md:hidden w-10 h-10 flex items-center justify-center rounded-lg min-h-[44px] min-w-[44px]"
+          style={{ color: 'var(--goblin-moss)' }}
+          aria-label={sidebarOpen ? "Close sidebar" : "Open sidebar"}
+        >
+          {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </button>
+
         <span
           className="font-[family-name:var(--font-fraunces)] text-xl font-bold"
           style={{ color: 'var(--goblin-moss)' }}
@@ -32,13 +47,14 @@ export function Topbar() {
           Goblin
         </span>
 
-        <span className="text-sm font-medium" style={{ color: 'var(--goblin-slate)' }}>
+        <span className="hidden sm:inline text-sm font-medium" style={{ color: 'var(--goblin-slate)' }}>
           {activeProject ? activeProject.name : "Select a project"}
         </span>
       </div>
 
-      <div className="flex items-center gap-6">
-        <div className="flex items-center gap-1">
+      <div className="flex items-center gap-3 md:gap-6">
+        {/* Desktop tabs — hidden on mobile */}
+        <div className="hidden md:flex items-center gap-1">
           {TABS.map(tab => (
             <button
               key={tab.id}
@@ -66,7 +82,7 @@ export function Topbar() {
         <div className="relative">
           <button
             onClick={() => setMenuOpen(!menuOpen)}
-            className="w-8 h-8 rounded-full flex items-center justify-center"
+            className="w-8 h-8 rounded-full flex items-center justify-center min-h-[44px] min-w-[44px]"
             style={{ backgroundColor: 'var(--goblin-moss)', color: 'white' }}
           >
             <span className="text-sm font-medium">U</span>

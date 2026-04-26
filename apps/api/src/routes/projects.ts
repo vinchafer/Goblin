@@ -61,7 +61,8 @@ projects.post('/', async (c) => {
       name: result.data.name,
       description: result.data.description ?? null,
       color: result.data.color ?? '#2D4A2B',
-      status: 'idle'
+      status: 'idle',
+      storage_path: `projects/${userId}`
     })
     .select()
     .single();
@@ -242,6 +243,59 @@ projects.get('/:id/download', async (c) => {
   c.header('Content-Disposition', `attachment; filename="project-${projectId}.zip"`);
 
   return c.body(zipBuffer as unknown as null);
+});
+
+// Get pending code injections for a project
+projects.get('/:id/pending-injections', async (c) => {
+  const userId = c.get('userId');
+  const projectId = c.req.param('id');
+
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
+  );
+
+  // Verify ownership
+  const { data: project, error: checkError } = await supabase
+    .from('projects')
+    .select('id')
+    .eq('id', projectId)
+    .eq('user_id', userId)
+    .single();
+
+  if (checkError || !project) {
+    return c.json({ error: 'Project not found' }, 404);
+  }
+
+  // Fetch pending injections
+  const { data: injections, error: fetchError } = await supabase
+    .from('code_injections')
+    .select('id, payload, payload_type, created_at')
+    .eq('project_id', projectId)
+    .is('applied_at', null)
+    .order('created_at', { ascending: false });
+
+  if (fetchError) {
+    return c.json({ error: 'Failed to fetch injections' }, 500);
+  }
+
+  // Mark as applied
+  if (injections && injections.length > 0) {
+    const ids = injections.map(i => i.id);
+    await supabase
+      .from('code_injections')
+      .update({ applied_at: new Date().toISOString() })
+      .in('id', ids);
+  }
+
+  return c.json({
+    injections: (injections || []).map(i => ({
+      id: i.id,
+      payload: i.payload,
+      payloadType: i.payload_type,
+      createdAt: i.created_at,
+    })),
+  });
 });
 
 export { projects };

@@ -1,10 +1,10 @@
 {
   "name": "Goblin — Cloud Workshop",
   "short_name": "Goblin",
-  "description": "Build apps with AI from any device",
-  "start_url": "/",
+  "description": "The Cloud Workshop for Builders",
+  "start_url": "/dashboard",
   "display": "standalone",
-  "background_color": "#F7F4ED",
+  "background_color": "#2D4A2B",
   "theme_color": "#2D4A2B",
   "icons": [
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
