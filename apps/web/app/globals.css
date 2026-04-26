@@ -1,128 +1,27 @@
 @import "tailwindcss";
 
-@theme {
-  --color-goblin-moss: #1e3a1c;
-  --color-goblin-moss2: #2d5229;
-  --color-goblin-ochre: #c9933a;
-  --color-goblin-ochre2: #e8b05a;
-  --color-goblin-cream: #f5f0e8;
-  --color-goblin-cream2: #ede7d9;
-  --color-goblin-bark: #2a1f0f;
-  --color-goblin-text: #1a1a1a;
-  --color-goblin-meta: #6b6560;
-  --color-goblin-border: #e4ddd2;
-  --color-goblin-good: #4A7C3B;
-  --color-goblin-warn: #B85C3C;
-}
-
 :root {
-  /* Primary palette — exact spec values */
-  --goblin-moss:   #1e3a1c;
-  --goblin-moss2:  #2d5229;
-  --goblin-ochre:  #c9933a;
-  --goblin-ochre2: #e8b05a;
-  --goblin-cream:  #f5f0e8;
-  --goblin-cream2: #ede7d9;
-  --goblin-bark:   #2a1f0f;
-  --goblin-text:   #1a1a1a;
-  --goblin-meta:   #6b6560;
-  --goblin-border: #e4ddd2;
-  --goblin-good:   #4A7C3B;
-  --goblin-warn:   #B85C3C;
-
-  /* Aliases for backwards-compat with old code */
-  --goblin-slate: #1a1a1a;
-  --goblin-gray:  #6b6560;
-  --goblin-light: #ede7d9;
-
-  /* Short-name aliases for new components */
-  --moss:   #1e3a1c;
-  --moss2:  #2d5229;
-  --ochre:  #c9933a;
+  --moss: #1e3a1c;
+  --moss2: #2d5229;
+  --moss3: #3a6635;
+  --ochre: #c9933a;
   --ochre2: #e8b05a;
-  --cream:  #f5f0e8;
+  --cream: #f5f0e8;
   --cream2: #ede7d9;
-  --bark:   #2a1f0f;
+  --bark: #2a1f0f;
+  --text: #1a1a1a;
+  --meta: #6b6560;
   --border: #e4ddd2;
-  --meta:   #6b6560;
 }
 
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
 body {
-  background-color: var(--goblin-cream);
-  color: var(--goblin-text);
-  font-family: var(--font-dm-sans), system-ui, -apple-system, sans-serif;
-}
-
-/* iOS: prevent auto-zoom on input focus */
-input, textarea, select {
-  font-size: 16px;
-}
-
-/* Safe area for notched devices */
-.safe-bottom {
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
-/* Sidebar slide-in animation */
-@keyframes slideInLeft {
-  from { transform: translateX(-100%); opacity: 0; }
-  to   { transform: translateX(0);     opacity: 1; }
-}
-.animate-slide-in-left {
-  animation: slideInLeft 0.22s ease-out;
-}
-
-/* Code injection slide-in */
-@keyframes slideInRight {
-  from { transform: translateX(24px); opacity: 0; }
-  to   { transform: translateX(0);    opacity: 1; }
-}
-.animate-slide-in-right {
-  animation: slideInRight 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-/* Fade in */
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to   { opacity: 1; }
-}
-.animate-fade-in {
-  animation: fadeIn 0.4s ease-out;
-}
-
-/* Pulse dot for "Now in beta" badge */
-@keyframes pulseDot {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: 0.5; transform: scale(1.4); }
-}
-.animate-pulse-dot {
-  animation: pulseDot 1.8s ease-in-out infinite;
-}
-
-/* Global touch targets */
-button, a, [role="button"] {
-  touch-action: manipulation;
-}
-
-/* Fraunces serif utility */
-.font-fraunces {
-  font-family: var(--font-fraunces), Georgia, serif;
-}
-
-/* DM Sans utility */
-.font-dm-sans {
-  font-family: var(--font-dm-sans), system-ui, sans-serif;
-}
-
-/* JetBrains Mono utility */
-.font-mono-jb {
-  font-family: var(--font-jetbrains-mono), 'Courier New', monospace;
-}
-
-/* Goblin grid pattern for hero */
-.goblin-grid-pattern {
-  background-image:
-    linear-gradient(rgba(30, 58, 28, 0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(30, 58, 28, 0.04) 1px, transparent 1px);
-  background-size: 48px 48px;
+  font-family: 'DM Sans', sans-serif;
+  background: var(--cream);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
 }

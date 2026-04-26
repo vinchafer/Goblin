@@ -1,240 +1,126 @@
-"use client";
+import Link from 'next/link';
 
 export function Hero() {
   return (
-    <section
-      className="relative min-h-screen flex flex-col items-center justify-center px-4 pt-14"
-      style={{ backgroundColor: "var(--goblin-cream)" }}
-    >
-      {/* Background grid + radial moss glow */}
-      <div className="absolute inset-0 goblin-grid-pattern pointer-events-none" />
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            "radial-gradient(ellipse 80% 50% at 50% -10%, rgba(30,58,28,0.07) 0%, transparent 70%)"
-        }}
-      />
+    <section style={{
+      minHeight: '100vh', display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center', textAlign: 'center',
+      padding: '120px 24px 80px', position: 'relative', overflow: 'hidden',
+      background: 'var(--cream)',
+    }}>
+      <div style={{
+        position: 'absolute', inset: 0, pointerEvents: 'none',
+        backgroundImage: 'linear-gradient(rgba(30,58,28,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(30,58,28,0.04) 1px, transparent 1px)',
+        backgroundSize: '48px 48px',
+      }} />
+      <div style={{
+        position: 'absolute', inset: 0, pointerEvents: 'none',
+        background: 'radial-gradient(ellipse 80% 50% at 50% -10%, rgba(30,58,28,0.1) 0%, transparent 70%)',
+      }} />
 
-      <div className="relative z-10 max-w-5xl mx-auto text-center space-y-8">
-        {/* Eyebrow badge */}
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border text-sm font-medium"
-          style={{
-            borderColor: "var(--goblin-ochre)",
-            color: "var(--goblin-ochre)",
-            backgroundColor: "rgba(201,147,58,0.06)"
-          }}
-        >
-          <span
-            className="w-2 h-2 rounded-full animate-pulse-dot"
-            style={{ backgroundColor: "#22c55e" }}
-          />
-          Now in beta
+      <div style={{
+        display: 'inline-flex', alignItems: 'center', gap: 8,
+        background: 'rgba(201,147,58,0.1)', border: '1px solid rgba(201,147,58,0.3)',
+        borderRadius: 100, padding: '6px 16px', fontSize: 11, fontWeight: 500,
+        color: 'var(--ochre)', letterSpacing: '0.5px', textTransform: 'uppercase' as const,
+        marginBottom: 32, position: 'relative', zIndex: 1,
+      }}>
+        <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--ochre)', display: 'inline-block' }} />
+        Now in beta
+      </div>
+
+      <h1 style={{
+        fontFamily: 'Fraunces, serif', fontSize: 'clamp(52px, 7vw, 88px)',
+        lineHeight: 1.0, fontWeight: 900, color: 'var(--moss)',
+        letterSpacing: '-3px', marginBottom: 24, maxWidth: 860,
+        position: 'relative', zIndex: 1,
+      }}>
+        Build from{' '}<em style={{ fontStyle: 'italic', color: 'var(--ochre)' }}>anywhere.</em>
+        <br />Ship everything.
+      </h1>
+
+      <p style={{
+        fontSize: 18, color: 'var(--meta)', maxWidth: 520, lineHeight: 1.65,
+        marginBottom: 48, fontWeight: 300, position: 'relative', zIndex: 1,
+      }}>
+        Your AI workshop in the cloud. No token panic. No laptop limits.
+        Your goblin handles the rest.
+      </p>
+
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' as const, justifyContent: 'center', marginBottom: 24, position: 'relative', zIndex: 1 }}>
+        <Link href="/login" style={{
+          background: 'var(--moss)', color: '#fff', padding: '14px 28px',
+          borderRadius: 10, fontSize: 15, fontWeight: 500, textDecoration: 'none',
+          display: 'inline-flex', alignItems: 'center', gap: 8,
+        }}>Start building free →</Link>
+        <a href="#how-it-works" style={{
+          background: 'transparent', color: 'var(--text)', padding: '14px 24px',
+          borderRadius: 10, fontSize: 15, fontWeight: 400, textDecoration: 'none',
+          border: '1px solid rgba(0,0,0,0.12)',
+        }}>See how it works</a>
+      </div>
+
+      <p style={{ fontSize: 13, color: 'var(--meta)', position: 'relative', zIndex: 1, marginBottom: 64 }}>
+        Fair-use unlimited inference · BYOK support · GitHub push built-in
+      </p>
+
+      {/* App Window Mockup */}
+      <div style={{
+        width: '100%', maxWidth: 900, borderRadius: 16, overflow: 'hidden',
+        boxShadow: '0 40px 120px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.08)',
+        position: 'relative', zIndex: 1,
+      }}>
+        <div style={{ background: '#1c1c1a', height: 36, display: 'flex', alignItems: 'center', padding: '0 16px', gap: 8 }}>
+          {['#ff5f57','#febc2e','#28c840'].map(c => <div key={c} style={{ width: 11, height: 11, borderRadius: '50%', background: c }} />)}
+          <div style={{ flex: 1, background: 'rgba(255,255,255,0.07)', borderRadius: 5, height: 20, margin: '0 12px', display: 'flex', alignItems: 'center', padding: '0 10px', fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>
+            🔒 app.justgoblin.com/dashboard
+          </div>
         </div>
-
-        {/* H1 */}
-        <h1
-          className="font-fraunces font-bold leading-[0.9] tracking-[-3px]"
-          style={{
-            fontSize: "clamp(52px, 10vw, 88px)",
-            color: "var(--goblin-bark)"
-          }}
-        >
-          Build from
-          <br />
-          <em
-            className="not-italic"
-            style={{ color: "var(--goblin-ochre)", fontStyle: "italic" }}
-          >
-            anywhere.
-          </em>
-          <br />
-          Ship everything.
-        </h1>
-
-        {/* Subtext */}
-        <p
-          className="text-lg md:text-xl max-w-2xl mx-auto leading-relaxed"
-          style={{ color: "var(--goblin-meta)", fontFamily: "var(--font-dm-sans)" }}
-        >
-          Your AI workshop in the cloud. No token panic. No laptop limits.
-        </p>
-
-        {/* Buttons */}
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
-          <a
-            href="/login"
-            className="w-full sm:w-auto px-7 py-3 rounded-lg font-medium text-white text-center transition-colors"
-            style={{ backgroundColor: "var(--goblin-moss)" }}
-            onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--goblin-moss2)")}
-            onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--goblin-moss)")}
-          >
-            Start building free →
-          </a>
-          <a
-            href="#how-it-works"
-            className="w-full sm:w-auto px-7 py-3 rounded-lg font-medium text-center border transition-colors"
-            style={{
-              color: "var(--goblin-moss)",
-              borderColor: "var(--goblin-border)"
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--goblin-moss)")}
-            onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--goblin-border)")}
-          >
-            See how it works
-          </a>
-        </div>
-
-        {/* Trust line */}
-        <p
-          className="text-sm"
-          style={{
-            color: "var(--goblin-meta)",
-            fontFamily: "var(--font-dm-sans)"
-          }}
-        >
-          Fair-use unlimited inference · BYOK support · GitHub push built-in
-        </p>
-
-        {/* App window mockup */}
-        <div className="mt-8 rounded-2xl overflow-hidden shadow-2xl border max-w-4xl mx-auto"
-          style={{ borderColor: "var(--goblin-border)" }}
-        >
-          {/* Chrome bar */}
-          <div
-            className="h-9 flex items-center gap-2 px-4 border-b"
-            style={{
-              backgroundColor: "var(--goblin-moss)",
-              borderColor: "rgba(255,255,255,0.1)"
-            }}
-          >
-            <div className="flex gap-1.5">
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: "#ff5f57" }} />
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: "#febc2e" }} />
-              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: "#28c840" }} />
+        <div style={{ background: '#fff', display: 'grid', gridTemplateColumns: '180px 1fr 260px', height: 340 }}>
+          <div style={{ background: '#f7f3ec', borderRight: '1px solid #e4ddd2', padding: 12 }}>
+            <div style={{ fontFamily: 'Fraunces, serif', fontSize: 16, color: 'var(--moss)', fontWeight: 700, paddingBottom: 10, borderBottom: '1px solid #e4ddd2', marginBottom: 10 }}>
+              Goblin<span style={{ color: 'var(--ochre)' }}>.</span>
             </div>
-            <div
-              className="flex-1 mx-4 h-5 rounded text-xs flex items-center justify-center"
-              style={{
-                backgroundColor: "rgba(255,255,255,0.1)",
-                color: "rgba(255,255,255,0.5)",
-                fontFamily: "var(--font-jetbrains-mono)"
-              }}
-            >
-              app.goblin.dev
+            {([['#c9933a','MyStartup',true],['#4a7c3b','NewsletterAI',false],['#7a4a8a','LeadMagnet',false]] as [string,string,boolean][]).map(([c,n,a]) => (
+              <div key={n} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 7, marginBottom: 3,
+                background: a ? 'rgba(201,147,58,0.1)' : 'transparent',
+                border: a ? '1px solid rgba(201,147,58,0.2)' : '1px solid transparent' }}>
+                <div style={{ width: 7, height: 7, borderRadius: '50%', background: c }} />
+                <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--text)' }}>{n}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', borderRight: '1px solid #e4ddd2' }}>
+            <div style={{ background: 'var(--moss)', height: 44, display: 'flex', alignItems: 'center', padding: '0 14px', gap: 8, flexShrink: 0 }}>
+              <span style={{ fontFamily: 'Fraunces, serif', color: 'var(--ochre)', fontSize: 15, fontWeight: 700 }}>Goblin.</span>
+              {['Chat','Code','Preview'].map((t,i) => <span key={t} style={{ padding: '3px 10px', borderRadius: 5, fontSize: 11, fontWeight: 500, background: i===0 ? 'rgba(255,255,255,0.12)' : 'transparent', color: i===0 ? '#fff' : 'rgba(255,255,255,0.45)' }}>{t}</span>)}
+            </div>
+            <div style={{ flex: 1, padding: 14, display: 'flex', flexDirection: 'column', gap: 10, overflow: 'hidden' }}>
+              <div style={{ alignSelf: 'flex-end', background: 'var(--moss)', color: 'rgba(255,255,255,0.9)', borderRadius: 10, padding: '8px 12px', fontSize: 11, maxWidth: '85%' }}>
+                Add dark mode toggle to navbar
+              </div>
+              <div style={{ display: 'flex', gap: 7 }}>
+                <div style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--moss)', color: 'var(--ochre)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 700, flexShrink: 0, marginTop: 2 }}>G</div>
+                <div style={{ background: 'var(--cream)', border: '1px solid var(--border)', borderRadius: 10, padding: '8px 12px', fontSize: 11 }}>
+                  Done! Here is the updated Navbar:
+                  <div style={{ background: '#1a2018', borderRadius: 6, padding: '7px 9px', margin: '6px 0', fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#8aaa85', lineHeight: 1.6 }}>
+                    <span style={{ color: '#c9933a' }}>export function</span> <span style={{ color: '#7dd3a8' }}>Navbar</span>() {'{'}..{'}'}
+                  </div>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'var(--ochre)', color: 'var(--bark)', borderRadius: 6, padding: '5px 11px', fontSize: 11, fontWeight: 600 }}>→ Send to Code</div>
+                </div>
+              </div>
             </div>
           </div>
-
-          {/* 3-panel dashboard preview */}
-          <div
-            className="flex"
-            style={{ backgroundColor: "var(--goblin-cream2)", minHeight: "260px" }}
-          >
-            {/* Sidebar strip */}
-            <div
-              className="w-44 border-r flex flex-col gap-1 p-2"
-              style={{
-                backgroundColor: "var(--goblin-cream)",
-                borderColor: "var(--goblin-border)"
-              }}
-            >
-              <div
-                className="h-7 rounded-md flex items-center px-2 text-xs font-medium text-white"
-                style={{ backgroundColor: "var(--goblin-moss)" }}
-              >
-                + New Project
-              </div>
-              {["my-saas", "portfolio", "api-server"].map((p, i) => (
-                <div
-                  key={p}
-                  className="h-7 rounded-md flex items-center gap-2 px-2 text-xs"
-                  style={{
-                    backgroundColor: i === 0 ? "rgba(201,147,58,0.1)" : "transparent",
-                    color: i === 0 ? "var(--goblin-ochre)" : "var(--goblin-meta)",
-                    border: i === 0 ? "1px solid rgba(201,147,58,0.2)" : "none"
-                  }}
-                >
-                  <span
-                    className="w-1.5 h-1.5 rounded-full"
-                    style={{
-                      backgroundColor: ["var(--goblin-ochre)", "#22c55e", "var(--goblin-meta)"][i]
-                    }}
-                  />
-                  {p}
-                </div>
-              ))}
+          <div style={{ background: '#141a12', display: 'flex', flexDirection: 'column' }}>
+            <div style={{ background: '#0f1410', padding: '8px 12px', display: 'flex', gap: 5, borderBottom: '1px solid #1e2a1c' }}>
+              <span style={{ fontSize: 10, fontFamily: 'JetBrains Mono, monospace', padding: '2px 8px', borderRadius: 4, background: '#1e2a1c', color: '#7aaa75', border: '1px solid #2d4a2b' }}>Navbar.tsx</span>
             </div>
-
-            {/* Chat panel */}
-            <div className="flex-1 flex flex-col p-3 gap-2">
-              <div
-                className="self-end max-w-[70%] px-3 py-1.5 rounded-2xl rounded-br-md text-xs text-white"
-                style={{ backgroundColor: "var(--goblin-moss)" }}
-              >
-                Add a navbar with dark mode
-              </div>
-              <div
-                className="self-start max-w-[80%] px-3 py-2 rounded-2xl rounded-bl-md text-xs border"
-                style={{
-                  backgroundColor: "var(--goblin-cream)",
-                  borderColor: "var(--goblin-border)",
-                  color: "var(--goblin-bark)"
-                }}
-              >
-                Here&apos;s the component with a toggle built in...
-                <div
-                  className="mt-2 px-2 py-1 rounded text-[10px] font-mono"
-                  style={{ backgroundColor: "#1a2018", color: "#7aaa75" }}
-                >
-                  export function Navbar() &#123;...&#125;
-                </div>
-                <button
-                  className="mt-2 inline-flex items-center gap-1 px-2.5 py-1 rounded text-[10px] font-medium text-white"
-                  style={{ backgroundColor: "var(--goblin-ochre)" }}
-                >
-                  → Send to Code
-                </button>
-              </div>
-            </div>
-
-            {/* Code panel */}
-            <div
-              className="w-52 border-l p-3"
-              style={{
-                backgroundColor: "#141a12",
-                borderColor: "rgba(255,255,255,0.08)"
-              }}
-            >
-              <div
-                className="text-[10px] mb-2 pb-1 border-b"
-                style={{
-                  color: "rgba(255,255,255,0.4)",
-                  borderColor: "rgba(255,255,255,0.08)",
-                  fontFamily: "var(--font-jetbrains-mono)"
-                }}
-              >
-                Navbar.tsx
-              </div>
-              <div
-                className="text-[10px] leading-relaxed"
-                style={{ color: "#7aaa75", fontFamily: "var(--font-jetbrains-mono)" }}
-              >
-                <span style={{ color: "#c9933a" }}>import</span> &#123; useState &#125;<br />
-                <span style={{ color: "#c9933a" }}>export function</span> Navbar() &#123;<br />
-                &nbsp;&nbsp;<span style={{ color: "rgba(255,255,255,0.4)" }}>// dark mode</span><br />
-                &nbsp;&nbsp;<span style={{ color: "#c9933a" }}>const</span> [dark] = ...<br />
-                &#125;
-              </div>
-              <div
-                className="mt-3 px-2 py-1 rounded text-[10px] border animate-fade-in"
-                style={{
-                  borderColor: "var(--goblin-ochre)",
-                  color: "var(--goblin-ochre)",
-                  fontFamily: "var(--font-jetbrains-mono)"
-                }}
-              >
-                ✦ Injected
-              </div>
+            <div style={{ padding: '10px 12px', fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#5a8a55', lineHeight: 1.8 }}>
+              <span style={{ color: '#3d6038' }}>// injected via Send to Code</span><br />
+              <span style={{ display: 'block', background: 'rgba(201,147,58,0.07)', borderLeft: '2px solid #c9933a', margin: '2px -12px', padding: '0 12px' }}><span style={{ color: '#c9933a' }}>export function</span> <span style={{ color: '#7dd3a8' }}>Navbar</span>() {'{'}</span>
+              <span style={{ display: 'block', background: 'rgba(201,147,58,0.07)', borderLeft: '2px solid #c9933a', margin: '0 -12px', padding: '0 12px' }}>&nbsp;&nbsp;<span style={{ color: '#c9933a' }}>const</span> [dark, setDark] = useState(false)</span>
+              <span style={{ display: 'block', background: 'rgba(201,147,58,0.07)', borderLeft: '2px solid #c9933a', margin: '0 -12px', padding: '0 12px' }}>&nbsp;&nbsp;...</span>
+              <span style={{ display: 'block', background: 'rgba(201,147,58,0.07)', borderLeft: '2px solid #c9933a', margin: '0 -12px', padding: '0 12px' }}>{'}'}</span>
             </div>
           </div>
         </div>

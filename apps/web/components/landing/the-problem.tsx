@@ -1,89 +1,29 @@
-"use client";
-
 export function TheProblem() {
-  const problems = [
-    {
-      emoji: "⚡",
-      title: "Token panic",
-      description: "Claude Pro locks you out after 2 hours. Mid-flow."
-    },
-    {
-      emoji: "💻",
-      title: "Hardware wall",
-      description: "Running powerful models needs 48GB+ VRAM. Most don't have that."
-    },
-    {
-      emoji: "📋",
-      title: "Copy-paste hell",
-      description: "Chat → copy → switch → paste. Every. Single. Time."
-    },
-    {
-      emoji: "🔩",
-      title: "IDE overwhelm",
-      description: "Cursor wasn't built for builders who just want to ship."
-    }
+  const items = [
+    { icon: '⚡', title: 'Token panic', desc: 'Claude Pro locks you out after 2 hours. Counting tokens instead of shipping.' },
+    { icon: '💻', title: 'Hardware wall', desc: 'Powerful models need 48GB+ VRAM. Your laptop simply does not have it.' },
+    { icon: '📋', title: 'Copy-paste hell', desc: 'Chat → copy → switch tabs → paste → find the right file. Every. Single. Time.' },
+    { icon: '🔩', title: 'IDE overwhelm', desc: 'Cursor and VS Code were not built for builders who just want to ship fast.' },
   ];
-
   return (
-    <section
-      id="why-goblin"
-      className="py-24 px-4"
-      style={{ backgroundColor: "var(--goblin-moss)" }}
-    >
-      <div className="max-w-6xl mx-auto">
-        <div className="text-center mb-16 space-y-3">
-          <p
-            className="text-sm font-medium tracking-widest uppercase"
-            style={{
-              color: "var(--goblin-ochre)",
-              fontFamily: "var(--font-dm-sans)"
-            }}
-          >
-            The problem
-          </p>
-          <h2
-            className="font-fraunces font-bold text-white"
-            style={{ fontSize: "clamp(28px, 5vw, 48px)" }}
-          >
-            Building with AI shouldn&apos;t feel like this.
-          </h2>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {problems.map((p, i) => (
-            <div
-              key={i}
-              className="p-6 rounded-xl transition-all duration-200"
-              style={{
-                backgroundColor: "rgba(255,255,255,0.04)",
-                border: "1px solid rgba(255,255,255,0.08)"
-              }}
-              onMouseEnter={(e) => {
-                (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(201,147,58,0.3)";
-              }}
-              onMouseLeave={(e) => {
-                (e.currentTarget as HTMLDivElement).style.borderColor = "rgba(255,255,255,0.08)";
-              }}
-            >
-              <div className="text-3xl mb-4">{p.emoji}</div>
-              <h3
-                className="font-semibold text-white mb-2"
-                style={{ fontFamily: "var(--font-dm-sans)" }}
-              >
-                {p.title}
-              </h3>
-              <p
-                className="text-sm leading-relaxed"
-                style={{
-                  color: "rgba(255,255,255,0.55)",
-                  fontFamily: "var(--font-dm-sans)"
-                }}
-              >
-                {p.description}
-              </p>
-            </div>
-          ))}
-        </div>
+    <section id="why-goblin" style={{ background: 'var(--moss)', padding: '100px 40px' }}>
+      <div style={{ textAlign: 'center', marginBottom: 64 }}>
+        <div style={{ fontSize: 11, fontWeight: 500, letterSpacing: 2, textTransform: 'uppercase' as const, color: 'var(--ochre)', marginBottom: 16 }}>The problem</div>
+        <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 'clamp(36px,5vw,56px)', color: '#fff', lineHeight: 1.05, letterSpacing: '-2px', fontWeight: 900, marginBottom: 16 }}>
+          Building with AI<br />should not feel like this.
+        </h2>
+        <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.45)', maxWidth: 480, margin: '0 auto', lineHeight: 1.6, fontWeight: 300 }}>
+          Four walls every builder hits. Goblin removes all of them.
+        </p>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 20, maxWidth: 1000, margin: '0 auto' }}>
+        {items.map(p => (
+          <div key={p.title} style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: 28 }}>
+            <div style={{ fontSize: 24, marginBottom: 14 }}>{p.icon}</div>
+            <div style={{ fontFamily: 'Fraunces, serif', fontSize: 20, color: '#fff', fontWeight: 700, marginBottom: 8, letterSpacing: '-0.5px' }}>{p.title}</div>
+            <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', lineHeight: 1.65, fontWeight: 300 }}>{p.desc}</div>
+          </div>
+        ))}
       </div>
     </section>
   );

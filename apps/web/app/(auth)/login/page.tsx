@@ -1,127 +1,78 @@
-import { LoginForm } from "@/components/auth/login-form";
-import { Check } from "lucide-react";
-
-const PROOF_POINTS = [
-  "No token panic",
-  "Build from anywhere",
-  "Ship to GitHub in one click"
-];
+'use client';
+import { useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
 
 export default function LoginPage() {
+  const [email, setEmail] = useState('');
+  const [status, setStatus] = useState<'idle'|'loading'|'sent'|'error'>('idle');
+  const supabase = createClient();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim() || status === 'loading') return;
+    setStatus('loading');
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+    });
+    setStatus(error ? 'error' : 'sent');
+  };
+
   return (
-    <main className="min-h-screen flex">
-      {/* LEFT — Moss brand panel (hidden on mobile) */}
-      <div
-        className="hidden lg:flex lg:w-2/5 flex-col justify-between p-12 relative overflow-hidden"
-        style={{ backgroundColor: "var(--goblin-moss)" }}
-      >
-        {/* Grid decoration */}
-        <div
-          className="absolute inset-0 pointer-events-none opacity-[0.04]"
-          style={{
-            backgroundImage:
-              "linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)",
-            backgroundSize: "40px 40px"
-          }}
-        />
-
-        <div className="relative z-10">
-          <a href="/">
-            <h1
-              className="font-fraunces font-bold mb-2"
-              style={{ fontSize: "48px", color: "var(--goblin-ochre)", letterSpacing: "-1px" }}
-            >
-              Goblin.
-            </h1>
-          </a>
-          <p
-            className="text-lg"
-            style={{
-              color: "rgba(255,255,255,0.6)",
-              fontFamily: "var(--font-dm-sans)"
-            }}
-          >
-            The cloud workshop for builders.
-          </p>
+    <div style={{ display: 'flex', minHeight: '100vh' }}>
+      {/* Left — Moss panel */}
+      <div style={{ width: '42%', background: 'var(--moss)', padding: '60px 48px', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }} className="hide-mobile">
+        <div style={{ fontFamily: 'Fraunces, serif', fontSize: 28, color: 'var(--ochre)', fontWeight: 700 }}>Goblin.</div>
+        <div>
+          <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 48, color: '#fff', fontWeight: 900, lineHeight: 1.1, letterSpacing: '-2px', marginBottom: 24 }}>
+            The cloud<br />workshop for<br /><em style={{ fontStyle: 'italic', color: 'var(--ochre)' }}>builders.</em>
+          </h1>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {['No token panic — ever','Build from your phone','Ship to GitHub in one tap'].map(t => (
+              <div key={t} style={{ display: 'flex', alignItems: 'center', gap: 12, fontSize: 14, color: 'rgba(255,255,255,0.7)', fontWeight: 300 }}>
+                <span style={{ width: 20, height: 20, borderRadius: '50%', background: 'rgba(201,147,58,0.15)', border: '1px solid rgba(201,147,58,0.35)', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: 'var(--ochre)', flexShrink: 0 }}>✓</span>
+                {t}
+              </div>
+            ))}
+          </div>
         </div>
+        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.2)' }}>© 2026 Goblin</div>
+      </div>
 
-        <div className="relative z-10 space-y-4">
-          {PROOF_POINTS.map((point) => (
-            <div key={point} className="flex items-center gap-3">
-              <span
-                className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
-                style={{ backgroundColor: "rgba(201,147,58,0.25)" }}
-              >
-                <Check className="w-3 h-3" style={{ color: "var(--goblin-ochre)" }} strokeWidth={3} />
-              </span>
-              <span
-                className="text-sm"
-                style={{
-                  color: "rgba(255,255,255,0.65)",
-                  fontFamily: "var(--font-dm-sans)"
-                }}
-              >
-                {point}
-              </span>
+      {/* Right — Form */}
+      <div style={{ flex: 1, background: 'var(--cream)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40 }}>
+        <div style={{ width: '100%', maxWidth: 400 }}>
+          {status !== 'sent' ? (
+            <>
+              <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 32, color: 'var(--moss)', fontWeight: 700, marginBottom: 8, letterSpacing: '-1px' }}>Welcome back.</h2>
+              <p style={{ fontSize: 15, color: 'var(--meta)', marginBottom: 36, lineHeight: 1.5, fontWeight: 300 }}>Enter your email — we will send a magic link. No password needed.</p>
+              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <input
+                  type="email" value={email} onChange={e => setEmail(e.target.value)}
+                  placeholder="you@example.com" required
+                  style={{ width: '100%', height: 52, padding: '0 16px', borderRadius: 10, fontSize: 16, border: '1.5px solid var(--border)', background: '#fff', color: 'var(--text)', fontFamily: 'DM Sans, sans-serif', outline: 'none' }}
+                />
+                <button type="submit" disabled={status === 'loading'} style={{
+                  width: '100%', height: 52, background: 'var(--moss)', color: '#fff', border: 'none',
+                  borderRadius: 10, fontSize: 15, fontWeight: 500, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
+                }}>
+                  {status === 'loading' ? 'Sending…' : 'Send magic link →'}
+                </button>
+                {status === 'error' && <p style={{ color: '#c0392b', fontSize: 13, textAlign: 'center' }}>Something went wrong. Please try again.</p>}
+              </form>
+              <p style={{ marginTop: 24, fontSize: 12, color: 'var(--meta)', textAlign: 'center', fontWeight: 300 }}>No password. No friction. Just your email.</p>
+            </>
+          ) : (
+            <div style={{ textAlign: 'center' }}>
+              <div style={{ width: 64, height: 64, borderRadius: '50%', background: 'rgba(74,124,59,0.1)', border: '2px solid #4a7c3b', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 28, margin: '0 auto 24px' }}>✓</div>
+              <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 28, color: 'var(--moss)', fontWeight: 700, marginBottom: 8 }}>Check your inbox.</h2>
+              <p style={{ fontSize: 15, color: 'var(--meta)', lineHeight: 1.6, fontWeight: 300 }}>Magic link sent to <strong style={{ color: 'var(--text)' }}>{email}</strong>.<br />Click the link to sign in instantly.</p>
+              <button onClick={() => setStatus('idle')} style={{ marginTop: 24, background: 'none', border: 'none', color: 'var(--meta)', fontSize: 13, cursor: 'pointer', textDecoration: 'underline' }}>Use a different email</button>
             </div>
-          ))}
-        </div>
-
-        <p
-          className="relative z-10 text-xs"
-          style={{ color: "rgba(255,255,255,0.2)", fontFamily: "var(--font-dm-sans)" }}
-        >
-          © 2026 Goblin
-        </p>
-      </div>
-
-      {/* RIGHT — Login form */}
-      <div
-        className="flex-1 flex flex-col items-center justify-center px-6 py-12"
-        style={{ backgroundColor: "var(--goblin-cream)" }}
-      >
-        {/* Mobile logo */}
-        <div className="lg:hidden mb-10 text-center">
-          <a href="/">
-            <span
-              className="font-fraunces font-bold text-4xl"
-              style={{ color: "var(--goblin-moss)" }}
-            >
-              Goblin<span style={{ color: "var(--goblin-ochre)" }}>.</span>
-            </span>
-          </a>
-        </div>
-
-        <div className="w-full max-w-sm">
-          <h2
-            className="font-fraunces font-bold mb-2"
-            style={{ fontSize: "28px", color: "var(--goblin-moss)" }}
-          >
-            Welcome back.
-          </h2>
-          <p
-            className="text-sm mb-8"
-            style={{
-              color: "var(--goblin-meta)",
-              fontFamily: "var(--font-dm-sans)"
-            }}
-          >
-            Enter your email — we&apos;ll send a magic link.
-          </p>
-
-          <LoginForm />
-
-          <p
-            className="text-center mt-6 text-xs"
-            style={{
-              color: "var(--goblin-meta)",
-              fontFamily: "var(--font-dm-sans)"
-            }}
-          >
-            No password. No friction. Just your email.
-          </p>
+          )}
         </div>
       </div>
-    </main>
+      <style>{`.hide-mobile { display: flex; } @media (max-width: 768px) { .hide-mobile { display: none !important; } }`}</style>
+    </div>
   );
 }

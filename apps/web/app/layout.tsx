@@ -1,27 +1,5 @@
 import type { Metadata } from "next";
-import { Fraunces, DM_Sans, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
-
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  variable: "--font-fraunces",
-  display: "swap",
-  axes: ["opsz"]
-});
-
-const dmSans = DM_Sans({
-  subsets: ["latin"],
-  variable: "--font-dm-sans",
-  weight: ["300", "400", "500"],
-  display: "swap"
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-jetbrains-mono",
-  weight: ["400", "500"],
-  display: "swap"
-});
 
 export const metadata: Metadata = {
   title: "Goblin — The Cloud Workshop for Builders",
@@ -45,8 +23,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${fraunces.variable} ${dmSans.variable} ${jetbrainsMono.variable}`}>
+    <html lang="en">
       <head>
+        <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,700;0,9..144,900;1,9..144,700&family=DM+Sans:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#1e3a1c" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
