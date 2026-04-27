@@ -1,6 +1,5 @@
 node_modules
 apps/api
-packages
 *.test.ts
 *.spec.ts
 .env.local
