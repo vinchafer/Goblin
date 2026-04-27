@@ -9,7 +9,7 @@ import {
 } from '@aws-sdk/client-s3';
 import type { S3ClientConfig } from '@aws-sdk/client-s3';
 
-// ── Memory fallback for local development ──────────────────────────────────
+// DEV ONLY — nicht für Production. Hetzner Keys in .env eintragen.
 const memoryStorage = new Map<string, string>();
 
 // ── S3 Client factory ──────────────────────────────────────────────────────
@@ -26,7 +26,7 @@ function getS3Client(): S3Client | null {
   const bucket = process.env.HETZNER_STORAGE_BUCKET;
 
   if (!endpoint || !accessKeyId || !secretAccessKey || !bucket) {
-    console.warn('[file-storage] Hetzner S3 not configured — using in-memory storage');
+    console.warn('⚠️  Hetzner Storage nicht konfiguriert — nutze In-Memory Fallback. Daten gehen beim Neustart verloren.');
     _s3Available = false;
     return null;
   }
