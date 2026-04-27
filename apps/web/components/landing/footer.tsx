@@ -1,3 +1,5 @@
+'use client';
+
 const COLS = [
   {
     title: 'Product',

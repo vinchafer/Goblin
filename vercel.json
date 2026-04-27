@@ -1,6 +1,6 @@
 {
   "buildCommand": "pnpm --filter @goblin/web build",
-  "outputDirectory": ".next",
+  "outputDirectory": "apps/web/.next",
   "installCommand": "pnpm install",
   "framework": "nextjs",
   "rewrites": [
