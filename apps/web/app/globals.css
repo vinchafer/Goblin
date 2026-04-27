@@ -1,27 +1,75 @@
 @import "tailwindcss";
 
 :root {
-  --moss: #1e3a1c;
-  --moss2: #2d5229;
-  --moss3: #3a6635;
-  --ochre: #c9933a;
-  --ochre2: #e8b05a;
-  --cream: #f5f0e8;
-  --cream2: #ede7d9;
-  --bark: #2a1f0f;
-  --text: #1a1a1a;
-  --meta: #6b6560;
-  --border: #e4ddd2;
+  --moss:    #1e3a1c;
+  --moss2:   #2d5229;
+  --moss3:   #3a6635;
+  --ochre:   #c9933a;
+  --ochre2:  #e8b05a;
+  --ochre3:  #f5c878;
+  --cream:   #f5f0e8;
+  --cream2:  #ede7d9;
+  --bark:    #2a1f0f;
+  --text:    #1a1a1a;
+  --meta:    #6b6560;
+  --border:  #e4ddd2;
+  --panel:   #ffffff;
+  --sidebar: #f7f3ec;
+  --success: #4a7c3b;
+  --danger:  #b85c3c;
+  --code-bg: #141a12;
+  --code-border: #1e2a1c;
+
+  /* backwards-compat aliases */
+  --goblin-moss:   #1e3a1c;
+  --goblin-ochre:  #c9933a;
+  --goblin-cream:  #f5f0e8;
+  --goblin-cream2: #ede7d9;
+  --goblin-bark:   #2a1f0f;
+  --goblin-slate:  #1a1a1a;
+  --goblin-gray:   #6b6560;
+  --goblin-light:  #ede7d9;
+  --goblin-border: #e4ddd2;
+  --goblin-meta:   #6b6560;
+  --goblin-text:   #1a1a1a;
+  --goblin-good:   #4a7c3b;
+  --goblin-warn:   #b85c3c;
+  --goblin-moss2:  #2d5229;
+  --goblin-ochre2: #e8b05a;
 }
 
-* { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; font-size: 16px; }
+
 body {
   font-family: 'DM Sans', sans-serif;
   background: var(--cream);
   color: var(--text);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
-  margin: 0;
-  padding: 0;
+  line-height: 1.5;
 }
+
+.font-fraunces { font-family: 'Fraunces', serif; }
+.font-mono     { font-family: 'JetBrains Mono', monospace; }
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: var(--meta); }
+
+:focus-visible { outline: 2px solid var(--ochre); outline-offset: 2px; }
+
+@keyframes pulse   { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+@keyframes blink   { 0%,100%{opacity:1} 50%{opacity:0.3} }
+@keyframes slideIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+@keyframes slideUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+@keyframes fadeIn  { from{opacity:0} to{opacity:1} }
+@keyframes pw      { from{width:55%} to{width:78%} }
+@keyframes spin    { to{transform:rotate(360deg)} }
+@keyframes slideInLeft { from{transform:translateX(-100%);opacity:0} to{transform:translateX(0);opacity:1} }
+
+.animate-slide-in-left { animation: slideInLeft 0.22s ease-out; }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.safe-top    { padding-top:    env(safe-area-inset-top,    0px); }

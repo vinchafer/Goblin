@@ -1,48 +1,48 @@
-"use client";
-
-import { useApp, type AppTab } from "@/contexts/app-context";
-import { MessageSquare, Code, Eye, Server } from "lucide-react";
-
-const TABS: { id: AppTab; label: string; icon: React.ReactNode; comingSoon?: boolean }[] = [
-  { id: "chat", label: "Chat", icon: <MessageSquare className="w-5 h-5" /> },
-  { id: "code", label: "Code", icon: <Code className="w-5 h-5" /> },
-  { id: "preview", label: "Preview", icon: <Eye className="w-5 h-5" />, comingSoon: true },
-  { id: "server", label: "Server", icon: <Server className="w-5 h-5" />, comingSoon: true }
-];
+'use client';
+import { useApp } from '@/contexts/app-context';
 
 export function BottomTabBar() {
   const { activeTab, setActiveTab, injectionCount } = useApp();
 
+  const tabs = [
+    { id: 'chat' as const, label: 'Chat', icon: '💬' },
+    { id: 'code' as const, label: 'Code', icon: '</>' },
+    { id: 'preview' as const, label: 'Preview', icon: '🌐' },
+  ];
+
   return (
-    <nav
-      className="md:hidden h-14 flex items-center justify-around border-t shrink-0 safe-bottom"
-      style={{
-        backgroundColor: 'var(--goblin-cream)',
-        borderColor: 'var(--goblin-light)'
-      }}
-    >
-      {TABS.map(tab => (
+    <nav style={{
+      height: 56,
+      background: 'var(--panel)',
+      borderTop: '1px solid var(--border)',
+      display: 'flex',
+      zIndex: 50,
+      paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+      flexShrink: 0,
+    }} className="goblin-bottom-bar">
+      {tabs.map(tab => (
         <button
           key={tab.id}
-          onClick={() => !tab.comingSoon && setActiveTab(tab.id)}
-          disabled={tab.comingSoon}
-          className={`flex flex-col items-center justify-center gap-0.5 min-h-[44px] min-w-[44px] px-2 ${tab.comingSoon ? 'opacity-40' : ''}`}
+          onClick={() => setActiveTab(tab.id)}
           style={{
-            color: activeTab === tab.id ? 'var(--goblin-moss)' : 'var(--goblin-gray)'
+            flex: 1, background: 'none', border: 'none', cursor: 'pointer',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            gap: 3, fontSize: 10, fontWeight: 500, fontFamily: 'DM Sans, sans-serif',
+            color: activeTab === tab.id ? 'var(--moss)' : 'var(--meta)',
+            position: 'relative', minHeight: 44,
           }}
         >
-          <span className="relative">
-            {tab.icon}
-            {tab.id === 'code' && activeTab !== 'code' && injectionCount > 0 && (
-              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full" style={{ backgroundColor: '#D4A94A' }} />
-            )}
-          </span>
-          <span className="text-[10px] font-medium leading-none">
-            {tab.label}
-            {tab.comingSoon && <span className="ml-0.5 text-[9px]">Soon</span>}
-          </span>
+          <span style={{ fontSize: 18, lineHeight: 1 }}>{tab.icon}</span>
+          {tab.label}
+          {tab.id === 'code' && injectionCount > 0 && (
+            <span style={{ position: 'absolute', top: 8, right: '30%', width: 6, height: 6, borderRadius: '50%', background: 'var(--ochre)', animation: 'blink 1.5s infinite' }} />
+          )}
         </button>
       ))}
+      <style>{`
+        .goblin-bottom-bar { display: none; }
+        @media (max-width: 768px) { .goblin-bottom-bar { display: flex !important; } }
+      `}</style>
     </nav>
   );
 }

@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { Topbar } from "./topbar";
 import { Sidebar } from "./sidebar";
 import { BottomTabBar } from "./bottom-tab-bar";
+import { useApp } from "@/contexts/app-context";
 import type { Project } from "@goblin/shared/src/schemas";
 
 interface DashboardShellProps {
@@ -13,65 +15,61 @@ interface DashboardShellProps {
 
 export function DashboardShell({ projects, children }: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { activeTab, setActiveTab, injectionCount, activeModel } = useApp();
+  const pathname = usePathname();
 
-  const toggleSidebar = useCallback(() => {
-    setSidebarOpen(prev => !prev);
-  }, []);
+  const activeProjectId = (() => {
+    const match = pathname.match(/\/dashboard\/project\/([^/]+)/);
+    return match ? match[1] : undefined;
+  })();
 
-  const closeSidebar = useCallback(() => {
-    setSidebarOpen(false);
-  }, []);
+  const closeSidebar = useCallback(() => setSidebarOpen(false), []);
 
-  // Close sidebar on route change (when children change)
   useEffect(() => {
     closeSidebar();
-  }, [children, closeSidebar]);
+  }, [pathname, closeSidebar]);
 
-  // Close sidebar on window resize to desktop
   useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 768) {
-        closeSidebar();
-      }
-    };
+    const handleResize = () => { if (window.innerWidth >= 768) closeSidebar(); };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [closeSidebar]);
 
+  const activeProjectName = projects.find(p => p.id === activeProjectId)?.name;
+
   return (
-    <div className="h-[100dvh] flex flex-col">
-      <Topbar onToggleSidebar={toggleSidebar} sidebarOpen={sidebarOpen} />
-      <div className="flex flex-1 overflow-hidden">
-        {/* Desktop sidebar — always visible on md+ */}
-        <div className="hidden md:block">
-          <Sidebar projects={projects} />
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--cream)', overflow: 'hidden' }}>
+      <Topbar
+        activeTab={activeTab as 'chat' | 'code' | 'preview'}
+        onTabChange={tab => setActiveTab(tab)}
+        onMenuToggle={() => setSidebarOpen(s => !s)}
+        projectName={activeProjectName}
+        selectedModel={activeModel.id}
+        injectionCount={injectionCount}
+      />
+      <div style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative' }}>
+        <div className="goblin-sidebar-desktop">
+          <Sidebar
+            projects={projects as any[]}
+            activeProjectId={activeProjectId}
+            isOpen={false}
+          />
         </div>
-
-        {/* Mobile drawer overlay */}
-        {sidebarOpen && (
-          <div className="md:hidden fixed inset-0 z-40 flex">
-            {/* Backdrop */}
-            <div
-              className="absolute inset-0 bg-black/30"
-              onClick={closeSidebar}
-            />
-            {/* Drawer */}
-            <div className="relative w-72 h-full shadow-xl z-50 animate-slide-in-left">
-              <Sidebar projects={projects} />
-            </div>
-          </div>
-        )}
-
-        <main
-          className="flex-1 overflow-auto pb-14 md:pb-0"
-          style={{ backgroundColor: 'var(--goblin-cream)' }}
-        >
+        <Sidebar
+          projects={projects as any[]}
+          activeProjectId={activeProjectId}
+          isOpen={sidebarOpen}
+          onClose={closeSidebar}
+        />
+        <main style={{ flex: 1, overflow: 'auto', paddingBottom: 56 }}>
           {children}
         </main>
       </div>
-
-      {/* Bottom tab bar — mobile only */}
       <BottomTabBar />
+      <style>{`
+        .goblin-sidebar-desktop { display: flex; }
+        @media (max-width: 768px) { .goblin-sidebar-desktop { display: none !important; } }
+      `}</style>
     </div>
   );
 }
