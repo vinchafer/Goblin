@@ -20,10 +20,10 @@ function getS3Client(): S3Client | null {
   if (_s3Available === false) return null;
   if (_s3Client) return _s3Client;
 
-  const endpoint = process.env.HETZNER_STORAGE_ENDPOINT;
-  const accessKeyId = process.env.HETZNER_STORAGE_KEY;
-  const secretAccessKey = process.env.HETZNER_STORAGE_SECRET;
-  const bucket = process.env.HETZNER_STORAGE_BUCKET;
+  const endpoint = process.env.STORAGE_ENDPOINT;
+  const accessKeyId = process.env.STORAGE_KEY;
+  const secretAccessKey = process.env.STORAGE_SECRET;
+  const bucket = process.env.STORAGE_BUCKET;
 
   if (!endpoint || !accessKeyId || !secretAccessKey || !bucket) {
     console.warn('⚠️  Hetzner Storage nicht konfiguriert — nutze In-Memory Fallback. Daten gehen beim Neustart verloren.');
@@ -33,7 +33,7 @@ function getS3Client(): S3Client | null {
 
   const config: S3ClientConfig = {
     endpoint,
-    region: process.env.HETZNER_STORAGE_REGION || 'fsn1',
+    region: process.env.STORAGE_REGION || 'fsn1',
     credentials: { accessKeyId, secretAccessKey },
     forcePathStyle: true,
   };
@@ -45,7 +45,7 @@ function getS3Client(): S3Client | null {
 }
 
 function getBucket(): string {
-  return process.env.HETZNER_STORAGE_BUCKET || 'goblin-dev';
+  return process.env.STORAGE_BUCKET || 'goblin-dev';
 }
 
 function storageKey(projectId: string, filePath: string): string {
