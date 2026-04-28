@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { KeyRound, Trash2, Plus, Clock } from "lucide-react";
+import { KeyRound, Trash2, Plus, Clock, CheckCircle, X } from "lucide-react";
 import type { ByokKey } from "@goblin/shared/src/schemas";
 import { AddKeyModal } from "./add-key-modal";
 import { createClient } from "@/lib/supabase/client";
@@ -10,23 +10,41 @@ interface KeysListProps {
   initialKeys: ByokKey[];
 }
 
+const PROVIDER_LIST: Array<{ id: string; label: string; icon: string }> = [
+  { id: 'anthropic', label: 'Anthropic', icon: '🔑' },
+  { id: 'openai',    label: 'OpenAI',    icon: '🔑' },
+  { id: 'google',    label: 'Google',    icon: '🔑' },
+  { id: 'groq',      label: 'Groq',      icon: '🔑' },
+  { id: 'mistral',   label: 'Mistral',   icon: '🔑' },
+  { id: 'deepseek',  label: 'DeepSeek',  icon: '🔑' },
+  { id: 'xai',       label: 'xAI',       icon: '🔑' },
+  { id: 'together',  label: 'Together',  icon: '🔑' },
+];
+
 export function KeysList({ initialKeys }: KeysListProps) {
   const [keys, setKeys] = useState<ByokKey[]>(initialKeys);
   const [modalOpen, setModalOpen] = useState(false);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [revokingId, setRevokingId] = useState<string | null>(null);
   const supabase = createClient();
 
   const handleRevoke = async (keyId: string) => {
-    if (!confirm('Are you sure you want to revoke this key? This cannot be undone.')) return;
+    setRevokingId(keyId);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
 
-    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/byok-keys/${keyId}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}`
-      }
-    });
+      await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/byok-keys/${keyId}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
 
-    setKeys(prev => prev.map(k => k.id === keyId ? { ...k, status: 'revoked' as const } : k));
+      setKeys(prev => prev.map(k => k.id === keyId ? { ...k, status: 'revoked' as const } : k));
+    } catch {
+      // Silently fail
+    } finally {
+      setRevokingId(null);
+    }
   };
 
   const handleKeyAdded = (newKey: ByokKey) => {
@@ -35,13 +53,54 @@ export function KeysList({ initialKeys }: KeysListProps) {
     setTimeout(() => setSuccessMessage(null), 4000);
   };
 
+  const activeProviders = new Set(keys.filter(k => k.status === 'active').map(k => k.provider));
+
+  const getKeyHint = (key: ByokKey): string => {
+    // The key_hint is stored in the DB — 4 last chars
+    return (key as any).key_hint || '····';
+  };
+
   return (
     <div className="space-y-4">
       {successMessage && (
-        <div className="p-3 rounded-lg text-sm" style={{ backgroundColor: 'rgba(74, 124, 59, 0.1)', color: 'var(--goblin-good)' }}>
+        <div className="p-3 rounded-lg text-sm flex items-center gap-2" style={{ backgroundColor: 'rgba(74, 124, 59, 0.1)', color: 'var(--goblin-good)' }}>
+          <CheckCircle className="w-4 h-4" />
           {successMessage}
         </div>
       )}
+
+      {/* Provider Grid */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+        {PROVIDER_LIST.map(({ id: providerId, label, icon }) => {
+          const hasKey = keys.some(k => k.provider === providerId && k.status === 'active');
+          return (
+            <button
+              key={providerId}
+              onClick={() => {
+                if (!hasKey) setModalOpen(true);
+              }}
+              className="flex items-center justify-between px-3 py-3 rounded-lg border transition-all"
+              style={{
+                borderColor: hasKey ? 'rgba(74, 124, 59, 0.3)' : 'var(--goblin-light)',
+                backgroundColor: hasKey ? 'rgba(74, 124, 59, 0.05)' : 'white',
+              }}
+            >
+              <span className="text-sm font-medium" style={{ color: hasKey ? 'var(--goblin-moss)' : 'var(--goblin-gray)' }}>
+                {label}
+              </span>
+              {hasKey ? (
+                <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ backgroundColor: 'rgba(74, 124, 59, 0.15)', color: 'var(--goblin-good)' }}>
+                  ✓
+                </span>
+              ) : (
+                <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: 'var(--goblin-light)', color: 'var(--goblin-gray)' }}>
+                  Add Key
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
 
       <button
         onClick={() => setModalOpen(true)}
@@ -69,6 +128,9 @@ export function KeysList({ initialKeys }: KeysListProps) {
                   <div className="font-medium" style={{ color: 'var(--goblin-slate)' }}>{key.label}</div>
                   <div className="text-sm flex items-center gap-2">
                     <span style={{ color: 'var(--goblin-gray)' }}>{key.provider}</span>
+                    <span className="font-mono text-xs" style={{ color: 'var(--goblin-gray)' }}>
+                      ···· {(key as any).key_hint || ''}
+                    </span>
                     <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: key.status === 'active' ? 'rgba(74, 124, 59, 0.1)' : 'rgba(107, 107, 107, 0.1)', color: key.status === 'active' ? 'var(--goblin-good)' : 'var(--goblin-gray)' }}>
                       {key.status}
                     </span>
@@ -83,9 +145,31 @@ export function KeysList({ initialKeys }: KeysListProps) {
               </div>
 
               {key.status === 'active' && (
-                <button onClick={() => handleRevoke(key.id)} className="p-2 rounded-lg hover:bg-red-50">
-                  <Trash2 className="w-4 h-4" style={{ color: 'var(--goblin-warn)' }} />
-                </button>
+                <div className="relative">
+                  {revokingId === key.id ? (
+                    <div className="flex items-center gap-2 p-2 rounded-lg" style={{ backgroundColor: 'rgba(184, 92, 60, 0.06)' }}>
+                      <span className="text-xs" style={{ color: 'var(--goblin-warn)' }}>Revoke?</span>
+                      <button
+                        onClick={() => handleRevoke(key.id)}
+                        className="text-xs px-2 py-1 rounded font-medium"
+                        style={{ backgroundColor: 'var(--goblin-warn)', color: 'white' }}
+                      >
+                        Yes
+                      </button>
+                      <button
+                        onClick={() => setRevokingId(null)}
+                        className="text-xs px-2 py-1 rounded"
+                        style={{ backgroundColor: 'var(--goblin-light)', color: 'var(--goblin-gray)' }}
+                      >
+                        No
+                      </button>
+                    </div>
+                  ) : (
+                    <button onClick={() => setRevokingId(key.id)} className="p-2 rounded-lg hover:bg-red-50">
+                      <Trash2 className="w-4 h-4" style={{ color: 'var(--goblin-warn)' }} />
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           ))}

@@ -1,88 +1,157 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronDown, Bot, Zap, Key, ExternalLink } from "lucide-react";
-import { useApp, type AppModel, type ModelTier } from "@/contexts/app-context";
+import { ChevronDown, Bot, Zap, Key, ExternalLink, Info } from "lucide-react";
+import { useApp, type AppModel } from "@/contexts/app-context";
 import { createClient } from "@/lib/supabase/client";
 
-const MODELS: AppModel[] = [
-  { id: "claude-sonnet-4-6", name: "Claude Sonnet 4.6", tier: "byok", icon: "🔑", available: true },
-  { id: "claude-opus-4-7", name: "Claude Opus 4.7", tier: "byok", icon: "🔑", available: true },
-  { id: "gpt-4o", name: "GPT-4o", tier: "byok", icon: "🔑", available: true },
-  { id: "qwen-coder-32b", name: "Qwen Coder 32B", tier: "hosted", icon: "🤖", available: false, badge: "Phase 3" },
-  { id: "qwen-coder-14b", name: "Qwen Coder 14B (fast)", tier: "hosted", icon: "🤖", available: false, badge: "Phase 3" },
-  { id: "gemini-2-flash", name: "Gemini 2.0 Flash", tier: "free", icon: "⚡", available: false, badge: "Phase 2" },
-  { id: "llama-3.3-70b", name: "Llama 3.3 70B (Groq)", tier: "free", icon: "🦙", available: false, badge: "Phase 2" },
-];
-
-const TIER_LABELS: Record<ModelTier, string> = {
-  hosted: "Goblin Hosted",
-  free: "Free API",
-  byok: "BYOK"
+const PROVIDER_URLS: Record<string, string> = {
+  anthropic: 'https://console.anthropic.com/settings/keys',
+  openai: 'https://platform.openai.com/api-keys',
+  google: 'https://aistudio.google.com/app/apikey',
+  groq: 'https://console.groq.com/keys',
+  mistral: 'https://console.mistral.ai/api-keys/',
+  deepseek: 'https://platform.deepseek.com/api_keys',
+  xai: 'https://console.x.ai/',
+  together: 'https://api.together.xyz/settings/api-keys',
 };
 
-const TIER_COLORS: Record<ModelTier, string> = {
-  hosted: 'var(--goblin-moss)',
-  free: 'var(--goblin-ochre)',
-  byok: 'var(--goblin-gray)'
-};
+interface ModelFromAPI {
+  id: string;
+  name: string;
+  slug: string;
+  provider: string;
+  layer: string;
+  description: string;
+  tags: string[];
+  requires_key: boolean;
+  available: boolean;
+  phase: number;
+}
 
-// Map model IDs to their BYOK provider
-const MODEL_PROVIDER_MAP: Record<string, string> = {
-  "claude-sonnet-4-6": "anthropic",
-  "claude-opus-4-7": "anthropic",
-  "gpt-4o": "openai",
-};
-
-interface CreditInfo {
-  supported: boolean;
-  remaining?: string;
-  link?: string;
+interface ByokKeyInfo {
+  id: string;
+  provider: string;
+  status: string;
 }
 
 export function ModelSwitcher() {
   const { activeModel, setActiveModel } = useApp();
   const [open, setOpen] = useState(false);
-  const [credits, setCredits] = useState<Record<string, CreditInfo>>({});
+  const [models, setModels] = useState<ModelFromAPI[]>([]);
+  const [byokKeys, setByokKeys] = useState<ByokKeyInfo[]>([]);
+  const [loading, setLoading] = useState(true);
   const supabase = createClient();
 
-  // Fetch credit info for BYOK models
   useEffect(() => {
-    async function fetchCredits() {
+    async function fetchData() {
       try {
         const { data } = await supabase.auth.getSession();
         const token = data.session?.access_token;
-        if (!token) return;
-
-        const providers = new Set<string>();
-        for (const model of MODELS) {
-          const provider = MODEL_PROVIDER_MAP[model.id];
-          if (model.tier === 'byok' && provider) {
-            providers.add(provider);
-          }
+        if (!token) {
+          setLoading(false);
+          return;
         }
 
-        const creditMap: Record<string, CreditInfo> = {};
-        for (const provider of providers) {
-          try {
-            const res = await fetch(`/api/models/${provider}/credits`, {
-              headers: { 'Authorization': `Bearer ${token}` }
-            });
-            if (res.ok) {
-              creditMap[provider] = await res.json();
-            }
-          } catch {
-            // Silently fail
-          }
-        }
-        setCredits(creditMap);
+        const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
+
+        const [modelsRes, keysRes] = await Promise.all([
+          fetch(`${apiBase}/api/models`, {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+          fetch(`${apiBase}/api/byok-keys`, {
+            headers: { Authorization: `Bearer ${token}` }
+          }),
+        ]);
+
+        const modelsData = await modelsRes.json();
+        const keysData = await keysRes.json();
+
+        setModels(Array.isArray(modelsData) ? modelsData : []);
+        setByokKeys(Array.isArray(keysData) ? keysData : []);
       } catch {
-        // Silently fail
+        // Silently fail — fallback to empty state
+      } finally {
+        setLoading(false);
       }
     }
 
-    fetchCredits();
+    fetchData();
   }, [supabase]);
+
+  const getActiveProviders = (): string[] => {
+    return byokKeys
+      .filter(k => k.status === 'active')
+      .map(k => k.provider);
+  };
+
+  const activeProviders = getActiveProviders();
+
+  const getBadge = (model: ModelFromAPI) => {
+    if (activeProviders.includes(model.provider)) {
+      return { text: "KEY CONNECTED ✓", color: 'var(--goblin-good)' };
+    }
+    if (model.requires_key && !activeProviders.includes(model.provider)) {
+      return { text: "BYOK REQUIRED", color: 'var(--goblin-gray)' };
+    }
+    if (model.layer === 'free_api') {
+      return { text: "FREE", color: 'var(--goblin-ochre)' };
+    }
+    if (model.layer === 'goblin_hosted') {
+      return { text: "GOBLIN HOSTED", color: 'var(--goblin-moss)' };
+    }
+    return null;
+  };
+
+  const handleModelSelect = (model: ModelFromAPI) => {
+    const appModel: AppModel = {
+      id: model.id,
+      name: model.name,
+      slug: model.slug || model.id,
+      provider: model.provider,
+      tier: model.layer === 'free_api' ? 'free' : model.layer === 'goblin_hosted' ? 'hosted' : 'byok',
+      icon: model.requires_key ? '🔑' : model.layer === 'goblin_hosted' ? '🤖' : '⚡',
+      available: model.available,
+    };
+    setActiveModel(appModel);
+    localStorage.setItem('goblin_active_model', JSON.stringify(appModel));
+    setOpen(false);
+  };
+
+  // Group models by layer (tier)
+  const groupedModels: Record<string, ModelFromAPI[]> = {};
+  for (const model of models) {
+    const tier = model.layer === 'free_api' ? 'free' : model.layer === 'goblin_hosted' ? 'hosted' : 'byok';
+    if (!groupedModels[tier]) groupedModels[tier] = [];
+    groupedModels[tier].push(model);
+  }
+
+  const TIER_LABELS: Record<string, string> = {
+    hosted: "Goblin Hosted",
+    free: "Free API",
+    byok: "BYOK"
+  };
+
+  const TIER_ORDER = ['byok', 'hosted', 'free'];
+
+  // Loading state: skeleton
+  if (loading) {
+    return (
+      <div className="relative">
+        <div
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg border animate-pulse"
+          style={{
+            backgroundColor: 'white',
+            borderColor: 'var(--goblin-light)',
+            minWidth: '140px',
+          }}
+        >
+          <div className="w-4 h-4 rounded-full" style={{ backgroundColor: 'var(--goblin-light)' }} />
+          <div className="w-24 h-4 rounded" style={{ backgroundColor: 'var(--goblin-light)' }} />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative">
@@ -102,72 +171,98 @@ export function ModelSwitcher() {
 
       {open && (
         <div
-          className="absolute right-0 top-full mt-2 w-72 rounded-lg border shadow-lg py-2 z-50"
+          className="absolute right-0 top-full mt-2 w-80 rounded-lg border shadow-lg py-2 z-50"
           style={{
             backgroundColor: 'white',
-            borderColor: 'var(--goblin-light)'
+            borderColor: 'var(--goblin-light)',
+            maxHeight: 'calc(100vh - 80px)',
+            overflowY: 'auto'
           }}
         >
-          {Object.entries(TIER_LABELS).map(([tier, label]) => (
-            <div key={tier}>
-              <div className="px-3 py-1.5 text-xs font-medium uppercase" style={{ color: 'var(--goblin-gray)' }}>
-                {label}
-              </div>
-              {MODELS.filter(m => m.tier === tier).map(model => {
-                const provider = MODEL_PROVIDER_MAP[model.id];
-                const creditInfo = provider ? credits[provider] : null;
-                
-                return (
-                  <button
-                    key={model.id}
-                    onClick={() => {
-                      if (model.available) {
-                        setActiveModel(model);
-                        localStorage.setItem('goblin_active_model', JSON.stringify(model));
-                        setOpen(false);
-                      }
-                    }}
-                    className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 ${model.available ? 'hover:bg-gray-50' : 'opacity-50 cursor-not-allowed'} ${activeModel.id === model.id ? 'bg-gray-50' : ''}`}
-                  >
-                    <span>{model.icon}</span>
-                    <div className="flex-1 min-w-0">
-                      <span style={{ color: model.available ? 'var(--goblin-slate)' : 'var(--goblin-gray)' }}>{model.name}</span>
-                      
-                      {/* Credit info for BYOK models */}
-                      {creditInfo?.supported && creditInfo.remaining && (
-                        <div className="text-xs mt-0.5" style={{ color: 'var(--goblin-moss)' }}>
-                          {creditInfo.remaining}
-                        </div>
-                      )}
-                      {creditInfo?.link && !creditInfo.supported && (
-                        <a
-                          href={creditInfo.link}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-xs mt-0.5 flex items-center gap-1 hover:underline"
-                          style={{ color: 'var(--goblin-gray)' }}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <ExternalLink className="w-3 h-3" />
-                          Add credits
-                        </a>
-                      )}
-                    </div>
-                    
-                    {model.badge && (
-                      <span className="ml-auto text-xs px-1.5 py-0.5 rounded flex-shrink-0" style={{ backgroundColor: 'var(--goblin-light)', color: 'var(--goblin-gray)' }}>
-                        {model.badge}
-                      </span>
-                    )}
-                    
-                    {activeModel.id === model.id && !model.badge && (
-                      <span className="ml-auto w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: TIER_COLORS[tier as ModelTier] }} />
-                    )}
-                  </button>
-                );
-              })}
+          {models.length === 0 ? (
+            <div className="px-4 py-6 text-center">
+              <p className="text-sm" style={{ color: 'var(--goblin-gray)' }}>
+                No models available
+              </p>
+              <button
+                className="mt-3 text-xs px-3 py-1.5 rounded-lg font-medium"
+                style={{ backgroundColor: 'var(--goblin-moss)', color: 'white' }}
+                onClick={() => window.location.href = '/dashboard/settings/keys'}
+              >
+                Add API Key
+              </button>
             </div>
-          ))}
+          ) : (
+            TIER_ORDER.map(tier => {
+              const tierModels = groupedModels[tier];
+              if (!tierModels || tierModels.length === 0) return null;
+
+              return (
+                <div key={tier}>
+                  <div className="px-3 py-1.5 text-xs font-medium uppercase" style={{ color: 'var(--goblin-gray)' }}>
+                    {TIER_LABELS[tier]}
+                  </div>
+                  {tierModels.map(model => {
+                    const badge = getBadge(model);
+                    const isActive = activeModel.id === model.id;
+
+                    return (
+                      <button
+                        key={model.id}
+                        onClick={() => {
+                          if (model.available) {
+                            handleModelSelect(model);
+                          }
+                        }}
+                        className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 ${
+                          model.available ? 'hover:bg-gray-50' : 'opacity-50 cursor-not-allowed'
+                        } ${isActive ? 'bg-gray-50' : ''}`}
+                      >
+                        <span>{model.requires_key ? '🔑' : model.layer === 'goblin_hosted' ? '🤖' : '⚡'}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1">
+                            <span style={{ color: model.available ? 'var(--goblin-slate)' : 'var(--goblin-gray)' }}>
+                              {model.name}
+                            </span>
+                            {model.provider && PROVIDER_URLS[model.provider] && model.requires_key && (
+                              <span
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  window.open(PROVIDER_URLS[model.provider], '_blank', 'noopener,noreferrer');
+                                }}
+                                className="inline-flex items-center justify-center w-4 h-4 rounded-full cursor-pointer hover:opacity-70 flex-shrink-0"
+                                style={{ color: 'var(--goblin-gray)' }}
+                                title={`Get ${model.provider} API key`}
+                              >
+                                <Info className="w-3 h-3" />
+                              </span>
+                            )}
+                          </div>
+                          {badge && (
+                            <div className="text-xs mt-0.5" style={{ color: badge.color }}>
+                              {badge.text}
+                            </div>
+                          )}
+                        </div>
+
+                        {!model.available && model.phase && (
+                          <span className="ml-auto text-xs px-1.5 py-0.5 rounded flex-shrink-0" 
+                            style={{ backgroundColor: 'var(--goblin-light)', color: 'var(--goblin-gray)' }}>
+                            Phase {model.phase}
+                          </span>
+                        )}
+
+                        {isActive && !model.requires_key && (
+                          <span className="ml-auto w-2 h-2 rounded-full flex-shrink-0" 
+                            style={{ backgroundColor: model.layer === 'goblin_hosted' ? 'var(--goblin-moss)' : 'var(--goblin-ochre)' }} />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })
+          )}
         </div>
       )}
     </div>

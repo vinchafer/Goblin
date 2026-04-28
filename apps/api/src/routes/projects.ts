@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { randomUUID } from 'crypto';
 import { authMiddleware } from '../middleware/auth';
 import { generateProject } from '../services/project-generator';
-import { createZip, listFiles, getFile } from '../services/file-storage';
+import { createZip, listFiles, getFile, uploadFile } from '../services/file-storage';
 import { getSupabaseAdmin } from '../lib/supabase';
 
 type Variables = { userId: string }
@@ -279,6 +279,60 @@ projects.get('/:id/pending-injections', async (c) => {
       createdAt: i.created_at,
     })),
   });
+});
+
+// Save file content (for CodeMirror editor)
+projects.put('/:id/files/*', async (c) => {
+  const userId = c.get('userId');
+  const projectId = c.req.param('id');
+  const filePath = c.req.param('*');
+
+  if (!filePath) {
+    return c.json({ error: 'File path required' }, 400);
+  }
+
+  const { content } = await c.req.json();
+  if (content === undefined || content === null) {
+    return c.json({ error: 'Content required' }, 400);
+  }
+
+  const supabase = getSupabaseAdmin();
+
+  // Verify ownership
+  const { data: project, error: checkError } = await supabase
+    .from('projects')
+    .select('id')
+    .eq('id', projectId)
+    .eq('user_id', userId)
+    .single();
+
+  if (checkError || !project) {
+    return c.json({ error: 'Not found' }, 404);
+  }
+
+  await uploadFile(projectId, filePath, content);
+  return c.json({ success: true, path: filePath });
+});
+
+// Get single project by id
+projects.get('/:id', async (c) => {
+  const userId = c.get('userId');
+  const projectId = c.req.param('id');
+
+  const supabase = getSupabaseAdmin();
+
+  const { data: project, error } = await supabase
+    .from('projects')
+    .select('*')
+    .eq('id', projectId)
+    .eq('user_id', userId)
+    .single();
+
+  if (error || !project) {
+    return c.json({ error: 'Project not found' }, 404);
+  }
+
+  return c.json(project);
 });
 
 export { projects };

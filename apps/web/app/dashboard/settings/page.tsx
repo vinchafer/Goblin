@@ -1,5 +1,7 @@
 'use client';
+import { useState } from 'react';
 import { SettingsLayout } from '@/components/settings/settings-layout';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 const FIELD_STYLE = {
   width: '100%',
@@ -16,9 +18,108 @@ const FIELD_STYLE = {
   boxSizing: 'border-box' as const,
 };
 
+function NotificationsSection() {
+  const { subscribe, unsubscribe, isSubscribed, isSupported, loading } = usePushNotifications();
+  const [sendingTest, setSendingTest] = useState(false);
+  const [testResult, setTestResult] = useState<string | null>(null);
+
+  const handleToggle = async () => {
+    if (isSubscribed) {
+      await unsubscribe();
+    } else {
+      await subscribe();
+    }
+  };
+
+  const handleSendTest = async () => {
+    setSendingTest(true);
+    setTestResult(null);
+    try {
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
+      const res = await fetch(`${apiBase}/api/notifications/test`, {
+        method: 'POST',
+      });
+      if (res.ok) {
+        setTestResult('✓ Test notification sent!');
+      } else {
+        setTestResult('✗ Failed to send test notification');
+      }
+    } catch {
+      setTestResult('✗ Failed to send test');
+    } finally {
+      setSendingTest(false);
+      setTimeout(() => setTestResult(null), 4000);
+    }
+  };
+
+  if (!isSupported && !loading) return null;
+
+  return (
+    <div style={{
+      background: 'var(--panel)',
+      border: '1px solid var(--border)',
+      borderRadius: 14, padding: '28px 28px 24px',
+      marginBottom: 20,
+    }}>
+      <h2 style={{
+        fontFamily: 'Fraunces, serif', fontSize: 22,
+        color: 'var(--moss)', fontWeight: 700,
+        marginBottom: 4, letterSpacing: '-0.5px',
+      }}>🔔 Build Notifications</h2>
+      <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 20 }}>
+        Get notified when builds complete
+      </p>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <button
+          onClick={handleToggle}
+          disabled={loading}
+          style={{
+            background: isSubscribed ? 'var(--good)' : 'var(--moss)',
+            color: '#fff',
+            border: 'none', borderRadius: 8,
+            padding: '10px 22px', fontSize: 13, fontWeight: 500,
+            cursor: loading ? 'not-allowed' : 'pointer',
+            fontFamily: 'DM Sans, sans-serif',
+            opacity: loading ? 0.6 : 1,
+          }}
+        >
+          {loading ? '...' : isSubscribed ? '✓ Enabled' : 'Enable'}
+        </button>
+
+        {isSubscribed && (
+          <button
+            onClick={handleSendTest}
+            disabled={sendingTest}
+            style={{
+              background: 'transparent',
+              color: 'var(--meta)',
+              border: '1px solid var(--border)',
+              borderRadius: 8, padding: '9px 18px',
+              fontSize: 13, fontWeight: 500, cursor: sendingTest ? 'not-allowed' : 'pointer',
+              fontFamily: 'DM Sans, sans-serif',
+            }}
+          >
+            {sendingTest ? 'Sending...' : 'Send test'}
+          </button>
+        )}
+      </div>
+
+      {testResult && (
+        <p style={{ fontSize: 12, color: testResult.startsWith('✓') ? 'var(--good)' : 'var(--danger)', marginTop: 8 }}>
+          {testResult}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   return (
     <SettingsLayout>
+      {/* Notifications section */}
+      <NotificationsSection />
+
       {/* General card */}
       <div style={{
         background: 'var(--panel)',

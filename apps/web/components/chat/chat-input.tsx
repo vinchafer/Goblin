@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send } from "lucide-react";
+import { Send, Mic } from "lucide-react";
+import { useVoiceInput } from "@/hooks/use-voice-input";
 
 interface ChatInputProps {
   onSend: (content: string) => void;
@@ -10,7 +11,11 @@ interface ChatInputProps {
 
 export function ChatInput({ onSend, disabled }: ChatInputProps) {
   const [value, setValue] = useState("");
+  const [toast, setToast] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const { isListening, isSupported, startListening } = useVoiceInput(
+    (text) => setValue(prev => prev + (prev ? ' ' : '') + text)
+  );
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -50,6 +55,24 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
             maxHeight: '200px'
           }}
         />
+        {/* Mic button — left side */}
+        {isSupported && (
+          <button
+            onClick={() => {
+              try { startListening(); } catch { setToast('Microphone access denied'); setTimeout(() => setToast(null), 3000); }
+            }}
+            disabled={disabled}
+            className="absolute left-2 bottom-2 w-10 h-10 rounded-lg flex items-center justify-center disabled:opacity-50 transition-all"
+            style={{
+              backgroundColor: isListening ? 'rgba(184, 92, 60, 0.15)' : 'transparent',
+              color: isListening ? '#B85C3C' : 'var(--goblin-gray)',
+            }}
+            title={isListening ? 'Listening…' : 'Voice input'}
+          >
+            <Mic className={`w-4 h-4 ${isListening ? 'animate-pulse' : ''}`} />
+          </button>
+        )}
+        {/* Send button */}
         <button
           onClick={handleSubmit}
           disabled={disabled || !value.trim()}

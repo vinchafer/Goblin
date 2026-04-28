@@ -10,6 +10,7 @@ const notifications = new Hono<{ Variables: Variables }>();
 // Protected routes
 notifications.use('/subscribe', authMiddleware);
 notifications.use('/unsubscribe', authMiddleware);
+notifications.use('/test', authMiddleware);
 
 // Set up VAPID details once
 const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
@@ -92,6 +93,55 @@ notifications.post('/unsubscribe', async (c) => {
     .eq('endpoint', result.data.endpoint);
 
   return c.json({ success: true });
+});
+
+// POST /api/notifications/test — sends test push to current user
+notifications.post('/test', async (c) => {
+  const userId = c.get('userId');
+
+  if (!vapidPublicKey || !vapidPrivateKey) {
+    return c.json({ error: 'Push notifications not configured' }, 500);
+  }
+
+  const supabase = getSupabase();
+
+  const { data: subscriptions, error } = await supabase
+    .from('push_subscriptions')
+    .select('endpoint, keys')
+    .eq('user_id', userId);
+
+  if (error || !subscriptions || subscriptions.length === 0) {
+    return c.json({ error: 'No subscriptions found. Enable notifications first.' }, 400);
+  }
+
+  const payload = JSON.stringify({
+    title: 'Goblin Test',
+    body: '🔔 Push notifications are working!',
+    url: '/dashboard',
+  });
+
+  let sent = 0;
+  for (const sub of subscriptions) {
+    try {
+      await webpush.sendNotification(
+        {
+          endpoint: sub.endpoint,
+          keys: sub.keys as webpush.PushSubscription['keys'],
+        },
+        payload
+      );
+      sent++;
+    } catch (err: any) {
+      if (err.statusCode === 410 || err.statusCode === 404) {
+        await supabase
+          .from('push_subscriptions')
+          .delete()
+          .eq('endpoint', sub.endpoint);
+      }
+    }
+  }
+
+  return c.json({ sent, message: sent > 0 ? 'Test notification sent' : 'No notifications sent' });
 });
 
 // POST /api/notifications/send (internal — uses service role, not user auth)

@@ -17,6 +17,8 @@ export interface PendingInjection {
 export interface AppModel {
   id: string;
   name: string;
+  slug?: string;
+  provider?: string;
   tier: ModelTier;
   icon: string;
   available?: boolean;

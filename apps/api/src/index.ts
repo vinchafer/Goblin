@@ -28,6 +28,7 @@ import { health } from './routes/health';
 import { sendToCode } from './routes/send-to-code';
 import { notifications } from './routes/notifications';
 import { models } from './routes/models';
+import { admin } from './routes/admin';
 
 const app = new Hono();
 
@@ -54,6 +55,7 @@ app.route('/api/billing', billing);
 app.route('/api/chat/send-to-code', sendToCode);
 app.route('/api/notifications', notifications);
 app.route('/api/models', models);
+app.route('/api/admin', admin);
 
 const port = parseInt(process.env.API_PORT || '3001', 10);
 console.log(`Goblin API starting on port ${port}`);

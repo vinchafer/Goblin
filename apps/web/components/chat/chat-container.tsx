@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import { MessageList } from "./message-list";
 import { ChatInput } from "./chat-input";
 import { createClient } from "@/lib/supabase/client";
+import { useApp } from "@/contexts/app-context";
 import type { ChatMessage } from "@goblin/shared/src/schemas";
 
 interface ChatContainerProps {
@@ -11,21 +12,49 @@ interface ChatContainerProps {
 }
 
 export function ChatContainer({ projectId }: ChatContainerProps) {
+  const { activeModel } = useApp();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingText, setStreamingText] = useState("");
+  const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   
   const streamAccumRef = useRef("");
   const supabase = useMemo(() => createClient(), []);
 
   const loadMessages = useCallback(async () => {
-    const { data } = await supabase
-      .from('chat_messages')
-      .select('*')
-      .eq('project_id', projectId)
-      .order('created_at', { ascending: true });
-    
-    setMessages(data || []);
+    setIsLoadingHistory(true);
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) {
+        setIsLoadingHistory(false);
+        return;
+      }
+
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
+      const res = await fetch(`${apiBase}/api/chat/${projectId}/history`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (res.ok) {
+        const messagesData = await res.json();
+        if (Array.isArray(messagesData) && messagesData.length > 0) {
+          setMessages(messagesData.map((m: any) => ({
+            id: m.id,
+            project_id: m.project_id,
+            role: m.role,
+            content: m.content,
+            model_used: m.model_used,
+            source_tier: m.source_tier,
+            created_at: new Date(m.created_at),
+          })));
+        }
+      }
+    } catch {
+      // Silently fail — fallback to empty
+    } finally {
+      setIsLoadingHistory(false);
+    }
   }, [projectId, supabase]);
 
   useEffect(() => {
@@ -61,13 +90,14 @@ export function ChatContainer({ projectId }: ChatContainerProps) {
       }
 
       const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
+      const modelSlug = activeModel.slug || activeModel.id;
       const response = await fetch(`${apiBase}/api/chat/stream`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ projectId, message: content })
+        body: JSON.stringify({ projectId, message: content, modelSlug })
       });
 
       if (!response.ok) {
@@ -130,6 +160,8 @@ export function ChatContainer({ projectId }: ChatContainerProps) {
           messages={messages}
           isStreaming={isStreaming}
           currentStreamingMessage={streamingText}
+          isLoadingHistory={isLoadingHistory}
+          onSuggestionClick={handleSendMessage}
         />
       </div>
       <div className="sticky bottom-0 pt-2 safe-bottom" style={{ backgroundColor: 'var(--goblin-cream)' }}>

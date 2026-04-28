@@ -1,7 +1,9 @@
 import Anthropic from '@anthropic-ai/sdk';
+import OpenAI from 'openai';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { PROJECT_GENERATOR_SYSTEM_PROMPT } from '../prompts/project-generator';
 import { getActiveKey } from './byok-service';
+import { decryptData } from './encryption';
 import { saveFile } from './file-storage';
 import type { SSEStreamingApi } from 'hono/streaming';
 
@@ -10,6 +12,44 @@ interface GenerationResult {
   description: string;
   setupInstructions: string;
   files: Array<{ path: string; content: string }>;
+}
+
+// Provider priority order for auto-selection (same as model-router)
+const PROVIDER_PRIORITY = ['anthropic', 'openai', 'deepseek', 'groq', 'mistral', 'google', 'xai', 'together'];
+
+// OpenAI-compatible provider configs
+const OPENAI_COMPATIBLE: Record<string, { baseURL: string; defaultModel: string }> = {
+  openai:    { baseURL: 'https://api.openai.com/v1',           defaultModel: 'gpt-4o' },
+  groq:      { baseURL: 'https://api.groq.com/openai/v1',      defaultModel: 'llama-3.3-70b-versatile' },
+  deepseek:  { baseURL: 'https://api.deepseek.com/v1',         defaultModel: 'deepseek-chat' },
+  mistral:   { baseURL: 'https://api.mistral.ai/v1',           defaultModel: 'mistral-large-latest' },
+  xai:       { baseURL: 'https://api.x.ai/v1',                 defaultModel: 'grok-2-1212' },
+  together:  { baseURL: 'https://api.together.xyz/v1',         defaultModel: 'meta-llama/Llama-3-70b-chat-hf' },
+  google:    { baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/', defaultModel: 'gemini-2.0-flash' },
+};
+
+async function getFirstActiveKey(userId: string): Promise<{ provider: string; key: string } | null> {
+  const supabase = getSupabaseAdmin();
+
+  const { data: keys } = await supabase
+    .from('byok_keys')
+    .select('provider, key_encrypted')
+    .eq('user_id', userId)
+    .eq('status', 'active');
+
+  if (!keys || keys.length === 0) return null;
+
+  for (const provider of PROVIDER_PRIORITY) {
+    const match = keys.find(k => k.provider === provider);
+    if (match) {
+      return { provider, key: decryptData(match.key_encrypted) };
+    }
+  }
+
+  // Fallback: use whatever key exists first
+  const first = keys[0];
+  if (!first) return null;
+  return { provider: first.provider, key: decryptData(first.key_encrypted) };
 }
 
 export async function generateProject(
@@ -46,31 +86,54 @@ export async function generateProject(
       data: JSON.stringify({ type: 'planning', message: 'Analyzing request...' })
     });
 
-    // Get user key
-    const apiKey = await getActiveKey(userId, 'anthropic');
-    if (!apiKey) {
-      throw new Error('No active Anthropic key found');
+    // Get the first available active key (multi-provider)
+    const keyInfo = await getFirstActiveKey(userId);
+    if (!keyInfo) {
+      throw new Error('NO_KEY: Add an API key in Settings → API Keys to generate projects.');
     }
 
-    const anthropic = new Anthropic({ apiKey });
+    const { provider, key } = keyInfo;
+
+    await stream.writeSSE({
+      data: JSON.stringify({ type: 'planning', message: `Generating project structure (${provider})...` })
+    });
 
     const systemPrompt = PROJECT_GENERATOR_SYSTEM_PROMPT.replace('{{PROMPT}}', prompt);
 
-    await stream.writeSSE({
-      data: JSON.stringify({ type: 'planning', message: 'Generating project structure...' })
-    });
+    let responseText = '';
 
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 8192,
-      messages: [{ role: 'user', content: prompt }],
-      system: systemPrompt
-    });
+    if (provider === 'anthropic') {
+      const anthropic = new Anthropic({ apiKey: key });
+
+      const response = await anthropic.messages.create({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 8192,
+        messages: [{ role: 'user', content: prompt }],
+        system: systemPrompt
+      });
+
+      const firstContent = response.content[0];
+      responseText = firstContent?.type === 'text' ? firstContent.text : '';
+    } else {
+      const config = OPENAI_COMPATIBLE[provider];
+      if (!config) throw new Error(`Unsupported provider: ${provider}`);
+
+      const openai = new OpenAI({ apiKey: key, baseURL: config.baseURL });
+
+      const response = await openai.chat.completions.create({
+        model: config.defaultModel,
+        max_tokens: 8192,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: prompt }
+        ],
+      });
+
+      responseText = response.choices[0]?.message?.content || '';
+    }
 
     // Parse response
-    const firstContent = response.content[0];
-    const content = firstContent?.type === 'text' ? firstContent.text : '';
-    const jsonMatch = content.match(/```json\n([\s\S]*?)\n```/);
+    const jsonMatch = responseText.match(/```json\n([\s\S]*?)\n```/);
 
     if (!jsonMatch) {
       throw new Error('Failed to parse generation response');
@@ -107,8 +170,7 @@ export async function generateProject(
         .from('agent_runs')
         .update({
           status: 'success',
-          input_tokens: response.usage.input_tokens,
-          output_tokens: response.usage.output_tokens,
+          model_used: provider,
           completed_at: new Date().toISOString()
         })
         .eq('id', agentRun.id);

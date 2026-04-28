@@ -42,7 +42,7 @@ chat.get('/:projectId/history', async (c) => {
 
 chat.post('/stream', usageLimitMiddleware, async (c) => {
   const userId = c.get('userId');
-  const { projectId, message } = await c.req.json();
+  const { projectId, message, modelSlug } = await c.req.json();
 
   if (!projectId || !message) {
     return c.json({ error: 'Missing parameters' }, 400);
@@ -81,7 +81,8 @@ chat.post('/stream', usageLimitMiddleware, async (c) => {
         userId,
         projectId,
         message,
-        chatHistory: chatHistory || []
+        chatHistory: chatHistory || [],
+        modelPreference: modelSlug
       })) {
         if (abortController.signal.aborted) break;
         
@@ -95,6 +96,7 @@ chat.post('/stream', usageLimitMiddleware, async (c) => {
       }
 
       if (!abortController.signal.aborted) {
+        const modelUsed = modelSlug || 'claude-sonnet-4-6';
         // Save assistant message
         const { data: assistantMessage } = await supabase
           .from('chat_messages')
@@ -102,7 +104,7 @@ chat.post('/stream', usageLimitMiddleware, async (c) => {
             project_id: projectId,
             role: 'assistant',
             content: fullResponse,
-            model_used: 'claude-sonnet-4-6',
+            model_used: modelUsed,
             source_tier: 'byok'
           })
           .select()
@@ -112,7 +114,7 @@ chat.post('/stream', usageLimitMiddleware, async (c) => {
           data: JSON.stringify({
             type: 'message_end',
             messageId: assistantMessage.id,
-            model_used: 'claude-sonnet-4-6',
+            model_used: modelUsed,
             source_tier: 'byok'
           })
         });

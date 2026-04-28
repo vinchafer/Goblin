@@ -1,33 +1,42 @@
 import type { Context, Next } from 'hono';
 
-const generalStore = new Map<string, { count: number; resetAt: number }>();
-const strictStore = new Map<string, { count: number; resetAt: number }>();
+const stores = new Map<string, Map<string, { count: number; resetAt: number }>>();
 
-// Cleanup old entries
+function getStore(name: string): Map<string, { count: number; resetAt: number }> {
+  if (!stores.has(name)) {
+    stores.set(name, new Map());
+  }
+  return stores.get(name)!;
+}
+
+// Cleanup old entries every 5 minutes
 setInterval(() => {
   const now = Date.now();
-  for (const [key, entry] of generalStore.entries()) {
-    if (entry.resetAt < now) {
-      generalStore.delete(key);
-    }
-  }
-  for (const [key, entry] of strictStore.entries()) {
-    if (entry.resetAt < now) {
-      strictStore.delete(key);
+  for (const [, store] of stores) {
+    for (const [key, entry] of store) {
+      if (entry.resetAt < now) {
+        store.delete(key);
+      }
     }
   }
 }, 5 * 60 * 1000);
 
-export function rateLimitMiddleware(limit: number, windowMs: number, store: Map<string, { count: number; resetAt: number }>) {
+function getClientId(c: Context): string {
+  const userId = c.get('userId');
+  if (userId) return `user:${userId}`;
+  return c.req.header('x-forwarded-for') ?? c.req.header('x-real-ip') ?? 'unknown';
+}
+
+export function rateLimitMiddleware(limit: number, windowMs: number, storeName: string = 'default') {
   return async (c: Context, next: Next) => {
-    const ip = c.req.header('x-forwarded-for') ?? c.req.header('x-real-ip') ?? 'unknown';
+    const store = getStore(storeName);
+    const clientId = getClientId(c);
     const now = Date.now();
 
-    let entry = store.get(ip);
-
+    let entry = store.get(clientId);
     if (!entry || entry.resetAt < now) {
       entry = { count: 0, resetAt: now + windowMs };
-      store.set(ip, entry);
+      store.set(clientId, entry);
     }
 
     entry.count++;
@@ -35,7 +44,7 @@ export function rateLimitMiddleware(limit: number, windowMs: number, store: Map<
     if (entry.count > limit) {
       const retryAfter = Math.ceil((entry.resetAt - now) / 1000);
       c.header('Retry-After', retryAfter.toString());
-      return c.json({ error: 'Rate limit exceeded' }, 429);
+      return c.json({ error: 'Rate limit exceeded. Please slow down.' }, 429);
     }
 
     c.header('X-RateLimit-Limit', limit.toString());
@@ -46,5 +55,15 @@ export function rateLimitMiddleware(limit: number, windowMs: number, store: Map<
   };
 }
 
-export const generalRateLimit = rateLimitMiddleware(100, 60 * 1000, generalStore);
-export const strictRateLimit = rateLimitMiddleware(10, 60 * 1000, strictStore);
+// Per-route rate limiters
+export const generalRateLimit = rateLimitMiddleware(60, 60 * 1000, 'general');
+export const strictRateLimit = rateLimitMiddleware(10, 60 * 1000, 'strict');
+
+// Chat stream: max 20 requests/minute per user
+export const chatStreamRateLimit = rateLimitMiddleware(20, 60 * 1000, 'chat-stream');
+
+// Project generate: max 5 requests/minute per user
+export const projectGenerateRateLimit = rateLimitMiddleware(5, 60 * 1000, 'project-generate');
+
+// BYOK keys: max 10 requests/minute per user
+export const byokKeysRateLimit = rateLimitMiddleware(10, 60 * 1000, 'byok-keys');

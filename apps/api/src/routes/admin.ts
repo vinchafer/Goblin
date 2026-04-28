@@ -3,17 +3,19 @@ import { getSupabaseAdmin } from '../lib/supabase';
 
 const admin = new Hono();
 
+// Admin routes require ADMIN_API_KEY header
 admin.use('*', async (c, next) => {
-  const adminSecret = c.req.header('x-admin-secret');
-  const expectedSecret = process.env.ADMIN_SECRET;
+  const adminKey = c.req.header('x-admin-key');
+  const expectedKey = process.env.ADMIN_API_KEY;
 
-  if (!expectedSecret || !adminSecret || adminSecret !== expectedSecret) {
-    return c.json({ error: 'Forbidden' }, 403);
+  if (!expectedKey || !adminKey || adminKey !== expectedKey) {
+    return c.json({ error: 'Unauthorized' }, 401);
   }
 
   await next();
 });
 
+// Admin dashboard analytics
 admin.get('/analytics', async (c) => {
   const supabase = getSupabaseAdmin();
   const { data } = await supabase
@@ -21,7 +23,35 @@ admin.get('/analytics', async (c) => {
     .select('*')
     .single();
 
-  return c.json(data);
+  return c.json(data || {});
+});
+
+// List all users (basic admin endpoint)
+admin.get('/users', async (c) => {
+  const supabase = getSupabaseAdmin();
+  const { data } = await supabase
+    .from('users')
+    .select('id, email, created_at')
+    .limit(100);
+
+  return c.json(data || []);
+});
+
+// System health
+admin.get('/health', async (c) => {
+  const supabase = getSupabaseAdmin();
+
+  // Quick DB check
+  const start = Date.now();
+  const { error } = await supabase.from('projects').select('id').limit(1);
+  const dbLatency = Date.now() - start;
+
+  return c.json({
+    status: error ? 'degraded' : 'healthy',
+    dbLatency: `${dbLatency}ms`,
+    uptime: process.uptime(),
+    timestamp: new Date().toISOString(),
+  });
 });
 
 export { admin };
