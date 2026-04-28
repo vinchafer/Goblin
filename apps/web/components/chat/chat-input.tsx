@@ -31,7 +31,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSubmit();
     }
@@ -46,9 +46,9 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={disabled}
-          placeholder="Tell your goblin what to build..."
+          placeholder="Chat with your goblin…"
           rows={1}
-          className="w-full px-4 py-3 pr-12 bg-transparent resize-none focus:outline-none text-base"
+          className="w-full px-12 py-3 bg-transparent resize-none focus:outline-none text-base"
           style={{
             color: 'var(--goblin-slate)',
             minHeight: '56px',
@@ -56,34 +56,26 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
           }}
         />
         {/* Mic button — left side */}
-        {isSupported && (
-          <button
-            onClick={() => {
-              try { startListening(); } catch { setToast('Microphone access denied'); setTimeout(() => setToast(null), 3000); }
-            }}
-            disabled={disabled}
-            className="absolute left-2 bottom-2 w-10 h-10 rounded-lg flex items-center justify-center disabled:opacity-50 transition-all"
-            style={{
-              backgroundColor: isListening ? 'rgba(184, 92, 60, 0.15)' : 'transparent',
-              color: isListening ? '#B85C3C' : 'var(--goblin-gray)',
-            }}
-            title={isListening ? 'Listening…' : 'Voice input'}
-          >
-            <Mic className={`w-4 h-4 ${isListening ? 'animate-pulse' : ''}`} />
-          </button>
-        )}
+        <button
+          disabled
+          className="absolute left-2 bottom-2 w-10 h-10 rounded-lg flex items-center justify-center opacity-30"
+          title="Voice input (coming soon)"
+          style={{ color: 'var(--goblin-gray)' }}
+        >
+          <Mic className="w-4 h-4" />
+        </button>
         {/* Send button */}
         <button
           onClick={handleSubmit}
           disabled={disabled || !value.trim()}
-          className="absolute right-2 bottom-2 w-10 h-10 rounded-lg flex items-center justify-center disabled:opacity-50 touch-manipulation"
+          className="absolute right-2 bottom-2 w-10 h-10 rounded-lg flex items-center justify-center disabled:opacity-50 touch-manipulation transition-opacity"
           style={{ backgroundColor: 'var(--goblin-moss)' }}
         >
           <Send className="w-4 h-4 text-white" />
         </button>
       </div>
       <p className="text-xs text-center mt-2" style={{ color: 'var(--goblin-gray)' }}>
-        Press Cmd+Enter to send
+        Enter to send · Shift+Enter for new line
       </p>
     </div>
   );

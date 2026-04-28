@@ -6,6 +6,16 @@ const REQUIRED_ENV = [
   'ENCRYPTION_KEY',
 ]
 
+// Optional env vars for Free-API Pool (Layer 2 routing)
+// GOOGLE_FREE_API_KEY=          # Gemini 2.0 Flash
+// GROQ_FREE_API_KEY=            # Llama 3.3 70B
+// CEREBRAS_FREE_API_KEY=        # Llama 3.3 70B
+// OPENROUTER_FREE_API_KEY=      # Various free models
+
+// Optional env vars for Goblin Hosted GPU (Phase 3)
+// GOBLIN_GPU_ENDPOINT=          # vLLM-compatible endpoint URL
+// GOBLIN_GPU_API_KEY=           # API key for GPU endpoint
+
 const missing = REQUIRED_ENV.filter(key => !process.env[key])
 if (missing.length > 0) {
   console.error('❌ Missing required environment variables:', missing.join(', '))
@@ -29,6 +39,7 @@ import { sendToCode } from './routes/send-to-code';
 import { notifications } from './routes/notifications';
 import { models } from './routes/models';
 import { admin } from './routes/admin';
+import { deploy } from './routes/deploy';
 
 const app = new Hono();
 
@@ -56,6 +67,7 @@ app.route('/api/chat/send-to-code', sendToCode);
 app.route('/api/notifications', notifications);
 app.route('/api/models', models);
 app.route('/api/admin', admin);
+app.route('/api/deploy', deploy);
 
 const port = parseInt(process.env.API_PORT || '3001', 10);
 console.log(`Goblin API starting on port ${port}`);

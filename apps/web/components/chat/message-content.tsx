@@ -4,9 +4,10 @@ import { useState, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/cjs/styles/prism";
-import { Copy, Check, ArrowRight } from "lucide-react";
+import { Copy, Check, ArrowRight, ArrowUpRight } from "lucide-react";
 import { useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { useApp } from "@/contexts/app-context";
 
 interface MessageContentProps {
   content: string;
@@ -75,14 +76,14 @@ const LANG_TO_EXT: Record<string, string> = {
 
 function CodeBlock({ language, value, messageId }: { language: string; value: string; messageId?: string }) {
   const [copied, setCopied] = useState(false);
+  const { setPendingCodePayload, setActiveTab } = useApp();
+  const filenameHint = LANG_TO_EXT[language] ? `file.${LANG_TO_EXT[language]}` : undefined;
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(value);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
-
-  const filenameHint = LANG_TO_EXT[language] ? `file.${LANG_TO_EXT[language]}` : undefined;
 
   return (
     <div className="relative my-3 rounded-lg overflow-hidden">
@@ -102,15 +103,19 @@ function CodeBlock({ language, value, messageId }: { language: string; value: st
           {value}
         </SyntaxHighlighter>
       </div>
-      {messageId && (
-        <SendToCodeButton
-          payload={value}
-          payloadType="code"
-          messageId={messageId}
-          filename={filenameHint}
-          label="→ Send to Code"
-        />
-      )}
+      <div style={{ display: 'flex', gap: 4, background: '#1a1a1a', padding: '4px 8px', justifyContent: 'flex-end' }}>
+        <button
+          onClick={() => { setPendingCodePayload({ content: value, filename: filenameHint }); setActiveTab('code'); }}
+          style={{
+            padding: '5px 12px', borderRadius: 5, fontSize: 11, fontWeight: 600,
+            background: '#c9933a', color: '#2a1f0f', border: 'none', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 4,
+          }}
+        >
+          <ArrowUpRight className="w-3 h-3" />
+          Send to Code
+        </button>
+      </div>
     </div>
   );
 }

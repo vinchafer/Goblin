@@ -40,7 +40,7 @@ const PLANS = [
     price: 39,
     description: 'For teams and power builders.',
     features: [
-      '3 000 requests / month',
+      '3,000 requests / month',
       'Unlimited projects',
       'All routing layers',
       'All deploy targets',

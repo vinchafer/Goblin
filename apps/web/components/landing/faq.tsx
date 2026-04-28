@@ -3,28 +3,24 @@ import { useState } from 'react';
 
 const QUESTIONS = [
   {
-    q: "What does 'fair-use unlimited' actually mean?",
-    a: "You can build as much as you want. We don't throttle. If you're using 10x the average we might reach out, but this is for normal human builders, not bots."
-  },
-  {
     q: "Do I need to know how to code?",
     a: "No. But if you do know how to code, you'll love Goblin even more. We show you every line we write and let you edit directly."
   },
   {
     q: "Can I use my own Claude or OpenAI keys?",
-    a: "Yes. Bring any API key you want. Goblin will use yours first before touching shared capacity. No markup, ever."
+    a: "Yes, absolutely. Go to Settings → API Keys and paste your key. We encrypt it at rest and use it exclusively for your requests. No markup, no middleman."
+  },
+  {
+    q: "Is my code private?",
+    a: "Yes. Your projects are only visible to you. All code is stored encrypted at rest on Hetzner servers in Frankfurt (GDPR). We never train on your data. Ever."
   },
   {
     q: "What happens to my projects if I cancel?",
     a: "They stay. You can always log back in and push them to GitHub. We won't delete your work."
   },
   {
-    q: "Is my code private?",
-    a: "Yes. Your projects are only visible to you. We never train on user code. Ever."
-  },
-  {
-    q: "Where is my code stored?",
-    a: "Encrypted at rest on European servers. Supabase Postgres for metadata, S3 compatible object storage for files."
+    q: "Where exactly is my code stored?",
+    a: "Encrypted at rest on Hetzner servers in Frankfurt, Germany. We use Supabase Postgres for metadata and S3-compatible object storage for your files. GDPR compliant."
   },
   {
     q: "Can I use Goblin on my phone?",

@@ -1,11 +1,38 @@
 'use client';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
+import { useState } from 'react';
+import { ModelSwitcher } from './model-switcher';
+
+function MenuItem({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        width: '100%', padding: '8px 14px',
+        background: 'none', border: 'none',
+        color: 'rgba(255,255,255,0.8)', fontSize: 13,
+        fontFamily: 'DM Sans, sans-serif',
+        cursor: 'pointer', textAlign: 'left',
+        transition: 'background 0.1s',
+      }}
+      onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.06)'}
+      onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'none'}
+    >
+      {children}
+    </button>
+  );
+}
 
 interface TopbarProps {
   projectName?: string;
   activeTab?: 'chat' | 'code' | 'preview';
   onTabChange?: (tab: 'chat' | 'code' | 'preview') => void;
   selectedModel?: string;
+  // Deprecated — model management moved to ModelSwitcher component
+  // Kept for backward compatibility with DashboardShell
+  // @deprecated
   injectionCount?: number;
   onMenuToggle?: () => void;
   onToggleSidebar?: () => void;
@@ -16,13 +43,20 @@ export function Topbar({
   projectName,
   activeTab = 'chat',
   onTabChange,
-  selectedModel = 'claude-sonnet-4-6',
   injectionCount = 0,
   onMenuToggle,
   onToggleSidebar,
 }: TopbarProps) {
   const router = useRouter();
   const handleMenu = onMenuToggle ?? onToggleSidebar;
+  const [menuOpen, setMenuOpen] = useState(false);
+  const supabase = createClient();
+
+  const handleSignOut = async () => {
+    setMenuOpen(false);
+    await supabase.auth.signOut();
+    router.push('/login');
+  };
 
   return (
     <header style={{
@@ -110,42 +144,53 @@ export function Topbar({
 
       <div style={{ flex: 1 }} />
 
-      {/* Model pill */}
-      <div
-        onClick={() => router.push('/dashboard/settings/keys')}
-        title="Change model / API keys"
-        style={{
-          background: 'rgba(201,147,58,0.14)',
-          border: '1px solid rgba(201,147,58,0.38)',
-          color: '#e8b05a', fontSize: 11,
-          padding: '4px 10px', borderRadius: 20,
-          fontFamily: 'JetBrains Mono, monospace',
-          cursor: 'pointer', flexShrink: 0,
-          maxWidth: 180, overflow: 'hidden',
-          textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          transition: 'border-color 0.15s',
-        }}
-        onMouseEnter={e => (e.currentTarget as HTMLElement).style.borderColor = 'rgba(201,147,58,0.6)'}
-        onMouseLeave={e => (e.currentTarget as HTMLElement).style.borderColor = 'rgba(201,147,58,0.38)'}
-      >
-        {selectedModel} · BYOK ▾
-      </div>
+      {/* Model Switcher */}
+      <ModelSwitcher />
 
-      {/* Avatar */}
-      <button
-        onClick={() => router.push('/dashboard/settings')}
-        aria-label="Settings"
-        style={{
-          width: 30, height: 30, borderRadius: '50%',
-          background: '#c9933a', border: 'none',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 12, fontWeight: 700, color: '#2a1f0f',
-          cursor: 'pointer', flexShrink: 0,
-          transition: 'background 0.15s',
-        }}
-        onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#e8b05a'}
-        onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#c9933a'}
-      >V</button>
+      {/* Avatar + Dropdown */}
+      <div style={{ position: 'relative', flexShrink: 0 }}>
+        <button
+          onClick={() => setMenuOpen(prev => !prev)}
+          aria-label="User menu"
+          style={{
+            width: 30, height: 30, borderRadius: '50%',
+            background: '#c9933a', border: 'none',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 12, fontWeight: 700, color: '#2a1f0f',
+            cursor: 'pointer', transition: 'background 0.15s',
+          }}
+          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#e8b05a'}
+          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#c9933a'}
+        >V</button>
+
+        {menuOpen && (
+          <>
+            {/* Backdrop */}
+            <div
+              style={{ position: 'fixed', inset: 0, zIndex: 99 }}
+              onClick={() => setMenuOpen(false)}
+            />
+            <div style={{
+              position: 'absolute', right: 0, top: 'calc(100% + 6px)',
+              background: '#1a2e18', border: '1px solid #2d5229',
+              borderRadius: 8, padding: '4px 0',
+              minWidth: 180, zIndex: 100,
+              boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
+            }}>
+              <MenuItem onClick={() => { router.push('/dashboard/settings'); setMenuOpen(false); }}>
+                ⚙️ Account
+              </MenuItem>
+              <MenuItem onClick={() => { router.push('/dashboard/settings/keys'); setMenuOpen(false); }}>
+                🔑 API Keys
+              </MenuItem>
+              <div style={{ height: 1, background: '#2d5229', margin: '4px 8px' }} />
+              <MenuItem onClick={handleSignOut}>
+                🚪 Sign out
+              </MenuItem>
+            </div>
+          </>
+        )}
+      </div>
 
       <style>{`
         @media (max-width: 768px) {

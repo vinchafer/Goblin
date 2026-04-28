@@ -11,6 +11,7 @@ interface MessageListProps {
   currentStreamingMessage: string;
   isLoadingHistory?: boolean;
   onSuggestionClick?: (text: string) => void;
+  metaInfo?: { model: string; sourceTier: string } | null;
 }
 
 const SUGGESTIONS = [
@@ -20,7 +21,7 @@ const SUGGESTIONS = [
   "Add user authentication",
 ];
 
-export function MessageList({ messages, isStreaming, currentStreamingMessage, isLoadingHistory, onSuggestionClick }: MessageListProps) {
+export function MessageList({ messages, isStreaming, currentStreamingMessage, isLoadingHistory, onSuggestionClick, metaInfo }: MessageListProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -61,10 +62,10 @@ export function MessageList({ messages, isStreaming, currentStreamingMessage, is
       <div className="flex-1 flex flex-col items-center justify-center text-center pb-10">
         <div className="text-6xl mb-4">👺</div>
         <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--goblin-slate)', fontFamily: 'Fraunces, serif' }}>
-          Your goblin is ready.
+          What are you building today?
         </h2>
         <p className="text-sm mb-6" style={{ color: 'var(--goblin-gray)' }}>
-          Start with one of these:
+          Describe your project or ask me anything.
         </p>
         <div className="flex flex-wrap justify-center gap-2 max-w-md">
           {SUGGESTIONS.map(text => (
@@ -89,6 +90,8 @@ export function MessageList({ messages, isStreaming, currentStreamingMessage, is
     );
   }
 
+  const showMetaBadge = metaInfo && currentStreamingMessage;
+
   return (
     <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-4 pb-6">
       {messages.map(message => (
@@ -97,8 +100,15 @@ export function MessageList({ messages, isStreaming, currentStreamingMessage, is
           className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
         >
           {message.role === 'assistant' && (
-            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--goblin-moss)' }}>
-              <Bot className="w-4 h-4 text-white" />
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+              <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--goblin-moss)' }}>
+                <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>G</span>
+              </div>
+              {message.model_used && message.source_tier && (
+                <span style={{ fontSize: 9, color: '#6b6560', whiteSpace: 'nowrap', maxWidth: 64, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  via {message.model_used.split('-').slice(0, 2).join('-')} · {(message.source_tier as string) === 'byok' ? 'BYOK' : (message.source_tier as string) === 'free_api' ? 'Free' : 'Hosted'}
+                </span>
+              )}
             </div>
           )}
 
@@ -115,7 +125,7 @@ export function MessageList({ messages, isStreaming, currentStreamingMessage, is
 
           {message.role === 'user' && (
             <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--goblin-ochre)' }}>
-              <User className="w-4 h-4 text-white" />
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>U</span>
             </div>
           )}
         </div>
@@ -123,8 +133,15 @@ export function MessageList({ messages, isStreaming, currentStreamingMessage, is
 
       {isStreaming && (
         <div className="flex gap-3 justify-start">
-          <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--goblin-moss)' }}>
-            <Bot className="w-4 h-4 text-white" />
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--goblin-moss)' }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>G</span>
+            </div>
+            {showMetaBadge && (
+              <span style={{ fontSize: 9, color: '#6b6560', whiteSpace: 'nowrap', maxWidth: 64, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                via {metaInfo.model.split('-').slice(0, 2).join('-')} · {(metaInfo.sourceTier as string) === 'byok' ? 'BYOK' : (metaInfo.sourceTier as string) === 'free_api' ? 'Free' : 'Hosted'}
+              </span>
+            )}
           </div>
           <div className="max-w-[88%] md:max-w-2xl px-4 py-3 rounded-2xl rounded-tl-none bg-white" style={{ border: '1px solid var(--goblin-light)' }}>
             {currentStreamingMessage ? (

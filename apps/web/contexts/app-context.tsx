@@ -37,6 +37,10 @@ interface AppContextType {
   addInjection: (injection: PendingInjection) => void;
   clearPendingInjections: () => void;
   injectionCount: number;
+  showNewProjectModal: boolean;
+  setShowNewProjectModal: (show: boolean) => void;
+  pendingCodePayload: { content: string; filename?: string } | null;
+  setPendingCodePayload: (payload: { content: string; filename?: string } | null) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -53,6 +57,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [activeTab, setActiveTab] = useState<AppTab>("chat");
   const [activeModel, setActiveModel] = useState<AppModel>(DEFAULT_MODEL);
   const [pendingInjections, setPendingInjections] = useState<PendingInjection[]>([]);
+  const [showNewProjectModal, setShowNewProjectModal] = useState(false);
+  const [pendingCodePayload, setPendingCodePayload] = useState<{ content: string; filename?: string } | null>(null);
   const clearPendingInjections = useCallback(() => setPendingInjections([]), []);
   const addInjection = useCallback((injection: PendingInjection) => {
     setPendingInjections(prev => {
@@ -75,6 +81,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       addInjection,
       clearPendingInjections,
       injectionCount,
+      showNewProjectModal,
+      setShowNewProjectModal,
+      pendingCodePayload,
+      setPendingCodePayload,
     }}>
       {children}
     </AppContext.Provider>

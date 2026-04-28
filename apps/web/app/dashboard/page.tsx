@@ -2,6 +2,8 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { useApp } from '@/contexts/app-context';
+import { NewProjectModal } from '@/components/projects/new-project-modal';
 
 const FEATURES = [
   {
@@ -24,6 +26,7 @@ const FEATURES = [
 export default function DashboardPage() {
   const router = useRouter();
   const supabase = createClient();
+  const { showNewProjectModal, setShowNewProjectModal } = useApp();
 
   useEffect(() => {
     supabase
@@ -44,6 +47,11 @@ export default function DashboardPage() {
       height: '100%', padding: '48px 24px',
       textAlign: 'center', background: 'var(--cream)',
     }}>
+      {/* New Project Modal */}
+      {showNewProjectModal && (
+        <NewProjectModal onClose={() => setShowNewProjectModal(false)} />
+      )}
+
       {/* Goblin emoji */}
       <div style={{ fontSize: 72, marginBottom: 24, lineHeight: 1 }}>👺</div>
 
@@ -65,7 +73,7 @@ export default function DashboardPage() {
       </p>
 
       <button
-        onClick={() => router.push('/dashboard/new')}
+        onClick={() => setShowNewProjectModal(true)}
         style={{
           background: 'var(--moss)', color: '#fff', border: 'none',
           borderRadius: 10, padding: '14px 28px',

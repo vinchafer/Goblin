@@ -1,5 +1,6 @@
 'use client';
 import { useRouter } from 'next/navigation';
+import { useApp } from '@/contexts/app-context';
 
 interface Project {
   id: string;
@@ -32,6 +33,7 @@ function timeAgo(dateStr?: string): string {
 
 export function Sidebar({ projects = [], activeProjectId, onProjectSelect, isOpen = true, onClose }: SidebarProps) {
   const router = useRouter();
+  const { setShowNewProjectModal } = useApp();
 
   return (
     <>
@@ -59,7 +61,7 @@ export function Sidebar({ projects = [], activeProjectId, onProjectSelect, isOpe
         {/* ── Projects ── */}
         <div style={{ padding: 12, borderBottom: '1px solid #e4ddd2', flexShrink: 0 }}>
           <button
-            onClick={() => { router.push('/dashboard/new'); onClose?.(); }}
+            onClick={() => { setShowNewProjectModal(true); onClose?.(); }}
             style={{
               width: '100%', background: '#1e3a1c', color: '#fff', border: 'none',
               borderRadius: 8, padding: '8px 12px', fontSize: 12, fontWeight: 500,

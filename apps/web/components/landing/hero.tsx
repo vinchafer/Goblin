@@ -46,7 +46,7 @@ export function Hero() {
         fontSize: 18, color: 'var(--meta)', maxWidth: 520, lineHeight: 1.65,
         marginBottom: 48, fontWeight: 300, position: 'relative', zIndex: 1,
       }}>
-        Your AI workshop in the cloud. No token panic. No laptop limits.
+        Bring your own API key. No extra markup. Full control.
         Your goblin handles the rest.
       </p>
 
@@ -65,7 +65,7 @@ export function Hero() {
       </div>
 
       <p style={{ fontSize: 13, color: 'var(--meta)', position: 'relative', zIndex: 1, marginBottom: 64 }}>
-        Fair-use unlimited inference · BYOK support · GitHub push built-in
+        BYOK support · No token panic · GitHub push built-in
       </p>
 
       {/* App window mockup */}

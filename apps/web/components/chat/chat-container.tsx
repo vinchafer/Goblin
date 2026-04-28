@@ -17,6 +17,7 @@ export function ChatContainer({ projectId }: ChatContainerProps) {
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingText, setStreamingText] = useState("");
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+  const [metaInfo, setMetaInfo] = useState<{ model: string; sourceTier: string } | null>(null);
   
   const streamAccumRef = useRef("");
   const supabase = useMemo(() => createClient(), []);
@@ -124,7 +125,9 @@ export function ChatContainer({ projectId }: ChatContainerProps) {
             const jsonStr = line.slice(6);
             const parsed = JSON.parse(jsonStr);
             
-            if (parsed.type === 'token') {
+            if (parsed.type === 'meta') {
+              setMetaInfo({ model: parsed.model, sourceTier: parsed.source_tier });
+            } else if (parsed.type === 'token') {
               streamAccumRef.current += parsed.content;
               setStreamingText(streamAccumRef.current);
             } else if (parsed.type === 'message_end') {
@@ -133,12 +136,25 @@ export function ChatContainer({ projectId }: ChatContainerProps) {
                 project_id: projectId,
                 role: 'assistant',
                 content: streamAccumRef.current,
-                model_used: parsed.model_used,
-                source_tier: parsed.source_tier,
+                model_used: parsed.model_used || metaInfo?.model,
+                source_tier: parsed.source_tier || metaInfo?.sourceTier,
                 created_at: new Date()
               }]);
               setStreamingText('');
               streamAccumRef.current = '';
+              setIsStreaming(false);
+              setMetaInfo(null);
+            } else if (parsed.type === 'error') {
+              setMessages(prev => [...prev, {
+                id: crypto.randomUUID(),
+                project_id: projectId,
+                role: 'assistant',
+                content: `❌ Error: ${parsed.message}`,
+                model_used: null,
+                source_tier: null,
+                created_at: new Date()
+              }]);
+              setStreamingText('');
               setIsStreaming(false);
             }
           } catch {
@@ -162,6 +178,7 @@ export function ChatContainer({ projectId }: ChatContainerProps) {
           currentStreamingMessage={streamingText}
           isLoadingHistory={isLoadingHistory}
           onSuggestionClick={handleSendMessage}
+          metaInfo={metaInfo}
         />
       </div>
       <div className="sticky bottom-0 pt-2 safe-bottom" style={{ backgroundColor: 'var(--goblin-cream)' }}>

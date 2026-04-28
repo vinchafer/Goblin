@@ -70,6 +70,8 @@ chat.post('/stream', usageLimitMiddleware, async (c) => {
 
   return streamSSE(c, async (stream) => {
     let fullResponse = '';
+    let currentModel = modelSlug || 'claude-sonnet-4-6';
+    let currentSourceTier = 'byok';
     const abortController = new AbortController();
 
     c.req.raw.signal.addEventListener('abort', () => {
@@ -77,54 +79,94 @@ chat.post('/stream', usageLimitMiddleware, async (c) => {
     });
 
     try {
-      for await (const token of streamCompletion({
+      for await (const jsonToken of streamCompletion({
         userId,
         projectId,
         message,
         chatHistory: chatHistory || [],
-        modelPreference: modelSlug
+        modelPreference: modelSlug,
+        supabase,
       })) {
         if (abortController.signal.aborted) break;
-        
-        fullResponse += token;
-        await stream.writeSSE({
-          data: JSON.stringify({
-            type: 'token',
-            content: token
-          })
-        });
+
+        const parsed = JSON.parse(jsonToken);
+
+        // Meta event — routing info, send as-is
+        if (parsed.type === 'meta') {
+          currentModel = parsed.model;
+          currentSourceTier = parsed.source_tier;
+          await stream.writeSSE({
+            data: JSON.stringify(parsed),
+          });
+          continue;
+        }
+
+        // Delta event — token content
+        if (parsed.type === 'delta') {
+          fullResponse += parsed.content;
+          await stream.writeSSE({
+            data: JSON.stringify({
+              type: 'token',
+              content: parsed.content,
+            }),
+          });
+          continue;
+        }
+
+        // Done event
+        if (parsed.type === 'done') {
+          // Save assistant message
+          const { data: assistantMessage } = await supabase
+            .from('chat_messages')
+            .insert({
+              project_id: projectId,
+              role: 'assistant',
+              content: fullResponse,
+              model_used: currentModel,
+              source_tier: currentSourceTier,
+            })
+            .select()
+            .single();
+
+          await stream.writeSSE({
+            data: JSON.stringify({
+              type: 'message_end',
+              messageId: assistantMessage?.id,
+              model_used: currentModel,
+              source_tier: currentSourceTier,
+            }),
+          });
+          return;
+        }
       }
 
-      if (!abortController.signal.aborted) {
-        const modelUsed = modelSlug || 'claude-sonnet-4-6';
-        // Save assistant message
-        const { data: assistantMessage } = await supabase
-          .from('chat_messages')
-          .insert({
-            project_id: projectId,
-            role: 'assistant',
-            content: fullResponse,
-            model_used: modelUsed,
-            source_tier: 'byok'
-          })
-          .select()
-          .single();
+      // Fallback done if generator ends without explicit 'done'
+      const { data: assistantMessage } = await supabase
+        .from('chat_messages')
+        .insert({
+          project_id: projectId,
+          role: 'assistant',
+          content: fullResponse,
+          model_used: currentModel,
+          source_tier: currentSourceTier,
+        })
+        .select()
+        .single();
 
-        await stream.writeSSE({
-          data: JSON.stringify({
-            type: 'message_end',
-            messageId: assistantMessage.id,
-            model_used: modelUsed,
-            source_tier: 'byok'
-          })
-        });
-      }
+      await stream.writeSSE({
+        data: JSON.stringify({
+          type: 'message_end',
+          messageId: assistantMessage?.id,
+          model_used: currentModel,
+          source_tier: currentSourceTier,
+        }),
+      });
     } catch (err: unknown) {
       await stream.writeSSE({
         data: JSON.stringify({
           type: 'error',
-          message: err instanceof Error ? err.message : 'Stream failed'
-        })
+          message: err instanceof Error ? err.message : 'Stream failed',
+        }),
       });
     }
   });

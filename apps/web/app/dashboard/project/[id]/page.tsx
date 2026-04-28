@@ -12,9 +12,9 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 
   const { data: project } = await supabase
     .from('projects')
-    .select('id, name, description')
+    .select('id, name, description, preview_url')
     .eq('id', id)
-    .single() as unknown as { data: { id: string; name: string; description: string | null } | null };
+    .single() as unknown as { data: { id: string; name: string; description: string | null; preview_url: string | null } | null };
 
   if (!project) {
     notFound();
@@ -29,7 +29,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
         )}
       </div>
 
-      <ProjectWorkspace projectId={id} />
+      <ProjectWorkspace projectId={id} previewUrl={project.preview_url} />
     </div>
   );
 }
