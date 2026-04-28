@@ -187,7 +187,7 @@ export function ModelSwitcher() {
               <button
                 className="mt-3 text-xs px-3 py-1.5 rounded-lg font-medium"
                 style={{ backgroundColor: 'var(--goblin-moss)', color: 'white' }}
-                onClick={() => window.location.href = '/dashboard/settings/keys'}
+                onClick={() => window.location.href = '/settings?tab=api-keys'}
               >
                 Add API Key
               </button>

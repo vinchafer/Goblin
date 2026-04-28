@@ -1,7 +1,7 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ModelSwitcher } from './model-switcher';
 
 function MenuItem({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
@@ -50,7 +50,19 @@ export function Topbar({
   const router = useRouter();
   const handleMenu = onMenuToggle ?? onToggleSidebar;
   const [menuOpen, setMenuOpen] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const supabase = createClient();
+
+  useEffect(() => {
+    loadUser();
+  }, []);
+
+  const loadUser = async () => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session?.user?.email) {
+      setUserEmail(session.user.email);
+    }
+  };
 
   const handleSignOut = async () => {
     setMenuOpen(false);
@@ -161,7 +173,9 @@ export function Topbar({
           }}
           onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#e8b05a'}
           onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#c9933a'}
-        >V</button>
+        >
+          {userEmail ? userEmail.charAt(0).toUpperCase() : 'U'}
+        </button>
 
         {menuOpen && (
           <>
@@ -174,14 +188,29 @@ export function Topbar({
               position: 'absolute', right: 0, top: 'calc(100% + 6px)',
               background: '#1a2e18', border: '1px solid #2d5229',
               borderRadius: 8, padding: '4px 0',
-              minWidth: 180, zIndex: 100,
+              minWidth: 200, zIndex: 100,
               boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
             }}>
-              <MenuItem onClick={() => { router.push('/dashboard/settings'); setMenuOpen(false); }}>
-                ⚙️ Account
-              </MenuItem>
-              <MenuItem onClick={() => { router.push('/dashboard/settings/keys'); setMenuOpen(false); }}>
+              {userEmail && (
+                <>
+                  <div style={{
+                    padding: '8px 14px',
+                    color: 'rgba(255,255,255,0.5)',
+                    fontSize: 11,
+                    fontFamily: 'DM Sans, sans-serif',
+                    borderBottom: '1px solid #2d5229',
+                    marginBottom: 4,
+                  }}>
+                    {userEmail}
+                  </div>
+                  <div style={{ height: 1, background: '#2d5229', margin: '4px 8px' }} />
+                </>
+              )}
+              <MenuItem onClick={() => { router.push('/settings?tab=api-keys'); setMenuOpen(false); }}>
                 🔑 API Keys
+              </MenuItem>
+              <MenuItem onClick={() => { router.push('/settings?tab=account'); setMenuOpen(false); }}>
+                ⚙️ Account
               </MenuItem>
               <div style={{ height: 1, background: '#2d5229', margin: '4px 8px' }} />
               <MenuItem onClick={handleSignOut}>

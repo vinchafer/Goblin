@@ -12,6 +12,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 interface CodeTabProps {
   projectId: string;
+  pendingCode?: { content: string; filename?: string } | null;
 }
 
 interface ActiveFile {
@@ -19,8 +20,8 @@ interface ActiveFile {
   content: string;
 }
 
-export function CodeTab({ projectId }: CodeTabProps) {
-  const { pendingInjections, addInjection, clearPendingInjections } = useApp();
+export function CodeTab({ projectId, pendingCode }: CodeTabProps) {
+  const { pendingInjections, addInjection, clearPendingInjections, setPendingCodePayload } = useApp();
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const seenIds = useRef<Set<string>>(new Set());
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -207,6 +208,34 @@ export function CodeTab({ projectId }: CodeTabProps) {
               </div>
               <FileTree projectId={projectId} files={files} onFileClick={openFile} />
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Pending code banner */}
+      {pendingCode && (
+        <div className="border-b shrink-0" style={{ borderColor: '#D4A94A', backgroundColor: '#141a12' }}>
+          <div
+            className="flex items-center justify-between px-4 py-3"
+            style={{ backgroundColor: 'rgba(212,169,74,0.08)' }}
+          >
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold" style={{ color: '#D4A94A' }}>
+                ✦ Code ready to review
+              </span>
+              {pendingCode.filename && (
+                <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: 'rgba(212,169,74,0.2)', color: '#D4A94A' }}>
+                  {pendingCode.filename}
+                </span>
+              )}
+            </div>
+            <button 
+              onClick={() => setPendingCodePayload(null)}
+              className="text-xs px-3 py-1 rounded font-medium"
+              style={{ backgroundColor: '#D4A94A', color: '#2a1f0f' }}
+            >
+              Clear
+            </button>
           </div>
         </div>
       )}

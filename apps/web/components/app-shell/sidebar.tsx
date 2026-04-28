@@ -90,7 +90,7 @@ export function Sidebar({ projects = [], activeProjectId, onProjectSelect, isOpe
               return (
                 <div
                   key={p.id}
-                  onClick={() => { onProjectSelect?.(p.id); router.push(`/dashboard/project/${p.id}`); onClose?.(); }}
+                  onClick={() => { onProjectSelect?.(p.id); router.push(`/project/${p.id}`); onClose?.(); }}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 8,
                     padding: '7px 8px', borderRadius: 7, cursor: 'pointer', marginBottom: 2,

@@ -31,16 +31,28 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  const protectedRoutes = ['/dashboard', '/project', '/settings'];
-  const isProtectedRoute = protectedRoutes.some(route =>
-    request.nextUrl.pathname.startsWith(route)
+  // Unprotected routes
+  const unprotectedPaths = [
+    '/',
+    '/login',
+    '/auth/callback',
+    '/_next/',
+    '/api/',
+  ];
+
+  const isUnprotected = unprotectedPaths.some(path => 
+    request.nextUrl.pathname.startsWith(path)
   );
 
-  if (isProtectedRoute && !user) {
-    return NextResponse.redirect(new URL('/login', request.url));
+  // If not authenticated and trying to access protected route, redirect to login
+  if (!user && !isUnprotected) {
+    const redirectUrl = new URL('/login', request.url);
+    redirectUrl.searchParams.set('redirect', request.nextUrl.pathname);
+    return NextResponse.redirect(redirectUrl);
   }
 
-  if (request.nextUrl.pathname === '/login' && user) {
+  // If authenticated and trying to access login page, redirect to dashboard
+  if (user && request.nextUrl.pathname === '/login') {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
@@ -49,9 +61,13 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/dashboard/:path*',
-    '/project/:path*',
-    '/settings/:path*',
-    '/login'
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public folder
+     */
+    '/((?!_next/static|_next/image|favicon.ico|public).*)',
   ],
 };

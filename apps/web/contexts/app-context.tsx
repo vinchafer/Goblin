@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import type { Project } from "@goblin/shared/src/schemas";
 
 export type AppTab = "chat" | "code" | "preview" | "server";
@@ -67,6 +67,25 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   }, []);
   const injectionCount = pendingInjections.length;
+
+  // Listen for send-to-code events
+  useEffect(() => {
+    const handleSendToCode = (event: CustomEvent<{ code: string; filename?: string }>) => {
+      setPendingCodePayload({
+        content: event.detail.code,
+        filename: event.detail.filename
+      });
+      setActiveTab("code");
+    };
+
+    // Add event listener
+    window.addEventListener('goblin:sendToCode', handleSendToCode as EventListener);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('goblin:sendToCode', handleSendToCode as EventListener);
+    };
+  }, []);
 
   return (
     <AppContext.Provider value={{

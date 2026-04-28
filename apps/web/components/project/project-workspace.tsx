@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import dynamic from "next/dynamic";
 import { useApp } from "@/contexts/app-context";
-import { ChatContainer } from "@/components/chat/chat-container";
+import { ChatTab } from "@/components/workspace/chat-tab";
 import { CodeTab } from "@/components/project/code-tab";
+import type { ChatMessage } from "@goblin/shared/src/schemas";
 
 const PreviewTab = dynamic(() => import('@/components/preview/preview-tab').then(m => m.PreviewTab), { ssr: false });
 
@@ -14,10 +16,10 @@ interface ProjectWorkspaceProps {
 
 export function ProjectWorkspace({ projectId, previewUrl }: ProjectWorkspaceProps) {
   const { activeTab, pendingCodePayload } = useApp();
-  // pendingCodePayload used by code-tab via shared context
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
 
   if (activeTab === "code") {
-    return <CodeTab projectId={projectId} />;
+    return <CodeTab projectId={projectId} pendingCode={pendingCodePayload} />;
   }
 
   if (activeTab === "preview") {
@@ -25,5 +27,11 @@ export function ProjectWorkspace({ projectId, previewUrl }: ProjectWorkspaceProp
   }
 
   // Default: chat tab
-  return <ChatContainer projectId={projectId} />;
+  return (
+    <ChatTab 
+      projectId={projectId}
+      messages={messages}
+      onMessagesChange={setMessages}
+    />
+  );
 }

@@ -1,15 +1,15 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
 const COLORS = [
-  { name: 'Ochre', hex: '#c9933a' },
-  { name: 'Moss', hex: '#4a7c3b' },
-  { name: 'Rust', hex: '#b85c3c' },
-  { name: 'Teal', hex: '#3a8a8a' },
-  { name: 'Purple', hex: '#7a4a8a' },
-  { name: 'Slate', hex: '#6b6560' },
+  { name: 'Ochre', hex: '#D4A94A' },
+  { name: 'Moss', hex: '#2D4A2B' },
+  { name: 'Rust', hex: '#B85C3C' },
+  { name: 'Forest', hex: '#4A7C3B' },
+  { name: 'Gray', hex: '#6B6B6B' },
+  { name: 'Brown', hex: '#3A2E1F' },
 ];
 
 interface NewProjectModalProps {
@@ -24,6 +24,18 @@ export function NewProjectModal({ onClose }: NewProjectModalProps) {
   const [selectedColor, setSelectedColor] = useState(COLORS[0]?.hex ?? '#c9933a');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Handle Escape key to close modal
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [onClose]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,7 +70,7 @@ export function NewProjectModal({ onClose }: NewProjectModalProps) {
 
       const project = await response.json();
       onClose();
-      router.push(`/dashboard/project/${project.id}`);
+      router.push(`/project/${project.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create project');
     } finally {

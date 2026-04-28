@@ -19,7 +19,7 @@ export function DashboardShell({ projects, children }: DashboardShellProps) {
   const pathname = usePathname();
 
   const activeProjectId = (() => {
-    const match = pathname.match(/\/dashboard\/project\/([^/]+)/);
+    const match = pathname.match(/\/project\/([^/]+)/);
     return match ? match[1] : undefined;
   })();
 
