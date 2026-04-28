@@ -166,11 +166,11 @@ export function ChatTab({ projectId, messages, onMessagesChange, selectedModel =
               switch (data.type) {
                 case 'meta':
                   // Update streaming message with model info
-                  onMessagesChange((prev: ChatMessage[]) => prev.map(msg => 
-                    msg.id === 'streaming' 
-                      ? { ...msg, model_used: data.data?.model || null, source_tier: data.data?.sourceTier as any || null }
+                  onMessagesChange((prev: ChatMessage[]) => prev.map(msg =>
+                    msg.id === 'streaming'
+                      ? { ...msg, model_used: data.data?.model || null, source_tier: (data.data?.sourceTier || null) as ChatMessage['source_tier'] }
                       : msg
-                  ));
+                  ) as ChatMessage[]);
                   break;
                 
                 case 'delta':
