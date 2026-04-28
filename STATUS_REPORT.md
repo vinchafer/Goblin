@@ -1,5 +1,5 @@
 # Goblin — Status Report
-**Datum:** 2026-04-28
+**Datum:** 2026-04-28 (aktualisiert nach Commit `82b5462`)
 **Analysiert von:** Claude Sonnet 4.6
 
 ---
@@ -125,18 +125,22 @@ Usage-Limit-Middleware (`usage-limit.ts`) prüft und inkrementiert `monthly_requ
 - Landing Page mit Pricing
 - Model-Switcher im Dashboard
 
-### Neu / Noch nicht committed ⚠️
+### Committed & gepusht ✅ (82b5462, 2026-04-28)
 - **Vercel Deploy-Feature** (`deploy.ts`, `vercel-service.ts`) — SSE-Deploy-Flow vollständig, schreibt `preview_url` in DB
-- **Preview-Tab** (`components/preview/preview-tab.tsx`) — iframe mit Viewport-Switcher (375/768/1440px)
-- **DB-Migration 0016** — `preview_url` + `last_deployed_at` auf `projects`
+- **Preview-Tab** (`components/preview/preview-tab.tsx`) — iframe mit Viewport-Switcher (375/768/1440px), in ProjectWorkspace verdrahtet
+- **DB-Migration 0016** — `preview_url` + `last_deployed_at` auf `projects` — **noch manuell auf Supabase deployen**
+- **3-Layer Model-Routing** — goblin_hosted → free_api (Google/Groq/Cerebras/OpenRouter) → byok
+- **goblin-hosted.ts** — Placeholder für Phase 3 GPU-Inferenz (Clore.ai/vLLM)
+- **new-project-modal.tsx** — in `components/projects/`
+- **UI-Überarbeitung** — Chat, Sidebar, Topbar, Landing Pages aktualisiert
 
 ---
 
 ## 8. Offene Baustellen / Bugs
 
 ### Kritisch
-- **PreviewTab nicht verdrahtet:** `project-workspace.tsx` kennt nur `"code"` und `"chat"` als Tabs — kein `"preview"`. `project/[id]/page.tsx` übergibt `preview_url` nicht an `ProjectWorkspace`. Die neuen Komponenten existieren, sind aber nicht eingebunden.
-- **Migration 0016 nicht deployed:** `preview_url`-Spalte existiert in Production noch nicht, bis die Migration ausgerollt wird.
+- ~~**PreviewTab nicht verdrahtet**~~ — ✅ behoben in 82b5462
+- **Migration 0016 nicht deployed:** `preview_url`-Spalte existiert in Production noch nicht. **Manuell ausführen:** `supabase db push` oder SQL direkt in Supabase Studio.
 
 ### Mittel
 - **Vercel-Token-Cache:** `_vercelTokenCache` ist eine prozess-lokale `Map` — geht bei API-Restart verloren (kein Problem, aber kein Re-Fetch bis nächster Login-Request; bereits handled durch lazy refetch).
@@ -147,31 +151,29 @@ Usage-Limit-Middleware (`usage-limit.ts`) prüft und inkrementiert `monthly_requ
 ### Klein
 - Kein CI/CD-Pipeline im Repo.
 - Kein Test-Suite (keine Unit-, Integration- oder E2E-Tests).
-- `apps/web/tsconfig.json` modifiziert, aber Änderung unklar (nicht committed).
+- `apps/web/tsconfig.json` committed in 82b5462.
 
 ---
 
-## 9. Offene Git-Changes (nicht committed)
+## 9. Git-Stand
 
-```
-M  apps/api/src/index.ts              — deploy-Route registriert
-M  apps/web/tsconfig.json             — unbekannte Änderung
-M  packages/shared/src/database.types.ts — preview_url-Typen ergänzt
-?? apps/api/src/routes/deploy.ts      — NEU
-?? apps/api/src/services/vercel-service.ts — NEU
-?? apps/web/components/preview/      — NEU (PreviewTab-Komponente)
-?? supabase/migrations/0016_preview_url.sql — NEU
-```
+**Letzter Commit:** `82b5462` — `feat: Vercel deploy, preview tab, 3-layer model routing, UI overhaul`
+**Branch:** master — up to date mit `origin/master`
+**Vercel-Deploy:** automatisch via GitHub-Integration ausgelöst
 
-**Empfehlung:** Vor dem nächsten Session-Start alles commiten und Migration 0016 auf Supabase deployen.
+Noch ausstehend im lokalen Working Tree:
+```
+ D .env.example   — lokal gelöscht, nicht committed (intentional?)
+```
 
 ---
 
 ## 10. Empfohlene nächste Schritte (Prio-Reihenfolge)
 
-1. **PreviewTab einbinden** — `ProjectWorkspace` um `"preview"`-Tab erweitern, `preview_url` vom Server in `ProjectPage` fetchen und durchreichen.
-2. **Migration 0016 deployen** (`supabase db push` oder SQL in Supabase Studio ausführen).
-3. **Alles committen** — Deploy-Feature + Preview-Tab als einen atomaren Commit.
+1. ~~**PreviewTab einbinden**~~ — ✅ erledigt
+2. ~~**Alles committen**~~ — ✅ `82b5462` gepusht
+3. **Migration 0016 deployen** — `supabase db push` oder SQL direkt in Supabase Studio.
 4. **Rate-Limit auf Deploy-Route** — `usageLimitMiddleware` oder separates Deploy-Limit ergänzen.
 5. **100-Datei-Limit erhöhen / paginieren** — Vercel API unterstützt mehr via mehrere Upload-Calls.
-6. **CI/CD** — GitHub Actions: typecheck + lint on PR, ggf. smoke-test nach Deploy.
+6. **CI/CD** — GitHub Actions: typecheck + lint on PR, smoke-test nach Deploy.
+7. **`.env.example` klären** — lokal gelöscht, aber nicht committed; wiederherstellen oder entfernen.
