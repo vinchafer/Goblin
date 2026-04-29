@@ -1,3 +1,10 @@
+import { config } from 'dotenv';
+import { join } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = fileURLToPath(new URL('.', import.meta.url));
+config({ path: join(__dirname, '../../../.env') });
+
 // Startup validation — fail fast with clear error messages
 const REQUIRED_ENV = [
   'NEXT_PUBLIC_SUPABASE_URL',
@@ -25,6 +32,14 @@ if (missing.length > 0) {
 
 console.log('✅ Environment validation passed')
 
+// Run startup migrations (idempotent, safe to run multiple times)
+try {
+  const { runStartupMigrations } = await import('./startup-migrations.js')
+  await runStartupMigrations()
+} catch (error) {
+  console.warn('Could not run startup migrations:', error)
+}
+
 import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import { serve } from '@hono/node-server';
@@ -44,9 +59,41 @@ import { deploy } from './routes/deploy';
 const app = new Hono();
 
 app.use('*', cors({
-  origin: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+  origin: (origin) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return '*';
+    
+    const allowedOrigins = [
+      'http://localhost:3000',
+      'https://goblin-web.vercel.app',
+      'https://goblin-web-git-*.vercel.app',
+      'https://justgoblin.com',
+      'https://www.justgoblin.com',
+      process.env.NEXT_PUBLIC_APP_URL
+    ].filter((origin): origin is string => !!origin);
+    
+    // Check if the origin matches any allowed pattern
+    if (allowedOrigins.some(allowed => {
+      if (allowed.includes('*')) {
+        const pattern = allowed.replace('*', '.*');
+        return new RegExp(pattern).test(origin);
+      }
+      return origin === allowed;
+    })) {
+      return origin;
+    }
+    
+    // For development, allow all origins
+    if (process.env.NODE_ENV === 'development') {
+      return origin;
+    }
+    
+    return null;
+  },
+  credentials: true,
   allowHeaders: ['Content-Type', 'Authorization'],
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  maxAge: 86400, // 24 hours
 }));
 
 app.onError((err, c) => {
