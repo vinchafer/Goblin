@@ -165,45 +165,41 @@ export function ChatTab({ projectId, messages, onMessagesChange, selectedModel =
               
               switch (data.type) {
                 case 'meta':
-                  // Update streaming message with model info
-                  onMessagesChange((prev: ChatMessage[]) => prev.map(msg =>
+                  onMessagesChange(messages.map(msg =>
                     msg.id === 'streaming'
                       ? { ...msg, model_used: data.data?.model || null, source_tier: (data.data?.sourceTier || null) as ChatMessage['source_tier'] }
                       : msg
-                  ) as ChatMessage[]);
+                  ));
                   break;
-                
+
                 case 'delta':
-                  // Append content to streaming message
-                  onMessagesChange((prev: ChatMessage[]) => prev.map(msg => 
-                    msg.id === 'streaming' 
+                  onMessagesChange(messages.map(msg =>
+                    msg.id === 'streaming'
                       ? { ...msg, content: msg.content + (data.data?.content || '') }
                       : msg
                   ));
                   break;
-                
+
                 case 'done':
-                  // Replace streaming message with final message
                   if (data.data?.id) {
-                    onMessagesChange((prev: ChatMessage[]) => prev.map(msg => 
-                      msg.id === 'streaming' 
-                        ? { 
-                            ...msg, 
+                    onMessagesChange(messages.map(msg =>
+                      msg.id === 'streaming'
+                        ? {
+                            ...msg,
                             id: data.data!.id!,
                             model_used: data.data?.model || msg.model_used,
-                            source_tier: data.data?.sourceTier as any || msg.source_tier
+                            source_tier: (data.data?.sourceTier || msg.source_tier) as ChatMessage['source_tier'],
                           }
                         : msg
                     ));
                   }
                   setIsStreaming(false);
                   break;
-                
+
                 case 'error':
                   setError(data.data?.error || 'Streaming error');
                   setIsStreaming(false);
-                  // Remove streaming message on error
-                  onMessagesChange((prev: ChatMessage[]) => prev.filter(msg => msg.id !== 'streaming'));
+                  onMessagesChange(messages.filter(msg => msg.id !== 'streaming'));
                   break;
               }
             } catch (err) {
@@ -216,8 +212,7 @@ export function ChatTab({ projectId, messages, onMessagesChange, selectedModel =
       console.error('Error in chat stream:', err);
       setError(err instanceof Error ? err.message : 'Failed to send message');
       setIsStreaming(false);
-      // Remove streaming message on error
-      onMessagesChange((prev: ChatMessage[]) => prev.filter(msg => msg.id !== 'streaming'));
+      onMessagesChange(messages.filter(msg => msg.id !== 'streaming'));
     }
   };
 
