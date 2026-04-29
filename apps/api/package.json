@@ -21,6 +21,7 @@
     "jszip": "^3.10.1",
     "web-push": "^3.6.7",
     "@aws-sdk/client-s3": "^3.600.0",
+    "dotenv": "^16.4.0",
     "@goblin/shared": "workspace:*"
   },
   "devDependencies": {
