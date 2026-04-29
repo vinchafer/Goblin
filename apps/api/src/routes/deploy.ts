@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
+import type { Context, Next } from 'hono';
 import { authMiddleware } from '../middleware/auth';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { deployToVercel, getDeployStatus } from '../services/vercel-service';
@@ -8,30 +9,34 @@ type Variables = { userId: string };
 const deploy = new Hono<{ Variables: Variables }>();
 deploy.use('*', authMiddleware);
 
-// Rate-limit middleware for deploy: max 10 deploys per hour per user
-const deployRateLimit = async (c: any, next: any) => {
+// Rate-limit: max 10 deploys per hour per user using agent_runs as proxy
+// DEPLOY-FIX [2026-04-29]: removed broken deploy_logs reference (table never existed)
+const deployRateLimit = async (c: Context<{ Variables: Variables }>, next: Next) => {
   const userId = c.get('userId');
   const supabase = getSupabaseAdmin();
-  
-  const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
-  
+
+  const oneHourAgo = new Date(Date.now() - 3600_000).toISOString();
+
   const { count } = await supabase
-    .from('deploy_logs')
-    .select('*', { count: 'exact', head: true })
+    .from('projects')
+    .select('id', { count: 'exact', head: true })
     .eq('user_id', userId)
-    .gte('created_at', oneHourAgo);
-  
-  if (count && count >= 10) {
+    .gte('last_deployed_at', oneHourAgo);
+
+  if (count !== null && count >= 10) {
     return c.json({ error: 'Deploy rate limit: max 10 deploys per hour' }, 429);
   }
-  
+
   await next();
 };
 
 // POST /api/deploy/vercel — SSE stream
 deploy.post('/vercel', deployRateLimit, async (c) => {
   const userId = c.get('userId');
-  const { projectId } = await c.req.json();
+  const body = await c.req.json().catch(() => ({})) as { projectId?: string };
+  const { projectId } = body;
+
+  if (!projectId) return c.json({ error: 'projectId required' }, 400);
 
   const supabase = getSupabaseAdmin();
   const { data: project } = await supabase
@@ -54,7 +59,6 @@ deploy.post('/vercel', deployRateLimit, async (c) => {
         },
       );
 
-      // Update project preview_url
       await supabase
         .from('projects')
         .update({ preview_url: result.url, last_deployed_at: new Date().toISOString() })
@@ -69,7 +73,7 @@ deploy.post('/vercel', deployRateLimit, async (c) => {
           url: `/dashboard/project/${projectId}`,
         });
       } catch {
-        // notifications may not be configured
+        // VAPID may not be configured — not fatal
       }
 
       await stream.writeSSE({
@@ -93,8 +97,9 @@ deploy.get('/vercel/:deploymentId/status', async (c) => {
   try {
     const status = await getDeployStatus(userId, deploymentId);
     return c.json(status);
-  } catch {
-    return c.json({ error: 'Failed to get status' }, 500);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Failed to get status';
+    return c.json({ error: msg }, 500);
   }
 });
 

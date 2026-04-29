@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { authMiddleware } from '../middleware/auth';
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdmin } from '../lib/supabase';
 import { createKey, listKeys, revokeKey } from '../services/byok-service';
 import { CreateByokKeySchema, UpdateByokKeySchema } from '@goblin/shared/src/schemas';
 
@@ -10,48 +10,71 @@ const byokKeys = new Hono<{ Variables: Variables }>();
 byokKeys.use('*', authMiddleware);
 
 byokKeys.get('/', async (c) => {
-  const userId = c.get('userId');
-  const keys = await listKeys(userId);
-  return c.json(keys);
+  try {
+    const userId = c.get('userId');
+    const keys = await listKeys(userId);
+    return c.json(keys);
+  } catch {
+    return c.json({ error: 'Failed to fetch keys' }, 500);
+  }
 });
 
 byokKeys.post('/', async (c) => {
-  const userId = c.get('userId');
-  const body = await c.req.json();
-  const data = CreateByokKeySchema.parse(body);
-  
-  const key = await createKey(userId, data.provider, data.label, data.key);
-  return c.json(key, 201);
+  try {
+    const userId = c.get('userId');
+    const body = await c.req.json();
+    const result = CreateByokKeySchema.safeParse(body);
+    if (!result.success) {
+      return c.json({ error: 'Invalid request', details: result.error.flatten() }, 400);
+    }
+    const key = await createKey(userId, result.data.provider, result.data.label, result.data.key);
+    return c.json(key, 201);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Failed to create key';
+    // 400 for validation errors (invalid key, max keys reached), 500 for DB errors
+    const isValidationError = msg.includes('Invalid') || msg.includes('Maximum') || msg.includes('timed out');
+    return c.json({ error: msg }, isValidationError ? 400 : 500);
+  }
 });
 
 byokKeys.delete('/:id', async (c) => {
-  const userId = c.get('userId');
-  const keyId = c.req.param('id');
-  
-  await revokeKey(userId, keyId);
-  return c.json({ success: true });
+  try {
+    const userId = c.get('userId');
+    const keyId = c.req.param('id');
+    await revokeKey(userId, keyId);
+    return c.json({ success: true });
+  } catch {
+    return c.json({ error: 'Failed to revoke key' }, 500);
+  }
 });
 
 byokKeys.patch('/:id', async (c) => {
-  const userId = c.get('userId');
-  const keyId = c.req.param('id');
-  const body = await c.req.json();
-  const data = UpdateByokKeySchema.parse(body);
+  try {
+    const userId = c.get('userId');
+    const keyId = c.req.param('id');
+    const body = await c.req.json();
+    const result = UpdateByokKeySchema.safeParse(body);
+    if (!result.success) {
+      return c.json({ error: 'Invalid request' }, 400);
+    }
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+    const supabase = getSupabaseAdmin();
+    const { data: updated, error } = await supabase
+      .from('byok_keys')
+      .update({ label: result.data.label })
+      .eq('id', keyId)
+      .eq('user_id', userId)
+      .select()
+      .single();
 
-  const { data: updated } = await supabase
-    .from('byok_keys')
-    .update({ label: data.label })
-    .eq('id', keyId)
-    .eq('user_id', userId)
-    .select()
-    .single();
+    if (error || !updated) {
+      return c.json({ error: 'Key not found' }, 404);
+    }
 
-  return c.json(updated);
+    return c.json(updated);
+  } catch {
+    return c.json({ error: 'Failed to update key' }, 500);
+  }
 });
 
 export { byokKeys };

@@ -53,6 +53,16 @@ chat.post('/stream', usageLimitMiddleware, async (c) => {
     process.env.SUPABASE_SERVICE_ROLE_KEY!
   );
 
+  // Verify project ownership — prevents IDOR (any user writing to any project)
+  const { data: projectCheck } = await supabase
+    .from('projects')
+    .select('id')
+    .eq('id', projectId)
+    .eq('user_id', userId)
+    .single();
+
+  if (!projectCheck) return c.json({ error: 'Project not found' }, 404);
+
   // Save user message
   await supabase.from('chat_messages').insert({
     project_id: projectId,
