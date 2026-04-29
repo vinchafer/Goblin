@@ -29,6 +29,11 @@ export function ChatTab({ projectId, messages, onMessagesChange, selectedModel =
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // Refs for streaming: avoids stale closure when multiple delta events arrive
+  // before React re-renders (SSE events are faster than 16ms render cycle)
+  const streamingContentRef = useRef('');
+  const baseMessagesRef = useRef<ChatMessage[]>([]);
+  const streamingMessageRef = useRef<ChatMessage | null>(null);
   const supabase = createClient();
 
   // Load chat history on mount
@@ -106,7 +111,10 @@ export function ChatTab({ projectId, messages, onMessagesChange, selectedModel =
     setIsStreaming(true);
     setError(null);
 
-    // Add empty assistant message for streaming
+    // Capture pre-stream state in refs so delta handlers don't use stale closures
+    streamingContentRef.current = '';
+    baseMessagesRef.current = updatedMessages;
+
     const streamingMessage: ChatMessage = {
       id: 'streaming',
       project_id: projectId,
@@ -116,6 +124,7 @@ export function ChatTab({ projectId, messages, onMessagesChange, selectedModel =
       source_tier: null,
       created_at: new Date(),
     };
+    streamingMessageRef.current = streamingMessage;
 
     onMessagesChange([...updatedMessages, streamingMessage]);
 
@@ -165,33 +174,39 @@ export function ChatTab({ projectId, messages, onMessagesChange, selectedModel =
               
               switch (data.type) {
                 case 'meta':
-                  onMessagesChange(messages.map(msg =>
-                    msg.id === 'streaming'
-                      ? { ...msg, model_used: data.data?.model || null, source_tier: (data.data?.sourceTier || null) as ChatMessage['source_tier'] }
-                      : msg
-                  ));
+                  if (streamingMessageRef.current) {
+                    streamingMessageRef.current = {
+                      ...streamingMessageRef.current,
+                      model_used: data.data?.model || null,
+                      source_tier: (data.data?.sourceTier || null) as ChatMessage['source_tier'],
+                    };
+                    onMessagesChange([...baseMessagesRef.current, streamingMessageRef.current]);
+                  }
                   break;
 
                 case 'delta':
-                  onMessagesChange(messages.map(msg =>
-                    msg.id === 'streaming'
-                      ? { ...msg, content: msg.content + (data.data?.content || '') }
-                      : msg
-                  ));
+                  // Append to ref synchronously — avoids lost tokens when SSE events
+                  // arrive faster than React re-renders (stale closure on `messages` prop)
+                  streamingContentRef.current += data.data?.content || '';
+                  if (streamingMessageRef.current) {
+                    streamingMessageRef.current = {
+                      ...streamingMessageRef.current,
+                      content: streamingContentRef.current,
+                    };
+                    onMessagesChange([...baseMessagesRef.current, streamingMessageRef.current]);
+                  }
                   break;
 
                 case 'done':
-                  if (data.data?.id) {
-                    onMessagesChange(messages.map(msg =>
-                      msg.id === 'streaming'
-                        ? {
-                            ...msg,
-                            id: data.data!.id!,
-                            model_used: data.data?.model || msg.model_used,
-                            source_tier: (data.data?.sourceTier || msg.source_tier) as ChatMessage['source_tier'],
-                          }
-                        : msg
-                    ));
+                  if (data.data?.id && streamingMessageRef.current) {
+                    const finalMsg: ChatMessage = {
+                      ...streamingMessageRef.current,
+                      id: data.data.id,
+                      model_used: data.data?.model || streamingMessageRef.current.model_used,
+                      source_tier: (data.data?.sourceTier || streamingMessageRef.current.source_tier) as ChatMessage['source_tier'],
+                    };
+                    onMessagesChange([...baseMessagesRef.current, finalMsg]);
+                    streamingMessageRef.current = null;
                   }
                   setIsStreaming(false);
                   break;
@@ -199,7 +214,8 @@ export function ChatTab({ projectId, messages, onMessagesChange, selectedModel =
                 case 'error':
                   setError(data.data?.error || 'Streaming error');
                   setIsStreaming(false);
-                  onMessagesChange(messages.filter(msg => msg.id !== 'streaming'));
+                  onMessagesChange(baseMessagesRef.current);
+                  streamingMessageRef.current = null;
                   break;
               }
             } catch (err) {
@@ -212,7 +228,8 @@ export function ChatTab({ projectId, messages, onMessagesChange, selectedModel =
       console.error('Error in chat stream:', err);
       setError(err instanceof Error ? err.message : 'Failed to send message');
       setIsStreaming(false);
-      onMessagesChange(messages.filter(msg => msg.id !== 'streaming'));
+      onMessagesChange(baseMessagesRef.current);
+      streamingMessageRef.current = null;
     }
   };
 
