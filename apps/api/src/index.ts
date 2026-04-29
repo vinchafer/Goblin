@@ -116,7 +116,7 @@ app.route('/api/models', models);
 app.route('/api/admin', admin);
 app.route('/api/deploy', deploy);
 
-const port = parseInt(process.env.API_PORT || '3001', 10);
+const port = parseInt(process.env.PORT || process.env.API_PORT || '3001', 10);
 console.log(`Goblin API starting on port ${port}`);
 serve({
   fetch: app.fetch,
