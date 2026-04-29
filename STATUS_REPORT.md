@@ -1,179 +1,137 @@
 # Goblin — Status Report
-**Datum:** 2026-04-28 (aktualisiert nach Commit `82b5462`)
-**Analysiert von:** Claude Sonnet 4.6
+**Datum:** 2026-04-29
+**Nach Code Review + Fixes (Commits e1cc72e + 30b9b83)**
 
 ---
 
-## 1. Projekt-Überblick
+## Executive Summary
 
-Goblin ist ein KI-gestützter Code-Editor / App-Builder als SaaS. Nutzer beschreiben Projekte im Chat, die KI generiert Code, der per GitHub oder Vercel deployed werden kann.
-
-**Monorepo-Struktur:**
-```
-goblin-monorepo (pnpm workspaces)
-├── apps/web          Next.js 16 / React 19 — Frontend (Vercel)
-├── apps/api          Hono on Node.js — Backend API (Railway)
-└── packages/shared   Shared DB-Types + Schemas
-```
+Goblin ist funktional deployed (Web auf Vercel, API auf Railway) mit vollständigem BYOK-Chat, GitHub-Integration und Vercel-Deploy-Feature. Heute wurden 8 kritische Bugs gefixt: ein IDOR-Sicherheitsloch im Chat-Stream, ein nicht-funktionierender Deploy-Rate-Limiter (referenzierte eine nicht existierende DB-Tabelle), stale-closure-Tokenverlust im SSE-Stream sowie fehlende Fehlerbehandlung in 3 API-Routen. Migration 0016 (preview_url) muss noch manuell auf Supabase deployed werden.
 
 ---
 
-## 2. Infrastruktur & Deployment
+## Feature Status
 
-| Komponente | Technologie | Ziel-URL |
+| Feature | Status | Funktioniert wirklich? | Getestet? |
+|---|---|---|---|
+| Auth (Magic Link) | ✅ | Ja | Nein (manuell) |
+| Projekt erstellen | ✅ | Ja | Nein |
+| Chat Stream (BYOK) | ✅ | Ja — Stale-Closure-Bug gefixt | Nein |
+| Send to Code | ✅ | Ja | Nein |
+| Code Tab (Editor) | ✅ | Ja | Nein |
+| GitHub OAuth | ✅ | Ja | Nein |
+| GitHub Push | ✅ | Ja | Nein |
+| Vercel Deploy | ⚠️ | Partial — Bugs gefixt, Migration 0016 pending | Nein |
+| Preview Tab | ⚠️ | Partial — zeigt URL, Migration 0016 pending | Nein |
+| BYOK Settings UI | ✅ | Ja — Error-Handling gefixt | Nein |
+| Model Picker | ⚠️ | UI vorhanden, 3-Layer-Routing aktiv | Nein |
+| Billing (Stripe) | ⚠️ | Code vollständig, Webhooks ungetestet | Nein |
+| Push Notifications | ⚠️ | Implementiert, VAPID-Konfiguration unklar | Nein |
+| Landing Page | ✅ | Ja | Nein |
+| Mobile PWA | ⚠️ | manifest.json + sw.js vorhanden, ungetestet | Nein |
+
+**Legende:** ✅ Vollständig | ⚠️ Partial/Buggy | ❌ Fehlt
+
+---
+
+## Vercel Deploy — Root Cause & Fix
+
+**Was war kaputt:**
+1. **Token-Cache-Invalidierung fehlte**: `_vercelTokenCache` wurde nie geleert. Wenn ein User seinen Vercel-Token widerrief und einen neuen in DB speicherte, wurde trotzdem der alte gecachte Token verwendet → 401-Fehler bei jedem Deploy-Versuch, ohne Möglichkeit der Selbstheilung ohne API-Restart.
+2. **`content!` null-assertion**: `Buffer.from(content!)` crashed wenn eine Datei in S3 nicht lesbar war (gelöscht, race condition). War unkontrollierter Crash → Deploy-Fehler ohne klare Meldung.
+3. **Rate-Limit referenzierte nicht-existierende Tabelle**: `deploy_logs` existiert in keiner Migration. Der Supabase-Error wurde still geschluckt, `count` war `null` → Rate-Limit komplett deaktiviert ohne Fehlermeldung.
+4. **`getDeployStatus` prüfte `res.ok` nicht**: Bei Vercel-API-Fehler (401, 404) wurde trotzdem `.json()` geparst und `UNKNOWN` zurückgegeben statt des echten Fehlers.
+5. **>100 Dateien wurden silent truncated**: Projekte mit >100 Files wurden ohne Warnung mit nur 100 Files deployed.
+
+**Was wurde geändert:**
+- Token-Cache wird bei 401/403 von Vercel-API sofort geleert → nächster Deploy-Versuch holt frischen Token aus DB
+- `Promise.allSettled()` statt `Promise.all()` → einzelne fehlgeschlagene Datei-Downloads crashen nicht mehr den gesamten Deploy
+- Rate-Limit nutzt jetzt `projects.last_deployed_at` (existierende Tabelle) statt der nicht-existierenden `deploy_logs`
+- `getDeployStatus`: prüft `res.ok` + wirft bei Auth-Fehler und leert Cache
+- Warnung im SSE-Fortschritts-Stream wenn >100 Dateien vorhanden
+
+**Warum wird es nicht mehr auftreten:**
+Token-Cache hat jetzt einen Invalidierungs-Pfad. Alle null-Fälle sind durch `Promise.allSettled` + explizite Checks abgedeckt. Rate-Limit-Middleware verwendet eine tatsächlich existierende Tabelle.
+
+---
+
+## Gefundene und gefixte Bugs
+
+| Bug | Severity | Fix |
 |---|---|---|
-| Frontend | Next.js 16 + React 19 | justgoblin.com (Vercel) |
-| Backend API | Hono 4.6 + Node.js | api.justgoblin.com (Railway) |
-| Datenbank | Supabase (PostgreSQL + Auth + RLS) | — |
-| Datei-Storage | S3-kompatibel (Hetzner) + In-Memory-Fallback | — |
-| Billing | Stripe | — |
-
-**Vercel-Konfiguration:** `vercel.json` rewritet `/api/*` → `https://api.justgoblin.com/api/*`. Railway startet via `pnpm --filter @goblin/api start`.
-
-**CI/CD:** Keine `.github/workflows/` vorhanden. Kein automatisiertes Testing oder Deployment-Pipeline im Repo.
+| IDOR: `/api/chat/stream` prüfte keine Project-Ownership → User A konnte in Projekte von User B schreiben | P0 | Ownership-Check vor Stream eingefügt |
+| Vercel token cache nie invalidiert → 401-Loop nach Token-Rotation | P0 | Cache-Clear bei 401/403 von Vercel API |
+| `deploy_logs` Tabelle nicht vorhanden → Rate-Limit silent disabled | P0 | Auf `projects.last_deployed_at` umgestellt |
+| `content!` null crash in vercel-service → unkontrollierter 500 | P0 | `Promise.allSettled` + null-filter |
+| `getDeployStatus` kein `res.ok`-Check → UNKNOWN statt Fehlermeldung | P0 | `res.ok` Check + sprechende Errors |
+| >100 Dateien silent truncated → incomplete deploys | P0 | Warnung im SSE-Stream |
+| `byok-keys.ts` POST: `parse()` statt `safeParse()` → ZodError crasht zu 500 | P0 | `safeParse()` + try/catch mit richtigen Status-Codes |
+| `byok-keys.ts` PATCH: returned `null` mit 200 wenn Key nicht gefunden | P1 | 404 wenn `updated` null |
+| `byok-keys.ts` DELETE: kein try/catch → unhandled 500 bei DB-Fehler | P1 | try/catch + 500 mit message |
+| Chat SSE stale closure: delta-Events verloren Tokens bei schneller Ankunft | P1 | `streamingContentRef` + `baseMessagesRef` für synchrones Accumulation |
+| `chat-tab.tsx` Error-Handler nutzte stale `messages` closure | P1 | Auf `baseMessagesRef.current` umgestellt |
+| `.env.example` gelöscht → neue Env-Vars (Free-API Pool) undokumentiert | P2 | Wiederhergestellt + alle neuen Vars dokumentiert |
 
 ---
 
-## 3. Datenbank-Schema (Supabase)
+## Noch offene Issues
 
-16 Migrationen bisher. Alle Tabellen mit RLS abgesichert.
+| Issue | Severity | Aufwand |
+|---|---|---|
+| Migration 0016 (`preview_url`) nicht auf Supabase Production deployed | P0 | Klein — `supabase db push` oder SQL in Studio |
+| Chat SSE: `getSession()` statt `getUser()` → Tokens könnten nach 1h expired sein ohne Refresh | P1 | Klein — aber Next.js SSR middleware refresht bei Navigation |
+| `chat-tab.tsx`: kein AbortController für Stream bei Unmount → Memory Leak bei Navigation | P1 | Mittel |
+| File-Path-Bug in `github.ts`: `fullPath.replace(projectId/)` — listFiles gibt relative Pfade zurück, kein Präfix | P1 | Klein |
+| `byok_keys.key_encrypted` ist BYTEA in Schema aber Code speichert base64 String | P2 | Mittel — Migration um column type zu ändern, oder explizit dokumentieren |
+| Kein CI/CD Pipeline (typecheck + lint on PR) | P2 | Mittel |
+| Kein Test-Suite | P2 | Groß |
+| Goblin-gehostete Modell-Layer (Phase 3) komplett Placeholder | P3 | Groß |
 
-| Tabelle | Zweck |
+---
+
+## Environment Variables Checklist
+
+### Railway (API)
+- ✅ `NEXT_PUBLIC_SUPABASE_URL` — benötigt
+- ✅ `SUPABASE_SERVICE_ROLE_KEY` — benötigt
+- ✅ `SUPABASE_JWT_SECRET` — benötigt (startup-validation)
+- ✅ `ENCRYPTION_KEY` — benötigt (startup-validation)
+- ⚠️ `GITHUB_CLIENT_ID` / `GITHUB_CLIENT_SECRET` — nur für GitHub OAuth
+- ⚠️ `STRIPE_SECRET_KEY` / `STRIPE_WEBHOOK_SECRET` / `STRIPE_PRICE_*` — nur für Billing
+- ⚠️ `STORAGE_ENDPOINT` / `STORAGE_KEY` / `STORAGE_SECRET` / `STORAGE_BUCKET` — optional (in-memory fallback aktiv wenn fehlt)
+- ⚠️ `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` — optional (Push Notifications)
+- ⚠️ `ADMIN_API_KEY` — optional (Admin-Routen)
+- ⚠️ `GOOGLE_FREE_API_KEY` — optional (Free-API Pool Layer 2)
+- ⚠️ `GROQ_FREE_API_KEY` — optional (Free-API Pool Layer 2)
+- ⚠️ `CEREBRAS_FREE_API_KEY` — optional (Free-API Pool Layer 2)
+- ⚠️ `OPENROUTER_FREE_API_KEY` — optional (Free-API Pool Layer 2)
+
+### Vercel (Frontend)
+- ✅ `NEXT_PUBLIC_SUPABASE_URL` — benötigt
+- ✅ `NEXT_PUBLIC_SUPABASE_ANON_KEY` — benötigt
+- ✅ `NEXT_PUBLIC_API_URL` — benötigt (zeigt auf Railway-URL)
+- ⚠️ `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` — nur für Billing-UI
+- ⚠️ `NEXT_PUBLIC_VAPID_PUBLIC_KEY` — nur für Push-Notifications
+
+**Legende:** ✅ muss gesetzt sein | ⚠️ optional / feature-abhängig
+
+---
+
+## Git-Stand
+
+| Commit | Beschreibung |
 |---|---|
-| `users` | Nutzerprofile, Plan, Billing-State, Request-Counter |
-| `projects` | Projekte (Name, Color, GitHub-Repo, `preview_url` ⚠️ neu) |
-| `chat_messages` | Nachrichtenhistorie pro Projekt |
-| `agent_runs` | Token-Tracking pro AI-Aufruf |
-| `byok_keys` | Verschlüsselte API-Keys der Nutzer |
-| `oauth_states` | CSRF-Tokens für GitHub OAuth |
-| `push_subscriptions` | Web-Push-Endpoints |
-| `models` | Verfügbare AI-Modelle (admin-konfigurierbar) |
-| `code_injections` | Code-Snippets per Dateiname injizierbar |
+| `e1cc72e` | fix: Vercel deploy reliability + auth hardening (P0) |
+| `30b9b83` | fix: stream stale closure — tokens no longer lost under fast SSE (P1) |
 
-**Migration 0016** (`preview_url`, `last_deployed_at`) ist lokal vorhanden, aber noch **nicht committed**.
+Branch: `master` — up to date mit `origin/master`. Letzter Vercel-Deploy: ✅ success (2026-04-29T02:06:17Z).
 
 ---
 
-## 4. API-Routen (Hono)
+## Nächste Schritte (Prio-Reihenfolge)
 
-| Route | Datei | Funktion |
-|---|---|---|
-| `GET /health` | `health.ts` | Health-Check |
-| `POST /api/chat/stream` | `chat.ts` | SSE-Stream, BYOK-gesteuert |
-| `GET /api/chat/:projectId/history` | `chat.ts` | Chat-Historie |
-| `* /api/projects` | `projects.ts` | CRUD Projekte + Datei-Download/Upload |
-| `* /api/byok-keys` | `byok-keys.ts` | BYOK-Key-Verwaltung |
-| `* /api/github` | `github.ts` | OAuth-Flow + Repo-Push |
-| `* /api/billing` | `billing.ts` | Stripe Checkout, Portal, Webhook |
-| `* /api/notifications` | `notifications.ts` | Web-Push Subscribe/Send |
-| `* /api/models` | `models.ts` | Modell-Liste |
-| `* /api/admin` | `admin.ts` | Admin-Actions (via `x-admin-key`) |
-| `POST /api/deploy/vercel` | `deploy.ts` ⚠️ | SSE-Deploy zu Vercel |
-| `GET /api/deploy/vercel/:id/status` | `deploy.ts` ⚠️ | Deploy-Status |
-
-⚠️ = neu, noch nicht committed
-
----
-
-## 5. KI & Model-Routing
-
-**Ausschließlich BYOK** (kein Goblin-eigenes Budget). Nutzer hinterlegen ihren eigenen API-Key.
-
-**Unterstützte Provider:**
-
-| Provider | Typ | Default-Modell |
-|---|---|---|
-| Anthropic | Native SDK | claude-sonnet-4-6 |
-| OpenAI | OpenAI-kompatibel | gpt-4o |
-| Groq | OpenAI-kompatibel | llama-3.3-70b-versatile |
-| DeepSeek | OpenAI-kompatibel | deepseek-chat |
-| Mistral | OpenAI-kompatibel | mistral-large-latest |
-| xAI (Grok) | OpenAI-kompatibel | grok-2-1212 |
-| Together | OpenAI-kompatibel | Llama-3-70b |
-| Google | OpenAI-kompatibel | gemini-2.0-flash |
-| Vercel (BYOK) | Deploy-Token | — |
-
-**Provider-Priorität bei Auto-Select:** Anthropic → OpenAI → DeepSeek → Groq → Mistral → Google → xAI → Together
-
----
-
-## 6. Billing / Pläne
-
-| Plan | Preis | Requests/Monat |
-|---|---|---|
-| seed | €9 | 200 |
-| craft | €19 | 800 |
-| forge | €39 | 3.000 |
-
-Usage-Limit-Middleware (`usage-limit.ts`) prüft und inkrementiert `monthly_requests_used` synchron vor jedem Chat-Stream. Stripe-Webhook resettet Counter bei `invoice.paid`.
-
----
-
-## 7. Feature-Status
-
-### Vollständig implementiert ✅
-- Auth (Supabase Magic Link / OAuth)
-- Projekt-CRUD + Datei-Storage (Hetzner S3 + In-Memory-Fallback)
-- Chat-Stream (SSE, BYOK, Multi-Provider)
-- Code-Editor (CodeMirror 6, Read/Write Dateien)
-- GitHub-Integration (OAuth + Repo-Push)
-- Billing (Stripe Checkout, Portal, Webhooks)
-- BYOK-Key-Verwaltung (AES-verschlüsselt)
-- Web-Push-Notifications (VAPID)
-- Admin-API
-- PWA (manifest.json, Service Worker)
-- Landing Page mit Pricing
-- Model-Switcher im Dashboard
-
-### Committed & gepusht ✅ (82b5462, 2026-04-28)
-- **Vercel Deploy-Feature** (`deploy.ts`, `vercel-service.ts`) — SSE-Deploy-Flow vollständig, schreibt `preview_url` in DB
-- **Preview-Tab** (`components/preview/preview-tab.tsx`) — iframe mit Viewport-Switcher (375/768/1440px), in ProjectWorkspace verdrahtet
-- **DB-Migration 0016** — `preview_url` + `last_deployed_at` auf `projects` — **noch manuell auf Supabase deployen**
-- **3-Layer Model-Routing** — goblin_hosted → free_api (Google/Groq/Cerebras/OpenRouter) → byok
-- **goblin-hosted.ts** — Placeholder für Phase 3 GPU-Inferenz (Clore.ai/vLLM)
-- **new-project-modal.tsx** — in `components/projects/`
-- **UI-Überarbeitung** — Chat, Sidebar, Topbar, Landing Pages aktualisiert
-
----
-
-## 8. Offene Baustellen / Bugs
-
-### Kritisch
-- ~~**PreviewTab nicht verdrahtet**~~ — ✅ behoben in 82b5462
-- **Migration 0016 nicht deployed:** `preview_url`-Spalte existiert in Production noch nicht. **Manuell ausführen:** `supabase db push` oder SQL direkt in Supabase Studio.
-
-### Mittel
-- **Vercel-Token-Cache:** `_vercelTokenCache` ist eine prozess-lokale `Map` — geht bei API-Restart verloren (kein Problem, aber kein Re-Fetch bis nächster Login-Request; bereits handled durch lazy refetch).
-- **100-Datei-Limit** in `vercel-service.ts` (`files.slice(0, 100)`) — größere Projekte werden stillschweigend gekürzt.
-- **Rate-Limit fehlt auf `/api/deploy`** — kein `usageLimitMiddleware` auf Deploy-Route; könnte missbraucht werden.
-- **File-Path-Bug in `github.ts`:** `fullPath.replace(\`${result.data.projectId}/\`, '')` — entfernt nur erste Occurrence und nur wenn im Pfad vorhanden; `listFiles` gibt relative Pfade zurück, nicht mit projektId-Präfix.
-
-### Klein
-- Kein CI/CD-Pipeline im Repo.
-- Kein Test-Suite (keine Unit-, Integration- oder E2E-Tests).
-- `apps/web/tsconfig.json` committed in 82b5462.
-
----
-
-## 9. Git-Stand
-
-**Letzter Commit:** `82b5462` — `feat: Vercel deploy, preview tab, 3-layer model routing, UI overhaul`
-**Branch:** master — up to date mit `origin/master`
-**Vercel-Deploy:** automatisch via GitHub-Integration ausgelöst
-
-Noch ausstehend im lokalen Working Tree:
-```
- D .env.example   — lokal gelöscht, nicht committed (intentional?)
-```
-
----
-
-## 10. Empfohlene nächste Schritte (Prio-Reihenfolge)
-
-1. ~~**PreviewTab einbinden**~~ — ✅ erledigt
-2. ~~**Alles committen**~~ — ✅ `82b5462` gepusht
-3. **Migration 0016 deployen** — `supabase db push` oder SQL direkt in Supabase Studio.
-4. **Rate-Limit auf Deploy-Route** — `usageLimitMiddleware` oder separates Deploy-Limit ergänzen.
-5. **100-Datei-Limit erhöhen / paginieren** — Vercel API unterstützt mehr via mehrere Upload-Calls.
-6. **CI/CD** — GitHub Actions: typecheck + lint on PR, smoke-test nach Deploy.
-7. **`.env.example` klären** — lokal gelöscht, aber nicht committed; wiederherstellen oder entfernen.
+1. **Migration 0016 deployen** — `supabase db push` — Preview Tab funktioniert danach vollständig
+2. **AbortController in `chat-tab.tsx`** — beim Unmount Stream abbrechen
+3. **GitHub Push File-Path-Bug fixen** — `apps/api/src/routes/github.ts` Zeile ~120
+4. **BYOK `key_encrypted` Column Type klären** — BYTEA vs TEXT
+5. **CI/CD** — GitHub Actions: typecheck + lint bei PR
