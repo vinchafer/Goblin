@@ -115,9 +115,22 @@ app.route('/api/models', models);
 app.route('/api/admin', admin);
 app.route('/api/deploy', deploy);
 
+process.on('uncaughtException', (err) => {
+  console.error('[FATAL] Uncaught exception:', err);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason) => {
+  console.error('[FATAL] Unhandled rejection:', reason);
+  process.exit(1);
+});
+
 const port = parseInt(process.env.PORT || process.env.API_PORT || '3001', 10);
 console.log(`Goblin API starting on port ${port}`);
-serve({
+
+const server = serve({
   fetch: app.fetch,
-  port
+  port,
 });
+
+console.log(`Goblin API listening on port ${port}`);
