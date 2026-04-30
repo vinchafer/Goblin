@@ -23,7 +23,12 @@ export async function exchangeCodeForToken(code: string): Promise<string> {
     })
   });
 
-  const data = await response.json();
+  const data = await response.json() as { access_token?: string; error?: string; error_description?: string };
+
+  if (!response.ok || data.error || !data.access_token) {
+    throw new Error(data.error_description || data.error || 'GitHub OAuth failed');
+  }
+
   return data.access_token;
 }
 
