@@ -37,6 +37,7 @@ interface TopbarProps {
   onMenuToggle?: () => void;
   onToggleSidebar?: () => void;
   sidebarOpen?: boolean;
+  previewUrl?: string | null;
 }
 
 export function Topbar({
@@ -46,6 +47,7 @@ export function Topbar({
   injectionCount = 0,
   onMenuToggle,
   onToggleSidebar,
+  previewUrl,
 }: TopbarProps) {
   const router = useRouter();
   const handleMenu = onMenuToggle ?? onToggleSidebar;
@@ -72,14 +74,14 @@ export function Topbar({
 
   return (
     <header style={{
-      height: 52,
-      background: '#1e3a1c',
+      height: 56,
+      background: '#2D4A2B',
       display: 'flex',
       alignItems: 'center',
-      padding: '0 12px',
-      gap: 8,
+      padding: '0 16px',
+      gap: 12,
       flexShrink: 0,
-      borderBottom: '2px solid #2d5229',
+      borderBottom: '1px solid #3A5A37',
       position: 'relative',
       zIndex: 50,
     }}>
@@ -98,56 +100,70 @@ export function Topbar({
         }}
       >☰</button>
 
-      {/* Logo */}
-      <div style={{
-        fontFamily: 'Fraunces, serif', fontSize: 20,
-        color: '#c9933a', fontWeight: 700,
-        letterSpacing: '-0.5px', marginRight: 4, flexShrink: 0,
-        userSelect: 'none',
-      }}>
+      {/* Logo - clickable */}
+      <button
+        onClick={() => router.push('/dashboard')}
+        style={{
+          fontFamily: 'Fraunces, serif', fontSize: 20,
+          color: '#D4A94A', fontWeight: 700,
+          letterSpacing: '-0.5px', marginRight: 4, flexShrink: 0,
+          userSelect: 'none', background: 'none', border: 'none',
+          cursor: 'pointer', padding: '8px 4px',
+        }}
+      >
         Goblin<span style={{ opacity: 0.65 }}>.</span>
-      </div>
+      </button>
 
-      {/* Project chip */}
+      {/* Project name - editable on double click */}
       {projectName && (
-        <div style={{
-          fontSize: 12, color: 'rgba(255,255,255,0.55)',
-          background: 'rgba(255,255,255,0.07)',
-          padding: '3px 10px', borderRadius: 6,
-          border: '1px solid rgba(255,255,255,0.1)',
-          flexShrink: 0, maxWidth: 160,
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-          fontFamily: 'DM Sans, sans-serif',
-        }}>
+        <div
+          style={{
+            fontSize: 14, color: 'rgba(255,255,255,0.9)',
+            background: 'rgba(255,255,255,0.05)',
+            padding: '6px 12px', borderRadius: 8,
+            border: '1px solid rgba(255,255,255,0.1)',
+            flexShrink: 0, maxWidth: 200,
+            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+            fontFamily: 'DM Sans, sans-serif', fontWeight: 500,
+            cursor: 'pointer',
+          }}
+          onDoubleClick={() => {
+            // TODO: Implement project name editing
+            console.log('Edit project name:', projectName);
+          }}
+          title="Double-click to edit"
+        >
           {projectName}
         </div>
       )}
 
       {/* Tab switcher — desktop only */}
-      <div style={{ display: 'flex', gap: 2, marginLeft: 8 }} className="topbar-tabs">
+      <div style={{ display: 'flex', gap: 4, marginLeft: 8 }} className="topbar-tabs">
         {(['chat', 'code', 'preview'] as const).map(tab => (
           <button
             key={tab}
             onClick={() => onTabChange?.(tab)}
             style={{
-              padding: '5px 14px', borderRadius: 6,
-              fontSize: 12, fontWeight: 500,
+              padding: '6px 16px', borderRadius: 8,
+              fontSize: 13, fontWeight: 500,
               cursor: 'pointer',
-              background: activeTab === tab ? 'rgba(255,255,255,0.13)' : 'transparent',
-              color: activeTab === tab ? '#fff' : 'rgba(255,255,255,0.4)',
+              background: activeTab === tab ? '#ffffff' : 'transparent',
+              color: activeTab === tab ? '#2D4A2B' : 'rgba(255,255,255,0.6)',
               border: 'none', fontFamily: 'DM Sans, sans-serif',
               transition: 'all 0.15s', position: 'relative',
               minHeight: 32,
             }}
-            onMouseEnter={e => { if (activeTab !== tab) (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.7)'; }}
-            onMouseLeave={e => { if (activeTab !== tab) (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.4)'; }}
+            onMouseEnter={e => { if (activeTab !== tab) (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.9)'; }}
+            onMouseLeave={e => { if (activeTab !== tab) (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.6)'; }}
+            disabled={tab === 'preview' && !previewUrl}
+            title={tab === 'preview' && !previewUrl ? 'Deploy first to see preview' : ''}
           >
             {tab.charAt(0).toUpperCase() + tab.slice(1)}
             {tab === 'code' && injectionCount > 0 && (
               <span style={{
                 position: 'absolute', top: 4, right: 4,
                 width: 6, height: 6, borderRadius: '50%',
-                background: '#c9933a', animation: 'blink 1.5s infinite',
+                background: '#D4A94A', animation: 'blink 1.5s infinite',
               }} />
             )}
           </button>

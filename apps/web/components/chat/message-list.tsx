@@ -59,29 +59,45 @@ export function MessageList({ messages, isStreaming, currentStreamingMessage, is
   // Empty state
   if (messages.length === 0 && !isStreaming) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-center pb-10">
-        <div className="text-6xl mb-4">👺</div>
-        <h2 className="text-xl font-semibold mb-2" style={{ color: 'var(--goblin-slate)', fontFamily: 'Fraunces, serif' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', paddingBottom: 40 }}>
+        {/* Goblin Logo - small, Moss */}
+        <div style={{ width: 48, height: 48, borderRadius: 12, background: '#2D4A2B', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
+          <span style={{ fontSize: 20, fontWeight: 700, color: '#FFFFFF', fontFamily: 'Fraunces, serif' }}>G</span>
+        </div>
+        <h2 style={{ fontSize: 24, fontWeight: 600, color: '#2A2A2A', marginBottom: 8, fontFamily: 'Fraunces, serif' }}>
           What are you building today?
         </h2>
-        <p className="text-sm mb-6" style={{ color: 'var(--goblin-gray)' }}>
+        <p style={{ fontSize: 14, color: '#6B6B6B', marginBottom: 32 }}>
           Describe your project or ask me anything.
         </p>
-        <div className="flex flex-wrap justify-center gap-2 max-w-md">
+        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 8, maxWidth: 400 }}>
           {SUGGESTIONS.map(text => (
             <button
               key={text}
               onClick={() => onSuggestionClick?.(text)}
-              className="px-4 py-2 rounded-lg text-sm font-medium transition-all hover:scale-105"
               style={{
-                backgroundColor: 'rgba(45, 74, 43, 0.08)',
-                color: 'var(--goblin-moss)',
-                border: '1px solid rgba(45, 74, 43, 0.15)',
+                padding: '8px 16px',
+                borderRadius: 20,
+                fontSize: 12,
+                fontWeight: 500,
+                backgroundColor: '#FFFFFF',
+                color: '#2A2A2A',
+                border: '1px solid #EDE8DC',
+                cursor: 'pointer',
+                transition: 'all 0.15s',
+                fontFamily: 'DM Sans, sans-serif',
               }}
-              onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'rgba(45, 74, 43, 0.15)'; }}
-              onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(45, 74, 43, 0.08)'; }}
+              onMouseEnter={e => { 
+                e.currentTarget.style.backgroundColor = '#F7F3EC'; 
+                e.currentTarget.style.borderColor = '#D4A94A';
+                e.currentTarget.style.transform = 'translateY(-1px)';
+              }}
+              onMouseLeave={e => { 
+                e.currentTarget.style.backgroundColor = '#FFFFFF'; 
+                e.currentTarget.style.borderColor = '#EDE8DC';
+                e.currentTarget.style.transform = 'translateY(0)';
+              }}
             >
-              <Sparkles className="w-3 h-3 inline-block mr-1.5" />
               {text}
             </button>
           ))}
@@ -97,11 +113,11 @@ export function MessageList({ messages, isStreaming, currentStreamingMessage, is
       {messages.map(message => (
         <div
           key={message.id}
-          className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+          style={{ display: 'flex', gap: 12, marginBottom: 16, justifyContent: message.role === 'user' ? 'flex-end' : 'flex-start' }}
         >
           {message.role === 'assistant' && (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-              <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--goblin-moss)' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, flexShrink: 0 }}>
+              <div style={{ width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#2D4A2B' }}>
                 <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>G</span>
               </div>
               {message.model_used && message.source_tier && (
@@ -113,18 +129,23 @@ export function MessageList({ messages, isStreaming, currentStreamingMessage, is
           )}
 
           <div
-            className={`max-w-[88%] md:max-w-2xl px-4 py-3 rounded-2xl ${message.role === 'user' ? 'rounded-tr-none' : 'rounded-tl-none'}`}
             style={{
-              backgroundColor: message.role === 'user' ? 'var(--goblin-moss)' : 'white',
-              border: message.role === 'assistant' ? '1px solid var(--goblin-light)' : 'none',
-              color: message.role === 'user' ? 'white' : 'inherit',
+              maxWidth: message.role === 'user' ? '75%' : '85%',
+              padding: '12px 16px',
+              borderRadius: message.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+              backgroundColor: message.role === 'user' ? '#2D4A2B' : '#FFFFFF',
+              border: message.role === 'assistant' ? '1px solid #EDE8DC' : 'none',
+              color: message.role === 'user' ? 'rgba(255, 255, 255, 0.92)' : '#2A2A2A',
+              fontFamily: 'DM Sans, sans-serif',
+              fontSize: 14,
+              lineHeight: 1.5,
             }}
           >
             <MessageContent content={message.content} messageId={message.id} role={message.role} />
           </div>
 
           {message.role === 'user' && (
-            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--goblin-ochre)' }}>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#D4A94A', flexShrink: 0 }}>
               <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>U</span>
             </div>
           )}
@@ -132,25 +153,37 @@ export function MessageList({ messages, isStreaming, currentStreamingMessage, is
       ))}
 
       {isStreaming && (
-        <div className="flex gap-3 justify-start">
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-            <div className="w-8 h-8 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: 'var(--goblin-moss)' }}>
+        <div style={{ display: 'flex', gap: 12, marginBottom: 16, justifyContent: 'flex-start' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, flexShrink: 0 }}>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#2D4A2B' }}>
               <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>G</span>
             </div>
             {showMetaBadge && (
-              <span style={{ fontSize: 9, color: '#6b6560', whiteSpace: 'nowrap', maxWidth: 64, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <span style={{ fontSize: 10, color: '#6B6B6B', whiteSpace: 'nowrap', maxWidth: 64, overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: 'JetBrains Mono, monospace' }}>
                 via {metaInfo.model.split('-').slice(0, 2).join('-')} · {(metaInfo.sourceTier as string) === 'byok' ? 'BYOK' : (metaInfo.sourceTier as string) === 'free_api' ? 'Free' : 'Hosted'}
               </span>
             )}
           </div>
-          <div className="max-w-[88%] md:max-w-2xl px-4 py-3 rounded-2xl rounded-tl-none bg-white" style={{ border: '1px solid var(--goblin-light)' }}>
+          <div
+            style={{
+              maxWidth: '85%',
+              padding: '12px 16px',
+              borderRadius: '16px 16px 16px 4px',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid #EDE8DC',
+              color: '#2A2A2A',
+              fontFamily: 'DM Sans, sans-serif',
+              fontSize: 14,
+              lineHeight: 1.5,
+            }}
+          >
             {currentStreamingMessage ? (
               <MessageContent content={currentStreamingMessage} role="assistant" />
             ) : (
-              <div className="flex items-center gap-1 h-6">
-                <span className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--goblin-moss)', animationDelay: '0ms' }} />
-                <span className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--goblin-moss)', animationDelay: '150ms' }} />
-                <span className="w-2 h-2 rounded-full animate-bounce" style={{ backgroundColor: 'var(--goblin-moss)', animationDelay: '300ms' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4, height: 24 }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#2D4A2B', animation: 'bounce 1.4s infinite ease-in-out' }} />
+                <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#2D4A2B', animation: 'bounce 1.4s infinite ease-in-out', animationDelay: '0.16s' }} />
+                <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#2D4A2B', animation: 'bounce 1.4s infinite ease-in-out', animationDelay: '0.32s' }} />
               </div>
             )}
           </div>

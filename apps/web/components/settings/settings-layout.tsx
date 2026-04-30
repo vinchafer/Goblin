@@ -2,12 +2,13 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
+import { User, Key, GitBranch, CreditCard } from 'lucide-react';
 
 const NAV_ITEMS = [
-  { href: '/dashboard/settings',              label: 'General',      icon: '⚙' },
-  { href: '/dashboard/settings/keys',         label: 'API Keys',     icon: '🔑' },
-  { href: '/dashboard/settings/integrations', label: 'Integrations', icon: '🔗' },
-  { href: '/dashboard/settings/billing',      label: 'Billing',      icon: '💳' },
+  { href: '/dashboard/settings',              label: 'Account',      icon: User, size: 16 },
+  { href: '/dashboard/settings/keys',         label: 'API Keys',     icon: Key, size: 16 },
+  { href: '/dashboard/settings/integrations', label: 'Integrations', icon: GitBranch, size: 16 },
+  { href: '/dashboard/settings/billing',      label: 'Billing',      icon: CreditCard, size: 16 },
 ];
 
 export function SettingsLayout({ children }: { children: ReactNode }) {
@@ -42,6 +43,7 @@ export function SettingsLayout({ children }: { children: ReactNode }) {
 
         {NAV_ITEMS.map(item => {
           const active = pathname === item.href;
+          const IconComponent = item.icon;
           return (
             <Link
               key={item.href}
@@ -58,7 +60,7 @@ export function SettingsLayout({ children }: { children: ReactNode }) {
               onMouseEnter={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0.03)'; (e.currentTarget as HTMLElement).style.color = 'var(--text)'; } }}
               onMouseLeave={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--meta)'; } }}
             >
-              <span style={{ fontSize: 14, lineHeight: 1 }}>{item.icon}</span>
+              <IconComponent size={item.size} style={{ opacity: active ? 1 : 0.6 }} />
               {item.label}
             </Link>
           );

@@ -1,7 +1,7 @@
 'use client';
 import type { CSSProperties, ReactNode } from 'react';
 
-type ButtonVariant = 'primary' | 'ghost' | 'ochre' | 'danger';
+type ButtonVariant = 'primary' | 'secondary' | 'ochre' | 'ghost' | 'danger';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 interface ButtonProps {
@@ -13,19 +13,42 @@ interface ButtonProps {
   fullWidth?: boolean;
   type?: 'button' | 'submit';
   style?: CSSProperties;
+  loading?: boolean;
 }
 
 const variants: Record<ButtonVariant, CSSProperties> = {
-  primary: { background: 'var(--moss)', color: '#fff', border: 'none' },
-  ghost:   { background: 'transparent', color: 'var(--text)', border: '1px solid var(--border)' },
-  ochre:   { background: 'var(--ochre)', color: 'var(--bark)', border: 'none', boxShadow: '0 2px 8px rgba(201,147,58,0.25)' },
-  danger:  { background: 'var(--danger)', color: '#fff', border: 'none' },
+  primary: { 
+    background: 'var(--moss)', 
+    color: '#fff', 
+    border: 'none',
+  },
+  secondary: { 
+    background: 'white', 
+    color: 'var(--text)', 
+    border: '1px solid var(--div)',
+  },
+  ochre: { 
+    background: 'var(--ochre)', 
+    color: 'var(--bark)', 
+    border: 'none',
+    boxShadow: 'var(--shadow-ochre)',
+  },
+  ghost: { 
+    background: 'transparent', 
+    color: 'var(--meta)', 
+    border: 'none',
+  },
+  danger: { 
+    background: 'var(--error)', 
+    color: '#fff', 
+    border: 'none',
+  },
 };
 
 const sizes: Record<ButtonSize, CSSProperties> = {
-  sm: { height: 32, padding: '0 12px', fontSize: 12, borderRadius: 7 },
-  md: { height: 40, padding: '0 16px', fontSize: 13, borderRadius: 8 },
-  lg: { height: 52, padding: '0 24px', fontSize: 15, borderRadius: 10 },
+  sm: { height: 32, padding: '0 12px', fontSize: 13, borderRadius: 8 },
+  md: { height: 36, padding: '0 16px', fontSize: 13, borderRadius: 8 },
+  lg: { height: 40, padding: '0 20px', fontSize: 14, borderRadius: 8 },
 };
 
 export function Button({ children, variant = 'primary', size = 'md', onClick, disabled, fullWidth, type = 'button', style }: ButtonProps) {
@@ -54,17 +77,21 @@ export function Button({ children, variant = 'primary', size = 'md', onClick, di
       onMouseEnter={e => {
         if (disabled) return;
         const el = e.currentTarget;
-        if (variant === 'primary') el.style.background = 'var(--moss2)';
-        if (variant === 'ghost') el.style.background = 'rgba(0,0,0,0.04)';
-        if (variant === 'ochre') el.style.background = 'var(--ochre2)';
+        if (variant === 'primary') el.style.background = 'var(--moss-2)';
+        if (variant === 'secondary') el.style.background = 'var(--subtle)';
+        if (variant === 'ochre') el.style.background = 'var(--ochre-2)';
+        if (variant === 'ghost') el.style.background = 'var(--subtle)';
+        if (variant === 'danger') el.style.background = '#a04c30';
         el.style.transform = 'translateY(-1px)';
       }}
       onMouseLeave={e => {
         if (disabled) return;
         const el = e.currentTarget;
         if (variant === 'primary') el.style.background = 'var(--moss)';
-        if (variant === 'ghost') el.style.background = 'transparent';
+        if (variant === 'secondary') el.style.background = 'white';
         if (variant === 'ochre') el.style.background = 'var(--ochre)';
+        if (variant === 'ghost') el.style.background = 'transparent';
+        if (variant === 'danger') el.style.background = 'var(--error)';
         el.style.transform = '';
       }}
     >

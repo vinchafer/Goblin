@@ -58,57 +58,68 @@ export function ProjectsList({ projects, onProjectCreated }: ProjectsListProps) 
 
       {/* Project list */}
       <div className="flex-1 overflow-y-auto px-2 pb-2 space-y-0.5">
-        {projects.map((project) => {
-          const isActive = activeProject?.id === project.id;
-          return (
-            <button
-              key={project.id}
-              onClick={() => {
-                setActiveProject(project);
-                router.push(`/dashboard/project/${project.id}`);
-              }}
-              className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-all duration-150"
-              style={{
-                backgroundColor: isActive ? "rgba(201,147,58,0.1)" : "transparent",
-                border: isActive ? "1px solid rgba(201,147,58,0.2)" : "1px solid transparent"
-              }}
-              onMouseEnter={(e) => {
-                if (!isActive) {
-                  (e.currentTarget as HTMLButtonElement).style.backgroundColor =
-                    "rgba(0,0,0,0.04)";
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (!isActive) {
-                  (e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent";
-                }
-              }}
-            >
-              <Circle
-                className="w-2.5 h-2.5 shrink-0"
-                fill={project.color}
-                strokeWidth={0}
-              />
-              <div className="flex-1 min-w-0">
-                <div
-                  className="text-xs font-medium truncate"
-                  style={{
-                    color: isActive ? "var(--goblin-ochre)" : "var(--goblin-bark)",
-                    fontFamily: "var(--font-dm-sans)"
-                  }}
-                >
-                  {project.name}
+        {projects.length === 0 ? (
+          <div className="px-2.5 py-4 text-center">
+            <div className="text-xs font-medium mb-1" style={{ color: 'var(--goblin-bark)' }}>
+              No projects yet
+            </div>
+            <div className="text-[10px]" style={{ color: 'var(--goblin-meta)' }}>
+              Click above to create your first
+            </div>
+          </div>
+        ) : (
+          projects.map((project) => {
+            const isActive = activeProject?.id === project.id;
+            return (
+              <button
+                key={project.id}
+                onClick={() => {
+                  setActiveProject(project);
+                  router.push(`/dashboard/project/${project.id}`);
+                }}
+                className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-all duration-150"
+                style={{
+                  backgroundColor: isActive ? "rgba(201,147,58,0.1)" : "transparent",
+                  border: isActive ? "1px solid rgba(201,147,58,0.2)" : "1px solid transparent"
+                }}
+                onMouseEnter={(e) => {
+                  if (!isActive) {
+                    (e.currentTarget as HTMLButtonElement).style.backgroundColor =
+                      "rgba(0,0,0,0.04)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive) {
+                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent";
+                  }
+                }}
+              >
+                <Circle
+                  className="w-2.5 h-2.5 shrink-0"
+                  fill={project.color}
+                  strokeWidth={0}
+                />
+                <div className="flex-1 min-w-0">
+                  <div
+                    className="text-xs font-medium truncate"
+                    style={{
+                      color: isActive ? "var(--goblin-ochre)" : "var(--goblin-bark)",
+                      fontFamily: "var(--font-dm-sans)"
+                    }}
+                  >
+                    {project.name}
+                  </div>
+                  <div
+                    className="text-[10px]"
+                    style={{ color: "var(--goblin-meta)", fontFamily: "var(--font-dm-sans)" }}
+                  >
+                    {formatRelativeTime(project.last_active)}
+                  </div>
                 </div>
-                <div
-                  className="text-[10px]"
-                  style={{ color: "var(--goblin-meta)", fontFamily: "var(--font-dm-sans)" }}
-                >
-                  {formatRelativeTime(project.last_active)}
-                </div>
-              </div>
-            </button>
-          );
-        })}
+              </button>
+            );
+          })
+        )}
       </div>
 
       {modalOpen && (

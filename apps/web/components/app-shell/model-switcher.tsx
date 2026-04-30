@@ -67,8 +67,79 @@ export function ModelSwitcher() {
         const modelsData = await modelsRes.json();
         const keysData = await keysRes.json();
 
-        setModels(Array.isArray(modelsData) ? modelsData : []);
-        setByokKeys(Array.isArray(keysData) ? keysData : []);
+        const modelsArray = Array.isArray(modelsData) ? modelsData : [];
+        const keysArray = Array.isArray(keysData) ? keysData : [];
+
+        setModels(modelsArray);
+        setByokKeys(keysArray);
+
+        // Default model selection logic
+        const activeProviders = keysArray
+          .filter(k => k.status === 'active')
+          .map(k => k.provider);
+
+        // 1. Check localStorage
+        const storedModel = localStorage.getItem('goblin:selectedModel');
+        if (storedModel) {
+          try {
+            const parsed = JSON.parse(storedModel);
+            const foundModel = modelsArray.find(m => m.id === parsed.id);
+            if (foundModel && foundModel.available) {
+              // Check if BYOK model has key
+              if (foundModel.layer === 'byok' && !activeProviders.includes(foundModel.provider)) {
+                // Don't select BYOK model without key
+              } else {
+                handleModelSelect(foundModel);
+                return;
+              }
+            }
+          } catch {
+            // Invalid JSON, continue
+          }
+        }
+
+        // 2. First BYOK model with key
+        const firstByokWithKey = modelsArray.find(m => 
+          m.layer === 'byok' && 
+          m.available && 
+          activeProviders.includes(m.provider)
+        );
+        if (firstByokWithKey) {
+          handleModelSelect(firstByokWithKey);
+          return;
+        }
+
+        // 3. Gemini Flash (free_api)
+        const geminiFlash = modelsArray.find(m => 
+          m.layer === 'free_api' && 
+          m.available && 
+          m.name.includes('Gemini')
+        );
+        if (geminiFlash) {
+          handleModelSelect(geminiFlash);
+          return;
+        }
+
+        // 4. First free_api model
+        const firstFree = modelsArray.find(m => 
+          m.layer === 'free_api' && 
+          m.available
+        );
+        if (firstFree) {
+          handleModelSelect(firstFree);
+          return;
+        }
+
+        // 5. No model available
+        setActiveModel({
+          id: '',
+          name: 'Add model →',
+          slug: '',
+          provider: '',
+          tier: 'byok',
+          icon: 'key',
+          available: false,
+        });
       } catch {
         // Silently fail — fallback to empty state
       } finally {
@@ -88,17 +159,18 @@ export function ModelSwitcher() {
   const activeProviders = getActiveProviders();
 
   const getBadge = (model: ModelFromAPI) => {
-    if (activeProviders.includes(model.provider)) {
-      return { text: `${model.provider.toUpperCase()} · BYOK`, color: 'var(--goblin-good)' };
-    }
-    if (model.requires_key && !activeProviders.includes(model.provider)) {
-      return { text: "Add key →", color: 'var(--goblin-gray)' };
+    if (model.layer === 'byok') {
+      if (activeProviders.includes(model.provider)) {
+        return { text: 'BYOK ✓', color: '#4a7c3b' }; // green
+      } else {
+        return { text: 'Add key →', color: '#b85c3c' }; // red
+      }
     }
     if (model.layer === 'free_api') {
-      return { text: "FREE", color: 'var(--goblin-ochre)' };
+      return { text: 'FREE', color: '#4a7c3b' }; // green
     }
     if (model.layer === 'goblin_hosted') {
-      return { text: "GOBLIN HOSTED", color: 'var(--goblin-moss)' };
+      return { text: 'SOON', color: '#6b6560' }; // gray
     }
     return null;
   };
@@ -110,11 +182,11 @@ export function ModelSwitcher() {
       slug: model.slug || model.id,
       provider: model.provider,
       tier: model.layer === 'free_api' ? 'free' : model.layer === 'goblin_hosted' ? 'hosted' : 'byok',
-      icon: model.requires_key ? '🔑' : model.layer === 'goblin_hosted' ? '🤖' : '⚡',
+      icon: model.requires_key ? 'key' : model.layer === 'goblin_hosted' ? 'bot' : 'zap',
       available: model.available,
     };
     setActiveModel(appModel);
-    localStorage.setItem('goblin_active_model', JSON.stringify(appModel));
+    localStorage.setItem('goblin:selectedModel', JSON.stringify(appModel));
     setOpen(false);
   };
 
@@ -127,9 +199,9 @@ export function ModelSwitcher() {
   }
 
   const TIER_LABELS: Record<string, string> = {
-    hosted: "Goblin Hosted",
-    free: "Free API",
-    byok: "BYOK"
+    byok: "BYOK — YOUR KEYS",
+    free: "FREE — NO KEY NEEDED",
+    hosted: "GOBLIN HOSTED — COMING SOON"
   };
 
   const TIER_ORDER = ['byok', 'hosted', 'free'];
@@ -153,6 +225,24 @@ export function ModelSwitcher() {
     );
   }
 
+  const getPillDisplay = () => {
+    if (activeModel.name === 'Add model →') {
+      return (
+        <>
+          <span style={{ color: '#D4A94A' }}>{activeModel.name}</span>
+        </>
+      );
+    }
+    
+    const tierLabel = activeModel.tier === 'byok' ? 'BYOK' : activeModel.tier === 'free' ? 'FREE' : 'HOSTED';
+    return (
+      <>
+        <span>{activeModel.name}</span>
+        <span style={{ color: 'var(--goblin-gray)' }}> · {tierLabel}</span>
+      </>
+    );
+  };
+
   return (
     <div className="relative">
       <button
@@ -160,12 +250,14 @@ export function ModelSwitcher() {
         className="flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium"
         style={{
           backgroundColor: 'white',
-          borderColor: 'var(--goblin-light)',
+          borderColor: activeModel.name === 'Add model →' ? '#D4A94A' : 'var(--goblin-light)',
           color: 'var(--goblin-slate)'
         }}
       >
-        <span>{activeModel.icon}</span>
-        <span>{activeModel.name}</span>
+        {activeModel.icon === 'key' && <Key className="w-4 h-4" />}
+        {activeModel.icon === 'bot' && <Bot className="w-4 h-4" />}
+        {activeModel.icon === 'zap' && <Zap className="w-4 h-4" />}
+        {getPillDisplay()}
         <ChevronDown className="w-4 h-4" style={{ color: 'var(--goblin-gray)' }} />
       </button>
 
@@ -217,8 +309,14 @@ export function ModelSwitcher() {
                         className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 ${
                           model.available ? 'hover:bg-gray-50' : 'opacity-50 cursor-not-allowed'
                         } ${isActive ? 'bg-gray-50' : ''}`}
-                      >
-                        <span>{model.requires_key ? '🔑' : model.layer === 'goblin_hosted' ? '🤖' : '⚡'}</span>
+                       >
+                         {model.requires_key ? (
+                           <Key className="w-4 h-4" />
+                         ) : model.layer === 'goblin_hosted' ? (
+                           <Bot className="w-4 h-4" />
+                         ) : (
+                           <Zap className="w-4 h-4" />
+                         )}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-1">
                             <span style={{ color: model.available ? 'var(--goblin-slate)' : 'var(--goblin-gray)' }}>

@@ -97,7 +97,7 @@ export function AddKeyModal({ open, onClose, onKeyAdded }: AddKeyModalProps) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="bg-white rounded-xl shadow-2xl max-w-md w-full m-4">
         <div className="p-5 border-b flex items-center justify-between" style={{ borderColor: 'var(--goblin-light)' }}>
-          <h2 className="text-lg font-semibold" style={{ color: 'var(--goblin-slate)' }}>Add API Key</h2>
+          <h2 className="text-lg font-semibold" style={{ color: 'var(--goblin-slate)' }}>Connect {PROVIDERS.find(p => p.id === provider)?.label}</h2>
           <button onClick={handleClose} className="p-1 rounded hover:bg-gray-100">
             <X className="w-5 h-5" style={{ color: 'var(--goblin-gray)' }} />
           </button>
@@ -145,7 +145,7 @@ export function AddKeyModal({ open, onClose, onKeyAdded }: AddKeyModalProps) {
                 type={showKey ? 'text' : 'password'}
                 value={key}
                 onChange={(e) => setKey(e.target.value)}
-                placeholder={`${provider} API Key`}
+                placeholder="sk-..."
                 className="w-full px-3 py-2 pr-10 rounded-lg border font-mono text-sm"
                 style={{ borderColor: 'var(--goblin-light)' }}
                 required
@@ -192,14 +192,31 @@ export function AddKeyModal({ open, onClose, onKeyAdded }: AddKeyModalProps) {
             </div>
           )}
 
-          <button
-            type="submit"
-            disabled={loading || !label || !key}
-            className="w-full py-3 rounded-lg flex items-center justify-center gap-2 font-medium disabled:opacity-50"
-            style={{ backgroundColor: 'var(--goblin-moss)', color: 'white' }}
-          >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Add key'}
-          </button>
+          <div className="flex gap-2 pt-2">
+            <button
+              type="button"
+              onClick={handleClose}
+              className="flex-1 py-3 rounded-lg font-medium"
+              style={{
+                border: '1px solid var(--goblin-light)',
+                color: 'var(--goblin-slate)',
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading || !label || !key}
+              className="flex-1 py-3 rounded-lg flex items-center justify-center gap-2 font-medium disabled:opacity-50"
+              style={{
+                backgroundColor: '#D4A94A',
+                color: '#3A2E1F',
+                fontWeight: 600,
+              }}
+            >
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Connect →'}
+            </button>
+          </div>
         </form>
       </div>
     </div>

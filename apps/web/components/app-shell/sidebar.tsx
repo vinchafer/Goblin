@@ -63,21 +63,21 @@ export function Sidebar({ projects = [], activeProjectId, onProjectSelect, isOpe
           <button
             onClick={() => { setShowNewProjectModal(true); onClose?.(); }}
             style={{
-              width: '100%', background: '#1e3a1c', color: '#fff', border: 'none',
+              width: '100%', background: '#2D4A2B', color: '#fff', border: 'none',
               borderRadius: 8, padding: '8px 12px', fontSize: 12, fontWeight: 500,
               cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
               marginBottom: 12, fontFamily: 'DM Sans, sans-serif', transition: 'background 0.15s',
               minHeight: 36,
             }}
-            onMouseEnter={e => (e.currentTarget.style.background = '#2d5229')}
-            onMouseLeave={e => (e.currentTarget.style.background = '#1e3a1c')}
+            onMouseEnter={e => (e.currentTarget.style.background = '#3A5A37')}
+            onMouseLeave={e => (e.currentTarget.style.background = '#2D4A2B')}
           >
             <span style={{ fontSize: 16, lineHeight: 1, flexShrink: 0 }}>＋</span>
             New Project
           </button>
 
-          <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', color: '#6b6560', marginBottom: 8, padding: '0 4px' }}>
-            Projects
+          <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', color: '#6B6B6B', marginBottom: 8, padding: '0 4px' }}>
+            PROJECTS
           </div>
 
           {projects.length === 0 ? (
@@ -112,28 +112,18 @@ export function Sidebar({ projects = [], activeProjectId, onProjectSelect, isOpe
         </div>
 
         {/* ── Build Status ── */}
+        {/* Only shown when there's an active deploy in the last 10 minutes */}
+        {/* For now, we don't have project data, so we'll hide it */}
+        {/* 
         <div style={{ padding: 12, borderBottom: '1px solid #e4ddd2', flexShrink: 0 }}>
           <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', color: '#6b6560', marginBottom: 10 }}>
             Build
           </div>
-
-          {/* Active build example — shown when project is deploying */}
-          <div style={{ background: 'rgba(201,147,58,0.06)', border: '1px solid rgba(201,147,58,0.18)', borderRadius: 8, padding: '10px 12px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-              <span style={{ fontSize: 11, fontWeight: 500, color: '#1a1a1a' }}>Deploying…</span>
-              <span style={{ fontSize: 10, fontFamily: 'JetBrains Mono, monospace', color: '#c9933a' }}>~34s</span>
-            </div>
-            {/* Animated progress bar */}
-            <div style={{ height: 4, background: 'rgba(201,147,58,0.15)', borderRadius: 2, overflow: 'hidden' }}>
-              <div style={{
-                height: '100%', background: 'linear-gradient(90deg, #c9933a, #e8b05a)',
-                borderRadius: 2, animation: 'pw 3s ease-in-out infinite alternate',
-                width: '65%',
-              }} />
-            </div>
-            <div style={{ fontSize: 10, color: '#6b6560', marginTop: 6 }}>Vercel · main branch</div>
+          <div style={{ padding: '8px 0', fontSize: 11, color: '#6b6560', fontStyle: 'italic' }}>
+            No active deployments
           </div>
         </div>
+        */}
 
         {/* ── Model Routing ── */}
         <div style={{ padding: 12, marginTop: 'auto', borderTop: '1px solid #e4ddd2', flexShrink: 0 }}>

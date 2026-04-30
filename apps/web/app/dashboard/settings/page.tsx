@@ -65,7 +65,7 @@ function NotificationsSection() {
         fontFamily: 'Fraunces, serif', fontSize: 22,
         color: 'var(--moss)', fontWeight: 700,
         marginBottom: 4, letterSpacing: '-0.5px',
-      }}>🔔 Build Notifications</h2>
+      }}>Build Notifications</h2>
       <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 20 }}>
         Get notified when builds complete
       </p>

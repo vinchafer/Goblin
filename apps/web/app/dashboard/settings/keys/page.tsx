@@ -12,12 +12,12 @@ export default async function KeysSettingsPage() {
 
   return (
     <SettingsLayout>
-      <div className="max-w-2xl">
-        <h1 className="text-2xl font-semibold mb-2" style={{ color: 'var(--goblin-slate)' }}>
-          BYOK Keys
+      <div style={{ maxWidth: '800px' }}>
+        <h1 style={{ fontSize: '24px', fontWeight: 600, color: '#2A2A2A', marginBottom: '8px', fontFamily: 'DM Sans, sans-serif' }}>
+          API Keys
         </h1>
-        <p className="mb-6" style={{ color: 'var(--goblin-gray)' }}>
-          Bring your own API keys for Anthropic and OpenAI. Your keys are encrypted at rest.
+        <p style={{ fontSize: '14px', color: '#6B6B6B', marginBottom: '32px' }}>
+          Connect your own API keys for different AI providers. Your keys are encrypted at rest and never stored in plaintext.
         </p>
 
         <KeysList initialKeys={keys || []} />

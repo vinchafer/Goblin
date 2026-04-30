@@ -1,41 +1,61 @@
 @import "tailwindcss";
 
 :root {
-  --moss:    #1e3a1c;
-  --moss2:   #2d5229;
-  --moss3:   #3a6635;
-  --ochre:   #c9933a;
-  --ochre2:  #e8b05a;
-  --ochre3:  #f5c878;
-  --cream:   #f5f0e8;
-  --cream2:  #ede7d9;
-  --bark:    #2a1f0f;
-  --text:    #1a1a1a;
-  --meta:    #6b6560;
-  --border:  #e4ddd2;
-  --panel:   #ffffff;
-  --sidebar: #f7f3ec;
-  --success: #4a7c3b;
-  --danger:  #b85c3c;
-  --code-bg: #141a12;
-  --code-border: #1e2a1c;
+  /* Brand Colors */
+  --moss:     #2D4A2B;
+  --moss-2:   #3A5E38;
+  --moss-3:   #1E3220;
+  --ochre:    #D4A94A;
+  --ochre-2:  #E8BF6A;
+  --bark:     #3A2E1F;
+  --cream:    #F7F4ED;
+  --subtle:   #F0EBE0;
+  --div:      #EDE8DC;
+
+  /* Text */
+  --text:     #2A2A2A;
+  --text-2:   #4A4A4A;
+  --meta:     #6B6B6B;
+  --disabled: #ABABAB;
+
+  /* Status */
+  --success:  #4A7C3B;
+  --error:    #B85C3C;
+  --warning:  #D4A94A;
+
+  /* Fonts */
+  --font-brand: var(--font-fraunces), Georgia, serif;
+  --font-ui:    var(--font-dm-sans), system-ui, sans-serif;
+  --font-code:  var(--font-mono), 'Courier New', monospace;
+
+  /* Spacing */
+  --radius-sm:  6px;
+  --radius-md:  8px;
+  --radius-lg:  12px;
+  --radius-xl:  16px;
+
+  /* Shadows */
+  --shadow-sm:  0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:  0 4px 16px rgba(0,0,0,0.08);
+  --shadow-lg:  0 8px 32px rgba(0,0,0,0.12);
+  --shadow-ochre: 0 2px 8px rgba(212,169,74,0.25);
 
   /* backwards-compat aliases */
-  --goblin-moss:   #1e3a1c;
-  --goblin-ochre:  #c9933a;
-  --goblin-cream:  #f5f0e8;
-  --goblin-cream2: #ede7d9;
-  --goblin-bark:   #2a1f0f;
-  --goblin-slate:  #1a1a1a;
-  --goblin-gray:   #6b6560;
-  --goblin-light:  #ede7d9;
-  --goblin-border: #e4ddd2;
-  --goblin-meta:   #6b6560;
-  --goblin-text:   #1a1a1a;
-  --goblin-good:   #4a7c3b;
-  --goblin-warn:   #b85c3c;
-  --goblin-moss2:  #2d5229;
-  --goblin-ochre2: #e8b05a;
+  --goblin-moss:   #2D4A2B;
+  --goblin-ochre:  #D4A94A;
+  --goblin-cream:  #F7F4ED;
+  --goblin-cream2: #F0EBE0;
+  --goblin-bark:   #3A2E1F;
+  --goblin-slate:  #2A2A2A;
+  --goblin-gray:   #6B6B6B;
+  --goblin-light:  #F0EBE0;
+  --goblin-border: #EDE8DC;
+  --goblin-meta:   #6B6B6B;
+  --goblin-text:   #2A2A2A;
+  --goblin-good:   #4A7C3B;
+  --goblin-warn:   #B85C3C;
+  --goblin-moss2:  #3A5E38;
+  --goblin-ochre2: #E8BF6A;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -65,11 +85,24 @@ body {
 @keyframes blink   { 0%,100%{opacity:1} 50%{opacity:0.3} }
 @keyframes slideIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
 @keyframes slideUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
-@keyframes fadeIn  { from{opacity:0} to{opacity:1} }
+@keyframes fadeIn  { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
 @keyframes pw      { from{width:55%} to{width:78%} }
 @keyframes spin    { to{transform:rotate(360deg)} }
 @keyframes slideInLeft { from{transform:translateX(-100%);opacity:0} to{transform:translateX(0);opacity:1} }
 
 .animate-slide-in-left { animation: slideInLeft 0.22s ease-out; }
+.fade-in { animation: fadeIn 0.2s ease; }
+
+.skeleton {
+  background: linear-gradient(90deg, var(--subtle) 25%, var(--div) 50%, var(--subtle) 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+}
+
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
 .safe-top    { padding-top:    env(safe-area-inset-top,    0px); }

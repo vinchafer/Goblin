@@ -11,9 +11,10 @@ import type { Project } from "@goblin/shared/src/schemas";
 interface DashboardShellProps {
   projects: Project[];
   children: React.ReactNode;
+  previewUrl?: string | null;
 }
 
-export function DashboardShell({ projects, children }: DashboardShellProps) {
+export function DashboardShell({ projects, children, previewUrl }: DashboardShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { activeTab, setActiveTab, injectionCount, activeModel } = useApp();
   const pathname = usePathname();
@@ -46,15 +47,9 @@ export function DashboardShell({ projects, children }: DashboardShellProps) {
         projectName={activeProjectName}
         selectedModel={activeModel.id}
         injectionCount={injectionCount}
+        previewUrl={previewUrl}
       />
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative' }}>
-        <div className="goblin-sidebar-desktop">
-          <Sidebar
-            projects={projects as any[]}
-            activeProjectId={activeProjectId}
-            isOpen={false}
-          />
-        </div>
         <Sidebar
           projects={projects as any[]}
           activeProjectId={activeProjectId}
@@ -66,10 +61,6 @@ export function DashboardShell({ projects, children }: DashboardShellProps) {
         </main>
       </div>
       <BottomTabBar />
-      <style>{`
-        .goblin-sidebar-desktop { display: flex; }
-        @media (max-width: 768px) { .goblin-sidebar-desktop { display: none !important; } }
-      `}</style>
     </div>
   );
 }

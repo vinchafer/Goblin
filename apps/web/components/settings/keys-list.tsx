@@ -1,23 +1,23 @@
 "use client";
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { ByokKey } from "@goblin/shared/src/schemas";
-import { Eye, EyeOff, Check, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { Eye, EyeOff, Check, Trash2, ChevronDown, ChevronUp, Key, Zap, Cpu, Bot, Code, Globe, Layers } from "lucide-react";
 
 interface KeysListProps {
   initialKeys: ByokKey[];
 }
 
 const PROVIDERS = [
-  { id: 'anthropic', label: 'Anthropic',     icon: '🧠', model: 'Claude Sonnet 4.6',  dashboard: 'https://console.anthropic.com/settings/keys', desc: 'Best for coding — powers Claude Sonnet' },
-  { id: 'google',    label: 'Google AI Studio', icon: '🔮', model: 'Gemini 2.0 Flash', dashboard: 'https://aistudio.google.com/app/apikey', desc: 'Gemini 2.0 Flash — fast, generous free tier' },
-  { id: 'groq',      label: 'Groq',           icon: '🔥', model: 'Llama 3.3 70B',       dashboard: 'https://console.groq.com/keys',         desc: 'Llama 3.3 70B — fastest inference' },
-  { id: 'openai',    label: 'OpenAI',         icon: '⚡', model: 'GPT-4o',              dashboard: 'https://platform.openai.com/api-keys',  desc: 'GPT-4o and o1 models' },
-  { id: 'deepseek',  label: 'DeepSeek',       icon: '🧊', model: 'DeepSeek V3',         dashboard: 'https://platform.deepseek.com/api_keys', desc: 'DeepSeek V3 — best price/performance' },
-  { id: 'mistral',   label: 'Mistral',        icon: '🌬️', model: 'Mistral Large',      dashboard: 'https://console.mistral.ai/api-keys/',  desc: 'European AI, GDPR-friendly' },
-  { id: 'xai',       label: 'xAI (Grok)',     icon: '🕵️', model: 'Grok 2',             dashboard: 'https://console.x.ai/',                desc: 'Grok 2 — real-time knowledge' },
-  { id: 'together',  label: 'Together AI',    icon: '🤝', model: 'Llama 3 70B',        dashboard: 'https://api.together.xyz/settings/api-keys', desc: '100+ open source models' },
+  { id: 'anthropic', label: 'Anthropic',     icon: Key, model: 'Claude Sonnet 4.6',  dashboard: 'https://console.anthropic.com/settings/keys', desc: 'Best for coding — powers Claude Sonnet' },
+  { id: 'google',    label: 'Google AI Studio', icon: Zap, model: 'Gemini 2.0 Flash', dashboard: 'https://aistudio.google.com/app/apikey', desc: 'Gemini 2.0 Flash — fast, generous free tier' },
+  { id: 'groq',      label: 'Groq',           icon: Cpu, model: 'Llama 3.3 70B',       dashboard: 'https://console.groq.com/keys',         desc: 'Llama 3.3 70B — fastest inference' },
+  { id: 'openai',    label: 'OpenAI',         icon: Bot, model: 'GPT-4o',              dashboard: 'https://platform.openai.com/api-keys',  desc: 'GPT-4o and o1 models' },
+  { id: 'deepseek',  label: 'DeepSeek',       icon: Code, model: 'DeepSeek V3',         dashboard: 'https://platform.deepseek.com/api_keys', desc: 'DeepSeek V3 — best price/performance' },
+  { id: 'mistral',   label: 'Mistral',        icon: Globe, model: 'Mistral Large',      dashboard: 'https://console.mistral.ai/api-keys/',  desc: 'European AI, GDPR-friendly' },
+  { id: 'xai',       label: 'xAI (Grok)',     icon: Zap, model: 'Grok 2',             dashboard: 'https://console.x.ai/',                desc: 'Grok 2 — real-time knowledge' },
+  { id: 'together',  label: 'Together AI',    icon: Layers, model: 'Llama 3 70B',        dashboard: 'https://api.together.xyz/settings/api-keys', desc: '100+ open source models' },
 ];
 
 export function KeysList({ initialKeys }: KeysListProps) {
@@ -128,70 +128,78 @@ export function KeysList({ initialKeys }: KeysListProps) {
               {/* Provider row */}
               <div style={{
                 display: 'flex', alignItems: 'center', gap: 12,
-                padding: '12px 14px',
-                background: activeKey ? 'rgba(74,124,59,0.04)' : 'transparent',
-                border: `1px solid ${activeKey ? 'rgba(74,124,59,0.2)' : '#e4ddd2'}`,
-                borderRadius: 8, minHeight: 48,
+                padding: '16px 20px',
+                background: '#FFFFFF',
+                border: '1px solid #EDE8DC',
+                borderRadius: 8, minHeight: 64,
               }}>
-                <span style={{ fontSize: 20 }}>{p.icon}</span>
+                <div style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(212, 169, 74, 0.1)', borderRadius: 6 }}>
+                  {React.createElement(p.icon, { size: 18, color: '#D4A94A' })}
+                </div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: '#1e3a1c', fontFamily: 'DM Sans, sans-serif' }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: '#2A2A2A', fontFamily: 'DM Sans, sans-serif' }}>
                     {p.label}
                   </div>
+                  <div style={{ fontSize: 13, color: '#6B6B6B', marginTop: 2 }}>
+                    {p.desc}
+                  </div>
                   {activeKey && (
-                    <div style={{ fontSize: 11, color: '#6b6560', fontFamily: 'monospace', marginTop: 1 }}>
+                    <div style={{ fontSize: 11, color: '#6b6560', fontFamily: 'monospace', marginTop: 4 }}>
                       ···· {(activeKey as any).key_hint || '····'}
                     </div>
                   )}
                 </div>
 
-                {/* Status */}
-                {activeKey ? (
-                  <span style={{
-                    fontSize: 11, padding: '3px 8px', borderRadius: 12,
-                    background: 'rgba(74,124,59,0.12)', color: '#4a7c3b',
-                    fontWeight: 500, whiteSpace: 'nowrap',
-                  }}>
-                    ● Connected
-                  </span>
-                ) : (
-                  <span style={{
-                    fontSize: 11, padding: '3px 8px', borderRadius: 12,
-                    background: '#e4ddd2', color: '#6b6560',
-                    fontWeight: 500, whiteSpace: 'nowrap',
-                  }}>
-                    ○ Not connected
-                  </span>
-                )}
-
-                {/* Actions */}
-                <div style={{ display: 'flex', gap: 4 }}>
+                {/* Status & Actions */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   {activeKey ? (
                     <>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#4a7c3b' }} />
+                        <span style={{ fontSize: 12, color: '#4a7c3b', fontWeight: 500 }}>
+                          Connected ···· {(activeKey as any).key_hint?.slice(-4) || '4Xk2'}
+                        </span>
+                      </div>
                       <button
-                        onClick={() => setConnecting(p.id)}
-                        style={{ background: 'none', border: '1px solid #e4ddd2', borderRadius: 6, padding: '6px 10px', fontSize: 12, color: '#6b6560', cursor: 'pointer' }}
+                        onClick={() => setRevokingId(activeKey.id)}
+                        style={{ 
+                          background: 'none', 
+                          border: '1px solid #EDE8DC', 
+                          borderRadius: 6, 
+                          padding: '6px 12px', 
+                          fontSize: 12, 
+                          fontWeight: 600,
+                          color: '#B85C3C', 
+                          cursor: 'pointer',
+                          transition: 'all 0.15s'
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(184, 92, 60, 0.05)'; e.currentTarget.style.borderColor = '#B85C3C'; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = '#EDE8DC'; }}
                       >
-                        Edit
+                        Remove
                       </button>
-                      {revokingId === activeKey.id ? (
-                        <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-                          <span style={{ fontSize: 11, color: '#b85c3c' }}>Remove?</span>
-                          <button onClick={() => handleRevoke(activeKey.id)} style={{ background: '#b85c3c', border: 'none', borderRadius: 6, padding: '6px 8px', color: '#fff', fontSize: 11, cursor: 'pointer' }}>Yes</button>
-                          <button onClick={() => setRevokingId(null)} style={{ background: '#e4ddd2', border: 'none', borderRadius: 6, padding: '6px 8px', color: '#6b6560', fontSize: 11, cursor: 'pointer' }}>No</button>
-                        </div>
-                      ) : (
-                        <button onClick={() => setRevokingId(activeKey.id)} style={{ background: 'none', border: 'none', borderRadius: 6, padding: '6px 8px', color: '#b85c3c', cursor: 'pointer', fontSize: 14 }}>
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
                     </>
                   ) : (
                     <button
                       onClick={() => { setConnecting(p.id); setError(null); }}
-                      style={{ background: '#1e3a1c', border: 'none', borderRadius: 6, padding: '6px 14px', fontSize: 12, fontWeight: 500, color: '#c9933a', cursor: 'pointer' }}
+                      style={{ 
+                        background: '#D4A94A', 
+                        border: 'none', 
+                        borderRadius: 6, 
+                        padding: '8px 16px', 
+                        fontSize: 12, 
+                        fontWeight: 600,
+                        color: '#2A1F0F', 
+                        cursor: 'pointer',
+                        transition: 'background 0.15s',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4
+                      }}
+                      onMouseEnter={e => e.currentTarget.style.background = '#E8B05A'}
+                      onMouseLeave={e => e.currentTarget.style.background = '#D4A94A'}
                     >
-                      Connect
+                      Add →
                     </button>
                   )}
                 </div>
