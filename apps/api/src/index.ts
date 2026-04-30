@@ -10,6 +10,9 @@ const REQUIRED_ENV = [
   'NEXT_PUBLIC_SUPABASE_URL',
   'SUPABASE_SERVICE_ROLE_KEY',
   'ENCRYPTION_KEY',
+  'STRIPE_PRICE_SEED',
+  'STRIPE_PRICE_CRAFT',
+  'STRIPE_PRICE_FORGE',
 ]
 
 // Optional env vars for Free-API Pool (Layer 2 routing)

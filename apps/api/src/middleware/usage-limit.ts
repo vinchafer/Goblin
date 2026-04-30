@@ -1,14 +1,11 @@
 import { createMiddleware } from 'hono/factory';
-import { createClient } from '@supabase/supabase-js';
-import { PLANS } from '../config/plans';
+import { getSupabaseAdmin } from '../lib/supabase';
+import { getPlans } from '../config/plans';
 
 export const usageLimitMiddleware = createMiddleware(async (c, next) => {
   const userId = c.get('userId');
-  
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  );
+
+  const supabase = getSupabaseAdmin();
 
   const { data: user, error } = await supabase
     .from('users')
@@ -34,7 +31,8 @@ export const usageLimitMiddleware = createMiddleware(async (c, next) => {
     }
   }
 
-  const limit = user.monthly_limit ?? PLANS[user.plan ?? 'seed']?.monthlyRequests ?? 200;
+  const plans = getPlans();
+  const limit = user.monthly_limit ?? plans[user.plan ?? 'seed']?.monthlyRequests ?? 200;
 
   if (used >= limit) {
     return c.json({ error: 'Monthly request limit reached. Upgrade your plan.' }, 429);
@@ -42,14 +40,14 @@ export const usageLimitMiddleware = createMiddleware(async (c, next) => {
 
   // Atomic conditional increment — prevents race condition on concurrent requests.
   // Only updates if monthly_requests_used hasn't changed since we read it.
-  const { count } = await supabase
+  const { data: updated } = await supabase
     .from('users')
     .update({ monthly_requests_used: used + 1 })
     .eq('id', userId)
     .eq('monthly_requests_used', used)
-    .select('id', { count: 'exact', head: true });
+    .select('id');
 
-  if (!count || count === 0) {
+  if (!updated || updated.length === 0) {
     return c.json({ error: 'Monthly request limit reached. Upgrade your plan.' }, 429);
   }
 

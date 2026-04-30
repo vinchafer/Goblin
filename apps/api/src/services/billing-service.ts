@@ -1,6 +1,6 @@
 import Stripe from 'stripe';
 import { getSupabaseAdmin } from '../lib/supabase';
-import { PLANS, getPlanFromPriceId } from '../config/plans';
+import { getPlans, getPlanFromPriceId } from '../config/plans';
 
 let _stripe: Stripe | null = null;
 
@@ -33,7 +33,7 @@ export async function createCheckoutSession(userId: string, targetPlan: string):
     mode: 'subscription',
     line_items: [
       {
-        price: PLANS[targetPlan as keyof typeof PLANS]?.stripePriceId,
+        price: getPlans()[targetPlan]?.stripePriceId,
         quantity: 1
       }
     ],
@@ -75,7 +75,7 @@ export async function handleSubscriptionCreated(subscription: Stripe.Subscriptio
   const userId = subscription.metadata.userId;
   const priceId = subscription.items.data[0]?.price.id || '';
   const plan = getPlanFromPriceId(priceId) || 'seed';
-  const planConfig = PLANS[plan] ?? PLANS.seed!;
+  const planConfig = getPlans()[plan] ?? getPlans()['seed']!;
 
   await supabase
     .from('users')
@@ -93,7 +93,7 @@ export async function handleSubscriptionUpdated(subscription: Stripe.Subscriptio
   const supabase = getSupabaseAdmin();
   const priceId = subscription.items.data[0]?.price.id || '';
   const plan = getPlanFromPriceId(priceId) || 'seed';
-  const planConfig = PLANS[plan] ?? PLANS.seed!;
+  const planConfig = getPlans()[plan] ?? getPlans()['seed']!;
 
   await supabase
     .from('users')
@@ -112,7 +112,7 @@ export async function handleSubscriptionDeleted(subscription: Stripe.Subscriptio
     .from('users')
     .update({
       plan: 'seed',
-      monthly_limit: PLANS.seed!.monthlyRequests,
+      monthly_limit: getPlans()['seed']!.monthlyRequests,
       stripe_subscription_id: null
     })
     .eq('stripe_subscription_id', subscription.id);
