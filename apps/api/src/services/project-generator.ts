@@ -28,6 +28,21 @@ const OPENAI_COMPATIBLE: Record<string, { baseURL: string; defaultModel: string 
   google:    { baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/', defaultModel: 'gemini-2.0-flash' },
 };
 
+async function getKeyById(userId: string, keyId: string): Promise<{ provider: string; key: string } | null> {
+  const supabase = getSupabaseAdmin();
+
+  const { data: row } = await supabase
+    .from('byok_keys')
+    .select('provider, key_encrypted')
+    .eq('id', keyId)
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .single();
+
+  if (!row) return null;
+  return { provider: row.provider, key: decryptData(row.key_encrypted) };
+}
+
 async function getFirstActiveKey(userId: string): Promise<{ provider: string; key: string } | null> {
   const supabase = getSupabaseAdmin();
 
@@ -46,7 +61,6 @@ async function getFirstActiveKey(userId: string): Promise<{ provider: string; ke
     }
   }
 
-  // Fallback: use whatever key exists first
   const first = keys[0];
   if (!first) return null;
   return { provider: first.provider, key: decryptData(first.key_encrypted) };
@@ -86,8 +100,9 @@ export async function generateProject(
       data: JSON.stringify({ type: 'planning', message: 'Analyzing request...' })
     });
 
-    // Get the first available active key (multi-provider)
-    const keyInfo = await getFirstActiveKey(userId);
+    const keyInfo = byokKeyId
+      ? await getKeyById(userId, byokKeyId)
+      : await getFirstActiveKey(userId);
     if (!keyInfo) {
       throw new Error('NO_KEY: Add an API key in Settings → API Keys to generate projects.');
     }
