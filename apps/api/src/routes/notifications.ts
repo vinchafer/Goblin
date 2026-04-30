@@ -144,9 +144,12 @@ notifications.post('/test', async (c) => {
   return c.json({ sent, message: sent > 0 ? 'Test notification sent' : 'No notifications sent' });
 });
 
-// POST /api/notifications/send (internal — uses service role, not user auth)
-// This is called by other services (e.g., after GitHub push)
+// POST /api/notifications/send (internal — requires CRON_SECRET header)
 notifications.post('/send', async (c) => {
+  const secret = c.req.header('x-cron-secret');
+  if (!process.env.CRON_SECRET || secret !== process.env.CRON_SECRET) {
+    return c.json({ error: 'Unauthorized' }, 401);
+  }
   const body = await c.req.json();
 
   const schema = z.object({

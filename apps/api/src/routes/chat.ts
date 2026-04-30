@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { streamCompletion } from '../services/model-router';
 import { authMiddleware } from '../middleware/auth';
 import { usageLimitMiddleware } from '../middleware/usage-limit';
+import { chatStreamRateLimit } from '../middleware/rate-limit';
 
 type Variables = { userId: string }
 const chat = new Hono<{ Variables: Variables }>();
@@ -40,7 +41,7 @@ chat.get('/:projectId/history', async (c) => {
   return c.json(data || []);
 });
 
-chat.post('/stream', usageLimitMiddleware, async (c) => {
+chat.post('/stream', chatStreamRateLimit, usageLimitMiddleware, async (c) => {
   const userId = c.get('userId');
   const { projectId, message, modelSlug } = await c.req.json();
 

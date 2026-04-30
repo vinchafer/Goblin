@@ -127,10 +127,10 @@ export function ChatContainer({ projectId }: ChatContainerProps) {
             
             if (parsed.type === 'meta') {
               setMetaInfo({ model: parsed.model, sourceTier: parsed.source_tier });
-            } else if (parsed.type === 'token') {
+            } else if (parsed.type === 'delta') {
               streamAccumRef.current += parsed.content;
               setStreamingText(streamAccumRef.current);
-            } else if (parsed.type === 'message_end') {
+            } else if (parsed.type === 'done') {
               setMessages(prev => [...prev, {
                 id: parsed.messageId,
                 project_id: projectId,
