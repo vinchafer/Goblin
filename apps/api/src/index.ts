@@ -9,7 +9,6 @@ config({ path: join(__dirname, '../../../.env') });
 const REQUIRED_ENV = [
   'NEXT_PUBLIC_SUPABASE_URL',
   'SUPABASE_SERVICE_ROLE_KEY',
-  'SUPABASE_JWT_SECRET',
   'ENCRYPTION_KEY',
 ]
 
