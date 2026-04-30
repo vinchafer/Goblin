@@ -43,7 +43,7 @@ const FREE_API_POOL: FreePoolEntry[] = [
 ];
 
 // OpenAI-compatible providers (everything except anthropic)
-const OPENAI_COMPATIBLE: Record<string, { baseURL: string; defaultModel: string }> = {
+export const OPENAI_COMPATIBLE: Record<string, { baseURL: string; defaultModel: string }> = {
   openai:    { baseURL: 'https://api.openai.com/v1',           defaultModel: 'gpt-4o' },
   groq:      { baseURL: 'https://api.groq.com/openai/v1',      defaultModel: 'llama-3.3-70b-versatile' },
   deepseek:  { baseURL: 'https://api.deepseek.com/v1',         defaultModel: 'deepseek-chat' },
@@ -54,7 +54,7 @@ const OPENAI_COMPATIBLE: Record<string, { baseURL: string; defaultModel: string 
 };
 
 // Priority for auto-selection when no model preference given
-const PROVIDER_PRIORITY: ProviderName[] = ['anthropic', 'openai', 'deepseek', 'groq', 'mistral', 'google', 'xai', 'together'];
+export const PROVIDER_PRIORITY: ProviderName[] = ['anthropic', 'openai', 'deepseek', 'groq', 'mistral', 'google', 'xai', 'together'];
 
 // ─── Layer 3: BYOK ────────────────────────────────────────────────
 

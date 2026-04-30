@@ -5,6 +5,7 @@ import { PROJECT_GENERATOR_SYSTEM_PROMPT } from '../prompts/project-generator';
 import { getActiveKey } from './byok-service';
 import { decryptData } from './encryption';
 import { saveFile } from './file-storage';
+import { OPENAI_COMPATIBLE, PROVIDER_PRIORITY } from './model-router';
 import type { SSEStreamingApi } from 'hono/streaming';
 
 interface GenerationResult {
@@ -13,20 +14,6 @@ interface GenerationResult {
   setupInstructions: string;
   files: Array<{ path: string; content: string }>;
 }
-
-// Provider priority order for auto-selection (same as model-router)
-const PROVIDER_PRIORITY = ['anthropic', 'openai', 'deepseek', 'groq', 'mistral', 'google', 'xai', 'together'];
-
-// OpenAI-compatible provider configs
-const OPENAI_COMPATIBLE: Record<string, { baseURL: string; defaultModel: string }> = {
-  openai:    { baseURL: 'https://api.openai.com/v1',           defaultModel: 'gpt-4o' },
-  groq:      { baseURL: 'https://api.groq.com/openai/v1',      defaultModel: 'llama-3.3-70b-versatile' },
-  deepseek:  { baseURL: 'https://api.deepseek.com/v1',         defaultModel: 'deepseek-chat' },
-  mistral:   { baseURL: 'https://api.mistral.ai/v1',           defaultModel: 'mistral-large-latest' },
-  xai:       { baseURL: 'https://api.x.ai/v1',                 defaultModel: 'grok-2-1212' },
-  together:  { baseURL: 'https://api.together.xyz/v1',         defaultModel: 'meta-llama/Llama-3-70b-chat-hf' },
-  google:    { baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/', defaultModel: 'gemini-2.0-flash' },
-};
 
 async function getKeyById(userId: string, keyId: string): Promise<{ provider: string; key: string } | null> {
   const supabase = getSupabaseAdmin();
