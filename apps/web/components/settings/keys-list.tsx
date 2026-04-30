@@ -10,14 +10,14 @@ interface KeysListProps {
 }
 
 const PROVIDERS = [
-  { id: 'anthropic', label: 'Anthropic',     icon: '🧠', model: 'Claude Sonnet 4.6',  dashboard: 'https://console.anthropic.com/',         desc: 'Best coding model. Fast and capable.' },
-  { id: 'openai',    label: 'OpenAI',         icon: '⚡', model: 'GPT-4o',              dashboard: 'https://platform.openai.com/api-keys',  desc: 'Flagship model. Strong at everything.' },
-  { id: 'groq',      label: 'Groq',           icon: '🔥', model: 'Llama 3.3 70B',       dashboard: 'https://console.groq.com/keys',         desc: 'Extremely fast inference on Llama.' },
-  { id: 'deepseek',  label: 'DeepSeek',       icon: '🧊', model: 'DeepSeek V3',         dashboard: 'https://platform.deepseek.com/api_keys', desc: 'Best price/performance for coding.' },
-  { id: 'mistral',   label: 'Mistral',        icon: '🌬️', model: 'Mistral Large',      dashboard: 'https://console.mistral.ai/api-keys/',  desc: 'European LLM. Strong multilingual.' },
-  { id: 'xai',       label: 'xAI (Grok)',     icon: '🕵️', model: 'Grok 2',             dashboard: 'https://console.x.ai/',                desc: 'Elon\'s model. Good reasoning.' },
-  { id: 'google',    label: 'Google AI',      icon: '🔮', model: 'Gemini 2.0 Flash',    dashboard: 'https://aistudio.google.com/app/apikey', desc: 'Fast, free tier available.' },
-  { id: 'together',  label: 'Together AI',    icon: '🤝', model: 'Llama 3 70B',        dashboard: 'https://api.together.xyz/settings/api-keys', desc: 'Access many open models.' },
+  { id: 'anthropic', label: 'Anthropic',     icon: '🧠', model: 'Claude Sonnet 4.6',  dashboard: 'https://console.anthropic.com/settings/keys', desc: 'Best for coding — powers Claude Sonnet' },
+  { id: 'google',    label: 'Google AI Studio', icon: '🔮', model: 'Gemini 2.0 Flash', dashboard: 'https://aistudio.google.com/app/apikey', desc: 'Gemini 2.0 Flash — fast, generous free tier' },
+  { id: 'groq',      label: 'Groq',           icon: '🔥', model: 'Llama 3.3 70B',       dashboard: 'https://console.groq.com/keys',         desc: 'Llama 3.3 70B — fastest inference' },
+  { id: 'openai',    label: 'OpenAI',         icon: '⚡', model: 'GPT-4o',              dashboard: 'https://platform.openai.com/api-keys',  desc: 'GPT-4o and o1 models' },
+  { id: 'deepseek',  label: 'DeepSeek',       icon: '🧊', model: 'DeepSeek V3',         dashboard: 'https://platform.deepseek.com/api_keys', desc: 'DeepSeek V3 — best price/performance' },
+  { id: 'mistral',   label: 'Mistral',        icon: '🌬️', model: 'Mistral Large',      dashboard: 'https://console.mistral.ai/api-keys/',  desc: 'European AI, GDPR-friendly' },
+  { id: 'xai',       label: 'xAI (Grok)',     icon: '🕵️', model: 'Grok 2',             dashboard: 'https://console.x.ai/',                desc: 'Grok 2 — real-time knowledge' },
+  { id: 'together',  label: 'Together AI',    icon: '🤝', model: 'Llama 3 70B',        dashboard: 'https://api.together.xyz/settings/api-keys', desc: '100+ open source models' },
 ];
 
 export function KeysList({ initialKeys }: KeysListProps) {

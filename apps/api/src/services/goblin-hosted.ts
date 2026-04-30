@@ -55,3 +55,37 @@ export function createGoblinHostedClient() {
     defaultModel: 'goblin-hosted-llama-3.3-70b',
   };
 }
+
+import OpenAI from 'openai'
+
+const GPU_ENDPOINT = process.env.GOBLIN_GPU_ENDPOINT
+const GPU_API_KEY = process.env.GOBLIN_GPU_API_KEY ?? 'goblin'
+
+export function isGoblinHostedAvailable(): boolean {
+  return !!GPU_ENDPOINT
+}
+
+export async function goblinHostedStream(
+  messages: Array<{role: 'user' | 'assistant' | 'system', content: string}>,
+  model: string = 'qwen2.5-coder-32b-instruct',
+  onToken: (token: string) => void
+): Promise<void> {
+  if (!GPU_ENDPOINT) throw new Error('Goblin Hosted not configured')
+
+  const client = new OpenAI({
+    baseURL: `${GPU_ENDPOINT}/v1`,
+    apiKey: GPU_API_KEY
+  })
+
+  const stream = await client.chat.completions.create({
+    model,
+    messages: messages as any, // Type assertion for OpenAI SDK compatibility
+    stream: true,
+    max_tokens: 4096
+  })
+
+  for await (const chunk of stream) {
+    const token = chunk.choices[0]?.delta?.content ?? ''
+    if (token) onToken(token)
+  }
+}

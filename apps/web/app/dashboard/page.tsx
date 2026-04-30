@@ -30,15 +30,22 @@ interface Project {
   last_active?: string;
 }
 
+interface ByokKey {
+  id: string;
+  provider: string;
+  status: string;
+}
+
 export default function DashboardPage() {
   const supabase = createClient();
   const { showNewProjectModal, setShowNewProjectModal } = useApp();
   const [projects, setProjects] = useState<Project[]>([]);
+  const [byokKeys, setByokKeys] = useState<ByokKey[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchProjects = async () => {
+    const fetchData = async () => {
       try {
         setLoading(true);
         const { data } = await supabase.auth.getSession();
@@ -46,28 +53,40 @@ export default function DashboardPage() {
         if (!token) throw new Error('Not authenticated');
 
         const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
-        const response = await fetch(`${apiBase}/api/projects`, {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
+        
+        // Fetch projects and BYOK keys in parallel
+        const [projectsRes, keysRes] = await Promise.all([
+          fetch(`${apiBase}/api/projects`, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` },
+          }),
+          fetch(`${apiBase}/api/byok-keys`, {
+            method: 'GET',
+            headers: { 'Authorization': `Bearer ${token}` },
+          }),
+        ]);
 
-        if (!response.ok) {
-          const err = await response.json();
+        if (!projectsRes.ok) {
+          const err = await projectsRes.json();
           throw new Error(err.error || 'Failed to fetch projects');
         }
 
-        const projectsData = await response.json();
+        const projectsData = await projectsRes.json();
         setProjects(projectsData);
+
+        // BYOK keys are optional - don't fail if this endpoint fails
+        if (keysRes.ok) {
+          const keysData = await keysRes.json();
+          setByokKeys(Array.isArray(keysData) ? keysData : []);
+        }
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch projects');
+        setError(err instanceof Error ? err.message : 'Failed to fetch data');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchProjects();
+    fetchData();
   }, []);
 
   return (
@@ -151,6 +170,201 @@ export default function DashboardPage() {
           }}>
             Welcome to Goblin.
           </h1>
+
+          {/* Enhanced Onboarding Flow for new users */}
+          {projects.length === 0 && byokKeys.filter(k => k.status === 'active').length === 0 && (
+            <div style={{
+              background: 'var(--panel)',
+              border: '1px solid var(--border)',
+              borderRadius: 16,
+              padding: '32px',
+              marginBottom: 32,
+              maxWidth: 520,
+              width: '100%',
+              textAlign: 'left',
+            }}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 16,
+                marginBottom: 24,
+              }}>
+                <div style={{
+                  width: 48,
+                  height: 48,
+                  background: 'var(--ochre)',
+                  borderRadius: 12,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 24,
+                }}>👺</div>
+                <div>
+                  <h2 style={{
+                    fontFamily: 'Fraunces, serif',
+                    fontSize: 22,
+                    color: 'var(--moss)',
+                    fontWeight: 700,
+                    marginBottom: 4,
+                  }}>Your goblin is ready.</h2>
+                  <p style={{
+                    fontSize: 13,
+                    color: 'var(--meta)',
+                    lineHeight: 1.5,
+                  }}>Get started in 2 minutes</p>
+                </div>
+              </div>
+
+              {/* Step 1: Add API Key */}
+              <div style={{ marginBottom: 24 }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  marginBottom: 12,
+                }}>
+                  <div style={{
+                    width: 24,
+                    height: 24,
+                    background: 'var(--ochre)',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 12,
+                    color: '#fff',
+                    fontWeight: 600,
+                  }}>1</div>
+                  <h3 style={{
+                    fontFamily: 'DM Sans, sans-serif',
+                    fontSize: 15,
+                    fontWeight: 600,
+                    color: 'var(--text)',
+                  }}>Add your API key</h3>
+                </div>
+                <div style={{
+                  display: 'flex',
+                  gap: 12,
+                  flexWrap: 'wrap',
+                }}>
+                  <button
+                    onClick={() => window.location.href = '/settings?tab=api-keys'}
+                    style={{
+                      background: 'var(--ochre)',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: 8,
+                      padding: '10px 20px',
+                      fontSize: 13,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      fontFamily: 'DM Sans, sans-serif',
+                      transition: 'opacity 0.15s',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.opacity = '0.9')}
+                    onMouseLeave={e => (e.currentTarget.style.opacity = '1')}
+                  >
+                    <span>🔑</span>
+                    Connect Anthropic
+                  </button>
+                  <button
+                    onClick={() => {
+                      // This would use Free-API Pool (Gemini Flash)
+                      // For now, just show a message
+                      alert('Using Free-API Pool (Gemini Flash) - no key required!');
+                    }}
+                    style={{
+                      background: 'transparent',
+                      color: 'var(--meta)',
+                      border: '1px solid var(--border)',
+                      borderRadius: 8,
+                      padding: '10px 20px',
+                      fontSize: 13,
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      fontFamily: 'DM Sans, sans-serif',
+                      transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'var(--cream2)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                  >
+                    or use free Gemini Flash
+                  </button>
+                </div>
+                <p style={{
+                  fontSize: 12,
+                  color: 'var(--meta)',
+                  marginTop: 8,
+                  lineHeight: 1.5,
+                }}>
+                  Claude Sonnet 4.6 is best for coding. Free tier available with Gemini Flash.
+                </p>
+              </div>
+
+              {/* Step 2: Create Project */}
+              <div>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  marginBottom: 12,
+                }}>
+                  <div style={{
+                    width: 24,
+                    height: 24,
+                    background: 'var(--moss)',
+                    borderRadius: '50%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 12,
+                    color: '#fff',
+                    fontWeight: 600,
+                  }}>2</div>
+                  <h3 style={{
+                    fontFamily: 'DM Sans, sans-serif',
+                    fontSize: 15,
+                    fontWeight: 600,
+                    color: 'var(--text)',
+                  }}>Create your first project</h3>
+                </div>
+                <button
+                  onClick={() => setShowNewProjectModal(true)}
+                  style={{
+                    background: 'var(--moss)',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 8,
+                    padding: '12px 24px',
+                    fontSize: 14,
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    fontFamily: 'DM Sans, sans-serif',
+                    transition: 'background 0.15s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 8,
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--moss2)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'var(--moss)')}
+                >
+                  <span>＋</span>
+                  New Project →
+                </button>
+                <p style={{
+                  fontSize: 12,
+                  color: 'var(--meta)',
+                  marginTop: 8,
+                  lineHeight: 1.5,
+                }}>
+                  Describe what you want to build. Your goblin will generate the code.
+                </p>
+              </div>
+            </div>
+          )}
 
           <p style={{
             fontSize: 16, color: 'var(--meta)',

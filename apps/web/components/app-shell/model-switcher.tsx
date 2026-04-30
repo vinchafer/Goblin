@@ -89,10 +89,10 @@ export function ModelSwitcher() {
 
   const getBadge = (model: ModelFromAPI) => {
     if (activeProviders.includes(model.provider)) {
-      return { text: "KEY CONNECTED ✓", color: 'var(--goblin-good)' };
+      return { text: `${model.provider.toUpperCase()} · BYOK`, color: 'var(--goblin-good)' };
     }
     if (model.requires_key && !activeProviders.includes(model.provider)) {
-      return { text: "BYOK REQUIRED", color: 'var(--goblin-gray)' };
+      return { text: "Add key →", color: 'var(--goblin-gray)' };
     }
     if (model.layer === 'free_api') {
       return { text: "FREE", color: 'var(--goblin-ochre)' };

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { apiStream, apiGet } from "@/lib/api";
 import type { ChatMessage } from "@goblin/shared/src/schemas";
 
 interface ChatTabProps {
@@ -13,13 +14,17 @@ interface ChatTabProps {
 
 interface StreamMessage {
   type: 'meta' | 'delta' | 'done' | 'error';
-  data?: {
-    id?: string;
-    model?: string;
-    sourceTier?: string;
-    content?: string;
-    error?: string;
-  };
+  // meta fields
+  model?: string;
+  source_tier?: string;
+  provider?: string;
+  // delta fields
+  content?: string;
+  // done fields
+  messageId?: string;
+  model_used?: string;
+  // error fields
+  message?: string;
 }
 
 export function ChatTab({ projectId, messages, onMessagesChange, selectedModel = 'claude-3-5-sonnet-20241022' }: ChatTabProps) {
@@ -34,6 +39,7 @@ export function ChatTab({ projectId, messages, onMessagesChange, selectedModel =
   const streamingContentRef = useRef('');
   const baseMessagesRef = useRef<ChatMessage[]>([]);
   const streamingMessageRef = useRef<ChatMessage | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const supabase = createClient();
 
   // Load chat history on mount
@@ -46,6 +52,11 @@ export function ChatTab({ projectId, messages, onMessagesChange, selectedModel =
     scrollToBottom();
   }, [messages]);
 
+  // Cleanup stream on unmount
+  useEffect(() => {
+    return () => { abortControllerRef.current?.abort(); };
+  }, []);
+
   // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
@@ -57,26 +68,8 @@ export function ChatTab({ projectId, messages, onMessagesChange, selectedModel =
   const loadChatHistory = async () => {
     try {
       setIsLoadingHistory(true);
-      const { data: { session } } = await supabase.auth.getSession();
       
-      if (!session) {
-        setError('Not authenticated');
-        return;
-      }
-
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
-      const response = await fetch(`${apiBase}/api/chat/${projectId}/history`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw new Error(`Failed to load chat history: ${response.status}`);
-      }
-
-      const history: ChatMessage[] = await response.json();
+      const history: ChatMessage[] = await apiGet(`/api/chat/${projectId}/history`);
       onMessagesChange(history);
     } catch (err) {
       console.error('Error loading chat history:', err);
@@ -129,101 +122,64 @@ export function ChatTab({ projectId, messages, onMessagesChange, selectedModel =
     onMessagesChange([...updatedMessages, streamingMessage]);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        throw new Error('Not authenticated');
-      }
-
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
-      const response = await fetch(`${apiBase}/api/chat/stream`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
+      abortControllerRef.current = new AbortController();
+      await apiStream(
+        '/api/chat/stream',
+        {
           projectId,
           message: trimmedInput,
-          model: selectedModel,
-        }),
-      });
+          modelSlug: selectedModel,
+        },
+        (data: unknown) => {
+          const streamData = data as StreamMessage;
 
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
-      }
-
-      if (!response.body) {
-        throw new Error('No response body');
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value);
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            try {
-              const data = JSON.parse(line.slice(6)) as StreamMessage;
-              
-              switch (data.type) {
-                case 'meta':
-                  if (streamingMessageRef.current) {
-                    streamingMessageRef.current = {
-                      ...streamingMessageRef.current,
-                      model_used: data.data?.model || null,
-                      source_tier: (data.data?.sourceTier || null) as ChatMessage['source_tier'],
-                    };
-                    onMessagesChange([...baseMessagesRef.current, streamingMessageRef.current]);
-                  }
-                  break;
-
-                case 'delta':
-                  // Append to ref synchronously — avoids lost tokens when SSE events
-                  // arrive faster than React re-renders (stale closure on `messages` prop)
-                  streamingContentRef.current += data.data?.content || '';
-                  if (streamingMessageRef.current) {
-                    streamingMessageRef.current = {
-                      ...streamingMessageRef.current,
-                      content: streamingContentRef.current,
-                    };
-                    onMessagesChange([...baseMessagesRef.current, streamingMessageRef.current]);
-                  }
-                  break;
-
-                case 'done':
-                  if (data.data?.id && streamingMessageRef.current) {
-                    const finalMsg: ChatMessage = {
-                      ...streamingMessageRef.current,
-                      id: data.data.id,
-                      model_used: data.data?.model || streamingMessageRef.current.model_used,
-                      source_tier: (data.data?.sourceTier || streamingMessageRef.current.source_tier) as ChatMessage['source_tier'],
-                    };
-                    onMessagesChange([...baseMessagesRef.current, finalMsg]);
-                    streamingMessageRef.current = null;
-                  }
-                  setIsStreaming(false);
-                  break;
-
-                case 'error':
-                  setError(data.data?.error || 'Streaming error');
-                  setIsStreaming(false);
-                  onMessagesChange(baseMessagesRef.current);
-                  streamingMessageRef.current = null;
-                  break;
+          switch (streamData.type) {
+            case 'meta':
+              if (streamingMessageRef.current) {
+                streamingMessageRef.current = {
+                  ...streamingMessageRef.current,
+                  model_used: streamData.model || null,
+                  source_tier: (streamData.source_tier || null) as ChatMessage['source_tier'],
+                };
+                onMessagesChange([...baseMessagesRef.current, streamingMessageRef.current]);
               }
-            } catch (err) {
-              console.error('Error parsing SSE data:', err);
-            }
+              break;
+
+            case 'delta':
+              streamingContentRef.current += streamData.content || '';
+              if (streamingMessageRef.current) {
+                streamingMessageRef.current = {
+                  ...streamingMessageRef.current,
+                  content: streamingContentRef.current,
+                };
+                onMessagesChange([...baseMessagesRef.current, streamingMessageRef.current]);
+              }
+              break;
+
+            case 'done':
+              if (streamingMessageRef.current) {
+                const finalMsg: ChatMessage = {
+                  ...streamingMessageRef.current,
+                  id: streamData.messageId || streamingMessageRef.current.id,
+                  model_used: streamData.model_used || streamingMessageRef.current.model_used,
+                  source_tier: (streamData.source_tier || streamingMessageRef.current.source_tier) as ChatMessage['source_tier'],
+                };
+                onMessagesChange([...baseMessagesRef.current, finalMsg]);
+                streamingMessageRef.current = null;
+              }
+              setIsStreaming(false);
+              break;
+
+            case 'error':
+              setError(streamData.message || 'Streaming error');
+              setIsStreaming(false);
+              onMessagesChange(baseMessagesRef.current);
+              streamingMessageRef.current = null;
+              break;
           }
-        }
-      }
+        },
+        abortControllerRef.current.signal
+      );
     } catch (err) {
       console.error('Error in chat stream:', err);
       setError(err instanceof Error ? err.message : 'Failed to send message');
@@ -303,10 +259,33 @@ export function ChatTab({ projectId, messages, onMessagesChange, selectedModel =
             <div className="w-16 h-16 rounded-full bg-cream flex items-center justify-center mx-auto mb-4">
               <span className="text-2xl font-bold text-ochre">G</span>
             </div>
-            <h3 className="text-lg font-semibold text-slate mb-2">Chat with your goblin</h3>
-            <p className="text-gray-500 max-w-md mx-auto">
+            <h3 className="text-lg font-semibold text-slate mb-2">What are you building today?</h3>
+            <p className="text-gray-500 max-w-md mx-auto mb-6">
               Ask questions, get code suggestions, or discuss your project. Your goblin is ready to help!
             </p>
+            
+            {/* Suggestion pills */}
+            <div className="flex flex-wrap justify-center gap-3 max-w-md mx-auto">
+              {[
+                { text: 'Build a landing page', prompt: 'Create a modern landing page with hero section, features, and contact form' },
+                { text: 'Create a REST API', prompt: 'Design a REST API with authentication, CRUD operations, and error handling' },
+                { text: 'Add dark mode toggle', prompt: 'Implement a dark mode toggle with CSS variables and localStorage persistence' },
+                { text: 'Set up authentication', prompt: 'Set up user authentication with email/password and social login options' },
+                { text: 'Optimize performance', prompt: 'Analyze and optimize web performance with lazy loading and code splitting' },
+                { text: 'Deploy to production', prompt: 'Guide me through deploying this project to production with best practices' },
+              ].map((suggestion) => (
+                <button
+                  key={suggestion.text}
+                  onClick={() => {
+                    setInput(suggestion.prompt);
+                    textareaRef.current?.focus();
+                  }}
+                  className="px-4 py-2 bg-cream hover:bg-cream/80 text-slate rounded-full text-sm font-medium transition-colors border border-light"
+                >
+                  {suggestion.text}
+                </button>
+              ))}
+            </div>
           </div>
         ) : (
           messages.map((message) => (

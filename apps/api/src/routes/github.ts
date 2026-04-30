@@ -36,7 +36,7 @@ github.get('/callback', async (c) => {
   const state = c.req.query('state');
 
   if (!code || !state) {
-    return c.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard/settings/integrations?error=invalid_request`);
+    return c.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard?error=github_invalid_request`);
   }
 
   const supabase = getSupabaseAdmin();
@@ -50,7 +50,7 @@ github.get('/callback', async (c) => {
     .single();
 
   if (error || !oauthState) {
-    return c.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard/settings/integrations?error=oauth_expired`);
+    return c.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard?error=github_oauth_expired`);
   }
 
   // Delete state after use (one-time only)
@@ -65,9 +65,17 @@ github.get('/callback', async (c) => {
     
     await saveGitHubConnection(oauthState.user_id, accessToken, username);
     
-    return c.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard/settings/integrations?github=connected`);
+    // Send notification for success toast
+    await sendToUser(oauthState.user_id, {
+      title: 'GitHub',
+      body: '✅ GitHub connected successfully',
+      url: '/dashboard',
+      tag: 'github-connected',
+    }).catch((err: unknown) => console.error('[github] notification failed:', err));
+    
+    return c.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard?github=connected`);
   } catch {
-    return c.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard/settings/integrations?error=github_failed`);
+    return c.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard?error=github_failed`);
   }
 });
 
@@ -118,7 +126,9 @@ github.post('/push', async (c) => {
     const filePaths = await listFiles(result.data.projectId);
     const files = await Promise.all(
       filePaths.map(async fullPath => {
-        const path = fullPath.replace(`${result.data.projectId}/`, '');
+        // Remove project ID prefix and fix leading slash
+        let path = fullPath.replace(`${result.data.projectId}/`, '');
+        path = path.startsWith('/') ? path.slice(1) : path;
         return {
           path,
           content: await getFile(result.data.projectId, fullPath) || ''

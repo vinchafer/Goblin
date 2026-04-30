@@ -116,7 +116,7 @@ chat.post('/stream', usageLimitMiddleware, async (c) => {
           fullResponse += parsed.content;
           await stream.writeSSE({
             data: JSON.stringify({
-              type: 'token',
+              type: 'delta',
               content: parsed.content,
             }),
           });
@@ -140,7 +140,7 @@ chat.post('/stream', usageLimitMiddleware, async (c) => {
 
           await stream.writeSSE({
             data: JSON.stringify({
-              type: 'message_end',
+              type: 'done',
               messageId: assistantMessage?.id,
               model_used: currentModel,
               source_tier: currentSourceTier,
@@ -165,7 +165,7 @@ chat.post('/stream', usageLimitMiddleware, async (c) => {
 
       await stream.writeSSE({
         data: JSON.stringify({
-          type: 'message_end',
+          type: 'done',
           messageId: assistantMessage?.id,
           model_used: currentModel,
           source_tier: currentSourceTier,

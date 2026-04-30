@@ -15,7 +15,7 @@ projects.use('*', authMiddleware);
 const CreateProjectSchema = z.object({
   name: z.string().min(1).max(100),
   description: z.string().max(500).optional(),
-  color: z.enum(['#2D4A2B', '#D4A94A', '#B85C3C', '#4A7C3B', '#6B6B6B']).optional()
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional()
 });
 
 // List user projects

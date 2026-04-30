@@ -25,15 +25,22 @@ models.get('/', async (c) => {
     // DB table may not exist yet — fall through to static list
   }
 
-  // Static fallback: Phase 1 BYOK models
+  // Static fallback: Phase 1 BYOK models + Free API models
   return c.json([
+    // BYOK Models (Phase 1)
     { id: 'claude-sonnet-4-6', name: 'Claude Sonnet 4.6', slug: 'claude-sonnet-4-6', provider: 'anthropic', layer: 'byok', description: 'Fast, capable. Best for most coding tasks.', tags: ['coding', 'fast'], requires_key: true, available: true, phase: 1 },
     { id: 'claude-opus-4-7', name: 'Claude Opus 4.7', slug: 'claude-opus-4-7', provider: 'anthropic', layer: 'byok', description: 'Most powerful. Best for complex reasoning.', tags: ['reasoning', 'coding'], requires_key: true, available: true, phase: 1 },
     { id: 'gpt-4o', name: 'GPT-4o', slug: 'gpt-4o', provider: 'openai', layer: 'byok', description: 'OpenAI flagship. Strong at code and instruction following.', tags: ['coding', 'fast'], requires_key: true, available: true, phase: 1 },
     { id: 'deepseek-chat', name: 'DeepSeek V3', slug: 'deepseek/deepseek-chat', provider: 'deepseek', layer: 'byok', description: 'Best price/performance for coding. Near GPT-4 quality.', tags: ['coding', 'fast'], requires_key: true, available: true, phase: 1 },
     { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', slug: 'gemini/gemini-2.0-flash', provider: 'google', layer: 'byok', description: 'Very fast. Great for quick iterations.', tags: ['fast'], requires_key: true, available: true, phase: 1 },
     { id: 'llama-3.3-70b-versatile', name: 'Llama 3.3 70B (Groq)', slug: 'groq/llama-3.3-70b-versatile', provider: 'groq', layer: 'byok', description: 'Open-source 70B. Extremely fast via Groq inference.', tags: ['fast', 'coding'], requires_key: true, available: true, phase: 1 },
-    { id: 'qwen-coder-32b', name: 'Qwen Coder 32B', slug: 'qwen-coder-32b', provider: 'goblin', layer: 'goblin_hosted', description: 'Goblin-hosted. No key required. Best for coding tasks.', tags: ['coding', 'hosted'], requires_key: false, available: false, phase: 3 },
+    { id: 'mistral-large', name: 'Mistral Large', slug: 'mistral/mistral-large', provider: 'mistral', layer: 'byok', description: 'European LLM. Strong multilingual support.', tags: ['multilingual', 'coding'], requires_key: true, available: true, phase: 1 },
+    { id: 'grok-2', name: 'Grok 2', slug: 'xai/grok-2', provider: 'xai', layer: 'byok', description: 'Elon\'s model. Good reasoning and real-time knowledge.', tags: ['reasoning', 'knowledge'], requires_key: true, available: true, phase: 1 },
+    { id: 'llama-3-70b', name: 'Llama 3 70B (Together)', slug: 'together/llama-3-70b', provider: 'together', layer: 'byok', description: 'Open-source 70B via Together AI. Access many open models.', tags: ['open-source', 'coding'], requires_key: true, available: true, phase: 1 },
+    
+    // Free API Models (no key required)
+    { id: 'gemini-2.0-flash-free', name: 'Gemini 2.0 Flash', slug: 'gemini/gemini-2.0-flash', provider: 'google', layer: 'free_api', description: 'Fast, generous free tier. No key required.', tags: ['fast', 'free'], requires_key: false, available: true, phase: 1 },
+    { id: 'llama-3.3-70b-free', name: 'Llama 3.3 70B', slug: 'groq/llama-3.3-70b-versatile', provider: 'groq', layer: 'free_api', description: 'Extremely fast inference. Free tier available.', tags: ['fast', 'free', 'coding'], requires_key: false, available: true, phase: 1 },
   ]);
 });
 
