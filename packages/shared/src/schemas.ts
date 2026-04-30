@@ -16,7 +16,7 @@ export const ChatMessageSchema = z.object({
   role: z.enum(["user", "assistant"]),
   content: z.string(),
   model_used: z.string().optional().nullable(),
-  source_tier: z.enum(["hosted", "free", "byok"]).optional().nullable(),
+  source_tier: z.enum(["goblin_hosted", "free_api", "byok"]).optional().nullable(),
   created_at: z.coerce.date()
 });
 

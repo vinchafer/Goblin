@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { authMiddleware } from '../middleware/auth';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { listKeys, getActiveKey } from '../services/byok-service';
+import { ByokProviderSchema } from '@goblin/shared/src/schemas';
 
 type Variables = { userId: string };
 const models = new Hono<{ Variables: Variables }>();
@@ -95,14 +96,19 @@ models.get('/status', async (c) => {
 // GET /api/models/:provider/credits — returns credit/balance info for a provider
 models.get('/:provider/credits', async (c) => {
   const userId = c.get('userId') as string;
-  const provider = c.req.param('provider');
+  const rawProvider = c.req.param('provider');
+  const providerParsed = ByokProviderSchema.safeParse(rawProvider);
+  if (!providerParsed.success) {
+    return c.json({ error: 'Invalid provider' }, 400);
+  }
+  const provider = providerParsed.data;
 
   if (!userId) {
     return c.json({ error: 'Unauthorized' }, 401);
   }
 
   try {
-    const key = await getActiveKey(userId, provider as any);
+    const key = await getActiveKey(userId, provider);
     if (!key) {
       return c.json({ supported: false, link: getProviderLink(provider) });
     }

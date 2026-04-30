@@ -163,7 +163,7 @@ export function CodeTab({ projectId, pendingCode }: CodeTabProps) {
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };
-  }, [editorContent, activeFile?.path]);
+  }, [editorContent, activeFile?.path, saveFile]);
 
   return (
     <div className="h-full flex flex-col">

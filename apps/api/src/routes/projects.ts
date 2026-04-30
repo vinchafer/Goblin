@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { randomUUID } from 'crypto';
 import { authMiddleware } from '../middleware/auth';
 import { generateProject } from '../services/project-generator';
-import { createZip, listFiles, getFile, uploadFile } from '../services/file-storage';
+import { createZip, listFiles, getFile, uploadFile, deleteProject } from '../services/file-storage';
 import { getSupabaseAdmin } from '../lib/supabase';
 
 type Variables = { userId: string }
@@ -95,6 +95,11 @@ projects.delete('/:id', async (c) => {
     .from('projects')
     .delete()
     .eq('id', projectId);
+
+  // Best-effort storage cleanup — don't block response on failure
+  deleteProject(projectId).catch((err) =>
+    console.error(`Storage cleanup failed for project ${projectId}:`, err)
+  );
 
   return c.json({ success: true });
 });

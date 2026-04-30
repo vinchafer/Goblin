@@ -249,11 +249,12 @@ export async function createZip(projectId: string): Promise<Buffer> {
   const zip = new JSZip();
   const files = await listFiles(projectId);
 
-  for (const filePath of files) {
-    const content = await getFile(projectId, filePath);
-    if (content) {
-      zip.file(filePath, content);
-    }
+  const entries = await Promise.all(
+    files.map(async (filePath) => ({ filePath, content: await getFile(projectId, filePath) }))
+  );
+
+  for (const { filePath, content } of entries) {
+    if (content) zip.file(filePath, content);
   }
 
   return Buffer.from(await zip.generateAsync({ type: 'uint8array' }));
