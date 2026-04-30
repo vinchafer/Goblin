@@ -4,7 +4,5 @@ buildCommand = "pnpm install --frozen-lockfile && pnpm --filter @goblin/shared b
 
 [deploy]
 startCommand = "node apps/api/dist/index.js"
-healthcheckPath = "/health"
-healthcheckTimeout = 30
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
