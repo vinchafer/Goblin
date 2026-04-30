@@ -221,20 +221,36 @@ export function ChatTab({ projectId, messages, onMessagesChange, selectedModel =
     }));
   };
 
-  // Simple markdown parsing for bold, italic, and inline code
+  const escapeHtml = (s: string) =>
+    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+
+  // Markdown parsing: HTML-escape raw content first so user/AI text
+  // cannot inject tags. Only our own controlled substitutions add HTML.
   const parseMarkdown = (text: string) => {
-    let parsed = text
+    const codeBlocks: Array<{ code: string; language?: string }> = [];
+
+    // Extract code blocks before escaping so we can preserve them
+    const placeholders: string[] = [];
+    const stripped = text.replace(/```(\w+)?\n([\s\S]*?)```/g, (_, language, code) => {
+      const idx = codeBlocks.length;
+      codeBlocks.push({ code, language });
+      placeholders.push(`\x00CODE${idx}\x00`);
+      return `\x00CODE${idx}\x00`;
+    });
+
+    // Escape everything else
+    let parsed = escapeHtml(stripped);
+
+    // Re-insert code block placeholders as safe containers
+    parsed = parsed.replace(/\x00CODE(\d+)\x00/g, (_, idx) =>
+      `<div class="code-block-container" data-code-id="code-${idx}"></div>`
+    );
+
+    // Apply inline markdown (content already escaped, these tags are safe)
+    parsed = parsed
       .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
       .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
-    
-    // Extract code blocks
-    const codeBlocks: Array<{ code: string; language?: string }> = [];
-    parsed = parsed.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, language, code) => {
-      const id = `code-${codeBlocks.length}`;
-      codeBlocks.push({ code, language });
-      return `<div class="code-block-container" data-code-id="${id}"></div>`;
-    });
+      .replace(/`([^`]+)`/g, (_, inner) => `<code class="inline-code">${escapeHtml(inner)}</code>`);
 
     return { parsed, codeBlocks };
   };
