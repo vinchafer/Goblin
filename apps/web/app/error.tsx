@@ -14,22 +14,47 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: 'var(--goblin-cream)' }}>
-      <div className="max-w-md text-center p-6 space-y-4">
-        <div className="text-6xl mb-4">🤕</div>
-        <h2 className="text-2xl font-semibold" style={{ color: 'var(--goblin-bark)' }}>
-          Something went wrong
-        </h2>
-        <p style={{ color: 'var(--goblin-warn)' }}>
-          Your goblin got confused. Try refreshing.
+    <div style={{
+      minHeight: '100dvh', display: 'flex', flexDirection: 'column',
+      alignItems: 'center', justifyContent: 'center',
+      background: '#F7F4ED', padding: '24px', textAlign: 'center',
+    }}>
+      <div style={{ fontSize: 64, lineHeight: 1, marginBottom: 20 }}>🤕</div>
+      <h2 style={{
+        fontFamily: 'Fraunces, serif', fontSize: 28,
+        color: '#2D4A2B', fontWeight: 700, letterSpacing: '-0.5px', marginBottom: 10,
+      }}>
+        Your goblin crashed.
+      </h2>
+      <p style={{ fontSize: 15, color: '#6B6B6B', marginBottom: 6, fontFamily: 'DM Sans, sans-serif' }}>
+        Something broke. We&apos;re on it.
+      </p>
+      {error.digest && (
+        <p style={{ fontSize: 11, color: '#9C9589', marginBottom: 28, fontFamily: 'JetBrains Mono, monospace' }}>
+          Error ID: {error.digest}
         </p>
+      )}
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
         <button
           onClick={() => reset()}
-          className="px-6 py-2.5 rounded-lg font-medium text-white"
-          style={{ backgroundColor: 'var(--goblin-moss)' }}
+          style={{
+            background: '#2D4A2B', color: '#fff', border: 'none',
+            padding: '12px 24px', borderRadius: 10, fontSize: 14,
+            fontWeight: 500, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
+          }}
         >
-          Refresh
+          Try again
         </button>
+        <a
+          href="/dashboard"
+          style={{
+            background: 'transparent', color: '#6B6B6B', padding: '12px 24px',
+            borderRadius: 10, fontSize: 14, fontWeight: 400, textDecoration: 'none',
+            border: '1px solid rgba(0,0,0,0.12)', fontFamily: 'DM Sans, sans-serif',
+          }}
+        >
+          Back to workshop
+        </a>
       </div>
     </div>
   );

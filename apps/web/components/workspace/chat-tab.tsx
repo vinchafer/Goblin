@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { apiStream, apiGet } from "@/lib/api";
 import { ChatInput, useChatModel, DEFAULT_MODEL } from "@/components/chat/ChatInput";
+import { FirstChatTip } from "@/components/onboarding/first-chat-tip";
 import type { ChatMessage } from "@goblin/shared/src/schemas";
 import type { SelectedModel } from "@/components/chat/ChatInput";
 
@@ -32,6 +33,15 @@ interface TokenInfo {
   provider: string;
   layer: string;
 }
+
+const THINKING_PHRASES = [
+  'Your goblin is thinking…',
+  'Cooking up something good…',
+  'Consulting the ancient scrolls…',
+  'Connecting the dots…',
+  'Spinning up the gears…',
+  'On it…',
+];
 
 // ─── Per-provider pricing (USD per 1K tokens) ─────────────────────────────────
 
@@ -195,7 +205,9 @@ function Message({ msg, isStreaming, onSendToCode }: {
         }}>
           {isThinking ? (
             <div style={{ display: 'flex', gap: 4, alignItems: 'center', padding: '4px 0' }}>
-              <span style={{ fontSize: 12, color: isUser ? 'rgba(255,255,255,0.6)' : '#9C9589' }}>Goblin is thinking</span>
+              <span style={{ fontSize: 12, color: isUser ? 'rgba(255,255,255,0.6)' : '#9C9589' }}>
+                {THINKING_PHRASES[Math.floor(Date.now() / 8000) % THINKING_PHRASES.length]}
+              </span>
               {[0, 1, 2].map(i => (
                 <div key={i} style={{
                   width: 5, height: 5, borderRadius: '50%',
@@ -437,6 +449,9 @@ export function ChatTab({ projectId }: ChatTabProps) {
         @keyframes blink { 50%{opacity:0} }
         .ic { background:rgba(45,74,43,0.08);padding:1px 5px;border-radius:4px;font-family:JetBrains Mono,monospace;font-size:0.9em; }
       `}</style>
+
+      {/* First-chat tip (dismissable) */}
+      <FirstChatTip />
 
       {/* Messages */}
       <div style={{ flex: 1, overflowY: 'auto', padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
