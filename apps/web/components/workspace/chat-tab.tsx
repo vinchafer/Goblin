@@ -467,21 +467,37 @@ export function ChatTab({ projectId }: ChatTabProps) {
             ))
         }
 
-        {error && (
-          <div style={{
-            background: '#FEF2F2', border: '1px solid #FCA5A5',
-            borderRadius: 10, padding: '12px 16px', fontSize: 13,
-            color: '#991B1B', fontFamily: 'DM Sans, sans-serif',
-          }}>
-            {error}
-            <button
-              onClick={() => setError(null)}
-              style={{ marginLeft: 10, fontSize: 11, textDecoration: 'underline', background: 'none', border: 'none', color: '#991B1B', cursor: 'pointer' }}
-            >
-              Dismiss
-            </button>
-          </div>
-        )}
+        {error && (() => {
+          const isNoModel = /no model|no key|api key|not connected|no provider/i.test(error);
+          return (
+            <div style={{
+              background: isNoModel ? 'rgba(212,169,74,0.08)' : '#FEF2F2',
+              border: `1px solid ${isNoModel ? 'rgba(212,169,74,0.3)' : '#FCA5A5'}`,
+              borderRadius: 10, padding: '12px 16px', fontSize: 13,
+              color: isNoModel ? 'var(--text)' : '#991B1B',
+              fontFamily: 'DM Sans, sans-serif',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+            }}>
+              <span>
+                {isNoModel ? (
+                  <>
+                    No model connected.{' '}
+                    <a href="/dashboard/settings/keys" style={{ color: 'var(--ochre-dark)', fontWeight: 600, textDecoration: 'underline' }}>
+                      Add an API key in Settings →
+                    </a>
+                  </>
+                ) : error}
+              </span>
+              <button
+                onClick={() => setError(null)}
+                style={{ fontSize: 16, background: 'none', border: 'none', color: isNoModel ? 'var(--meta)' : '#991B1B', cursor: 'pointer', flexShrink: 0, lineHeight: 1, padding: '0 2px' }}
+                aria-label="Dismiss"
+              >
+                ×
+              </button>
+            </div>
+          );
+        })()}
 
         <div ref={messagesEndRef} />
       </div>

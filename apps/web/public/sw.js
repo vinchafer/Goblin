@@ -1,4 +1,4 @@
-const GOBLIN_VERSION = '1.2.0-20260501';
+const GOBLIN_VERSION = new URL(location.href).searchParams.get('v') || '1.2.0';
 const SHELL_CACHE = `goblin-shell-${GOBLIN_VERSION}`;
 const STATIC_CACHE = `goblin-static-${GOBLIN_VERSION}`;
 

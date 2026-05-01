@@ -64,13 +64,22 @@ function SkeletonCard() {
   return (
     <div style={{
       background: '#fff', borderRadius: 12,
-      border: '1px solid #EDE8DC', padding: '20px',
+      border: '1px solid var(--div)', padding: '18px 18px 16px',
+      minHeight: 120,
       animation: 'pulse 1.5s ease-in-out infinite',
+      display: 'flex', flexDirection: 'column',
     }}>
-      <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#EDE8DC', marginBottom: 14 }} />
-      <div style={{ height: 20, background: '#EDE8DC', borderRadius: 4, marginBottom: 8, width: '70%' }} />
-      <div style={{ height: 14, background: '#EDE8DC', borderRadius: 4, marginBottom: 4, width: '90%' }} />
-      <div style={{ height: 14, background: '#EDE8DC', borderRadius: 4, width: '60%' }} />
+      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
+        <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--div)', marginTop: 4, flexShrink: 0 }} />
+        <div style={{ flex: 1 }}>
+          <div style={{ height: 18, background: 'var(--div)', borderRadius: 4, marginBottom: 8, width: '65%' }} />
+          <div style={{ height: 13, background: 'var(--div)', borderRadius: 4, marginBottom: 4, width: '90%' }} />
+          <div style={{ height: 13, background: 'var(--div)', borderRadius: 4, width: '70%' }} />
+        </div>
+      </div>
+      <div style={{ marginTop: 'auto', paddingTop: 6, display: 'flex', gap: 6 }}>
+        <div style={{ height: 11, width: 48, background: 'var(--div)', borderRadius: 3 }} />
+      </div>
     </div>
   );
 }

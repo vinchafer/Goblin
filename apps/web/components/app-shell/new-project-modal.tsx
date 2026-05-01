@@ -1,12 +1,19 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { X, Loader2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Project } from "@goblin/shared/src/schemas";
 
 const COLOR_PRESETS = [
-  "#2D4A2B", "#D4A94A", "#B85C3C", "#4A7C3B", "#6B6B6B"
+  { hex: '#D4A94A', label: 'Ochre' },
+  { hex: '#2D4A2B', label: 'Moss' },
+  { hex: '#B85C3C', label: 'Rust' },
+  { hex: '#2A2A2A', label: 'Slate' },
+  { hex: '#7A4A8A', label: 'Purple' },
+  { hex: '#4A7A7A', label: 'Teal' },
+  { hex: '#8A3A5A', label: 'Pink' },
 ];
 
 interface NewProjectModalProps {
@@ -15,10 +22,11 @@ interface NewProjectModalProps {
 }
 
 export function NewProjectModal({ onClose, onProjectCreated }: NewProjectModalProps) {
+  const router = useRouter();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
-  const [selectedColor, setSelectedColor] = useState(COLOR_PRESETS[1]);
+  const [selectedColor, setSelectedColor] = useState(COLOR_PRESETS[0]!.hex);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,31 +43,23 @@ export function NewProjectModal({ onClose, onProjectCreated }: NewProjectModalPr
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!name.trim()) return;
-
     setLoading(true);
     setError(null);
 
     try {
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
-
-      if (!token) {
-        throw new Error('Not authenticated');
-      }
+      if (!token) throw new Error('Not authenticated');
 
       const response = await fetch('/api/projects', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
           name: name.trim(),
           description: description.trim() || undefined,
-          color: selectedColor
-        })
+          color: selectedColor,
+        }),
       });
 
       if (!response.ok) {
@@ -68,15 +68,11 @@ export function NewProjectModal({ onClose, onProjectCreated }: NewProjectModalPr
       }
 
       const project = await response.json();
-      
-      if (onProjectCreated) {
-        onProjectCreated(project);
-      }
-      
-      handleClose();
+      onProjectCreated?.(project);
+      dialogRef.current?.close();
+      router.push(`/dashboard/project/${project.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create project');
-    } finally {
       setLoading(false);
     }
   };
@@ -84,105 +80,150 @@ export function NewProjectModal({ onClose, onProjectCreated }: NewProjectModalPr
   return (
     <dialog
       ref={dialogRef}
-      className="rounded-2xl border shadow-2xl p-0"
       style={{
-        backgroundColor: 'white',
-        borderColor: 'var(--goblin-light)'
+        backgroundColor: '#fff',
+        border: '1px solid var(--div)',
+        borderRadius: 18,
+        boxShadow: '0 24px 64px rgba(0,0,0,0.18)',
+        padding: 0,
+        maxWidth: 460,
+        width: '100%',
       }}
       onClick={(e) => e.target === dialogRef.current && handleClose()}
     >
-      <form onSubmit={handleSubmit} className="w-[440px] p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold" style={{ color: 'var(--goblin-slate)' }}>
+      <form onSubmit={handleSubmit} style={{ padding: 28 }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+          <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 20, color: 'var(--moss)', fontWeight: 700, letterSpacing: '-0.4px' }}>
             New Project
           </h2>
-          <button type="button" onClick={handleClose} className="p-1 rounded hover:bg-gray-100">
-            <X className="w-5 h-5" style={{ color: 'var(--goblin-gray)' }} />
+          <button type="button" onClick={handleClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, borderRadius: 6, color: 'var(--meta)', display: 'flex' }}>
+            <X size={18} />
           </button>
         </div>
 
-        <div className="space-y-4">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          {/* Name */}
           <div>
-            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--goblin-slate)' }}>
-              Project Name
-            </label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+              <label style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>
+                Project Name <span style={{ color: 'var(--error)' }}>*</span>
+              </label>
+              <span style={{ fontSize: 11, color: name.length > 40 ? 'var(--error)' : 'var(--meta)' }}>
+                {name.length}/50
+              </span>
+            </div>
             <input
               type="text"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => setName(e.target.value.slice(0, 50))}
               required
+              autoFocus
               placeholder="My Awesome Project"
-              className="w-full px-3 py-2 rounded-lg border text-sm"
               style={{
-                borderColor: 'var(--goblin-light)',
-                color: 'var(--goblin-slate)'
+                width: '100%', padding: '10px 14px', borderRadius: 9,
+                border: '1.5px solid var(--div)', fontSize: 14,
+                fontFamily: 'DM Sans, sans-serif', color: 'var(--text)',
+                outline: 'none', boxSizing: 'border-box', background: '#fff',
               }}
+              onFocus={e => (e.target.style.borderColor = 'var(--moss)')}
+              onBlur={e => (e.target.style.borderColor = 'var(--div)')}
             />
           </div>
 
+          {/* Description */}
           <div>
-            <label className="block text-sm font-medium mb-1.5" style={{ color: 'var(--goblin-slate)' }}>
-              Description
-            </label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 6 }}>
+              <label style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>
+                What are you building?
+              </label>
+              <span style={{ fontSize: 11, color: description.length > 180 ? 'var(--error)' : 'var(--meta)' }}>
+                {description.length}/200
+              </span>
+            </div>
             <textarea
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e) => setDescription(e.target.value.slice(0, 200))}
               rows={3}
-              placeholder="What are you building?"
-              className="w-full px-3 py-2 rounded-lg border text-sm resize-none"
+              placeholder="A SaaS app, landing page, API..."
               style={{
-                borderColor: 'var(--goblin-light)',
-                color: 'var(--goblin-slate)'
+                width: '100%', padding: '10px 14px', borderRadius: 9,
+                border: '1.5px solid var(--div)', fontSize: 13,
+                fontFamily: 'DM Sans, sans-serif', color: 'var(--text)',
+                outline: 'none', resize: 'none', boxSizing: 'border-box',
+                lineHeight: 1.5, background: '#fff',
               }}
+              onFocus={e => (e.target.style.borderColor = 'var(--moss)')}
+              onBlur={e => (e.target.style.borderColor = 'var(--div)')}
             />
           </div>
 
+          {/* Color picker */}
           <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--goblin-slate)' }}>
+            <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text)', marginBottom: 10 }}>
               Color
             </label>
-            <div className="flex gap-2">
-              {COLOR_PRESETS.map(color => (
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {COLOR_PRESETS.map(({ hex, label }) => (
                 <button
-                  key={color}
+                  key={hex}
                   type="button"
-                  onClick={() => setSelectedColor(color)}
-                  className={`w-8 h-8 rounded-full transition-transform ${selectedColor === color ? 'scale-110 ring-2 ring-offset-2' : ''}`}
+                  title={label}
+                  onClick={() => setSelectedColor(hex)}
                   style={{
-                    backgroundColor: color
+                    width: 32, height: 32, borderRadius: '50%',
+                    background: hex, border: 'none', cursor: 'pointer',
+                    outline: selectedColor === hex ? `3px solid ${hex}` : 'none',
+                    outlineOffset: 2,
+                    transform: selectedColor === hex ? 'scale(1.15)' : 'scale(1)',
+                    transition: 'transform 0.15s, outline 0.15s',
+                    boxShadow: selectedColor === hex ? '0 2px 8px rgba(0,0,0,0.2)' : 'none',
                   }}
+                  aria-label={label}
+                  aria-pressed={selectedColor === hex}
                 />
               ))}
             </div>
           </div>
 
           {error && (
-            <p className="text-sm" style={{ color: 'var(--goblin-warn)' }}>
+            <div style={{ fontSize: 13, color: 'var(--error)', background: 'rgba(184,92,60,0.08)', padding: '10px 14px', borderRadius: 8 }}>
               {error}
-            </p>
+            </div>
           )}
         </div>
 
-        <div className="flex justify-end gap-3 mt-6">
+        {/* Actions */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 24 }}>
           <button
             type="button"
             onClick={handleClose}
-            className="px-4 py-2 rounded-lg text-sm font-medium"
-            style={{ color: 'var(--goblin-gray)' }}
+            style={{
+              padding: '9px 18px', borderRadius: 8, border: '1px solid var(--div)',
+              background: 'transparent', color: 'var(--meta)', fontSize: 13,
+              fontWeight: 500, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
+            }}
           >
             Cancel
           </button>
           <button
             type="submit"
-            disabled={!name || loading}
-            className="px-4 py-2 rounded-lg text-sm font-medium text-white disabled:opacity-50 flex items-center gap-2"
-            style={{ backgroundColor: 'var(--goblin-moss)' }}
+            disabled={!name.trim() || loading}
+            style={{
+              padding: '9px 22px', borderRadius: 8, border: 'none',
+              background: 'var(--moss)', color: '#fff', fontSize: 13,
+              fontWeight: 500, cursor: loading || !name.trim() ? 'not-allowed' : 'pointer',
+              fontFamily: 'DM Sans, sans-serif',
+              opacity: !name.trim() ? 0.5 : 1,
+              display: 'flex', alignItems: 'center', gap: 7,
+            }}
           >
-            {loading && <Loader2 className="w-4 h-4 animate-spin" />}
-            {loading ? 'Creating...' : 'Create Project'}
+            {loading && <Loader2 size={14} style={{ animation: 'spin 0.8s linear infinite' }} />}
+            {loading ? 'Creating…' : 'Create Project'}
           </button>
         </div>
       </form>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </dialog>
   );
 }

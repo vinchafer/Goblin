@@ -4,12 +4,13 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
 const COLORS = [
-  { name: 'Ochre', hex: '#D4A94A' },
-  { name: 'Moss', hex: '#2D4A2B' },
-  { name: 'Rust', hex: '#B85C3C' },
-  { name: 'Forest', hex: '#4A7C3B' },
-  { name: 'Gray', hex: '#6B6B6B' },
-  { name: 'Brown', hex: '#3A2E1F' },
+  { name: 'Ochre',  hex: '#D4A94A' },
+  { name: 'Moss',   hex: '#2D4A2B' },
+  { name: 'Rust',   hex: '#B85C3C' },
+  { name: 'Slate',  hex: '#2A2A2A' },
+  { name: 'Purple', hex: '#7A4A8A' },
+  { name: 'Teal',   hex: '#4A7A7A' },
+  { name: 'Pink',   hex: '#8A3A5A' },
 ];
 
 interface NewProjectModalProps {
@@ -70,7 +71,7 @@ export function NewProjectModal({ onClose }: NewProjectModalProps) {
 
       const project = await response.json();
       onClose();
-      router.push(`/project/${project.id}`);
+      router.push(`/dashboard/project/${project.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create project');
     } finally {

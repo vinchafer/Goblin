@@ -48,7 +48,8 @@ export function usePushNotifications() {
     const permission = await Notification.requestPermission();
     if (permission !== "granted") return;
 
-    const registration = await navigator.serviceWorker.register("/sw.js");
+    const buildId = process.env.NEXT_PUBLIC_BUILD_ID || Date.now().toString();
+    const registration = await navigator.serviceWorker.register(`/sw.js?v=${buildId}`);
     await navigator.serviceWorker.ready;
 
     const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
