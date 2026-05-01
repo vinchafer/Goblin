@@ -50,6 +50,10 @@ import { Hono } from 'hono';
 import { HTTPException } from 'hono/http-exception';
 import { serve } from '@hono/node-server';
 import { cors } from 'hono/cors';
+import { initSentry, captureError } from './lib/sentry';
+import logger, { logRequest } from './lib/logger';
+
+initSentry();
 import { chat } from './routes/chat';
 import { billing } from './routes/billing';
 import { projects } from './routes/projects';
@@ -106,12 +110,18 @@ app.use('*', cors({
   maxAge: 86400, // 24 hours
 }));
 
+// Request logging
+app.use('*', async (c, next) => {
+  const start = Date.now();
+  await next();
+  logRequest(c.req.method, c.req.path, c.res.status, Date.now() - start);
+});
+
 app.onError((err, c) => {
-  console.error('[API Error]', err.message);
   const status = err instanceof HTTPException ? err.status : 500;
-  return c.json({ 
-    error: status === 500 ? 'Internal server error' : err.message 
-  }, status);
+  if (status >= 500) captureError(err, { path: c.req.path, method: c.req.method });
+  else logger.warn({ path: c.req.path, status }, err.message);
+  return c.json({ error: status === 500 ? 'Internal server error' : err.message }, status);
 });
 
 app.route('/health', health);

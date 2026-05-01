@@ -24,7 +24,9 @@ async function getToken(): Promise<string | null> {
 
 export function useBuildStatus(projectId: string) {
   const [builds, setBuilds] = useState<BuildRun[]>([]);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const fallbackPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const realtimeFailedRef = useRef(false);
+  const backoffRef = useRef(2000);
 
   const fetchBuilds = useCallback(async () => {
     const token = await getToken();
@@ -36,42 +38,63 @@ export function useBuildStatus(projectId: string) {
       if (!res.ok) return;
       const data: BuildRun[] = await res.json();
       setBuilds(data);
-    } catch {
-      // silent — polling handles transient errors
-    }
+    } catch { /* silent */ }
   }, [projectId]);
 
-  const activeBuilds = builds.filter(b => b.status === 'pending' || b.status === 'running');
-  const recentDone = builds.filter(b => {
-    if (b.status !== 'done' && b.status !== 'failed') return false;
-    if (!b.completed_at) return false;
-    return Date.now() - new Date(b.completed_at).getTime() < 30_000;
-  });
+  // Upsert a single build into state
+  const upsertBuild = useCallback((build: BuildRun) => {
+    setBuilds(prev => {
+      const idx = prev.findIndex(b => b.id === build.id);
+      if (idx === -1) return [build, ...prev];
+      const next = [...prev];
+      next[idx] = build;
+      return next;
+    });
+  }, []);
 
-  // Initial fetch on mount
   useEffect(() => {
+    // Initial fetch
     fetchBuilds();
-  }, [fetchBuilds]);
 
-  // Poll only when there are active builds
-  useEffect(() => {
-    if (activeBuilds.length > 0) {
-      if (!pollRef.current) {
-        pollRef.current = setInterval(fetchBuilds, 2000);
-      }
-    } else {
-      if (pollRef.current) {
-        clearInterval(pollRef.current);
-        pollRef.current = null;
-      }
-    }
+    const supabase = createClient();
+
+    const channel = supabase
+      .channel(`builds:${projectId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'build_runs', filter: `project_id=eq.${projectId}` },
+        (payload) => {
+          if (payload.new && typeof payload.new === 'object') {
+            upsertBuild(payload.new as BuildRun);
+          }
+        }
+      )
+      .subscribe((status) => {
+        if (status === 'SUBSCRIBED') {
+          realtimeFailedRef.current = false;
+          backoffRef.current = 2000;
+          // Clear fallback poll if running
+          if (fallbackPollRef.current) {
+            clearInterval(fallbackPollRef.current);
+            fallbackPollRef.current = null;
+          }
+        } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          realtimeFailedRef.current = true;
+          // Start fallback polling with exponential backoff
+          if (!fallbackPollRef.current) {
+            fallbackPollRef.current = setInterval(() => {
+              fetchBuilds();
+              backoffRef.current = Math.min(backoffRef.current * 2, 30_000);
+            }, backoffRef.current);
+          }
+        }
+      });
+
     return () => {
-      if (pollRef.current) {
-        clearInterval(pollRef.current);
-        pollRef.current = null;
-      }
+      supabase.removeChannel(channel);
+      if (fallbackPollRef.current) clearInterval(fallbackPollRef.current);
     };
-  }, [activeBuilds.length, fetchBuilds]);
+  }, [projectId, fetchBuilds, upsertBuild]);
 
   const startBuild = useCallback(
     async (type: BuildRun['type'], message?: string): Promise<string | null> => {
@@ -87,12 +110,17 @@ export function useBuildStatus(projectId: string) {
         const data = await res.json();
         fetchBuilds();
         return data.jobId as string;
-      } catch {
-        return null;
-      }
+      } catch { return null; }
     },
     [projectId, fetchBuilds]
   );
+
+  const activeBuilds = builds.filter(b => b.status === 'pending' || b.status === 'running');
+  const recentDone = builds.filter(b => {
+    if (b.status !== 'done' && b.status !== 'failed') return false;
+    if (!b.completed_at) return false;
+    return Date.now() - new Date(b.completed_at).getTime() < 30_000;
+  });
 
   return { builds, activeBuilds, recentDone, startBuild, refetch: fetchBuilds };
 }

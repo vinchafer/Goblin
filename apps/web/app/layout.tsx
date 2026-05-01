@@ -45,11 +45,21 @@ export const metadata: Metadata = {
   },
 }
 
+export function reportWebVitals(metric: { name: string; value: number; rating: string }) {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+  if (!apiUrl) return;
+  fetch(`${apiUrl}/api/analytics/vitals`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: metric.name, value: Math.round(metric.value), rating: metric.rating }),
+    keepalive: true,
+  }).catch(() => {});
+}
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${fraunces.variable} ${dmSans.variable} ${jetbrainsMono.variable}`}>
       <head>
-        {/* Safari pinned tab */}
         <link rel="mask-icon" href="/icons/icon-512.png" color="#2D4A2B" />
       </head>
       <body>
