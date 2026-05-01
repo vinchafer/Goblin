@@ -283,10 +283,11 @@ export async function* streamCompletion({
 
       for await (const event of stream) {
         if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-          outputTokens++;
           yield JSON.stringify({ type: 'delta', content: event.delta.text });
         } else if (event.type === 'message_start') {
           inputTokens = event.message.usage.input_tokens;
+        } else if (event.type === 'message_delta' && event.usage) {
+          outputTokens = event.usage.output_tokens;
         }
       }
     } else {
@@ -302,16 +303,17 @@ export async function* streamCompletion({
         max_tokens: 8096,
         messages,
         stream: true,
+        stream_options: { include_usage: true },
       });
 
       for await (const chunk of stream) {
         const text = chunk.choices[0]?.delta?.content ?? '';
         if (text) {
-          outputTokens++;
           yield JSON.stringify({ type: 'delta', content: text });
         }
         if (chunk.usage) {
           inputTokens = chunk.usage.prompt_tokens ?? 0;
+          outputTokens = chunk.usage.completion_tokens ?? 0;
         }
       }
     }
