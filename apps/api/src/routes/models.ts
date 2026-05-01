@@ -1,69 +1,107 @@
 import { Hono } from 'hono';
+import { z } from 'zod';
 import { authMiddleware } from '../middleware/auth';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { listKeys, getActiveKey } from '../services/byok-service';
 import { ByokProviderSchema } from '@goblin/shared/src/schemas';
+import { ALL_STATIC_MODELS, FREE_API_MODELS } from '../config/providers';
 
 type Variables = { userId: string };
 const models = new Hono<{ Variables: Variables }>();
 
 models.use('*', authMiddleware);
 
-// GET /api/models — DB-driven model list (falls back to static list)
+// 30-second server-side model list cache (per user)
+const modelCache = new Map<string, { data: unknown[]; ts: number }>();
+const MODEL_CACHE_TTL = 30_000;
+
+// 5-minute credits cache
+const creditsCache = new Map<string, { data: unknown; ts: number }>();
+const CREDITS_CACHE_TTL = 5 * 60_000;
+
+// GET /api/models — user-aware model list with BYOK + availability filtering
 models.get('/', async (c) => {
+  const userId = c.get('userId');
+
+  // Cache check
+  const cached = modelCache.get(userId);
+  if (cached && Date.now() - cached.ts < MODEL_CACHE_TTL) {
+    return c.json(cached.data);
+  }
+
+  const supabase = getSupabaseAdmin();
+
+  // Fetch user's connected providers
+  const userKeys = await listKeys(userId).catch(() => []);
+  const connectedProviders = new Set<string>(userKeys.filter(k => k.status === 'active').map(k => k.provider as string));
+
+  // Fetch models from DB (falls back to static if table empty/missing)
+  let dbModels: Array<{
+    id: string; name: string; slug: string; provider: string;
+    layer: string; description: string | null; tags: string[];
+    requires_key: boolean; available: boolean; phase: number;
+  }> = [];
+
   try {
-    const supabase = getSupabaseAdmin();
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from('models')
       .select('*')
       .eq('available', true)
       .order('phase', { ascending: true });
+    if (data && data.length > 0) dbModels = data;
+  } catch { /* use static fallback */ }
 
-    if (!error && data && data.length > 0) {
-      return c.json(data);
-    }
-  } catch {
-    // DB table may not exist yet — fall through to static list
-  }
+  const sourceModels = dbModels.length > 0 ? dbModels : [...ALL_STATIC_MODELS, ...FREE_API_MODELS];
 
-  // Static fallback: Phase 1 BYOK models + Free API models
-  return c.json([
-    // BYOK Models (Phase 1)
-    { id: 'claude-sonnet-4-6', name: 'Claude Sonnet 4.6', slug: 'claude-sonnet-4-6', provider: 'anthropic', layer: 'byok', description: 'Fast, capable. Best for most coding tasks.', tags: ['coding', 'fast'], requires_key: true, available: true, phase: 1 },
-    { id: 'claude-opus-4-7', name: 'Claude Opus 4.7', slug: 'claude-opus-4-7', provider: 'anthropic', layer: 'byok', description: 'Most powerful. Best for complex reasoning.', tags: ['reasoning', 'coding'], requires_key: true, available: true, phase: 1 },
-    { id: 'gpt-4o', name: 'GPT-4o', slug: 'gpt-4o', provider: 'openai', layer: 'byok', description: 'OpenAI flagship. Strong at code and instruction following.', tags: ['coding', 'fast'], requires_key: true, available: true, phase: 1 },
-    { id: 'deepseek-chat', name: 'DeepSeek V3', slug: 'deepseek/deepseek-chat', provider: 'deepseek', layer: 'byok', description: 'Best price/performance for coding. Near GPT-4 quality.', tags: ['coding', 'fast'], requires_key: true, available: true, phase: 1 },
-    { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', slug: 'gemini/gemini-2.0-flash', provider: 'google', layer: 'byok', description: 'Very fast. Great for quick iterations.', tags: ['fast'], requires_key: true, available: true, phase: 1 },
-    { id: 'llama-3.3-70b-versatile', name: 'Llama 3.3 70B (Groq)', slug: 'groq/llama-3.3-70b-versatile', provider: 'groq', layer: 'byok', description: 'Open-source 70B. Extremely fast via Groq inference.', tags: ['fast', 'coding'], requires_key: true, available: true, phase: 1 },
-    { id: 'mistral-large', name: 'Mistral Large', slug: 'mistral/mistral-large', provider: 'mistral', layer: 'byok', description: 'European LLM. Strong multilingual support.', tags: ['multilingual', 'coding'], requires_key: true, available: true, phase: 1 },
-    { id: 'grok-2', name: 'Grok 2', slug: 'xai/grok-2', provider: 'xai', layer: 'byok', description: 'Elon\'s model. Good reasoning and real-time knowledge.', tags: ['reasoning', 'knowledge'], requires_key: true, available: true, phase: 1 },
-    { id: 'llama-3-70b', name: 'Llama 3 70B (Together)', slug: 'together/llama-3-70b', provider: 'together', layer: 'byok', description: 'Open-source 70B via Together AI. Access many open models.', tags: ['open-source', 'coding'], requires_key: true, available: true, phase: 1 },
-    
-    // Free API Models (no key required)
-    { id: 'gemini-2.0-flash-free', name: 'Gemini 2.0 Flash', slug: 'gemini/gemini-2.0-flash', provider: 'google', layer: 'free_api', description: 'Fast, generous free tier. No key required.', tags: ['fast', 'free'], requires_key: false, available: true, phase: 1 },
-    { id: 'llama-3.3-70b-free', name: 'Llama 3.3 70B', slug: 'groq/llama-3.3-70b-versatile', provider: 'groq', layer: 'free_api', description: 'Extremely fast inference. Free tier available.', tags: ['fast', 'free', 'coding'], requires_key: false, available: true, phase: 1 },
-  ]);
+  // Annotate each model with user-specific info
+  const annotated = sourceModels
+    .filter(m => {
+      if (m.layer === 'byok') return true; // Always show BYOK options
+      if (m.layer === 'free_api') return true; // Always show free options
+      if (m.layer === 'goblin_hosted') return true; // Phase 3
+      return false;
+    })
+    .map(m => {
+      const keyConnected = m.layer === 'byok' ? connectedProviders.has(m.provider) : null;
+      let badge: 'BYOK' | 'FREE' | 'GOBLIN_HOSTED' | 'COMING_SOON' = 'BYOK';
+      if (m.layer === 'free_api') badge = 'FREE';
+      else if (m.layer === 'goblin_hosted') badge = 'GOBLIN_HOSTED';
+
+      return {
+        ...m,
+        keyConnected,
+        badge,
+        available: m.layer === 'byok' ? (keyConnected ?? false) : m.available,
+      };
+    })
+    .sort((a, b) => {
+      // BYOK connected first, then free, then BYOK not connected, then goblin_hosted
+      const score = (m: typeof a) => {
+        if (m.layer === 'byok' && m.keyConnected) return 0;
+        if (m.layer === 'free_api') return 1;
+        if (m.layer === 'byok' && !m.keyConnected) return 2;
+        return 3;
+      };
+      return score(a) - score(b);
+    });
+
+  modelCache.set(userId, { data: annotated, ts: Date.now() });
+  return c.json(annotated);
 });
 
-// GET /api/models/status — returns BYOK key status and free API availability
+// GET /api/models/status — BYOK key status + free API availability
 models.get('/status', async (c) => {
-  const userId = c.get('userId') as string;
-  if (!userId) {
-    return c.json({ error: 'Unauthorized' }, 401);
-  }
-
+  const userId = c.get('userId');
   try {
     const supabase = getSupabaseAdmin();
     const keys = await listKeys(userId);
 
-    // Build BYOK status map
-    const byokProviders = ['anthropic', 'openai', 'google', 'groq', 'mistral', 'deepseek', 'xai', 'together'] as const;
+    const byokProviders = ['anthropic', 'openai', 'google', 'groq', 'mistral', 'deepseek', 'xai', 'together', 'fireworks', 'openrouter'] as const;
     const byok: Record<string, boolean> = {};
     for (const provider of byokProviders) {
       byok[provider] = keys.some(k => k.provider === provider && k.status === 'active');
     }
 
-    // Get free API usage from database
     const { data: freeApiData } = await supabase
       .from('free_api_usage')
       .select('provider, used_today, daily_limit')
@@ -71,7 +109,7 @@ models.get('/status', async (c) => {
 
     const freeApi: Record<string, { available: boolean; usedToday: number; limit: number }> = {
       gemini: { available: true, usedToday: 0, limit: 50 },
-      groq: { available: true, usedToday: 0, limit: 50 },
+      groq:   { available: true, usedToday: 0, limit: 50 },
     };
 
     if (freeApiData) {
@@ -87,24 +125,23 @@ models.get('/status', async (c) => {
     }
 
     return c.json({ byok, freeApi });
-  } catch (err) {
-    console.error('[models/status] Error:', err);
+  } catch {
     return c.json({ error: 'Failed to fetch model status' }, 500);
   }
 });
 
-// GET /api/models/:provider/credits — returns credit/balance info for a provider
+// GET /api/models/:provider/credits — cached live credit check
 models.get('/:provider/credits', async (c) => {
-  const userId = c.get('userId') as string;
+  const userId = c.get('userId');
   const rawProvider = c.req.param('provider');
   const providerParsed = ByokProviderSchema.safeParse(rawProvider);
-  if (!providerParsed.success) {
-    return c.json({ error: 'Invalid provider' }, 400);
-  }
+  if (!providerParsed.success) return c.json({ error: 'Invalid provider' }, 400);
   const provider = providerParsed.data;
 
-  if (!userId) {
-    return c.json({ error: 'Unauthorized' }, 401);
+  const cacheKey = `${userId}:${provider}`;
+  const cached = creditsCache.get(cacheKey);
+  if (cached && Date.now() - cached.ts < CREDITS_CACHE_TTL) {
+    return c.json(cached.data);
   }
 
   try {
@@ -113,99 +150,82 @@ models.get('/:provider/credits', async (c) => {
       return c.json({ supported: false, link: getProviderLink(provider) });
     }
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 3000);
+    let result: { supported: boolean; remaining?: string; credits?: number; link?: string };
+    const signal = AbortSignal.timeout(4000);
 
-    try {
-      let result: { supported: boolean; remaining?: string; link?: string };
-
-      switch (provider) {
-        case 'anthropic': {
-          const response = await fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST',
-            headers: {
-              'x-api-key': key,
-              'anthropic-version': '2023-06-01',
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              model: 'claude-3-5-haiku-latest',
-              max_tokens: 1,
-              messages: [{ role: 'user', content: 'hi' }],
-            }),
-            signal: controller.signal,
-          });
-
-          // Anthropic doesn't have a direct balance endpoint, but we can check
-          // the organization usage/limits via their API
-          const orgResponse = await fetch('https://api.anthropic.com/v1/organizations', {
-            headers: {
-              'x-api-key': key,
-              'anthropic-version': '2023-06-01',
-            },
-            signal: controller.signal,
-          });
-
-          if (orgResponse.ok) {
-            result = { supported: true, remaining: 'Active' };
-          } else {
-            result = { supported: false, link: 'https://console.anthropic.com/settings/billing' };
-          }
-          break;
-        }
-
-        case 'openai': {
-          const response = await fetch('https://api.openai.com/v1/dashboard/billing/subscription', {
-            headers: {
-              'Authorization': `Bearer ${key}`,
-            },
-            signal: controller.signal,
-          });
-
-          if (response.ok) {
-            const data = await response.json() as any;
-            const remaining = data.hard_limit_usd
-              ? `$${(data.hard_limit_usd - (data.soft_limit_usd || 0)).toFixed(2)} remaining`
-              : 'Active';
-            result = { supported: true, remaining };
-          } else {
-            result = { supported: false, link: 'https://platform.openai.com/usage' };
-          }
-          break;
-        }
-
-        default:
-          result = { supported: false, link: getProviderLink(provider) };
+    switch (provider) {
+      case 'anthropic': {
+        // Anthropic: no public balance endpoint, just verify key works
+        const res = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json' },
+          body: JSON.stringify({ model: 'claude-haiku-4-5', max_tokens: 1, messages: [{ role: 'user', content: '.' }] }),
+          signal,
+        });
+        result = res.ok || res.status === 400
+          ? { supported: true, remaining: 'Active' }
+          : { supported: false, link: 'https://console.anthropic.com/settings/billing' };
+        break;
       }
 
-      clearTimeout(timeout);
-      return c.json(result);
-    } catch (fetchErr: unknown) {
-      clearTimeout(timeout);
-      if (fetchErr instanceof DOMException && fetchErr.name === 'AbortError') {
-        // Timeout — return nothing (frontend will show nothing)
-        return c.json({ supported: false });
+      case 'openai': {
+        const res = await fetch('https://api.openai.com/v1/dashboard/billing/subscription', {
+          headers: { Authorization: `Bearer ${key}` },
+          signal,
+        });
+        if (res.ok) {
+          const data = await res.json() as { hard_limit_usd?: number; soft_limit_usd?: number };
+          const remaining = data.hard_limit_usd
+            ? `$${(data.hard_limit_usd - (data.soft_limit_usd ?? 0)).toFixed(2)} remaining`
+            : 'Active';
+          result = { supported: true, remaining };
+        } else {
+          result = { supported: false, link: 'https://platform.openai.com/usage' };
+        }
+        break;
       }
-      throw fetchErr;
+
+      case 'mistral': {
+        const res = await fetch('https://api.mistral.ai/v1/users/me', {
+          headers: { Authorization: `Bearer ${key}` },
+          signal,
+        });
+        result = res.ok
+          ? { supported: true, remaining: 'Active' }
+          : { supported: false, link: 'https://console.mistral.ai/billing' };
+        break;
+      }
+
+      default:
+        result = { supported: false, link: getProviderLink(provider) };
     }
-  } catch (err) {
-    console.error(`[models/credits/${provider}] Error:`, err);
+
+    creditsCache.set(cacheKey, { data: result, ts: Date.now() });
+    return c.json(result);
+  } catch {
     return c.json({ supported: false });
   }
 });
 
+// Invalidate model cache when user adds/removes key
+export function invalidateModelCache(userId: string) {
+  modelCache.delete(userId);
+}
+
 function getProviderLink(provider: string): string {
   const links: Record<string, string> = {
-    anthropic: 'https://console.anthropic.com/settings/billing',
-    openai: 'https://platform.openai.com/usage',
-    google: 'https://aistudio.google.com/app/apikey',
-    groq: 'https://console.groq.com/keys',
-    mistral: 'https://console.mistral.ai/billing',
-    deepseek: 'https://platform.deepseek.com/api_keys',
-    xai: 'https://console.x.ai/',
-    together: 'https://api.together.xyz/settings/billing',
+    anthropic:  'https://console.anthropic.com/settings/billing',
+    openai:     'https://platform.openai.com/usage',
+    google:     'https://aistudio.google.com/app/apikey',
+    groq:       'https://console.groq.com/keys',
+    mistral:    'https://console.mistral.ai/billing',
+    deepseek:   'https://platform.deepseek.com/api_keys',
+    xai:        'https://console.x.ai/',
+    together:   'https://api.together.xyz/settings/api-keys',
+    fireworks:  'https://fireworks.ai/account/api-keys',
+    openrouter: 'https://openrouter.ai/keys',
   };
-  return links[provider] || '#';
+  return links[provider] ?? '#';
 }
 
 export { models };

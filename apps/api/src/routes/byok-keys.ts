@@ -3,6 +3,7 @@ import { authMiddleware } from '../middleware/auth';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { createKey, listKeys, revokeKey } from '../services/byok-service';
 import { CreateByokKeySchema, UpdateByokKeySchema } from '@goblin/shared/src/schemas';
+import { invalidateModelCache } from './models';
 
 type Variables = { userId: string }
 const byokKeys = new Hono<{ Variables: Variables }>();
@@ -28,6 +29,7 @@ byokKeys.post('/', async (c) => {
       return c.json({ error: 'Invalid request', details: result.error.flatten() }, 400);
     }
     const key = await createKey(userId, result.data.provider, result.data.label, result.data.key);
+    invalidateModelCache(userId);
     return c.json(key, 201);
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Failed to create key';
@@ -42,6 +44,7 @@ byokKeys.delete('/:id', async (c) => {
     const userId = c.get('userId');
     const keyId = c.req.param('id');
     await revokeKey(userId, keyId);
+    invalidateModelCache(userId);
     return c.json({ success: true });
   } catch {
     return c.json({ error: 'Failed to revoke key' }, 500);

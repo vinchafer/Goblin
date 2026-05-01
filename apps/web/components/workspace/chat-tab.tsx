@@ -15,8 +15,9 @@ interface ChatTabProps {
 }
 
 interface StreamMessage {
-  type: 'meta' | 'delta' | 'done' | 'error';
+  type: 'meta' | 'delta' | 'done' | 'error' | 'fallback_notice';
   model?: string;
+  model_slug?: string;
   source_tier?: string;
   provider?: string;
   content?: string;
@@ -24,6 +25,7 @@ interface StreamMessage {
   model_used?: string;
   input_tokens?: number;
   output_tokens?: number;
+  token_display?: string;
   message?: string;
 }
 
@@ -32,6 +34,7 @@ interface TokenInfo {
   output: number;
   provider: string;
   layer: string;
+  tokenDisplay?: string;
 }
 
 const THINKING_PHRASES = [
@@ -402,10 +405,11 @@ export function ChatTab({ projectId }: ChatTabProps) {
               setMessages([...baseMessagesRef.current, final]);
               streamingMessageRef.current = null;
             }
-            if (d.input_tokens && d.output_tokens) {
+            if (d.input_tokens != null && d.output_tokens != null) {
               setTokenInfo({
                 input: d.input_tokens, output: d.output_tokens,
-                provider: model.provider, layer: model.layer,
+                provider: model.provider, layer: d.source_tier || model.layer,
+                tokenDisplay: d.token_display,
               });
             }
             setIsStreaming(false);
@@ -506,18 +510,22 @@ export function ChatTab({ projectId }: ChatTabProps) {
       {tokenInfo && (
         <div style={{
           padding: '4px 16px',
-          fontSize: 11, color: '#9C9589',
-          fontFamily: 'DM Sans, sans-serif',
-          background: '#F7F4ED',
+          fontSize: 11, color: 'var(--meta)',
+          fontFamily: 'JetBrains Mono, monospace',
+          background: 'var(--cream)',
           display: 'flex', gap: 6, alignItems: 'center',
         }}>
-          <span>~{(tokenInfo.input + tokenInfo.output).toLocaleString()} tokens</span>
-          {calcCost(tokenInfo) && (
-            <>
-              <span>·</span>
-              <span>{calcCost(tokenInfo)}</span>
-            </>
-          )}
+          {tokenInfo.tokenDisplay
+            ? <span>{tokenInfo.tokenDisplay}</span>
+            : (
+              <>
+                <span>↑{tokenInfo.input.toLocaleString()} ↓{tokenInfo.output.toLocaleString()} tokens</span>
+                {calcCost(tokenInfo) && (
+                  <><span>·</span><span>{calcCost(tokenInfo)}</span></>
+                )}
+              </>
+            )
+          }
         </div>
       )}
 
