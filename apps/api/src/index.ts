@@ -34,6 +34,10 @@ if (missing.length > 0) {
 
 console.log('✅ Environment validation passed')
 
+if (!process.env.ADMIN_API_KEY) {
+  console.warn('⚠️  ADMIN_API_KEY not set — admin routes are disabled (all requests will return 401)')
+}
+
 // Run startup migrations (idempotent, safe to run multiple times)
 try {
   const { runStartupMigrations } = await import('./startup-migrations.js')
@@ -62,7 +66,9 @@ const app = new Hono();
 
 app.use('*', cors({
   origin: (origin) => {
-    // Allow requests with no origin (like mobile apps or curl requests)
+    // Requests with no Origin (curl, server-to-server, Tauri) get wildcard.
+    // All sensitive endpoints require an Authorization header, so wildcard CORS
+    // here does not bypass auth — browsers enforce same-origin for credentialed requests.
     if (!origin) return '*';
     
     const allowedOrigins = [

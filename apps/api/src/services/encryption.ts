@@ -5,6 +5,9 @@ function deriveKey(): Buffer {
   if (!masterKey) {
     throw new Error('ENCRYPTION_KEY environment variable is not set');
   }
+  // Static salt is intentional: per-ciphertext random IV (16 bytes) in encryptData()
+  // provides semantic security via AES-256-GCM; changing the salt here would invalidate
+  // all existing encrypted keys in the DB. Rotate via key-migration script if needed.
   return scryptSync(masterKey, 'goblin-salt-v1', 32);
 }
 

@@ -266,15 +266,6 @@ projects.get('/:id/pending-injections', async (c) => {
     return c.json({ error: 'Failed to fetch injections' }, 500);
   }
 
-  // Mark as applied
-  if (injections && injections.length > 0) {
-    const ids = injections.map(i => i.id);
-    await supabase
-      .from('code_injections')
-      .update({ applied_at: new Date().toISOString() })
-      .in('id', ids);
-  }
-
   return c.json({
     injections: (injections || []).map(i => ({
       id: i.id,
@@ -284,6 +275,39 @@ projects.get('/:id/pending-injections', async (c) => {
       createdAt: i.created_at,
     })),
   });
+});
+
+// Acknowledge received injections — client calls this after successfully consuming them
+projects.patch('/:id/pending-injections/acknowledge', async (c) => {
+  const userId = c.get('userId');
+  const projectId = c.req.param('id');
+  const body = await c.req.json();
+  const ids: string[] = body.ids ?? [];
+
+  if (!Array.isArray(ids) || ids.length === 0) {
+    return c.json({ error: 'ids must be a non-empty array' }, 400);
+  }
+
+  const supabase = getSupabaseAdmin();
+
+  const { data: project, error: checkError } = await supabase
+    .from('projects')
+    .select('id')
+    .eq('id', projectId)
+    .eq('user_id', userId)
+    .single();
+
+  if (checkError || !project) {
+    return c.json({ error: 'Project not found' }, 404);
+  }
+
+  await supabase
+    .from('code_injections')
+    .update({ applied_at: new Date().toISOString() })
+    .in('id', ids)
+    .eq('project_id', projectId);
+
+  return c.json({ acknowledged: ids.length });
 });
 
 // Save file content (for CodeMirror editor)

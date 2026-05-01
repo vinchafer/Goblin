@@ -1,5 +1,8 @@
 import type { Context, Next } from 'hono';
 
+// NOTE: In-memory store — resets on every deploy/restart and is NOT shared across
+// multiple API instances. Acceptable for single-instance Phase 1; replace with a
+// Redis-backed limiter (e.g. @hono-rate-limiter/redis) before horizontal scaling.
 const stores = new Map<string, Map<string, { count: number; resetAt: number }>>();
 
 function getStore(name: string): Map<string, { count: number; resetAt: number }> {

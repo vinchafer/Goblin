@@ -10,7 +10,17 @@ import {
 import type { S3ClientConfig } from '@aws-sdk/client-s3';
 
 // DEV ONLY — nicht für Production. Hetzner Keys in .env eintragen.
+// Capped at 500 entries to prevent unbounded growth in long-running dev sessions.
+const MEMORY_STORAGE_MAX = 500;
 const memoryStorage = new Map<string, string>();
+
+function memoryStorageSet(key: string, value: string) {
+  if (!memoryStorage.has(key) && memoryStorage.size >= MEMORY_STORAGE_MAX) {
+    const firstKey = memoryStorage.keys().next().value;
+    if (firstKey !== undefined) memoryStorage.delete(firstKey);
+  }
+  memoryStorage.set(key, value);
+}
 
 // ── S3 Client factory ──────────────────────────────────────────────────────
 let _s3Client: S3Client | null = null;
@@ -67,7 +77,7 @@ export async function uploadFile(projectId: string, filePath: string, content: s
   const s3 = getS3Client();
 
   if (!s3) {
-    memoryStorage.set(key, content);
+    memoryStorageSet(key, content);
     return key;
   }
 
