@@ -12,6 +12,11 @@
   --subtle:   #F0EBE0;
   --div:      #EDE8DC;
 
+  /* Surfaces */
+  --white:    #FFFFFF;
+  --panel:    #FFFFFF;
+  --surface:  #F7F4ED;
+
   /* Text */
   --text:     #2A2A2A;
   --text-2:   #4A4A4A;
@@ -22,6 +27,8 @@
   --success:  #4A7C3B;
   --error:    #B85C3C;
   --warning:  #D4A94A;
+  --good:     #4A7C3B;
+  --danger:   #B85C3C;
 
   /* Fonts */
   --font-brand: var(--font-fraunces), Georgia, serif;
@@ -35,12 +42,13 @@
   --radius-xl:  16px;
 
   /* Shadows */
-  --shadow-sm:  0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-  --shadow-md:  0 4px 16px rgba(0,0,0,0.08);
-  --shadow-lg:  0 8px 32px rgba(0,0,0,0.12);
+  --shadow-sm:    0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:    0 4px 16px rgba(0,0,0,0.08);
+  --shadow-lg:    0 8px 32px rgba(0,0,0,0.12);
   --shadow-ochre: 0 2px 8px rgba(212,169,74,0.25);
 
   /* Extended palette */
+  --moss2:        #3A5E38;
   --ochre-dark:   #C9933A;
   --text-faint:   #9C9589;
   --sidebar-meta: #6B6560;
@@ -69,6 +77,64 @@
   --goblin-ochre2: #E8BF6A;
 }
 
+[data-theme="dark"] {
+  --moss:     #3a5e38;
+  --moss-2:   #4a7848;
+  --moss-3:   #2a4a28;
+  --ochre:    #e8bf6a;
+  --ochre-2:  #f0cf8a;
+  --bark:     #e8d5b0;
+  --cream:    #1a1e18;
+  --subtle:   #1e2420;
+  --div:      #2d3d2b;
+
+  --white:    #1e2420;
+  --panel:    #1e2420;
+  --surface:  #1a1e18;
+
+  --text:     #e8f0e6;
+  --text-2:   #c8d8c6;
+  --meta:     #8aaa85;
+  --disabled: #4a5a49;
+
+  --success:  #5aac4b;
+  --error:    #e87060;
+  --warning:  #e8bf6a;
+  --good:     #5aac4b;
+  --danger:   #e87060;
+
+  --border:       #3d5a3b;
+  --text-faint:   #6a8a67;
+  --sidebar-meta: #8aaa85;
+  --shadow-sm:    0 1px 3px rgba(0,0,0,0.2), 0 1px 2px rgba(0,0,0,0.15);
+  --shadow-md:    0 4px 16px rgba(0,0,0,0.3);
+  --shadow-lg:    0 8px 32px rgba(0,0,0,0.4);
+
+  --moss2:        #4a7848;
+  --ochre-dark:   #f0cf8a;
+  --code-bg:      #111a0f;
+  --code-bg-dark: #0d140b;
+  --code-fg:      #a8d5a2;
+  --code-root:    #0a0f09;
+  --code-root-2:  #080c07;
+
+  --goblin-moss:   #3a5e38;
+  --goblin-ochre:  #e8bf6a;
+  --goblin-cream:  #1a1e18;
+  --goblin-cream2: #1e2420;
+  --goblin-bark:   #e8d5b0;
+  --goblin-slate:  #e8f0e6;
+  --goblin-gray:   #8aaa85;
+  --goblin-light:  #2d3d2b;
+  --goblin-border: #3d5a3b;
+  --goblin-meta:   #8aaa85;
+  --goblin-text:   #e8f0e6;
+  --goblin-good:   #5aac4b;
+  --goblin-warn:   #e87060;
+  --goblin-moss2:  #4a7848;
+  --goblin-ochre2: #f0cf8a;
+}
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; font-size: 16px; }
 
@@ -92,46 +158,80 @@ body {
 
 :focus-visible { outline: 2px solid var(--ochre); outline-offset: 2px; }
 
-@keyframes pulse   { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
-@keyframes blink   { 0%,100%{opacity:1} 50%{opacity:0.3} }
-@keyframes slideIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
-@keyframes slideUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
-@keyframes fadeIn  { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
-@keyframes pw      { from{width:55%} to{width:78%} }
-@keyframes spin    { to{transform:rotate(360deg)} }
-@keyframes slideInLeft { from{transform:translateX(-100%);opacity:0} to{transform:translateX(0);opacity:1} }
+/* ─── Keyframes ─────────────────────────────────────────── */
+@keyframes pulse        { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+@keyframes blink        { 0%,100%{opacity:1} 50%{opacity:0.3} }
+@keyframes slideIn      { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+@keyframes slideUp      { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+@keyframes fadeIn       { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+@keyframes pw           { from{width:55%} to{width:78%} }
+@keyframes spin         { to{transform:rotate(360deg)} }
+@keyframes slideInLeft  { from{transform:translateX(-100%);opacity:0} to{transform:translateX(0);opacity:1} }
+@keyframes modalIn      { from{opacity:0;transform:scale(0.95) translateY(-4px)} to{opacity:1;transform:scale(1) translateY(0)} }
+@keyframes modalOut     { from{opacity:1;transform:scale(1)} to{opacity:0;transform:scale(0.95)} }
+@keyframes overlayIn    { from{opacity:0} to{opacity:1} }
+@keyframes cardStagger  { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+@keyframes messageSlide { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+@keyframes successPop   { 0%{transform:scale(1)} 40%{transform:scale(1.15)} 100%{transform:scale(1)} }
+@keyframes progressFill { from{width:0%} to{width:var(--target-width,100%)} }
 
+/* ─── Animation utility classes ─────────────────────────── */
 .animate-slide-in-left { animation: slideInLeft 0.22s ease-out; }
-.fade-in { animation: fadeIn 0.2s ease; }
+.fade-in               { animation: fadeIn 0.2s ease; }
+.animate-modal-in      { animation: modalIn 0.15s ease-out; }
+.animate-overlay-in    { animation: overlayIn 0.15s ease-out; }
+.animate-message-slide { animation: messageSlide 0.2s ease-out; }
 
+/* Staggered card entrance */
+.card-stagger > * {
+  opacity: 0;
+  animation: cardStagger 0.25s ease-out forwards;
+}
+.card-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.card-stagger > *:nth-child(2) { animation-delay: 50ms; }
+.card-stagger > *:nth-child(3) { animation-delay: 100ms; }
+.card-stagger > *:nth-child(4) { animation-delay: 150ms; }
+.card-stagger > *:nth-child(5) { animation-delay: 200ms; }
+.card-stagger > *:nth-child(6) { animation-delay: 250ms; }
+
+/* Button press feedback */
+.btn-press:active { transform: scale(0.97); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ─── Skeleton ───────────────────────────────────────────── */
 .skeleton {
   background: linear-gradient(90deg, var(--subtle) 25%, var(--div) 50%, var(--subtle) 75%);
   background-size: 200% 100%;
   animation: skeleton-loading 1.5s infinite;
 }
-
 @keyframes skeleton-loading {
-  0% { background-position: 200% 0; }
+  0%   { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
 
+/* ─── Safe areas ─────────────────────────────────────────── */
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
 .safe-top    { padding-top:    env(safe-area-inset-top,    0px); }
 
-/* Ensure minimum touch targets on mobile */
+/* ─── Mobile ─────────────────────────────────────────────── */
 @media (max-width: 768px) {
   button, [role="button"], a {
     min-height: 44px;
     min-width: 44px;
   }
-  /* Exceptions for inline/icon-only elements where we use padding */
   button.touch-compact, [role="button"].touch-compact {
     min-height: unset;
     min-width: unset;
   }
 }
 
-/* Mobile-specific utilities */
 .mobile-only  { display: none; }
 .desktop-only { display: initial; }
 @media (max-width: 768px) {
@@ -139,7 +239,6 @@ body {
   .desktop-only { display: none !important; }
 }
 
-/* Horizontal scroll container (What's New on mobile) */
 .scroll-x-mobile {
   display: flex;
   flex-direction: column;
@@ -156,27 +255,4 @@ body {
   }
   .scroll-x-mobile::-webkit-scrollbar { display: none; }
   .scroll-x-mobile > * { flex-shrink: 0; width: 260px; }
-}
-
-/* Dark mode CSS variables (Phase 2 — not yet toggled in UI) */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --cream:    #1a1e18;
-    --subtle:   #1e2420;
-    --div:      #242924;
-    --white:    #1e2420;
-    --text:     #e8f0e6;
-    --text-2:   #c5d0c0;
-    --meta:     #8aaa85;
-    --disabled: #4a5a49;
-
-    --goblin-cream:  #1a1e18;
-    --goblin-cream2: #1e2420;
-    --goblin-light:  #242924;
-    --goblin-border: #2d3d2b;
-    --goblin-text:   #e8f0e6;
-    --goblin-meta:   #8aaa85;
-    --goblin-slate:  #e8f0e6;
-    --goblin-gray:   #8aaa85;
-  }
 }

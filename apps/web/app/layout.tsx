@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Fraunces, DM_Sans, JetBrains_Mono } from 'next/font/google'
 import { Toaster } from 'sonner'
+import { ThemeProvider } from '@/lib/theme'
 import './globals.css'
 
 const fraunces = Fraunces({ subsets: ['latin'], variable: '--font-fraunces', display: 'swap' })
@@ -61,10 +62,33 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${fraunces.variable} ${dmSans.variable} ${jetbrainsMono.variable}`}>
       <head>
         <link rel="mask-icon" href="/icons/icon-512.png" color="#2D4A2B" />
+        {/* no-flash theme init — must run before first paint */}
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function(){
+            try {
+              var t = localStorage.getItem('goblin_theme') || 'system';
+              var d = t === 'system'
+                ? window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+                : t;
+              document.documentElement.setAttribute('data-theme', d);
+            } catch(e){}
+          })();
+        `}} />
       </head>
       <body>
-        {children}
-        <Toaster position="bottom-right" richColors />
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
+        <Toaster
+          position="bottom-right"
+          richColors
+          toastOptions={{
+            style: {
+              borderLeft: '3px solid var(--moss)',
+              fontFamily: 'DM Sans, sans-serif',
+            },
+          }}
+        />
       </body>
     </html>
   )

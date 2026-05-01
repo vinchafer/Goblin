@@ -63,7 +63,7 @@ function ExternalIcon() {
 function SkeletonCard() {
   return (
     <div style={{
-      background: '#fff', borderRadius: 12,
+      background: 'var(--panel)', borderRadius: 12,
       border: '1px solid var(--div)', padding: '18px 18px 16px',
       minHeight: 120,
       animation: 'pulse 1.5s ease-in-out infinite',
@@ -116,7 +116,7 @@ export default function DashboardPage() {
   }, [router]);
 
   return (
-    <div style={{ height: '100%', background: '#F7F4ED', overflowY: 'auto' }}>
+    <div style={{ height: '100%', background: 'var(--cream)', overflowY: 'auto' }}>
       {showNewProjectModal && (
         <NewProjectModal onClose={() => setShowNewProjectModal(false)} />
       )}
@@ -124,8 +124,8 @@ export default function DashboardPage() {
       <style>{`
         @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.5} }
         @keyframes fadeIn { from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none} }
-        .project-card { transition: box-shadow 0.15s, transform 0.15s; cursor: pointer; }
-        .project-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.1); transform: translateY(-2px); }
+        .project-card { transition: box-shadow 0.15s, transform 0.15s; cursor: pointer; background: var(--panel); border-color: var(--div) !important; }
+        .project-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
         @media (max-width: 900px) {
           .dash-grid { flex-direction: column !important; }
           .dash-projects { width: 100% !important; }
@@ -158,7 +158,7 @@ export default function DashboardPage() {
             }}>
               <h1 style={{
                 fontFamily: 'Fraunces, serif', fontSize: 26,
-                color: '#2D4A2B', fontWeight: 700, letterSpacing: '-0.8px',
+                color: 'var(--moss)', fontWeight: 700, letterSpacing: '-0.8px',
               }}>
                 Your Projects
               </h1>
@@ -166,14 +166,14 @@ export default function DashboardPage() {
                 <button
                   onClick={() => setShowNewProjectModal(true)}
                   style={{
-                    background: '#2D4A2B', color: '#fff', border: 'none',
+                    background: 'var(--moss)', color: '#fff', border: 'none',
                     borderRadius: 8, padding: '8px 16px',
                     fontSize: 13, fontWeight: 500, cursor: 'pointer',
                     fontFamily: 'DM Sans, sans-serif', transition: 'background 0.15s',
                     display: 'flex', alignItems: 'center', gap: 6,
                   }}
-                  onMouseEnter={e => (e.currentTarget.style.background = '#3A5A37')}
-                  onMouseLeave={e => (e.currentTarget.style.background = '#2D4A2B')}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--moss-2)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'var(--moss)')}
                 >
                   <span style={{ fontSize: 15 }}>＋</span> New
                 </button>
@@ -217,12 +217,12 @@ export default function DashboardPage() {
                 <div style={{ fontSize: 64, marginBottom: 20, lineHeight: 1 }}>👺</div>
                 <h2 style={{
                   fontFamily: 'Fraunces, serif', fontSize: 24,
-                  color: '#2D4A2B', fontWeight: 700, marginBottom: 10,
+                  color: 'var(--moss)', fontWeight: 700, marginBottom: 10,
                 }}>
                   Your goblin is ready.
                 </h2>
                 <p style={{
-                  fontSize: 15, color: '#6B6B6B', marginBottom: 28,
+                  fontSize: 15, color: 'var(--meta)', marginBottom: 28,
                   fontFamily: 'DM Sans, sans-serif', lineHeight: 1.6, maxWidth: 340, margin: '0 auto 28px',
                 }}>
                   Describe what you want to build. Your goblin will generate the code, push to GitHub, and ship it.
@@ -258,8 +258,8 @@ export default function DashboardPage() {
                       className="project-card"
                       onClick={() => router.push(`/dashboard/project/${p.id}`)}
                       style={{
-                        background: '#fff', borderRadius: 12,
-                        border: '1px solid #EDE8DC', padding: '18px 18px 16px',
+                        background: 'var(--panel)', borderRadius: 12,
+                        border: '1px solid var(--div)', padding: '18px 18px 16px',
                       }}
                     >
                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
@@ -270,7 +270,7 @@ export default function DashboardPage() {
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{
                             fontFamily: 'Fraunces, serif', fontSize: 16,
-                            color: '#2D4A2B', fontWeight: 700,
+                            color: 'var(--moss)', fontWeight: 700,
                             letterSpacing: '-0.3px', marginBottom: 4,
                             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                           }}>
@@ -278,7 +278,7 @@ export default function DashboardPage() {
                           </div>
                           {p.description && (
                             <div style={{
-                              fontSize: 12, color: '#6B6B6B',
+                              fontSize: 12, color: 'var(--meta)',
                               fontFamily: 'DM Sans, sans-serif',
                               lineHeight: 1.5,
                               display: '-webkit-box', WebkitLineClamp: 2,
@@ -295,7 +295,7 @@ export default function DashboardPage() {
                         display: 'flex', alignItems: 'center',
                         gap: 8, marginTop: 6,
                       }}>
-                        <span style={{ fontSize: 11, color: '#9C9589', fontFamily: 'DM Sans, sans-serif' }}>
+                        <span style={{ fontSize: 11, color: 'var(--text-faint)', fontFamily: 'DM Sans, sans-serif' }}>
                           {timeAgo(p.updated_at ?? p.last_active)}
                         </span>
                         <div style={{ flex: 1 }} />
@@ -305,7 +305,7 @@ export default function DashboardPage() {
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={e => e.stopPropagation()}
-                            style={{ color: '#6B6B6B', display: 'flex' }}
+                            style={{ color: 'var(--meta)', display: 'flex' }}
                             title="GitHub"
                           >
                             <GitHubIcon />
@@ -317,7 +317,7 @@ export default function DashboardPage() {
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={e => e.stopPropagation()}
-                            style={{ color: '#6B6B6B', display: 'flex' }}
+                            style={{ color: 'var(--meta)', display: 'flex' }}
                             title="Preview"
                           >
                             <ExternalIcon />
@@ -335,7 +335,7 @@ export default function DashboardPage() {
                   style={{
                     background: 'transparent',
                     borderRadius: 12,
-                    border: '1.5px dashed #C8C0B4',
+                    border: '1.5px dashed var(--border)',
                     padding: '18px', minHeight: 100,
                     display: 'flex', flexDirection: 'column',
                     alignItems: 'center', justifyContent: 'center',
@@ -343,7 +343,7 @@ export default function DashboardPage() {
                   }}
                 >
                   <span style={{ fontSize: 22, opacity: 0.4 }}>＋</span>
-                  <span style={{ fontSize: 13, color: '#9C9589', fontFamily: 'DM Sans, sans-serif' }}>
+                  <span style={{ fontSize: 13, color: 'var(--text-faint)', fontFamily: 'DM Sans, sans-serif' }}>
                     Start something new
                   </span>
                 </div>
@@ -355,7 +355,7 @@ export default function DashboardPage() {
           <div className="dash-right" style={{ width: 300, flexShrink: 0 }}>
             <h2 style={{
               fontFamily: 'Fraunces, serif', fontSize: 20,
-              color: '#2D4A2B', fontWeight: 700,
+              color: 'var(--moss)', fontWeight: 700,
               letterSpacing: '-0.5px', marginBottom: 16,
             }}>
               What&apos;s New
@@ -367,8 +367,8 @@ export default function DashboardPage() {
                   key={u.title}
                   className="whats-new-card"
                   style={{
-                    background: '#fff', borderRadius: 10,
-                    border: '1px solid #EDE8DC', padding: '14px 14px',
+                    background: 'var(--panel)', borderRadius: 10,
+                    border: '1px solid var(--div)', padding: '14px 14px',
                   }}
                 >
                   <div style={{ display: 'flex', gap: 10 }}>
@@ -376,15 +376,15 @@ export default function DashboardPage() {
                     <div style={{ minWidth: 0 }}>
                       <div style={{
                         fontFamily: 'DM Sans, sans-serif', fontSize: 13,
-                        fontWeight: 600, color: '#2A2A2A', marginBottom: 3,
+                        fontWeight: 600, color: 'var(--text)', marginBottom: 3,
                         lineHeight: 1.3,
                       }}>
                         {u.title}
                       </div>
-                      <div style={{ fontSize: 12, color: '#6B6B6B', lineHeight: 1.5, fontFamily: 'DM Sans, sans-serif' }}>
+                      <div style={{ fontSize: 12, color: 'var(--meta)', lineHeight: 1.5, fontFamily: 'DM Sans, sans-serif' }}>
                         {u.desc}
                       </div>
-                      <div style={{ fontSize: 10, color: '#9C9589', marginTop: 5, fontFamily: 'DM Sans, sans-serif' }}>
+                      <div style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 5, fontFamily: 'DM Sans, sans-serif' }}>
                         {u.date}
                       </div>
                     </div>
@@ -395,7 +395,7 @@ export default function DashboardPage() {
 
             {/* Community links */}
             <div style={{
-              marginTop: 16, background: '#2D4A2B',
+              marginTop: 16, background: 'var(--moss)',
               borderRadius: 10, padding: '16px',
             }}>
               <div style={{

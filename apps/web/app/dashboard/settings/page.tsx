@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { SettingsLayout } from '@/components/settings/settings-layout';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
+import { useTheme, type Theme } from '@/lib/theme';
 
 const FIELD_STYLE = {
   width: '100%',
@@ -95,6 +96,46 @@ function NotificationsSection() {
   );
 }
 
+function AppearanceSection() {
+  const { theme, setTheme } = useTheme();
+  const options: { value: Theme; label: string; icon: string }[] = [
+    { value: 'light', label: 'Light', icon: '☀️' },
+    { value: 'dark',  label: 'Dark',  icon: '🌙' },
+    { value: 'system', label: 'System', icon: '💻' },
+  ];
+  return (
+    <div style={CARD_STYLE}>
+      <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 18, color: 'var(--moss)', fontWeight: 700, marginBottom: 4, letterSpacing: '-0.3px' }}>
+        Appearance
+      </h2>
+      <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 20 }}>Theme and display preferences</p>
+      <div style={{ display: 'flex', gap: 8 }}>
+        {options.map(opt => {
+          const isActive = theme === opt.value;
+          return (
+            <button
+              key={opt.value}
+              onClick={() => setTheme(opt.value)}
+              style={{
+                padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 500,
+                border: isActive ? '2px solid var(--moss)' : '1.5px solid var(--border)',
+                background: isActive ? 'rgba(45,74,43,0.1)' : 'transparent',
+                color: isActive ? 'var(--moss)' : 'var(--meta)',
+                cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
+                display: 'flex', alignItems: 'center', gap: 6,
+                transition: 'all 0.15s',
+              }}
+            >
+              <span>{opt.icon}</span>
+              {opt.label}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function GeneralTab() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
@@ -161,31 +202,7 @@ function GeneralTab() {
       </div>
 
       {/* Appearance card */}
-      <div style={CARD_STYLE}>
-        <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 18, color: 'var(--moss)', fontWeight: 700, marginBottom: 4, letterSpacing: '-0.3px' }}>
-          Appearance
-        </h2>
-        <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 20 }}>Theme and display preferences</p>
-        <div style={{ display: 'flex', gap: 10 }}>
-          {['Light', 'Dark', 'System'].map(theme => (
-            <button
-              key={theme}
-              disabled={theme !== 'Light'}
-              title={theme !== 'Light' ? 'Dark mode coming soon' : undefined}
-              style={{
-                padding: '8px 18px', borderRadius: 8, fontSize: 13, fontWeight: 500,
-                border: theme === 'Light' ? '2px solid var(--moss)' : '1.5px solid var(--border)',
-                background: theme === 'Light' ? 'rgba(45,74,43,0.08)' : 'transparent',
-                color: theme !== 'Light' ? 'var(--meta)' : 'var(--moss)',
-                cursor: theme !== 'Light' ? 'not-allowed' : 'pointer',
-                fontFamily: 'DM Sans, sans-serif', opacity: theme !== 'Light' ? 0.55 : 1,
-              }}
-            >
-              {theme}{theme !== 'Light' ? ' (soon)' : ' ✓'}
-            </button>
-          ))}
-        </div>
-      </div>
+      <AppearanceSection />
 
       {/* Notifications */}
       <NotificationsSection />

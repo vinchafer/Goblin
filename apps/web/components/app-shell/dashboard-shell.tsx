@@ -1,11 +1,15 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { WelcomeModal } from "@/components/onboarding/welcome-modal";
+import { CommandPalette, useCommandPalette } from "@/components/ui/CommandPalette";
+import { ShortcutsHelp } from "@/components/ui/ShortcutsHelp";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useApp } from "@/contexts/app-context";
+import { createClient } from "@/lib/supabase/client";
 import type { Project } from "@goblin/shared/src/schemas";
 
 const ONBOARDED_KEY = 'goblin_onboarded';
@@ -21,35 +25,49 @@ interface DashboardShellProps {
 export function DashboardShell({ projects, children, previewUrl, isFirstLogin, userName }: DashboardShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
-  const { activeTab, setActiveTab, injectionCount } = useApp();
+  const [cmdPaletteOpen, setCmdPaletteOpen] = useState(false);
+  const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const { activeTab, setActiveTab, injectionCount, setShowNewProjectModal } = useApp();
   const pathname = usePathname();
+  const router = useRouter();
 
-  // Global keyboard shortcuts: Cmd+1/2/3 tab switch, Escape close sidebar
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      const mod = e.metaKey || e.ctrlKey;
-      if (mod && e.key === '1') { e.preventDefault(); setActiveTab('chat'); }
-      else if (mod && e.key === '2') { e.preventDefault(); setActiveTab('code'); }
-      else if (mod && e.key === '3') { e.preventDefault(); setActiveTab('preview'); }
-      else if (e.key === 'Escape') { setMobileOpen(false); }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [setActiveTab]);
+  const handleLogout = useCallback(async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    router.push('/');
+  }, [router]);
+
+  const commands = useCommandPalette({
+    projects: projects.map(p => ({ id: p.id, name: p.name })),
+    onNewProject: () => setShowNewProjectModal(true),
+    onToggleSidebar: () => setMobileOpen(s => !s),
+    onLogout: handleLogout,
+  });
+
+  useKeyboardShortcuts({
+    onCommandPalette: () => setCmdPaletteOpen(true),
+    onTabChat: () => setActiveTab('chat'),
+    onTabCode: () => setActiveTab('code'),
+    onTabPreview: () => setActiveTab('preview'),
+    onToggleSidebar: () => setMobileOpen(s => !s),
+    onSettings: () => router.push('/dashboard/settings'),
+    onNewProject: () => setShowNewProjectModal(true),
+    onShortcutsHelp: () => setShortcutsOpen(true),
+    onFocusChat: () => {
+      const input = document.querySelector<HTMLElement>('[data-chat-input]');
+      input?.focus();
+    },
+  });
 
   useEffect(() => {
     if (!isFirstLogin) return;
     const alreadyOnboarded = typeof window !== 'undefined' && localStorage.getItem(ONBOARDED_KEY);
-    if (!alreadyOnboarded) {
-      setShowWelcome(true);
-    }
+    if (!alreadyOnboarded) setShowWelcome(true);
   }, [isFirstLogin]);
 
   const handleWelcomeComplete = useCallback(() => {
     setShowWelcome(false);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(ONBOARDED_KEY, '1');
-    }
+    if (typeof window !== 'undefined') localStorage.setItem(ONBOARDED_KEY, '1');
   }, []);
 
   const activeProjectId = (() => {
@@ -61,9 +79,7 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
 
   const closeMobile = useCallback(() => setMobileOpen(false), []);
 
-  useEffect(() => {
-    closeMobile();
-  }, [pathname, closeMobile]);
+  useEffect(() => { closeMobile(); }, [pathname, closeMobile]);
 
   useEffect(() => {
     const handleResize = () => { if (window.innerWidth >= 768) closeMobile(); };
@@ -100,11 +116,19 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
       </div>
 
       {showWelcome && (
-        <WelcomeModal
-          userName={userName}
-          onComplete={handleWelcomeComplete}
-        />
+        <WelcomeModal userName={userName} onComplete={handleWelcomeComplete} />
       )}
+
+      <CommandPalette
+        open={cmdPaletteOpen}
+        onClose={() => setCmdPaletteOpen(false)}
+        commands={commands}
+      />
+
+      <ShortcutsHelp
+        open={shortcutsOpen}
+        onClose={() => setShortcutsOpen(false)}
+      />
     </div>
   );
 }
