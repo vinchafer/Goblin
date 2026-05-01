@@ -1,30 +1,38 @@
 import { createClient } from '@/lib/supabase/server';
 import { NextResponse } from 'next/server';
-import type { EmailOtpType } from '@supabase/supabase-js';
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get('code');
-  const token_hash = searchParams.get('token_hash');
-  const type = searchParams.get('type') as EmailOtpType | null;
+
+  if (!code) {
+    return NextResponse.redirect(`${origin}/login?error=Authentication+failed`);
+  }
 
   const supabase = await createClient();
+  const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
-  // Magic link / OTP flow
-  if (token_hash && type) {
-    const { error } = await supabase.auth.verifyOtp({ token_hash, type });
-    if (!error) {
-      return NextResponse.redirect(`${origin}/dashboard`);
-    }
+  if (error || !data.session) {
+    return NextResponse.redirect(
+      `${origin}/login?error=${encodeURIComponent(error?.message ?? 'Authentication failed')}`
+    );
   }
 
-  // OAuth / PKCE code flow
-  if (code) {
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) {
-      return NextResponse.redirect(`${origin}/dashboard`);
-    }
-  }
+  const user = data.session.user;
 
-  return NextResponse.redirect(`${origin}/login?error=Authentication+failed`);
+  // Create user row on first login — ignore unique constraint violation on repeat logins
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await (supabase as any)
+    .from('users')
+    .insert({
+      id: user.id,
+      email: user.email ?? '',
+      plan: 'seed',
+      monthly_requests_used: 0,
+    })
+    .then(() => {}, () => {
+      // Ignore — user row already exists (subsequent logins)
+    });
+
+  return NextResponse.redirect(`${origin}/dashboard`);
 }
