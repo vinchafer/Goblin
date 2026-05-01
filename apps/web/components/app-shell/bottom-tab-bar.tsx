@@ -1,13 +1,40 @@
 'use client';
 import { useApp } from '@/contexts/app-context';
 
+function ChatIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+    </svg>
+  );
+}
+
+function CodeIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="16 18 22 12 16 6"/>
+      <polyline points="8 6 2 12 8 18"/>
+    </svg>
+  );
+}
+
+function PreviewIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="2" y1="12" x2="22" y2="12"/>
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+    </svg>
+  );
+}
+
 export function BottomTabBar() {
   const { activeTab, setActiveTab, injectionCount } = useApp();
 
   const tabs = [
-    { id: 'chat' as const, label: 'Chat', icon: '💬' },
-    { id: 'code' as const, label: 'Code', icon: '</>' },
-    { id: 'preview' as const, label: 'Preview', icon: '🌐' },
+    { id: 'chat' as const, label: 'Chat', Icon: ChatIcon },
+    { id: 'code' as const, label: 'Code', Icon: CodeIcon },
+    { id: 'preview' as const, label: 'Preview', Icon: PreviewIcon },
   ];
 
   return (
@@ -20,28 +47,47 @@ export function BottomTabBar() {
       paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       flexShrink: 0,
     }} className="goblin-bottom-bar">
-      {tabs.map(tab => (
-        <button
-          key={tab.id}
-          onClick={() => setActiveTab(tab.id)}
-          style={{
-            flex: 1, background: 'none', border: 'none', cursor: 'pointer',
-            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-            gap: 3, fontSize: 10, fontWeight: 500, fontFamily: 'DM Sans, sans-serif',
-            color: activeTab === tab.id ? '#D4A94A' : '#6B6B6B',
-            position: 'relative', minHeight: 44,
-            opacity: tab.id === 'preview' ? 0.6 : 1,
-          }}
-          disabled={tab.id === 'preview'}
-          title={tab.id === 'preview' ? 'Deploy first to see preview' : ''}
-        >
-          <span style={{ fontSize: 18, lineHeight: 1 }}>{tab.icon}</span>
-          {tab.label}
-          {tab.id === 'code' && injectionCount > 0 && (
-            <span style={{ position: 'absolute', top: 8, right: '30%', width: 6, height: 6, borderRadius: '50%', background: '#D4A94A', animation: 'blink 1.5s infinite' }} />
-          )}
-        </button>
-      ))}
+      {tabs.map(({ id, label, Icon }) => {
+        const active = activeTab === id;
+        const disabled = id === 'preview';
+        return (
+          <button
+            key={id}
+            onClick={() => !disabled && setActiveTab(id)}
+            style={{
+              flex: 1, background: 'none', border: 'none', cursor: disabled ? 'default' : 'pointer',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              gap: 3, fontSize: 10, fontWeight: 600, fontFamily: 'DM Sans, sans-serif',
+              color: active ? '#2D4A2B' : '#6B6B6B',
+              position: 'relative', minHeight: 56, padding: '6px 0',
+              opacity: disabled ? 0.45 : 1,
+              WebkitTapHighlightColor: 'transparent',
+            }}
+            disabled={disabled}
+            title={disabled ? 'Deploy first to see preview' : ''}
+            aria-label={label}
+          >
+            <Icon />
+            <span style={{ fontSize: 10, lineHeight: 1 }}>{label}</span>
+            {/* Active indicator */}
+            {active && (
+              <span style={{
+                position: 'absolute', top: 6, left: '50%', transform: 'translateX(-50%)',
+                width: 20, height: 2, borderRadius: 1,
+                background: '#2D4A2B',
+              }} />
+            )}
+            {/* Injection dot on Code tab */}
+            {id === 'code' && injectionCount > 0 && (
+              <span style={{
+                position: 'absolute', top: 8, right: '28%',
+                width: 6, height: 6, borderRadius: '50%',
+                background: '#D4A94A', animation: 'blink 1.5s infinite',
+              }} />
+            )}
+          </button>
+        );
+      })}
       <style>{`
         .goblin-bottom-bar { display: none; }
         @media (max-width: 768px) { .goblin-bottom-bar { display: flex !important; } }

@@ -326,8 +326,29 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
         </div>
       )}
 
+      {/* Mobile file picker (visible only on mobile) */}
+      <div className="md:hidden shrink-0" style={{ borderBottom: '1px solid #1e2a1c', background: '#0f1410' }}>
+        <select
+          value={activeFile?.path ?? ''}
+          onChange={e => e.target.value && openFile(e.target.value)}
+          style={{
+            width: '100%', padding: '10px 14px', background: 'transparent',
+            color: '#8aaa85', border: 'none', outline: 'none',
+            fontFamily: 'JetBrains Mono, monospace', fontSize: 12,
+            cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none',
+          }}
+        >
+          {!activeFile && <option value="">— select a file —</option>}
+          {files.map(f => (
+            <option key={f} value={f} style={{ background: '#141a12', color: '#c5d0c0' }}>
+              {f}
+            </option>
+          ))}
+        </select>
+      </div>
+
       {/* Desktop layout: file tree left, content right */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden" style={{ position: 'relative' }}>
         {/* Desktop File Tree sidebar */}
         <div className={`hidden md:flex flex-col border-r ${fileTreeOpen ? 'w-64' : 'w-12'} transition-all duration-200`} 
           style={{ borderColor: 'var(--goblin-light)', backgroundColor: '#0f1410' }}>
@@ -426,6 +447,39 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
             </div>
           )}
         </div>
+      </div>
+
+      {/* Mobile FAB — Build + Push (only on mobile) */}
+      <div className="md:hidden" style={{
+        position: 'absolute', bottom: 16, right: 16,
+        display: 'flex', flexDirection: 'column', gap: 8, zIndex: 30,
+      }}>
+        <button
+          onClick={() => setPushModalOpen(true)}
+          style={{
+            width: 48, height: 48, borderRadius: '50%',
+            background: 'rgba(30,58,28,0.95)', border: '1px solid rgba(138,170,133,0.3)',
+            color: '#8aaa85', fontSize: 18, cursor: 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+            WebkitTapHighlightColor: 'transparent',
+          } as React.CSSProperties}
+          title="Push to GitHub"
+        >⬆</button>
+        <button
+          onClick={handleDeploy}
+          disabled={deploying}
+          style={{
+            width: 56, height: 56, borderRadius: '50%',
+            background: deploying ? 'rgba(45,74,43,0.6)' : '#2D4A2B',
+            border: 'none', color: '#D4A94A',
+            fontSize: 22, cursor: deploying ? 'not-allowed' : 'pointer',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 4px 20px rgba(45,74,43,0.5)',
+            WebkitTapHighlightColor: 'transparent',
+          } as React.CSSProperties}
+          title="Deploy to Vercel"
+        >{deploying ? '…' : '▶'}</button>
       </div>
 
       {/* Build status bar */}

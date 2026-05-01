@@ -334,27 +334,41 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
         </div>
       </aside>
 
-      {/* Mobile sidebar (fixed overlay) */}
+      {/* Mobile sidebar (bottom sheet) */}
       <aside
         className="goblin-sidebar-mobile"
         style={{
-          position: 'fixed', top: 0, left: 0, bottom: 0,
-          width: 260,
+          position: 'fixed',
+          bottom: 0, left: 0, right: 0,
+          maxHeight: '82dvh',
           background: '#F2EDE4',
-          borderRight: '1px solid #DDD7CC',
+          borderRadius: '18px 18px 0 0',
+          borderTop: '1px solid #DDD7CC',
           display: 'flex', flexDirection: 'column',
           zIndex: 40,
-          transform: isOpen ? 'translateX(0)' : 'translateX(-100%)',
-          transition: 'transform 0.25s cubic-bezier(0.4,0,0.2,1)',
-          boxShadow: isOpen ? '4px 0 32px rgba(0,0,0,0.18)' : 'none',
+          transform: isOpen ? 'translateY(0)' : 'translateY(100%)',
+          transition: 'transform 0.28s cubic-bezier(0.4,0,0.2,1)',
+          boxShadow: isOpen ? '0 -8px 40px rgba(0,0,0,0.2)' : 'none',
           overflowY: 'auto',
-        }}
+          overscrollBehavior: 'contain',
+          WebkitOverflowScrolling: 'touch',
+        } as React.CSSProperties}
       >
-        {/* Logo */}
+        {/* Drag handle */}
+        <div
+          onClick={onClose}
+          style={{
+            display: 'flex', justifyContent: 'center',
+            padding: '10px 0 6px', cursor: 'pointer', flexShrink: 0,
+          }}
+        >
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: '#C8C0B4' }} />
+        </div>
+
+        {/* Header row */}
         <div style={{
-          height: 56, display: 'flex', alignItems: 'center',
-          padding: '0 16px', borderBottom: '1px solid #DDD7CC',
-          gap: 10, flexShrink: 0,
+          display: 'flex', alignItems: 'center',
+          padding: '4px 16px 12px', flexShrink: 0,
         }}>
           <div
             onClick={() => navigate('/dashboard')}
@@ -368,11 +382,12 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
           </div>
           <div style={{ flex: 1 }} />
           <button onClick={onClose} style={{
-            background: 'none', border: 'none', fontSize: 18,
+            background: 'none', border: 'none', fontSize: 20,
             color: '#8C857A', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             width: 32, height: 32, borderRadius: 6,
-          }}>×</button>
+            WebkitTapHighlightColor: 'transparent',
+          } as React.CSSProperties}>×</button>
         </div>
 
         {/* New Project */}

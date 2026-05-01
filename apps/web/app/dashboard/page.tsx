@@ -123,7 +123,18 @@ export default function DashboardPage() {
           .dash-right { width: 100% !important; }
           .proj-grid { grid-template-columns: 1fr !important; }
         }
-        @media (max-width: 600px) { .proj-grid { grid-template-columns: 1fr !important; } }
+        @media (max-width: 600px) {
+          .proj-grid { grid-template-columns: 1fr !important; }
+          .whats-new-list {
+            flex-direction: row !important;
+            overflow-x: auto !important;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            padding-bottom: 4px;
+          }
+          .whats-new-list::-webkit-scrollbar { display: none; }
+          .whats-new-card { flex-shrink: 0 !important; width: 240px !important; }
+        }
       `}</style>
 
       <div style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px' }}>
@@ -341,10 +352,11 @@ export default function DashboardPage() {
               What&apos;s New
             </h2>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div className="whats-new-list" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {UPDATES.map((u) => (
                 <div
                   key={u.title}
+                  className="whats-new-card"
                   style={{
                     background: '#fff', borderRadius: 10,
                     border: '1px solid #EDE8DC', padding: '14px 14px',

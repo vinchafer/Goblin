@@ -106,3 +106,66 @@ body {
 
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
 .safe-top    { padding-top:    env(safe-area-inset-top,    0px); }
+
+/* Ensure minimum touch targets on mobile */
+@media (max-width: 768px) {
+  button, [role="button"], a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  /* Exceptions for inline/icon-only elements where we use padding */
+  button.touch-compact, [role="button"].touch-compact {
+    min-height: unset;
+    min-width: unset;
+  }
+}
+
+/* Mobile-specific utilities */
+.mobile-only  { display: none; }
+.desktop-only { display: initial; }
+@media (max-width: 768px) {
+  .mobile-only  { display: initial; }
+  .desktop-only { display: none !important; }
+}
+
+/* Horizontal scroll container (What's New on mobile) */
+.scroll-x-mobile {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+@media (max-width: 768px) {
+  .scroll-x-mobile {
+    flex-direction: row;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+    gap: 12px;
+  }
+  .scroll-x-mobile::-webkit-scrollbar { display: none; }
+  .scroll-x-mobile > * { flex-shrink: 0; width: 260px; }
+}
+
+/* Dark mode CSS variables (Phase 2 — not yet toggled in UI) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --cream:    #1a1e18;
+    --subtle:   #1e2420;
+    --div:      #242924;
+    --white:    #1e2420;
+    --text:     #e8f0e6;
+    --text-2:   #c5d0c0;
+    --meta:     #8aaa85;
+    --disabled: #4a5a49;
+
+    --goblin-cream:  #1a1e18;
+    --goblin-cream2: #1e2420;
+    --goblin-light:  #242924;
+    --goblin-border: #2d3d2b;
+    --goblin-text:   #e8f0e6;
+    --goblin-meta:   #8aaa85;
+    --goblin-slate:  #e8f0e6;
+    --goblin-gray:   #8aaa85;
+  }
+}

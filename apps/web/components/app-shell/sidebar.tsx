@@ -58,6 +58,11 @@ export function Sidebar({ projects = [], activeProjectId, onProjectSelect, isOpe
           transition: 'transform 0.25s ease',
         }}
       >
+        {/* Bottom-sheet drag handle (mobile only) */}
+        <div className="goblin-sidebar-handle" onClick={onClose}>
+          <div />
+        </div>
+
         {/* ── Projects ── */}
         <div style={{ padding: 12, borderBottom: '1px solid #e4ddd2', flexShrink: 0 }}>
           <button
@@ -172,15 +177,39 @@ export function Sidebar({ projects = [], activeProjectId, onProjectSelect, isOpe
         @media (max-width: 768px) {
           .goblin-sidebar {
             position: fixed !important;
-            top: 0; left: 0; bottom: 0;
-            transform: translateX(-100%);
+            bottom: 0; left: 0; right: 0;
+            top: auto !important;
+            width: 100% !important;
+            max-height: 82dvh;
+            border-radius: 18px 18px 0 0;
+            border-right: none !important;
+            border-top: 1px solid #e4ddd2;
+            transform: translateY(100%);
             z-index: 41;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
           }
           .goblin-sidebar.goblin-sidebar-open {
-            transform: translateX(0) !important;
-            box-shadow: 4px 0 24px rgba(0,0,0,0.2);
+            transform: translateY(0) !important;
+            box-shadow: 0 -8px 40px rgba(0,0,0,0.22);
+          }
+          .goblin-sidebar-handle {
+            display: flex !important;
           }
           .sidebar-backdrop { display: block !important; }
+        }
+        .goblin-sidebar-handle {
+          display: none;
+          justify-content: center;
+          padding: 10px 0 4px;
+          cursor: grab;
+          flex-shrink: 0;
+        }
+        .goblin-sidebar-handle div {
+          width: 36px; height: 4px;
+          border-radius: 2px;
+          background: #c8c0b4;
         }
       `}</style>
     </>
