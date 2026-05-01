@@ -1,427 +1,502 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { toast } from "sonner";
 import { apiStream, apiGet } from "@/lib/api";
+import { ChatInput, useChatModel, DEFAULT_MODEL } from "@/components/chat/ChatInput";
 import type { ChatMessage } from "@goblin/shared/src/schemas";
+import type { SelectedModel } from "@/components/chat/ChatInput";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface ChatTabProps {
   projectId: string;
-  messages: ChatMessage[];
-  onMessagesChange: (messages: ChatMessage[]) => void;
-  selectedModel?: string;
 }
 
 interface StreamMessage {
   type: 'meta' | 'delta' | 'done' | 'error';
-  // meta fields
   model?: string;
   source_tier?: string;
   provider?: string;
-  // delta fields
   content?: string;
-  // done fields
   messageId?: string;
   model_used?: string;
-  // error fields
+  input_tokens?: number;
+  output_tokens?: number;
   message?: string;
 }
 
-export function ChatTab({ projectId, messages, onMessagesChange, selectedModel = 'claude-3-5-sonnet-20241022' }: ChatTabProps) {
-  const [input, setInput] = useState('');
+interface TokenInfo {
+  input: number;
+  output: number;
+  provider: string;
+  layer: string;
+}
+
+// ─── Per-provider pricing (USD per 1K tokens) ─────────────────────────────────
+
+const PRICE_PER_1K: Record<string, { input: number; output: number }> = {
+  anthropic: { input: 0.003,  output: 0.015  },
+  openai:    { input: 0.002,  output: 0.006  },
+  google:    { input: 0.001,  output: 0.002  },
+  groq:      { input: 0.0002, output: 0.0006 },
+  deepseek:  { input: 0.0002, output: 0.0006 },
+  mistral:   { input: 0.002,  output: 0.006  },
+  xai:       { input: 0.003,  output: 0.015  },
+};
+
+function calcCost(tokens: TokenInfo): string | null {
+  if (tokens.layer === 'goblin_hosted') return null;
+  if (tokens.layer === 'free_api') return 'Free';
+  const p = PRICE_PER_1K[tokens.provider];
+  if (!p) return null;
+  const cost = (tokens.input / 1000) * p.input + (tokens.output / 1000) * p.output;
+  return `$${cost.toFixed(4)}`;
+}
+
+// ─── Markdown / code parsing ──────────────────────────────────────────────────
+
+function escapeHtml(s: string) {
+  return s
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function parseMessage(text: string): { html: string; codeBlocks: Array<{ code: string; language: string; filename?: string }> } {
+  const codeBlocks: Array<{ code: string; language: string; filename?: string }> = [];
+
+  const stripped = text.replace(/```(\w+)?(?: (.+))?\n([\s\S]*?)```/g, (_, lang, filename, code) => {
+    const idx = codeBlocks.length;
+    codeBlocks.push({ code, language: lang || 'text', filename: filename?.trim() });
+    return `\x00CODE${idx}\x00`;
+  });
+
+  let html = escapeHtml(stripped);
+  html = html.replace(/\x00CODE(\d+)\x00/g, (_, i) =>
+    `<span class="code-placeholder" data-idx="${i}"></span>`
+  );
+  html = html
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\*(.*?)\*/g, '<em>$1</em>')
+    .replace(/`([^`]+)`/g, (_, inner) => `<code class="ic">${escapeHtml(inner)}</code>`)
+    .replace(/\n/g, '<br>');
+
+  return { html, codeBlocks };
+}
+
+// ─── CodeBlock component ──────────────────────────────────────────────────────
+
+function CodeBlock({ code, language, filename, onSendToCode }: {
+  code: string; language: string; filename?: string;
+  onSendToCode: (code: string, filename?: string) => void;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  const copy = async () => {
+    await navigator.clipboard.writeText(code).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div style={{ margin: '10px 0', borderRadius: 10, overflow: 'hidden', border: '1px solid #2a2a2a' }}>
+      {/* Header */}
+      <div style={{
+        background: '#1e1e1e', display: 'flex', alignItems: 'center',
+        padding: '6px 12px', gap: 8,
+      }}>
+        <span style={{ fontSize: 11, color: '#9C9589', fontFamily: 'JetBrains Mono, monospace', flex: 1 }}>
+          {filename || language}
+        </span>
+        <button
+          onClick={copy}
+          style={{
+            background: 'none', border: 'none', color: copied ? '#4A7C3B' : '#9C9589',
+            fontSize: 11, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
+            padding: '2px 6px', borderRadius: 4, transition: 'color 0.15s',
+          }}
+        >
+          {copied ? '✓ Copied' : '📋 Copy'}
+        </button>
+      </div>
+
+      {/* Code */}
+      <div style={{ background: '#111', padding: '14px 16px', overflowX: 'auto' }}>
+        <pre style={{ margin: 0, fontFamily: 'JetBrains Mono, monospace', fontSize: 13, color: '#e8e8e8', lineHeight: 1.6 }}>
+          <code>{code}</code>
+        </pre>
+      </div>
+
+      {/* Send to Code button */}
+      <button
+        onClick={() => onSendToCode(code, filename || `${language}-snippet`)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 8,
+          width: '100%', padding: '9px 14px',
+          background: '#D4A94A', border: 'none', cursor: 'pointer',
+          fontSize: 13, fontWeight: 600, color: '#fff',
+          fontFamily: 'DM Sans, sans-serif',
+          transition: 'background 0.15s',
+        }}
+        onMouseEnter={e => (e.currentTarget.style.background = '#e8b05a')}
+        onMouseLeave={e => (e.currentTarget.style.background = '#D4A94A')}
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+          <polyline points="5 12 12 5 19 12"/><polyline points="5 19 12 12 19 19"/>
+        </svg>
+        Send to Code →
+      </button>
+    </div>
+  );
+}
+
+// ─── Message component ────────────────────────────────────────────────────────
+
+function Message({ msg, isStreaming, onSendToCode }: {
+  msg: ChatMessage; isStreaming: boolean;
+  onSendToCode: (code: string, filename?: string) => void;
+}) {
+  const isUser = msg.role === 'user';
+  const isThinking = msg.id === 'streaming' && msg.content === '';
+  const { html, codeBlocks } = parseMessage(msg.content);
+
+  const modelLabel = msg.model_used
+    ? `via ${msg.model_used.replace(/^anthropic\/|^openai\/|^google\//, '')}${msg.source_tier ? ` · ${msg.source_tier}` : ''}`
+    : null;
+
+  return (
+    <div style={{
+      display: 'flex', gap: 10, alignItems: 'flex-start',
+      flexDirection: isUser ? 'row-reverse' : 'row',
+      maxWidth: '100%',
+    }}>
+      {/* Avatar */}
+      <div style={{
+        width: 28, height: 28, borderRadius: '50%', flexShrink: 0,
+        background: isUser ? '#6B6B6B' : '#2D4A2B',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 12, fontWeight: 700,
+        color: isUser ? '#fff' : '#D4A94A',
+        marginTop: 2,
+      }}>
+        {isUser ? 'U' : 'G'}
+      </div>
+
+      <div style={{ flex: 1, minWidth: 0, maxWidth: '82%' }}>
+        {/* Bubble */}
+        <div style={{
+          background: isUser ? '#2D4A2B' : '#fff',
+          color: isUser ? '#fff' : '#2A2A2A',
+          borderRadius: isUser ? '12px 4px 12px 12px' : '4px 12px 12px 12px',
+          padding: '10px 14px',
+          border: isUser ? 'none' : '1px solid #EDE8DC',
+          fontSize: 14, lineHeight: 1.6,
+          fontFamily: 'DM Sans, sans-serif',
+        }}>
+          {isThinking ? (
+            <div style={{ display: 'flex', gap: 4, alignItems: 'center', padding: '4px 0' }}>
+              <span style={{ fontSize: 12, color: isUser ? 'rgba(255,255,255,0.6)' : '#9C9589' }}>Goblin is thinking</span>
+              {[0, 1, 2].map(i => (
+                <div key={i} style={{
+                  width: 5, height: 5, borderRadius: '50%',
+                  background: '#9C9589', animation: 'bounce 1.2s ease infinite',
+                  animationDelay: `${i * 0.2}s`,
+                }} />
+              ))}
+            </div>
+          ) : (
+            <>
+              <div
+                dangerouslySetInnerHTML={{ __html: html }}
+                style={{ wordBreak: 'break-word' }}
+              />
+              {isStreaming && msg.id === 'streaming' && msg.content.length > 0 && (
+                <span style={{
+                  display: 'inline-block', width: 2, height: 14,
+                  background: '#D4A94A', marginLeft: 2, verticalAlign: 'text-bottom',
+                  animation: 'blink 0.8s step-end infinite',
+                }} />
+              )}
+            </>
+          )}
+        </div>
+
+        {/* Code blocks */}
+        {!isUser && codeBlocks.length > 0 && (
+          <div style={{ marginTop: 6 }}>
+            {codeBlocks.map((block, i) => (
+              <CodeBlock key={i} {...block} onSendToCode={onSendToCode} />
+            ))}
+          </div>
+        )}
+
+        {/* Model label */}
+        {!isUser && modelLabel && !isStreaming && (
+          <div style={{ marginTop: 5, fontSize: 11, color: '#9C9589', fontFamily: 'DM Sans, sans-serif' }}>
+            {modelLabel}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Empty state ──────────────────────────────────────────────────────────────
+
+const SUGGESTIONS = [
+  { label: 'Build a landing page', prompt: 'Create a modern landing page with hero section, features grid, and CTA button' },
+  { label: 'Create a REST API', prompt: 'Design a REST API with authentication, CRUD endpoints, and proper error handling' },
+  { label: 'Add dark mode', prompt: 'Implement dark mode toggle with CSS variables and localStorage persistence' },
+  { label: 'Deploy to Vercel', prompt: 'Guide me through deploying this project to Vercel with environment variables' },
+];
+
+function EmptyState({ onSuggestion }: { onSuggestion: (s: string) => void }) {
+  return (
+    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 24px', textAlign: 'center' }}>
+      <div style={{ fontSize: 52, marginBottom: 16, lineHeight: 1 }}>👺</div>
+      <h3 style={{ fontFamily: 'Fraunces, serif', fontSize: 20, color: '#2D4A2B', fontWeight: 700, marginBottom: 8 }}>
+        What are you building today?
+      </h3>
+      <p style={{ fontSize: 14, color: '#6B6B6B', fontFamily: 'DM Sans, sans-serif', marginBottom: 24, maxWidth: 360, lineHeight: 1.6 }}>
+        Describe a feature, ask for code, or request a review. Your goblin handles it.
+      </p>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center', maxWidth: 420 }}>
+        {SUGGESTIONS.map(s => (
+          <button
+            key={s.label}
+            onClick={() => onSuggestion(s.prompt)}
+            style={{
+              padding: '8px 14px', borderRadius: 20,
+              border: '1px solid #DDD7CC',
+              background: '#fff', color: '#2A2A2A',
+              fontSize: 13, fontFamily: 'DM Sans, sans-serif',
+              cursor: 'pointer', transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => { (e.currentTarget.style.background = '#2D4A2B'); (e.currentTarget.style.color = '#fff'); (e.currentTarget.style.borderColor = '#2D4A2B'); }}
+            onMouseLeave={e => { (e.currentTarget.style.background = '#fff'); (e.currentTarget.style.color = '#2A2A2A'); (e.currentTarget.style.borderColor = '#DDD7CC'); }}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── ChatTab ──────────────────────────────────────────────────────────────────
+
+export function ChatTab({ projectId }: ChatTabProps) {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [isStreaming, setIsStreaming] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [isLoadingHistory, setIsLoadingHistory] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [tokenInfo, setTokenInfo] = useState<TokenInfo | null>(null);
+
+  const { selectedModel, changeModel, setSelectedModel } = useChatModel();
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  // Refs for streaming: avoids stale closure when multiple delta events arrive
-  // before React re-renders (SSE events are faster than 16ms render cycle)
   const streamingContentRef = useRef('');
   const baseMessagesRef = useRef<ChatMessage[]>([]);
   const streamingMessageRef = useRef<ChatMessage | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
-  const supabase = createClient();
 
-  // Load chat history on mount
   useEffect(() => {
-    loadChatHistory();
+    loadHistory();
+    return () => { abortControllerRef.current?.abort(); };
   }, [projectId]);
 
-  // Auto-scroll to bottom when messages change
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Cleanup stream on unmount
-  useEffect(() => {
-    return () => { abortControllerRef.current?.abort(); };
-  }, []);
-
-  // Auto-resize textarea
-  useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.style.height = 'auto';
-      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`;
-    }
-  }, [input]);
-
-  const loadChatHistory = async () => {
+  const loadHistory = async () => {
     try {
       setIsLoadingHistory(true);
-      
-      const history: ChatMessage[] = await apiGet(`/api/chat/${projectId}/history`);
-      onMessagesChange(history);
-    } catch (err) {
-      console.error('Error loading chat history:', err);
-      setError('Failed to load chat history');
-    } finally {
-      setIsLoadingHistory(false);
-    }
-  };
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
-  const handleSubmit = async () => {
-    const trimmedInput = input.trim();
-    if (!trimmedInput || isStreaming) return;
-
-    // Add user message immediately
-    const userMessage: ChatMessage = {
-      id: `temp-${Date.now()}`,
-      project_id: projectId,
-      role: 'user',
-      content: trimmedInput,
-      model_used: null,
-      source_tier: null,
-      created_at: new Date(),
-    };
-
-    const updatedMessages = [...messages, userMessage];
-    onMessagesChange(updatedMessages);
-    setInput('');
-    setIsStreaming(true);
-    setError(null);
-
-    // Capture pre-stream state in refs so delta handlers don't use stale closures
-    streamingContentRef.current = '';
-    baseMessagesRef.current = updatedMessages;
-
-    const streamingMessage: ChatMessage = {
-      id: 'streaming',
-      project_id: projectId,
-      role: 'assistant',
-      content: '',
-      model_used: null,
-      source_tier: null,
-      created_at: new Date(),
-    };
-    streamingMessageRef.current = streamingMessage;
-
-    onMessagesChange([...updatedMessages, streamingMessage]);
-
-    try {
-      abortControllerRef.current = new AbortController();
-      await apiStream(
-        '/api/chat/stream',
-        {
-          projectId,
-          message: trimmedInput,
-          modelSlug: selectedModel,
-        },
-        (data: unknown) => {
-          const streamData = data as StreamMessage;
-
-          switch (streamData.type) {
-            case 'meta':
-              if (streamingMessageRef.current) {
-                streamingMessageRef.current = {
-                  ...streamingMessageRef.current,
-                  model_used: streamData.model || null,
-                  source_tier: (streamData.source_tier || null) as ChatMessage['source_tier'],
-                };
-                onMessagesChange([...baseMessagesRef.current, streamingMessageRef.current]);
-              }
-              break;
-
-            case 'delta':
-              streamingContentRef.current += streamData.content || '';
-              if (streamingMessageRef.current) {
-                streamingMessageRef.current = {
-                  ...streamingMessageRef.current,
-                  content: streamingContentRef.current,
-                };
-                onMessagesChange([...baseMessagesRef.current, streamingMessageRef.current]);
-              }
-              break;
-
-            case 'done':
-              if (streamingMessageRef.current) {
-                const finalMsg: ChatMessage = {
-                  ...streamingMessageRef.current,
-                  id: streamData.messageId || streamingMessageRef.current.id,
-                  model_used: streamData.model_used || streamingMessageRef.current.model_used,
-                  source_tier: (streamData.source_tier || streamingMessageRef.current.source_tier) as ChatMessage['source_tier'],
-                };
-                onMessagesChange([...baseMessagesRef.current, finalMsg]);
-                streamingMessageRef.current = null;
-              }
-              setIsStreaming(false);
-              break;
-
-            case 'error':
-              setError(streamData.message || 'Streaming error');
-              setIsStreaming(false);
-              onMessagesChange(baseMessagesRef.current);
-              streamingMessageRef.current = null;
-              break;
-          }
-        },
-        abortControllerRef.current.signal
-      );
-    } catch (err) {
-      console.error('Error in chat stream:', err);
-      setError(err instanceof Error ? err.message : 'Failed to send message');
-      setIsStreaming(false);
-      onMessagesChange(baseMessagesRef.current);
-      streamingMessageRef.current = null;
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit();
-    }
-  };
-
-  const handleTextareaInput = (e: React.FormEvent<HTMLTextAreaElement>) => {
-    const target = e.target as HTMLTextAreaElement;
-    setInput(target.value);
-  };
-
-  const handleRetry = () => {
-    setError(null);
-    loadChatHistory();
-  };
-
-  const copyToClipboard = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      // Could add visual feedback here
-    } catch (err) {
-      console.error('Failed to copy:', err);
-    }
+      const history = await apiGet<ChatMessage[]>(`/api/chat/${projectId}/history`);
+      setMessages(history);
+    } catch { /* non-fatal */ } finally { setIsLoadingHistory(false); }
   };
 
   const sendToCode = (code: string, filename?: string) => {
     window.dispatchEvent(new CustomEvent('goblin:sendToCode', {
       detail: { code, filename: filename || 'generated-code.js' }
     }));
+    toast.success('Sent to Code tab ✓', { duration: 1500 });
   };
 
-  const escapeHtml = (s: string) =>
-    s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  const handleSubmit = async (text: string, model: SelectedModel) => {
+    const userMsg: ChatMessage = {
+      id: `temp-${Date.now()}`,
+      project_id: projectId,
+      role: 'user',
+      content: text,
+      model_used: null,
+      source_tier: null,
+      created_at: new Date(),
+    };
 
-  // Markdown parsing: HTML-escape raw content first so user/AI text
-  // cannot inject tags. Only our own controlled substitutions add HTML.
-  const parseMarkdown = (text: string) => {
-    const codeBlocks: Array<{ code: string; language?: string }> = [];
+    const withUser = [...messages, userMsg];
+    setMessages(withUser);
+    setIsStreaming(true);
+    setError(null);
+    setTokenInfo(null);
 
-    // Extract code blocks before escaping so we can preserve them
-    const placeholders: string[] = [];
-    const stripped = text.replace(/```(\w+)?\n([\s\S]*?)```/g, (_, language, code) => {
-      const idx = codeBlocks.length;
-      codeBlocks.push({ code, language });
-      placeholders.push(`\x00CODE${idx}\x00`);
-      return `\x00CODE${idx}\x00`;
-    });
+    streamingContentRef.current = '';
+    baseMessagesRef.current = withUser;
 
-    // Escape everything else
-    let parsed = escapeHtml(stripped);
+    const streamMsg: ChatMessage = {
+      id: 'streaming',
+      project_id: projectId,
+      role: 'assistant',
+      content: '',
+      model_used: model.slug,
+      source_tier: null,
+      created_at: new Date(),
+    };
+    streamingMessageRef.current = streamMsg;
+    setMessages([...withUser, streamMsg]);
 
-    // Re-insert code block placeholders as safe containers
-    parsed = parsed.replace(/\x00CODE(\d+)\x00/g, (_, idx) =>
-      `<div class="code-block-container" data-code-id="code-${idx}"></div>`
-    );
+    try {
+      abortControllerRef.current = new AbortController();
+      await apiStream(
+        '/api/chat/stream',
+        { projectId, message: text, modelSlug: model.slug },
+        (raw: unknown) => {
+          const d = raw as StreamMessage;
 
-    // Apply inline markdown (content already escaped, these tags are safe)
-    parsed = parsed
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/`([^`]+)`/g, (_, inner) => `<code class="inline-code">${escapeHtml(inner)}</code>`);
+          if (d.type === 'meta') {
+            if (streamingMessageRef.current) {
+              streamingMessageRef.current = {
+                ...streamingMessageRef.current,
+                model_used: d.model || model.slug,
+                source_tier: (d.source_tier || null) as ChatMessage['source_tier'],
+              };
+              setMessages([...baseMessagesRef.current, streamingMessageRef.current]);
+            }
+          } else if (d.type === 'delta') {
+            streamingContentRef.current += d.content ?? '';
+            if (streamingMessageRef.current) {
+              streamingMessageRef.current = { ...streamingMessageRef.current, content: streamingContentRef.current };
+              setMessages([...baseMessagesRef.current, streamingMessageRef.current]);
+            }
+          } else if (d.type === 'done') {
+            if (streamingMessageRef.current) {
+              const final: ChatMessage = {
+                ...streamingMessageRef.current,
+                id: d.messageId || streamingMessageRef.current.id,
+                model_used: d.model_used || streamingMessageRef.current.model_used,
+                source_tier: (d.source_tier || streamingMessageRef.current.source_tier) as ChatMessage['source_tier'],
+              };
+              setMessages([...baseMessagesRef.current, final]);
+              streamingMessageRef.current = null;
+            }
+            if (d.input_tokens && d.output_tokens) {
+              setTokenInfo({
+                input: d.input_tokens, output: d.output_tokens,
+                provider: model.provider, layer: model.layer,
+              });
+            }
+            setIsStreaming(false);
+          } else if (d.type === 'error') {
+            setError(d.message || 'Streaming error');
+            setIsStreaming(false);
+            setMessages(baseMessagesRef.current);
+            streamingMessageRef.current = null;
+          }
+        },
+        abortControllerRef.current.signal
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to send';
+      setError(msg);
+      setIsStreaming(false);
+      setMessages(baseMessagesRef.current);
+      streamingMessageRef.current = null;
+    }
+  };
 
-    return { parsed, codeBlocks };
+  const handleSuggestion = (prompt: string) => {
+    // Pre-fill input by triggering submit directly
+    handleSubmit(prompt, selectedModel);
   };
 
   if (isLoadingHistory) {
     return (
-      <div className="flex-1 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-moss mx-auto"></div>
-          <p className="mt-2 text-sm text-gray-500">Loading chat history...</p>
-        </div>
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12 }}>
+        <div style={{ width: 32, height: 32, border: '2px solid #EDE8DC', borderTopColor: '#2D4A2B', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+        <div style={{ fontSize: 13, color: '#9C9589', fontFamily: 'DM Sans, sans-serif' }}>Loading…</div>
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Messages container */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-6">
-        {messages.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="w-16 h-16 rounded-full bg-cream flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl font-bold text-ochre">G</span>
-            </div>
-            <h3 className="text-lg font-semibold text-slate mb-2">What are you building today?</h3>
-            <p className="text-gray-500 max-w-md mx-auto mb-6">
-              Ask questions, get code suggestions, or discuss your project. Your goblin is ready to help!
-            </p>
-            
-            {/* Suggestion pills */}
-            <div className="flex flex-wrap justify-center gap-3 max-w-md mx-auto">
-              {[
-                { text: 'Build a landing page', prompt: 'Create a modern landing page with hero section, features, and contact form' },
-                { text: 'Create a REST API', prompt: 'Design a REST API with authentication, CRUD operations, and error handling' },
-                { text: 'Add dark mode toggle', prompt: 'Implement a dark mode toggle with CSS variables and localStorage persistence' },
-                { text: 'Set up authentication', prompt: 'Set up user authentication with email/password and social login options' },
-                { text: 'Optimize performance', prompt: 'Analyze and optimize web performance with lazy loading and code splitting' },
-                { text: 'Deploy to production', prompt: 'Guide me through deploying this project to production with best practices' },
-              ].map((suggestion) => (
-                <button
-                  key={suggestion.text}
-                  onClick={() => {
-                    setInput(suggestion.prompt);
-                    textareaRef.current?.focus();
-                  }}
-                  className="px-4 py-2 bg-cream hover:bg-cream/80 text-slate rounded-full text-sm font-medium transition-colors border border-light"
-                >
-                  {suggestion.text}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              {message.role === 'assistant' && (
-                <div className="flex-shrink-0 mr-3">
-                  <div className="w-8 h-8 rounded-full bg-moss flex items-center justify-center">
-                    <span className="text-sm font-bold text-ochre">G</span>
-                  </div>
-                  {message.source_tier && message.model_used && (
-                    <div className="mt-1 text-xs text-ochre bg-ochre/10 px-2 py-0.5 rounded-full text-center">
-                      via {message.model_used} · {message.source_tier.toUpperCase()}
-                    </div>
-                  )}
-                </div>
-              )}
-              
-              <div
-                className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                  message.role === 'user'
-                    ? 'bg-moss text-white'
-                    : 'bg-cream text-slate'
-                }`}
-              >
-                {message.id === 'streaming' && message.content === '' ? (
-                  <div className="flex space-x-1">
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
-                  </div>
-                ) : (
-                  <>
-                    <div 
-                      className="prose prose-sm max-w-none"
-                      dangerouslySetInnerHTML={{ 
-                        __html: parseMarkdown(message.content).parsed 
-                      }}
-                    />
-                    
-                    {/* Render code blocks separately */}
-                    {parseMarkdown(message.content).codeBlocks.map((block, idx) => (
-                      <div key={idx} className="mt-3 mb-2">
-                        <div className="bg-gray-900 text-gray-100 rounded-lg overflow-hidden">
-                          <div className="flex justify-between items-center px-4 py-2 bg-gray-800">
-                            <span className="text-sm font-mono">
-                              {block.language || 'javascript'}
-                            </span>
-                            <div className="flex space-x-2">
-                              <button
-                                onClick={() => copyToClipboard(block.code)}
-                                className="text-xs hover:text-white transition-colors"
-                              >
-                                📋 Copy
-                              </button>
-                              <button
-                                onClick={() => sendToCode(block.code, `generated-${block.language || 'code'}`)}
-                                className="text-xs hover:text-white transition-colors"
-                              >
-                                → Send to Code
-                              </button>
-                            </div>
-                          </div>
-                          <pre className="p-4 overflow-x-auto">
-                            <code className="font-mono text-sm">{block.code}</code>
-                          </pre>
-                        </div>
-                      </div>
-                    ))}
-                  </>
-                )}
-              </div>
-            </div>
-          ))
-        )}
-        
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: '#F7F4ED' }}>
+      <style>{`
+        @keyframes bounce { 0%,80%,100%{transform:scale(0)}40%{transform:scale(1)} }
+        @keyframes blink { 50%{opacity:0} }
+        .ic { background:rgba(45,74,43,0.08);padding:1px 5px;border-radius:4px;font-family:JetBrains Mono,monospace;font-size:0.9em; }
+      `}</style>
+
+      {/* Messages */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '20px 16px', display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {messages.length === 0
+          ? <EmptyState onSuggestion={handleSuggestion} />
+          : messages.map(m => (
+              <Message
+                key={m.id}
+                msg={m}
+                isStreaming={isStreaming}
+                onSendToCode={sendToCode}
+              />
+            ))
+        }
+
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-2xl px-4 py-3 max-w-[80%] mx-auto">
-            <p className="text-red-700 text-sm">Something went wrong. Try again.</p>
+          <div style={{
+            background: '#FEF2F2', border: '1px solid #FCA5A5',
+            borderRadius: 10, padding: '12px 16px', fontSize: 13,
+            color: '#991B1B', fontFamily: 'DM Sans, sans-serif',
+          }}>
+            {error}
             <button
-              onClick={handleRetry}
-              className="mt-2 text-xs bg-red-100 hover:bg-red-200 text-red-800 px-3 py-1 rounded-full transition-colors"
+              onClick={() => setError(null)}
+              style={{ marginLeft: 10, fontSize: 11, textDecoration: 'underline', background: 'none', border: 'none', color: '#991B1B', cursor: 'pointer' }}
             >
-              Retry
+              Dismiss
             </button>
           </div>
         )}
-        
+
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input area */}
-      <div className="border-t border-light p-4">
-        <div className="flex items-end space-x-3">
-          <div className="flex-1 relative">
-            <textarea
-              ref={textareaRef}
-              value={input}
-              onChange={handleTextareaInput}
-              onKeyDown={handleKeyDown}
-              placeholder="Chat with your goblin…"
-              className="w-full resize-none border border-light rounded-2xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-ochre/20 focus:border-ochre max-h-[200px]"
-              rows={1}
-              disabled={isStreaming}
-            />
-            <div className="absolute right-3 bottom-3 text-xs text-gray-400">
-              {isStreaming ? 'Streaming…' : 'Enter to send, Shift+Enter for newline'}
-            </div>
-          </div>
-          <button
-            onClick={handleSubmit}
-            disabled={!input.trim() || isStreaming}
-            className="bg-ochre hover:bg-ochre/90 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-medium px-6 py-3 rounded-2xl transition-colors"
-          >
-            {isStreaming ? '…' : 'Send'}
-          </button>
+      {/* Token display */}
+      {tokenInfo && (
+        <div style={{
+          padding: '4px 16px',
+          fontSize: 11, color: '#9C9589',
+          fontFamily: 'DM Sans, sans-serif',
+          background: '#F7F4ED',
+          display: 'flex', gap: 6, alignItems: 'center',
+        }}>
+          <span>~{(tokenInfo.input + tokenInfo.output).toLocaleString()} tokens</span>
+          {calcCost(tokenInfo) && (
+            <>
+              <span>·</span>
+              <span>{calcCost(tokenInfo)}</span>
+            </>
+          )}
         </div>
-      </div>
+      )}
+
+      {/* Input */}
+      <ChatInput
+        onSubmit={handleSubmit}
+        disabled={isStreaming}
+        selectedModel={selectedModel}
+        onModelChange={(m) => setSelectedModel(m)}
+      />
     </div>
   );
 }
