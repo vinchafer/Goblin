@@ -14,9 +14,9 @@ export function PreviewTab({ projectId, previewUrl }: PreviewTabProps) {
   const [loading, setLoading] = useState(true);
 
   const vpLabels: Record<Viewport, string> = {
-    '375': '📱 375px',
-    '768': '💻 768px',
-    '1440': '🖥 Full',
+    '375': '375',
+    '768': '768',
+    '1440': 'Full',
   };
 
   const widths: Record<Viewport, string> = {
@@ -66,34 +66,45 @@ export function PreviewTab({ projectId, previewUrl }: PreviewTabProps) {
         display: 'flex', alignItems: 'center',
         padding: '0 12px', gap: 6, flexShrink: 0,
       }}>
-        {(['375', '768', '1440'] as Viewport[]).map(v => (
-          <button key={v} onClick={() => setViewport(v)} style={{
-            padding: '4px 10px', borderRadius: 6, fontSize: 11,
-            border: 'none', cursor: 'pointer',
-            background: viewport === v ? 'var(--moss)' : 'transparent',
-            color: viewport === v ? '#fff' : 'var(--meta)',
-            fontFamily: 'DM Sans, sans-serif', fontWeight: 500,
-            transition: 'all 0.15s',
-          }}>{vpLabels[v]}</button>
-        ))}
-        <div style={{ flex: 1 }} />
+        {/* Viewport switcher */}
+        <div style={{ display: 'flex', background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: 7, padding: 2, gap: 1 }}>
+          {(['375', '768', '1440'] as Viewport[]).map(v => (
+            <button key={v} onClick={() => setViewport(v)} style={{
+              padding: '3px 10px', borderRadius: 5, fontSize: 11,
+              border: 'none', cursor: 'pointer',
+              background: viewport === v ? 'var(--moss)' : 'transparent',
+              color: viewport === v ? '#fff' : 'var(--meta)',
+              fontFamily: 'DM Sans, sans-serif', fontWeight: 600,
+              transition: 'all 0.15s', minWidth: 36,
+            }}>{vpLabels[v]}</button>
+          ))}
+        </div>
+
+        {/* URL bar */}
+        <div style={{
+          flex: 1, marginLeft: 8, marginRight: 4,
+          display: 'flex', alignItems: 'center',
+          background: 'var(--panel)', border: '1px solid var(--border)',
+          borderRadius: 7, padding: '0 10px', height: 30, overflow: 'hidden',
+        }}>
+          <span style={{
+            fontFamily: 'JetBrains Mono, monospace', fontSize: 11,
+            color: 'var(--meta)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+          }}>
+            {previewUrl}
+          </span>
+        </div>
+
         <button
           onClick={() => { setLoading(true); setReloadKey(k => k + 1); }}
-          style={{ background: 'none', border: 'none', color: 'var(--meta)', cursor: 'pointer', fontSize: 16, padding: '4px 8px' }}
+          style={{ background: 'none', border: 'none', color: 'var(--meta)', cursor: 'pointer', fontSize: 15, padding: '4px 6px', lineHeight: 1 }}
           title="Reload"
         >↺</button>
         <a
           href={previewUrl} target="_blank" rel="noopener noreferrer"
-          style={{ color: 'var(--meta)', fontSize: 13, textDecoration: 'none', padding: '4px 8px' }}
+          style={{ color: 'var(--meta)', fontSize: 13, textDecoration: 'none', padding: '4px 6px', lineHeight: 1, display: 'flex', alignItems: 'center' }}
           title="Open in new tab"
         >↗</a>
-        <div style={{
-          fontFamily: 'JetBrains Mono, monospace', fontSize: 10,
-          color: 'var(--meta)', marginLeft: 4,
-          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200,
-        }}>
-          {previewUrl}
-        </div>
       </div>
 
       {/* Iframe area */}

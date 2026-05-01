@@ -18,6 +18,8 @@ const PROVIDERS = [
   { id: 'mistral',   label: 'Mistral',        icon: Globe, model: 'Mistral Large',      dashboard: 'https://console.mistral.ai/api-keys/',  desc: 'European AI, GDPR-friendly' },
   { id: 'xai',       label: 'xAI (Grok)',     icon: Zap, model: 'Grok 2',             dashboard: 'https://console.x.ai/',                desc: 'Grok 2 — real-time knowledge' },
   { id: 'together',  label: 'Together AI',    icon: Layers, model: 'Llama 3 70B',        dashboard: 'https://api.together.xyz/settings/api-keys', desc: '100+ open source models' },
+  { id: 'fireworks', label: 'Fireworks AI',   icon: Zap,    model: 'Llama 3.1 405B',     dashboard: 'https://fireworks.ai/account/api-keys',       desc: 'Fast inference, open source models' },
+  { id: 'custom',    label: 'Custom Endpoint', icon: Globe, model: 'OpenAI-compatible',  dashboard: '',                                             desc: 'Any OpenAI-compatible API endpoint' },
 ];
 
 export function KeysList({ initialKeys }: KeysListProps) {
@@ -117,35 +119,51 @@ export function KeysList({ initialKeys }: KeysListProps) {
         </div>
       )}
 
-      {/* Provider List */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      {/* Provider Grid */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
+        gap: 12,
+      }}>
         {PROVIDERS.map(p => {
           const activeKey = activeForProvider(p.id);
           const isConnecting = connecting === p.id;
 
           return (
             <div key={p.id}>
-              {/* Provider row */}
+              {/* Provider card */}
               <div style={{
-                display: 'flex', alignItems: 'center', gap: 12,
-                padding: '16px 20px',
-                background: '#FFFFFF',
-                border: '1px solid #EDE8DC',
-                borderRadius: 8, minHeight: 64,
+                display: 'flex', alignItems: 'flex-start', gap: 12,
+                padding: '18px 20px',
+                background: activeKey ? 'rgba(74,124,59,0.04)' : '#FFFFFF',
+                border: activeKey ? '1px solid rgba(74,124,59,0.25)' : '1px solid #EDE8DC',
+                borderRadius: 10, minHeight: 72,
+                transition: 'border-color 0.15s',
               }}>
-                <div style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(212, 169, 74, 0.1)', borderRadius: 6 }}>
-                  {React.createElement(p.icon, { size: 18, color: '#D4A94A' })}
+                <div style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', background: activeKey ? 'rgba(74,124,59,0.1)' : 'rgba(212,169,74,0.1)', borderRadius: 8, flexShrink: 0, marginTop: 2 }}>
+                  {React.createElement(p.icon, { size: 18, color: activeKey ? '#4a7c3b' : '#D4A94A' })}
                 </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: '#2A2A2A', fontFamily: 'DM Sans, sans-serif' }}>
-                    {p.label}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: '#2A2A2A', fontFamily: 'DM Sans, sans-serif' }}>{p.label}</span>
+                    {activeKey && (
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#4a7c3b', fontWeight: 500 }}>
+                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#4a7c3b', display: 'inline-block' }} />
+                        Connected
+                      </span>
+                    )}
                   </div>
-                  <div style={{ fontSize: 13, color: '#6B6B6B', marginTop: 2 }}>
+                  <div style={{ fontSize: 12, color: '#6B6B6B', marginBottom: activeKey ? 6 : 0 }}>
                     {p.desc}
                   </div>
                   {activeKey && (
-                    <div style={{ fontSize: 11, color: '#6b6560', fontFamily: 'monospace', marginTop: 4 }}>
-                      ···· {(activeKey as any).key_hint || '····'}
+                    <div style={{ fontSize: 11, color: '#6b6560', fontFamily: 'JetBrains Mono, monospace' }}>
+                      sk-···· {(activeKey as any).key_hint?.slice(-4) || '····'}
+                      {activeKey.created_at && (
+                        <span style={{ marginLeft: 8, fontFamily: 'DM Sans, sans-serif', color: '#9b9691' }}>
+                          since {new Date(activeKey.created_at).toLocaleDateString()}
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>
@@ -208,7 +226,7 @@ export function KeysList({ initialKeys }: KeysListProps) {
               {/* Inline Connect Panel */}
               {isConnecting && (
                 <div style={{
-                  marginTop: 2, marginBottom: 2,
+                  marginTop: 8,
                   padding: '16px 14px',
                   background: '#f7f3ec', border: '1px solid #e4ddd2',
                   borderRadius: 8,

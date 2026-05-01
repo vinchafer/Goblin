@@ -212,29 +212,65 @@ export function CodeTab({ projectId, pendingCode }: CodeTabProps) {
         </div>
       )}
 
-      {/* Pending code banner */}
+      {/* Injection Banner */}
       {pendingCode && (
-        <div className="border-b shrink-0" style={{ borderColor: '#D4A94A', backgroundColor: '#141a12' }}>
-          <div
-            className="flex items-center justify-between px-4 py-3"
-            style={{ backgroundColor: 'rgba(212,169,74,0.08)' }}
-          >
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold" style={{ color: '#D4A94A' }}>
-                ✦ Code ready to review
+        <div style={{
+          background: 'rgba(212,169,74,0.15)',
+          borderBottom: '1px solid rgba(212,169,74,0.35)',
+          padding: '10px 16px',
+          display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0,
+        }}>
+          <span style={{ color: '#D4A94A', fontSize: 16, flexShrink: 0 }}>✦</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: '#D4A94A', fontFamily: 'DM Sans, sans-serif' }}>
+              Injected via Send to Code
+            </span>
+            {pendingCode.filename && (
+              <span style={{
+                marginLeft: 8, fontSize: 12,
+                color: '#c9933a', fontFamily: 'JetBrains Mono, monospace',
+                background: 'rgba(212,169,74,0.15)',
+                padding: '1px 8px', borderRadius: 4,
+              }}>
+                {pendingCode.filename}
               </span>
-              {pendingCode.filename && (
-                <span className="text-xs px-2 py-0.5 rounded" style={{ backgroundColor: 'rgba(212,169,74,0.2)', color: '#D4A94A' }}>
-                  {pendingCode.filename}
-                </span>
-              )}
-            </div>
-            <button 
-              onClick={() => setPendingCodePayload(null)}
-              className="text-xs px-3 py-1 rounded font-medium"
-              style={{ backgroundColor: '#D4A94A', color: '#2a1f0f' }}
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+            <button
+              style={{
+                background: '#2D4A2B', color: '#D4A94A', border: 'none',
+                borderRadius: 6, padding: '5px 12px',
+                fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                fontFamily: 'DM Sans, sans-serif', display: 'flex', alignItems: 'center', gap: 5,
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = '#3A5A37')}
+              onMouseLeave={e => (e.currentTarget.style.background = '#2D4A2B')}
             >
-              Clear
+              ▶ Build
+            </button>
+            <button
+              style={{
+                background: 'transparent', color: '#8aaa85',
+                border: '1px solid rgba(138,170,133,0.3)',
+                borderRadius: 6, padding: '5px 12px',
+                fontSize: 12, fontWeight: 500, cursor: 'pointer',
+                fontFamily: 'DM Sans, sans-serif', display: 'flex', alignItems: 'center', gap: 5,
+              }}
+              onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(138,170,133,0.7)')}
+              onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(138,170,133,0.3)')}
+            >
+              → Push GitHub
+            </button>
+            <button
+              onClick={() => setPendingCodePayload(null)}
+              style={{
+                background: 'none', border: 'none', color: '#6b8a6b',
+                cursor: 'pointer', fontSize: 16, padding: '4px 6px', lineHeight: 1,
+              }}
+              title="Clear"
+            >
+              ×
             </button>
           </div>
         </div>
@@ -314,21 +350,25 @@ export function CodeTab({ projectId, pendingCode }: CodeTabProps) {
             )}
           </div>
 
-          {/* Injection payloads area (collapsed at bottom if present) */}
+          {/* Pending injections badge area */}
           {pendingInjections.length > 0 && (
-            <div className="border-t shrink-0" style={{ borderColor: '#D4A94A', backgroundColor: '#141a12' }}>
-              <div
-                className="flex items-center justify-between px-4 py-2"
-                style={{ backgroundColor: 'rgba(212,169,74,0.08)' }}
-              >
-                <span className="text-sm font-semibold" style={{ color: '#D4A94A' }}>
-                  ✦ {pendingInjections.length} new payload{pendingInjections.length !== 1 ? 's' : ''}
+            <div style={{ borderTop: '1px solid rgba(212,169,74,0.3)', flexShrink: 0, background: '#141a12' }}>
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '8px 14px',
+                background: 'rgba(212,169,74,0.07)',
+              }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: '#D4A94A', fontFamily: 'DM Sans, sans-serif' }}>
+                  ✦ {pendingInjections.length} pending injection{pendingInjections.length !== 1 ? 's' : ''}
                 </span>
-                <button onClick={clearPendingInjections} className="p-1 rounded hover:opacity-60">
-                  <X className="w-3.5 h-3.5" style={{ color: '#D4A94A' }} />
+                <button
+                  onClick={clearPendingInjections}
+                  style={{ background: 'none', border: 'none', color: '#6b8a6b', cursor: 'pointer', fontSize: 15, lineHeight: 1 }}
+                >
+                  ×
                 </button>
               </div>
-              <div className="max-h-40 overflow-y-auto p-2 space-y-2">
+              <div style={{ maxHeight: 160, overflowY: 'auto', padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {pendingInjections.map(injection => (
                   <InjectionCard key={injection.id} injection={injection} />
                 ))}
