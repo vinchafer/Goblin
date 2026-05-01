@@ -7,11 +7,15 @@ import { Code, FileText, MessageSquare, X, File as FileIcon, Menu, Save } from "
 import { FileTree } from "./file-tree";
 import { CodeEditor } from "@/components/editor/code-editor";
 import { SaveIndicator } from "@/components/editor/save-indicator";
+import { PushToGitHubModal } from "./push-to-github-modal";
+import { useBuildStatus } from "@/hooks/useBuildStatus";
+import { BuildStatusBar } from "@/components/build/build-status-bar";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 interface CodeTabProps {
   projectId: string;
+  projectName?: string;
   pendingCode?: { content: string; filename?: string } | null;
 }
 
@@ -20,8 +24,12 @@ interface ActiveFile {
   content: string;
 }
 
-export function CodeTab({ projectId, pendingCode }: CodeTabProps) {
+export function CodeTab({ projectId, projectName = 'project', pendingCode }: CodeTabProps) {
   const { pendingInjections, addInjection, clearPendingInjections, setPendingCodePayload } = useApp();
+  const { activeBuilds, recentDone, startBuild } = useBuildStatus(projectId);
+  const [pushModalOpen, setPushModalOpen] = useState(false);
+  const [deploying, setDeploying] = useState(false);
+  const [deployMessage, setDeployMessage] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const seenIds = useRef<Set<string>>(new Set());
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -37,6 +45,45 @@ export function CodeTab({ projectId, pendingCode }: CodeTabProps) {
 
   // Injected files tracking (files sent via Send-to-Code)
   const [injectedFiles, setInjectedFiles] = useState<Set<string>>(new Set());
+
+  const handleDeploy = useCallback(async () => {
+    if (deploying) return;
+    setDeploying(true);
+    setDeployMessage('Deploying to Vercel…');
+    await startBuild('vercel_deploy', 'Deploying to Vercel…');
+    try {
+      const res = await fetch(`${API_URL}/api/deploy/vercel`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ projectId }),
+      });
+      if (!res.ok || !res.body) throw new Error('Deploy failed');
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const lines = decoder.decode(value).split('\n');
+        for (const line of lines) {
+          if (!line.startsWith('data:')) continue;
+          try {
+            const event = JSON.parse(line.slice(5));
+            if (event.message) setDeployMessage(event.message);
+            if (event.type === 'success') {
+              setDeployMessage(`Deployed ✓ ${event.url}`);
+              setTimeout(() => setDeployMessage(null), 6000);
+            }
+            if (event.type === 'error') setDeployMessage(`Error: ${event.message}`);
+          } catch { /* ignore parse errors */ }
+        }
+      }
+    } catch (err) {
+      setDeployMessage(err instanceof Error ? err.message : 'Deploy failed');
+      setTimeout(() => setDeployMessage(null), 6000);
+    } finally {
+      setDeploying(false);
+    }
+  }, [deploying, projectId, token, startBuild]);
 
   // Get auth token on mount
   useEffect(() => {
@@ -238,18 +285,21 @@ export function CodeTab({ projectId, pendingCode }: CodeTabProps) {
           </div>
           <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
             <button
+              onClick={handleDeploy}
+              disabled={deploying}
               style={{
-                background: '#2D4A2B', color: '#D4A94A', border: 'none',
+                background: deploying ? 'rgba(45,74,43,0.5)' : '#2D4A2B', color: '#D4A94A', border: 'none',
                 borderRadius: 6, padding: '5px 12px',
-                fontSize: 12, fontWeight: 600, cursor: 'pointer',
+                fontSize: 12, fontWeight: 600, cursor: deploying ? 'not-allowed' : 'pointer',
                 fontFamily: 'DM Sans, sans-serif', display: 'flex', alignItems: 'center', gap: 5,
               }}
-              onMouseEnter={e => (e.currentTarget.style.background = '#3A5A37')}
-              onMouseLeave={e => (e.currentTarget.style.background = '#2D4A2B')}
+              onMouseEnter={e => { if (!deploying) e.currentTarget.style.background = '#3A5A37'; }}
+              onMouseLeave={e => { if (!deploying) e.currentTarget.style.background = '#2D4A2B'; }}
             >
-              ▶ Build
+              {deploying ? '▶ Deploying…' : '▶ Build'}
             </button>
             <button
+              onClick={() => setPushModalOpen(true)}
               style={{
                 background: 'transparent', color: '#8aaa85',
                 border: '1px solid rgba(138,170,133,0.3)',
@@ -377,6 +427,35 @@ export function CodeTab({ projectId, pendingCode }: CodeTabProps) {
           )}
         </div>
       </div>
+
+      {/* Build status bar */}
+      {(activeBuilds.length > 0 || recentDone.length > 0) && (
+        <div style={{ borderTop: '1px solid var(--goblin-light)', flexShrink: 0 }}>
+          <BuildStatusBar builds={[...activeBuilds, ...recentDone]} />
+        </div>
+      )}
+
+      {/* Deploy message toast */}
+      {deployMessage && (
+        <div style={{
+          position: 'absolute', bottom: 16, left: '50%', transform: 'translateX(-50%)',
+          background: '#1e3a1c', border: '1px solid rgba(212,169,74,0.4)',
+          borderRadius: 8, padding: '8px 16px',
+          fontSize: 12, color: '#c9933a', fontFamily: 'DM Sans, sans-serif',
+          zIndex: 50, whiteSpace: 'nowrap', maxWidth: 400, textAlign: 'center',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
+        }}>
+          {deployMessage}
+        </div>
+      )}
+
+      {/* Push to GitHub modal */}
+      <PushToGitHubModal
+        open={pushModalOpen}
+        onClose={() => setPushModalOpen(false)}
+        projectId={projectId}
+        defaultName={projectName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}
+      />
     </div>
   );
 }

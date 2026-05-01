@@ -29,7 +29,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
         )}
       </div>
 
-      <ProjectWorkspace projectId={id} previewUrl={project.preview_url} />
+      <ProjectWorkspace projectId={id} projectName={project.name} previewUrl={project.preview_url} />
     </div>
   );
 }

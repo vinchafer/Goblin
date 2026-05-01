@@ -68,9 +68,13 @@ deploy.post('/vercel', deployRateLimit, async (c) => {
       try {
         const { sendToUser } = await import('../services/notification-service');
         await sendToUser(userId, {
-          title: 'Goblin',
-          body: `🚀 ${project.name} deployed — live ✅`,
+          title: `✅ ${project.name} deployed`,
+          body: result.url,
           url: `/dashboard/project/${projectId}`,
+          tag: 'build_complete',
+          actionUrls: {
+            open_preview: result.url,
+          },
         });
       } catch {
         // VAPID may not be configured — not fatal

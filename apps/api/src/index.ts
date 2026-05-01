@@ -61,6 +61,7 @@ import { notifications } from './routes/notifications';
 import { models } from './routes/models';
 import { admin } from './routes/admin';
 import { deploy } from './routes/deploy';
+import { builds } from './routes/builds';
 
 const app = new Hono();
 
@@ -123,6 +124,7 @@ app.route('/api/notifications', notifications);
 app.route('/api/models', models);
 app.route('/api/admin', admin);
 app.route('/api/deploy', deploy);
+app.route('/api/builds', builds);
 
 process.on('uncaughtException', (err) => {
   console.error('[FATAL] Uncaught exception:', err);

@@ -6,6 +6,7 @@ interface PushPayload {
   body: string;
   url?: string;
   tag?: string;
+  actionUrls?: Record<string, string>;
 }
 
 let _vapidInitialized = false;
@@ -36,7 +37,13 @@ export async function sendToUser(userId: string, payload: PushPayload): Promise<
 
   if (error || !subscriptions?.length) return;
 
-  const body = JSON.stringify(payload);
+  const body = JSON.stringify({
+    title: payload.title,
+    body: payload.body,
+    url: payload.url,
+    tag: payload.tag,
+    actionUrls: payload.actionUrls,
+  });
 
   for (const sub of subscriptions) {
     try {

@@ -153,10 +153,13 @@ github.post('/push', async (c) => {
       .eq('user_id', userId);
 
     sendToUser(userId, {
-      title: 'Goblin',
-      body: `✅ ${result.data.name} pushed to GitHub successfully`,
+      title: `⬆ Pushed to GitHub`,
+      body: `${result.data.name} → ${repoUrl}`,
       url: `/dashboard/project/${result.data.projectId}`,
-      tag: 'github-push',
+      tag: 'build_complete',
+      actionUrls: {
+        open_preview: repoUrl,
+      },
     }).catch((err: unknown) => console.error('[github] push notification failed:', err));
 
     return c.json({ success: true, url: repo.html_url });

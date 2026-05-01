@@ -12,14 +12,15 @@ const PreviewTab = dynamic(
 
 interface ProjectWorkspaceProps {
   projectId: string;
+  projectName?: string;
   previewUrl?: string | null;
 }
 
-export function ProjectWorkspace({ projectId, previewUrl }: ProjectWorkspaceProps) {
+export function ProjectWorkspace({ projectId, projectName, previewUrl }: ProjectWorkspaceProps) {
   const { activeTab, pendingCodePayload } = useApp();
 
   if (activeTab === "code") {
-    return <CodeTab projectId={projectId} pendingCode={pendingCodePayload} />;
+    return <CodeTab projectId={projectId} projectName={projectName} pendingCode={pendingCodePayload} />;
   }
 
   if (activeTab === "preview") {
