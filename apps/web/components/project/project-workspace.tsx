@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useApp } from "@/contexts/app-context";
 import { ChatTab } from "@/components/workspace/chat-tab";
@@ -17,7 +18,11 @@ interface ProjectWorkspaceProps {
 }
 
 export function ProjectWorkspace({ projectId, projectName, previewUrl }: ProjectWorkspaceProps) {
-  const { activeTab, pendingCodePayload } = useApp();
+  const { activeTab, pendingCodePayload, setPreviewUrl } = useApp();
+
+  useEffect(() => {
+    setPreviewUrl(previewUrl ?? null);
+  }, [previewUrl, setPreviewUrl]);
 
   if (activeTab === "code") {
     return <CodeTab projectId={projectId} projectName={projectName} pendingCode={pendingCodePayload} />;

@@ -19,7 +19,7 @@ interface SidebarProps {
   onClose?: () => void;
 }
 
-const COLORS = ['#c9933a', '#4a7c3b', '#7a4a8a', '#3a6b8a', '#8a3a3a', '#4a7a7a'];
+const COLORS = ['var(--ochre-dark)', '#4a7c3b', '#7a4a8a', '#3a6b8a', '#8a3a3a', '#4a7a7a'];
 
 function timeAgo(dateStr?: string): string {
   if (!dateStr) return '';
@@ -68,14 +68,14 @@ export function Sidebar({ projects = [], activeProjectId, onProjectSelect, isOpe
           <button
             onClick={() => { setShowNewProjectModal(true); onClose?.(); }}
             style={{
-              width: '100%', background: '#2D4A2B', color: '#fff', border: 'none',
+              width: '100%', background: 'var(--moss)', color: '#fff', border: 'none',
               borderRadius: 8, padding: '8px 12px', fontSize: 12, fontWeight: 500,
               cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
               marginBottom: 12, fontFamily: 'DM Sans, sans-serif', transition: 'background 0.15s',
               minHeight: 36,
             }}
-            onMouseEnter={e => (e.currentTarget.style.background = '#3A5A37')}
-            onMouseLeave={e => (e.currentTarget.style.background = '#2D4A2B')}
+            onMouseEnter={e => (e.currentTarget.style.background = 'var(--moss-2)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'var(--moss)')}
           >
             <span style={{ fontSize: 16, lineHeight: 1, flexShrink: 0 }}>＋</span>
             New Project
@@ -95,7 +95,7 @@ export function Sidebar({ projects = [], activeProjectId, onProjectSelect, isOpe
               return (
                 <div
                   key={p.id}
-                  onClick={() => { onProjectSelect?.(p.id); router.push(`/project/${p.id}`); onClose?.(); }}
+                  onClick={() => { onProjectSelect?.(p.id); router.push(`/dashboard/project/${p.id}`); onClose?.(); }}
                   style={{
                     display: 'flex', alignItems: 'center', gap: 8,
                     padding: '7px 8px', borderRadius: 7, cursor: 'pointer', marginBottom: 2,
@@ -136,7 +136,7 @@ export function Sidebar({ projects = [], activeProjectId, onProjectSelect, isOpe
             Model Routing
           </div>
           {[
-            { label: 'Goblin Hosted', color: '#c9933a', active: true },
+            { label: 'Goblin Hosted', color: 'var(--ochre-dark)', active: true },
             { label: 'Free-API Pool', color: '#4a7c3b', active: true },
             { label: 'BYOK · Anthropic', color: '#4a7c3b', active: true },
             { label: 'BYOK · OpenAI', color: '#e4ddd2', active: false },

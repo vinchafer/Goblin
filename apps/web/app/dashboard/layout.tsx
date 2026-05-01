@@ -12,15 +12,28 @@ export default async function DashboardLayout({
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  const { data: projects } = await supabase
-    .from('projects')
-    .select('*')
-    .eq('user_id', user?.id ?? '')
-    .order('last_active', { ascending: false });
+  const [{ data: projects }, { data: keys }] = await Promise.all([
+    supabase
+      .from('projects')
+      .select('*')
+      .eq('user_id', user?.id ?? '')
+      .order('last_active', { ascending: false }),
+    supabase
+      .from('byok_keys')
+      .select('id')
+      .eq('user_id', user?.id ?? '')
+      .limit(1),
+  ]);
+
+  const isFirstLogin = (projects?.length ?? 0) === 0 && (keys?.length ?? 0) === 0;
 
   return (
     <AppProvider>
-      <DashboardShell projects={(projects as Project[]) || []}>
+      <DashboardShell
+        projects={(projects as Project[]) || []}
+        isFirstLogin={isFirstLogin}
+        userName={user?.user_metadata?.full_name ?? user?.email}
+      >
         {children}
       </DashboardShell>
     </AppProvider>

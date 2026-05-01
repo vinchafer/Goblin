@@ -29,12 +29,12 @@ function PreviewIcon() {
 }
 
 export function BottomTabBar() {
-  const { activeTab, setActiveTab, injectionCount } = useApp();
+  const { activeTab, setActiveTab, injectionCount, previewUrl } = useApp();
 
   const tabs = [
-    { id: 'chat' as const, label: 'Chat', Icon: ChatIcon },
-    { id: 'code' as const, label: 'Code', Icon: CodeIcon },
-    { id: 'preview' as const, label: 'Preview', Icon: PreviewIcon },
+    { id: 'chat' as const, label: 'Chat', Icon: ChatIcon, disabled: false },
+    { id: 'code' as const, label: 'Code', Icon: CodeIcon, disabled: false },
+    { id: 'preview' as const, label: 'Preview', Icon: PreviewIcon, disabled: !previewUrl },
   ];
 
   return (
@@ -47,9 +47,8 @@ export function BottomTabBar() {
       paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       flexShrink: 0,
     }} className="goblin-bottom-bar">
-      {tabs.map(({ id, label, Icon }) => {
+      {tabs.map(({ id, label, Icon, disabled }) => {
         const active = activeTab === id;
-        const disabled = id === 'preview';
         return (
           <button
             key={id}
@@ -58,7 +57,7 @@ export function BottomTabBar() {
               flex: 1, background: 'none', border: 'none', cursor: disabled ? 'default' : 'pointer',
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
               gap: 3, fontSize: 10, fontWeight: 600, fontFamily: 'DM Sans, sans-serif',
-              color: active ? '#2D4A2B' : '#6B6B6B',
+              color: active ? 'var(--moss)' : 'var(--meta)',
               position: 'relative', minHeight: 56, padding: '6px 0',
               opacity: disabled ? 0.45 : 1,
               WebkitTapHighlightColor: 'transparent',
@@ -74,7 +73,7 @@ export function BottomTabBar() {
               <span style={{
                 position: 'absolute', top: 6, left: '50%', transform: 'translateX(-50%)',
                 width: 20, height: 2, borderRadius: 1,
-                background: '#2D4A2B',
+                background: 'var(--moss)',
               }} />
             )}
             {/* Injection dot on Code tab */}
@@ -82,7 +81,7 @@ export function BottomTabBar() {
               <span style={{
                 position: 'absolute', top: 8, right: '28%',
                 width: 6, height: 6, borderRadius: '50%',
-                background: '#D4A94A', animation: 'blink 1.5s infinite',
+                background: 'var(--ochre)', animation: 'blink 1.5s infinite',
               }} />
             )}
           </button>

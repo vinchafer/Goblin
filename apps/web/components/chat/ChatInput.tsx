@@ -3,6 +3,7 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { apiGet } from '@/lib/api';
+import { createClient } from '@/lib/supabase/client';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -330,6 +331,26 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
     } catch { /* silently fail — user sees empty hub */ }
     setModelsLoaded(true);
   };
+
+  const refetchKeys = useCallback(async () => {
+    try {
+      const keys = await apiGet<ConnectedKey[]>('/api/byok-keys');
+      setConnectedKeys(keys);
+      setModelsLoaded(false); // force full reload next time hub opens
+    } catch { /* silent */ }
+  }, []);
+
+  // Realtime: refresh keys when byok_keys table changes for this user
+  useEffect(() => {
+    const supabase = createClient();
+    const channel = supabase
+      .channel('byok_keys_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'byok_keys' }, () => {
+        refetchKeys();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [refetchKeys]);
 
   // Close hub on outside click
   useEffect(() => {

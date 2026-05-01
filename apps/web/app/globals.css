@@ -40,6 +40,17 @@
   --shadow-lg:  0 8px 32px rgba(0,0,0,0.12);
   --shadow-ochre: 0 2px 8px rgba(212,169,74,0.25);
 
+  /* Extended palette */
+  --ochre-dark:   #C9933A;
+  --text-faint:   #9C9589;
+  --sidebar-meta: #6B6560;
+  --border:       #DDD7CC;
+  --code-bg:      #1E2A1C;
+  --code-bg-dark: #1E3A1C;
+  --code-fg:      #8AAA85;
+  --code-root:    #141A12;
+  --code-root-2:  #0F1410;
+
   /* backwards-compat aliases */
   --goblin-moss:   #2D4A2B;
   --goblin-ochre:  #D4A94A;

@@ -13,8 +13,23 @@ const github = new Hono<{ Variables: Variables }>();
 
 // Protected routes
 github.use('/connect', authMiddleware);
+github.use('/status', authMiddleware);
 github.use('/push', authMiddleware);
 github.use('/disconnect', authMiddleware);
+
+github.get('/status', async (c) => {
+  const userId = c.get('userId');
+  const accessToken = await getDecryptedAccessToken(userId);
+  if (!accessToken) {
+    return c.json({ connected: false });
+  }
+  try {
+    const username = await getUsername(accessToken);
+    return c.json({ connected: true, username });
+  } catch {
+    return c.json({ connected: false });
+  }
+});
 
 github.post('/connect', async (c) => {
   const userId = c.get('userId');

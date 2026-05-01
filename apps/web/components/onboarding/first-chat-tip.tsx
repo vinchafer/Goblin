@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { createClient } from '@/lib/supabase/client';
 
 const STORAGE_KEY = 'goblin_first_chat_tip_dismissed';
 
@@ -8,15 +9,36 @@ export function FirstChatTip() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const dismissed = localStorage.getItem(STORAGE_KEY);
-      if (!dismissed) setVisible(true);
-    }
+    const check = async () => {
+      // Fast local check first
+      if (typeof window !== 'undefined' && localStorage.getItem(STORAGE_KEY)) {
+        return;
+      }
+      // Authoritative check via user_metadata
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.user_metadata?.first_chat_tip_dismissed) {
+          localStorage.setItem(STORAGE_KEY, '1');
+          return;
+        }
+      } catch {
+        // Fallback to localStorage only
+      }
+      setVisible(true);
+    };
+    check();
   }, []);
 
-  const dismiss = () => {
+  const dismiss = async () => {
     setVisible(false);
     localStorage.setItem(STORAGE_KEY, '1');
+    try {
+      const supabase = createClient();
+      await supabase.auth.updateUser({ data: { first_chat_tip_dismissed: true } });
+    } catch {
+      // localStorage fallback already set
+    }
   };
 
   if (!visible) return null;

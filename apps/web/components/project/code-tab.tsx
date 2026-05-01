@@ -8,6 +8,7 @@ import { FileTree } from "./file-tree";
 import { CodeEditor } from "@/components/editor/code-editor";
 import { SaveIndicator } from "@/components/editor/save-indicator";
 import { PushToGitHubModal } from "./push-to-github-modal";
+import { ConnectGitHubModal } from "./connect-github-modal";
 import { useBuildStatus } from "@/hooks/useBuildStatus";
 import { BuildStatusBar } from "@/components/build/build-status-bar";
 
@@ -28,6 +29,8 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
   const { pendingInjections, addInjection, clearPendingInjections, setPendingCodePayload } = useApp();
   const { activeBuilds, recentDone, startBuild } = useBuildStatus(projectId);
   const [pushModalOpen, setPushModalOpen] = useState(false);
+  const [connectGitHubOpen, setConnectGitHubOpen] = useState(false);
+  const [githubConnected, setGithubConnected] = useState<boolean | null>(null);
   const [deploying, setDeploying] = useState(false);
   const [deployMessage, setDeployMessage] = useState<string | null>(null);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -84,6 +87,33 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
       setDeploying(false);
     }
   }, [deploying, projectId, token, startBuild]);
+
+  const openPushModal = useCallback(async () => {
+    if (githubConnected === null) {
+      // Check connection status
+      const t = token ?? (await (async () => {
+        const supabase = createClient();
+        const { data } = await supabase.auth.getSession();
+        return data.session?.access_token ?? null;
+      })());
+      if (!t) return;
+      try {
+        const res = await fetch(`${API_URL}/api/github/status`, {
+          headers: { Authorization: `Bearer ${t}` },
+        });
+        const data = await res.json();
+        setGithubConnected(data.connected);
+        if (data.connected) setPushModalOpen(true);
+        else setConnectGitHubOpen(true);
+      } catch {
+        setConnectGitHubOpen(true);
+      }
+    } else if (githubConnected) {
+      setPushModalOpen(true);
+    } else {
+      setConnectGitHubOpen(true);
+    }
+  }, [githubConnected, token]);
 
   // Get auth token on mount
   useEffect(() => {
@@ -299,7 +329,7 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
               {deploying ? '▶ Deploying…' : '▶ Build'}
             </button>
             <button
-              onClick={() => setPushModalOpen(true)}
+              onClick={openPushModal}
               style={{
                 background: 'transparent', color: '#8aaa85',
                 border: '1px solid rgba(138,170,133,0.3)',
@@ -451,11 +481,11 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
 
       {/* Mobile FAB — Build + Push (only on mobile) */}
       <div className="md:hidden" style={{
-        position: 'absolute', bottom: 16, right: 16,
-        display: 'flex', flexDirection: 'column', gap: 8, zIndex: 30,
+        position: 'fixed', bottom: 'calc(56px + 16px)', right: 16,
+        display: 'flex', flexDirection: 'column', gap: 8, zIndex: 40,
       }}>
         <button
-          onClick={() => setPushModalOpen(true)}
+          onClick={openPushModal}
           style={{
             width: 48, height: 48, borderRadius: '50%',
             background: 'rgba(30,58,28,0.95)', border: '1px solid rgba(138,170,133,0.3)',
@@ -502,6 +532,17 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
           {deployMessage}
         </div>
       )}
+
+      {/* Connect GitHub modal (shown when GitHub not connected) */}
+      <ConnectGitHubModal
+        open={connectGitHubOpen}
+        onClose={() => setConnectGitHubOpen(false)}
+        onConnected={() => {
+          setConnectGitHubOpen(false);
+          setGithubConnected(true);
+          setPushModalOpen(true);
+        }}
+      />
 
       {/* Push to GitHub modal */}
       <PushToGitHubModal

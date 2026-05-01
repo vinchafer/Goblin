@@ -1,4 +1,4 @@
-const GOBLIN_VERSION = '1.1.0';
+const GOBLIN_VERSION = '1.2.0-20260501';
 const SHELL_CACHE = `goblin-shell-${GOBLIN_VERSION}`;
 const STATIC_CACHE = `goblin-static-${GOBLIN_VERSION}`;
 

@@ -41,13 +41,37 @@ export function useBuildStatus(projectId: string) {
     }
   }, [projectId]);
 
+  const activeBuilds = builds.filter(b => b.status === 'pending' || b.status === 'running');
+  const recentDone = builds.filter(b => {
+    if (b.status !== 'done' && b.status !== 'failed') return false;
+    if (!b.completed_at) return false;
+    return Date.now() - new Date(b.completed_at).getTime() < 30_000;
+  });
+
+  // Initial fetch on mount
   useEffect(() => {
     fetchBuilds();
-    pollRef.current = setInterval(fetchBuilds, 2000);
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
   }, [fetchBuilds]);
+
+  // Poll only when there are active builds
+  useEffect(() => {
+    if (activeBuilds.length > 0) {
+      if (!pollRef.current) {
+        pollRef.current = setInterval(fetchBuilds, 2000);
+      }
+    } else {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+    }
+    return () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+    };
+  }, [activeBuilds.length, fetchBuilds]);
 
   const startBuild = useCallback(
     async (type: BuildRun['type'], message?: string): Promise<string | null> => {
@@ -69,13 +93,6 @@ export function useBuildStatus(projectId: string) {
     },
     [projectId, fetchBuilds]
   );
-
-  const activeBuilds = builds.filter(b => b.status === 'pending' || b.status === 'running');
-  const recentDone = builds.filter(b => {
-    if (b.status !== 'done' && b.status !== 'failed') return false;
-    if (!b.completed_at) return false;
-    return Date.now() - new Date(b.completed_at).getTime() < 30_000;
-  });
 
   return { builds, activeBuilds, recentDone, startBuild, refetch: fetchBuilds };
 }

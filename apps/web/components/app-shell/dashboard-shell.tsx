@@ -4,19 +4,40 @@ import { useState, useCallback, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { WelcomeModal } from "@/components/onboarding/welcome-modal";
 import { useApp } from "@/contexts/app-context";
 import type { Project } from "@goblin/shared/src/schemas";
+
+const ONBOARDED_KEY = 'goblin_onboarded';
 
 interface DashboardShellProps {
   projects: Project[];
   children: React.ReactNode;
   previewUrl?: string | null;
+  isFirstLogin?: boolean;
+  userName?: string;
 }
 
-export function DashboardShell({ projects, children, previewUrl }: DashboardShellProps) {
+export function DashboardShell({ projects, children, previewUrl, isFirstLogin, userName }: DashboardShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
   const { activeTab, setActiveTab, injectionCount } = useApp();
   const pathname = usePathname();
+
+  useEffect(() => {
+    if (!isFirstLogin) return;
+    const alreadyOnboarded = typeof window !== 'undefined' && localStorage.getItem(ONBOARDED_KEY);
+    if (!alreadyOnboarded) {
+      setShowWelcome(true);
+    }
+  }, [isFirstLogin]);
+
+  const handleWelcomeComplete = useCallback(() => {
+    setShowWelcome(false);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(ONBOARDED_KEY, '1');
+    }
+  }, []);
 
   const activeProjectId = (() => {
     const match = pathname.match(/\/project\/([^/]+)/);
@@ -64,6 +85,13 @@ export function DashboardShell({ projects, children, previewUrl }: DashboardShel
           {children}
         </main>
       </div>
+
+      {showWelcome && (
+        <WelcomeModal
+          userName={userName}
+          onComplete={handleWelcomeComplete}
+        />
+      )}
     </div>
   );
 }

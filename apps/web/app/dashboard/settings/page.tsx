@@ -252,7 +252,7 @@ const MODELS = [
 
 function DeveloperTab() {
   const [defaultModel, setDefaultModel] = useState(MODELS[0]);
-  const [timeout, setTimeout] = useState('30');
+  const [timeoutSetting, setTimeoutSetting] = useState('30');
   const [systemPrompt, setSystemPrompt] = useState('');
 
   return (
@@ -284,12 +284,12 @@ function DeveloperTab() {
           {['10', '30', '60', '120'].map(t => (
             <button
               key={t}
-              onClick={() => setTimeout(t)}
+              onClick={() => setTimeoutSetting(t)}
               style={{
                 padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 500,
-                border: timeout === t ? '2px solid var(--moss)' : '1.5px solid var(--border)',
-                background: timeout === t ? 'rgba(45,74,43,0.08)' : 'transparent',
-                color: timeout === t ? 'var(--moss)' : 'var(--meta)',
+                border: timeoutSetting === t ? '2px solid var(--moss)' : '1.5px solid var(--border)',
+                background: timeoutSetting === t ? 'rgba(45,74,43,0.08)' : 'transparent',
+                color: timeoutSetting === t ? 'var(--moss)' : 'var(--meta)',
                 cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
               }}
             >

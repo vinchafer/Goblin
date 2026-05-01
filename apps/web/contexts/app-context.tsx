@@ -41,6 +41,8 @@ interface AppContextType {
   setShowNewProjectModal: (show: boolean) => void;
   pendingCodePayload: { content: string; filename?: string } | null;
   setPendingCodePayload: (payload: { content: string; filename?: string } | null) => void;
+  previewUrl: string | null;
+  setPreviewUrl: (url: string | null) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -59,6 +61,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [pendingInjections, setPendingInjections] = useState<PendingInjection[]>([]);
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [pendingCodePayload, setPendingCodePayload] = useState<{ content: string; filename?: string } | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const clearPendingInjections = useCallback(() => setPendingInjections([]), []);
   const addInjection = useCallback((injection: PendingInjection) => {
     setPendingInjections(prev => {
@@ -104,6 +107,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setShowNewProjectModal,
       pendingCodePayload,
       setPendingCodePayload,
+      previewUrl,
+      setPreviewUrl,
     }}>
       {children}
     </AppContext.Provider>
