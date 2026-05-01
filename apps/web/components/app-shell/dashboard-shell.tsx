@@ -24,6 +24,19 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
   const { activeTab, setActiveTab, injectionCount } = useApp();
   const pathname = usePathname();
 
+  // Global keyboard shortcuts: Cmd+1/2/3 tab switch, Escape close sidebar
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      const mod = e.metaKey || e.ctrlKey;
+      if (mod && e.key === '1') { e.preventDefault(); setActiveTab('chat'); }
+      else if (mod && e.key === '2') { e.preventDefault(); setActiveTab('code'); }
+      else if (mod && e.key === '3') { e.preventDefault(); setActiveTab('preview'); }
+      else if (e.key === 'Escape') { setMobileOpen(false); }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [setActiveTab]);
+
   useEffect(() => {
     if (!isFirstLogin) return;
     const alreadyOnboarded = typeof window !== 'undefined' && localStorage.getItem(ONBOARDED_KEY);

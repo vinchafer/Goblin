@@ -21,6 +21,7 @@
     "@supabase/ssr": "^0.6.0",
     "@supabase/supabase-js": "^2.45.0",
     "codemirror": "^6.0.2",
+    "diff": "^9.0.0",
     "lucide-react": "^0.400.0",
     "next": "^16.2.4",
     "react": "19.0.0",
@@ -35,6 +36,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.0.0",
+    "@types/diff": "^8.0.0",
     "@types/react": "19.0.0",
     "@types/react-dom": "19.0.0",
     "@types/react-syntax-highlighter": "^15.5.13",

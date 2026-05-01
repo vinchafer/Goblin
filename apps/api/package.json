@@ -10,25 +10,27 @@
     "generate-vapid": "node -e \"const wp=require('web-push');const k=wp.generateVAPIDKeys();console.log('VAPID_PUBLIC_KEY='+k.publicKey);console.log('VAPID_PRIVATE_KEY='+k.privateKey);\""
   },
   "dependencies": {
-    "hono": "^4.6.0",
-    "@hono/node-server": "^1.12.0",
-    "zod": "^3.23.0",
-    "@supabase/supabase-js": "^2.45.0",
     "@anthropic-ai/sdk": "^0.27.0",
+    "@aws-sdk/client-s3": "^3.600.0",
+    "@goblin/shared": "workspace:*",
+    "@hono/node-server": "^1.12.0",
+    "@octokit/rest": "^21.0.0",
+    "@supabase/supabase-js": "^2.45.0",
+    "diff": "^9.0.0",
+    "dotenv": "^16.4.0",
+    "hono": "^4.6.0",
+    "jszip": "^3.10.1",
     "openai": "^4.52.0",
     "stripe": "^16.0.0",
-    "@octokit/rest": "^21.0.0",
-    "jszip": "^3.10.1",
     "web-push": "^3.6.7",
-    "@aws-sdk/client-s3": "^3.600.0",
-    "dotenv": "^16.4.0",
-    "@goblin/shared": "workspace:*"
+    "zod": "^3.23.0"
   },
   "devDependencies": {
+    "@types/diff": "^8.0.0",
+    "@types/node": "^22.0.0",
+    "@types/web-push": "^3.6.3",
     "tsup": "^8.3.0",
     "tsx": "^4.19.0",
-    "typescript": "^5.6.0",
-    "@types/node": "^22.0.0",
-    "@types/web-push": "^3.6.3"
+    "typescript": "^5.6.0"
   }
 }

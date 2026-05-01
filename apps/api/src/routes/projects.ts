@@ -4,8 +4,9 @@ import { z } from 'zod';
 import { randomUUID } from 'crypto';
 import { authMiddleware } from '../middleware/auth';
 import { generateProject } from '../services/project-generator';
-import { createZip, listFiles, getFile, uploadFile, deleteProject } from '../services/file-storage';
+import { createZip, listFiles, getFile, uploadFile, deleteFile, deleteProject } from '../services/file-storage';
 import { getSupabaseAdmin } from '../lib/supabase';
+import { createTwoFilesPatch } from 'diff';
 
 type Variables = { userId: string }
 const projects = new Hono<{ Variables: Variables }>();
@@ -341,6 +342,130 @@ projects.put('/:id/files/*', async (c) => {
 
   await uploadFile(projectId, filePath, content);
   return c.json({ success: true, path: filePath });
+});
+
+// ── Path traversal guard ──────────────────────────────────────────────────────
+function isSafePath(filePath: string): boolean {
+  if (!filePath) return false;
+  const normalized = filePath.replace(/\\/g, '/');
+  if (normalized.includes('..')) return false;
+  if (normalized.startsWith('/')) return false;
+  if (normalized.includes('\0')) return false;
+  return true;
+}
+
+async function verifyProjectOwnership(supabase: ReturnType<typeof getSupabaseAdmin>, projectId: string, userId: string) {
+  const { data, error } = await supabase
+    .from('projects').select('id').eq('id', projectId).eq('user_id', userId).single();
+  return error || !data ? null : data;
+}
+
+// Create new file
+projects.post('/:id/files', async (c) => {
+  const userId = c.get('userId');
+  const projectId = c.req.param('id');
+  const body = await c.req.json();
+
+  const schema = z.object({
+    path: z.string().min(1).max(500),
+    content: z.string(),
+  });
+  const result = schema.safeParse(body);
+  if (!result.success) return c.json({ error: 'Invalid request' }, 400);
+
+  if (!isSafePath(result.data.path)) return c.json({ error: 'Invalid file path' }, 400);
+
+  const supabase = getSupabaseAdmin();
+  if (!await verifyProjectOwnership(supabase, projectId, userId)) {
+    return c.json({ error: 'Not found' }, 404);
+  }
+
+  await uploadFile(projectId, result.data.path, result.data.content);
+  return c.json({ success: true, path: result.data.path }, 201);
+});
+
+// Delete file
+projects.delete('/:id/files/*', async (c) => {
+  const userId = c.get('userId');
+  const projectId = c.req.param('id');
+  const filePath = c.req.param('*');
+
+  if (!filePath || !isSafePath(filePath)) return c.json({ error: 'Invalid file path' }, 400);
+
+  const supabase = getSupabaseAdmin();
+  if (!await verifyProjectOwnership(supabase, projectId, userId)) {
+    return c.json({ error: 'Not found' }, 404);
+  }
+
+  // Soft delete: move to .trash/
+  const trashPath = `.trash/${Date.now()}_${filePath.replace(/\//g, '_')}`;
+  const content = await getFile(projectId, filePath);
+  if (content !== null) {
+    await uploadFile(projectId, trashPath, content);
+  }
+  await deleteFile(projectId, filePath);
+  return c.json({ success: true, trashedAs: trashPath });
+});
+
+// Rename/move file
+projects.post('/:id/files/rename', async (c) => {
+  const userId = c.get('userId');
+  const projectId = c.req.param('id');
+  const body = await c.req.json();
+
+  const schema = z.object({
+    from: z.string().min(1).max(500),
+    to: z.string().min(1).max(500),
+  });
+  const result = schema.safeParse(body);
+  if (!result.success) return c.json({ error: 'Invalid request' }, 400);
+  if (!isSafePath(result.data.from) || !isSafePath(result.data.to)) {
+    return c.json({ error: 'Invalid file path' }, 400);
+  }
+
+  const supabase = getSupabaseAdmin();
+  if (!await verifyProjectOwnership(supabase, projectId, userId)) {
+    return c.json({ error: 'Not found' }, 404);
+  }
+
+  const content = await getFile(projectId, result.data.from);
+  if (content === null) return c.json({ error: 'Source file not found' }, 404);
+
+  await uploadFile(projectId, result.data.to, content);
+  await deleteFile(projectId, result.data.from);
+  return c.json({ success: true, from: result.data.from, to: result.data.to });
+});
+
+// Diff endpoint — compute unified diff between current and proposed content
+projects.post('/:id/diff', async (c) => {
+  const userId = c.get('userId');
+  const projectId = c.req.param('id');
+  const body = await c.req.json();
+
+  const schema = z.object({
+    filePath: z.string().min(1),
+    proposedContent: z.string(),
+  });
+  const result = schema.safeParse(body);
+  if (!result.success) return c.json({ error: 'Invalid request' }, 400);
+  if (!isSafePath(result.data.filePath)) return c.json({ error: 'Invalid file path' }, 400);
+
+  const supabase = getSupabaseAdmin();
+  if (!await verifyProjectOwnership(supabase, projectId, userId)) {
+    return c.json({ error: 'Not found' }, 404);
+  }
+
+  const currentContent = await getFile(projectId, result.data.filePath) ?? '';
+  const patch = createTwoFilesPatch(
+    result.data.filePath,
+    result.data.filePath,
+    currentContent,
+    result.data.proposedContent,
+    'Current',
+    'Proposed',
+  );
+
+  return c.json({ diff: patch, currentContent, proposedContent: result.data.proposedContent });
 });
 
 // Get single project by id
