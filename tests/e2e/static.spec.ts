@@ -42,8 +42,8 @@ test.describe('/badge page', () => {
 
   test('shows HTML and Markdown embed options', async ({ page }) => {
     await page.goto('/badge');
-    await expect(page.getByText('HTML')).toBeVisible();
-    await expect(page.getByText('Markdown')).toBeVisible();
+    await expect(page.getByText('HTML').first()).toBeVisible();
+    await expect(page.getByText('Markdown').first()).toBeVisible();
   });
 });
 
