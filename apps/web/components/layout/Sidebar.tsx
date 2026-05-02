@@ -306,11 +306,32 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
           )}
         </div>
 
-        {/* ── Settings ── */}
+        {/* ── Bottom Nav ── */}
         <div style={{
           padding: collapsed ? '8px' : '8px 12px',
           borderTop: '1px solid #DDD7CC', flexShrink: 0,
+          display: 'flex', flexDirection: 'column', gap: 2,
         }}>
+          <button
+            onClick={() => navigate('/dashboard/billing')}
+            title="Billing"
+            style={{
+              width: '100%', background: 'none', border: 'none',
+              padding: collapsed ? '8px 0' : '8px',
+              borderRadius: 7, fontSize: 12,
+              color: '#6B6560', cursor: 'pointer',
+              display: 'flex', alignItems: 'center',
+              gap: collapsed ? 0 : 7,
+              justifyContent: collapsed ? 'center' : 'flex-start',
+              fontFamily: 'DM Sans, sans-serif',
+              minHeight: 36, transition: 'background 0.1s',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.05)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+          >
+            <span style={{ fontSize: 14 }}>💳</span>
+            {!collapsed && 'Billing'}
+          </button>
           <button
             onClick={() => navigate('/dashboard/settings')}
             title="Settings"
@@ -448,19 +469,29 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
           </div>
         </div>
 
-        {/* Settings */}
-        <div style={{ padding: '8px 12px', borderTop: '1px solid #DDD7CC', flexShrink: 0 }}>
+        {/* Bottom nav mobile */}
+        <div style={{ padding: '8px 12px', borderTop: '1px solid #DDD7CC', flexShrink: 0, display: 'flex', gap: 8 }}>
+          <button
+            onClick={() => navigate('/dashboard/billing')}
+            style={{
+              flex: 1, background: 'none', border: 'none',
+              padding: '8px', borderRadius: 7, fontSize: 12,
+              color: '#6B6560', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+              fontFamily: 'DM Sans, sans-serif', minHeight: 36,
+            }}
+          >
+            <span style={{ fontSize: 14 }}>💳</span> Billing
+          </button>
           <button
             onClick={() => navigate('/dashboard/settings')}
             style={{
-              width: '100%', background: 'none', border: 'none',
+              flex: 1, background: 'none', border: 'none',
               padding: '8px', borderRadius: 7, fontSize: 12,
               color: '#6B6560', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: 7,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
               fontFamily: 'DM Sans, sans-serif', minHeight: 36, transition: 'background 0.1s',
             }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.05)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'none')}
           >
             <GearIcon /> Settings
           </button>

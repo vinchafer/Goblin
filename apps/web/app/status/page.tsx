@@ -1,4 +1,4 @@
-import { Suspense } from 'react';
+import { createClient } from '@/lib/supabase/server';
 
 interface Check {
   status: 'ok' | 'fail' | 'skip' | 'degraded';
@@ -13,16 +13,38 @@ interface HealthData {
   checks: Record<string, Check>;
 }
 
+interface Incident {
+  id: string;
+  title: string;
+  status: string;
+  severity: string;
+  description: string | null;
+  resolved_at: string | null;
+  created_at: string;
+}
+
 async function getHealth(): Promise<HealthData | null> {
   try {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
-    const res = await fetch(`${apiUrl}/health/deep`, {
-      next: { revalidate: 60 },
-    });
+    const res = await fetch(`${apiUrl}/health/deep`, { next: { revalidate: 60 } });
     if (!res.ok) return null;
     return res.json();
   } catch {
     return null;
+  }
+}
+
+async function getIncidents(): Promise<Incident[]> {
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase
+      .from('incidents')
+      .select('id, title, status, severity, description, resolved_at, created_at')
+      .order('created_at', { ascending: false })
+      .limit(20);
+    return data ?? [];
+  } catch {
+    return [];
   }
 }
 
@@ -47,12 +69,28 @@ const SERVICE_LABELS: Record<string, string> = {
   stripe: 'Payments (Stripe)',
 };
 
+const INCIDENT_STATUS_COLOR: Record<string, string> = {
+  investigating: '#B85C3C',
+  identified:    '#D4A94A',
+  monitoring:    '#3A6B8A',
+  resolved:      '#4A7C3B',
+};
+
+const SEVERITY_ICON: Record<string, string> = {
+  minor: '🟡', major: '🟠', critical: '🔴',
+};
+
 export default async function StatusPage() {
-  const health = await getHealth();
+  const [health, incidents] = await Promise.all([getHealth(), getIncidents()]);
+
+  const activeIncidents = incidents.filter(i => i.status !== 'resolved');
+  const resolvedIncidents = incidents.filter(i => i.status === 'resolved');
 
   const overall = health?.status ?? 'down';
   const overallColor = overall === 'ok' ? '#4a7c3b' : overall === 'degraded' ? '#D4A94A' : '#b85c3c';
-  const overallLabel = overall === 'ok' ? '✓ All systems operational' : overall === 'degraded' ? '⚠ Partial outage' : '✗ Major outage';
+  const overallLabel = overall === 'ok'
+    ? activeIncidents.length > 0 ? '⚠ Active incidents' : '✓ All systems operational'
+    : overall === 'degraded' ? '⚠ Partial outage' : '✗ Major outage';
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--cream)', fontFamily: 'DM Sans, sans-serif' }}>
@@ -66,10 +104,10 @@ export default async function StatusPage() {
       <div style={{ maxWidth: 640, margin: '0 auto', padding: '48px 24px' }}>
         {/* Overall status */}
         <div style={{
-          background: '#fff', border: `2px solid ${overallColor}`, borderRadius: 14,
+          background: 'var(--panel)', border: `2px solid ${overallColor}`, borderRadius: 14,
           padding: '24px 28px', marginBottom: 32, display: 'flex', alignItems: 'center', gap: 14,
         }}>
-          <StatusDot status={overall} />
+          <StatusDot status={activeIncidents.length > 0 ? 'degraded' : overall} />
           <div>
             <div style={{ fontFamily: 'Fraunces, serif', fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>{overallLabel}</div>
             {health && (
@@ -80,8 +118,38 @@ export default async function StatusPage() {
           </div>
         </div>
 
+        {/* Active incidents */}
+        {activeIncidents.length > 0 && (
+          <div style={{ marginBottom: 28 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--danger)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
+              Active Incidents
+            </div>
+            {activeIncidents.map(inc => (
+              <div key={inc.id} style={{
+                background: 'var(--panel)', border: '1px solid rgba(184,92,60,0.3)',
+                borderLeft: `3px solid ${INCIDENT_STATUS_COLOR[inc.status] || 'var(--danger)'}`,
+                borderRadius: 10, padding: '14px 18px', marginBottom: 10,
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                  <span>{SEVERITY_ICON[inc.severity] || '🟡'}</span>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{inc.title}</span>
+                  <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: INCIDENT_STATUS_COLOR[inc.status] || 'var(--meta)' }}>
+                    {inc.status}
+                  </span>
+                </div>
+                {inc.description && (
+                  <div style={{ fontSize: 13, color: 'var(--meta)', lineHeight: 1.5 }}>{inc.description}</div>
+                )}
+                <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 6 }}>
+                  {new Date(inc.created_at).toLocaleString()}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Service checks */}
-        <div style={{ background: '#fff', border: '1px solid var(--div)', borderRadius: 12, overflow: 'hidden', marginBottom: 28 }}>
+        <div style={{ background: 'var(--panel)', border: '1px solid var(--div)', borderRadius: 12, overflow: 'hidden', marginBottom: 28 }}>
           <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--div)', fontSize: 12, fontWeight: 600, color: 'var(--meta)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
             Services
           </div>
@@ -100,6 +168,27 @@ export default async function StatusPage() {
             <div style={{ padding: '20px', fontSize: 13, color: 'var(--meta)', textAlign: 'center' }}>Unable to fetch service status</div>
           )}
         </div>
+
+        {/* Incident history */}
+        {resolvedIncidents.length > 0 && (
+          <div style={{ background: 'var(--panel)', border: '1px solid var(--div)', borderRadius: 12, overflow: 'hidden', marginBottom: 28 }}>
+            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--div)', fontSize: 12, fontWeight: 600, color: 'var(--meta)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+              Past Incidents
+            </div>
+            {resolvedIncidents.map(inc => (
+              <div key={inc.id} style={{ padding: '12px 20px', borderBottom: '1px solid var(--div)', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                <span style={{ fontSize: 12, marginTop: 2 }}>{SEVERITY_ICON[inc.severity] || '🟡'}</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{inc.title}</div>
+                  <div style={{ fontSize: 11, color: 'var(--meta)', marginTop: 2 }}>{new Date(inc.created_at).toLocaleDateString()}</div>
+                </div>
+                <span style={{ fontSize: 11, fontWeight: 700, color: '#4A7C3B', background: 'rgba(74,124,59,0.1)', padding: '2px 7px', borderRadius: 4 }}>
+                  Resolved
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
 
         <p style={{ fontSize: 12, color: 'var(--meta)', textAlign: 'center' }}>
           Auto-refreshes every 60 seconds.{' '}

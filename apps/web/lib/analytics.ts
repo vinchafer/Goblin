@@ -16,7 +16,7 @@ export function initAnalytics(): void {
   if (!key) return;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  import('posthog-js' as any).then(({ default: posthog }: { default: any }) => {
+  (import('posthog-js') as Promise<any>).then(({ default: posthog }: { default: any }) => {
     posthog.init(key, {
       api_host: host,
       capture_pageview: true,

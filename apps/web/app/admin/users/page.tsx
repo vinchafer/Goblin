@@ -2,11 +2,11 @@
 
 import { useEffect, useState, useCallback } from 'react';
 
-const API = process.env.NEXT_PUBLIC_API_URL || '';
-const ADMIN_KEY = process.env.NEXT_PUBLIC_ADMIN_KEY || '';
+// Admin calls go through /api/admin proxy (server-side key injection, is_admin check)
+const ADMIN_BASE = '/api/admin';
 
 function adminHeaders() {
-  return { 'x-admin-key': ADMIN_KEY, 'Content-Type': 'application/json' };
+  return { 'Content-Type': 'application/json' };
 }
 
 interface User {
@@ -54,8 +54,8 @@ export default function AdminUsersPage() {
     const params = new URLSearchParams({ page: String(page), limit: '20' });
     if (search) params.set('search', search);
     const [usersRes, statsRes] = await Promise.all([
-      fetch(`${API}/api/admin/users?${params}`, { headers: adminHeaders() }),
-      fetch(`${API}/api/admin/stats`, { headers: adminHeaders() }),
+      fetch(`${ADMIN_BASE}/users?${params}`, { headers: adminHeaders() }),
+      fetch(`${ADMIN_BASE}/stats`, { headers: adminHeaders() }),
     ]);
     if (usersRes.ok) setUsers(await usersRes.json());
     if (statsRes.ok) setStats(await statsRes.json());
@@ -68,14 +68,14 @@ export default function AdminUsersPage() {
     setActionLoading(userId + action);
     try {
       if (action === 'delete') {
-        await fetch(`${API}/api/admin/users/${userId}`, { method: 'DELETE', headers: adminHeaders() });
+        await fetch(`${ADMIN_BASE}/users/${userId}`, { method: 'DELETE', headers: adminHeaders() });
       } else if (action === 'suspend') {
-        await fetch(`${API}/api/admin/users/${userId}`, {
+        await fetch(`${ADMIN_BASE}/users/${userId}`, {
           method: 'PATCH', headers: adminHeaders(),
           body: JSON.stringify({ is_suspended: value }),
         });
       } else if (action === 'plan') {
-        await fetch(`${API}/api/admin/users/${userId}`, {
+        await fetch(`${ADMIN_BASE}/users/${userId}`, {
           method: 'PATCH', headers: adminHeaders(),
           body: JSON.stringify({ plan: value }),
         });

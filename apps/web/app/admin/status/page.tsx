@@ -2,9 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react';
 
-const API = process.env.NEXT_PUBLIC_API_URL || '';
-const ADMIN_KEY = process.env.NEXT_PUBLIC_ADMIN_KEY || '';
-const adminHeaders = () => ({ 'x-admin-key': ADMIN_KEY, 'Content-Type': 'application/json' });
+const ADMIN_BASE = '/api/admin';
+const adminHeaders = () => ({ 'Content-Type': 'application/json' });
 
 interface Incident {
   id: string;
@@ -45,7 +44,7 @@ export default function AdminStatusPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch(`${API}/api/admin/incidents`, { headers: adminHeaders() });
+    const res = await fetch(`${ADMIN_BASE}/incidents`, { headers: adminHeaders() });
     if (res.ok) setIncidents(await res.json());
     setLoading(false);
   }, []);
@@ -55,11 +54,11 @@ export default function AdminStatusPage() {
   const handleSave = async () => {
     setSaving(true);
     if (editId) {
-      await fetch(`${API}/api/admin/incidents/${editId}`, {
+      await fetch(`${ADMIN_BASE}/incidents/${editId}`, {
         method: 'PATCH', headers: adminHeaders(), body: JSON.stringify(form),
       });
     } else {
-      await fetch(`${API}/api/admin/incidents`, {
+      await fetch(`${ADMIN_BASE}/incidents`, {
         method: 'POST', headers: adminHeaders(), body: JSON.stringify(form),
       });
     }
@@ -72,7 +71,7 @@ export default function AdminStatusPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this incident?')) return;
-    await fetch(`${API}/api/admin/incidents/${id}`, { method: 'DELETE', headers: adminHeaders() });
+    await fetch(`${ADMIN_BASE}/incidents/${id}`, { method: 'DELETE', headers: adminHeaders() });
     load();
   };
 

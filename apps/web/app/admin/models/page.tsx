@@ -2,9 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react';
 
-const API = process.env.NEXT_PUBLIC_API_URL || '';
-const ADMIN_KEY = process.env.NEXT_PUBLIC_ADMIN_KEY || '';
-const adminHeaders = () => ({ 'x-admin-key': ADMIN_KEY, 'Content-Type': 'application/json' });
+const ADMIN_BASE = '/api/admin';
+const adminHeaders = () => ({ 'Content-Type': 'application/json' });
 
 interface Model {
   id: string;
@@ -38,7 +37,7 @@ export default function AdminModelsPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch(`${API}/api/admin/models`, { headers: adminHeaders() });
+    const res = await fetch(`${ADMIN_BASE}/models`, { headers: adminHeaders() });
     if (res.ok) setModels(await res.json());
     setLoading(false);
   }, []);
@@ -46,7 +45,7 @@ export default function AdminModelsPage() {
   useEffect(() => { load(); }, [load]);
 
   const toggleAvailable = async (m: Model) => {
-    await fetch(`${API}/api/admin/models/${m.id}`, {
+    await fetch(`${ADMIN_BASE}/models/${m.id}`, {
       method: 'PATCH', headers: adminHeaders(),
       body: JSON.stringify({ available: !m.available }),
     });
@@ -57,11 +56,11 @@ export default function AdminModelsPage() {
     setSaving(true);
     const payload = { ...form, tags: Array.isArray(form.tags) ? form.tags : [] };
     if (editId) {
-      await fetch(`${API}/api/admin/models/${editId}`, {
+      await fetch(`${ADMIN_BASE}/models/${editId}`, {
         method: 'PATCH', headers: adminHeaders(), body: JSON.stringify(payload),
       });
     } else {
-      await fetch(`${API}/api/admin/models`, {
+      await fetch(`${ADMIN_BASE}/models`, {
         method: 'POST', headers: adminHeaders(), body: JSON.stringify(payload),
       });
     }
@@ -74,7 +73,7 @@ export default function AdminModelsPage() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this model?')) return;
-    await fetch(`${API}/api/admin/models/${id}`, { method: 'DELETE', headers: adminHeaders() });
+    await fetch(`${ADMIN_BASE}/models/${id}`, { method: 'DELETE', headers: adminHeaders() });
     load();
   };
 

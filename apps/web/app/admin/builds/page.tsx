@@ -2,9 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react';
 
-const API = process.env.NEXT_PUBLIC_API_URL || '';
-const ADMIN_KEY = process.env.NEXT_PUBLIC_ADMIN_KEY || '';
-const adminHeaders = () => ({ 'x-admin-key': ADMIN_KEY, 'Content-Type': 'application/json' });
+const ADMIN_BASE = '/api/admin';
+const adminHeaders = () => ({ 'Content-Type': 'application/json' });
 
 interface Build {
   id: string;
@@ -45,7 +44,7 @@ export default function AdminBuildsPage() {
     setLoading(true);
     const params = new URLSearchParams({ page: String(page), limit: '25' });
     if (statusFilter) params.set('status', statusFilter);
-    const res = await fetch(`${API}/api/admin/builds?${params}`, { headers: adminHeaders() });
+    const res = await fetch(`${ADMIN_BASE}/builds?${params}`, { headers: adminHeaders() });
     if (res.ok) {
       const d = await res.json();
       setBuilds(Array.isArray(d) ? d : (d.builds ?? d));
@@ -57,7 +56,7 @@ export default function AdminBuildsPage() {
 
   const handleCancel = async (id: string) => {
     setCancelling(id);
-    await fetch(`${API}/api/admin/builds/${id}/cancel`, { method: 'POST', headers: adminHeaders() });
+    await fetch(`${ADMIN_BASE}/builds/${id}/cancel`, { method: 'POST', headers: adminHeaders() });
     setCancelling(null);
     load();
   };
