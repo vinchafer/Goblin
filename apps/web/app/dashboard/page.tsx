@@ -328,24 +328,51 @@ export default function DashboardPage() {
                   );
                 })}
 
-                {/* New Project card */}
+                {/* New Project card — with template quick-start */}
                 <div
-                  className="project-card"
-                  onClick={() => setShowNewProjectModal(true)}
                   style={{
                     background: 'transparent',
                     borderRadius: 12,
                     border: '1.5px dashed var(--border)',
-                    padding: '18px', minHeight: 100,
+                    padding: '14px',
                     display: 'flex', flexDirection: 'column',
-                    alignItems: 'center', justifyContent: 'center',
-                    gap: 6,
+                    gap: 10,
                   }}
                 >
-                  <span style={{ fontSize: 22, opacity: 0.4 }}>＋</span>
-                  <span style={{ fontSize: 13, color: 'var(--text-faint)', fontFamily: 'DM Sans, sans-serif' }}>
-                    Start something new
-                  </span>
+                  <button
+                    onClick={() => setShowNewProjectModal(true)}
+                    className="project-card"
+                    style={{
+                      background: 'transparent', border: 'none', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', gap: 8,
+                      padding: '6px 4px', borderRadius: 6, width: '100%',
+                    }}
+                  >
+                    <span style={{ fontSize: 18, opacity: 0.4 }}>＋</span>
+                    <span style={{ fontSize: 13, color: 'var(--text-faint)', fontFamily: 'DM Sans, sans-serif' }}>Blank project</span>
+                  </button>
+                  <div style={{ borderTop: '1px solid var(--div)', paddingTop: 8 }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--meta)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Quick start</div>
+                    {[
+                      { icon: '🚀', label: 'SaaS Starter', key: 'saas-starter' },
+                      { icon: '🌟', label: 'Landing Page', key: 'landing-pro' },
+                      { icon: '🛠️', label: 'AI Chat App', key: 'ai-chat' },
+                    ].map(t => (
+                      <button
+                        key={t.key}
+                        onClick={() => setShowNewProjectModal(true)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', width: '100%' }}
+                      >
+                        <span style={{ fontSize: 12 }}>{t.icon}</span>
+                        <span style={{ fontSize: 12, color: 'var(--text-2)', fontFamily: 'DM Sans, sans-serif' }}>{t.label}</span>
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setShowNewProjectModal(true)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: 'var(--ochre)', fontFamily: 'DM Sans, sans-serif', padding: '6px 0 0', display: 'block', fontWeight: 600 }}>
+                      Browse all templates →
+                    </button>
+                  </div>
                 </div>
               </div>
             )}

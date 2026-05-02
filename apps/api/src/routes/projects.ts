@@ -7,6 +7,7 @@ import { generateProject } from '../services/project-generator';
 import { createZip, listFiles, getFile, uploadFile, deleteFile, deleteProject } from '../services/file-storage';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { createTwoFilesPatch } from 'diff';
+import { createProjectFromTemplate } from './templates';
 
 type Variables = { userId: string }
 const projects = new Hono<{ Variables: Variables }>();
@@ -71,6 +72,33 @@ projects.post('/', async (c) => {
   }
 
   return c.json(data, 201);
+});
+
+// POST /api/projects/from-template
+projects.post('/from-template', async (c) => {
+  const userId = c.get('userId');
+  const body = await c.req.json();
+
+  const schema = z.object({
+    templateId: z.string().uuid(),
+    projectName: z.string().min(1).max(100),
+    description: z.string().max(500).optional(),
+  });
+
+  const result = schema.safeParse(body);
+  if (!result.success) return c.json({ error: 'Invalid request' }, 400);
+
+  try {
+    const project = await createProjectFromTemplate(
+      userId,
+      result.data.templateId,
+      result.data.projectName,
+      result.data.description
+    );
+    return c.json(project, 201);
+  } catch (err) {
+    return c.json({ error: err instanceof Error ? err.message : 'Failed to create project' }, 400);
+  }
 });
 
 // Delete project
