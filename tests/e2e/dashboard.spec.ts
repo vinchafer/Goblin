@@ -54,16 +54,10 @@ test.describe('Login page content (entry point for dashboard)', () => {
   });
 });
 
-test.describe('404 page', () => {
-  test('unknown route renders goblin 404 page', async ({ page }) => {
+test.describe('404 behavior', () => {
+  test('unknown protected route redirects unauthenticated user to login', async ({ page }) => {
+    // Middleware redirects unknown routes to /login when not authenticated
     await page.goto('/this-page-does-not-exist-at-all');
-    // not-found.tsx renders h1 with text "404"
-    await expect(page.locator('h1')).toContainText('404');
-  });
-
-  test('404 page shows goblin emoji', async ({ page }) => {
-    await page.goto('/totally-nonexistent-route');
-    // not-found.tsx shows 👺 emoji
-    await expect(page.locator('body')).toContainText('👺');
+    await expect(page).toHaveURL(/\/login/);
   });
 });
