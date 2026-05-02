@@ -62,6 +62,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${fraunces.variable} ${dmSans.variable} ${jetbrainsMono.variable}`}>
       <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="mask-icon" href="/icons/icon-512.png" color="#2D4A2B" />
         {/* no-flash theme init — must run before first paint */}
         <script dangerouslySetInnerHTML={{ __html: `

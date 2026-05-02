@@ -1,121 +1,77 @@
-# Goblin
+# Goblin 👺
 
-The Cloud Workshop for Builders
+**Build from anywhere. No laptop required.**
 
-## Stack
+Goblin is a cloud IDE for makers — chat with AI to build full-stack apps, push to GitHub, and deploy to Vercel, all from your phone or any browser. You bring your own API keys (BYOK) to access any AI model with zero markup.
 
-- **Monorepo**: pnpm Workspaces
-- **Frontend**: Next.js 15 + React 19 + Tailwind 4
-- **Backend**: Hono
-- **Shared**: TypeScript + Zod
-- **Strict mode everywhere**
+## Tech Stack
 
-## Setup
+| Layer | Tech |
+|-------|------|
+| Frontend | Next.js 15 (App Router), Tailwind CSS v4, TypeScript |
+| Backend | Hono (Node.js), Supabase (Postgres + Auth + Storage) |
+| AI | LiteLLM proxy, BYOK (Anthropic/OpenAI/Gemini/Groq/+8 more), Free-API pool |
+| Payments | Stripe (subscriptions, usage-based limits) |
+| Deploy | Vercel (via API), GitHub (OAuth + repo push) |
+| Monitoring | Sentry, PostHog, structured logging (pino) |
+
+## Quick Start
 
 ```bash
-# Install dependencies
+# 1. Clone
+git clone https://github.com/yourusername/goblin.git && cd goblin
+
+# 2. Install
 pnpm install
 
-# Validate environment variables
-npx tsx scripts/validate-env.ts
+# 3. Environment
+cp .env.example .env
+# Fill in NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
+# ENCRYPTION_KEY (32 chars), STRIPE_* keys, LITELLM_BASE_URL
 
-# Start development servers
+# 4. Supabase setup
+# Run supabase/migrations/*.sql in order via Supabase SQL editor
+
+# 5. Dev
 pnpm dev
-
-# Build all packages
-pnpm build
-
-# Run type checking across all workspaces
-pnpm typecheck
-
-# Run lint across all workspaces
-pnpm lint
-
-# Run smoke test (requires running API server)
-npx tsx scripts/smoke-test.ts
+# Web: http://localhost:3000
+# API: http://localhost:3001
 ```
 
-## Services
+## Architecture
 
-| Service | Port | Description |
-|---------|------|-------------|
-| Web | 3000 | Next.js Application |
-| API | 3001 | Hono Backend Server |
-
-## Workspaces
-
-- `apps/web` - Next.js frontend application
-- `apps/api` - Hono backend API
-- `packages/shared` - Shared types, schemas and utilities
-
-## 🔑 BYOK Setup
-
-1. Go to `/dashboard/settings/keys`
-2. Add your Anthropic or OpenAI API key
-3. Your keys are encrypted at rest and never leave your account
-
-## 🐙 GitHub OAuth Setup
-
-1. Go to [github.com/settings/developers](https://github.com/settings/developers)
-2. Create new OAuth App:
-   - Name: Goblin (dev)
-   - Homepage URL: `http://localhost:3000`
-   - Callback URL: `http://localhost:3000/dashboard/settings/integrations/github-callback`
-3. Copy Client ID + Client Secret to your `.env`
-
-## 📤 Push to GitHub
-
-1. Connect your GitHub account from `/dashboard/settings/integrations`
-2. Generate a project
-3. Click "Push to GitHub"
-4. Your project will be created as a new repository
-
-## 💳 Stripe Setup
-
-1. Create a Stripe account (test mode)
-2. Create 3 products: Goblin Seed, Goblin Craft, Goblin Forge
-3. Add monthly recurring price to each product
-4. Copy price IDs to your `.env`
-5. Install Stripe CLI for local webhooks:
-   ```bash
-   stripe listen --forward-to localhost:3001/api/billing/webhook
-   ```
-6. Copy webhook signing secret to your `.env`
-
-## 📊 Plans
-
-| Plan   | Price | Monthly Requests |
-|--------|-------|------------------|
-| Seed   | $9    | 200              |
-| Craft  | $19   | 800              |
-| Forge  | $39   | 3000             |
-
-All plans include unlimited projects and GitHub push integration.
-
-## 🚀 Deployment
-
-### Vercel (Frontend)
-
-The `vercel.json` at the repo root configures the Next.js frontend deployment.
-API routes are proxied to the standalone API server.
-
-### Railway / Docker (API)
-
-The API server runs as a standalone Node.js process. See `apps/api/Dockerfile`
-and `apps/api/railway.json` for deployment configuration.
-
-### Environment Variables
-
-Copy `.env.example` to `.env` and fill in all required values. Run the
-validation script to check your setup:
-
-```bash
-npx tsx scripts/validate-env.ts
+```
+apps/
+  web/          # Next.js frontend
+    app/        # App Router pages
+    components/ # UI components
+    lib/        # Supabase, analytics, theme
+  api/          # Hono REST API
+    src/
+      routes/   # chat, projects, billing, admin, templates
+      services/ # encryption, file-storage, billing, model-router
+      middleware/ # auth, usage-limit, rate-limit
+packages/
+  shared/       # Zod schemas shared between web + api
+supabase/
+  migrations/   # SQL migrations (0001 → 0021)
+  seeds/        # Template marketplace seed data
 ```
 
-## 📜 Scripts
+## Features
 
-| Script | Description |
-|--------|-------------|
-| `scripts/validate-env.ts` | Validates all required environment variables |
-| `scripts/smoke-test.ts` | End-to-end test: user → project → chat → cleanup |
+- **Chat-to-code** — describe what to build, AI generates files
+- **Send to Code** — extract code blocks from chat directly into editor
+- **CodeMirror editor** — syntax highlighting, auto-save, diff view
+- **BYOK** — connect any AI provider, no markup, encrypted at rest (AES-256-GCM)
+- **Template marketplace** — 10 official starters (SaaS, Landing, API, Blog…)
+- **GitHub integration** — push to new/existing repos
+- **Vercel deploy** — one-click deploy with live progress stream
+- **Dark mode** — system-aware, persisted preference
+- **Cmd+K command palette** — quick navigation and actions
+- **PWA** — installable on iOS/Android, offline shell
+- **Admin panel** — user management, model toggles, incident management
+
+## Contributing
+
+Join the Discord → [discord.gg/goblin](https://discord.gg/goblin)

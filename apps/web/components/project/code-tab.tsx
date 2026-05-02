@@ -1,11 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useCallback, useState } from "react";
+import dynamic from "next/dynamic";
 import { useApp, type PendingInjection } from "@/contexts/app-context";
 import { createClient } from "@/lib/supabase/client";
 import { Code, FileText, MessageSquare, File as FileIcon, Menu } from "lucide-react";
 import { FileTree } from "./file-tree";
-import { CodeEditor } from "@/components/editor/code-editor";
+
+const CodeEditor = dynamic(
+  () => import("@/components/editor/code-editor").then(m => ({ default: m.CodeEditor })),
+  { ssr: false, loading: () => <div style={{ flex: 1, background: '#141a12', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4a6a4a', fontFamily: 'JetBrains Mono, monospace', fontSize: 13 }}>Loading editor…</div> }
+);
 import { SaveIndicator } from "@/components/editor/save-indicator";
 import { PushToGitHubModal } from "./push-to-github-modal";
 import { ConnectGitHubModal } from "./connect-github-modal";
