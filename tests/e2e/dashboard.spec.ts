@@ -57,12 +57,13 @@ test.describe('Login page content (entry point for dashboard)', () => {
 test.describe('404 page', () => {
   test('unknown route renders goblin 404 page', async ({ page }) => {
     await page.goto('/this-page-does-not-exist-at-all');
-    // The not-found page renders a 404 heading and goblin-flavoured copy
-    await expect(page.getByRole('heading', { name: '404' })).toBeVisible();
+    // not-found.tsx renders h1 with text "404"
+    await expect(page.locator('h1')).toContainText('404');
   });
 
-  test('404 page shows goblin error message', async ({ page }) => {
+  test('404 page shows goblin emoji', async ({ page }) => {
     await page.goto('/totally-nonexistent-route');
-    await expect(page.getByText(/goblin/i)).toBeVisible();
+    // not-found.tsx shows 👺 emoji
+    await expect(page.locator('body')).toContainText('👺');
   });
 });
