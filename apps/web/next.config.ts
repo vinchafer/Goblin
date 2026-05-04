@@ -5,7 +5,7 @@ const SUPABASE_HOST = process.env.NEXT_PUBLIC_SUPABASE_URL
   : '*.supabase.co';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ||
-  (process.env.NODE_ENV === 'production' ? 'https://api.justgoblin.com' : 'http://localhost:3001');
+  (process.env.NODE_ENV === 'production' ? 'https://goblinapi-production.up.railway.app' : 'http://localhost:3001');
 
 // Content-Security-Policy
 // Note: unsafe-inline required for Next.js inline styles; unsafe-eval required in dev.

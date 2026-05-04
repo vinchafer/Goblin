@@ -11,7 +11,7 @@ function getApiUrl(): string {
     if (process.env.NODE_ENV === 'production') {
       console.error('NEXT_PUBLIC_API_URL is not set in production!')
     }
-    return 'https://api.justgoblin.com'
+    return 'https://goblinapi-production.up.railway.app'
   }
   return url.replace(/\/$/, '')
 }
