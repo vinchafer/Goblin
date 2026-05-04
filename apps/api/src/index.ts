@@ -80,8 +80,7 @@ app.use('*', cors({
     
     const allowedOrigins = [
       'http://localhost:3000',
-      'https://goblin-web.vercel.app',
-      'https://goblin-web-git-*.vercel.app',
+      'https://*.vercel.app',
       'https://justgoblin.com',
       'https://www.justgoblin.com',
       process.env.NEXT_PUBLIC_APP_URL
