@@ -32,7 +32,8 @@ export function GenerationProgress({ projectId, byokKeyId, prompt, onComplete }:
           throw new Error('Not authenticated');
         }
 
-        const response = await fetch(`/api/projects/${projectId}/generate`, {
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://goblinapi-production.up.railway.app';
+        const response = await fetch(`${apiUrl}/api/projects/${projectId}/generate`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

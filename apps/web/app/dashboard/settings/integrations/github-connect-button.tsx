@@ -8,20 +8,22 @@ interface GitHubConnectButtonProps {
   username?: string | null;
 }
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://goblinapi-production.up.railway.app';
+
 export function GitHubConnectButton({ connected, username }: GitHubConnectButtonProps) {
   const [loading, setLoading] = useState(false);
   const supabase = createClient();
 
   async function handleConnect() {
     setLoading(true);
-    
+
     try {
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
 
       if (!token) return;
 
-      const response = await fetch('/api/github/connect', {
+      const response = await fetch(`${API_URL}/api/github/connect`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -46,7 +48,7 @@ export function GitHubConnectButton({ connected, username }: GitHubConnectButton
 
       if (!token) return;
 
-      await fetch('/api/github/disconnect', {
+      await fetch(`${API_URL}/api/github/disconnect`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
