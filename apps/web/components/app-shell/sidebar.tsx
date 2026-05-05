@@ -1,6 +1,7 @@
 'use client';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/contexts/app-context';
+import { UsageIndicators } from './usage-indicators';
 
 interface Project {
   id: string;
@@ -19,8 +20,6 @@ interface SidebarProps {
   onClose?: () => void;
 }
 
-const COLORS = ['var(--ochre-dark)', '#4a7c3b', '#7a4a8a', '#3a6b8a', '#8a3a3a', '#4a7a7a'];
-
 function timeAgo(dateStr?: string): string {
   if (!dateStr) return '';
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -29,6 +28,18 @@ function timeAgo(dateStr?: string): string {
   if (h < 1) return 'now';
   if (h < 24) return `${h}h`;
   return `${d}d`;
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{
+      fontSize: 10, fontWeight: 600, letterSpacing: '1.5px',
+      textTransform: 'uppercase', color: 'var(--meta)',
+      marginBottom: 6, padding: '0 4px',
+    }}>
+      {children}
+    </div>
+  );
 }
 
 export function Sidebar({ projects = [], activeProjectId, onProjectSelect, isOpen = true, onClose }: SidebarProps) {
@@ -48,8 +59,8 @@ export function Sidebar({ projects = [], activeProjectId, onProjectSelect, isOpe
         className={`goblin-sidebar${isOpen ? ' goblin-sidebar-open' : ''}`}
         style={{
           width: 220,
-          background: '#f7f3ec',
-          borderRight: '1px solid #e4ddd2',
+          background: 'var(--cream)',
+          borderRight: '1px solid var(--div)',
           display: 'flex',
           flexDirection: 'column',
           flexShrink: 0,
@@ -63,35 +74,34 @@ export function Sidebar({ projects = [], activeProjectId, onProjectSelect, isOpe
           <div />
         </div>
 
-        {/* ── Projects ── */}
-        <div style={{ padding: 12, borderBottom: '1px solid #e4ddd2', flexShrink: 0 }}>
+        {/* ── New Project ── */}
+        <div style={{ padding: 12, borderBottom: '1px solid var(--div)', flexShrink: 0 }}>
           <button
             onClick={() => { setShowNewProjectModal(true); onClose?.(); }}
             style={{
               width: '100%', background: 'var(--moss)', color: '#fff', border: 'none',
-              borderRadius: 8, padding: '8px 12px', fontSize: 12, fontWeight: 500,
+              borderRadius: 8, padding: '8px 12px', fontSize: 12, fontWeight: 600,
               cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6,
-              marginBottom: 12, fontFamily: 'DM Sans, sans-serif', transition: 'background 0.15s',
-              minHeight: 36,
+              marginBottom: 14, fontFamily: 'DM Sans, sans-serif', transition: 'background 0.15s',
+              minHeight: 36, letterSpacing: '0.1px',
             }}
             onMouseEnter={e => (e.currentTarget.style.background = 'var(--moss-2)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'var(--moss)')}
           >
-            <span style={{ fontSize: 16, lineHeight: 1, flexShrink: 0 }}>＋</span>
+            <span style={{ fontSize: 15, lineHeight: 1, flexShrink: 0, marginTop: -1 }}>+</span>
             New Project
           </button>
 
-          <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', color: '#6B6B6B', marginBottom: 8, padding: '0 4px' }}>
-            PROJECTS
-          </div>
+          <SectionLabel>Projects</SectionLabel>
 
           {projects.length === 0 ? (
-            <div style={{ padding: '10px 8px', fontSize: 12, color: '#6b6560', fontStyle: 'italic' }}>
+            <div style={{ padding: '8px 8px', fontSize: 12, color: 'var(--meta)', fontStyle: 'italic' }}>
               No projects yet
             </div>
           ) : (
-            projects.map((p, i) => {
+            projects.map(p => {
               const active = activeProjectId === p.id;
+              const dotColor = p.color ?? 'var(--ochre)';
               return (
                 <div
                   key={p.id}
@@ -99,76 +109,62 @@ export function Sidebar({ projects = [], activeProjectId, onProjectSelect, isOpe
                   style={{
                     display: 'flex', alignItems: 'center', gap: 8,
                     padding: '7px 8px', borderRadius: 7, cursor: 'pointer', marginBottom: 2,
-                    background: active ? 'rgba(201,147,58,0.1)' : 'transparent',
-                    border: active ? '1px solid rgba(201,147,58,0.2)' : '1px solid transparent',
+                    background: active ? 'rgba(212,169,74,0.1)' : 'transparent',
+                    border: active ? '1px solid rgba(212,169,74,0.2)' : '1px solid transparent',
                     transition: 'all 0.1s',
                     minHeight: 32,
                   }}
                   onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0.04)'; }}
                   onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                 >
-                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: COLORS[i % COLORS.length], flexShrink: 0 }} />
-                  <span style={{ fontSize: 12, fontWeight: 500, color: '#1a1a1a', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
-                  <span style={{ fontSize: 10, color: '#6b6560', flexShrink: 0 }}>{timeAgo(p.updated_at ?? p.last_active)}</span>
+                  <div style={{ width: 7, height: 7, borderRadius: '50%', background: dotColor, flexShrink: 0 }} />
+                  <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{p.name}</span>
+                  <span style={{ fontSize: 10, color: 'var(--meta)', flexShrink: 0 }}>{timeAgo(p.updated_at ?? p.last_active)}</span>
                 </div>
               );
             })
           )}
         </div>
 
-        {/* ── Build Status ── */}
-        {/* Only shown when there's an active deploy in the last 10 minutes */}
-        {/* For now, we don't have project data, so we'll hide it */}
-        {/* 
-        <div style={{ padding: 12, borderBottom: '1px solid #e4ddd2', flexShrink: 0 }}>
-          <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', color: '#6b6560', marginBottom: 10 }}>
-            Build
-          </div>
-          <div style={{ padding: '8px 0', fontSize: 11, color: '#6b6560', fontStyle: 'italic' }}>
-            No active deployments
+        {/* ── Recent Chats ── */}
+        <div style={{ padding: 12, borderBottom: '1px solid var(--div)', flexShrink: 0 }}>
+          <SectionLabel>Recent Chats</SectionLabel>
+          <div style={{ padding: '6px 8px', fontSize: 12, color: 'var(--meta)', fontStyle: 'italic' }}>
+            No chats yet
           </div>
         </div>
-        */}
 
-        {/* ── Model Routing ── */}
-        <div style={{ padding: 12, marginTop: 'auto', borderTop: '1px solid #e4ddd2', flexShrink: 0 }}>
-          <div style={{ fontSize: 9, fontWeight: 600, letterSpacing: '1.5px', textTransform: 'uppercase', color: '#6b6560', marginBottom: 10 }}>
-            Model Routing
+        {/* ── Usage ── */}
+        <div style={{ borderBottom: '1px solid var(--div)', flexShrink: 0 }}>
+          <div style={{ padding: '12px 12px 0' }}>
+            <SectionLabel>Usage</SectionLabel>
           </div>
+          <UsageIndicators />
+        </div>
+
+        {/* ── Bottom Links ── */}
+        <div style={{ padding: '8px 12px', marginTop: 'auto', flexShrink: 0 }}>
           {[
-            { label: 'Goblin Hosted', color: 'var(--ochre-dark)', active: true },
-            { label: 'Free-API Pool', color: '#4a7c3b', active: true },
-            { label: 'BYOK · Anthropic', color: '#4a7c3b', active: true },
-            { label: 'BYOK · OpenAI', color: '#e4ddd2', active: false },
-          ].map(item => (
-            <div key={item.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-              <span style={{ fontSize: 11, color: '#6b6560', fontFamily: 'DM Sans, sans-serif' }}>{item.label}</span>
-              <div style={{
-                width: 7, height: 7, borderRadius: '50%',
-                background: item.color,
-                boxShadow: item.active ? `0 0 4px ${item.color}` : 'none',
-              }} />
-            </div>
+            { label: 'Billing', path: '/dashboard/settings/billing' },
+            { label: 'Settings', path: '/dashboard/settings' },
+          ].map(({ label, path }) => (
+            <button
+              key={path}
+              onClick={() => { router.push(path); onClose?.(); }}
+              style={{
+                width: '100%', background: 'none', border: 'none',
+                padding: '7px 8px', borderRadius: 7, fontSize: 12,
+                color: 'var(--meta)', cursor: 'pointer',
+                textAlign: 'left', fontFamily: 'DM Sans, sans-serif',
+                minHeight: 32, transition: 'background 0.1s',
+                display: 'block',
+              }}
+              onMouseEnter={e => { (e.currentTarget.style.background = 'rgba(0,0,0,0.04)'); (e.currentTarget.style.color = 'var(--text)'); }}
+              onMouseLeave={e => { (e.currentTarget.style.background = 'none'); (e.currentTarget.style.color = 'var(--meta)'); }}
+            >
+              {label}
+            </button>
           ))}
-        </div>
-
-        {/* ── Settings ── */}
-        <div style={{ padding: 12, borderTop: '1px solid #e4ddd2', flexShrink: 0 }}>
-          <button
-            onClick={() => { router.push('/dashboard/settings'); onClose?.(); }}
-            style={{
-              width: '100%', background: 'none', border: 'none',
-              padding: '8px 8px', borderRadius: 7, fontSize: 12,
-              color: '#6b6560', cursor: 'pointer',
-              textAlign: 'left', display: 'flex', alignItems: 'center',
-              gap: 8, fontFamily: 'DM Sans, sans-serif', minHeight: 36,
-              transition: 'background 0.1s',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.04)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'none')}
-          >
-            ⚙ Settings
-          </button>
         </div>
       </aside>
 
@@ -183,7 +179,7 @@ export function Sidebar({ projects = [], activeProjectId, onProjectSelect, isOpe
             max-height: 82dvh;
             border-radius: 18px 18px 0 0;
             border-right: none !important;
-            border-top: 1px solid #e4ddd2;
+            border-top: 1px solid var(--div);
             transform: translateY(100%);
             z-index: 41;
             overflow-y: auto;
@@ -209,7 +205,7 @@ export function Sidebar({ projects = [], activeProjectId, onProjectSelect, isOpe
         .goblin-sidebar-handle div {
           width: 36px; height: 4px;
           border-radius: 2px;
-          background: #c8c0b4;
+          background: var(--border);
         }
       `}</style>
     </>

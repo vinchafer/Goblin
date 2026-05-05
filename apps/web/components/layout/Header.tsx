@@ -204,9 +204,9 @@ export function Header({
                 </div>
               )}
               {[
-                { label: '🔑 API Keys', path: '/dashboard/settings/keys' },
-                { label: '💳 Billing', path: '/dashboard/settings/billing' },
-                { label: '⚙️ Settings', path: '/dashboard/settings' },
+                { label: 'API Keys', path: '/dashboard/settings/keys' },
+                { label: 'Billing',  path: '/dashboard/settings/billing' },
+                { label: 'Settings', path: '/dashboard/settings' },
               ].map(item => (
                 <button
                   key={item.path}
@@ -239,7 +239,7 @@ export function Header({
                 onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'none')}
               >
-                🚪 Sign out
+                Sign out
               </button>
             </div>
           </>

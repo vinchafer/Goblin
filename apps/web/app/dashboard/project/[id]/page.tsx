@@ -21,14 +21,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   }
 
   return (
-    <div className="h-full">
-      <div className="px-6 py-4 border-b" style={{ borderColor: 'var(--goblin-light)' }}>
-        <h1 className="text-xl font-semibold" style={{ color: 'var(--goblin-slate)' }}>{project.name}</h1>
-        {project.description && (
-          <p className="text-sm mt-1" style={{ color: 'var(--goblin-gray)' }}>{project.description}</p>
-        )}
-      </div>
-
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <ProjectWorkspace projectId={id} projectName={project.name} previewUrl={project.preview_url} />
     </div>
   );

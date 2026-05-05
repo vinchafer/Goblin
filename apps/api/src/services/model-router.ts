@@ -182,7 +182,7 @@ export async function resolveModel(
 
 interface StreamCompletionParams {
   userId: string;
-  projectId: string;
+  projectId?: string | null;
   message: string;
   chatHistory: Array<{ role: string; content: string }>;
   modelPreference?: string;

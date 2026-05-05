@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { File, Folder, ChevronRight, ChevronDown, Download } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
@@ -160,7 +159,7 @@ export function FileTree({ projectId, files, onFileClick, onFilesChanged }: File
         {/* Inline new file input at root */}
         {inlineInput?.mode === 'new-file' && inlineInput.parentPath === '' && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 8px 2px 20px' }}>
-            <span style={{ fontSize: 12 }}>📄</span>
+            <span style={{ width: 12, flexShrink: 0 }} />
             <input
               ref={inputRef}
               value={inputValue}
@@ -355,18 +354,9 @@ function renderTreeNode(
             onMouseEnter={e => (e.currentTarget.style.background = 'rgba(138,170,133,0.08)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
           >
-            {isFolder ? (
-              expanded.has(fullPath)
-                ? <ChevronDown size={12} style={{ flexShrink: 0 }} />
-                : <ChevronRight size={12} style={{ flexShrink: 0 }} />
-            ) : (
-              <span style={{ width: 12, flexShrink: 0 }} />
-            )}
-
-            {isFolder
-              ? <Folder size={13} style={{ color: '#c9933a', flexShrink: 0 }} />
-              : <File size={13} style={{ color: '#6b8a6b', flexShrink: 0 }} />
-            }
+            <span style={{ width: 12, flexShrink: 0, fontSize: 9, color: '#6b8a6b', display: 'inline-flex', alignItems: 'center' }}>
+              {isFolder ? (expanded.has(fullPath) ? '▾' : '▸') : ''}
+            </span>
 
             {isRenaming ? (
               <input
@@ -397,7 +387,6 @@ function renderTreeNode(
           {inlineInput?.mode === 'new-file' && inlineInput.parentPath === fullPath && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 4, padding: `2px 8px 2px ${8 + (depth + 1) * 12}px` }}>
               <span style={{ width: 12 }} />
-              <File size={13} style={{ color: '#6b8a6b', flexShrink: 0 }} />
               <input
                 autoFocus
                 value={inputValue}

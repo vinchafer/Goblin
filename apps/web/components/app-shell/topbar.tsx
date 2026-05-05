@@ -262,17 +262,17 @@ export function Topbar({
               )}
 
               <MenuItem onClick={() => { router.push('/dashboard/settings/keys'); setMenuOpen(false); }}>
-                🔑 API Keys
+                API Keys
               </MenuItem>
               <MenuItem onClick={() => { router.push('/dashboard/settings'); setMenuOpen(false); }}>
-                ⚙️ Settings
+                Settings
               </MenuItem>
               <MenuItem onClick={() => { router.push('/dashboard/settings/billing'); setMenuOpen(false); }}>
-                💳 Billing
+                Billing
               </MenuItem>
               <div style={{ height: 1, background: '#2d5229', margin: '4px 8px' }} />
               <MenuItem onClick={handleSignOut}>
-                🚪 Sign out
+                Sign out
               </MenuItem>
             </div>
           </>

@@ -2,13 +2,12 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { ReactNode } from 'react';
-import { User, Key, GitBranch, CreditCard } from 'lucide-react';
 
 const NAV_ITEMS = [
-  { href: '/dashboard/settings',              label: 'Account',      icon: User, size: 16 },
-  { href: '/dashboard/settings/keys',         label: 'API Keys',     icon: Key, size: 16 },
-  { href: '/dashboard/settings/integrations', label: 'Integrations', icon: GitBranch, size: 16 },
-  { href: '/dashboard/settings/billing',      label: 'Billing',      icon: CreditCard, size: 16 },
+  { href: '/dashboard/settings',              label: 'Account' },
+  { href: '/dashboard/settings/keys',         label: 'API Keys' },
+  { href: '/dashboard/settings/integrations', label: 'Integrations' },
+  { href: '/dashboard/settings/billing',      label: 'Billing' },
 ];
 
 export function SettingsLayout({ children }: { children: ReactNode }) {
@@ -43,24 +42,22 @@ export function SettingsLayout({ children }: { children: ReactNode }) {
 
         {NAV_ITEMS.map(item => {
           const active = pathname === item.href;
-          const IconComponent = item.icon;
           return (
             <Link
               key={item.href}
               href={item.href}
               style={{
-                display: 'flex', alignItems: 'center', gap: 10,
-                padding: '10px 16px', fontSize: 13, fontWeight: 500,
+                display: 'flex', alignItems: 'center',
+                padding: '10px 16px', fontSize: 13, fontWeight: active ? 600 : 500,
                 textDecoration: 'none', transition: 'all 0.12s',
                 color: active ? 'var(--moss)' : 'var(--meta)',
-                background: active ? 'rgba(30,58,28,0.06)' : 'transparent',
-                borderLeft: active ? '2px solid var(--moss)' : '2px solid transparent',
+                background: active ? 'rgba(45,74,43,0.06)' : 'transparent',
+                borderLeft: active ? '3px solid var(--ochre)' : '3px solid transparent',
                 minHeight: 40,
               }}
               onMouseEnter={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0.03)'; (e.currentTarget as HTMLElement).style.color = 'var(--text)'; } }}
               onMouseLeave={e => { if (!active) { (e.currentTarget as HTMLElement).style.background = 'transparent'; (e.currentTarget as HTMLElement).style.color = 'var(--meta)'; } }}
             >
-              <IconComponent size={item.size} style={{ opacity: active ? 1 : 0.6 }} />
               {item.label}
             </Link>
           );

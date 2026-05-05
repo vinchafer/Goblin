@@ -9,27 +9,45 @@ interface UsageData {
   monthly_limit: number;
 }
 
-const PROVIDER_ROWS = [
-  { key: "goblin", label: "Goblin Hosted", type: "hosted" },
-  { key: "freeApiPool", label: "Free-API Pool", type: "free" },
-  { key: "anthropic", label: "BYOK Anthropic", type: "byok" },
-  { key: "openai", label: "BYOK OpenAI", type: "byok" },
-] as const;
-
-type StatusDot = "ochre" | "green" | "gray";
-
-function Dot({ status }: { status: StatusDot }) {
-  const color =
-    status === "ochre"
-      ? "var(--goblin-ochre)"
-      : status === "green"
-      ? "#22c55e"
-      : "rgba(0,0,0,0.2)";
+function UsageBar({ label, used, total, color }: {
+  label: string;
+  used: number;
+  total: number;
+  color: 'ochre' | 'green' | 'grey';
+}) {
+  const pct = Math.min((used / total) * 100, 100);
+  const barColor = color === 'ochre' ? 'var(--ochre)'
+                 : color === 'green' ? 'var(--success)'
+                 : '#ccc';
   return (
-    <span
-      className="w-1.5 h-1.5 rounded-full shrink-0"
-      style={{ backgroundColor: color, display: "inline-block" }}
-    />
+    <div style={{ marginBottom: 8 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'var(--meta)', marginBottom: 3 }}>
+        <span>{label}</span>
+        <span>{used}/{total}</span>
+      </div>
+      <div style={{ height: 3, background: 'var(--div)', borderRadius: 2 }}>
+        <div style={{
+          height: '100%',
+          width: `${pct}%`,
+          background: barColor,
+          borderRadius: 2,
+          transition: 'width 0.3s ease',
+        }} />
+      </div>
+    </div>
+  );
+}
+
+function StatusRow({ label, active }: { label: string; active: boolean }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+      <span style={{ fontSize: 11, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif' }}>{label}</span>
+      <div style={{
+        width: 6, height: 6, borderRadius: '50%',
+        background: active ? 'var(--success)' : 'var(--div)',
+        boxShadow: active ? '0 0 4px var(--success)' : 'none',
+      }} />
+    </div>
   );
 }
 
@@ -58,82 +76,40 @@ export function UsageIndicators() {
       }
     }
     fetchData();
-  }, [supabase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const pct = usage
-    ? Math.min(100, (usage.monthly_requests_used / usage.monthly_limit) * 100)
-    : 0;
+  if (loading) {
+    return (
+      <div style={{ padding: '8px 12px 12px' }}>
+        {[1, 2, 3].map(i => (
+          <div key={i} style={{ height: 12, borderRadius: 4, background: 'var(--div)', marginBottom: 8 }} className="skeleton" />
+        ))}
+      </div>
+    );
+  }
 
-  const getStatus = (_key: string, type: string): StatusDot => {
-    if (type === "hosted") return "gray";
-    if (type === "free") return "green";
-    if (type === "byok") return "gray";
-    return "gray";
-  };
+  if (!usage) {
+    return (
+      <div style={{ padding: '8px 12px 12px', fontSize: 11, color: 'var(--meta)', fontStyle: 'italic' }}>
+        Connect a model to see usage
+      </div>
+    );
+  }
+
+  const pct = Math.min(100, (usage.monthly_requests_used / usage.monthly_limit) * 100);
 
   return (
-    <div
-      className="px-3 py-3 border-t"
-      style={{ borderColor: "var(--goblin-border)" }}
-    >
-      <span
-        className="text-[10px] font-medium uppercase tracking-widest mb-2 block"
-        style={{ color: "var(--goblin-meta)", fontFamily: "var(--font-dm-sans)" }}
-      >
-        Usage
-      </span>
-
-      {loading ? (
-        <div className="space-y-2">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-4 rounded animate-pulse" style={{ backgroundColor: "var(--goblin-border)" }} />
-          ))}
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {/* Monthly requests bar */}
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <span
-                className="text-[11px]"
-                style={{ color: "var(--goblin-bark)", fontFamily: "var(--font-dm-sans)" }}
-              >
-                Monthly
-              </span>
-              <span
-                className="text-[10px]"
-                style={{ color: "var(--goblin-meta)", fontFamily: "var(--font-dm-sans)" }}
-              >
-                {usage?.monthly_requests_used ?? 0}/{usage?.monthly_limit ?? 200}
-              </span>
-            </div>
-            <div className="h-1 rounded-full" style={{ backgroundColor: "var(--goblin-border)" }}>
-              <div
-                className="h-full rounded-full transition-all duration-300"
-                style={{
-                  width: `${pct}%`,
-                  backgroundColor: pct > 90 ? "var(--goblin-warn)" : "var(--goblin-moss)"
-                }}
-              />
-            </div>
-          </div>
-
-          {/* Provider status dots */}
-          <div className="space-y-1 pt-1">
-            {PROVIDER_ROWS.map(({ key, label, type }) => (
-              <div key={key} className="flex items-center gap-2">
-                <Dot status={getStatus(key, type)} />
-                <span
-                  className="text-[11px]"
-                  style={{ color: "var(--goblin-meta)", fontFamily: "var(--font-dm-sans)" }}
-                >
-                  {label}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+    <div style={{ padding: '8px 12px 12px' }}>
+      <UsageBar
+        label="Monthly requests"
+        used={usage.monthly_requests_used}
+        total={usage.monthly_limit}
+        color={pct > 85 ? 'ochre' : 'green'}
+      />
+      <StatusRow label="Free-API Pool" active={true} />
+      <StatusRow label="BYOK · Anthropic" active={false} />
+      <StatusRow label="BYOK · OpenAI" active={false} />
     </div>
   );
 }

@@ -68,6 +68,7 @@ import { deploy } from './routes/deploy';
 import { builds } from './routes/builds';
 import { users } from './routes/users';
 import { templates } from './routes/templates';
+import { chatSessions } from './routes/chat-sessions';
 
 const app = new Hono();
 
@@ -125,6 +126,37 @@ app.onError((err, c) => {
 });
 
 app.route('/health', health);
+
+// Temporary debug endpoint — remove after production issues are resolved
+app.get('/api/debug', async (c) => {
+  const { checkStorageConnection } = await import('./services/file-storage.js');
+
+  const [storageOk, supabaseOk] = await Promise.all([
+    checkStorageConnection().catch(() => false),
+    (async () => {
+      try {
+        const { getSupabaseAdmin } = await import('./lib/supabase.js');
+        const { error } = await getSupabaseAdmin().from('projects').select('id').limit(1);
+        return !error;
+      } catch { return false; }
+    })(),
+  ]);
+
+  return c.json({
+    storage: storageOk,
+    supabase: supabaseOk,
+    env: {
+      hasSupabaseUrl: !!(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL),
+      hasServiceRoleKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+      hasStorageEndpoint: !!process.env.STORAGE_ENDPOINT,
+      hasStorageKey: !!process.env.STORAGE_KEY,
+      hasStorageBucket: !!process.env.STORAGE_BUCKET,
+      hasEncryptionKey: !!process.env.ENCRYPTION_KEY,
+      storageEndpoint: process.env.STORAGE_ENDPOINT ?? null,
+    },
+  });
+});
+
 app.route('/api/chat', chat);
 app.route('/api/byok-keys', byok);
 app.route('/api/projects', projects);
@@ -138,6 +170,7 @@ app.route('/api/deploy', deploy);
 app.route('/api/builds', builds);
 app.route('/api/users', users);
 app.route('/api/templates', templates);
+app.route('/api/chat-sessions', chatSessions);
 
 process.on('uncaughtException', (err) => {
   console.error('[FATAL] Uncaught exception:', err);

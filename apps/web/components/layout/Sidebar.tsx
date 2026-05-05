@@ -1,8 +1,16 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useApp } from '@/contexts/app-context';
+import { createClient } from '@/lib/supabase/client';
+import { apiGet } from '@/lib/api';
+
+interface ChatSession {
+  id: string;
+  title: string | null;
+  updated_at: string;
+}
 
 interface Project {
   id: string;
@@ -38,15 +46,6 @@ function timeAgo(dateStr?: string): string {
   if (h < 24) return `${h}h`;
   if (d < 30) return `${d}d`;
   return `${Math.floor(d / 30)}mo`;
-}
-
-function GearIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-      <circle cx="12" cy="12" r="3"/>
-      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-    </svg>
-  );
 }
 
 function ChevronLeft({ small }: { small?: boolean }) {
@@ -306,52 +305,40 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
           )}
         </div>
 
+        {/* ── Recent Chats ── */}
+        {!collapsed && <RecentChats pathname={pathname} navigate={navigate} />}
+
         {/* ── Bottom Nav ── */}
         <div style={{
           padding: collapsed ? '8px' : '8px 12px',
           borderTop: '1px solid #DDD7CC', flexShrink: 0,
           display: 'flex', flexDirection: 'column', gap: 2,
         }}>
-          <button
-            onClick={() => navigate('/dashboard/billing')}
-            title="Billing"
-            style={{
-              width: '100%', background: 'none', border: 'none',
-              padding: collapsed ? '8px 0' : '8px',
-              borderRadius: 7, fontSize: 12,
-              color: '#6B6560', cursor: 'pointer',
-              display: 'flex', alignItems: 'center',
-              gap: collapsed ? 0 : 7,
-              justifyContent: collapsed ? 'center' : 'flex-start',
-              fontFamily: 'DM Sans, sans-serif',
-              minHeight: 36, transition: 'background 0.1s',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.05)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'none')}
-          >
-            <span style={{ fontSize: 14 }}>💳</span>
-            {!collapsed && 'Billing'}
-          </button>
-          <button
-            onClick={() => navigate('/dashboard/settings')}
-            title="Settings"
-            style={{
-              width: '100%', background: 'none', border: 'none',
-              padding: collapsed ? '8px 0' : '8px',
-              borderRadius: 7, fontSize: 12,
-              color: '#6B6560', cursor: 'pointer',
-              display: 'flex', alignItems: 'center',
-              gap: collapsed ? 0 : 7,
-              justifyContent: collapsed ? 'center' : 'flex-start',
-              fontFamily: 'DM Sans, sans-serif',
-              minHeight: 36, transition: 'background 0.1s',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.05)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'none')}
-          >
-            <GearIcon />
-            {!collapsed && 'Settings'}
-          </button>
+          {[
+            { label: 'Billing',  path: '/dashboard/settings/billing' },
+            { label: 'Settings', path: '/dashboard/settings' },
+          ].map(({ label, path }) => (
+            <button
+              key={path}
+              onClick={() => navigate(path)}
+              title={label}
+              style={{
+                width: '100%', background: 'none', border: 'none',
+                padding: collapsed ? '8px 0' : '8px',
+                borderRadius: 7, fontSize: 12,
+                color: '#6B6560', cursor: 'pointer',
+                display: 'flex', alignItems: 'center',
+                justifyContent: collapsed ? 'center' : 'flex-start',
+                fontFamily: 'DM Sans, sans-serif',
+                minHeight: 36, transition: 'background 0.1s',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.05)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+            >
+              {!collapsed && label}
+              {collapsed && <span style={{ fontSize: 10, fontWeight: 600 }}>{label.slice(0, 2)}</span>}
+            </button>
+          ))}
         </div>
       </aside>
 
@@ -469,32 +456,30 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
           </div>
         </div>
 
+        {/* Recent Chats mobile */}
+        <RecentChats pathname={pathname} navigate={navigate} />
+
         {/* Bottom nav mobile */}
         <div style={{ padding: '8px 12px', borderTop: '1px solid #DDD7CC', flexShrink: 0, display: 'flex', gap: 8 }}>
-          <button
-            onClick={() => navigate('/dashboard/billing')}
-            style={{
-              flex: 1, background: 'none', border: 'none',
-              padding: '8px', borderRadius: 7, fontSize: 12,
-              color: '#6B6560', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              fontFamily: 'DM Sans, sans-serif', minHeight: 36,
-            }}
-          >
-            <span style={{ fontSize: 14 }}>💳</span> Billing
-          </button>
-          <button
-            onClick={() => navigate('/dashboard/settings')}
-            style={{
-              flex: 1, background: 'none', border: 'none',
-              padding: '8px', borderRadius: 7, fontSize: 12,
-              color: '#6B6560', cursor: 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-              fontFamily: 'DM Sans, sans-serif', minHeight: 36, transition: 'background 0.1s',
-            }}
-          >
-            <GearIcon /> Settings
-          </button>
+          {[
+            { label: 'Billing',  path: '/dashboard/settings/billing' },
+            { label: 'Settings', path: '/dashboard/settings' },
+          ].map(({ label, path }) => (
+            <button
+              key={path}
+              onClick={() => navigate(path)}
+              style={{
+                flex: 1, background: 'none', border: 'none',
+                padding: '8px', borderRadius: 7, fontSize: 12,
+                color: '#6B6560', cursor: 'pointer',
+                fontFamily: 'DM Sans, sans-serif', minHeight: 36, transition: 'background 0.1s',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.05)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+            >
+              {label}
+            </button>
+          ))}
         </div>
       </aside>
 
@@ -503,5 +488,129 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
         @media (max-width: 768px) { .goblin-sidebar-desktop { display: none !important; } }
       `}</style>
     </>
+  );
+}
+
+// ─── Recent Chats ─────────────────────────────────────────────────────────────
+
+function RecentChats({ pathname, navigate }: { pathname: string; navigate: (path: string) => void }) {
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
+  const [loading, setLoading] = useState(true);
+  const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
+
+  const loadSessions = useCallback(async () => {
+    try {
+      const data = await apiGet<ChatSession[]>('/api/chat-sessions');
+      setSessions(data.slice(0, 5));
+    } catch {
+      setSessions([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadSessions(); }, [loadSessions]);
+
+  const handleNewChat = async () => {
+    try {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) return;
+      const res = await fetch(`${apiBase}/api/chat-sessions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({}),
+      });
+      if (res.ok) {
+        const s = await res.json() as { id: string };
+        navigate(`/dashboard/chat/${s.id}`);
+        loadSessions();
+      }
+    } catch { /* ignore */ }
+  };
+
+  function timeAgoShort(dateStr: string): string {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const h = Math.floor(diff / 3600000);
+    const d = Math.floor(diff / 86400000);
+    if (h < 1) return 'now';
+    if (h < 24) return `${h}h`;
+    return `${d}d`;
+  }
+
+  return (
+    <div style={{ borderTop: '1px solid #DDD7CC', padding: '8px 0 0' }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 16px 6px' }}>
+        <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '1.2px', textTransform: 'uppercase', color: '#9C9589' }}>
+          Recent Chats
+        </span>
+        <button
+          onClick={handleNewChat}
+          title="New chat"
+          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: '#9C9589', padding: '0 2px', lineHeight: 1, display: 'flex', alignItems: 'center' }}
+          onMouseEnter={e => (e.currentTarget.style.color = '#2D4A2B')}
+          onMouseLeave={e => (e.currentTarget.style.color = '#9C9589')}
+        >
+          +
+        </button>
+      </div>
+
+      <div style={{ padding: '0 8px 8px' }}>
+        {loading ? (
+          [1, 2].map(i => (
+            <div key={i} style={{ height: 28, borderRadius: 6, background: '#EDE8DC', marginBottom: 2, animation: 'pulse 1.5s ease infinite' }} />
+          ))
+        ) : sessions.length === 0 ? (
+          <div style={{ padding: '4px 8px', fontSize: 12, color: '#9C9589', fontStyle: 'italic', fontFamily: 'DM Sans, sans-serif' }}>
+            No chats yet
+          </div>
+        ) : (
+          <>
+            {sessions.map(s => {
+              const active = pathname.includes(s.id);
+              return (
+                <div
+                  key={s.id}
+                  onClick={() => navigate(`/dashboard/chat/${s.id}`)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '6px 8px', borderRadius: 6, cursor: 'pointer', marginBottom: 1,
+                    background: active ? 'rgba(212,169,74,0.1)' : 'transparent',
+                    borderLeft: active ? '2px solid var(--ochre)' : '2px solid transparent',
+                    transition: 'all 0.1s',
+                  }}
+                  onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0.04)'; }}
+                  onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                >
+                  <span style={{
+                    fontSize: 12, color: active ? '#2D4A2B' : '#2A2A2A',
+                    flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                    fontFamily: 'DM Sans, sans-serif', fontWeight: active ? 600 : 400,
+                  }}>
+                    {s.title || 'New chat'}
+                  </span>
+                  <span style={{ fontSize: 10, color: '#9C9589', flexShrink: 0 }}>
+                    {timeAgoShort(s.updated_at)}
+                  </span>
+                </div>
+              );
+            })}
+            {sessions.length === 5 && (
+              <button
+                onClick={() => navigate('/dashboard/chat')}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: '#9C9589', padding: '4px 8px', fontFamily: 'DM Sans, sans-serif', width: '100%', textAlign: 'left' }}
+                onMouseEnter={e => (e.currentTarget.style.color = '#2D4A2B')}
+                onMouseLeave={e => (e.currentTarget.style.color = '#9C9589')}
+              >
+                See all chats →
+              </button>
+            )}
+          </>
+        )}
+      </div>
+      <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}`}</style>
+    </div>
   );
 }

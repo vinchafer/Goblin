@@ -4,7 +4,6 @@ import { useEffect, useRef, useCallback, useState } from "react";
 import dynamic from "next/dynamic";
 import { useApp, type PendingInjection } from "@/contexts/app-context";
 import { createClient } from "@/lib/supabase/client";
-import { Code, FileText, MessageSquare, File as FileIcon, Menu } from "lucide-react";
 import { FileTree } from "./file-tree";
 
 const CodeEditor = dynamic(
@@ -357,10 +356,20 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
 
   // ── Render ─────────────────────────────────────────────────────────────────
   return (
-    <div className="h-full flex flex-col" style={{ position: 'relative' }}>
+    <div style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column' }}>
       <style>{`
         @keyframes slideIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
-        .injection-card { animation: slideIn 0.2s ease-out; }
+        .gb-injection-card { animation: slideIn 0.2s ease-out; }
+        .gb-mobile-fab { display: none; }
+        .gb-mobile-picker { display: none; }
+        .gb-mobile-tree-toggle { display: none; }
+        .gb-filetree-panel { display: flex; }
+        @media (max-width: 768px) {
+          .gb-mobile-fab { display: flex !important; }
+          .gb-mobile-picker { display: block !important; }
+          .gb-mobile-tree-toggle { display: flex !important; }
+          .gb-filetree-panel { display: none !important; }
+        }
       `}</style>
 
       {/* Diff modal */}
@@ -386,10 +395,10 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
             boxShadow: '0 16px 40px rgba(0,0,0,0.5)',
           }}>
             <div style={{ fontSize: 13, color: '#c5d0c0', fontFamily: 'DM Sans, sans-serif', marginBottom: 16 }}>
-              Save changes to <span style={{ color: '#c9933a', fontFamily: 'JetBrains Mono, monospace' }}>{activeFile?.path.split('/').pop()}</span>?
+              Save changes to <span style={{ color: 'var(--ochre)', fontFamily: 'JetBrains Mono, monospace' }}>{activeFile?.path.split('/').pop()}</span>?
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => confirmSwitch(true)} style={{ background: '#2D4A2B', border: 'none', color: '#D4A94A', borderRadius: 7, padding: '7px 14px', fontSize: 12, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}>Save</button>
+              <button onClick={() => confirmSwitch(true)} style={{ background: 'var(--moss)', border: 'none', color: 'var(--ochre)', borderRadius: 7, padding: '7px 14px', fontSize: 12, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}>Save</button>
               <button onClick={() => confirmSwitch(false)} style={{ background: 'transparent', border: '1px solid #2d4a2b', color: '#8aaa85', borderRadius: 7, padding: '7px 14px', fontSize: 12, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}>Discard</button>
               <button onClick={() => setPendingFileSwitch(null)} style={{ background: 'transparent', border: '1px solid #2d4a2b', color: '#6b8a6b', borderRadius: 7, padding: '7px 14px', fontSize: 12, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}>Cancel</button>
             </div>
@@ -397,24 +406,41 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
         </>
       )}
 
-      {/* Mobile toggle */}
+      {/* Mobile file tree toggle */}
       <button
-        className="md:hidden fixed bottom-20 left-4 z-40 p-3 rounded-full shadow-lg"
-        style={{ backgroundColor: 'var(--goblin-moss)', color: 'white' }}
+        className="gb-mobile-tree-toggle"
         onClick={() => setMobileDrawerOpen(!mobileDrawerOpen)}
         aria-label="Toggle file tree"
+        style={{
+          position: 'fixed', bottom: 80, left: 16, zIndex: 40,
+          width: 44, height: 44, borderRadius: '50%',
+          background: 'var(--moss)', border: 'none',
+          color: 'var(--ochre)', fontSize: 18,
+          cursor: 'pointer', alignItems: 'center', justifyContent: 'center',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
+        }}
       >
-        <Menu className="w-5 h-5" />
+        ☰
       </button>
 
-      {/* Mobile drawer */}
+      {/* Mobile file tree drawer */}
       {mobileDrawerOpen && (
-        <div className="md:hidden fixed inset-0 z-30 bg-black/40" onClick={() => setMobileDrawerOpen(false)}>
-          <div className="absolute left-0 top-0 bottom-0 w-72 bg-white shadow-xl overflow-y-auto" style={{ background: '#0f1410' }} onClick={e => e.stopPropagation()}>
-            <div className="p-4">
-              <div className="flex items-center justify-between mb-4">
-                <span className="font-semibold text-sm" style={{ color: '#8aaa85' }}>Files</span>
-                <button onClick={() => setMobileDrawerOpen(false)} className="p-1 rounded" style={{ color: '#6b8a6b' }}>✕</button>
+        <div
+          onClick={() => setMobileDrawerOpen(false)}
+          style={{ position: 'fixed', inset: 0, zIndex: 30, background: 'rgba(0,0,0,0.4)' }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{
+              position: 'absolute', left: 0, top: 0, bottom: 0, width: 280,
+              background: '#0f1410', overflowY: 'auto',
+              boxShadow: '4px 0 20px rgba(0,0,0,0.5)',
+            }}
+          >
+            <div style={{ padding: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+                <span style={{ fontWeight: 600, fontSize: 13, color: '#8aaa85', fontFamily: 'DM Sans, sans-serif' }}>Files</span>
+                <button onClick={() => setMobileDrawerOpen(false)} style={{ background: 'none', border: 'none', color: '#6b8a6b', cursor: 'pointer', fontSize: 18, padding: '2px 4px', lineHeight: 1 }}>✕</button>
               </div>
               <FileTree projectId={projectId} files={files} onFileClick={openFile} onFilesChanged={fetchFiles} />
             </div>
@@ -425,16 +451,16 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
       {/* Injection Banner */}
       {pendingCode && (
         <div style={{
-          background: 'rgba(212,169,74,0.15)', borderBottom: '1px solid rgba(212,169,74,0.35)',
+          background: 'rgba(212,169,74,0.12)', borderBottom: '1px solid rgba(212,169,74,0.3)',
           padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0,
         }}>
-          <span style={{ color: '#D4A94A', fontSize: 16, flexShrink: 0 }}>✦</span>
+          <span style={{ color: 'var(--ochre)', fontSize: 14, flexShrink: 0 }}>✦</span>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <span style={{ fontSize: 13, fontWeight: 600, color: '#D4A94A', fontFamily: 'DM Sans, sans-serif' }}>
+            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--ochre)', fontFamily: 'DM Sans, sans-serif' }}>
               Injected via Send to Code
             </span>
             {pendingCode.filename && (
-              <span style={{ marginLeft: 8, fontSize: 12, color: '#c9933a', fontFamily: 'JetBrains Mono, monospace', background: 'rgba(212,169,74,0.15)', padding: '1px 8px', borderRadius: 4 }}>
+              <span style={{ marginLeft: 8, fontSize: 11, color: 'var(--ochre)', fontFamily: 'JetBrains Mono, monospace', background: 'rgba(212,169,74,0.12)', padding: '1px 8px', borderRadius: 4 }}>
                 {pendingCode.filename}
               </span>
             )}
@@ -443,13 +469,13 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
             <button
               onClick={handleDeploy}
               disabled={deploying}
-              style={{ background: deploying ? 'rgba(45,74,43,0.5)' : '#2D4A2B', color: '#D4A94A', border: 'none', borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 600, cursor: deploying ? 'not-allowed' : 'pointer', fontFamily: 'DM Sans, sans-serif', display: 'flex', alignItems: 'center', gap: 5 }}
+              style={{ background: deploying ? 'rgba(45,74,43,0.5)' : 'var(--moss)', color: 'var(--ochre)', border: 'none', borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 600, cursor: deploying ? 'not-allowed' : 'pointer', fontFamily: 'DM Sans, sans-serif', display: 'flex', alignItems: 'center', gap: 5 }}
             >
               {deploying ? '▶ Deploying…' : '▶ Build'}
             </button>
             <button
               onClick={handleSendToCodeApply}
-              style={{ background: 'rgba(212,169,74,0.15)', color: '#D4A94A', border: '1px solid rgba(212,169,74,0.4)', borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}
+              style={{ background: 'rgba(212,169,74,0.12)', color: 'var(--ochre)', border: '1px solid rgba(212,169,74,0.35)', borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}
             >
               ⟳ Review & Apply
             </button>
@@ -462,8 +488,8 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
             {undoPayload && (
               <button
                 onClick={handleUndoInjection}
-                style={{ background: 'transparent', color: '#6b8a6b', border: '1px solid rgba(107,138,107,0.3)', borderRadius: 6, padding: '5px 10px', fontSize: 12, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}
                 title="Undo last injection"
+                style={{ background: 'transparent', color: '#6b8a6b', border: '1px solid rgba(107,138,107,0.3)', borderRadius: 6, padding: '5px 10px', fontSize: 12, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}
               >
                 ↩ Undo
               </button>
@@ -474,40 +500,59 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
       )}
 
       {/* Mobile file picker */}
-      <div className="md:hidden shrink-0" style={{ borderBottom: '1px solid #1e2a1c', background: '#0f1410' }}>
+      <div className="gb-mobile-picker" style={{ borderBottom: '1px solid #1e2a1c', background: '#0f1410', flexShrink: 0 }}>
         <select
           value={activeFile?.path ?? ''}
           onChange={e => e.target.value && openFile(e.target.value)}
-          style={{ width: '100%', padding: '10px 14px', background: 'transparent', color: '#8aaa85', border: 'none', outline: 'none', fontFamily: 'JetBrains Mono, monospace', fontSize: 12, cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none' }}
+          style={{ width: '100%', padding: '10px 14px', background: 'transparent', color: '#8aaa85', border: 'none', outline: 'none', fontFamily: 'JetBrains Mono, monospace', fontSize: 12, cursor: 'pointer', appearance: 'none', WebkitAppearance: 'none' } as React.CSSProperties}
         >
           {!activeFile && <option value="">— select a file —</option>}
           {files.map(f => <option key={f} value={f} style={{ background: '#141a12', color: '#c5d0c0' }}>{f}</option>)}
         </select>
       </div>
 
-      {/* Desktop layout */}
-      <div className="flex-1 flex overflow-hidden" style={{ position: 'relative' }}>
-        {/* File Tree */}
-        <div className={`hidden md:flex flex-col border-r ${fileTreeOpen ? 'w-64' : 'w-12'} transition-all duration-200`}
-          style={{ borderColor: 'var(--goblin-light)', backgroundColor: '#0f1410' }}>
+      {/* Desktop layout: file tree + editor */}
+      <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
+
+        {/* File tree panel */}
+        <div
+          className="gb-filetree-panel"
+          style={{
+            flexDirection: 'column',
+            borderRight: '1px solid #1e2a1c',
+            background: '#0f1410',
+            width: fileTreeOpen ? 256 : 44,
+            minWidth: fileTreeOpen ? 256 : 44,
+            transition: 'width 0.2s ease, min-width 0.2s ease',
+            flexShrink: 0,
+          }}
+        >
           <button
             onClick={() => setFileTreeOpen(!fileTreeOpen)}
-            className="p-3 flex items-center gap-2 border-b shrink-0"
-            style={{ borderColor: '#1e2a1c' }}
+            style={{
+              padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 8,
+              borderBottom: '1px solid #1e2a1c', flexShrink: 0,
+              background: 'none', border: 'none',
+              cursor: 'pointer', width: '100%', textAlign: 'left',
+            } as React.CSSProperties}
           >
-            <FileIcon className="w-4 h-4" style={{ color: 'var(--goblin-ochre)' }} />
-            {fileTreeOpen && <span className="text-sm font-semibold" style={{ color: '#8aaa85' }}>Files</span>}
+            {fileTreeOpen
+              ? <span style={{ fontSize: 12, fontWeight: 600, color: '#8aaa85', fontFamily: 'DM Sans, sans-serif' }}>Files</span>
+              : <span style={{ fontSize: 14, color: '#8aaa85' }}>≡</span>
+            }
           </button>
           {fileTreeOpen && (
-            <div className="flex-1 overflow-y-auto">
+            <div style={{ flex: 1, overflowY: 'auto' }}>
               {loading ? (
-                <div className="p-4 space-y-2">
-                  {[1, 2, 3].map(i => <div key={i} className="h-4 rounded animate-pulse" style={{ backgroundColor: '#1e2a1c' }} />)}
+                <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {[1, 2, 3].map(i => (
+                    <div key={i} style={{ height: 14, borderRadius: 4, background: '#1e2a1c', animation: 'pulse 1.5s ease infinite' }} />
+                  ))}
                 </div>
               ) : files.length === 0 ? (
-                <div className="p-4 text-center">
-                  <p className="text-xs" style={{ color: '#6b8a6b' }}>No files yet</p>
-                  <p className="text-xs mt-1" style={{ color: '#4a6a4a' }}>Start chatting to generate code.</p>
+                <div style={{ padding: 16, textAlign: 'center' }}>
+                  <p style={{ fontSize: 12, color: '#6b8a6b', fontFamily: 'DM Sans, sans-serif', marginBottom: 4 }}>No files yet</p>
+                  <p style={{ fontSize: 11, color: '#4a6a4a', fontFamily: 'DM Sans, sans-serif' }}>Start chatting to generate code.</p>
                 </div>
               ) : (
                 <FileTree projectId={projectId} files={files} onFileClick={openFile} onFilesChanged={fetchFiles} />
@@ -516,21 +561,27 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
           )}
         </div>
 
-        {/* Editor */}
-        <div className="flex-1 flex flex-col min-w-0" style={{ backgroundColor: '#141a12' }}>
+        {/* Editor area */}
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, background: '#141a12' }}>
+
+          {/* Active file breadcrumb */}
           {activeFile && (
-            <div className="flex items-center gap-2 px-3 py-2 border-b shrink-0" style={{ backgroundColor: '#0f1410', borderColor: '#1e2a1c' }}>
-              <FileIcon className="w-3.5 h-3.5" style={{ color: '#8aaa85' }} />
-              <span className="text-sm font-medium" style={{ color: '#c5d0c0', fontFamily: 'JetBrains Mono, monospace' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderBottom: '1px solid #1e2a1c', background: '#0f1410', flexShrink: 0 }}>
+              <span style={{ color: '#c5d0c0', fontFamily: 'JetBrains Mono, monospace', fontSize: 12, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {activeFile.path}
               </span>
-              {isDirty && <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#D4A94A', flexShrink: 0, display: 'inline-block' }} title="Unsaved changes" />}
-              {injectedFiles.has(activeFile.path) && <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--goblin-ochre)' }} />}
+              {isDirty && (
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--ochre)', flexShrink: 0, display: 'inline-block' }} title="Unsaved changes" />
+              )}
+              {injectedFiles.has(activeFile.path) && (
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--ochre)', flexShrink: 0, display: 'inline-block' }} title="Injected" />
+              )}
               <SaveIndicator saving={saving} isDirty={isDirty} />
             </div>
           )}
 
-          <div className="flex-1 min-h-0">
+          {/* Editor or empty state */}
+          <div style={{ flex: 1, minHeight: 0 }}>
             {activeFile ? (
               <CodeEditor
                 key={activeFile.path}
@@ -540,21 +591,23 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
                 onSave={(content) => saveFile(content, true)}
               />
             ) : (
-              <div className="flex flex-col items-center justify-center h-full text-center p-8">
-                <Code className="w-12 h-12 mb-4" style={{ color: '#4a6a4a' }} />
-                <p className="text-sm" style={{ color: '#8aaa85' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', textAlign: 'center', padding: 32 }}>
+                <div style={{ fontSize: 32, color: '#4a6a4a', fontFamily: 'JetBrains Mono, monospace', marginBottom: 14, opacity: 0.5 }}>{'</>'}</div>
+                <p style={{ fontSize: 13, color: '#8aaa85', fontFamily: 'DM Sans, sans-serif', marginBottom: 6 }}>
                   {files.length > 0 ? 'Select a file to start editing' : 'No files yet — start chatting to generate code.'}
                 </p>
-                <p className="text-xs mt-2" style={{ color: '#4a6a4a' }}>Right-click the file tree to create a new file</p>
+                {files.length > 0 && (
+                  <p style={{ fontSize: 11, color: '#4a6a4a', fontFamily: 'DM Sans, sans-serif' }}>Right-click the file tree to create a new file</p>
+                )}
               </div>
             )}
           </div>
 
-          {/* Pending injections */}
+          {/* Pending injections panel */}
           {pendingInjections.length > 0 && (
-            <div style={{ borderTop: '1px solid rgba(212,169,74,0.3)', flexShrink: 0, background: '#141a12' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 14px', background: 'rgba(212,169,74,0.07)' }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: '#D4A94A', fontFamily: 'DM Sans, sans-serif' }}>
+            <div style={{ borderTop: '1px solid rgba(212,169,74,0.25)', flexShrink: 0, background: '#141a12' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 14px', background: 'rgba(212,169,74,0.06)' }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--ochre)', fontFamily: 'DM Sans, sans-serif' }}>
                   ✦ {pendingInjections.length} pending injection{pendingInjections.length !== 1 ? 's' : ''}
                 </span>
                 <button onClick={clearPendingInjections} style={{ background: 'none', border: 'none', color: '#6b8a6b', cursor: 'pointer', fontSize: 15, lineHeight: 1 }}>×</button>
@@ -567,22 +620,34 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
         </div>
       </div>
 
-      {/* Mobile FAB */}
-      <div className="md:hidden" style={{ position: 'fixed', bottom: 'calc(56px + 16px)', right: 16, display: 'flex', flexDirection: 'column', gap: 8, zIndex: 40 }}>
-        <button onClick={openPushModal} style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(30,58,28,0.95)', border: '1px solid rgba(138,170,133,0.3)', color: '#8aaa85', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 16px rgba(0,0,0,0.4)', WebkitTapHighlightColor: 'transparent' } as React.CSSProperties} title="Push to GitHub">⬆</button>
-        <button onClick={handleDeploy} disabled={deploying} style={{ width: 56, height: 56, borderRadius: '50%', background: deploying ? 'rgba(45,74,43,0.6)' : '#2D4A2B', border: 'none', color: '#D4A94A', fontSize: 22, cursor: deploying ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 20px rgba(45,74,43,0.5)', WebkitTapHighlightColor: 'transparent' } as React.CSSProperties} title="Deploy to Vercel">{deploying ? '…' : '▶'}</button>
+      {/* Mobile FABs */}
+      <div
+        className="gb-mobile-fab"
+        style={{ position: 'fixed', bottom: 80, right: 16, flexDirection: 'column', gap: 8, zIndex: 40 }}
+      >
+        <button
+          onClick={openPushModal}
+          title="Push to GitHub"
+          style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(30,58,28,0.95)', border: '1px solid rgba(138,170,133,0.3)', color: '#8aaa85', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' } as React.CSSProperties}
+        >⬆</button>
+        <button
+          onClick={handleDeploy}
+          disabled={deploying}
+          title="Deploy to Vercel"
+          style={{ width: 56, height: 56, borderRadius: '50%', background: deploying ? 'rgba(45,74,43,0.6)' : 'var(--moss)', border: 'none', color: 'var(--ochre)', fontSize: 22, cursor: deploying ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 20px rgba(45,74,43,0.5)' } as React.CSSProperties}
+        >{deploying ? '…' : '▶'}</button>
       </div>
 
       {/* Build status bar */}
       {(activeBuilds.length > 0 || recentDone.length > 0) && (
-        <div style={{ borderTop: '1px solid var(--goblin-light)', flexShrink: 0 }}>
+        <div style={{ borderTop: '1px solid var(--div)', flexShrink: 0 }}>
           <BuildStatusBar builds={[...activeBuilds, ...recentDone]} />
         </div>
       )}
 
       {/* Deploy toast */}
       {deployMessage && (
-        <div style={{ position: 'absolute', bottom: 16, left: '50%', transform: 'translateX(-50%)', background: '#1e3a1c', border: '1px solid rgba(212,169,74,0.4)', borderRadius: 8, padding: '8px 16px', fontSize: 12, color: '#c9933a', fontFamily: 'DM Sans, sans-serif', zIndex: 50, whiteSpace: 'nowrap', maxWidth: 400, textAlign: 'center', boxShadow: '0 4px 20px rgba(0,0,0,0.4)' }}>
+        <div style={{ position: 'absolute', bottom: 16, left: '50%', transform: 'translateX(-50%)', background: '#1e3a1c', border: '1px solid rgba(212,169,74,0.35)', borderRadius: 8, padding: '8px 16px', fontSize: 12, color: 'var(--ochre)', fontFamily: 'DM Sans, sans-serif', zIndex: 50, whiteSpace: 'nowrap', maxWidth: 400, textAlign: 'center', boxShadow: '0 4px 20px rgba(0,0,0,0.4)' }}>
           {deployMessage}
         </div>
       )}
@@ -595,18 +660,20 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
 }
 
 function InjectionCard({ injection }: { injection: PendingInjection }) {
-  const typeIcon = injection.payloadType === 'code' ? <Code className="w-3.5 h-3.5" /> : injection.payloadType === 'prompt' ? <MessageSquare className="w-3.5 h-3.5" /> : <FileText className="w-3.5 h-3.5" />;
+  const typeIcon = injection.payloadType === 'code' ? '</>' : injection.payloadType === 'prompt' ? '✦' : '≡';
   const typeLabel = injection.payloadType === 'code' ? 'CODE' : injection.payloadType === 'prompt' ? 'PROMPT' : 'MIXED';
   const preview = injection.payload.length > 80 ? injection.payload.slice(0, 80) + '…' : injection.payload;
   return (
-    <div className="injection-card rounded-lg border overflow-hidden" style={{ borderColor: '#D4A94A', backgroundColor: '#1a2018' }}>
-      <div className="flex items-center gap-2 px-3 py-2" style={{ backgroundColor: 'rgba(212,169,74,0.12)', borderBottom: '1px solid rgba(212,169,74,0.3)' }}>
-        <span style={{ color: '#D4A94A' }}>{typeIcon}</span>
-        <span className="text-xs font-bold tracking-wide" style={{ color: '#D4A94A' }}>[{typeLabel}]</span>
-        {injection.filenameHint && <span className="text-xs ml-1" style={{ color: '#8aaa85', fontFamily: 'monospace' }}>{injection.filenameHint}</span>}
-        <span className="text-xs ml-auto" style={{ color: '#6b8a6b' }}>{new Date(injection.createdAt).toLocaleTimeString()}</span>
+    <div className="gb-injection-card" style={{ borderRadius: 8, border: '1px solid rgba(212,169,74,0.4)', overflow: 'hidden', background: '#1a2018', animation: 'slideIn 0.2s ease-out' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', background: 'rgba(212,169,74,0.08)', borderBottom: '1px solid rgba(212,169,74,0.25)' }}>
+        <span style={{ color: 'var(--ochre)', fontSize: 11, fontFamily: 'JetBrains Mono, monospace' }}>{typeIcon}</span>
+        <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: 'var(--ochre)', fontFamily: 'JetBrains Mono, monospace' }}>[{typeLabel}]</span>
+        {injection.filenameHint && (
+          <span style={{ fontSize: 11, color: '#8aaa85', fontFamily: 'JetBrains Mono, monospace', marginLeft: 4 }}>{injection.filenameHint}</span>
+        )}
+        <span style={{ fontSize: 10, color: '#6b8a6b', marginLeft: 'auto', fontFamily: 'DM Sans, sans-serif' }}>{new Date(injection.createdAt).toLocaleTimeString()}</span>
       </div>
-      <pre className="text-xs whitespace-pre-wrap px-3 py-2.5 overflow-x-auto" style={{ fontFamily: 'JetBrains Mono, monospace', color: '#8aaa85', backgroundColor: '#1a2018' }}>{preview}</pre>
+      <pre style={{ fontSize: 11, whiteSpace: 'pre-wrap', wordBreak: 'break-all', padding: '8px 12px', overflowX: 'auto', fontFamily: 'JetBrains Mono, monospace', color: '#8aaa85', background: '#1a2018', margin: 0 }}>{preview}</pre>
     </div>
   );
 }

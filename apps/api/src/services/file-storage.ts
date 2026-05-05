@@ -30,16 +30,19 @@ function getS3Client(): S3Client | null {
   if (_s3Available === false) return null;
   if (_s3Client) return _s3Client;
 
-  const endpoint = process.env.STORAGE_ENDPOINT;
+  const rawEndpoint = process.env.STORAGE_ENDPOINT;
   const accessKeyId = process.env.STORAGE_KEY;
   const secretAccessKey = process.env.STORAGE_SECRET;
   const bucket = process.env.STORAGE_BUCKET;
 
-  if (!endpoint || !accessKeyId || !secretAccessKey || !bucket) {
-    console.warn('⚠️  Hetzner Storage nicht konfiguriert — nutze In-Memory Fallback. Daten gehen beim Neustart verloren.');
+  if (!rawEndpoint || !accessKeyId || !secretAccessKey || !bucket) {
+    console.warn('⚠️  Object Storage nicht konfiguriert — nutze In-Memory Fallback. Daten gehen beim Neustart verloren.');
     _s3Available = false;
     return null;
   }
+
+  // Normalize endpoint — ensure https:// prefix
+  const endpoint = rawEndpoint.startsWith('http') ? rawEndpoint : `https://${rawEndpoint}`;
 
   const config: S3ClientConfig = {
     endpoint,
@@ -268,4 +271,16 @@ export async function createZip(projectId: string): Promise<Buffer> {
   }
 
   return Buffer.from(await zip.generateAsync({ type: 'uint8array' }));
+}
+
+export async function checkStorageConnection(): Promise<boolean> {
+  const s3 = getS3Client();
+  if (!s3) return false;
+  try {
+    await s3.send(new ListObjectsV2Command({ Bucket: getBucket(), MaxKeys: 1 }));
+    return true;
+  } catch (e) {
+    console.error('[file-storage] Connection check failed:', e);
+    return false;
+  }
 }
