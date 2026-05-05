@@ -52,9 +52,9 @@ export function usePushNotifications() {
     const registration = await navigator.serviceWorker.register(`/sw.js?v=${buildId}`);
     await navigator.serviceWorker.ready;
 
-    const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+    const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_KEY;
     if (!vapidPublicKey) {
-      console.error("NEXT_PUBLIC_VAPID_PUBLIC_KEY is not set");
+      console.error("NEXT_PUBLIC_VAPID_KEY is not set");
       return;
     }
 
