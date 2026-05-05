@@ -1,14 +1,14 @@
 export function getAuthUrl(state: string): string {
-  const clientId = process.env.GITHUB_CLIENT_ID!;
-  const redirectUri = process.env.GITHUB_REDIRECT_URI!;
+  const clientId = process.env.GITHUB_CLIENT_ID_RAILWAY!;
+  const redirectUri = process.env.GITHUB_REDIRECT_URI_RAILWAY!;
   const scope = 'repo user';
 
   return `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&state=${state}`;
 }
 
 export async function exchangeCodeForToken(code: string): Promise<string> {
-  const clientId = process.env.GITHUB_CLIENT_ID!;
-  const clientSecret = process.env.GITHUB_CLIENT_SECRET!;
+  const clientId = process.env.GITHUB_CLIENT_ID_RAILWAY!;
+  const clientSecret = process.env.GITHUB_CLIENT_SECRET_RAILWAY!;
 
   const response = await fetch('https://github.com/login/oauth/access_token', {
     method: 'POST',

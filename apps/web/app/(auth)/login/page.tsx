@@ -120,6 +120,9 @@ export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState<Provider | null>(null);
+  const [email, setEmail] = useState('');
+  const [emailLoading, setEmailLoading] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
 
   useEffect(() => {
     const error = searchParams.get('error');
@@ -144,6 +147,28 @@ export default function LoginPage() {
     } catch (err: unknown) {
       setLoading(null);
       toast.error(err instanceof Error ? err.message : 'Sign in failed. Please try again.');
+    }
+  };
+
+  const signInWithEmail = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim() || emailLoading) return;
+    setEmailLoading(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email.trim(),
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      if (error) throw error;
+      setEmailSent(true);
+      toast.success('Magic link sent! Check your inbox.');
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'Failed to send magic link.');
+    } finally {
+      setEmailLoading(false);
     }
   };
 
@@ -285,35 +310,64 @@ export default function LoginPage() {
               <div style={{ flex: 1, height: 1, background: 'var(--goblin-border)' }} />
             </div>
 
-            {/* Email — disabled, coming soon */}
-            <div title="Email sign-in coming soon" style={{ position: 'relative' }}>
-              <button
-                disabled
-                style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  width: '100%', height: 48,
-                  background: 'var(--goblin-border)',
-                  color: 'var(--goblin-meta)',
-                  border: '1.5px solid var(--goblin-border)',
-                  borderRadius: 10, fontSize: 14,
-                  fontFamily: 'var(--font-dm-sans), DM Sans, sans-serif',
-                  cursor: 'not-allowed',
-                }}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <rect x="2" y="4" width="20" height="16" rx="2"/>
-                  <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
-                </svg>
-                Continue with Email
-                <span style={{
-                  marginLeft: 4, fontSize: 10, fontWeight: 600,
-                  background: 'var(--goblin-meta)', color: '#fff',
-                  padding: '1px 5px', borderRadius: 4,
-                }}>
-                  SOON
-                </span>
-              </button>
-            </div>
+            {/* Email — Magic Link */}
+            {emailSent ? (
+              <div style={{
+                textAlign: 'center', padding: '16px 12px',
+                background: 'rgba(45,74,43,0.06)', borderRadius: 10,
+                border: '1px solid rgba(45,74,43,0.15)',
+              }}>
+                <div style={{ fontSize: 22, marginBottom: 6 }}>📬</div>
+                <p style={{ fontSize: 13, color: 'var(--goblin-moss)', fontWeight: 500, margin: 0 }}>
+                  Magic link sent to <strong>{email}</strong>
+                </p>
+                <p style={{ fontSize: 12, color: 'var(--goblin-meta)', margin: '4px 0 0' }}>
+                  Check your inbox and click the link to sign in.
+                </p>
+              </div>
+            ) : (
+              <form onSubmit={signInWithEmail} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="your@email.com"
+                  required
+                  style={{
+                    width: '100%', height: 48, padding: '0 14px',
+                    border: '1.5px solid var(--goblin-border)',
+                    borderRadius: 10, fontSize: 14,
+                    fontFamily: 'var(--font-dm-sans), DM Sans, sans-serif',
+                    color: 'var(--goblin-slate)', outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                  onFocus={e => (e.target.style.borderColor = 'var(--goblin-moss)')}
+                  onBlur={e => (e.target.style.borderColor = 'var(--goblin-border)')}
+                />
+                <button
+                  type="submit"
+                  disabled={emailLoading || !email.trim()}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                    width: '100%', height: 48,
+                    background: email.trim() ? 'var(--goblin-moss)' : 'var(--goblin-border)',
+                    color: email.trim() ? '#fff' : 'var(--goblin-meta)',
+                    border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 500,
+                    fontFamily: 'var(--font-dm-sans), DM Sans, sans-serif',
+                    cursor: emailLoading || !email.trim() ? 'not-allowed' : 'pointer',
+                    transition: 'background 0.15s',
+                  }}
+                >
+                  {emailLoading ? <Spinner /> : (
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <rect x="2" y="4" width="20" height="16" rx="2"/>
+                      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                    </svg>
+                  )}
+                  {emailLoading ? 'Sending…' : 'Continue with Email'}
+                </button>
+              </form>
+            )}
 
             {/* Footer */}
             <p style={{
