@@ -52,7 +52,7 @@ export function NewProjectModal({ onClose, onProjectCreated }: NewProjectModalPr
       const token = data.session?.access_token;
       if (!token) throw new Error('Not authenticated');
 
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://goblinapi-production.up.railway.app';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
       const response = await fetch(`${apiUrl}/api/projects`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
