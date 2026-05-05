@@ -145,9 +145,18 @@ app.get('/api/debug/litellm', async (c) => {
       signal: AbortSignal.timeout(5000),
     });
     const body = await res.text().catch(() => '');
-    return c.json({ ok: res.ok, status: res.status, base: normalizedBase, body: body.slice(0, 200) });
+    // 500 with "Model list not initialized" = LiteLLM is running, just no models configured yet
+    const noModels = body.includes('Model list not initialized');
+    return c.json({
+      ok: res.ok || noModels,
+      connected: true,
+      status: res.status,
+      base: normalizedBase,
+      note: noModels ? 'LiteLLM running — no models configured yet. Add models via LiteLLM dashboard or config.' : undefined,
+      body: noModels ? undefined : body.slice(0, 200),
+    });
   } catch (e) {
-    return c.json({ ok: false, error: e instanceof Error ? e.message : 'Request failed', base: normalizedBase });
+    return c.json({ ok: false, connected: false, error: e instanceof Error ? e.message : 'Request failed', base: normalizedBase });
   }
 });
 
