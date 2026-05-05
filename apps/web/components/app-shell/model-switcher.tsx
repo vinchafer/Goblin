@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { ChevronDown, Bot, Zap, Key, ExternalLink, Info } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
 import { useApp, type AppModel } from "@/contexts/app-context";
 import { createClient } from "@/lib/supabase/client";
 
@@ -41,6 +40,7 @@ export function ModelSwitcher() {
   const [models, setModels] = useState<ModelFromAPI[]>([]);
   const [byokKeys, setByokKeys] = useState<ByokKeyInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
 
   useEffect(() => {
@@ -150,6 +150,15 @@ export function ModelSwitcher() {
     fetchData();
   }, [supabase]);
 
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
   const getActiveProviders = (): string[] => {
     return byokKeys
       .filter(k => k.status === 'active')
@@ -206,153 +215,107 @@ export function ModelSwitcher() {
 
   const TIER_ORDER = ['byok', 'hosted', 'free'];
 
-  // Loading state: skeleton
   if (loading) {
     return (
-      <div className="relative">
-        <div
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg border animate-pulse"
-          style={{
-            backgroundColor: 'white',
-            borderColor: 'var(--goblin-light)',
-            minWidth: '140px',
-          }}
-        >
-          <div className="w-4 h-4 rounded-full" style={{ backgroundColor: 'var(--goblin-light)' }} />
-          <div className="w-24 h-4 rounded" style={{ backgroundColor: 'var(--goblin-light)' }} />
-        </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '5px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.15)', minWidth: 140, background: 'rgba(255,255,255,0.06)', animation: 'pulse 1.5s ease infinite' }}>
+        <div style={{ width: 16, height: 12, borderRadius: 3, background: 'rgba(255,255,255,0.1)' }} />
+        <div style={{ width: 80, height: 12, borderRadius: 3, background: 'rgba(255,255,255,0.1)' }} />
       </div>
     );
   }
 
-  const getPillDisplay = () => {
-    if (activeModel.name === 'Add model →') {
-      return (
-        <>
-          <span style={{ color: '#D4A94A' }}>{activeModel.name}</span>
-        </>
-      );
-    }
-    
-    const tierLabel = activeModel.tier === 'byok' ? 'BYOK' : activeModel.tier === 'free' ? 'FREE' : 'HOSTED';
-    return (
-      <>
-        <span>{activeModel.name}</span>
-        <span style={{ color: 'var(--goblin-gray)' }}> · {tierLabel}</span>
-      </>
-    );
-  };
+  const isNoModel = activeModel.name === 'Add model →';
+  const tierLabel = activeModel.tier === 'byok' ? 'BYOK' : activeModel.tier === 'free' ? 'FREE' : 'HOSTED';
 
   return (
-    <div className="relative">
+    <div ref={dropdownRef} style={{ position: 'relative' }}>
       <button
-        onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm font-medium"
+        onClick={() => setOpen(o => !o)}
         style={{
-          backgroundColor: 'white',
-          borderColor: activeModel.name === 'Add model →' ? '#D4A94A' : 'var(--goblin-light)',
-          color: 'var(--goblin-slate)'
+          display: 'flex', alignItems: 'center', gap: 6,
+          padding: '5px 12px', borderRadius: 8,
+          border: `1px solid ${isNoModel ? 'var(--ochre)' : 'rgba(255,255,255,0.2)'}`,
+          background: 'rgba(255,255,255,0.06)',
+          color: isNoModel ? 'var(--ochre)' : 'rgba(255,255,255,0.85)',
+          fontSize: 13, fontWeight: 500, cursor: 'pointer',
+          fontFamily: 'DM Sans, sans-serif', transition: 'background 0.1s',
         }}
+        onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.1)')}
+        onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
       >
-        {activeModel.icon === 'key' && <Key className="w-4 h-4" />}
-        {activeModel.icon === 'bot' && <Bot className="w-4 h-4" />}
-        {activeModel.icon === 'zap' && <Zap className="w-4 h-4" />}
-        {getPillDisplay()}
-        <ChevronDown className="w-4 h-4" style={{ color: 'var(--goblin-gray)' }} />
+        <span>{activeModel.name}</span>
+        {!isNoModel && <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11 }}>· {tierLabel}</span>}
+        <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.45)', marginLeft: 2 }}>▾</span>
       </button>
 
       {open && (
-        <div
-          className="absolute right-0 top-full mt-2 w-80 rounded-lg border shadow-lg py-2 z-50"
-          style={{
-            backgroundColor: 'white',
-            borderColor: 'var(--goblin-light)',
-            maxHeight: 'calc(100vh - 80px)',
-            overflowY: 'auto'
-          }}
-        >
+        <div style={{
+          position: 'absolute', right: 0, top: 'calc(100% + 6px)',
+          width: 300, background: 'var(--panel)', border: '1px solid var(--div)',
+          borderRadius: 10, padding: '4px 0', zIndex: 50,
+          boxShadow: 'var(--shadow-lg)',
+          maxHeight: 'calc(100vh - 80px)', overflowY: 'auto',
+        }}>
           {models.length === 0 ? (
-            <div className="px-4 py-6 text-center">
-              <p className="text-sm" style={{ color: 'var(--goblin-gray)' }}>
-                No models available
-              </p>
-              <button
-                className="mt-3 text-xs px-3 py-1.5 rounded-lg font-medium"
-                style={{ backgroundColor: 'var(--goblin-moss)', color: 'white' }}
-                onClick={() => window.location.href = '/settings?tab=api-keys'}
-              >
-                Add API Key
-              </button>
+            <div style={{ padding: '20px 16px', textAlign: 'center' }}>
+              <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 10 }}>No models available</p>
+              <a href="/dashboard/settings/keys" style={{ fontSize: 12, color: 'var(--ochre)', fontWeight: 600, textDecoration: 'none' }}>
+                Add API Key →
+              </a>
             </div>
           ) : (
             TIER_ORDER.map(tier => {
               const tierModels = groupedModels[tier];
-              if (!tierModels || tierModels.length === 0) return null;
-
+              if (!tierModels?.length) return null;
               return (
                 <div key={tier}>
-                  <div className="px-3 py-1.5 text-xs font-medium uppercase" style={{ color: 'var(--goblin-gray)' }}>
+                  <div style={{ padding: '6px 12px 3px', fontSize: 10, fontWeight: 700, letterSpacing: '1px', textTransform: 'uppercase', color: 'var(--meta)' }}>
                     {TIER_LABELS[tier]}
                   </div>
                   {tierModels.map(model => {
                     const badge = getBadge(model);
                     const isActive = activeModel.id === model.id;
-
                     return (
                       <button
                         key={model.id}
-                        onClick={() => {
-                          if (model.available) {
-                            handleModelSelect(model);
-                          }
+                        onClick={() => model.available && handleModelSelect(model)}
+                        style={{
+                          display: 'flex', alignItems: 'center', gap: 8,
+                          width: '100%', padding: '8px 12px',
+                          background: isActive ? 'rgba(212,169,74,0.06)' : 'none',
+                          border: 'none', cursor: model.available ? 'pointer' : 'default',
+                          opacity: model.available ? 1 : 0.45,
+                          textAlign: 'left', transition: 'background 0.1s',
                         }}
-                        className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 ${
-                          model.available ? 'hover:bg-gray-50' : 'opacity-50 cursor-not-allowed'
-                        } ${isActive ? 'bg-gray-50' : ''}`}
-                       >
-                         {model.requires_key ? (
-                           <Key className="w-4 h-4" />
-                         ) : model.layer === 'goblin_hosted' ? (
-                           <Bot className="w-4 h-4" />
-                         ) : (
-                           <Zap className="w-4 h-4" />
-                         )}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-1">
-                            <span style={{ color: model.available ? 'var(--goblin-slate)' : 'var(--goblin-gray)' }}>
-                              {model.name}
-                            </span>
+                        onMouseEnter={e => { if (model.available) (e.currentTarget.style.background = 'var(--subtle)'); }}
+                        onMouseLeave={e => { (e.currentTarget.style.background = isActive ? 'rgba(212,169,74,0.06)' : 'none'); }}
+                      >
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 13, color: 'var(--text)', fontFamily: 'DM Sans, sans-serif', display: 'flex', alignItems: 'center', gap: 6 }}>
+                            {model.name}
                             {model.provider && PROVIDER_URLS[model.provider] && model.requires_key && (
                               <span
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  window.open(PROVIDER_URLS[model.provider], '_blank', 'noopener,noreferrer');
-                                }}
-                                className="inline-flex items-center justify-center w-4 h-4 rounded-full cursor-pointer hover:opacity-70 flex-shrink-0"
-                                style={{ color: 'var(--goblin-gray)' }}
-                                title={`Get ${model.provider} API key`}
+                                onClick={e => { e.stopPropagation(); window.open(PROVIDER_URLS[model.provider], '_blank', 'noopener,noreferrer'); }}
+                                title={`Get ${model.provider} key`}
+                                style={{ fontSize: 10, color: 'var(--meta)', cursor: 'pointer', lineHeight: 1 }}
                               >
-                                <Info className="w-3 h-3" />
+                                ↗
                               </span>
                             )}
                           </div>
                           {badge && (
-                            <div className="text-xs mt-0.5" style={{ color: badge.color }}>
+                            <div style={{ fontSize: 10, color: badge.color, marginTop: 1, fontFamily: 'DM Sans, sans-serif' }}>
                               {badge.text}
                             </div>
                           )}
                         </div>
-
                         {!model.available && model.phase && (
-                          <span className="ml-auto text-xs px-1.5 py-0.5 rounded flex-shrink-0" 
-                            style={{ backgroundColor: 'var(--goblin-light)', color: 'var(--goblin-gray)' }}>
+                          <span style={{ fontSize: 10, color: 'var(--meta)', background: 'var(--subtle)', padding: '2px 6px', borderRadius: 4, flexShrink: 0 }}>
                             Phase {model.phase}
                           </span>
                         )}
-
-                        {isActive && !model.requires_key && (
-                          <span className="ml-auto w-2 h-2 rounded-full flex-shrink-0" 
-                            style={{ backgroundColor: model.layer === 'goblin_hosted' ? 'var(--goblin-moss)' : 'var(--goblin-ochre)' }} />
+                        {isActive && (
+                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--ochre)', flexShrink: 0 }} />
                         )}
                       </button>
                     );

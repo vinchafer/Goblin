@@ -1,25 +1,24 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { ByokKey } from "@goblin/shared/src/schemas";
-import { Eye, EyeOff, Check, Trash2, ChevronDown, ChevronUp, Key, Zap, Cpu, Bot, Code, Globe, Layers } from "lucide-react";
 
 interface KeysListProps {
   initialKeys: ByokKey[];
 }
 
 const PROVIDERS = [
-  { id: 'anthropic', label: 'Anthropic',     icon: Key, model: 'Claude Sonnet 4.6',  dashboard: 'https://console.anthropic.com/settings/keys', desc: 'Best for coding — powers Claude Sonnet' },
-  { id: 'google',    label: 'Google AI Studio', icon: Zap, model: 'Gemini 2.0 Flash', dashboard: 'https://aistudio.google.com/app/apikey', desc: 'Gemini 2.0 Flash — fast, generous free tier' },
-  { id: 'groq',      label: 'Groq',           icon: Cpu, model: 'Llama 3.3 70B',       dashboard: 'https://console.groq.com/keys',         desc: 'Llama 3.3 70B — fastest inference' },
-  { id: 'openai',    label: 'OpenAI',         icon: Bot, model: 'GPT-4o',              dashboard: 'https://platform.openai.com/api-keys',  desc: 'GPT-4o and o1 models' },
-  { id: 'deepseek',  label: 'DeepSeek',       icon: Code, model: 'DeepSeek V3',         dashboard: 'https://platform.deepseek.com/api_keys', desc: 'DeepSeek V3 — best price/performance' },
-  { id: 'mistral',   label: 'Mistral',        icon: Globe, model: 'Mistral Large',      dashboard: 'https://console.mistral.ai/api-keys/',  desc: 'European AI, GDPR-friendly' },
-  { id: 'xai',       label: 'xAI (Grok)',     icon: Zap, model: 'Grok 2',             dashboard: 'https://console.x.ai/',                desc: 'Grok 2 — real-time knowledge' },
-  { id: 'together',  label: 'Together AI',    icon: Layers, model: 'Llama 3 70B',        dashboard: 'https://api.together.xyz/settings/api-keys', desc: '100+ open source models' },
-  { id: 'fireworks', label: 'Fireworks AI',   icon: Zap,    model: 'Llama 3.1 405B',     dashboard: 'https://fireworks.ai/account/api-keys',       desc: 'Fast inference, open source models' },
-  { id: 'custom',    label: 'Custom Endpoint', icon: Globe, model: 'OpenAI-compatible',  dashboard: '',                                             desc: 'Any OpenAI-compatible API endpoint' },
+  { id: 'anthropic', label: 'Anthropic',       model: 'Claude Sonnet 4.6',  dashboard: 'https://console.anthropic.com/settings/keys',   desc: 'Best for coding — powers Claude Sonnet' },
+  { id: 'google',    label: 'Google AI',        model: 'Gemini 2.0 Flash',   dashboard: 'https://aistudio.google.com/app/apikey',         desc: 'Gemini 2.0 Flash — fast, generous free tier' },
+  { id: 'groq',      label: 'Groq',             model: 'Llama 3.3 70B',      dashboard: 'https://console.groq.com/keys',                  desc: 'Llama 3.3 70B — fastest inference' },
+  { id: 'openai',    label: 'OpenAI',           model: 'GPT-4o',             dashboard: 'https://platform.openai.com/api-keys',           desc: 'GPT-4o and o1 models' },
+  { id: 'deepseek',  label: 'DeepSeek',         model: 'DeepSeek V3',        dashboard: 'https://platform.deepseek.com/api_keys',         desc: 'DeepSeek V3 — best price/performance' },
+  { id: 'mistral',   label: 'Mistral',          model: 'Mistral Large',      dashboard: 'https://console.mistral.ai/api-keys/',           desc: 'European AI, GDPR-friendly' },
+  { id: 'xai',       label: 'xAI',              model: 'Grok 2',             dashboard: 'https://console.x.ai/',                          desc: 'Grok 2 — real-time knowledge' },
+  { id: 'together',  label: 'Together AI',      model: 'Llama 3 70B',        dashboard: 'https://api.together.xyz/settings/api-keys',     desc: '100+ open source models' },
+  { id: 'fireworks', label: 'Fireworks AI',     model: 'Llama 3.1 405B',     dashboard: 'https://fireworks.ai/account/api-keys',          desc: 'Fast inference, open source models' },
+  { id: 'custom',    label: 'Custom Endpoint',  model: 'OpenAI-compatible',  dashboard: '',                                               desc: 'Any OpenAI-compatible API endpoint' },
 ];
 
 export function KeysList({ initialKeys }: KeysListProps) {
@@ -107,8 +106,8 @@ export function KeysList({ initialKeys }: KeysListProps) {
     <div>
       {/* Success Banner */}
       {success && (
-        <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(74,124,59,0.1)', color: '#4a7c3b', fontSize: 13, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <Check className="w-4 h-4" /> {success}
+        <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(74,124,59,0.1)', color: 'var(--success)', fontSize: 13, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+          ✓ {success}
         </div>
       )}
 
@@ -140,8 +139,8 @@ export function KeysList({ initialKeys }: KeysListProps) {
                 borderRadius: 10, minHeight: 72,
                 transition: 'border-color 0.15s',
               }}>
-                <div style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', background: activeKey ? 'rgba(74,124,59,0.1)' : 'rgba(212,169,74,0.1)', borderRadius: 8, flexShrink: 0, marginTop: 2 }}>
-                  {React.createElement(p.icon, { size: 18, color: activeKey ? '#4a7c3b' : '#D4A94A' })}
+                <div style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', background: activeKey ? 'rgba(74,124,59,0.1)' : 'rgba(212,169,74,0.1)', borderRadius: 8, flexShrink: 0, marginTop: 2, fontSize: 13, fontWeight: 700, color: activeKey ? 'var(--success)' : 'var(--ochre)', fontFamily: 'JetBrains Mono, monospace' }}>
+                  {p.id === 'anthropic' ? 'An' : p.id === 'openai' ? 'Ai' : p.id === 'google' ? 'G' : p.id === 'groq' ? 'Gq' : p.id === 'deepseek' ? 'Ds' : p.id === 'mistral' ? 'Mi' : p.id === 'xai' ? 'X' : p.id === 'together' ? 'To' : p.id === 'fireworks' ? 'Fw' : '∞'}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
@@ -258,7 +257,7 @@ export function KeysList({ initialKeys }: KeysListProps) {
                         onClick={() => setShowKey(prev => ({ ...prev, [p.id]: !prev[p.id] }))}
                         style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#6b6560', padding: 4 }}
                       >
-                        {showKey[p.id] ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        {showKey[p.id] ? '●' : '○'}
                       </button>
                     </div>
                     <button
@@ -294,7 +293,7 @@ export function KeysList({ initialKeys }: KeysListProps) {
           onClick={() => setAdvancedOpen(!advancedOpen)}
           style={{ background: 'none', border: 'none', color: '#6b6560', fontSize: 12, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}
         >
-          {advancedOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+          {advancedOpen ? '▲' : '▼'}
           {advancedOpen ? 'Hide Advanced' : 'Advanced'}
         </button>
       </div>

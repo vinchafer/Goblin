@@ -127,6 +127,30 @@ app.onError((err, c) => {
 
 app.route('/health', health);
 
+// Debug: LiteLLM connectivity
+app.get('/api/debug/litellm', async (c) => {
+  const base = process.env.LITELLM_BASE_URL;
+  const key = process.env.LITELLM_MASTER_KEY;
+  const normalizedBase = base
+    ? (base.startsWith('http') ? base.replace(/\/$/, '') : `https://${base.replace(/\/$/, '')}`)
+    : null;
+
+  if (!normalizedBase || !key) {
+    return c.json({ ok: false, error: 'LITELLM_BASE_URL or LITELLM_MASTER_KEY not set', base: normalizedBase, hasKey: !!key });
+  }
+
+  try {
+    const res = await fetch(`${normalizedBase}/health`, {
+      headers: { Authorization: `Bearer ${key}` },
+      signal: AbortSignal.timeout(5000),
+    });
+    const body = await res.text().catch(() => '');
+    return c.json({ ok: res.ok, status: res.status, base: normalizedBase, body: body.slice(0, 200) });
+  } catch (e) {
+    return c.json({ ok: false, error: e instanceof Error ? e.message : 'Request failed', base: normalizedBase });
+  }
+});
+
 // Temporary debug endpoint — remove after production issues are resolved
 app.get('/api/debug', async (c) => {
   const { checkStorageConnection } = await import('./services/file-storage.js');

@@ -13,7 +13,9 @@ export function isGoblinError(e: unknown): e is GoblinError {
 }
 
 function getLiteLLMBase(): string | null {
-  return process.env.LITELLM_BASE_URL ?? null;
+  const raw = process.env.LITELLM_BASE_URL;
+  if (!raw) return null;
+  return raw.startsWith('http') ? raw.replace(/\/$/, '') : `https://${raw.replace(/\/$/, '')}`;
 }
 
 /** Map HTTP status + error body to GoblinError */
