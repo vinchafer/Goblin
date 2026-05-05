@@ -33,7 +33,7 @@ export default function NewProjectPage() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { router.push('/login'); return; }
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/projects`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/projects`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

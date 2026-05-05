@@ -3,11 +3,6 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-interface ModelStatus {
-  byok: Record<string, boolean>;
-  freeApi: Record<string, { available: boolean; usedToday: number; limit: number }>;
-}
-
 interface UsageData {
   plan: "seed" | "craft" | "forge";
   monthly_requests_used: number;
@@ -41,23 +36,21 @@ function Dot({ status }: { status: StatusDot }) {
 export function UsageIndicators() {
   const [loading, setLoading] = useState(true);
   const [usage, setUsage] = useState<UsageData | null>(null);
-  const [modelStatus, setModelStatus] = useState<ModelStatus | null>(null);
   const supabase = createClient();
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const { data } = await supabase.auth.getSession();
-        const token = data.session?.access_token;
-        if (!token) return;
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
 
-        const [usageRes, statusRes] = await Promise.all([
-          fetch("/api/usage", { headers: { Authorization: `Bearer ${token}` } }),
-          fetch("/api/models/status", { headers: { Authorization: `Bearer ${token}` } })
-        ]);
+        const { data } = await supabase
+          .from('users')
+          .select('plan, monthly_requests_used, monthly_limit')
+          .eq('id', user.id)
+          .single();
 
-        if (usageRes.ok) setUsage(await usageRes.json());
-        if (statusRes.ok) setModelStatus(await statusRes.json());
+        if (data) setUsage(data as UsageData);
       } catch {
         // silently fail
       } finally {
@@ -71,10 +64,10 @@ export function UsageIndicators() {
     ? Math.min(100, (usage.monthly_requests_used / usage.monthly_limit) * 100)
     : 0;
 
-  const getStatus = (key: string, type: string): StatusDot => {
+  const getStatus = (_key: string, type: string): StatusDot => {
     if (type === "hosted") return "gray";
     if (type === "free") return "green";
-    if (type === "byok") return modelStatus?.byok[key] ? "ochre" : "gray";
+    if (type === "byok") return "gray";
     return "gray";
   };
 
