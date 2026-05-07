@@ -8,7 +8,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   if (!user) redirect('/login');
 
-  // @ts-ignore
   const { data: userData } = await supabase
     .from('users')
     .select('is_admin')

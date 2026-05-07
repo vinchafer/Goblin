@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client';
 export const dynamic = 'force-dynamic';
 
 type Provider = 'google' | 'github' | 'apple';
+type Mode = 'signup' | 'login';
 
 function Spinner() {
   return (
@@ -46,7 +47,7 @@ function AppleIcon() {
   );
 }
 
-const PROVIDER_CONFIG: Record<Provider, {
+const OAUTH_CONFIG: Record<Provider, {
   label: string;
   icon: React.ReactNode;
   bg: string;
@@ -54,30 +55,9 @@ const PROVIDER_CONFIG: Record<Provider, {
   border: string;
   hoverBg: string;
 }> = {
-  google: {
-    label: 'Sign in with Google',
-    icon: <GoogleIcon />,
-    bg: '#ffffff',
-    color: '#3c4043',
-    border: '#dadce0',
-    hoverBg: '#f8f9fa',
-  },
-  github: {
-    label: 'Sign in with GitHub',
-    icon: <GitHubIcon />,
-    bg: '#24292e',
-    color: '#ffffff',
-    border: '#24292e',
-    hoverBg: '#2f363d',
-  },
-  apple: {
-    label: 'Sign in with Apple',
-    icon: <AppleIcon />,
-    bg: '#000000',
-    color: '#ffffff',
-    border: '#000000',
-    hoverBg: '#1a1a1a',
-  },
+  google: { label: 'Continue with Google', icon: <GoogleIcon />, bg: '#ffffff', color: '#3c4043', border: '#dadce0', hoverBg: '#f8f9fa' },
+  github: { label: 'Continue with GitHub', icon: <GitHubIcon />, bg: '#24292e', color: '#ffffff', border: '#24292e', hoverBg: '#2f363d' },
+  apple:  { label: 'Continue with Apple',  icon: <AppleIcon />,  bg: '#000000', color: '#ffffff', border: '#000000', hoverBg: '#1a1a1a' },
 };
 
 function OAuthButton({ provider, onClick, loading }: {
@@ -85,7 +65,7 @@ function OAuthButton({ provider, onClick, loading }: {
   onClick: () => void;
   loading: boolean;
 }) {
-  const cfg = PROVIDER_CONFIG[provider];
+  const cfg = OAUTH_CONFIG[provider];
   const [hovered, setHovered] = useState(false);
 
   return (
@@ -97,12 +77,12 @@ function OAuthButton({ provider, onClick, loading }: {
       onMouseLeave={() => setHovered(false)}
       style={{
         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-        width: '100%', height: 48,
+        width: '100%', height: 46,
         background: hovered ? cfg.hoverBg : cfg.bg,
         color: cfg.color,
         border: `1.5px solid ${cfg.border}`,
         borderRadius: 10,
-        fontSize: 15, fontWeight: 500,
+        fontSize: 14, fontWeight: 500,
         fontFamily: 'var(--font-dm-sans), DM Sans, sans-serif',
         cursor: loading ? 'not-allowed' : 'pointer',
         opacity: loading ? 0.7 : 1,
@@ -119,33 +99,34 @@ function OAuthButton({ provider, onClick, loading }: {
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [loading, setLoading] = useState<Provider | null>(null);
+  const [mode, setMode] = useState<Mode>('signup');
+  const [oauthLoading, setOauthLoading] = useState<Provider | null>(null);
   const [email, setEmail] = useState('');
   const [emailLoading, setEmailLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
 
   useEffect(() => {
     const error = searchParams.get('error');
-    if (error) {
-      toast.error(decodeURIComponent(error));
-    }
+    if (error) toast.error(decodeURIComponent(error));
   }, [searchParams]);
 
-  const signIn = async (provider: Provider) => {
-    if (loading) return;
-    setLoading(provider);
+  const switchMode = (m: Mode) => {
+    setMode(m);
+    setEmailSent(false);
+  };
+
+  const signInWithOAuth = async (provider: Provider) => {
+    if (oauthLoading) return;
+    setOauthLoading(provider);
     try {
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
+        options: { redirectTo: `${window.location.origin}/auth/callback` },
       });
       if (error) throw error;
-      // Browser will redirect — keep spinner active
-    } catch (err: unknown) {
-      setLoading(null);
+    } catch (err) {
+      setOauthLoading(null);
       toast.error(err instanceof Error ? err.message : 'Sign in failed. Please try again.');
     }
   };
@@ -160,229 +141,166 @@ export default function LoginPage() {
         email: email.trim(),
         options: {
           emailRedirectTo: `${window.location.origin}/auth/callback`,
+          shouldCreateUser: mode === 'signup',
         },
       });
-      if (error) throw error;
+      if (error) {
+        // Supabase returns this when shouldCreateUser=false and no account exists
+        if (error.message.toLowerCase().includes('signup') || error.message.toLowerCase().includes('not found')) {
+          toast.error('No account found. Switch to "Create account" to sign up.');
+        } else {
+          throw error;
+        }
+        return;
+      }
       setEmailSent(true);
-      toast.success('Magic link sent! Check your inbox.');
-    } catch (err: unknown) {
+    } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to send magic link.');
     } finally {
       setEmailLoading(false);
     }
   };
 
-  const features = [
-    { icon: '⚡', text: 'No token panic — ever' },
-    { icon: '📱', text: 'Build from your phone' },
-    { icon: '🚀', text: 'Ship to GitHub in one tap' },
-  ];
-
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900;1,900&display=swap');
-        .login-left { display: flex; }
-        .login-mobile-header { display: none; }
-        @media (max-width: 768px) {
-          .login-left { display: none !important; }
-          .login-mobile-header { display: block !important; }
-          .login-right { padding: 32px 24px !important; }
-        }
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900&display=swap');
+        ::placeholder { color: rgba(255,255,255,0.25) !important; }
       `}</style>
 
-      <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--cream)' }}>
+      <div className="auth-page">
 
-        {/* Left — Brand panel */}
-        <div
-          className="login-left"
-          style={{
-            width: '44%', background: 'var(--moss)',
-            padding: '52px 48px',
-            flexDirection: 'column', justifyContent: 'space-between',
-            flexShrink: 0,
-          }}
-        >
-          {/* Logo */}
-          <div style={{
-            fontFamily: 'Fraunces, serif', fontSize: 26,
-            color: 'var(--ochre)', fontWeight: 700, letterSpacing: '-0.5px',
-          }}>
-            Goblin.
-          </div>
+        {/* Logo */}
+        <div className="auth-logo">Goblin.</div>
 
-          {/* Tagline block */}
-          <div>
-            <h1 style={{
-              fontFamily: 'Fraunces, serif',
-              fontSize: 46, fontWeight: 900,
-              color: '#ffffff', lineHeight: 1.1,
-              letterSpacing: '-2px', marginBottom: 32,
-            }}>
-              The cloud<br />
-              workshop for<br />
-              <em style={{ fontStyle: 'italic', color: 'var(--ochre)' }}>builders.</em>
-            </h1>
+        {/* Mode toggle */}
+        <div className="auth-mode-toggle">
+          {(['signup', 'login'] as Mode[]).map((m) => (
+            <button
+              key={m}
+              onClick={() => switchMode(m)}
+              className={`auth-mode-btn${mode === m ? ' active' : ''}`}
+            >
+              {m === 'signup' ? 'Create account' : 'Sign in'}
+            </button>
+          ))}
+        </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {features.map(f => (
-                <div key={f.text} style={{
-                  display: 'flex', alignItems: 'center', gap: 12,
-                  fontSize: 14, color: 'rgba(255,255,255,0.72)',
+        {/* Card */}
+        <div className="auth-card-wrapper">
+          <h1 className="auth-card-title">
+            {mode === 'signup' ? 'Create your account' : 'Welcome back'}
+          </h1>
+          <p className="auth-card-subtitle">
+            {mode === 'signup'
+              ? 'Build your first project in minutes.'
+              : 'Sign in to continue building.'}
+          </p>
+
+          {/* Email / Magic Link — primary action */}
+          {emailSent ? (
+            <div className="auth-success-box">
+              <div style={{ fontSize: 28, marginBottom: 10 }}>📬</div>
+              <p style={{ fontSize: 14, color: '#A8C6A0', fontWeight: 600, margin: '0 0 4px' }}>
+                Magic link sent
+              </p>
+              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', margin: 0, lineHeight: 1.5 }}>
+                Check <strong style={{ color: 'rgba(255,255,255,0.55)' }}>{email}</strong> and click the link.
+              </p>
+              <button
+                onClick={() => setEmailSent(false)}
+                style={{
+                  marginTop: 14,
+                  background: 'none',
+                  border: 'none',
+                  color: 'rgba(255,255,255,0.3)',
+                  fontSize: 12,
+                  cursor: 'pointer',
+                  fontFamily: 'DM Sans, sans-serif',
+                }}
+              >
+                ← Use a different email
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={signInWithEmail} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <input
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="your@email.com"
+                required
+                style={{
+                  width: '100%', height: 48, padding: '0 14px',
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1.5px solid rgba(255,255,255,0.1)',
+                  borderRadius: 10,
+                  fontSize: 14,
+                  color: '#fff',
+                  outline: 'none',
                   fontFamily: 'var(--font-dm-sans), DM Sans, sans-serif',
-                }}>
-                  <span style={{
-                    width: 28, height: 28, borderRadius: '50%',
-                    background: 'rgba(212,169,74,0.12)',
-                    border: '1px solid rgba(212,169,74,0.3)',
-                    display: 'inline-flex', alignItems: 'center',
-                    justifyContent: 'center', fontSize: 13, flexShrink: 0,
-                  }}>
-                    {f.icon}
-                  </span>
-                  {f.text}
-                </div>
-              ))}
-            </div>
+                  boxSizing: 'border-box',
+                  transition: 'border-color 0.15s',
+                }}
+                onFocus={e => (e.target.style.borderColor = '#2D4A2B')}
+                onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.1)')}
+              />
+              <button
+                type="submit"
+                disabled={emailLoading || !email.trim()}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  width: '100%', height: 48,
+                  background: email.trim() ? '#2D4A2B' : 'rgba(255,255,255,0.06)',
+                  color: email.trim() ? '#fff' : 'rgba(255,255,255,0.2)',
+                  border: 'none',
+                  borderRadius: 10,
+                  fontSize: 14, fontWeight: 600,
+                  fontFamily: 'var(--font-dm-sans), DM Sans, sans-serif',
+                  cursor: emailLoading || !email.trim() ? 'not-allowed' : 'pointer',
+                  transition: 'background 0.15s',
+                }}
+              >
+                {emailLoading ? <Spinner /> : (
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="2" y="4" width="20" height="16" rx="2"/>
+                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                  </svg>
+                )}
+                {emailLoading ? 'Sending…' : mode === 'signup' ? 'Create account with Email' : 'Sign in with Email'}
+              </button>
+            </form>
+          )}
+
+          {/* Divider */}
+          <div className="auth-divider">
+            <div className="auth-divider-line" />
+            <span className="auth-divider-text">or</span>
+            <div className="auth-divider-line" />
           </div>
 
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)', fontFamily: 'DM Sans, sans-serif' }}>
-            © 2026 Goblin · <a href="/privacy" style={{ color: 'inherit', textDecoration: 'none' }}>Privacy</a>
+          {/* OAuth */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+
+            <OAuthButton provider="google" onClick={() => signInWithOAuth('google')} loading={oauthLoading === 'google'} />
+            <OAuthButton provider="github" onClick={() => signInWithOAuth('github')} loading={oauthLoading === 'github'} />
+            <OAuthButton provider="apple"  onClick={() => signInWithOAuth('apple')}  loading={oauthLoading === 'apple'}  />
           </div>
+
+          {/* Terms */}
+          <p className="auth-terms">
+            By continuing you agree to our{' '}
+            <a href="/terms"   style={{ color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>Terms</a>
+            {' '}and{' '}
+            <a href="/privacy" style={{ color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>Privacy Policy</a>
+          </p>
         </div>
 
-        {/* Right — Login form */}
-        <div
-          className="login-right"
-          style={{
-            flex: 1, display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center',
-            padding: '48px 40px',
-          }}
-        >
-          {/* Mobile-only mini header */}
-          <div className="login-mobile-header" style={{ marginBottom: 32, textAlign: 'center' }}>
-            <div style={{
-              fontFamily: 'Fraunces, serif', fontSize: 24,
-              color: 'var(--moss)', fontWeight: 700,
-            }}>
-              Goblin.
-            </div>
-          </div>
-
-          {/* Card */}
-          <div style={{
-            width: '100%', maxWidth: 400,
-            background: '#ffffff',
-            borderRadius: 16,
-            border: '1px solid var(--goblin-border)',
-            padding: '40px 36px',
-            boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
-          }}>
-            <h2 style={{
-              fontFamily: 'Fraunces, serif', fontSize: 28,
-              color: 'var(--bark)', fontWeight: 700,
-              letterSpacing: '-0.8px', marginBottom: 6,
-            }}>
-              Welcome to Goblin
-            </h2>
-            <p style={{
-              fontSize: 14, color: 'var(--goblin-meta)',
-              fontFamily: 'var(--font-dm-sans), DM Sans, sans-serif',
-              marginBottom: 32, lineHeight: 1.5,
-            }}>
-              Sign in to continue building
-            </p>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <OAuthButton provider="google" onClick={() => signIn('google')} loading={loading === 'google'} />
-              <OAuthButton provider="github" onClick={() => signIn('github')} loading={loading === 'github'} />
-              <OAuthButton provider="apple"  onClick={() => signIn('apple')}  loading={loading === 'apple'}  />
-            </div>
-
-            {/* Divider */}
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 12,
-              margin: '24px 0 20px',
-            }}>
-              <div style={{ flex: 1, height: 1, background: 'var(--goblin-border)' }} />
-              <span style={{ fontSize: 12, color: 'var(--goblin-meta)', fontFamily: 'DM Sans, sans-serif' }}>or</span>
-              <div style={{ flex: 1, height: 1, background: 'var(--goblin-border)' }} />
-            </div>
-
-            {/* Email — Magic Link */}
-            {emailSent ? (
-              <div style={{
-                textAlign: 'center', padding: '16px 12px',
-                background: 'rgba(45,74,43,0.06)', borderRadius: 10,
-                border: '1px solid rgba(45,74,43,0.15)',
-              }}>
-                <div style={{ fontSize: 22, marginBottom: 6 }}>📬</div>
-                <p style={{ fontSize: 13, color: 'var(--goblin-moss)', fontWeight: 500, margin: 0 }}>
-                  Magic link sent to <strong>{email}</strong>
-                </p>
-                <p style={{ fontSize: 12, color: 'var(--goblin-meta)', margin: '4px 0 0' }}>
-                  Check your inbox and click the link to sign in.
-                </p>
-              </div>
-            ) : (
-              <form onSubmit={signInWithEmail} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={e => setEmail(e.target.value)}
-                  placeholder="your@email.com"
-                  required
-                  style={{
-                    width: '100%', height: 48, padding: '0 14px',
-                    border: '1.5px solid var(--goblin-border)',
-                    borderRadius: 10, fontSize: 14,
-                    fontFamily: 'var(--font-dm-sans), DM Sans, sans-serif',
-                    color: 'var(--goblin-slate)', outline: 'none',
-                    boxSizing: 'border-box',
-                  }}
-                  onFocus={e => (e.target.style.borderColor = 'var(--goblin-moss)')}
-                  onBlur={e => (e.target.style.borderColor = 'var(--goblin-border)')}
-                />
-                <button
-                  type="submit"
-                  disabled={emailLoading || !email.trim()}
-                  style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                    width: '100%', height: 48,
-                    background: email.trim() ? 'var(--goblin-moss)' : 'var(--goblin-border)',
-                    color: email.trim() ? '#fff' : 'var(--goblin-meta)',
-                    border: 'none', borderRadius: 10, fontSize: 14, fontWeight: 500,
-                    fontFamily: 'var(--font-dm-sans), DM Sans, sans-serif',
-                    cursor: emailLoading || !email.trim() ? 'not-allowed' : 'pointer',
-                    transition: 'background 0.15s',
-                  }}
-                >
-                  {emailLoading ? <Spinner /> : (
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <rect x="2" y="4" width="20" height="16" rx="2"/>
-                      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
-                    </svg>
-                  )}
-                  {emailLoading ? 'Sending…' : 'Continue with Email'}
-                </button>
-              </form>
-            )}
-
-            {/* Footer */}
-            <p style={{
-              marginTop: 24, fontSize: 11,
-              color: 'var(--goblin-meta)',
-              fontFamily: 'DM Sans, sans-serif',
-              textAlign: 'center', lineHeight: 1.6,
-            }}>
-              By signing in you agree to our{' '}
-              <a href="/terms" style={{ color: 'var(--goblin-moss)', textDecoration: 'none' }}>Terms</a>
-              {' '}and{' '}
-              <a href="/privacy" style={{ color: 'var(--goblin-moss)', textDecoration: 'none' }}>Privacy Policy</a>
-            </p>
-          </div>
-        </div>
+        {/* Footer */}
+        <p className="auth-footer">
+          © 2026 Goblin ·{' '}
+          <a href="/privacy" style={{ color: 'inherit', textDecoration: 'none' }}>Privacy</a>
+        </p>
       </div>
     </>
   );

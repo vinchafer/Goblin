@@ -9,26 +9,36 @@ interface KeysListProps {
 }
 
 const PROVIDERS = [
-  { id: 'anthropic', label: 'Anthropic',       model: 'Claude Sonnet 4.6',  dashboard: 'https://console.anthropic.com/settings/keys',   desc: 'Best for coding — powers Claude Sonnet' },
-  { id: 'google',    label: 'Google AI',        model: 'Gemini 2.0 Flash',   dashboard: 'https://aistudio.google.com/app/apikey',         desc: 'Gemini 2.0 Flash — fast, generous free tier' },
-  { id: 'groq',      label: 'Groq',             model: 'Llama 3.3 70B',      dashboard: 'https://console.groq.com/keys',                  desc: 'Llama 3.3 70B — fastest inference' },
-  { id: 'openai',    label: 'OpenAI',           model: 'GPT-4o',             dashboard: 'https://platform.openai.com/api-keys',           desc: 'GPT-4o and o1 models' },
-  { id: 'deepseek',  label: 'DeepSeek',         model: 'DeepSeek V3',        dashboard: 'https://platform.deepseek.com/api_keys',         desc: 'DeepSeek V3 — best price/performance' },
-  { id: 'mistral',   label: 'Mistral',          model: 'Mistral Large',      dashboard: 'https://console.mistral.ai/api-keys/',           desc: 'European AI, GDPR-friendly' },
-  { id: 'xai',       label: 'xAI',              model: 'Grok 2',             dashboard: 'https://console.x.ai/',                          desc: 'Grok 2 — real-time knowledge' },
-  { id: 'together',  label: 'Together AI',      model: 'Llama 3 70B',        dashboard: 'https://api.together.xyz/settings/api-keys',     desc: '100+ open source models' },
-  { id: 'fireworks', label: 'Fireworks AI',     model: 'Llama 3.1 405B',     dashboard: 'https://fireworks.ai/account/api-keys',          desc: 'Fast inference, open source models' },
-  { id: 'custom',    label: 'Custom Endpoint',  model: 'OpenAI-compatible',  dashboard: '',                                               desc: 'Any OpenAI-compatible API endpoint' },
+  { id: 'anthropic', label: 'Anthropic',      initial: 'An', model: 'Claude Sonnet 4.6',  dashboard: 'https://console.anthropic.com/settings/keys',   desc: 'Best for coding — powers Claude Sonnet',        hasCreditsLink: false },
+  { id: 'openai',    label: 'OpenAI',          initial: 'Ai', model: 'GPT-4o',             dashboard: 'https://platform.openai.com/api-keys',           desc: 'GPT-4o and o1 models',                          hasCreditsLink: true,  creditsUrl: 'https://platform.openai.com/usage' },
+  { id: 'google',    label: 'Google AI',       initial: 'G',  model: 'Gemini 2.0 Flash',   dashboard: 'https://aistudio.google.com/app/apikey',         desc: 'Gemini 2.0 Flash — fast, generous free tier',   hasCreditsLink: false },
+  { id: 'groq',      label: 'Groq',            initial: 'Gq', model: 'Llama 3.3 70B',      dashboard: 'https://console.groq.com/keys',                  desc: 'Llama 3.3 70B — fastest inference',             hasCreditsLink: false },
+  { id: 'deepseek',  label: 'DeepSeek',        initial: 'Ds', model: 'DeepSeek V3',        dashboard: 'https://platform.deepseek.com/api_keys',         desc: 'DeepSeek V3 — best price/performance',          hasCreditsLink: true,  creditsUrl: 'https://platform.deepseek.com' },
+  { id: 'mistral',   label: 'Mistral',         initial: 'Mi', model: 'Mistral Large',      dashboard: 'https://console.mistral.ai/api-keys/',           desc: 'European AI, GDPR-friendly',                    hasCreditsLink: true,  creditsUrl: 'https://console.mistral.ai/billing' },
+  { id: 'xai',       label: 'xAI',             initial: 'X',  model: 'Grok 3',             dashboard: 'https://console.x.ai/',                          desc: 'Grok 3 — powerful reasoning',                   hasCreditsLink: false },
+  { id: 'together',  label: 'Together AI',     initial: 'To', model: 'Llama 3.3 70B',      dashboard: 'https://api.together.xyz/settings/api-keys',     desc: '100+ open source models',                       hasCreditsLink: true,  creditsUrl: 'https://api.together.xyz/settings/billing' },
+  { id: 'fireworks', label: 'Fireworks AI',    initial: 'Fw', model: 'Llama 3.3 70B',      dashboard: 'https://fireworks.ai/account/api-keys',          desc: 'Fast inference, open source models',            hasCreditsLink: false },
+  { id: 'custom',    label: 'Custom Endpoint', initial: '∞',  model: 'OpenAI-compatible',  dashboard: '',                                               desc: 'Any OpenAI-compatible API endpoint',            hasCreditsLink: false },
 ];
+
+type SaveStatus = 'idle' | 'saving' | 'success' | 'error';
+
+function Spinner({ size = 14 }: { size?: number }) {
+  return (
+    <svg style={{ animation: 'spin 0.7s linear infinite' }} width={size} height={size} viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.5" strokeDasharray="28" strokeDashoffset="8" opacity="0.3" />
+      <path d="M12 3a9 9 0 0 1 9 9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+    </svg>
+  );
+}
 
 export function KeysList({ initialKeys }: KeysListProps) {
   const [keys, setKeys] = useState<ByokKey[]>(initialKeys);
   const [connecting, setConnecting] = useState<string | null>(null);
   const [keyInput, setKeyInput] = useState<Record<string, string>>({});
   const [showKey, setShowKey] = useState<Record<string, boolean>>({});
-  const [savingKey, setSavingKey] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
+  const [saveStatus, setSaveStatus] = useState<Record<string, SaveStatus>>({});
+  const [saveError, setSaveError] = useState<Record<string, string>>({});
   const [revokingId, setRevokingId] = useState<string | null>(null);
   const [advancedOpen, setAdvancedOpen] = useState(false);
   const [advancedSettings, setAdvancedSettings] = useState<Record<string, { baseUrl: string; model: string; timeout: string }>>({});
@@ -41,15 +51,20 @@ export function KeysList({ initialKeys }: KeysListProps) {
     const rawKey = keyInput[provider]?.trim();
     if (!rawKey) return;
 
-    setSavingKey(provider);
-    setError(null);
+    const providerMeta = PROVIDERS.find(p => p.id === provider);
+    setSaveStatus(prev => ({ ...prev, [provider]: 'saving' }));
+    setSaveError(prev => ({ ...prev, [provider]: '' }));
 
     try {
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
       if (!token) throw new Error('Not authenticated');
 
-      const body: Record<string, any> = { provider, key: rawKey };
+      const body: Record<string, unknown> = {
+        provider,
+        label: providerMeta?.label ?? provider,
+        key: rawKey,
+      };
       const adv = advancedSettings[provider];
       if (adv?.baseUrl) body.baseUrl = adv.baseUrl;
       if (adv?.model) body.model = adv.model;
@@ -69,32 +84,33 @@ export function KeysList({ initialKeys }: KeysListProps) {
         throw new Error(err.error || 'Failed to save key');
       }
 
-      const newKey = await response.json();
-      setKeys(prev => [newKey, ...prev]);
+      const newKey = await response.json() as ByokKey;
+      setKeys(prev => [newKey, ...prev.filter(k => !(k.provider === provider && k.status === 'active'))]);
       setKeyInput(prev => ({ ...prev, [provider]: '' }));
-      setConnecting(null);
-      setSuccess(`${PROVIDERS.find(p => p.id === provider)?.label} key connected!`);
-      setTimeout(() => setSuccess(null), 3000);
+      setSaveStatus(prev => ({ ...prev, [provider]: 'success' }));
+      // Collapse the inline panel after a brief success flash
+      setTimeout(() => {
+        setConnecting(null);
+        setSaveStatus(prev => ({ ...prev, [provider]: 'idle' }));
+      }, 1200);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to connect key');
-      setTimeout(() => setError(null), 4000);
-    } finally {
-      setSavingKey(null);
+      const msg = err instanceof Error ? err.message : 'Failed to connect key';
+      setSaveError(prev => ({ ...prev, [provider]: msg }));
+      setSaveStatus(prev => ({ ...prev, [provider]: 'error' }));
+      setTimeout(() => setSaveStatus(prev => ({ ...prev, [provider]: 'idle' })), 4000);
     }
   };
 
-  const handleRevoke = async (keyId: string) => {
+  const handleRevoke = async (keyId: string, provider: string) => {
     setRevokingId(keyId);
     try {
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
-
       await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/byok-keys/${keyId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` },
       });
-
-      setKeys(prev => prev.map(k => k.id === keyId ? { ...k, status: 'revoked' as const } : k));
+      setKeys(prev => prev.filter(k => k.id !== keyId));
     } catch {
       // ignore
     } finally {
@@ -104,138 +120,118 @@ export function KeysList({ initialKeys }: KeysListProps) {
 
   return (
     <div>
-      {/* Success Banner */}
-      {success && (
-        <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(74,124,59,0.1)', color: 'var(--success)', fontSize: 13, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
-          ✓ {success}
-        </div>
-      )}
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
 
-      {/* Error Banner */}
-      {error && (
-        <div style={{ padding: '10px 14px', borderRadius: 8, background: '#fef2f2', color: '#b85c3c', fontSize: 13, marginBottom: 16 }}>
-          {error}
-        </div>
-      )}
-
-      {/* Provider Grid */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
-        gap: 12,
-      }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         {PROVIDERS.map(p => {
           const activeKey = activeForProvider(p.id);
           const isConnecting = connecting === p.id;
+          const status = saveStatus[p.id] ?? 'idle';
+          const errMsg = saveError[p.id];
 
           return (
             <div key={p.id}>
-              {/* Provider card */}
-              <div style={{
-                display: 'flex', alignItems: 'flex-start', gap: 12,
-                padding: '18px 20px',
-                background: activeKey ? 'rgba(74,124,59,0.04)' : '#FFFFFF',
-                border: activeKey ? '1px solid rgba(74,124,59,0.25)' : '1px solid #EDE8DC',
-                borderRadius: 10, minHeight: 72,
-                transition: 'border-color 0.15s',
-              }}>
-                <div style={{ width: 36, height: 36, display: 'flex', alignItems: 'center', justifyContent: 'center', background: activeKey ? 'rgba(74,124,59,0.1)' : 'rgba(212,169,74,0.1)', borderRadius: 8, flexShrink: 0, marginTop: 2, fontSize: 13, fontWeight: 700, color: activeKey ? 'var(--success)' : 'var(--ochre)', fontFamily: 'JetBrains Mono, monospace' }}>
-                  {p.id === 'anthropic' ? 'An' : p.id === 'openai' ? 'Ai' : p.id === 'google' ? 'G' : p.id === 'groq' ? 'Gq' : p.id === 'deepseek' ? 'Ds' : p.id === 'mistral' ? 'Mi' : p.id === 'xai' ? 'X' : p.id === 'together' ? 'To' : p.id === 'fireworks' ? 'Fw' : '∞'}
+              {/* ── Provider row ── */}
+              <div className={`keys-provider-row${activeKey ? ' connected' : ''}${isConnecting ? ' open' : ''}`}>
+                {/* Initial badge */}
+                <div className={`keys-provider-badge ${activeKey ? 'connected' : 'idle'}`}>
+                  {p.initial}
                 </div>
+
+                {/* Label + hint */}
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                    <span style={{ fontSize: 14, fontWeight: 600, color: '#2A2A2A', fontFamily: 'DM Sans, sans-serif' }}>{p.label}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', fontFamily: 'DM Sans, sans-serif' }}>
+                      {p.label}
+                    </span>
                     {activeKey && (
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#4a7c3b', fontWeight: 500 }}>
-                        <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#4a7c3b', display: 'inline-block' }} />
+                      <span style={{
+                        display: 'flex', alignItems: 'center', gap: 4,
+                        fontSize: 11, color: 'var(--moss)', fontWeight: 500,
+                      }}>
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--moss)', display: 'inline-block' }} />
                         Connected
                       </span>
                     )}
                   </div>
-                  <div style={{ fontSize: 12, color: '#6B6B6B', marginBottom: activeKey ? 6 : 0 }}>
-                    {p.desc}
-                  </div>
-                  {activeKey && (
-                    <div style={{ fontSize: 11, color: '#6b6560', fontFamily: 'JetBrains Mono, monospace' }}>
-                      sk-···· {(activeKey as any).key_hint?.slice(-4) || '····'}
-                      {activeKey.created_at && (
-                        <span style={{ marginLeft: 8, fontFamily: 'DM Sans, sans-serif', color: '#9b9691' }}>
-                          since {new Date(activeKey.created_at).toLocaleDateString()}
-                        </span>
+                  {activeKey ? (
+                    <div style={{
+                      fontSize: 11, color: 'var(--meta)', marginTop: 2,
+                      fontFamily: 'JetBrains Mono, monospace',
+                      display: 'flex', alignItems: 'center', gap: 8,
+                    }}>
+                      <span>····{activeKey.key_hint ?? '····'}</span>
+                      {p.hasCreditsLink && p.creditsUrl && (
+                        <a
+                          href={p.creditsUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ fontSize: 11, color: 'var(--ochre)', fontFamily: 'DM Sans, sans-serif', textDecoration: 'none', fontWeight: 500 }}
+                          onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
+                          onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
+                        >
+                          Check credits →
+                        </a>
                       )}
+                    </div>
+                  ) : (
+                    <div style={{ fontSize: 12, color: 'var(--meta)', marginTop: 1, fontFamily: 'DM Sans, sans-serif' }}>
+                      {p.desc}
                     </div>
                   )}
                 </div>
 
-                {/* Status & Actions */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  {activeKey ? (
-                    <>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: '#4a7c3b' }} />
-                        <span style={{ fontSize: 12, color: '#4a7c3b', fontWeight: 500 }}>
-                          Connected ···· {(activeKey as any).key_hint?.slice(-4) || '4Xk2'}
-                        </span>
-                      </div>
-                      <button
-                        onClick={() => setRevokingId(activeKey.id)}
-                        style={{ 
-                          background: 'none', 
-                          border: '1px solid #EDE8DC', 
-                          borderRadius: 6, 
-                          padding: '6px 12px', 
-                          fontSize: 12, 
-                          fontWeight: 600,
-                          color: '#B85C3C', 
-                          cursor: 'pointer',
-                          transition: 'all 0.15s'
-                        }}
-                        onMouseEnter={e => { e.currentTarget.style.background = 'rgba(184, 92, 60, 0.05)'; e.currentTarget.style.borderColor = '#B85C3C'; }}
-                        onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = '#EDE8DC'; }}
-                      >
-                        Remove
-                      </button>
-                    </>
-                  ) : (
-                    <button
-                      onClick={() => { setConnecting(p.id); setError(null); }}
-                      style={{ 
-                        background: '#D4A94A', 
-                        border: 'none', 
-                        borderRadius: 6, 
-                        padding: '8px 16px', 
-                        fontSize: 12, 
-                        fontWeight: 600,
-                        color: '#2A1F0F', 
-                        cursor: 'pointer',
-                        transition: 'background 0.15s',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 4
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.background = '#E8B05A'}
-                      onMouseLeave={e => e.currentTarget.style.background = '#D4A94A'}
-                    >
-                      Add →
-                    </button>
-                  )}
-                </div>
+                {/* Action */}
+                {activeKey ? (
+                  <button
+                    onClick={() => handleRevoke(activeKey.id, p.id)}
+                    disabled={revokingId === activeKey.id}
+                    style={{
+                      background: 'none', border: '1px solid var(--border)',
+                      borderRadius: 6, padding: '6px 14px',
+                      fontSize: 12, fontWeight: 600, color: 'var(--danger)',
+                      cursor: revokingId === activeKey.id ? 'not-allowed' : 'pointer',
+                      opacity: revokingId === activeKey.id ? 0.5 : 1,
+                      transition: 'all 0.15s', whiteSpace: 'nowrap',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'rgba(184,92,60,0.05)'; e.currentTarget.style.borderColor = 'var(--danger)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = 'var(--border)'; }}
+                  >
+                    {revokingId === activeKey.id ? '...' : 'Remove'}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => { setConnecting(isConnecting ? null : p.id); setSaveError(prev => ({ ...prev, [p.id]: '' })); }}
+                    style={{
+                      background: isConnecting ? 'transparent' : 'var(--ochre)',
+                      border: isConnecting ? '1px solid var(--border)' : 'none',
+                      borderRadius: 6, padding: '7px 16px',
+                      fontSize: 12, fontWeight: 600,
+                      color: isConnecting ? 'var(--meta)' : '#2A1F0F',
+                      cursor: 'pointer', transition: 'background 0.15s',
+                      whiteSpace: 'nowrap',
+                    }}
+                    onMouseEnter={e => { if (!isConnecting) e.currentTarget.style.background = '#E8B05A'; }}
+                    onMouseLeave={e => { if (!isConnecting) e.currentTarget.style.background = 'var(--ochre)'; }}
+                  >
+                    {isConnecting ? 'Cancel' : 'Add key →'}
+                  </button>
+                )}
               </div>
 
-              {/* Inline Connect Panel */}
+              {/* ── Inline input panel ── */}
               {isConnecting && (
-                <div style={{
-                  marginTop: 8,
-                  padding: '16px 14px',
-                  background: '#f7f3ec', border: '1px solid #e4ddd2',
-                  borderRadius: 8,
-                }}>
-                  <p style={{ fontSize: 12, color: '#6b6560', marginBottom: 10, lineHeight: 1.5 }}>
-                    {p.desc} Model: <strong style={{ color: '#1e3a1c' }}>{p.model}</strong>.
-                    <br />
-                    <a href={p.dashboard} target="_blank" rel="noopener noreferrer" style={{ color: '#c9933a', textDecoration: 'underline' }}>
-                      Get your key →
-                    </a>
+                <div className="keys-input-panel">
+                  <p style={{ fontSize: 12, color: 'var(--meta)', marginBottom: 10, lineHeight: 1.5 }}>
+                    {p.desc} — model: <strong style={{ color: 'var(--text)' }}>{p.model}</strong>
+                    {p.dashboard && (
+                      <>
+                        {' · '}
+                        <a href={p.dashboard} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--ochre)', textDecoration: 'underline' }}>
+                          Get API key →
+                        </a>
+                      </>
+                    )}
                   </p>
 
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -244,42 +240,58 @@ export function KeysList({ initialKeys }: KeysListProps) {
                         type={showKey[p.id] ? 'text' : 'password'}
                         value={keyInput[p.id] || ''}
                         onChange={e => setKeyInput(prev => ({ ...prev, [p.id]: e.target.value }))}
+                        onKeyDown={e => { if (e.key === 'Enter') handleSave(p.id); }}
                         placeholder="Paste your API key"
                         style={{
                           width: '100%', padding: '9px 36px 9px 12px',
-                          borderRadius: 6, border: '1px solid #e4ddd2',
-                          fontSize: 13, fontFamily: 'monospace',
-                          background: '#fff', outline: 'none',
-                          boxSizing: 'border-box',
+                          borderRadius: 8, fontSize: 13,
+                          border: `1.5px solid ${errMsg ? 'var(--danger)' : 'var(--border)'}`,
+                          fontFamily: 'JetBrains Mono, monospace',
+                          background: 'var(--panel)', color: 'var(--text)',
+                          outline: 'none', boxSizing: 'border-box',
+                          transition: 'border-color 0.15s',
                         }}
+                        onFocus={e => { if (!errMsg) e.target.style.borderColor = 'var(--moss)'; }}
+                        onBlur={e => { e.target.style.borderColor = errMsg ? 'var(--danger)' : 'var(--border)'; }}
                       />
                       <button
                         onClick={() => setShowKey(prev => ({ ...prev, [p.id]: !prev[p.id] }))}
-                        style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#6b6560', padding: 4 }}
+                        style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--meta)', padding: 2, fontSize: 11 }}
                       >
-                        {showKey[p.id] ? '●' : '○'}
+                        {showKey[p.id] ? '🙈' : '👁'}
                       </button>
                     </div>
+
                     <button
                       onClick={() => handleSave(p.id)}
-                      disabled={!keyInput[p.id]?.trim() || savingKey === p.id}
+                      disabled={!keyInput[p.id]?.trim() || status === 'saving'}
                       style={{
-                        padding: '9px 18px', borderRadius: 6, border: 'none',
-                        fontSize: 13, fontWeight: 600, cursor: savingKey === p.id ? 'wait' : 'pointer',
-                        background: '#1e3a1c', color: '#c9933a',
-                        opacity: !keyInput[p.id]?.trim() ? 0.5 : 1,
+                        padding: '9px 20px', borderRadius: 8, border: 'none',
+                        fontSize: 13, fontWeight: 600,
+                        cursor: status === 'saving' ? 'wait' : (!keyInput[p.id]?.trim() ? 'not-allowed' : 'pointer'),
+                        background: status === 'success' ? 'var(--moss)' : status === 'error' ? 'var(--danger)' : 'var(--moss)',
+                        color: '#fff',
+                        opacity: !keyInput[p.id]?.trim() && status === 'idle' ? 0.45 : 1,
                         whiteSpace: 'nowrap',
+                        display: 'flex', alignItems: 'center', gap: 7,
+                        transition: 'background 0.2s',
+                        minWidth: 96,
+                        justifyContent: 'center',
                       }}
                     >
-                      {savingKey === p.id ? 'Saving...' : 'Save key'}
-                    </button>
-                    <button
-                      onClick={() => { setConnecting(null); setError(null); setKeyInput(prev => ({ ...prev, [p.id]: '' })); }}
-                      style={{ background: 'none', border: 'none', color: '#6b6560', cursor: 'pointer', fontSize: 13, padding: '9px 8px' }}
-                    >
-                      Cancel
+                      {status === 'saving' && <Spinner />}
+                      {status === 'saving' ? 'Validating…'
+                        : status === 'success' ? '✓ Connected'
+                        : status === 'error'   ? '✗ Invalid'
+                        : 'Save key'}
                     </button>
                   </div>
+
+                  {errMsg && (
+                    <p style={{ fontSize: 12, color: 'var(--danger)', marginTop: 7, fontFamily: 'DM Sans, sans-serif' }}>
+                      {errMsg}
+                    </p>
+                  )}
                 </div>
               )}
             </div>
@@ -288,46 +300,37 @@ export function KeysList({ initialKeys }: KeysListProps) {
       </div>
 
       {/* Advanced Toggle */}
-      <div style={{ marginTop: 24, textAlign: 'center' }}>
+      <div style={{ marginTop: 20, textAlign: 'center' }}>
         <button
           onClick={() => setAdvancedOpen(!advancedOpen)}
-          style={{ background: 'none', border: 'none', color: '#6b6560', fontSize: 12, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+          style={{ background: 'none', border: 'none', color: 'var(--meta)', fontSize: 12, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}
         >
-          {advancedOpen ? '▲' : '▼'}
-          {advancedOpen ? 'Hide Advanced' : 'Advanced'}
+          {advancedOpen ? '▲ Hide Advanced' : '▼ Advanced (custom endpoints)'}
         </button>
       </div>
 
-      {/* Advanced Settings Panel */}
       {advancedOpen && (
-        <div style={{ marginTop: 12, padding: 16, background: '#f7f3ec', border: '1px solid #e4ddd2', borderRadius: 8 }}>
-          <p style={{ fontSize: 12, color: '#6b6560', marginBottom: 12 }}>
-            Override API endpoints for self-hosted or OpenAI-compatible providers.
-            Leave blank to use defaults.
+        <div className="keys-advanced-panel">
+          <p style={{ fontSize: 12, color: 'var(--meta)', marginBottom: 12 }}>
+            Override base URLs for self-hosted or OpenAI-compatible providers.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {PROVIDERS.map(p => {
+            {PROVIDERS.filter(p => p.id !== 'custom').map(p => {
               const adv = advancedSettings[p.id] || { baseUrl: '', model: '', timeout: '' };
               return (
                 <div key={p.id} style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 12 }}>
-                  <span style={{ width: 100, color: '#1e3a1c', fontWeight: 500, flexShrink: 0 }}>{p.label}</span>
+                  <span style={{ width: 96, color: 'var(--text)', fontWeight: 500, flexShrink: 0, fontFamily: 'DM Sans, sans-serif' }}>{p.label}</span>
                   <input
-                    placeholder="Custom Base URL"
+                    placeholder="Custom base URL"
                     value={adv.baseUrl}
-                    onChange={e => setAdvancedSettings(prev => ({ ...prev, [p.id]: { ...prev[p.id], baseUrl: e.target.value, model: prev[p.id]?.model || '', timeout: prev[p.id]?.timeout || '' } }))}
-                    style={{ flex: 2, padding: '6px 8px', borderRadius: 4, border: '1px solid #e4ddd2', fontSize: 12, fontFamily: 'monospace', background: '#fff' }}
+                    onChange={e => setAdvancedSettings(prev => ({ ...prev, [p.id]: { ...adv, baseUrl: e.target.value } }))}
+                    style={{ flex: 2, padding: '6px 8px', borderRadius: 6, border: '1px solid var(--border)', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', background: 'var(--panel)', color: 'var(--text)' }}
                   />
                   <input
                     placeholder="Model override"
                     value={adv.model}
-                    onChange={e => setAdvancedSettings(prev => ({ ...prev, [p.id]: { ...prev[p.id], model: e.target.value, baseUrl: prev[p.id]?.baseUrl || '', timeout: prev[p.id]?.timeout || '' } }))}
-                    style={{ flex: 1, padding: '6px 8px', borderRadius: 4, border: '1px solid #e4ddd2', fontSize: 12, fontFamily: 'monospace', background: '#fff' }}
-                  />
-                  <input
-                    placeholder="Timeout ms"
-                    value={adv.timeout}
-                    onChange={e => setAdvancedSettings(prev => ({ ...prev, [p.id]: { ...prev[p.id], timeout: e.target.value, baseUrl: prev[p.id]?.baseUrl || '', model: prev[p.id]?.model || '' } }))}
-                    style={{ width: 90, padding: '6px 8px', borderRadius: 4, border: '1px solid #e4ddd2', fontSize: 12, fontFamily: 'monospace', background: '#fff' }}
+                    onChange={e => setAdvancedSettings(prev => ({ ...prev, [p.id]: { ...adv, model: e.target.value } }))}
+                    style={{ flex: 1, padding: '6px 8px', borderRadius: 6, border: '1px solid var(--border)', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', background: 'var(--panel)', color: 'var(--text)' }}
                   />
                 </div>
               );

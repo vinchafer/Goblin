@@ -85,11 +85,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </ThemeProvider>
         <Toaster
           position="bottom-right"
-          richColors
           toastOptions={{
             style: {
-              borderLeft: '3px solid var(--moss)',
+              background: '#1a1a18',
+              border: '1px solid #2D4A2B',
+              color: '#F7F4ED',
               fontFamily: 'DM Sans, sans-serif',
+              fontSize: 13,
+            },
+            classNames: {
+              success: 'goblin-toast-success',
+              error: 'goblin-toast-error',
             },
           }}
         />

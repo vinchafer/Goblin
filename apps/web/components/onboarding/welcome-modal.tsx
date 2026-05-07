@@ -2,266 +2,273 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useApp } from '@/contexts/app-context';
 
 interface WelcomeModalProps {
   userName?: string;
   onComplete: () => void;
 }
 
-const STEPS = [
-  { id: 'model', title: 'Connect a model', emoji: '🤖' },
-  { id: 'project', title: 'Create your first project', emoji: '⚡' },
-  { id: 'build', title: 'Start building', emoji: '🚀' },
-];
+function GoblinIcon({ size = 72, animate = false }: { size?: number; animate?: boolean }) {
+  return (
+    <div style={{
+      fontSize: size,
+      lineHeight: 1,
+      display: 'inline-block',
+      animation: animate ? 'goblin-wobble 2.4s ease-in-out infinite' : undefined,
+      userSelect: 'none',
+    }}>
+      👺
+    </div>
+  );
+}
 
-const PROVIDERS = [
-  { id: 'google', label: 'Google AI Studio', model: 'Gemini 2.0 Flash', free: true, url: 'https://aistudio.google.com/app/apikey' },
-  { id: 'anthropic', label: 'Anthropic', model: 'Claude Sonnet 4.6', url: 'https://console.anthropic.com/settings/keys' },
-  { id: 'groq', label: 'Groq', model: 'Llama 3.3 70B', free: true, url: 'https://console.groq.com/keys' },
-  { id: 'openai', label: 'OpenAI', model: 'GPT-4o', url: 'https://platform.openai.com/api-keys' },
-];
+function SendToCodeMockup() {
+  return (
+    <div style={{
+      background: '#0f1a0d', borderRadius: 12,
+      border: '1px solid #2d4a2b', padding: 16,
+      fontFamily: 'JetBrains Mono, monospace', fontSize: 12,
+      color: '#8aaa85', maxWidth: 360, margin: '0 auto',
+    }}>
+      {/* AI message */}
+      <div style={{ marginBottom: 12 }}>
+        <div style={{ fontSize: 10, color: '#4a6a4a', marginBottom: 5, fontFamily: 'DM Sans, sans-serif' }}>
+          Goblin
+        </div>
+        <div style={{ color: '#c5d0c0', fontFamily: 'DM Sans, sans-serif', fontSize: 13, lineHeight: 1.5, marginBottom: 8 }}>
+          Hier ist deine Login-Seite mit Supabase Auth:
+        </div>
+        {/* Code block */}
+        <div style={{
+          background: '#141a12', borderRadius: 8,
+          border: '1px solid #1e2a1c', padding: 10,
+          fontSize: 11,
+        }}>
+          <div style={{ color: '#4a8a6a' }}>{'// auth.tsx'}</div>
+          <div><span style={{ color: '#6aaa8a' }}>export</span><span style={{ color: '#8aaa85' }}> function Login() {'{'}</span></div>
+          <div style={{ paddingLeft: 16, color: '#8aaa85' }}>{'return <form>…</form>'}</div>
+          <div style={{ color: '#8aaa85' }}>{'}'}</div>
+        </div>
+        {/* Send to Code button */}
+        <button style={{
+          marginTop: 8,
+          background: 'rgba(212,169,74,0.15)',
+          border: '1px solid rgba(212,169,74,0.4)',
+          borderRadius: 6, padding: '5px 12px',
+          fontSize: 12, color: '#D4A94A',
+          cursor: 'default', fontFamily: 'DM Sans, sans-serif',
+          display: 'inline-flex', alignItems: 'center', gap: 5,
+          animation: 'send-pulse 2s ease-in-out infinite',
+        }}>
+          ✦ Send to Code →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+const DOTS = [0, 1, 2];
 
 export function WelcomeModal({ userName, onComplete }: WelcomeModalProps) {
   const router = useRouter();
-  const [step, setStep] = useState(0);
-  const [selectedProvider, setSelectedProvider] = useState<string | null>(null);
-  const [apiKey, setApiKey] = useState('');
-  const [projectName, setProjectName] = useState('');
-  const [projectDesc, setProjectDesc] = useState('');
-  const [saving, setSaving] = useState(false);
+  const { setShowNewProjectModal } = useApp();
+  const [slide, setSlide] = useState(0);
 
-  const next = () => {
-    if (step < STEPS.length - 1) setStep(s => s + 1);
-    else finish();
-  };
+  const firstName = userName?.split(' ')[0] ?? null;
 
-  const finish = () => {
+  const handleApiKeys = () => {
     onComplete();
-    if (projectName) {
-      // Will redirect after project creation
-    } else {
-      router.push('/dashboard');
-    }
+    router.push('/dashboard/settings/keys');
   };
 
-  const handleSaveKey = async () => {
-    if (!selectedProvider || !apiKey.trim()) return next();
-    setSaving(true);
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/byok-keys`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ provider: selectedProvider, key: apiKey.trim() }),
-      });
-      if (res.ok) next();
-    } catch {
-      next(); // Non-blocking
-    } finally {
-      setSaving(false);
-    }
+  const handleTryNow = () => {
+    onComplete();
+    setShowNewProjectModal(true);
   };
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, zIndex: 100,
-      background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
+      position: 'fixed', inset: 0, zIndex: 200,
+      background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(6px)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: 24,
+      padding: 20,
     }}>
-      <div style={{
-        background: 'var(--cream)', borderRadius: 20,
-        width: '100%', maxWidth: 520,
-        boxShadow: '0 32px 80px rgba(0,0,0,0.2)',
-        overflow: 'hidden',
-      }}>
-        {/* Header */}
-        <div style={{ background: 'var(--moss)', padding: '28px 32px 24px' }}>
-          <div style={{ fontSize: 32, marginBottom: 10 }}>{STEPS[step]!.emoji}</div>
-          <h2 style={{
-            fontFamily: 'Fraunces, serif', fontSize: 26,
-            color: 'var(--ochre)', fontWeight: 700, letterSpacing: '-0.5px', marginBottom: 4,
-          }}>
-            {step === 0 ? `Welcome to Goblin${userName ? `, ${userName.split(' ')[0]}` : ''}!` : STEPS[step]!.title}
-          </h2>
-          <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.65)', fontFamily: 'DM Sans, sans-serif' }}>
-            {step === 0 && 'Your cloud workshop is ready. Let\'s get you set up in 2 minutes.'}
-            {step === 1 && 'Name your first project. You can always change this later.'}
-            {step === 2 && 'You\'re all set. Chat with your goblin to start building.'}
-          </p>
+      <style>{`
+        @keyframes goblin-wobble {
+          0%,100% { transform: rotate(0deg) scale(1); }
+          15%      { transform: rotate(-8deg) scale(1.05); }
+          35%      { transform: rotate(6deg) scale(1.02); }
+          55%      { transform: rotate(-4deg) scale(1.04); }
+          75%      { transform: rotate(3deg) scale(1.01); }
+        }
+        @keyframes send-pulse {
+          0%,100% { opacity: 1; transform: scale(1); }
+          50%      { opacity: 0.7; transform: scale(1.03); }
+        }
+        @keyframes slide-up {
+          from { opacity: 0; transform: translateY(16px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .welcome-slide { animation: slide-up 0.3s ease-out; }
+      `}</style>
 
-          {/* Progress dots */}
-          <div style={{ display: 'flex', gap: 6, marginTop: 20 }}>
-            {STEPS.map((_, i) => (
-              <div key={i} style={{
-                height: 3, borderRadius: 2,
-                background: i <= step ? 'var(--ochre)' : 'rgba(255,255,255,0.2)',
-                flex: i === step ? 2 : 1,
-                transition: 'all 0.3s',
-              }} />
-            ))}
-          </div>
+      <div style={{
+        background: '#1a1a18',
+        border: '1px solid rgba(212,169,74,0.2)',
+        borderRadius: 20,
+        width: '100%', maxWidth: 480,
+        overflow: 'hidden',
+        boxShadow: '0 32px 80px rgba(0,0,0,0.6)',
+      }}>
+        {/* Progress dots */}
+        <div style={{ display: 'flex', gap: 6, padding: '20px 28px 0', justifyContent: 'center' }}>
+          {DOTS.map(i => (
+            <div key={i} style={{
+              height: 3, borderRadius: 2, flex: 1, maxWidth: 40,
+              background: i === slide ? '#D4A94A' : 'rgba(255,255,255,0.15)',
+              transition: 'background 0.3s',
+            }} />
+          ))}
         </div>
 
-        {/* Body */}
-        <div style={{ padding: '28px 32px' }}>
+        <div className="welcome-slide" key={slide} style={{ padding: '32px 36px 36px', textAlign: 'center' }}>
 
-          {/* Step 0 — Connect model */}
-          {step === 0 && (
-            <div>
-              <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 16, fontFamily: 'DM Sans, sans-serif' }}>
-                Choose a provider. Free options marked with ✦
+          {/* ── Slide 0 — Welcome ── */}
+          {slide === 0 && (
+            <>
+              <GoblinIcon size={80} animate />
+              <h1 style={{
+                fontFamily: 'Fraunces, serif',
+                fontSize: 30, fontWeight: 700,
+                color: '#D4A94A', letterSpacing: '-0.8px',
+                marginTop: 20, marginBottom: 10,
+              }}>
+                Willkommen{firstName ? `, ${firstName}` : ''} 👺
+              </h1>
+              <p style={{
+                fontSize: 16, color: 'rgba(255,255,255,0.6)',
+                fontFamily: 'DM Sans, sans-serif', lineHeight: 1.6, marginBottom: 36,
+              }}>
+                Dein Cloud-Workshop ist bereit.
               </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
-                {PROVIDERS.map(p => (
-                  <button
-                    key={p.id}
-                    onClick={() => setSelectedProvider(p.id)}
-                    style={{
-                      display: 'flex', alignItems: 'center', gap: 12,
-                      padding: '12px 16px', borderRadius: 10,
-                      border: selectedProvider === p.id ? '2px solid var(--moss)' : '1.5px solid var(--div)',
-                      background: selectedProvider === p.id ? 'rgba(45,74,43,0.06)' : '#fff',
-                      cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s',
-                    }}
-                  >
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', fontFamily: 'DM Sans, sans-serif' }}>
-                        {p.label}
-                        {p.free && <span style={{ marginLeft: 6, fontSize: 10, color: 'var(--success)', background: 'rgba(74,124,59,0.1)', padding: '1px 6px', borderRadius: 10, fontWeight: 700 }}>✦ FREE</span>}
-                      </div>
-                      <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 1 }}>{p.model}</div>
-                    </div>
-                    {selectedProvider === p.id && (
-                      <span style={{ color: 'var(--moss)', fontSize: 16 }}>✓</span>
-                    )}
-                  </button>
-                ))}
-              </div>
-
-              {selectedProvider && (
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                    <label style={{ fontSize: 12, fontWeight: 500, color: 'var(--text-2)', fontFamily: 'DM Sans, sans-serif' }}>
-                      API Key
-                    </label>
-                    <a
-                      href={PROVIDERS.find(p => p.id === selectedProvider)?.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      style={{ fontSize: 11, color: 'var(--ochre-dark)', textDecoration: 'none' }}
-                    >
-                      Get key →
-                    </a>
-                  </div>
-                  <input
-                    type="password"
-                    value={apiKey}
-                    onChange={e => setApiKey(e.target.value)}
-                    placeholder="sk-..."
-                    style={{
-                      width: '100%', padding: '10px 14px', borderRadius: 8,
-                      border: '1.5px solid var(--div)', background: '#fff',
-                      fontSize: 13, fontFamily: 'JetBrains Mono, monospace',
-                      outline: 'none', boxSizing: 'border-box',
-                    }}
-                    onFocus={e => (e.target.style.borderColor = 'var(--moss)')}
-                    onBlur={e => (e.target.style.borderColor = 'var(--div)')}
-                  />
-                  <p style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 5, fontFamily: 'DM Sans, sans-serif' }}>
-                    Encrypted with AES-256-GCM. Never logged.
-                  </p>
-                </div>
-              )}
-            </div>
+              <button
+                onClick={() => setSlide(1)}
+                style={{
+                  width: '100%', background: '#2D4A2B', color: '#fff',
+                  border: 'none', borderRadius: 12, padding: '14px 0',
+                  fontSize: 15, fontWeight: 600, cursor: 'pointer',
+                  fontFamily: 'DM Sans, sans-serif', transition: 'background 0.15s',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = '#3A5E38')}
+                onMouseLeave={e => (e.currentTarget.style.background = '#2D4A2B')}
+              >
+                Weiter →
+              </button>
+            </>
           )}
 
-          {/* Step 1 — Create project */}
-          {step === 1 && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: 'var(--text-2)', marginBottom: 6, fontFamily: 'DM Sans, sans-serif' }}>
-                  Project name *
-                </label>
-                <input
-                  type="text"
-                  value={projectName}
-                  onChange={e => setProjectName(e.target.value)}
-                  placeholder="My awesome app"
-                  autoFocus
+          {/* ── Slide 1 — Send to Code ── */}
+          {slide === 1 && (
+            <>
+              <h2 style={{
+                fontFamily: 'Fraunces, serif',
+                fontSize: 26, fontWeight: 700,
+                color: '#fff', letterSpacing: '-0.5px',
+                marginBottom: 10,
+              }}>
+                Beschreibe, was du bauen willst.
+              </h2>
+              <p style={{
+                fontSize: 14, color: 'rgba(255,255,255,0.5)',
+                fontFamily: 'DM Sans, sans-serif', lineHeight: 1.6, marginBottom: 24,
+              }}>
+                Goblin schreibt den Code.<br />
+                Du tippst <span style={{ color: '#D4A94A', fontWeight: 600 }}>[→ Send to Code]</span>.
+              </p>
+              <SendToCodeMockup />
+              <button
+                onClick={() => setSlide(2)}
+                style={{
+                  width: '100%', marginTop: 28,
+                  background: '#2D4A2B', color: '#fff',
+                  border: 'none', borderRadius: 12, padding: '14px 0',
+                  fontSize: 15, fontWeight: 600, cursor: 'pointer',
+                  fontFamily: 'DM Sans, sans-serif', transition: 'background 0.15s',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = '#3A5E38')}
+                onMouseLeave={e => (e.currentTarget.style.background = '#2D4A2B')}
+              >
+                Weiter →
+              </button>
+            </>
+          )}
+
+          {/* ── Slide 2 — API Key ── */}
+          {slide === 2 && (
+            <>
+              <div style={{ fontSize: 64, lineHeight: 1, marginBottom: 20 }}>🔑</div>
+              <h2 style={{
+                fontFamily: 'Fraunces, serif',
+                fontSize: 26, fontWeight: 700,
+                color: '#fff', letterSpacing: '-0.5px',
+                marginBottom: 10,
+              }}>
+                Verbinde deinen ersten API Key.
+              </h2>
+              <p style={{
+                fontSize: 14, color: 'rgba(255,255,255,0.5)',
+                fontFamily: 'DM Sans, sans-serif', lineHeight: 1.6, marginBottom: 32,
+              }}>
+                Oder nutze Goblin&apos;s Free-Pool zum Testen.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <button
+                  onClick={handleApiKeys}
                   style={{
-                    width: '100%', padding: '10px 14px', borderRadius: 8,
-                    border: '1.5px solid var(--div)', background: '#fff',
-                    fontSize: 14, fontFamily: 'DM Sans, sans-serif',
-                    outline: 'none', boxSizing: 'border-box',
+                    width: '100%', background: '#D4A94A', color: '#1a0f00',
+                    border: 'none', borderRadius: 12, padding: '14px 0',
+                    fontSize: 15, fontWeight: 700, cursor: 'pointer',
+                    fontFamily: 'DM Sans, sans-serif', transition: 'background 0.15s',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                   }}
-                  onFocus={e => (e.target.style.borderColor = 'var(--moss)')}
-                  onBlur={e => (e.target.style.borderColor = 'var(--div)')}
-                />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 500, color: 'var(--text-2)', marginBottom: 6, fontFamily: 'DM Sans, sans-serif' }}>
-                  What are you building? (optional)
-                </label>
-                <textarea
-                  value={projectDesc}
-                  onChange={e => setProjectDesc(e.target.value)}
-                  placeholder="A todo app with dark mode..."
-                  rows={3}
+                  onMouseEnter={e => (e.currentTarget.style.background = '#E8BF6A')}
+                  onMouseLeave={e => (e.currentTarget.style.background = '#D4A94A')}
+                >
+                  🔑 API Key verbinden →
+                </button>
+                <button
+                  onClick={handleTryNow}
                   style={{
-                    width: '100%', padding: '10px 14px', borderRadius: 8,
-                    border: '1.5px solid var(--div)', background: '#fff',
-                    fontSize: 13, fontFamily: 'DM Sans, sans-serif',
-                    outline: 'none', resize: 'none', boxSizing: 'border-box',
-                    lineHeight: 1.5,
+                    width: '100%', background: 'transparent', color: 'rgba(255,255,255,0.7)',
+                    border: '1.5px solid rgba(255,255,255,0.15)', borderRadius: 12, padding: '13px 0',
+                    fontSize: 15, fontWeight: 500, cursor: 'pointer',
+                    fontFamily: 'DM Sans, sans-serif', transition: 'all 0.15s',
                   }}
-                  onFocus={e => (e.target.style.borderColor = 'var(--moss)')}
-                  onBlur={e => (e.target.style.borderColor = 'var(--div)')}
-                />
+                  onMouseEnter={e => { (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.35)'); (e.currentTarget.style.color = '#fff'); }}
+                  onMouseLeave={e => { (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.15)'); (e.currentTarget.style.color = 'rgba(255,255,255,0.7)'); }}
+                >
+                  Jetzt ausprobieren →
+                </button>
               </div>
-            </div>
+            </>
           )}
 
-          {/* Step 2 — Done */}
-          {step === 2 && (
-            <div style={{ textAlign: 'center', padding: '16px 0' }}>
-              <div style={{ fontSize: 48, marginBottom: 16, lineHeight: 1 }}>👺</div>
-              <p style={{ fontSize: 15, color: 'var(--text-2)', fontFamily: 'DM Sans, sans-serif', lineHeight: 1.65, marginBottom: 8 }}>
-                Your goblin is ready to build.
-              </p>
-              <p style={{ fontSize: 13, color: 'var(--text-faint)', fontFamily: 'DM Sans, sans-serif', lineHeight: 1.6 }}>
-                Describe what you want to build. Tap [Send to Code →] to apply it instantly.
-              </p>
-            </div>
+          {/* Skip */}
+          {slide < 2 && (
+            <button
+              onClick={onComplete}
+              style={{
+                marginTop: 16, background: 'none', border: 'none',
+                color: 'rgba(255,255,255,0.25)', fontSize: 12,
+                cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.5)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.25)')}
+            >
+              Überspringen
+            </button>
           )}
-
-          {/* Actions */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 28 }}>
-            <button
-              onClick={finish}
-              style={{
-                background: 'none', border: 'none', fontSize: 12,
-                color: 'var(--text-faint)', cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
-                padding: '4px 0',
-              }}
-            >
-              Skip for now
-            </button>
-            <button
-              onClick={step === 0 && selectedProvider && apiKey ? handleSaveKey : step === 1 && !projectName ? undefined : next}
-              disabled={saving || (step === 1 && !projectName)}
-              style={{
-                background: 'var(--moss)', color: '#fff', border: 'none',
-                borderRadius: 10, padding: '12px 28px',
-                fontSize: 14, fontWeight: 500, cursor: saving ? 'wait' : 'pointer',
-                fontFamily: 'DM Sans, sans-serif', transition: 'background 0.15s',
-                opacity: (step === 1 && !projectName) ? 0.5 : 1,
-              }}
-              onMouseEnter={e => { if (!saving) e.currentTarget.style.background = 'var(--moss-2)'; }}
-              onMouseLeave={e => { if (!saving) e.currentTarget.style.background = 'var(--moss)'; }}
-            >
-              {saving ? 'Saving…' : step === 2 ? 'Start building →' : 'Continue →'}
-            </button>
-          </div>
         </div>
       </div>
     </div>

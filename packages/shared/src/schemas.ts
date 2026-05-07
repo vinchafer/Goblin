@@ -33,7 +33,7 @@ export const ByokProviderSchema = z.enum([
 
 export const CreateByokKeySchema = z.object({
   provider: ByokProviderSchema,
-  label: z.string().min(1).max(50),
+  label: z.string().min(1).max(50).optional(),
   key: z.string().min(1)
 });
 
@@ -52,7 +52,9 @@ export interface ByokKey {
   user_id: string;
   provider: ByokProvider;
   label: string;
+  key_hint?: string | null;
   status: "active" | "revoked";
   last_used: Date | null;
   created_at: Date;
+  validated_at?: Date | null;
 }

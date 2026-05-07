@@ -9,7 +9,6 @@ async function isAdmin(): Promise<boolean> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return false;
 
-  // @ts-ignore
   const { data } = await supabase
     .from('users')
     .select('is_admin')

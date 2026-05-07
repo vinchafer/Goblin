@@ -14,9 +14,9 @@ export function PreviewTab({ projectId, previewUrl }: PreviewTabProps) {
   const [loading, setLoading] = useState(true);
 
   const vpLabels: Record<Viewport, string> = {
-    '375': '375',
-    '768': '768',
-    '1440': 'Full',
+    '375': '📱',
+    '768': '💻',
+    '1440': '🖥',
   };
 
   const widths: Record<Viewport, string> = {
@@ -72,8 +72,9 @@ export function PreviewTab({ projectId, previewUrl }: PreviewTabProps) {
             <button key={v} onClick={() => setViewport(v)} style={{
               padding: '3px 10px', borderRadius: 5, fontSize: 11,
               border: 'none', cursor: 'pointer',
-              background: viewport === v ? 'var(--moss)' : 'transparent',
-              color: viewport === v ? '#fff' : 'var(--meta)',
+              background: viewport === v ? 'rgba(212,169,74,0.18)' : 'transparent',
+              color: viewport === v ? 'var(--ochre-dark, #C9933A)' : 'var(--meta)',
+              outline: viewport === v ? '1.5px solid rgba(212,169,74,0.4)' : 'none',
               fontFamily: 'DM Sans, sans-serif', fontWeight: 600,
               transition: 'all 0.15s', minWidth: 36,
             }}>{vpLabels[v]}</button>

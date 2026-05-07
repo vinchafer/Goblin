@@ -185,7 +185,7 @@ async function testKey(provider: ByokProvider, rawKey: string): Promise<{ valid:
 export async function createKey(
   userId: string,
   provider: ByokProvider,
-  label: string,
+  label: string | undefined,
   rawKey: string
 ): Promise<ByokKey> {
   const supabase = getSupabaseAdmin();
@@ -202,23 +202,28 @@ export async function createKey(
     throw new Error('Maximum 5 keys per provider');
   }
 
-  // Test key before storing
+  // Validate key before storing
   const testResult = await testKey(provider, rawKey);
   if (!testResult.valid) {
     throw new Error(testResult.error || 'Invalid key');
   }
 
   const encrypted = encryptData(rawKey);
+  // Store last 4 chars for display — never more
+  const keyHint = rawKey.slice(-4);
+  const resolvedLabel = label?.trim() || provider;
 
   const { data } = await supabase
     .from('byok_keys')
     .insert({
       user_id: userId,
       provider,
-      label,
-      key_encrypted: encrypted
+      label: resolvedLabel,
+      key_encrypted: encrypted,
+      key_hint: keyHint,
+      validated_at: new Date().toISOString(),
     })
-    .select('id, user_id, provider, label, status, last_used, created_at')
+    .select('id, user_id, provider, label, key_hint, status, last_used, created_at, validated_at')
     .single()
     .throwOnError();
 
@@ -230,7 +235,7 @@ export async function listKeys(userId: string): Promise<ByokKey[]> {
 
   const { data } = await supabase
     .from('byok_keys')
-    .select('id, user_id, provider, label, status, last_used, created_at')
+    .select('id, user_id, provider, label, key_hint, status, last_used, created_at, validated_at')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 

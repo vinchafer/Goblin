@@ -253,6 +253,92 @@ function ModelHub({
   );
 }
 
+// ─── Voice Button ─────────────────────────────────────────────────────────────
+
+function VoiceButton({ onTranscript, disabled }: { onTranscript: (t: string) => void; disabled: boolean }) {
+  const [recording, setRecording] = useState(false);
+  const [processing, setProcessing] = useState(false);
+  const mediaRef = useRef<MediaRecorder | null>(null);
+
+  const toggle = async () => {
+    if (disabled) return;
+    if (recording) {
+      mediaRef.current?.stop();
+      setRecording(false);
+      setProcessing(true);
+      setTimeout(() => setProcessing(false), 1200);
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mr = new MediaRecorder(stream);
+      mediaRef.current = mr;
+      mr.start();
+      setRecording(true);
+      mr.onstop = () => {
+        stream.getTracks().forEach(t => t.stop());
+        // Real transcription would go here
+      };
+    } catch {
+      // Mic not available — ignore silently
+    }
+  };
+
+  const label = processing ? 'Goblin hört zu…' : recording ? 'Aufnehmen…' : '';
+
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
+      {label && (
+        <span style={{
+          fontSize: 11, color: recording ? '#B85C3C' : 'var(--meta)',
+          fontFamily: 'DM Sans, sans-serif',
+          animation: 'goblin-pulse 1.2s ease-in-out infinite',
+        }}>
+          {label}
+        </span>
+      )}
+      <button
+        onClick={toggle}
+        title={recording ? 'Aufnahme stoppen' : 'Sprachaufnahme'}
+        style={{
+          width: 28, height: 28, borderRadius: 7, border: 'none',
+          background: recording ? 'rgba(184,92,60,0.12)' : 'transparent',
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 14, flexShrink: 0,
+          boxShadow: recording ? '0 0 0 2px rgba(184,92,60,0.4)' : 'none',
+          animation: recording ? 'goblin-pulse 1.2s ease-in-out infinite' : undefined,
+          transition: 'all 0.15s',
+          opacity: disabled ? 0.4 : 1,
+        }}
+      >
+        🎤
+      </button>
+    </div>
+  );
+}
+
+// ─── Module-level model cache (survives re-mounts within same session) ────────
+let _cachedModels: ApiModel[] | null = null;
+let _cachedKeys: ConnectedKey[] | null = null;
+let _cacheTs = 0;
+const MODEL_CACHE_TTL = 60_000; // 60 seconds
+
+async function fetchModelsAndKeys(): Promise<{ models: ApiModel[]; keys: ConnectedKey[] }> {
+  const now = Date.now();
+  if (_cachedModels && _cachedKeys && now - _cacheTs < MODEL_CACHE_TTL) {
+    return { models: _cachedModels, keys: _cachedKeys };
+  }
+  const [ms, keys] = await Promise.all([
+    apiGet<ApiModel[]>('/api/models'),
+    apiGet<ConnectedKey[]>('/api/byok-keys'),
+  ]);
+  _cachedModels = ms;
+  _cachedKeys = keys;
+  _cacheTs = now;
+  return { models: ms, keys };
+}
+
 // ─── ChatInput ────────────────────────────────────────────────────────────────
 
 const MODEL_STORAGE_KEY = 'goblin:last-model';
@@ -307,19 +393,16 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
     textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, maxH)}px`;
   }, [input]);
 
-  // Load models on first open
+  // Load models — uses module-level 60s cache so re-mounts don't refetch
   const openHub = async () => {
     setHubOpen(true);
     if (modelsLoaded) return;
     try {
-      const [ms, keys] = await Promise.all([
-        apiGet<ApiModel[]>('/api/models'),
-        apiGet<ConnectedKey[]>('/api/byok-keys'),
-      ]);
+      const { models: ms, keys } = await fetchModelsAndKeys();
       setModels(ms);
       setConnectedKeys(keys);
 
-      // Auto-select first BYOK key if no preference set
+      // Auto-select first BYOK model if no preference set
       const firstByok = ms.find(m => m.layer === 'byok' && keys.some(k => k.provider === m.provider));
       if (firstByok && selectedModel.slug === DEFAULT_MODEL.slug) {
         onModelChange({
@@ -334,6 +417,8 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
 
   const refetchKeys = useCallback(async () => {
     try {
+      _cachedKeys = null; // invalidate module-level cache
+      _cacheTs = 0;
       const keys = await apiGet<ConnectedKey[]>('/api/byok-keys');
       setConnectedKeys(keys);
       setModelsLoaded(false); // force full reload next time hub opens
@@ -365,12 +450,11 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
   }, [hubOpen]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       submit();
-      return;
     }
-    // plain Enter = newline (default textarea behavior)
+    // Shift+Enter = newline (default textarea behavior)
   };
 
   const submit = () => {
@@ -384,7 +468,7 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
   const hasInput = input.trim().length > 0;
 
   return (
-    <div style={{ padding: '12px 16px', background: '#fff', borderTop: '1px solid #EDE8DC', flexShrink: 0 }}>
+    <div style={{ padding: '10px 16px 12px', background: '#fff', borderTop: '1px solid #EDE8DC', flexShrink: 0 }}>
       <div ref={hubRef} style={{ position: 'relative' }}>
         {hubOpen && (
           <ModelHub
@@ -400,128 +484,107 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
         )}
 
         {/* Input container */}
-        <div style={{
-          display: 'flex', flexDirection: 'column',
-          border: '1.5px solid #DDD7CC', borderRadius: 12,
-          background: '#F7F4ED',
-          transition: 'border-color 0.15s',
-        }}
+        <div
+          style={{
+            display: 'flex', flexDirection: 'column',
+            border: '1.5px solid #DDD7CC', borderRadius: 14,
+            background: '#F7F4ED',
+            transition: 'border-color 0.15s',
+          }}
           onFocusCapture={e => (e.currentTarget.style.borderColor = '#2D4A2B')}
           onBlurCapture={e => (e.currentTarget.style.borderColor = '#DDD7CC')}
         >
-          {/* Textarea row */}
-          <div style={{ display: 'flex', alignItems: 'flex-end', padding: '10px 12px', gap: 8 }}>
-            {/* Left icons */}
-            <div style={{ display: 'flex', gap: 4, flexShrink: 0, marginBottom: 2 }}>
-              <button
-                disabled
-                title="File attach (coming soon)"
-                style={{
-                  width: 30, height: 30, borderRadius: 7,
-                  background: 'none', border: 'none', cursor: 'not-allowed',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  opacity: 0.35, color: '#6B6B6B',
-                }}
-              >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
-                </svg>
-              </button>
-              <button
-                disabled
-                title="Voice input (coming soon)"
-                style={{
-                  width: 30, height: 30, borderRadius: 7,
-                  background: 'none', border: 'none', cursor: 'not-allowed',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  opacity: 0.35, color: '#6B6B6B',
-                }}
-              >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
-                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
-                  <line x1="12" y1="19" x2="12" y2="23"/>
-                  <line x1="8" y1="23" x2="16" y2="23"/>
-                </svg>
-              </button>
-            </div>
+          {/* Textarea */}
+          <textarea
+            ref={textareaRef}
+            value={input}
+            onChange={e => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="Describe what you want to build, or ask anything…"
+            disabled={disabled}
+            rows={1}
+            style={{
+              resize: 'none', border: 'none', background: 'transparent',
+              outline: 'none', fontSize: 14, color: '#2A2A2A',
+              fontFamily: 'DM Sans, sans-serif', lineHeight: '22px',
+              maxHeight: `${6 * 22 + 20}px`, overflowY: 'auto',
+              padding: '12px 14px 6px',
+              width: '100%', boxSizing: 'border-box',
+            }}
+          />
 
-            {/* Textarea */}
-            <textarea
-              ref={textareaRef}
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Describe what you want to build, or ask anything…"
-              disabled={disabled}
-              rows={1}
+          {/* Bottom row: model pill (left) + hint + send (right) */}
+          <div style={{
+            display: 'flex', alignItems: 'center',
+            padding: '4px 8px 8px',
+            gap: 6,
+          }}>
+            {/* Model picker pill — left */}
+            <button
+              onClick={openHub}
               style={{
-                flex: 1, resize: 'none', border: 'none', background: 'transparent',
-                outline: 'none', fontSize: 14, color: '#2A2A2A',
-                fontFamily: 'DM Sans, sans-serif', lineHeight: '22px',
-                maxHeight: `${6 * 22 + 20}px`, overflowY: 'auto',
-                padding: '2px 0',
+                display: 'flex', alignItems: 'center', gap: 4,
+                padding: '3px 8px', borderRadius: 6,
+                background: 'none',
+                border: '1px solid rgba(45,74,43,0.18)',
+                cursor: 'pointer', fontSize: 11, fontWeight: 500,
+                color: '#5a7a58', fontFamily: 'DM Sans, sans-serif',
+                transition: 'all 0.12s', flexShrink: 0,
+                maxWidth: 160, overflow: 'hidden',
               }}
-            />
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(45,74,43,0.07)'; e.currentTarget.style.borderColor = 'rgba(45,74,43,0.35)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = 'rgba(45,74,43,0.18)'; }}
+            >
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {selectedModel.displayName}
+              </span>
+              <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" style={{ flexShrink: 0, opacity: 0.6 }}>
+                <polyline points="6 9 12 15 18 9"/>
+              </svg>
+            </button>
 
-            {/* Right: Model Pill + Send */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0, marginBottom: 2 }}>
-              {/* Model picker pill */}
-              <button
-                onClick={openHub}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 5,
-                  padding: '4px 9px', borderRadius: 20,
-                  background: 'rgba(45,74,43,0.08)',
-                  border: '1px solid rgba(45,74,43,0.15)',
-                  cursor: 'pointer', fontSize: 12, fontWeight: 500,
-                  color: '#2D4A2B', fontFamily: 'DM Sans, sans-serif',
-                  transition: 'background 0.15s', flexShrink: 0,
-                  maxWidth: 140, overflow: 'hidden',
-                }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(45,74,43,0.13)')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'rgba(45,74,43,0.08)')}
-              >
-                <span style={{ fontSize: 13 }}>{getProviderIcon(selectedModel.provider)}</span>
-                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {selectedModel.displayName}
-                </span>
-                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" style={{ flexShrink: 0 }}>
-                  <polyline points="6 9 12 15 18 9"/>
+            {/* Spacer + hint */}
+            <span style={{
+              flex: 1, fontSize: 11, color: '#B8B0A8',
+              fontFamily: 'DM Sans, sans-serif',
+              paddingLeft: 2,
+            }}>
+              {disabled ? '' : '⇧↵ new line'}
+            </span>
+
+            {/* Voice input button */}
+            <VoiceButton onTranscript={t => setInput(prev => prev + t)} disabled={disabled} />
+
+            {/* Send button — right */}
+            <button
+              onClick={submit}
+              disabled={!hasInput || disabled}
+              style={{
+                width: 32, height: 32, borderRadius: 8,
+                background: hasInput && !disabled ? '#2D4A2B' : '#DDD7CC',
+                border: 'none', cursor: hasInput && !disabled ? 'pointer' : 'not-allowed',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'all 0.15s', flexShrink: 0,
+                color: hasInput && !disabled ? '#fff' : '#9C9589',
+              }}
+              onMouseEnter={e => { if (hasInput && !disabled) e.currentTarget.style.background = '#3A5A37'; }}
+              onMouseLeave={e => { if (hasInput && !disabled) e.currentTarget.style.background = '#2D4A2B'; }}
+            >
+              {disabled ? (
+                <svg style={{ animation: 'inputSpin 0.8s linear infinite' }} width="14" height="14" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.5" strokeDasharray="28" strokeDashoffset="8" opacity="0.4" />
+                  <path d="M12 3a9 9 0 0 1 9 9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
                 </svg>
-              </button>
-
-              {/* Send button */}
-              <button
-                onClick={submit}
-                disabled={!hasInput || disabled}
-                style={{
-                  width: 34, height: 34, borderRadius: 9,
-                  background: hasInput && !disabled ? '#2D4A2B' : '#DDD7CC',
-                  border: 'none', cursor: hasInput && !disabled ? 'pointer' : 'not-allowed',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  transition: 'all 0.15s', flexShrink: 0,
-                  color: hasInput && !disabled ? '#fff' : '#9C9589',
-                }}
-                onMouseEnter={e => { if (hasInput && !disabled) (e.currentTarget.style.background = '#3A5A37'); }}
-                onMouseLeave={e => { if (hasInput && !disabled) (e.currentTarget.style.background = '#2D4A2B'); }}
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              ) : (
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                   <path d="M22 2L11 13"/>
                   <polygon points="22 2 15 22 11 13 2 9 22 2"/>
                 </svg>
-              </button>
-            </div>
-          </div>
-
-          {/* Hint row */}
-          <div style={{
-            padding: '0 12px 8px',
-            fontSize: 11, color: '#9C9589', fontFamily: 'DM Sans, sans-serif',
-          }}>
-            {disabled ? 'Goblin is thinking…' : '⌘↵ to send · ↵ for newline'}
+              )}
+            </button>
           </div>
         </div>
+        <style>{`@keyframes inputSpin{to{transform:rotate(360deg)}}`}</style>
       </div>
     </div>
   );

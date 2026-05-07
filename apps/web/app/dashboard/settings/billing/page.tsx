@@ -7,7 +7,6 @@ export default async function BillingSettingsPage() {
   const supabase = await createClient();
   const { data: user } = await supabase.auth.getUser();
 
-  // @ts-ignore supabase-js v2.104 / ssr v0.5 type mismatch
   const { data: userData } = await supabase
     .from('users')
     .select('*')

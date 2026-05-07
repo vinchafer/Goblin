@@ -124,8 +124,8 @@ export default function DashboardPage() {
       <style>{`
         @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.5} }
         @keyframes fadeIn { from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none} }
-        .project-card { transition: box-shadow 0.15s, transform 0.15s; cursor: pointer; background: var(--panel); border-color: var(--div) !important; }
-        .project-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+        .project-card { transition: box-shadow 0.15s, transform 0.15s, border-left-color 0.15s, border-left-width 0.15s, padding-left 0.15s; cursor: pointer; background: var(--panel); border-color: var(--div) !important; }
+        .project-card:hover { box-shadow: -3px 0 0 var(--ochre), var(--shadow-md); transform: translateY(-1px); }
         @media (max-width: 900px) {
           .dash-grid { flex-direction: column !important; }
           .dash-projects { width: 100% !important; }
@@ -211,36 +211,71 @@ export default function DashboardPage() {
             {/* Empty state */}
             {!loading && !error && projects.length === 0 && (
               <div style={{
-                textAlign: 'center', padding: '64px 24px',
+                textAlign: 'center', padding: '56px 24px',
                 animation: 'fadeIn 0.4s ease',
               }}>
-                <div style={{ fontSize: 64, marginBottom: 20, lineHeight: 1 }}>👺</div>
+                <div style={{ fontSize: 56, marginBottom: 16, lineHeight: 1 }}>👺</div>
                 <h2 style={{
-                  fontFamily: 'Fraunces, serif', fontSize: 24,
-                  color: 'var(--moss)', fontWeight: 700, marginBottom: 10,
+                  fontFamily: 'Fraunces, serif', fontSize: 26,
+                  color: 'var(--moss)', fontWeight: 700, marginBottom: 12, letterSpacing: '-0.5px',
                 }}>
-                  Your goblin is ready.
+                  Dein erstes Projekt wartet.
                 </h2>
                 <p style={{
                   fontSize: 15, color: 'var(--meta)', marginBottom: 28,
-                  fontFamily: 'DM Sans, sans-serif', lineHeight: 1.6, maxWidth: 340, margin: '0 auto 28px',
+                  fontFamily: 'DM Sans, sans-serif', lineHeight: 1.65,
+                  maxWidth: 360, margin: '0 auto 28px',
                 }}>
-                  Describe what you want to build. Your goblin will generate the code, push to GitHub, and ship it.
+                  Beschreibe, was du bauen willst — Goblin erledigt den Rest.
                 </p>
                 <button
                   onClick={() => setShowNewProjectModal(true)}
                   style={{
-                    background: '#D4A94A', color: '#fff', border: 'none',
-                    borderRadius: 10, padding: '13px 28px',
-                    fontSize: 15, fontWeight: 600, cursor: 'pointer',
+                    background: 'var(--ochre)', color: 'var(--bark)', border: 'none',
+                    borderRadius: 12, padding: '15px 32px',
+                    fontSize: 16, fontWeight: 700, cursor: 'pointer',
                     fontFamily: 'DM Sans, sans-serif', transition: 'all 0.15s',
                     display: 'inline-flex', alignItems: 'center', gap: 8,
+                    boxShadow: '0 4px 16px rgba(212,169,74,0.35)',
                   }}
-                  onMouseEnter={e => { (e.currentTarget.style.background = '#e8b05a'); (e.currentTarget.style.transform = 'translateY(-1px)'); }}
-                  onMouseLeave={e => { (e.currentTarget.style.background = '#D4A94A'); (e.currentTarget.style.transform = 'none'); }}
+                  onMouseEnter={e => { (e.currentTarget.style.background = 'var(--ochre-2)'); (e.currentTarget.style.transform = 'translateY(-2px)'); }}
+                  onMouseLeave={e => { (e.currentTarget.style.background = 'var(--ochre)'); (e.currentTarget.style.transform = 'none'); }}
                 >
-                  ＋ Build your first project
+                  ✦ Erstes Projekt erstellen
                 </button>
+
+                {/* Template chips */}
+                <div style={{ marginTop: 36 }}>
+                  <div style={{
+                    fontSize: 12, color: 'var(--meta)', marginBottom: 12,
+                    fontFamily: 'DM Sans, sans-serif', fontWeight: 500,
+                  }}>
+                    Nicht sicher? Starte mit einem Template:
+                  </div>
+                  <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
+                    {[
+                      { label: '📧 Newsletter-Tool', name: 'Newsletter Tool' },
+                      { label: '🔗 Link-Shortener', name: 'Link Shortener' },
+                      { label: '🚀 Waitlist-App', name: 'Waitlist App' },
+                    ].map(t => (
+                      <button
+                        key={t.name}
+                        onClick={() => setShowNewProjectModal(true)}
+                        style={{
+                          background: 'var(--panel)', border: '1.5px solid var(--div)',
+                          borderRadius: 20, padding: '8px 16px',
+                          fontSize: 13, color: 'var(--text)',
+                          cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
+                          transition: 'all 0.15s',
+                        }}
+                        onMouseEnter={e => { (e.currentTarget.style.borderColor = 'var(--moss)'); (e.currentTarget.style.color = 'var(--moss)'); }}
+                        onMouseLeave={e => { (e.currentTarget.style.borderColor = 'var(--div)'); (e.currentTarget.style.color = 'var(--text)'); }}
+                      >
+                        {t.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             )}
 

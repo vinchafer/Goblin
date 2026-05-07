@@ -2,7 +2,6 @@
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useState, useEffect } from 'react';
-import { ModelSwitcher } from './model-switcher';
 
 function MenuItem({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
   return (
@@ -109,7 +108,6 @@ export function Topbar({
       display: 'flex',
       alignItems: 'center',
       padding: '0 16px',
-      gap: 12,
       flexShrink: 0,
       borderBottom: '1px solid #3A5A37',
       position: 'relative',
@@ -130,45 +128,58 @@ export function Topbar({
         }}
       >☰</button>
 
-      {/* Logo */}
-      <button
-        onClick={() => router.push('/dashboard')}
-        style={{
-          fontFamily: 'Fraunces, serif', fontSize: 20,
-          color: '#D4A94A', fontWeight: 700,
-          letterSpacing: '-0.5px', marginRight: 4, flexShrink: 0,
-          userSelect: 'none', background: 'none', border: 'none',
-          cursor: 'pointer', padding: '8px 4px',
-        }}
-      >
-        Goblin<span style={{ opacity: 0.65 }}>.</span>
-      </button>
-
-      {/* Project name */}
-      {projectName && (
-        <div
+      {/* LEFT: Logo + Project Name */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+        <button
+          onClick={() => router.push('/dashboard')}
           style={{
-            fontSize: 14, color: 'rgba(255,255,255,0.9)',
-            background: 'rgba(255,255,255,0.05)',
-            padding: '6px 12px', borderRadius: 8,
-            border: '1px solid rgba(255,255,255,0.1)',
-            flexShrink: 0, maxWidth: 200,
-            overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            fontFamily: 'DM Sans, sans-serif', fontWeight: 500,
+            fontFamily: 'Fraunces, serif', fontSize: 20,
+            color: '#D4A94A', fontWeight: 700,
+            letterSpacing: '-0.5px',
+            userSelect: 'none', background: 'none', border: 'none',
+            cursor: 'pointer', padding: '8px 4px',
           }}
         >
-          {projectName}
-        </div>
-      )}
+          Goblin<span style={{ opacity: 0.65 }}>.</span>
+        </button>
 
-      {/* Tab switcher — desktop only */}
-      <div style={{ display: 'flex', gap: 4, marginLeft: 8 }} className="topbar-tabs">
+        {projectName && (
+          <>
+            <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 16, flexShrink: 0 }}>/</span>
+            <button
+              onClick={() => router.push('/dashboard')}
+              style={{
+                fontSize: 13, color: 'rgba(255,255,255,0.75)',
+                background: 'none', border: 'none',
+                padding: '4px 8px', borderRadius: 6, cursor: 'pointer',
+                maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                fontFamily: 'DM Sans, sans-serif', fontWeight: 500,
+                transition: 'background 0.1s, color 0.1s',
+              }}
+              onMouseEnter={e => { (e.currentTarget.style.background = 'rgba(255,255,255,0.08)'); (e.currentTarget.style.color = '#fff'); }}
+              onMouseLeave={e => { (e.currentTarget.style.background = 'none'); (e.currentTarget.style.color = 'rgba(255,255,255,0.75)'); }}
+              title="Projekt wechseln"
+            >
+              {projectName}
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* CENTER: Tab switcher — desktop only */}
+      <div
+        className="topbar-tabs"
+        style={{
+          position: 'absolute', left: '50%', transform: 'translateX(-50%)',
+          display: 'flex', gap: 4,
+        }}
+      >
         {(['chat', 'code', 'preview'] as const).map(tab => (
           <button
             key={tab}
             onClick={() => onTabChange?.(tab)}
             style={{
-              padding: '6px 16px', borderRadius: 8,
+              padding: '6px 18px', borderRadius: 8,
               fontSize: 13, fontWeight: 500,
               cursor: 'pointer',
               background: activeTab === tab ? '#ffffff' : 'transparent',
@@ -180,9 +191,9 @@ export function Topbar({
             onMouseEnter={e => { if (activeTab !== tab) (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.9)'; }}
             onMouseLeave={e => { if (activeTab !== tab) (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.6)'; }}
             disabled={tab === 'preview' && !previewUrl}
-            title={tab === 'preview' && !previewUrl ? 'Deploy first to see preview' : ''}
+            title={tab === 'preview' && !previewUrl ? 'Erst deployen für Preview' : undefined}
           >
-            {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            {tab === 'chat' ? 'Chat' : tab === 'code' ? 'Code' : 'Preview'}
             {tab === 'code' && injectionCount > 0 && (
               <span style={{
                 position: 'absolute', top: 4, right: 4,
@@ -196,10 +207,7 @@ export function Topbar({
 
       <div style={{ flex: 1 }} />
 
-      {/* Model Switcher */}
-      <ModelSwitcher />
-
-      {/* Avatar + Dropdown */}
+      {/* RIGHT: Avatar + Dropdown */}
       <div style={{ position: 'relative', flexShrink: 0 }}>
         <button
           onClick={() => setMenuOpen(prev => !prev)}
@@ -227,10 +235,10 @@ export function Topbar({
               position: 'absolute', right: 0, top: 'calc(100% + 6px)',
               background: '#1a2e18', border: '1px solid #2d5229',
               borderRadius: 10, padding: '4px 0',
-              minWidth: 220, zIndex: 100,
+              minWidth: 240, zIndex: 100,
               boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
             }}>
-              {/* User info header */}
+              {/* User info */}
               {userInfo && (
                 <div style={{
                   padding: '10px 14px 10px',
@@ -246,9 +254,7 @@ export function Topbar({
                       {userInfo.name}
                     </div>
                   )}
-                  <div style={{
-                    display: 'flex', alignItems: 'center', gap: 6,
-                  }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <ProviderIcon provider={userInfo.provider} />
                     <span style={{
                       color: 'rgba(255,255,255,0.45)', fontSize: 11,
@@ -261,18 +267,50 @@ export function Topbar({
                 </div>
               )}
 
+              {/* Plan & Usage */}
+              <div style={{
+                padding: '10px 14px',
+                borderBottom: '1px solid #2d5229',
+                marginBottom: 4,
+              }}>
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  marginBottom: 8,
+                }}>
+                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', fontFamily: 'DM Sans, sans-serif' }}>
+                    Plan
+                  </span>
+                  <span style={{
+                    fontSize: 11, fontWeight: 700, color: '#D4A94A',
+                    fontFamily: 'DM Sans, sans-serif', background: 'rgba(212,169,74,0.15)',
+                    padding: '2px 8px', borderRadius: 4,
+                  }}>
+                    Free
+                  </span>
+                </div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', fontFamily: 'DM Sans, sans-serif', marginBottom: 4 }}>
+                  Tokens diesen Monat
+                </div>
+                <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.1)', overflow: 'hidden', marginBottom: 4 }}>
+                  <div style={{ height: '100%', borderRadius: 2, background: '#D4A94A', width: '0%' }} />
+                </div>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', fontFamily: 'DM Sans, sans-serif' }}>
+                  0 / 100k verwendet
+                </div>
+              </div>
+
               <MenuItem onClick={() => { router.push('/dashboard/settings/keys'); setMenuOpen(false); }}>
                 API Keys
               </MenuItem>
               <MenuItem onClick={() => { router.push('/dashboard/settings'); setMenuOpen(false); }}>
-                Settings
+                Einstellungen
               </MenuItem>
               <MenuItem onClick={() => { router.push('/dashboard/settings/billing'); setMenuOpen(false); }}>
-                Billing
+                Billing & Plan
               </MenuItem>
               <div style={{ height: 1, background: '#2d5229', margin: '4px 8px' }} />
               <MenuItem onClick={handleSignOut}>
-                Sign out
+                Abmelden
               </MenuItem>
             </div>
           </>
@@ -280,6 +318,10 @@ export function Topbar({
       </div>
 
       <style>{`
+        @keyframes blink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.3; }
+        }
         @media (max-width: 768px) {
           .topbar-hamburger { display: flex !important; }
           .topbar-tabs { display: none !important; }

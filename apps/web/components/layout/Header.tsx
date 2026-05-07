@@ -134,11 +134,13 @@ export function Header({
               key={tab}
               onClick={() => onTabChange?.(tab)}
               disabled={tab === 'preview' && !previewUrl}
+              className={activeTab === tab ? 'tab-active-underline' : ''}
               style={{
                 padding: '5px 14px', borderRadius: 7,
-                fontSize: 13, fontWeight: 500, cursor: 'pointer',
-                background: activeTab === tab ? '#fff' : 'transparent',
-                color: activeTab === tab ? '#2D4A2B' : 'rgba(255,255,255,0.55)',
+                fontSize: 13, fontWeight: activeTab === tab ? 600 : 500,
+                cursor: 'pointer',
+                background: activeTab === tab ? 'rgba(255,255,255,0.12)' : 'transparent',
+                color: activeTab === tab ? '#fff' : 'rgba(255,255,255,0.55)',
                 border: 'none', fontFamily: 'DM Sans, sans-serif',
                 transition: 'all 0.15s', minHeight: 30, position: 'relative',
               }}

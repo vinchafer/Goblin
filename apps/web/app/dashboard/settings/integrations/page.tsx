@@ -7,7 +7,6 @@ export default async function IntegrationsPage({ searchParams }: { searchParams:
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  // @ts-ignore supabase-js v2.104 / ssr v0.5 type mismatch
   const { data: profile } = await supabase
     .from('users')
     .select('*')

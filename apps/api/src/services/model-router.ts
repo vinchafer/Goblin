@@ -37,7 +37,7 @@ interface FreePoolEntry {
 const FREE_API_POOL: FreePoolEntry[] = [
   { provider: 'google',   envVar: 'GOOGLE_FREE_API_KEY',     baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/', model: 'gemini-2.0-flash',        slug: 'free/gemini-flash' },
   { provider: 'groq',     envVar: 'GROQ_FREE_API_KEY',       baseURL: 'https://api.groq.com/openai/v1',                          model: 'llama-3.3-70b-versatile', slug: 'free/llama-70b' },
-  { provider: 'openai',   envVar: 'CEREBRAS_FREE_API_KEY',   baseURL: 'https://api.cerebras.ai/v1',                              model: 'llama-3.3-70b',           slug: 'free/llama-70b' },
+  { provider: 'openai',   envVar: 'CEREBRAS_FREE_API_KEY',   baseURL: 'https://api.cerebras.ai/v1',                              model: 'llama-3.3-70b',           slug: 'free/llama-70b-cerebras' },
   { provider: 'deepseek', envVar: 'OPENROUTER_FREE_API_KEY', baseURL: 'https://openrouter.ai/api/v1',                            model: 'deepseek/deepseek-chat',  slug: 'free/deepseek' },
 ];
 
@@ -175,7 +175,7 @@ export async function resolveModel(
     };
   }
 
-  throw new GoblinError('unknown', 'No model available. Add an API key in Settings → API Keys, or configure Free-API Pool keys in .env.');
+  throw new GoblinError('unknown', 'No model connected. Add an API key in Settings to start chatting.');
 }
 
 // ─── Streaming ────────────────────────────────────────────────────────────────

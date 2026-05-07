@@ -1,0 +1,113 @@
+'use client';
+
+interface InjectedBannerProps {
+  pendingCode: { content: string; filename?: string };
+  deploying: boolean;
+  undoPayload: { filePath: string; previousContent: string } | null;
+  onDeploy: () => void;
+  onApply: () => void;
+  onPush: () => void;
+  onUndo: () => void;
+  onDismiss: () => void;
+}
+
+export function InjectedBanner({
+  pendingCode,
+  deploying,
+  undoPayload,
+  onDeploy,
+  onApply,
+  onPush,
+  onUndo,
+  onDismiss,
+}: InjectedBannerProps) {
+  return (
+    <div style={{
+      background: 'rgba(212,169,74,0.1)',
+      borderBottom: '2px solid rgba(212,169,74,0.4)',
+      borderTop: '1px solid rgba(212,169,74,0.2)',
+      padding: '9px 14px',
+      display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0,
+    }}>
+      <span style={{ color: 'var(--ochre)', fontSize: 13, flexShrink: 0 }}>✦</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <span style={{
+          fontSize: 12, fontWeight: 600, color: 'var(--ochre)',
+          fontFamily: 'DM Sans, sans-serif',
+        }}>
+          Injected via Send to Code
+        </span>
+        {pendingCode.filename && (
+          <span style={{
+            marginLeft: 8, fontSize: 11, color: 'var(--ochre)',
+            fontFamily: 'JetBrains Mono, monospace',
+            background: 'rgba(212,169,74,0.12)',
+            padding: '1px 8px', borderRadius: 4,
+          }}>
+            {pendingCode.filename}
+          </span>
+        )}
+      </div>
+      <div style={{ display: 'flex', gap: 5, flexShrink: 0, alignItems: 'center' }}>
+        <button
+          onClick={onApply}
+          style={{
+            background: 'rgba(212,169,74,0.15)', color: 'var(--ochre)',
+            border: '1px solid rgba(212,169,74,0.4)',
+            borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 600,
+            cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
+          }}
+        >
+          ⟳ Review & Apply
+        </button>
+        <button
+          onClick={onDeploy}
+          disabled={deploying}
+          style={{
+            background: deploying ? 'rgba(45,74,43,0.5)' : 'var(--moss)',
+            color: 'var(--ochre)', border: 'none',
+            borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 600,
+            cursor: deploying ? 'not-allowed' : 'pointer',
+            fontFamily: 'DM Sans, sans-serif', display: 'flex', alignItems: 'center', gap: 4,
+          }}
+        >
+          {deploying ? '▶ Deploying…' : '▶ Build'}
+        </button>
+        <button
+          onClick={onPush}
+          style={{
+            background: 'transparent', color: '#8aaa85',
+            border: '1px solid rgba(138,170,133,0.3)',
+            borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 500,
+            cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
+          }}
+        >
+          → Push GitHub
+        </button>
+        {undoPayload && (
+          <button
+            onClick={onUndo}
+            title="Undo last injection"
+            style={{
+              background: 'transparent', color: '#6b8a6b',
+              border: '1px solid rgba(107,138,107,0.3)',
+              borderRadius: 6, padding: '5px 10px', fontSize: 12,
+              cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
+            }}
+          >
+            ↩ Undo
+          </button>
+        )}
+        <button
+          onClick={onDismiss}
+          style={{
+            background: 'none', border: 'none', color: '#6b8a6b',
+            cursor: 'pointer', fontSize: 16, padding: '4px 6px', lineHeight: 1,
+          }}
+        >
+          ×
+        </button>
+      </div>
+    </div>
+  );
+}

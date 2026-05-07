@@ -1,5 +1,10 @@
 import Link from "next/link";
 
+const name    = process.env.NEXT_PUBLIC_IMPRINT_NAME    ?? '[YOUR NAME]';
+const address = process.env.NEXT_PUBLIC_IMPRINT_ADDRESS ?? '[YOUR ADDRESS]';
+const vat     = process.env.NEXT_PUBLIC_IMPRINT_VAT     ?? 'CHE-XXX.XXX.XXX MWST';
+const email   = process.env.NEXT_PUBLIC_IMPRINT_EMAIL   ?? '[YOUR EMAIL]';
+
 export default function ImprintPage() {
   return (
     <main className="max-w-3xl mx-auto py-16 px-4">
@@ -11,16 +16,15 @@ export default function ImprintPage() {
 
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--goblin-slate)' }}>Contact</h2>
-        <p className="mb-2" style={{ color: 'var(--goblin-gray)' }}>[YOUR NAME]</p>
-        <p className="mb-2" style={{ color: 'var(--goblin-gray)' }}>[YOUR ADDRESS]</p>
-        <p className="mb-2" style={{ color: 'var(--goblin-gray)' }}>[POSTAL CODE] [CITY]</p>
+        <p className="mb-2" style={{ color: 'var(--goblin-gray)' }}>{name}</p>
+        <p className="mb-2" style={{ color: 'var(--goblin-gray)' }}>{address}</p>
         <p className="mb-2" style={{ color: 'var(--goblin-gray)' }}>Switzerland</p>
-        <p className="mb-2" style={{ color: 'var(--goblin-gray)' }}>Email: [YOUR EMAIL]</p>
+        <p className="mb-2" style={{ color: 'var(--goblin-gray)' }}>Email: {email}</p>
       </section>
 
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--goblin-slate)' }}>VAT Number</h2>
-        <p style={{ color: 'var(--goblin-gray)' }}>CHE-XXX.XXX.XXX MWST</p>
+        <p style={{ color: 'var(--goblin-gray)' }}>{vat}</p>
       </section>
 
       <section className="mb-8">

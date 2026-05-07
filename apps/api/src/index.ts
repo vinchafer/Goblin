@@ -54,6 +54,7 @@ import { initSentry, captureError } from './lib/sentry';
 import logger, { logRequest } from './lib/logger';
 
 initSentry();
+import { generalRateLimit } from './middleware/rate-limit';
 import { chat } from './routes/chat';
 import { billing } from './routes/billing';
 import { projects } from './routes/projects';
@@ -72,44 +73,42 @@ import { chatSessions } from './routes/chat-sessions';
 
 const app = new Hono();
 
+// Build CORS origin list once at startup — avoids rebuilding on every request
+const CORS_EXACT = new Set([
+  'http://localhost:3000',
+  'https://justgoblin.com',
+  'https://www.justgoblin.com',
+  process.env.NEXT_PUBLIC_APP_URL,
+  // Additional origins from env var: ALLOWED_ORIGINS=https://a.com,https://b.com
+  ...(process.env.ALLOWED_ORIGINS?.split(',').map(s => s.trim()).filter(Boolean) ?? []),
+].filter(Boolean) as string[]);
+
+// Wildcard patterns compiled to anchored regexes
+const CORS_PATTERNS = [
+  /^https:\/\/[^./]+\.vercel\.app$/,
+];
+
+function isAllowedOrigin(origin: string): boolean {
+  if (CORS_EXACT.has(origin)) return true;
+  return CORS_PATTERNS.some(re => re.test(origin));
+}
+
 app.use('*', cors({
   origin: (origin) => {
-    // Requests with no Origin (curl, server-to-server, Tauri) get wildcard.
-    // All sensitive endpoints require an Authorization header, so wildcard CORS
-    // here does not bypass auth — browsers enforce same-origin for credentialed requests.
+    // No Origin = curl / server-to-server — all routes require Authorization anyway
     if (!origin) return '*';
-    
-    const allowedOrigins = [
-      'http://localhost:3000',
-      'https://*.vercel.app',
-      'https://justgoblin.com',
-      'https://www.justgoblin.com',
-      process.env.NEXT_PUBLIC_APP_URL
-    ].filter((origin): origin is string => !!origin);
-    
-    // Check if the origin matches any allowed pattern
-    if (allowedOrigins.some(allowed => {
-      if (allowed.includes('*')) {
-        const pattern = allowed.replace('*', '.*');
-        return new RegExp(pattern).test(origin);
-      }
-      return origin === allowed;
-    })) {
-      return origin;
-    }
-    
-    // For development, allow all origins
-    if (process.env.NODE_ENV === 'development') {
-      return origin;
-    }
-    
+    if (isAllowedOrigin(origin)) return origin;
+    if (process.env.NODE_ENV === 'development') return origin;
     return null;
   },
   credentials: true,
   allowHeaders: ['Content-Type', 'Authorization'],
-  allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  maxAge: 86400, // 24 hours
+  allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  maxAge: 86400,
 }));
+
+// Global rate limit: 60 req/min per IP/user — applied to all /api/* routes
+app.use('/api/*', generalRateLimit);
 
 // Request logging
 app.use('*', async (c, next) => {
@@ -127,68 +126,6 @@ app.onError((err, c) => {
 
 app.route('/health', health);
 
-// Debug: LiteLLM connectivity
-app.get('/api/debug/litellm', async (c) => {
-  const base = process.env.LITELLM_BASE_URL;
-  const key = process.env.LITELLM_MASTER_KEY;
-  const normalizedBase = base
-    ? (base.startsWith('http') ? base.replace(/\/$/, '') : `https://${base.replace(/\/$/, '')}`)
-    : null;
-
-  if (!normalizedBase || !key) {
-    return c.json({ ok: false, error: 'LITELLM_BASE_URL or LITELLM_MASTER_KEY not set', base: normalizedBase, hasKey: !!key });
-  }
-
-  try {
-    const res = await fetch(`${normalizedBase}/health`, {
-      headers: { Authorization: `Bearer ${key}` },
-      signal: AbortSignal.timeout(5000),
-    });
-    const body = await res.text().catch(() => '');
-    // 500 with "Model list not initialized" = LiteLLM is running, just no models configured yet
-    const noModels = body.includes('Model list not initialized');
-    return c.json({
-      ok: res.ok || noModels,
-      connected: true,
-      status: res.status,
-      base: normalizedBase,
-      note: noModels ? 'LiteLLM running — no models configured yet. Add models via LiteLLM dashboard or config.' : undefined,
-      body: noModels ? undefined : body.slice(0, 200),
-    });
-  } catch (e) {
-    return c.json({ ok: false, connected: false, error: e instanceof Error ? e.message : 'Request failed', base: normalizedBase });
-  }
-});
-
-// Temporary debug endpoint — remove after production issues are resolved
-app.get('/api/debug', async (c) => {
-  const { checkStorageConnection } = await import('./services/file-storage.js');
-
-  const [storageOk, supabaseOk] = await Promise.all([
-    checkStorageConnection().catch(() => false),
-    (async () => {
-      try {
-        const { getSupabaseAdmin } = await import('./lib/supabase.js');
-        const { error } = await getSupabaseAdmin().from('projects').select('id').limit(1);
-        return !error;
-      } catch { return false; }
-    })(),
-  ]);
-
-  return c.json({
-    storage: storageOk,
-    supabase: supabaseOk,
-    env: {
-      hasSupabaseUrl: !!(process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL),
-      hasServiceRoleKey: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-      hasStorageEndpoint: !!process.env.STORAGE_ENDPOINT,
-      hasStorageKey: !!process.env.STORAGE_KEY,
-      hasStorageBucket: !!process.env.STORAGE_BUCKET,
-      hasEncryptionKey: !!process.env.ENCRYPTION_KEY,
-      storageEndpoint: process.env.STORAGE_ENDPOINT ?? null,
-    },
-  });
-});
 
 app.route('/api/chat', chat);
 app.route('/api/byok-keys', byok);

@@ -7,6 +7,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { WelcomeModal } from "@/components/onboarding/welcome-modal";
 import { CommandPalette, useCommandPalette } from "@/components/ui/CommandPalette";
 import { ShortcutsHelp } from "@/components/ui/ShortcutsHelp";
+import { ShortcutsTooltip } from "@/components/ui/ShortcutsTooltip";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useApp } from "@/contexts/app-context";
 import { createClient } from "@/lib/supabase/client";
@@ -129,6 +130,8 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
         open={shortcutsOpen}
         onClose={() => setShortcutsOpen(false)}
       />
+
+      <ShortcutsTooltip />
     </div>
   );
 }

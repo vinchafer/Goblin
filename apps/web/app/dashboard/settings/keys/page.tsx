@@ -7,7 +7,7 @@ export default async function KeysSettingsPage() {
 
   const { data: keys } = await supabase
     .from('byok_keys')
-    .select('id, provider, label, status, last_used, created_at')
+    .select('id, provider, label, key_hint, status, last_used, created_at, validated_at')
     .order('created_at', { ascending: false });
 
   return (
