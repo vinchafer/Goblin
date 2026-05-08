@@ -256,9 +256,12 @@ export function KeysList({ initialKeys }: KeysListProps) {
                       />
                       <button
                         onClick={() => setShowKey(prev => ({ ...prev, [p.id]: !prev[p.id] }))}
-                        style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--meta)', padding: 2, fontSize: 11 }}
+                        style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--meta)', padding: 2, display: 'flex', alignItems: 'center' }}
                       >
-                        {showKey[p.id] ? '🙈' : '👁'}
+                        {showKey[p.id]
+                          ? <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M2 10s3-6 8-6 8 6 8 6-3 6-8 6-8-6-8-6z"/><circle cx="10" cy="10" r="2.5"/><line x1="3" y1="3" x2="17" y2="17"/></svg>
+                          : <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M2 10s3-6 8-6 8 6 8 6-3 6-8 6-8-6-8-6z"/><circle cx="10" cy="10" r="2.5"/></svg>
+                        }
                       </button>
                     </div>
 

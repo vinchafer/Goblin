@@ -19,7 +19,17 @@ export default function NewProjectPage() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { router.push('/login'); return; }
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/projects`, {
+
+      const apiBase = process.env.NEXT_PUBLIC_API_URL;
+      console.log('API URL:', apiBase);
+      console.log('Has token:', !!session.access_token);
+
+      if (!apiBase) {
+        setError('NEXT_PUBLIC_API_URL is not set — check Vercel environment variables.');
+        return;
+      }
+
+      const res = await fetch(`${apiBase}/api/projects`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -36,7 +46,14 @@ export default function NewProjectPage() {
         setError(msg);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Network error — check connection.');
+      const e = err instanceof Error ? err : new Error(String(err));
+      console.error('Full error:', {
+        message: e.message,
+        name: e.name,
+        stack: e.stack,
+        apiUrl: process.env.NEXT_PUBLIC_API_URL,
+      });
+      setError(e.message || 'Network error — check connection and NEXT_PUBLIC_API_URL.');
     } finally {
       setLoading(false);
     }
@@ -89,8 +106,17 @@ export default function NewProjectPage() {
             className="btn btn-primary btn-lg"
             style={{ width: '100%' }}
           >
-            {loading ? 'Creating…' : 'Create project →'}
+            {loading ? (
+              <>
+                <svg style={{ animation: 'spin 0.7s linear infinite', flexShrink: 0 }} width="16" height="16" viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.5" strokeDasharray="28" strokeDashoffset="8" opacity="0.3" />
+                  <path d="M12 3a9 9 0 0 1 9 9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+                </svg>
+                Creating project…
+              </>
+            ) : 'Create project →'}
           </button>
+          <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
         </form>
       </div>
     </div>

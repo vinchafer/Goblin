@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { Icons } from '@/components/ui/icons';
 
 const PLANS = [
   {
@@ -57,10 +58,10 @@ export function PricingSection() {
     <section id="pricing" style={{ background: 'var(--cream2)', padding: '100px 40px' }}>
       <div style={{ maxWidth: 980, margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: 64 }}>
-          <div style={{ fontSize: 11, fontWeight: 500, letterSpacing: 2, textTransform: 'uppercase' as const, color: 'var(--ochre)', marginBottom: 16 }}>Pricing</div>
+          <div style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: 'var(--ochre)', marginBottom: 16, fontFamily: 'DM Sans, sans-serif' }}>Pricing</div>
           <h2 style={{
-            fontFamily: 'Fraunces, serif', fontSize: 'clamp(36px, 5vw, 56px)',
-            color: 'var(--moss)', lineHeight: 1.05, letterSpacing: '-2px', fontWeight: 900, marginBottom: 16,
+            fontFamily: 'Fraunces, serif', fontSize: 'clamp(28px, 4vw, 44px)',
+            color: 'var(--moss)', lineHeight: 1.1, letterSpacing: '-1.5px', fontWeight: 700, marginBottom: 16,
           }}>
             Pick your goblin&apos;s <em style={{ fontStyle: 'italic', color: 'var(--ochre)' }}>appetite.</em>
           </h2>
@@ -104,12 +105,12 @@ export function PricingSection() {
 
               <ul style={{ listStyle: 'none', padding: 0, marginBottom: 32, display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
                 {p.features.map(f => (
-                  <li key={f} style={{ fontSize: 13, display: 'flex', alignItems: 'flex-start', gap: 10, color: 'var(--text)' }}>
+                  <li key={f} style={{ fontSize: 13, display: 'flex', alignItems: 'flex-start', gap: 10, color: 'var(--text)', fontFamily: 'DM Sans, sans-serif' }}>
                     <span style={{
                       width: 18, height: 18, borderRadius: '50%', background: 'rgba(30,58,28,0.08)',
                       display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: 10, color: 'var(--moss)', flexShrink: 0, marginTop: 1,
-                    }}>✓</span>
+                      color: 'var(--moss)', flexShrink: 0, marginTop: 1,
+                    }}><Icons.Check size={11} strokeWidth={2} /></span>
                     {f}
                   </li>
                 ))}

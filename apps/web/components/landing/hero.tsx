@@ -6,72 +6,70 @@ export function Hero() {
       minHeight: '100vh', display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center', textAlign: 'center',
       padding: '120px 24px 80px', position: 'relative', overflow: 'hidden',
-      background: 'var(--cream)',
+      background: '#0f1410',
     }}>
-      {/* Grid background */}
+      {/* Subtle grid */}
       <div style={{
         position: 'absolute', inset: 0, pointerEvents: 'none',
-        backgroundImage: 'linear-gradient(rgba(30,58,28,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(30,58,28,0.04) 1px, transparent 1px)',
+        backgroundImage: 'linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px)',
         backgroundSize: '48px 48px',
       }} />
       {/* Radial glow */}
       <div style={{
         position: 'absolute', inset: 0, pointerEvents: 'none',
-        background: 'radial-gradient(ellipse 80% 50% at 50% -10%, rgba(30,58,28,0.1) 0%, transparent 70%)',
+        background: 'radial-gradient(ellipse 70% 45% at 50% 0%, rgba(30,58,28,0.5) 0%, transparent 70%)',
       }} />
 
-      {/* Beta badge */}
+      {/* Beta badge — no animation */}
       <div style={{
         display: 'inline-flex', alignItems: 'center', gap: 8,
-        background: 'rgba(201,147,58,0.1)', border: '1px solid rgba(201,147,58,0.3)',
-        borderRadius: 100, padding: '6px 16px', fontSize: 11, fontWeight: 500,
-        color: 'var(--ochre)', letterSpacing: '0.5px', textTransform: 'uppercase',
-        marginBottom: 32, position: 'relative', zIndex: 1,
+        background: 'rgba(201,147,58,0.1)', border: '1px solid rgba(201,147,58,0.25)',
+        borderRadius: 100, padding: '5px 14px', fontSize: 11, fontWeight: 500,
+        color: 'var(--ochre)', letterSpacing: '0.08em', textTransform: 'uppercase',
+        marginBottom: 36, position: 'relative', zIndex: 1,
       }}>
-        <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--ochre)', display: 'inline-block', animation: 'pulse 2s infinite' }} />
+        <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--ochre)', display: 'inline-block' }} />
         Now in beta
       </div>
 
       <h1 style={{
-        fontFamily: 'Fraunces, serif', fontSize: 'clamp(48px, 7vw, 88px)',
-        lineHeight: 1.0, fontWeight: 900, color: 'var(--moss)',
-        letterSpacing: '-3px', marginBottom: 24, maxWidth: 860,
+        fontFamily: 'Fraunces, serif', fontSize: 'clamp(40px, 6vw, 72px)',
+        lineHeight: 1.08, fontWeight: 700, color: '#F7F4ED',
+        letterSpacing: '-2px', marginBottom: 28, maxWidth: 760,
         position: 'relative', zIndex: 1,
       }}>
-        Build from{' '}<em style={{ fontStyle: 'italic', color: 'var(--ochre)' }}>anywhere.</em>
-        <br />Ship everything.
+        The Cloud Workshop<br />
+        <em style={{ fontStyle: 'italic', color: 'var(--ochre)' }}>for Builders.</em>
       </h1>
 
       <p style={{
-        fontSize: 18, color: 'var(--meta)', maxWidth: 520, lineHeight: 1.65,
-        marginBottom: 48, fontWeight: 300, position: 'relative', zIndex: 1,
+        fontSize: 18, color: 'rgba(255,255,255,0.55)', maxWidth: 480, lineHeight: 1.7,
+        marginBottom: 48, fontWeight: 400, position: 'relative', zIndex: 1,
       }}>
-        Bring your own API key. No extra markup. Full control.
-        Your goblin handles the rest.
+        Describe what you want to build.<br />
+        Your goblin writes the code.<br />
+        No token limits. No laptop required.
       </p>
 
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center', marginBottom: 24, position: 'relative', zIndex: 1 }}>
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center', position: 'relative', zIndex: 1, marginBottom: 64 }}>
         <Link href="/login" style={{
-          background: 'var(--moss)', color: '#fff', padding: '14px 28px',
-          borderRadius: 10, fontSize: 15, fontWeight: 500, textDecoration: 'none',
+          background: '#F7F4ED', color: '#0f1410', padding: '13px 28px',
+          borderRadius: 9, fontSize: 14, fontWeight: 600, textDecoration: 'none',
           display: 'inline-flex', alignItems: 'center', gap: 8,
-          boxShadow: '0 4px 16px rgba(30,58,28,0.25)',
-        }}>Start building free →</Link>
+          fontFamily: 'DM Sans, sans-serif',
+        }}>Start Building &rarr;</Link>
         <a href="#how-it-works" style={{
-          background: 'transparent', color: 'var(--text)', padding: '14px 24px',
-          borderRadius: 10, fontSize: 15, fontWeight: 400, textDecoration: 'none',
-          border: '1px solid rgba(0,0,0,0.12)',
-        }}>See how it works</a>
+          background: 'transparent', color: 'rgba(255,255,255,0.65)', padding: '13px 24px',
+          borderRadius: 9, fontSize: 14, fontWeight: 400, textDecoration: 'none',
+          border: '1px solid rgba(255,255,255,0.12)',
+          fontFamily: 'DM Sans, sans-serif',
+        }}>See how it works &darr;</a>
       </div>
-
-      <p style={{ fontSize: 13, color: 'var(--meta)', position: 'relative', zIndex: 1, marginBottom: 64 }}>
-        BYOK support · No token panic · GitHub push built-in
-      </p>
 
       {/* App window mockup */}
       <div style={{
-        width: '100%', maxWidth: 900, borderRadius: 16, overflow: 'hidden',
-        boxShadow: '0 40px 120px rgba(0,0,0,0.15), 0 0 0 1px rgba(0,0,0,0.08)',
+        width: '100%', maxWidth: 900, borderRadius: 14, overflow: 'hidden',
+        boxShadow: '0 40px 120px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06)',
         position: 'relative', zIndex: 1,
       }}>
         {/* Window chrome */}
@@ -79,8 +77,8 @@ export function Hero() {
           {['#ff5f57', '#febc2e', '#28c840'].map(c => (
             <div key={c} style={{ width: 11, height: 11, borderRadius: '50%', background: c }} />
           ))}
-          <div style={{ flex: 1, background: 'rgba(255,255,255,0.07)', borderRadius: 5, height: 20, margin: '0 12px', display: 'flex', alignItems: 'center', padding: '0 10px', fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>
-            🔒 app.justgoblin.com/dashboard
+          <div style={{ flex: 1, background: 'rgba(255,255,255,0.06)', borderRadius: 5, height: 20, margin: '0 12px', display: 'flex', alignItems: 'center', padding: '0 10px', fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: 'rgba(255,255,255,0.35)' }}>
+            app.justgoblin.com/dashboard
           </div>
         </div>
         {/* App layout */}
@@ -120,7 +118,7 @@ export function Hero() {
                   <div style={{ background: '#1a2018', borderRadius: 6, padding: '7px 9px', margin: '6px 0', fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#8aaa85', lineHeight: 1.6 }}>
                     <span style={{ color: '#c9933a' }}>export function</span> <span style={{ color: '#7dd3a8' }}>Navbar</span>()&nbsp;{'{'}..<br />{'}'  }
                   </div>
-                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'var(--ochre)', color: 'var(--bark)', borderRadius: 6, padding: '5px 11px', fontSize: 11, fontWeight: 600 }}>→ Send to Code</div>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'var(--ochre)', color: 'var(--bark)', borderRadius: 6, padding: '5px 11px', fontSize: 11, fontWeight: 600 }}>Send to Code</div>
                 </div>
               </div>
             </div>

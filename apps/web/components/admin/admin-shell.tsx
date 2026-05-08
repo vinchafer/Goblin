@@ -4,10 +4,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 const NAV = [
-  { href: '/admin/users',  label: 'Users',         icon: '👥' },
-  { href: '/admin/models', label: 'Models',        icon: '🧠' },
-  { href: '/admin/builds', label: 'Builds',        icon: '🔨' },
-  { href: '/admin/status', label: 'Status',        icon: '📡' },
+  { href: '/admin/health', label: 'Health',        icon: '♥' },
+  { href: '/admin/users',  label: 'Users',         icon: 'U' },
+  { href: '/admin/models', label: 'Models',        icon: 'M' },
+  { href: '/admin/builds', label: 'Builds',        icon: 'B' },
+  { href: '/admin/status', label: 'Status',        icon: 'S' },
 ];
 
 export function AdminShell({ children }: { children: React.ReactNode }) {

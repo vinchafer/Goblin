@@ -18,11 +18,16 @@ interface ProjectWorkspaceProps {
 }
 
 export function ProjectWorkspace({ projectId, projectName, previewUrl }: ProjectWorkspaceProps) {
-  const { activeTab, pendingCodePayload, setPreviewUrl } = useApp();
+  const { activeTab, setActiveTab, pendingCodePayload, setPreviewUrl } = useApp();
 
   useEffect(() => {
     setPreviewUrl(previewUrl ?? null);
   }, [previewUrl, setPreviewUrl]);
+
+  // Always land on chat when navigating to a project
+  useEffect(() => {
+    setActiveTab('chat');
+  }, [projectId, setActiveTab]);
 
   if (activeTab === "code") {
     return <CodeTab projectId={projectId} projectName={projectName} pendingCode={pendingCodePayload} />;

@@ -1,5 +1,16 @@
 import { createClient } from '@/lib/supabase/server';
 
+interface VersionData {
+  version: string;
+  gitCommit: string;
+  buildTime: string;
+  nodeEnv?: string;
+  env?: string;
+  apiUrl?: string;
+  webReady?: boolean;
+  apiReady?: boolean;
+}
+
 interface Check {
   status: 'ok' | 'fail' | 'skip' | 'degraded';
   latencyMs?: number;
@@ -21,6 +32,27 @@ interface Incident {
   description: string | null;
   resolved_at: string | null;
   created_at: string;
+}
+
+async function getWebVersion(): Promise<VersionData | null> {
+  try {
+    const res = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/version`, { cache: 'no-store' });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}
+
+async function getApiVersion(): Promise<VersionData | null> {
+  try {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+    const res = await fetch(`${apiUrl}/version`, { cache: 'no-store' });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
 }
 
 async function getHealth(): Promise<HealthData | null> {
@@ -81,7 +113,9 @@ const SEVERITY_ICON: Record<string, string> = {
 };
 
 export default async function StatusPage() {
-  const [health, incidents] = await Promise.all([getHealth(), getIncidents()]);
+  const [health, incidents, webVersion, apiVersion] = await Promise.all([
+    getHealth(), getIncidents(), getWebVersion(), getApiVersion(),
+  ]);
 
   const activeIncidents = incidents.filter(i => i.status !== 'resolved');
   const resolvedIncidents = incidents.filter(i => i.status === 'resolved');
@@ -189,6 +223,37 @@ export default async function StatusPage() {
             ))}
           </div>
         )}
+
+        {/* Deployment versions */}
+        <div style={{ background: 'var(--panel)', border: '1px solid var(--div)', borderRadius: 12, overflow: 'hidden', marginBottom: 28 }}>
+          <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--div)', fontSize: 12, fontWeight: 600, color: 'var(--meta)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+            Deployment
+          </div>
+          {[
+            { label: 'Web (Vercel)', data: webVersion },
+            { label: 'API (Railway)', data: apiVersion },
+          ].map(({ label, data }) => (
+            <div key={label} style={{ padding: '14px 20px', borderBottom: '1px solid var(--div)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                <StatusDot status={data ? 'ok' : 'fail'} />
+                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{label}</span>
+                <span style={{ marginLeft: 'auto', fontSize: 12, fontFamily: 'monospace', color: 'var(--meta)' }}>
+                  {data ? `v${data.version}` : 'unreachable'}
+                </span>
+              </div>
+              {data && (
+                <div style={{ fontSize: 11, color: 'var(--text-faint)', fontFamily: 'monospace', paddingLeft: 20 }}>
+                  commit: {data.gitCommit.slice(0, 7)} · built: {new Date(data.buildTime).toLocaleString()}
+                </div>
+              )}
+            </div>
+          ))}
+          {webVersion && apiVersion && webVersion.gitCommit !== 'unknown' && apiVersion.gitCommit !== 'unknown' && (
+            <div style={{ padding: '10px 20px', fontSize: 12, color: webVersion.gitCommit === apiVersion.gitCommit ? '#4A7C3B' : '#D4A94A', fontWeight: 600 }}>
+              {webVersion.gitCommit === apiVersion.gitCommit ? '✓ Web and API on same commit' : '⚠ Web and API on different commits'}
+            </div>
+          )}
+        </div>
 
         <p style={{ fontSize: 12, color: 'var(--meta)', textAlign: 'center' }}>
           Auto-refreshes every 60 seconds.{' '}

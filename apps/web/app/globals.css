@@ -47,7 +47,7 @@
   --space-12: 48px;
 
   /* Layout */
-  --topbar-height:  56px;
+  --topbar-height:  48px;
   --sidebar-width:  240px;
 
   /* Border Radius */
@@ -608,33 +608,28 @@ button, input, textarea, select {
   display: flex;
   align-items: center;
   gap: 14px;
-  padding: 14px 16px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  transition: background 0.15s;
+  padding: 16px 0;
+  background: transparent;
+  border-bottom: 1px solid var(--div);
+  transition: background 0.1s;
 }
-.keys-provider-row.connected { background: rgba(45,74,43,0.03); }
-.keys-provider-row.open { border-radius: 10px 10px 0 0; }
+.keys-provider-row:hover { background: rgba(0,0,0,0.015); margin: 0 -16px; padding-left: 16px; padding-right: 16px; }
 .keys-provider-badge {
-  width: 36px; height: 36px;
+  width: 32px; height: 32px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
-  font-size: 12px;
+  border-radius: 6px;
+  font-size: 11px;
   font-weight: 700;
   font-family: 'JetBrains Mono', monospace;
 }
-.keys-provider-badge.connected { background: rgba(45,74,43,0.12); color: var(--moss); }
-.keys-provider-badge.idle      { background: rgba(212,169,74,0.1);  color: var(--ochre); }
+.keys-provider-badge.connected { background: rgba(45,74,43,0.1); color: var(--moss); }
+.keys-provider-badge.idle      { background: var(--subtle); color: var(--meta); }
 .keys-input-panel {
-  padding: 14px 16px;
-  background: rgba(0,0,0,0.02);
-  border: 1px solid var(--border);
-  border-top: none;
-  border-radius: 0 0 10px 10px;
+  padding: 14px 0 20px;
+  border-bottom: 1px solid var(--div);
 }
 .keys-advanced-panel {
   margin-top: 10px;

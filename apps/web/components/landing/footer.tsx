@@ -74,7 +74,7 @@ export function Footer() {
         {/* Bottom bar */}
         <div style={{ borderTop: '1px solid rgba(255,255,255,0.07)', paddingTop: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, fontSize: 12, color: 'rgba(255,255,255,0.2)' }}>
           <span>© 2026 Goblin. All rights reserved.</span>
-          <span>Built with a goblin 👺</span>
+          <span>Built with a goblin.</span>
         </div>
       </div>
     </footer>

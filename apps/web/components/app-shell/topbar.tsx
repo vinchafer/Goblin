@@ -38,11 +38,6 @@ function ProviderIcon({ provider }: { provider: string | undefined }) {
       <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/>
     </svg>
   );
-  if (provider === 'apple') return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="rgba(255,255,255,0.7)" style={{ flexShrink: 0 }}>
-      <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
-    </svg>
-  );
   return null;
 }
 
@@ -103,7 +98,7 @@ export function Topbar({
 
   return (
     <header style={{
-      height: 56,
+      height: 48,
       background: '#2D4A2B',
       display: 'flex',
       alignItems: 'center',
@@ -120,45 +115,51 @@ export function Topbar({
         aria-label="Open menu"
         style={{
           background: 'none', border: 'none',
-          color: 'rgba(255,255,255,0.65)', fontSize: 18,
+          color: 'rgba(255,255,255,0.65)',
           cursor: 'pointer', padding: '0 6px',
-          borderRadius: 6, minWidth: 44, minHeight: 44,
+          borderRadius: 6, minWidth: 36, minHeight: 36,
           display: 'none', alignItems: 'center', justifyContent: 'center',
           flexShrink: 0,
         }}
-      >☰</button>
+      >
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
+          <line x1="3" y1="5" x2="17" y2="5"/>
+          <line x1="3" y1="10" x2="17" y2="10"/>
+          <line x1="3" y1="15" x2="17" y2="15"/>
+        </svg>
+      </button>
 
       {/* LEFT: Logo + Project Name */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
         <button
           onClick={() => router.push('/dashboard')}
           style={{
-            fontFamily: 'Fraunces, serif', fontSize: 20,
+            fontFamily: 'Fraunces, serif', fontSize: 18,
             color: '#D4A94A', fontWeight: 700,
             letterSpacing: '-0.5px',
             userSelect: 'none', background: 'none', border: 'none',
-            cursor: 'pointer', padding: '8px 4px',
+            cursor: 'pointer', padding: '6px 4px',
           }}
         >
-          Goblin<span style={{ opacity: 0.65 }}>.</span>
+          Goblin<span style={{ opacity: 0.6 }}>.</span>
         </button>
 
         {projectName && (
           <>
-            <span style={{ color: 'rgba(255,255,255,0.2)', fontSize: 16, flexShrink: 0 }}>/</span>
+            <span style={{ color: 'rgba(255,255,255,0.18)', fontSize: 14, flexShrink: 0 }}>/</span>
             <button
               onClick={() => router.push('/dashboard')}
               style={{
-                fontSize: 13, color: 'rgba(255,255,255,0.75)',
+                fontSize: 13, color: 'rgba(255,255,255,0.7)',
                 background: 'none', border: 'none',
-                padding: '4px 8px', borderRadius: 6, cursor: 'pointer',
-                maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                padding: '4px 6px', borderRadius: 5, cursor: 'pointer',
+                maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                 fontFamily: 'DM Sans, sans-serif', fontWeight: 500,
-                transition: 'background 0.1s, color 0.1s',
+                transition: 'color 0.1s',
               }}
-              onMouseEnter={e => { (e.currentTarget.style.background = 'rgba(255,255,255,0.08)'); (e.currentTarget.style.color = '#fff'); }}
-              onMouseLeave={e => { (e.currentTarget.style.background = 'none'); (e.currentTarget.style.color = 'rgba(255,255,255,0.75)'); }}
-              title="Projekt wechseln"
+              onMouseEnter={e => { (e.currentTarget.style.color = '#fff'); }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.7)'; }}
+              title="Back to projects"
             >
               {projectName}
             </button>
@@ -171,38 +172,52 @@ export function Topbar({
         className="topbar-tabs"
         style={{
           position: 'absolute', left: '50%', transform: 'translateX(-50%)',
-          display: 'flex', gap: 4,
+          display: 'flex', gap: 0,
         }}
       >
-        {(['chat', 'code', 'preview'] as const).map(tab => (
-          <button
-            key={tab}
-            onClick={() => onTabChange?.(tab)}
-            style={{
-              padding: '6px 18px', borderRadius: 8,
-              fontSize: 13, fontWeight: 500,
-              cursor: 'pointer',
-              background: activeTab === tab ? '#ffffff' : 'transparent',
-              color: activeTab === tab ? '#2D4A2B' : 'rgba(255,255,255,0.6)',
-              border: 'none', fontFamily: 'DM Sans, sans-serif',
-              transition: 'all 0.15s', position: 'relative',
-              minHeight: 32,
-            }}
-            onMouseEnter={e => { if (activeTab !== tab) (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.9)'; }}
-            onMouseLeave={e => { if (activeTab !== tab) (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.6)'; }}
-            disabled={tab === 'preview' && !previewUrl}
-            title={tab === 'preview' && !previewUrl ? 'Erst deployen für Preview' : undefined}
-          >
-            {tab === 'chat' ? 'Chat' : tab === 'code' ? 'Code' : 'Preview'}
-            {tab === 'code' && injectionCount > 0 && (
-              <span style={{
-                position: 'absolute', top: 4, right: 4,
-                width: 6, height: 6, borderRadius: '50%',
-                background: '#D4A94A', animation: 'blink 1.5s infinite',
-              }} />
-            )}
-          </button>
-        ))}
+        {(['chat', 'code', 'preview'] as const).map(tab => {
+          const isActive = activeTab === tab;
+          const isDisabled = tab === 'preview' && !previewUrl;
+          return (
+            <button
+              key={tab}
+              onClick={() => onTabChange?.(tab)}
+              style={{
+                padding: '0 18px', height: 48,
+                fontSize: 13, fontWeight: isActive ? 500 : 400,
+                cursor: isDisabled ? 'not-allowed' : 'pointer',
+                background: 'transparent',
+                color: isActive ? '#fff' : 'rgba(255,255,255,0.5)',
+                border: 'none', fontFamily: 'DM Sans, sans-serif',
+                transition: 'color 0.15s',
+                position: 'relative',
+                opacity: isDisabled ? 0.35 : 1,
+              }}
+              onMouseEnter={e => { if (!isActive && !isDisabled) (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.85)'; }}
+              onMouseLeave={e => { if (!isActive) (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.5)'; }}
+              disabled={isDisabled}
+              title={isDisabled ? 'Deploy first to see preview' : undefined}
+            >
+              {tab === 'chat' ? 'Chat' : tab === 'code' ? 'Code' : 'Preview'}
+              {isActive && (
+                <span style={{
+                  position: 'absolute', bottom: 0, left: '50%',
+                  transform: 'translateX(-50%)',
+                  width: '60%', height: 2,
+                  background: '#D4A94A', borderRadius: '1px 1px 0 0',
+                  display: 'block',
+                }} />
+              )}
+              {tab === 'code' && injectionCount > 0 && !isActive && (
+                <span style={{
+                  position: 'absolute', top: 10, right: 10,
+                  width: 5, height: 5, borderRadius: '50%',
+                  background: '#D4A94A',
+                }} />
+              )}
+            </button>
+          );
+        })}
       </div>
 
       <div style={{ flex: 1 }} />
@@ -213,10 +228,10 @@ export function Topbar({
           onClick={() => setMenuOpen(prev => !prev)}
           aria-label="User menu"
           style={{
-            width: 32, height: 32, borderRadius: '50%',
+            width: 30, height: 30, borderRadius: '50%',
             background: '#c9933a', border: 'none',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 13, fontWeight: 700, color: '#2a1f0f',
+            fontSize: 12, fontWeight: 700, color: '#2a1f0f',
             cursor: 'pointer', transition: 'background 0.15s',
           }}
           onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#e8b05a'}
@@ -235,13 +250,12 @@ export function Topbar({
               position: 'absolute', right: 0, top: 'calc(100% + 6px)',
               background: '#1a2e18', border: '1px solid #2d5229',
               borderRadius: 10, padding: '4px 0',
-              minWidth: 240, zIndex: 100,
+              minWidth: 220, zIndex: 100,
               boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
             }}>
-              {/* User info */}
               {userInfo && (
                 <div style={{
-                  padding: '10px 14px 10px',
+                  padding: '10px 14px',
                   borderBottom: '1px solid #2d5229',
                   marginBottom: 4,
                 }}>
@@ -267,50 +281,18 @@ export function Topbar({
                 </div>
               )}
 
-              {/* Plan & Usage */}
-              <div style={{
-                padding: '10px 14px',
-                borderBottom: '1px solid #2d5229',
-                marginBottom: 4,
-              }}>
-                <div style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  marginBottom: 8,
-                }}>
-                  <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', fontFamily: 'DM Sans, sans-serif' }}>
-                    Plan
-                  </span>
-                  <span style={{
-                    fontSize: 11, fontWeight: 700, color: '#D4A94A',
-                    fontFamily: 'DM Sans, sans-serif', background: 'rgba(212,169,74,0.15)',
-                    padding: '2px 8px', borderRadius: 4,
-                  }}>
-                    Free
-                  </span>
-                </div>
-                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', fontFamily: 'DM Sans, sans-serif', marginBottom: 4 }}>
-                  Tokens diesen Monat
-                </div>
-                <div style={{ height: 3, borderRadius: 2, background: 'rgba(255,255,255,0.1)', overflow: 'hidden', marginBottom: 4 }}>
-                  <div style={{ height: '100%', borderRadius: 2, background: '#D4A94A', width: '0%' }} />
-                </div>
-                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', fontFamily: 'DM Sans, sans-serif' }}>
-                  0 / 100k verwendet
-                </div>
-              </div>
-
               <MenuItem onClick={() => { router.push('/dashboard/settings/keys'); setMenuOpen(false); }}>
                 API Keys
               </MenuItem>
               <MenuItem onClick={() => { router.push('/dashboard/settings'); setMenuOpen(false); }}>
-                Einstellungen
+                Settings
               </MenuItem>
               <MenuItem onClick={() => { router.push('/dashboard/settings/billing'); setMenuOpen(false); }}>
-                Billing & Plan
+                Billing
               </MenuItem>
               <div style={{ height: 1, background: '#2d5229', margin: '4px 8px' }} />
               <MenuItem onClick={handleSignOut}>
-                Abmelden
+                Sign out
               </MenuItem>
             </div>
           </>
@@ -318,10 +300,6 @@ export function Topbar({
       </div>
 
       <style>{`
-        @keyframes blink {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.3; }
-        }
         @media (max-width: 768px) {
           .topbar-hamburger { display: flex !important; }
           .topbar-tabs { display: none !important; }

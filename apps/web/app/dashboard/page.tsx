@@ -23,10 +23,10 @@ const PROJECT_COLORS = [
 ];
 
 const UPDATES = [
-  { emoji: '🆕', title: 'Model Hub: Claude Sonnet 4.6', desc: 'Latest Anthropic model now available via BYOK. Best for coding tasks.', date: 'Apr 2026' },
-  { emoji: '📱', title: 'Send to Code on mobile', desc: 'The [Send to Code] button now works perfectly on iOS and Android browsers.', date: 'Apr 2026' },
-  { emoji: '🔒', title: 'Security hardened', desc: 'Atomic usage limits, XSS protection, and webhook validation upgraded.', date: 'Apr 2026' },
-  { emoji: '🎨', title: 'UI overhaul', desc: 'Dashboard, settings, and chat all got a fresh coat of paint.', date: 'Mar 2026' },
+  { tag: 'New', title: 'Claude Sonnet 4.6 available', desc: 'Latest Anthropic model now available via BYOK.', date: 'Apr 2026' },
+  { tag: 'Update', title: 'Send to Code on mobile', desc: 'Works on iOS and Android browsers.', date: 'Apr 2026' },
+  { tag: 'Security', title: 'Security hardened', desc: 'Atomic usage limits and XSS protection upgraded.', date: 'Apr 2026' },
+  { tag: 'Update', title: 'UI overhaul', desc: 'Dashboard, settings, and chat redesigned.', date: 'Mar 2026' },
 ];
 
 function timeAgo(dateStr?: string): string {
@@ -36,10 +36,10 @@ function timeAgo(dateStr?: string): string {
   const h = Math.floor(diff / 3600000);
   const d = Math.floor(diff / 86400000);
   if (m < 2) return 'just now';
-  if (h < 1) return `${m}m ago`;
-  if (h < 24) return `${h}h ago`;
-  if (d < 30) return `${d}d ago`;
-  return `${Math.floor(d / 30)}mo ago`;
+  if (h < 1) return `${m}m`;
+  if (h < 24) return `${h}h`;
+  if (d < 30) return `${d}d`;
+  return `${Math.floor(d / 30)}mo`;
 }
 
 function GitHubIcon() {
@@ -57,30 +57,6 @@ function ExternalIcon() {
       <polyline points="15 3 21 3 21 9"/>
       <line x1="10" y1="14" x2="21" y2="3"/>
     </svg>
-  );
-}
-
-function SkeletonCard() {
-  return (
-    <div style={{
-      background: 'var(--panel)', borderRadius: 12,
-      border: '1px solid var(--div)', padding: '18px 18px 16px',
-      minHeight: 120,
-      animation: 'pulse 1.5s ease-in-out infinite',
-      display: 'flex', flexDirection: 'column',
-    }}>
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
-        <div style={{ width: 10, height: 10, borderRadius: '50%', background: 'var(--div)', marginTop: 4, flexShrink: 0 }} />
-        <div style={{ flex: 1 }}>
-          <div style={{ height: 18, background: 'var(--div)', borderRadius: 4, marginBottom: 8, width: '65%' }} />
-          <div style={{ height: 13, background: 'var(--div)', borderRadius: 4, marginBottom: 4, width: '90%' }} />
-          <div style={{ height: 13, background: 'var(--div)', borderRadius: 4, width: '70%' }} />
-        </div>
-      </div>
-      <div style={{ marginTop: 'auto', paddingTop: 6, display: 'flex', gap: 6 }}>
-        <div style={{ height: 11, width: 48, background: 'var(--div)', borderRadius: 3 }} />
-      </div>
-    </div>
   );
 }
 
@@ -123,217 +99,147 @@ export default function DashboardPage() {
 
       <style>{`
         @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.5} }
-        @keyframes fadeIn { from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none} }
-        .project-card { transition: box-shadow 0.15s, transform 0.15s, border-left-color 0.15s, border-left-width 0.15s, padding-left 0.15s; cursor: pointer; background: var(--panel); border-color: var(--div) !important; }
-        .project-card:hover { box-shadow: -3px 0 0 var(--ochre), var(--shadow-md); transform: translateY(-1px); }
+        .project-row { transition: background 0.1s; cursor: pointer; }
+        .project-row:hover { background: rgba(0,0,0,0.02); }
         @media (max-width: 900px) {
           .dash-grid { flex-direction: column !important; }
-          .dash-projects { width: 100% !important; }
           .dash-right { width: 100% !important; }
-          .proj-grid { grid-template-columns: 1fr !important; }
-        }
-        @media (max-width: 600px) {
-          .proj-grid { grid-template-columns: 1fr !important; }
-          .whats-new-list {
-            flex-direction: row !important;
-            overflow-x: auto !important;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
-            padding-bottom: 4px;
-          }
-          .whats-new-list::-webkit-scrollbar { display: none; }
-          .whats-new-card { flex-shrink: 0 !important; width: 240px !important; }
         }
       `}</style>
 
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px' }}>
-        {/* Two-column layout */}
-        <div className="dash-grid" style={{ display: 'flex', gap: 32, alignItems: 'flex-start' }}>
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 24px' }}>
+        <div className="dash-grid" style={{ display: 'flex', gap: 48, alignItems: 'flex-start' }}>
 
           {/* LEFT — Projects */}
-          <div className="dash-projects" style={{ flex: '1 1 60%', minWidth: 0 }}>
+          <div style={{ flex: '1 1 0', minWidth: 0 }}>
             <div style={{
               display: 'flex', alignItems: 'center',
-              justifyContent: 'space-between', marginBottom: 20,
+              justifyContent: 'space-between', marginBottom: 24,
             }}>
               <h1 style={{
-                fontFamily: 'Fraunces, serif', fontSize: 26,
-                color: 'var(--moss)', fontWeight: 700, letterSpacing: '-0.8px',
+                fontFamily: 'Fraunces, serif', fontSize: 22,
+                color: 'var(--moss)', fontWeight: 700, letterSpacing: '-0.5px',
               }}>
-                Your Projects
+                Projects
               </h1>
-              {projects.length > 0 && (
-                <button
-                  onClick={() => setShowNewProjectModal(true)}
-                  style={{
-                    background: 'var(--moss)', color: '#fff', border: 'none',
-                    borderRadius: 8, padding: '8px 16px',
-                    fontSize: 13, fontWeight: 500, cursor: 'pointer',
-                    fontFamily: 'DM Sans, sans-serif', transition: 'background 0.15s',
-                    display: 'flex', alignItems: 'center', gap: 6,
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--moss-2)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'var(--moss)')}
-                >
-                  <span style={{ fontSize: 15 }}>＋</span> New
-                </button>
-              )}
+              <button
+                onClick={() => setShowNewProjectModal(true)}
+                style={{
+                  background: 'transparent', color: 'var(--moss)',
+                  border: '1px solid var(--div)',
+                  borderRadius: 7, padding: '7px 14px',
+                  fontSize: 13, fontWeight: 500, cursor: 'pointer',
+                  fontFamily: 'DM Sans, sans-serif', transition: 'background 0.15s',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'var(--subtle)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+              >
+                + New project
+              </button>
             </div>
 
-            {/* Skeleton */}
+            {/* Skeleton rows */}
             {loading && (
-              <div className="proj-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                {[1, 2, 3, 4].map(i => <SkeletonCard key={i} />)}
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {[1, 2, 3].map(i => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 0', borderBottom: '1px solid var(--div)', animation: 'pulse 1.5s ease-in-out infinite' }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--div)', flexShrink: 0 }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ height: 14, background: 'var(--div)', borderRadius: 4, width: '40%', marginBottom: 6 }} />
+                      <div style={{ height: 11, background: 'var(--div)', borderRadius: 4, width: '65%' }} />
+                    </div>
+                    <div style={{ height: 11, background: 'var(--div)', borderRadius: 4, width: 28 }} />
+                  </div>
+                ))}
               </div>
             )}
 
             {/* Error */}
             {error && !loading && (
               <div style={{
-                background: '#FEF2F2', border: '1px solid #FCA5A5',
-                borderRadius: 12, padding: '20px', textAlign: 'center',
+                background: 'rgba(184,92,60,0.06)', border: '1px solid rgba(184,92,60,0.2)',
+                borderRadius: 8, padding: '16px', fontSize: 13, color: 'var(--danger)',
+                fontFamily: 'DM Sans, sans-serif',
               }}>
-                <div style={{ fontSize: 32, marginBottom: 8 }}>⚠️</div>
-                <div style={{ fontSize: 14, color: '#991B1B', fontFamily: 'DM Sans, sans-serif' }}>{error}</div>
-                <button
-                  onClick={() => window.location.reload()}
-                  style={{
-                    marginTop: 12, background: '#991B1B', color: '#fff',
-                    border: 'none', borderRadius: 7, padding: '7px 16px',
-                    fontSize: 13, cursor: 'pointer',
-                  }}
-                >
-                  Retry
+                {error} —{' '}
+                <button onClick={() => window.location.reload()} style={{ background: 'none', border: 'none', color: 'var(--danger)', textDecoration: 'underline', cursor: 'pointer', fontSize: 13 }}>
+                  retry
                 </button>
               </div>
             )}
 
             {/* Empty state */}
             {!loading && !error && projects.length === 0 && (
-              <div style={{
-                textAlign: 'center', padding: '56px 24px',
-                animation: 'fadeIn 0.4s ease',
-              }}>
-                <div style={{ fontSize: 56, marginBottom: 16, lineHeight: 1 }}>👺</div>
+              <div style={{ padding: '48px 0', borderTop: '1px solid var(--div)' }}>
                 <h2 style={{
-                  fontFamily: 'Fraunces, serif', fontSize: 26,
-                  color: 'var(--moss)', fontWeight: 700, marginBottom: 12, letterSpacing: '-0.5px',
+                  fontFamily: 'Fraunces, serif', fontSize: 20,
+                  color: 'var(--moss)', fontWeight: 700, marginBottom: 8, letterSpacing: '-0.3px',
                 }}>
-                  Dein erstes Projekt wartet.
+                  Start your first project
                 </h2>
                 <p style={{
-                  fontSize: 15, color: 'var(--meta)', marginBottom: 28,
-                  fontFamily: 'DM Sans, sans-serif', lineHeight: 1.65,
-                  maxWidth: 360, margin: '0 auto 28px',
+                  fontSize: 14, color: 'var(--meta)', marginBottom: 20,
+                  fontFamily: 'DM Sans, sans-serif', lineHeight: 1.6,
                 }}>
-                  Beschreibe, was du bauen willst — Goblin erledigt den Rest.
+                  Describe what you want to build — Goblin writes the code.
                 </p>
                 <button
                   onClick={() => setShowNewProjectModal(true)}
                   style={{
-                    background: 'var(--ochre)', color: 'var(--bark)', border: 'none',
-                    borderRadius: 12, padding: '15px 32px',
-                    fontSize: 16, fontWeight: 700, cursor: 'pointer',
-                    fontFamily: 'DM Sans, sans-serif', transition: 'all 0.15s',
-                    display: 'inline-flex', alignItems: 'center', gap: 8,
-                    boxShadow: '0 4px 16px rgba(212,169,74,0.35)',
+                    background: 'var(--moss)', color: '#fff', border: 'none',
+                    borderRadius: 8, padding: '10px 20px',
+                    fontSize: 14, fontWeight: 500, cursor: 'pointer',
+                    fontFamily: 'DM Sans, sans-serif',
                   }}
-                  onMouseEnter={e => { (e.currentTarget.style.background = 'var(--ochre-2)'); (e.currentTarget.style.transform = 'translateY(-2px)'); }}
-                  onMouseLeave={e => { (e.currentTarget.style.background = 'var(--ochre)'); (e.currentTarget.style.transform = 'none'); }}
                 >
-                  ✦ Erstes Projekt erstellen
+                  Create project
                 </button>
-
-                {/* Template chips */}
-                <div style={{ marginTop: 36 }}>
-                  <div style={{
-                    fontSize: 12, color: 'var(--meta)', marginBottom: 12,
-                    fontFamily: 'DM Sans, sans-serif', fontWeight: 500,
-                  }}>
-                    Nicht sicher? Starte mit einem Template:
-                  </div>
-                  <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
-                    {[
-                      { label: '📧 Newsletter-Tool', name: 'Newsletter Tool' },
-                      { label: '🔗 Link-Shortener', name: 'Link Shortener' },
-                      { label: '🚀 Waitlist-App', name: 'Waitlist App' },
-                    ].map(t => (
-                      <button
-                        key={t.name}
-                        onClick={() => setShowNewProjectModal(true)}
-                        style={{
-                          background: 'var(--panel)', border: '1.5px solid var(--div)',
-                          borderRadius: 20, padding: '8px 16px',
-                          fontSize: 13, color: 'var(--text)',
-                          cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
-                          transition: 'all 0.15s',
-                        }}
-                        onMouseEnter={e => { (e.currentTarget.style.borderColor = 'var(--moss)'); (e.currentTarget.style.color = 'var(--moss)'); }}
-                        onMouseLeave={e => { (e.currentTarget.style.borderColor = 'var(--div)'); (e.currentTarget.style.color = 'var(--text)'); }}
-                      >
-                        {t.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
               </div>
             )}
 
-            {/* Project grid */}
+            {/* Project list */}
             {!loading && !error && projects.length > 0 && (
-              <div className="proj-grid" style={{
-                display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14,
-                animation: 'fadeIn 0.3s ease',
-              }}>
+              <div style={{ borderTop: '1px solid var(--div)' }}>
                 {projects.map((p, i) => {
                   const dotColor = p.color ?? PROJECT_COLORS[i % PROJECT_COLORS.length]!;
                   return (
                     <div
                       key={p.id}
-                      className="project-card"
+                      className="project-row"
                       onClick={() => router.push(`/dashboard/project/${p.id}`)}
                       style={{
-                        background: 'var(--panel)', borderRadius: 12,
-                        border: '1px solid var(--div)', padding: '18px 18px 16px',
+                        display: 'flex', alignItems: 'center', gap: 12,
+                        padding: '14px 8px',
+                        borderBottom: '1px solid var(--div)',
+                        borderRadius: 6, margin: '0 -8px',
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 10 }}>
+                      <div style={{
+                        width: 8, height: 8, borderRadius: '50%',
+                        background: dotColor, flexShrink: 0,
+                      }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{
-                          width: 10, height: 10, borderRadius: '50%',
-                          background: dotColor, marginTop: 4, flexShrink: 0,
-                        }} />
-                        <div style={{ flex: 1, minWidth: 0 }}>
+                          fontSize: 14, fontWeight: 500,
+                          color: 'var(--text)',
+                          overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                          marginBottom: p.description ? 2 : 0,
+                          fontFamily: 'DM Sans, sans-serif',
+                        }}>
+                          {p.name}
+                        </div>
+                        {p.description && (
                           <div style={{
-                            fontFamily: 'Fraunces, serif', fontSize: 16,
-                            color: 'var(--moss)', fontWeight: 700,
-                            letterSpacing: '-0.3px', marginBottom: 4,
+                            fontSize: 12, color: 'var(--meta)',
+                            fontFamily: 'DM Sans, sans-serif',
                             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                           }}>
-                            {p.name}
+                            {p.description}
                           </div>
-                          {p.description && (
-                            <div style={{
-                              fontSize: 12, color: 'var(--meta)',
-                              fontFamily: 'DM Sans, sans-serif',
-                              lineHeight: 1.5,
-                              display: '-webkit-box', WebkitLineClamp: 2,
-                              WebkitBoxOrient: 'vertical', overflow: 'hidden',
-                            }}>
-                              {p.description}
-                            </div>
-                          )}
-                        </div>
+                        )}
                       </div>
 
-                      {/* Footer row */}
-                      <div style={{
-                        display: 'flex', alignItems: 'center',
-                        gap: 8, marginTop: 6,
-                      }}>
-                        <span style={{ fontSize: 11, color: 'var(--text-faint)', fontFamily: 'DM Sans, sans-serif' }}>
-                          {timeAgo(p.updated_at ?? p.last_active)}
-                        </span>
-                        <div style={{ flex: 1 }} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
                         {p.github_repo && (
                           <a
                             href={`https://github.com/${p.github_repo}`}
@@ -358,147 +264,79 @@ export default function DashboardPage() {
                             <ExternalIcon />
                           </a>
                         )}
+                        <span style={{ fontSize: 12, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif', minWidth: 28, textAlign: 'right' }}>
+                          {timeAgo(p.updated_at ?? p.last_active)}
+                        </span>
                       </div>
                     </div>
                   );
                 })}
-
-                {/* New Project card — with template quick-start */}
-                <div
-                  style={{
-                    background: 'transparent',
-                    borderRadius: 12,
-                    border: '1.5px dashed var(--border)',
-                    padding: '14px',
-                    display: 'flex', flexDirection: 'column',
-                    gap: 10,
-                  }}
-                >
-                  <button
-                    onClick={() => setShowNewProjectModal(true)}
-                    className="project-card"
-                    style={{
-                      background: 'transparent', border: 'none', cursor: 'pointer',
-                      display: 'flex', alignItems: 'center', gap: 8,
-                      padding: '6px 4px', borderRadius: 6, width: '100%',
-                    }}
-                  >
-                    <span style={{ fontSize: 18, opacity: 0.4 }}>＋</span>
-                    <span style={{ fontSize: 13, color: 'var(--text-faint)', fontFamily: 'DM Sans, sans-serif' }}>Blank project</span>
-                  </button>
-                  <div style={{ borderTop: '1px solid var(--div)', paddingTop: 8 }}>
-                    <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--meta)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Quick start</div>
-                    {[
-                      { icon: '🚀', label: 'SaaS Starter', key: 'saas-starter' },
-                      { icon: '🌟', label: 'Landing Page', key: 'landing-pro' },
-                      { icon: '🛠️', label: 'AI Chat App', key: 'ai-chat' },
-                    ].map(t => (
-                      <button
-                        key={t.key}
-                        onClick={() => setShowNewProjectModal(true)}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, padding: '4px 0', width: '100%' }}
-                      >
-                        <span style={{ fontSize: 12 }}>{t.icon}</span>
-                        <span style={{ fontSize: 12, color: 'var(--text-2)', fontFamily: 'DM Sans, sans-serif' }}>{t.label}</span>
-                      </button>
-                    ))}
-                    <button
-                      onClick={() => setShowNewProjectModal(true)}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: 'var(--ochre)', fontFamily: 'DM Sans, sans-serif', padding: '6px 0 0', display: 'block', fontWeight: 600 }}>
-                      Browse all templates →
-                    </button>
-                  </div>
-                </div>
               </div>
             )}
           </div>
 
           {/* RIGHT — What's New */}
-          <div className="dash-right" style={{ width: 300, flexShrink: 0 }}>
+          <div className="dash-right" style={{ width: 260, flexShrink: 0 }}>
             <h2 style={{
-              fontFamily: 'Fraunces, serif', fontSize: 20,
-              color: 'var(--moss)', fontWeight: 700,
-              letterSpacing: '-0.5px', marginBottom: 16,
+              fontFamily: 'DM Sans, sans-serif', fontSize: 13, fontWeight: 600,
+              color: 'var(--meta)', letterSpacing: '0.02em',
+              marginBottom: 16, textTransform: 'uppercase',
             }}>
-              What&apos;s New
+              What&apos;s new
             </h2>
 
-            <div className="whats-new-list" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 0, borderTop: '1px solid var(--div)' }}>
               {UPDATES.map((u) => (
                 <div
                   key={u.title}
-                  className="whats-new-card"
-                  style={{
-                    background: 'var(--panel)', borderRadius: 10,
-                    border: '1px solid var(--div)', padding: '14px 14px',
-                  }}
+                  style={{ padding: '14px 0', borderBottom: '1px solid var(--div)' }}
                 >
-                  <div style={{ display: 'flex', gap: 10 }}>
-                    <span style={{ fontSize: 18, flexShrink: 0, lineHeight: 1.3 }}>{u.emoji}</span>
-                    <div style={{ minWidth: 0 }}>
-                      <div style={{
-                        fontFamily: 'DM Sans, sans-serif', fontSize: 13,
-                        fontWeight: 600, color: 'var(--text)', marginBottom: 3,
-                        lineHeight: 1.3,
-                      }}>
-                        {u.title}
-                      </div>
-                      <div style={{ fontSize: 12, color: 'var(--meta)', lineHeight: 1.5, fontFamily: 'DM Sans, sans-serif' }}>
-                        {u.desc}
-                      </div>
-                      <div style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 5, fontFamily: 'DM Sans, sans-serif' }}>
-                        {u.date}
-                      </div>
-                    </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <span style={{
+                      fontSize: 10, fontWeight: 600, color: 'var(--moss)',
+                      background: 'rgba(45,74,43,0.08)', padding: '1px 6px',
+                      borderRadius: 3, fontFamily: 'DM Sans, sans-serif',
+                    }}>{u.tag}</span>
+                    <span style={{ fontSize: 11, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif' }}>{u.date}</span>
+                  </div>
+                  <div style={{
+                    fontSize: 13, fontWeight: 500, color: 'var(--text)',
+                    marginBottom: 3, fontFamily: 'DM Sans, sans-serif', lineHeight: 1.35,
+                  }}>
+                    {u.title}
+                  </div>
+                  <div style={{ fontSize: 12, color: 'var(--meta)', lineHeight: 1.5, fontFamily: 'DM Sans, sans-serif' }}>
+                    {u.desc}
                   </div>
                 </div>
               ))}
             </div>
 
-            {/* Community links */}
-            <div style={{
-              marginTop: 16, background: 'var(--moss)',
-              borderRadius: 10, padding: '16px',
-            }}>
-              <div style={{
-                fontFamily: 'Fraunces, serif', fontSize: 14,
-                color: '#D4A94A', fontWeight: 700, marginBottom: 6,
-              }}>
-                Join the community
+            {/* Community */}
+            <div style={{ marginTop: 24 }}>
+              <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)', marginBottom: 10, fontFamily: 'DM Sans, sans-serif' }}>
+                Community
               </div>
-              <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.65)', fontFamily: 'DM Sans, sans-serif', marginBottom: 12, lineHeight: 1.5 }}>
-                Follow the build-in-public journey, get early access, share feedback.
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <a
                   href="https://discord.gg/goblin"
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 7,
-                    color: 'rgba(255,255,255,0.85)', fontSize: 12,
-                    fontFamily: 'DM Sans, sans-serif', textDecoration: 'none',
-                    transition: 'color 0.1s',
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
-                  onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.85)')}
+                  style={{ fontSize: 13, color: 'var(--moss)', fontFamily: 'DM Sans, sans-serif', textDecoration: 'none' }}
+                  onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
+                  onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
                 >
-                  <span style={{ fontSize: 14 }}>💬</span> Discord community →
+                  Discord →
                 </a>
                 <a
                   href="https://twitter.com/justgoblin"
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 7,
-                    color: 'rgba(255,255,255,0.85)', fontSize: 12,
-                    fontFamily: 'DM Sans, sans-serif', textDecoration: 'none',
-                    transition: 'color 0.1s',
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.color = '#fff')}
-                  onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.85)')}
+                  style={{ fontSize: 13, color: 'var(--moss)', fontFamily: 'DM Sans, sans-serif', textDecoration: 'none' }}
+                  onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
+                  onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
                 >
-                  <span style={{ fontSize: 14 }}>𝕏</span> Build in public →
+                  Build in public →
                 </a>
               </div>
             </div>

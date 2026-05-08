@@ -1,12 +1,16 @@
-const STEPS = [
-  { icon: '📱', label: 'Open Goblin', sub: 'Santorini', highlight: false },
-  { icon: '💬', label: 'Chat with AI', sub: 'describe it', highlight: false },
-  { icon: '→', label: 'Send to Code', sub: 'one tap', highlight: true },
-  { icon: '🔨', label: 'Build', sub: 'you decide', highlight: false },
-  { icon: '🐙', label: 'Push to GitHub', sub: 'auto push', highlight: false },
-  { icon: '▲', label: 'Vercel', sub: '~34 seconds', highlight: false },
-  { icon: '🔔', label: 'Live', sub: 'push notif ✓', highlight: true },
-  { icon: '🌐', label: 'Preview', sub: 'tap to see', highlight: false },
+import { Icons } from '@/components/ui/icons';
+
+type StepIcon = keyof typeof Icons;
+
+const STEPS: { Icon: StepIcon; label: string; sub: string; highlight: boolean }[] = [
+  { Icon: 'Mobile', label: 'Open Goblin', sub: 'Santorini', highlight: false },
+  { Icon: 'MessageCircle', label: 'Chat with AI', sub: 'describe it', highlight: false },
+  { Icon: 'Code', label: 'Send to Code', sub: 'one tap', highlight: true },
+  { Icon: 'Terminal', label: 'Build', sub: 'you decide', highlight: false },
+  { Icon: 'GitBranch', label: 'Push to GitHub', sub: 'auto push', highlight: false },
+  { Icon: 'Triangle', label: 'Vercel', sub: '~34 seconds', highlight: false },
+  { Icon: 'Bell', label: 'Live', sub: 'push notif', highlight: true },
+  { Icon: 'Globe', label: 'Preview', sub: 'tap to see', highlight: false },
 ];
 
 export function IslandFlow() {
@@ -27,27 +31,31 @@ export function IslandFlow() {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: 6 }}>
-          {STEPS.map((s, i) => (
-            <div key={s.label} style={{ display: 'contents' }}>
-              <div style={{
-                background: s.highlight ? 'rgba(201,147,58,0.08)' : '#1a1a18',
-                border: `1px solid ${s.highlight ? 'var(--ochre)' : 'rgba(255,255,255,0.06)'}`,
-                borderRadius: 12, padding: '18px 22px', textAlign: 'center',
-                minWidth: 100, transition: 'all 0.15s',
-                boxShadow: s.highlight ? '0 0 24px rgba(201,147,58,0.12)' : 'none',
-              }}>
-                <div style={{ fontSize: 22, marginBottom: 8, color: s.highlight ? 'var(--ochre)' : 'inherit' }}>{s.icon}</div>
-                <div style={{ fontSize: 11, fontWeight: 600, color: s.highlight ? 'var(--ochre)' : 'rgba(255,255,255,0.7)', marginBottom: 4 }}>{s.label}</div>
-                <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)' }}>{s.sub}</div>
+          {STEPS.map((s, i) => {
+            const IconComp = Icons[s.Icon];
+            return (
+              <div key={s.label} style={{ display: 'contents' }}>
+                <div style={{
+                  background: s.highlight ? 'rgba(201,147,58,0.08)' : '#1a1a18',
+                  border: `1px solid ${s.highlight ? 'var(--ochre)' : 'rgba(255,255,255,0.06)'}`,
+                  borderRadius: 12, padding: '18px 22px', textAlign: 'center',
+                  minWidth: 100, transition: 'all 0.15s',
+                  boxShadow: s.highlight ? '0 0 24px rgba(201,147,58,0.12)' : 'none',
+                }}>
+                  <div style={{ marginBottom: 8, color: s.highlight ? 'var(--ochre)' : 'rgba(255,255,255,0.45)', display: 'flex', justifyContent: 'center' }}>
+                    <IconComp size={20} strokeWidth={1.5} />
+                  </div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: s.highlight ? 'var(--ochre)' : 'rgba(255,255,255,0.7)', marginBottom: 4 }}>{s.label}</div>
+                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)' }}>{s.sub}</div>
+                </div>
+                {i < STEPS.length - 1 && (
+                  <div style={{ color: 'rgba(255,255,255,0.12)', fontSize: 14, flexShrink: 0 }}>&#8594;</div>
+                )}
               </div>
-              {i < STEPS.length - 1 && (
-                <div style={{ color: 'rgba(255,255,255,0.12)', fontSize: 14, flexShrink: 0 }}>→</div>
-              )}
-            </div>
-          ))}
+            );
+          })}
         </div>
 
-        {/* Bottom label */}
         <div style={{ textAlign: 'center', marginTop: 56 }}>
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 10, fontSize: 13,

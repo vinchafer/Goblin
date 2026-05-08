@@ -56,7 +56,10 @@ export function Nav() {
             onClick={() => setMobileOpen(o => !o)}
             style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text)', fontSize: 20, padding: 4, display: 'none' }}
             className="nav-hamburger"
-          >{mobileOpen ? '✕' : '☰'}</button>
+          >{mobileOpen
+            ? <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"><line x1="4" y1="4" x2="16" y2="16"/><line x1="16" y1="4" x2="4" y2="16"/></svg>
+            : <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"><line x1="3" y1="6" x2="17" y2="6"/><line x1="3" y1="10" x2="17" y2="10"/><line x1="3" y1="14" x2="17" y2="14"/></svg>
+          }</button>
         </div>
       </nav>
 
