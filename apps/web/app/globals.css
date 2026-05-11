@@ -684,3 +684,23 @@ button, input, textarea, select {
   animation: tab-underline 0.2s ease-out;
 }
 
+
+
+/* ─── iOS keyboard scroll fix ──────────────────────────────── */
+/* Prevents iOS keyboard from covering input fields */
+@supports (-webkit-touch-callout: none) {
+  body {
+    height: -webkit-fill-available;
+  }
+  .ios-scroll-fix {
+    height: -webkit-fill-available;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* ─── Offline banner animation ──────────────────────────────── */
+@keyframes slideDown {
+  from { transform: translateY(-100%); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
