@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { getAuthHeaders, API_URL } from '@/lib/api';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -147,16 +148,34 @@ function Step0Welcome({ onNext, onGoalSelect, selectedGoal }: { onNext: (goal: s
         ))}
       </div>
 
-      <button
-        onClick={() => onNext('custom')}
-        style={{
-          background: 'none', border: 'none', color: '#9B9B9B',
-          fontSize: 13, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
-          textDecoration: 'underline', textDecorationColor: 'rgba(0,0,0,0.15)',
-        }}
-      >
-        I have something else in mind →
-      </button>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+        <button
+          onClick={() => onNext('custom')}
+          style={{
+            background: 'none', border: 'none', color: '#9B9B9B',
+            fontSize: 13, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
+            textDecoration: 'underline', textDecorationColor: 'rgba(0,0,0,0.15)',
+          }}
+        >
+          I have something else in mind →
+        </button>
+
+        <Link
+          href="/onboarding/chat"
+          style={{
+            display: 'flex', alignItems: 'center', gap: 6,
+            padding: '7px 14px',
+            background: 'rgba(45,74,43,0.06)',
+            border: '1px solid rgba(45,74,43,0.2)',
+            borderRadius: 8, fontSize: 12, fontWeight: 600,
+            color: '#2D4A2B', textDecoration: 'none',
+            fontFamily: 'DM Sans, sans-serif',
+          }}
+        >
+          <span>✦</span>
+          Chat with Setup Buddy (AI)
+        </Link>
+      </div>
     </div>
   );
 }
