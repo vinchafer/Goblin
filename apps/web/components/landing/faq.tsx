@@ -11,16 +11,24 @@ const QUESTIONS = [
     a: "Yes, absolutely. Go to Settings → API Keys and paste your key. We encrypt it at rest and use it exclusively for your requests. No markup, no middleman."
   },
   {
+    q: "Why is Local mode free?",
+    a: "Local mode runs models on your own computer using Ollama — there's nothing for us to charge for. You use your own GPU, your own electricity. Cloud mode (storage, mobile access, push notifications) is what the $9/mo covers."
+  },
+  {
+    q: "What happens after my trial?",
+    a: "You get 3 days free — no card required. After that you'll see an upgrade prompt. Your projects are always safe. If you don't upgrade, you can still log in, download your code, and push to GitHub."
+  },
+  {
+    q: "Can I use my own API keys?",
+    a: "Yes. BYOK (bring your own keys) works with Anthropic, OpenAI, Google, Groq, Mistral, xAI, DeepSeek, Together.ai, and more. Your keys are encrypted at rest. We never mark up inference costs — you pay the provider directly."
+  },
+  {
     q: "Is my code private?",
     a: "Yes. Your projects are only visible to you. All code is stored encrypted at rest on Hetzner servers in Frankfurt (GDPR). We never train on your data. Ever."
   },
   {
     q: "What happens to my projects if I cancel?",
     a: "They stay. You can always log back in and push them to GitHub. We won't delete your work."
-  },
-  {
-    q: "Where exactly is my code stored?",
-    a: "Encrypted at rest on Hetzner servers in Frankfurt, Germany. We use Supabase Postgres for metadata and S3-compatible object storage for your files. GDPR compliant."
   },
   {
     q: "Can I use Goblin on my phone?",
