@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { useApp } from "@/contexts/app-context";
 import { ChatTab } from "@/components/workspace/chat-tab";
 import { CodeTab } from "@/components/project/code-tab";
+import { ErrorBoundary } from "@/components/error-boundary";
 
 const PreviewTab = dynamic(
   () => import('@/components/preview/preview-tab').then(m => m.PreviewTab),
@@ -30,12 +31,24 @@ export function ProjectWorkspace({ projectId, projectName, previewUrl }: Project
   }, [projectId, setActiveTab]);
 
   if (activeTab === "code") {
-    return <CodeTab projectId={projectId} projectName={projectName} pendingCode={pendingCodePayload} />;
+    return (
+      <ErrorBoundary label="code-tab">
+        <CodeTab projectId={projectId} projectName={projectName} pendingCode={pendingCodePayload} />
+      </ErrorBoundary>
+    );
   }
 
   if (activeTab === "preview") {
-    return <PreviewTab projectId={projectId} previewUrl={previewUrl} />;
+    return (
+      <ErrorBoundary label="preview-tab">
+        <PreviewTab projectId={projectId} previewUrl={previewUrl} />
+      </ErrorBoundary>
+    );
   }
 
-  return <ChatTab projectId={projectId} />;
+  return (
+    <ErrorBoundary label="chat-tab">
+      <ChatTab projectId={projectId} />
+    </ErrorBoundary>
+  );
 }
