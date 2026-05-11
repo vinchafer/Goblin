@@ -93,6 +93,23 @@ function isAllowedOrigin(origin: string): boolean {
   return CORS_PATTERNS.some(re => re.test(origin));
 }
 
+// Explicit OPTIONS preflight handler — runs before cors middleware
+app.use('*', async (c, next) => {
+  if (c.req.method !== 'OPTIONS') return next();
+  const origin = c.req.header('origin') || '';
+  const allowed = isAllowedOrigin(origin) || !origin || process.env.NODE_ENV === 'development';
+  return new Response(null, {
+    status: 204,
+    headers: {
+      'Access-Control-Allow-Origin': allowed ? origin : '',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization, x-requested-with',
+      'Access-Control-Allow-Credentials': 'true',
+      'Access-Control-Max-Age': '86400',
+    },
+  });
+});
+
 app.use('*', cors({
   origin: (origin) => {
     // No Origin = curl / server-to-server — all routes require Authorization anyway

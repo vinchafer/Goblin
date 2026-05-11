@@ -3,6 +3,7 @@ import { getSupabaseAdmin } from '../lib/supabase';
 
 export const authMiddleware = createMiddleware(async (c, next) => {
   const authHeader = c.req.header('Authorization');
+  console.log('Auth middleware:', { path: c.req.path, hasAuth: !!authHeader, prefix: authHeader?.slice(0, 20) });
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return c.json({ error: 'Unauthorized' }, 401);

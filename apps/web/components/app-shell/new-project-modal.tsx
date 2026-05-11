@@ -73,7 +73,12 @@ export function NewProjectModal({ onClose, onProjectCreated }: NewProjectModalPr
       dialogRef.current?.close();
       router.push(`/dashboard/project/${project.id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create project');
+      const msg = err instanceof Error ? err.message : 'Failed to create project';
+      console.error('Project creation failed:', {
+        message: msg,
+        apiUrl: process.env.NEXT_PUBLIC_API_URL,
+      });
+      setError(msg);
       setLoading(false);
     }
   };

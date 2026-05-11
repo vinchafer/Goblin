@@ -42,6 +42,12 @@ projects.get('/', async (c) => {
 // Create new project
 projects.post('/', async (c) => {
   const userId = c.get('userId');
+  console.log('POST /api/projects called', {
+    origin: c.req.header('origin'),
+    hasAuth: !!c.req.header('authorization'),
+    contentType: c.req.header('content-type'),
+    userId,
+  });
   const body = await c.req.json();
 
   const result = CreateProjectSchema.safeParse(body);
@@ -62,14 +68,22 @@ projects.post('/', async (c) => {
       description: result.data.description ?? null,
       color: result.data.color ?? '#2D4A2B',
       status: 'idle',
-      storage_path: `projects/${projectId}`
     })
     .select()
     .single();
 
   if (error) {
-    return c.json({ error: 'Failed to create project' }, 500);
+    console.error('Supabase insert error (projects):', { message: error.message, code: error.code, details: error.details });
+    return c.json({ error: error.message || 'Failed to create project', code: error.code }, 500);
   }
+
+  // Backfill storage_path — tolerates schema cache lag (column added in migration 0029)
+  try {
+    await supabase
+      .from('projects')
+      .update({ storage_path: `projects/${projectId}` })
+      .eq('id', projectId);
+  } catch { /* storage_path column may not exist yet — non-fatal */ }
 
   return c.json(data, 201);
 });

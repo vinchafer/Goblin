@@ -213,19 +213,30 @@ export async function createKey(
   const keyHint = rawKey.slice(-4);
   const resolvedLabel = label?.trim() || provider;
 
+  const insertData: Record<string, unknown> = {
+    user_id: userId,
+    provider,
+    key_encrypted: encrypted,
+    key_hint: keyHint,
+    validated_at: new Date().toISOString(),
+  };
+
   const { data } = await supabase
     .from('byok_keys')
-    .insert({
-      user_id: userId,
-      provider,
-      label: resolvedLabel,
-      key_encrypted: encrypted,
-      key_hint: keyHint,
-      validated_at: new Date().toISOString(),
-    })
-    .select('id, user_id, provider, label, key_hint, status, last_used, created_at, validated_at')
+    .insert(insertData)
+    .select('id, user_id, provider, key_hint, status, last_used, created_at, validated_at')
     .single()
     .throwOnError();
+
+  // Backfill label in a separate update — tolerates schema cache lag
+  if (data) {
+    try {
+      await supabase
+        .from('byok_keys')
+        .update({ label: resolvedLabel })
+        .eq('id', (data as { id: string }).id);
+    } catch { /* label column may not exist yet — non-fatal */ }
+  }
 
   return data as ByokKey;
 }
@@ -235,11 +246,11 @@ export async function listKeys(userId: string): Promise<ByokKey[]> {
 
   const { data } = await supabase
     .from('byok_keys')
-    .select('id, user_id, provider, label, key_hint, status, last_used, created_at, validated_at')
+    .select('id, user_id, provider, key_hint, status, last_used, created_at, validated_at')
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
-  return data as ByokKey[];
+  return (data ?? []) as ByokKey[];
 }
 
 export async function revokeKey(userId: string, keyId: string): Promise<void> {
