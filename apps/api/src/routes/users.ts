@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { authMiddleware } from '../middleware/auth';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { saveFallbackChain, getFallbackChain } from '../services/model-router';
+import { extendTrial } from '../middleware/trial-gate';
 
 type Variables = { userId: string };
 const users = new Hono<{ Variables: Variables }>();
@@ -117,6 +118,45 @@ users.get('/me/usage', async (c) => {
     byModel,
     byProject,
   });
+});
+
+// GET /api/users/me/trial — trial status
+users.get('/me/trial', async (c) => {
+  const userId = c.get('userId');
+  const supabase = getSupabaseAdmin();
+  const { data: user } = await supabase
+    .from('users')
+    .select('plan, stripe_subscription_id, cloud_trial_started_at, cloud_trial_ends_at, trial_extension_used')
+    .eq('id', userId)
+    .single();
+
+  if (!user) return c.json({ trialStatus: 'none' });
+
+  const hasActiveSub = !!user.stripe_subscription_id;
+  if (hasActiveSub) return c.json({ trialStatus: 'subscribed' });
+
+  if (!user.cloud_trial_started_at) return c.json({ trialStatus: 'not_started' });
+
+  const trialEnd = new Date(user.cloud_trial_ends_at as string);
+  const now = new Date();
+  const daysLeft = Math.ceil((trialEnd.getTime() - now.getTime()) / 86400000);
+
+  return c.json({
+    trialStatus: now <= trialEnd ? 'active' : 'expired',
+    trialEndsAt: user.cloud_trial_ends_at,
+    daysLeft: Math.max(0, daysLeft),
+    extensionUsed: user.trial_extension_used ?? false,
+  });
+});
+
+// POST /api/users/me/trial/extend
+users.post('/me/trial/extend', async (c) => {
+  const userId = c.get('userId');
+  const result = await extendTrial(userId);
+  if (!result.success) {
+    return c.json({ error: 'Extension already used or trial not active' }, 400);
+  }
+  return c.json({ success: true, newEnd: result.newEnd });
 });
 
 export { users };

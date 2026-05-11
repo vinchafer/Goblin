@@ -1,0 +1,126 @@
+'use client';
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { apiGet } from '@/lib/api';
+import { getAuthHeaders, API_URL } from '@/lib/api';
+
+interface TrialInfo {
+  trialStatus: 'not_started' | 'active' | 'expired' | 'subscribed' | 'none';
+  trialEndsAt?: string;
+  daysLeft?: number;
+  extensionUsed?: boolean;
+}
+
+export function TrialBanner() {
+  const router = useRouter();
+  const [info, setInfo] = useState<TrialInfo | null>(null);
+  const [extending, setExtending] = useState(false);
+  const [dismissed, setDismissed] = useState(false);
+
+  useEffect(() => {
+    apiGet<TrialInfo>('/api/users/me/trial').then(setInfo).catch(() => null);
+  }, []);
+
+  const handleExtend = async () => {
+    setExtending(true);
+    try {
+      const headers = await getAuthHeaders();
+      const res = await fetch(`${API_URL}/api/users/me/trial/extend`, { method: 'POST', headers });
+      if (res.ok) {
+        const data = await res.json() as { newEnd: string };
+        setInfo(prev => prev ? { ...prev, daysLeft: 2, trialEndsAt: data.newEnd, extensionUsed: true } : prev);
+      }
+    } finally {
+      setExtending(false);
+    }
+  };
+
+  if (!info || dismissed) return null;
+  if (info.trialStatus === 'subscribed' || info.trialStatus === 'none' || info.trialStatus === 'not_started') return null;
+
+  if (info.trialStatus === 'expired') {
+    return (
+      <div style={{
+        background: 'rgba(184,92,60,0.08)',
+        borderBottom: '2px solid rgba(184,92,60,0.3)',
+        padding: '8px 16px',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        gap: 12, flexShrink: 0, flexWrap: 'wrap',
+      }}>
+        <span style={{ fontSize: 13, color: '#B85C3C', fontFamily: 'DM Sans, sans-serif', fontWeight: 500 }}>
+          Your free trial has ended.
+        </span>
+        <button
+          onClick={() => router.push('/dashboard/upgrade')}
+          style={{
+            padding: '5px 14px', background: '#B85C3C', color: '#fff',
+            border: 'none', borderRadius: 7, fontSize: 12, fontWeight: 600,
+            cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
+          }}
+        >
+          Upgrade — $9/mo →
+        </button>
+      </div>
+    );
+  }
+
+  if (info.trialStatus === 'active') {
+    const days = info.daysLeft ?? 0;
+    const urgent = days <= 1;
+    return (
+      <div style={{
+        background: urgent ? 'rgba(212,169,74,0.12)' : 'rgba(45,74,43,0.06)',
+        borderBottom: `1px solid ${urgent ? 'rgba(212,169,74,0.4)' : 'rgba(45,74,43,0.12)'}`,
+        padding: '6px 16px',
+        display: 'flex', alignItems: 'center', gap: 10,
+        flexShrink: 0, flexWrap: 'wrap',
+      }}>
+        <span style={{
+          fontSize: 12, fontFamily: 'DM Sans, sans-serif',
+          color: urgent ? '#b88a20' : '#2D4A2B', fontWeight: 500, flex: 1,
+        }}>
+          {days === 0
+            ? 'Trial ends today.'
+            : `Day ${3 - days + (info.extensionUsed ? 2 : 0) + 1} of ${info.extensionUsed ? 5 : 3} in your free trial.`}
+          {' '}
+          <button
+            onClick={() => router.push('/dashboard/upgrade')}
+            style={{
+              background: 'none', border: 'none', color: 'inherit', textDecoration: 'underline',
+              cursor: 'pointer', fontSize: 12, fontFamily: 'DM Sans, sans-serif', fontWeight: 600,
+            }}
+          >
+            Upgrade →
+          </button>
+        </span>
+
+        {!info.extensionUsed && days <= 1 && (
+          <button
+            onClick={handleExtend}
+            disabled={extending}
+            style={{
+              padding: '4px 10px', background: 'transparent',
+              border: '1px solid currentColor', borderRadius: 6,
+              fontSize: 11, color: '#b88a20', cursor: extending ? 'not-allowed' : 'pointer',
+              fontFamily: 'DM Sans, sans-serif', fontWeight: 500, opacity: extending ? 0.6 : 1,
+            }}
+          >
+            {extending ? '...' : '+2 days'}
+          </button>
+        )}
+
+        <button
+          onClick={() => setDismissed(true)}
+          style={{
+            background: 'none', border: 'none', color: 'rgba(0,0,0,0.3)',
+            cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: '2px 4px',
+          }}
+        >
+          ×
+        </button>
+      </div>
+    );
+  }
+
+  return null;
+}

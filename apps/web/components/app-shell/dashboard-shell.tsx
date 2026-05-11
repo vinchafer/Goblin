@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { WelcomeModal } from "@/components/onboarding/welcome-modal";
+import { TrialBanner } from "@/components/app-shell/trial-banner";
 import { CommandPalette, useCommandPalette } from "@/components/ui/CommandPalette";
 import { ShortcutsHelp } from "@/components/ui/ShortcutsHelp";
 import { ShortcutsTooltip } from "@/components/ui/ShortcutsTooltip";
@@ -101,6 +102,8 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
         injectionCount={injectionCount}
         previewUrl={previewUrl}
       />
+      <TrialBanner />
+
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative' }}>
         <Sidebar
           projects={projects.map(p => ({
