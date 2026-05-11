@@ -34,6 +34,12 @@ export function NewProjectModal({ onClose, onProjectCreated }: NewProjectModalPr
 
   useEffect(() => {
     dialogRef.current?.showModal();
+    // Pick up prefill prompt set by dashboard starter cards
+    const prefill = typeof window !== 'undefined' ? sessionStorage.getItem('goblin_prefill_prompt') : null;
+    if (prefill) {
+      setDescription(prefill);
+      sessionStorage.removeItem('goblin_prefill_prompt');
+    }
   }, []);
 
   const handleClose = () => {

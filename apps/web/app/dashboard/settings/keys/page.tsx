@@ -5,9 +5,10 @@ import { KeysList } from "@/components/settings/keys-list";
 export default async function KeysSettingsPage() {
   const supabase = await createClient();
 
+  // 'label' requires migration 0028. Use graceful fallback if column absent.
   const { data: keys } = await supabase
     .from('byok_keys')
-    .select('id, provider, label, key_hint, status, last_used, created_at, validated_at')
+    .select('id, provider, key_hint, status, last_used, created_at, validated_at')
     .order('created_at', { ascending: false });
 
   return (

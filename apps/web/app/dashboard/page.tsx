@@ -22,6 +22,15 @@ const PROJECT_COLORS = [
   '#3A6B8A', '#B85C3C', '#4A7A7A', '#2D4A2B',
 ];
 
+const STARTER_CARDS = [
+  { icon: '🚀', label: 'Landing Page', prompt: 'Build a modern landing page with a hero section, features list, pricing table, and contact form. Use a clean, professional design.' },
+  { icon: '📊', label: 'SaaS Dashboard', prompt: 'Create a SaaS dashboard with a sidebar navigation, stats cards, a data table, and charts. Include light/dark mode support.' },
+  { icon: '📱', label: 'Mobile Web App', prompt: 'Build a mobile-first web app with bottom navigation, swipe gestures support, and a clean card-based layout.' },
+  { icon: '🔌', label: 'REST API', prompt: 'Create a REST API with TypeScript and Hono. Include CRUD endpoints, input validation with Zod, and JWT authentication.' },
+  { icon: '📨', label: 'Newsletter Tool', prompt: 'Build a newsletter sign-up tool with a beautiful subscription form, email list management, and a simple template editor.' },
+  { icon: '🧩', label: 'Chrome Extension', prompt: 'Create a Chrome extension with a popup UI, background service worker, and content script. Include a settings page.' },
+];
+
 const UPDATES = [
   { tag: 'New', title: 'Claude Sonnet 4.6 available', desc: 'Latest Anthropic model now available via BYOK.', date: 'Apr 2026' },
   { tag: 'Update', title: 'Send to Code on mobile', desc: 'Works on iOS and Android browsers.', date: 'Apr 2026' },
@@ -57,6 +66,27 @@ function ExternalIcon() {
       <polyline points="15 3 21 3 21 9"/>
       <line x1="10" y1="14" x2="21" y2="3"/>
     </svg>
+  );
+}
+
+function StarterCard({ icon, label, prompt, onClick }: { icon: string; label: string; prompt: string; onClick: (prompt: string) => void }) {
+  return (
+    <button
+      onClick={() => onClick(prompt)}
+      style={{
+        background: '#fff', border: '1px solid var(--div)',
+        borderRadius: 10, padding: '14px 14px',
+        textAlign: 'left', cursor: 'pointer',
+        transition: 'all 0.15s',
+        display: 'flex', flexDirection: 'column', gap: 6,
+        fontFamily: 'DM Sans, sans-serif',
+      }}
+      onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--moss)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(45,74,43,0.1)'; }}
+      onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--div)'; e.currentTarget.style.boxShadow = 'none'; }}
+    >
+      <span style={{ fontSize: 22 }}>{icon}</span>
+      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{label}</span>
+    </button>
   );
 }
 
@@ -170,29 +200,52 @@ export default function DashboardPage() {
 
             {/* Empty state */}
             {!loading && !error && projects.length === 0 && (
-              <div style={{ padding: '48px 0', borderTop: '1px solid var(--div)' }}>
-                <h2 style={{
-                  fontFamily: 'Fraunces, serif', fontSize: 20,
-                  color: 'var(--moss)', fontWeight: 700, marginBottom: 8, letterSpacing: '-0.3px',
+              <div style={{ paddingTop: 40, borderTop: '1px solid var(--div)' }}>
+                <div style={{ marginBottom: 8 }}>
+                  <h2 style={{
+                    fontFamily: 'Fraunces, serif', fontSize: 22,
+                    color: 'var(--moss)', fontWeight: 700, marginBottom: 6, letterSpacing: '-0.3px',
+                  }}>
+                    What do you want to build?
+                  </h2>
+                  <p style={{
+                    fontSize: 13, color: 'var(--meta)', marginBottom: 24,
+                    fontFamily: 'DM Sans, sans-serif', lineHeight: 1.6,
+                  }}>
+                    Pick a starting point or describe your own idea.
+                  </p>
+                </div>
+
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
+                  gap: 10, marginBottom: 24,
                 }}>
-                  Start your first project
-                </h2>
-                <p style={{
-                  fontSize: 14, color: 'var(--meta)', marginBottom: 20,
-                  fontFamily: 'DM Sans, sans-serif', lineHeight: 1.6,
-                }}>
-                  Describe what you want to build — Goblin writes the code.
-                </p>
+                  {STARTER_CARDS.map(c => (
+                    <StarterCard
+                      key={c.label}
+                      icon={c.icon}
+                      label={c.label}
+                      prompt={c.prompt}
+                      onClick={(prompt) => {
+                        setShowNewProjectModal(true);
+                        // Store prefill prompt for modal to pick up
+                        sessionStorage.setItem('goblin_prefill_prompt', prompt);
+                      }}
+                    />
+                  ))}
+                </div>
+
                 <button
                   onClick={() => setShowNewProjectModal(true)}
                   style={{
                     background: 'var(--moss)', color: '#fff', border: 'none',
                     borderRadius: 8, padding: '10px 20px',
-                    fontSize: 14, fontWeight: 500, cursor: 'pointer',
+                    fontSize: 13, fontWeight: 500, cursor: 'pointer',
                     fontFamily: 'DM Sans, sans-serif',
                   }}
                 >
-                  Create project
+                  Start with a blank project
                 </button>
               </div>
             )}
