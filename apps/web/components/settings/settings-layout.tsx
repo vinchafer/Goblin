@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { href: '/dashboard/settings/integrations', label: 'Integrations' },
   { href: '/dashboard/settings/billing',      label: 'Billing' },
   { href: '/dashboard/settings/local',        label: 'Local Mode' },
+  { href: '/dashboard/settings/routing',      label: 'Routing' },
 ];
 
 export function SettingsLayout({ children }: { children: ReactNode }) {

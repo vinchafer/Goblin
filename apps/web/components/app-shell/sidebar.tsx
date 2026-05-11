@@ -236,6 +236,7 @@ export function Sidebar({ projects = [], activeProjectId, onProjectSelect, isOpe
         }}>
           {[
             { label: 'Einstellungen', path: '/dashboard/settings', icon: '⚙' },
+            { label: 'Usage', path: '/dashboard/usage', icon: '◌' },
             { label: 'Hilfe', path: 'https://docs.goblin.app', icon: '?' },
           ].map(({ label, path, icon }) => (
             <button
