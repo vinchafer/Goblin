@@ -2,6 +2,7 @@
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useState, useEffect } from 'react';
+import { LocalCloudSwitch } from './local-cloud-switch';
 
 function MenuItem({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
   return (
@@ -222,7 +223,11 @@ export function Topbar({
 
       <div style={{ flex: 1 }} />
 
-      {/* RIGHT: Avatar + Dropdown */}
+      {/* RIGHT: Local/Cloud Switch + Avatar */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+        <LocalCloudSwitch />
+
+        {/* Avatar + Dropdown */}
       <div style={{ position: 'relative', flexShrink: 0 }}>
         <button
           onClick={() => setMenuOpen(prev => !prev)}
@@ -297,6 +302,7 @@ export function Topbar({
             </div>
           </>
         )}
+        </div>
       </div>
 
       <style>{`
