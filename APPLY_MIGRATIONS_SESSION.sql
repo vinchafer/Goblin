@@ -49,3 +49,24 @@ END $$;
 -- SELECT column_name FROM information_schema.columns WHERE table_name = 'projects' AND column_name = 'storage_path';
 -- SELECT column_name FROM information_schema.columns WHERE table_name = 'users' AND column_name IN ('cloud_trial_started_at', 'cloud_trial_ends_at');
 -- SELECT table_name FROM information_schema.tables WHERE table_name = 'onboarding_steps';
+
+-- ── Migration 0033: Support tickets table ────────────────────────────────────
+CREATE TABLE IF NOT EXISTS support_tickets (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  message TEXT,
+  response TEXT,
+  abuse_flag BOOLEAN,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE support_tickets ENABLE ROW LEVEL SECURITY;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies WHERE tablename = 'support_tickets' AND policyname = 'Users see own tickets'
+  ) THEN
+    CREATE POLICY "Users see own tickets" ON support_tickets FOR SELECT USING (auth.uid() = user_id);
+  END IF;
+END $$;
