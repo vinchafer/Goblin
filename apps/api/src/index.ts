@@ -70,6 +70,7 @@ import { builds } from './routes/builds';
 import { users } from './routes/users';
 import { templates } from './routes/templates';
 import { chatSessions } from './routes/chat-sessions';
+import { onboarding } from './routes/onboarding';
 
 const app = new Hono();
 
@@ -168,6 +169,7 @@ app.route('/api/builds', builds);
 app.route('/api/users', users);
 app.route('/api/templates', templates);
 app.route('/api/chat-sessions', chatSessions);
+app.route('/api/onboarding', onboarding);
 
 process.on('uncaughtException', (err) => {
   console.error('[FATAL] Uncaught exception:', err);
