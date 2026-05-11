@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ProjectWorkspace } from "@/components/project/project-workspace";
 
@@ -10,13 +10,17 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   const { id } = await params;
   const supabase = await createClient();
 
-  const { data: project } = await supabase
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
+
+  const { data: project, error } = await supabase
     .from('projects')
     .select('id, name, description, preview_url')
     .eq('id', id)
-    .single() as unknown as { data: { id: string; name: string; description: string | null; preview_url: string | null } | null };
+    .eq('user_id', user.id)
+    .single();
 
-  if (!project) {
+  if (error || !project) {
     notFound();
   }
 
