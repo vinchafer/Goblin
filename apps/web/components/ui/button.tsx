@@ -22,10 +22,10 @@ const variants: Record<ButtonVariant, CSSProperties> = {
     color: '#fff', 
     border: 'none',
   },
-  secondary: { 
-    background: 'white', 
-    color: 'var(--text)', 
-    border: '1px solid var(--div)',
+  secondary: {
+    background: 'var(--panel)',
+    color: 'var(--text)',
+    border: '1px solid var(--border)',
   },
   ochre: { 
     background: 'var(--ochre)', 
@@ -88,7 +88,7 @@ export function Button({ children, variant = 'primary', size = 'md', onClick, di
         if (disabled) return;
         const el = e.currentTarget;
         if (variant === 'primary') el.style.background = 'var(--moss)';
-        if (variant === 'secondary') el.style.background = 'white';
+        if (variant === 'secondary') el.style.background = 'var(--panel)';
         if (variant === 'ochre') el.style.background = 'var(--ochre)';
         if (variant === 'ghost') el.style.background = 'transparent';
         if (variant === 'danger') el.style.background = 'var(--error)';

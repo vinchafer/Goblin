@@ -1,6 +1,7 @@
 ﻿'use client';
 import { useState } from 'react';
 import { detectHardware, getModelRecommendations, isLocalModeAvailable, type HardwareInfo, type ModelRecommendation } from '@/lib/hardware-check';
+import { SettingsLayout } from '@/components/settings/settings-layout';
 
 const tagColors: Record<string, string> = {
   recommended: 'var(--ochre)',
@@ -13,8 +14,8 @@ function ModelCard({ model, onCopy }: { model: ModelRecommendation; onCopy: (cmd
   const color = tagColors[model.tag] ?? '#888';
   return (
     <div style={{
-      background: '#fff',
-      border: '1px solid #e8e4dc',
+      background: 'var(--panel)',
+      border: '1px solid var(--border)',
       borderRadius: 10,
       padding: '12px 14px',
       display: 'flex',
@@ -86,7 +87,8 @@ export default function LocalSettingsPage() {
   };
 
   return (
-    <div style={{ maxWidth: 640, margin: '0 auto', padding: '32px 24px' }}>
+    <SettingsLayout>
+    <div style={{ maxWidth: 640 }}>
       <h1 style={{
         fontSize: 22, fontWeight: 700,
         color: 'var(--text)', fontFamily: 'DM Sans, sans-serif',
@@ -100,8 +102,8 @@ export default function LocalSettingsPage() {
 
       {!canLocal && (
         <div style={{
-          background: '#FDF8EF',
-          border: '1px solid #e8d9b8',
+          background: 'rgba(212,169,74,0.06)',
+          border: '1px solid rgba(212,169,74,0.2)',
           borderRadius: 10,
           padding: '14px 16px',
           marginBottom: 24,
@@ -133,7 +135,7 @@ export default function LocalSettingsPage() {
 
       {/* Hardware Check */}
       <div style={{
-        background: '#fff', border: '1px solid #e8e4dc',
+        background: 'var(--panel)', border: '1px solid var(--border)',
         borderRadius: 12, padding: '20px',
         marginBottom: 24,
       }}>
@@ -178,7 +180,7 @@ export default function LocalSettingsPage() {
               style={{
                 marginTop: 12, padding: '6px 12px',
                 background: 'none', color: 'var(--meta)',
-                border: '1px solid #e8e4dc', borderRadius: 6,
+                border: '1px solid var(--border)', borderRadius: 6,
                 fontSize: 11, fontFamily: 'DM Sans, sans-serif',
                 cursor: 'pointer',
               }}
@@ -201,7 +203,7 @@ export default function LocalSettingsPage() {
 
           {models.length === 0 ? (
             <div style={{
-              background: '#FDF8EF', border: '1px solid #e8d9b8',
+              background: 'rgba(212,169,74,0.06)', border: '1px solid rgba(212,169,74,0.2)',
               borderRadius: 10, padding: '16px', fontSize: 13, color: 'var(--meta)',
               fontFamily: 'DM Sans, sans-serif',
             }}>
@@ -237,7 +239,7 @@ export default function LocalSettingsPage() {
       {/* Install Ollama */}
       <div style={{
         marginTop: 28,
-        background: 'var(--cream)', border: '1px solid #e8e4dc',
+        background: 'var(--cream)', border: '1px solid var(--border)',
         borderRadius: 10, padding: '14px 16px',
       }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', fontFamily: 'DM Sans, sans-serif', marginBottom: 6 }}>
@@ -262,13 +264,14 @@ export default function LocalSettingsPage() {
         </a>
       </div>
     </div>
+    </SettingsLayout>
   );
 }
 
 function HwBadge({ label, value }: { label: string; value: string }) {
   return (
     <div style={{
-      background: 'var(--cream)', border: '1px solid #e8e4dc',
+      background: 'var(--cream)', border: '1px solid var(--border)',
       borderRadius: 7, padding: '6px 12px',
       display: 'flex', flexDirection: 'column', gap: 2,
       minWidth: 80,

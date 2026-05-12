@@ -74,7 +74,7 @@ function StarterCard({ icon, label, prompt, onClick }: { icon: string; label: st
     <button
       onClick={() => onClick(prompt)}
       style={{
-        background: '#fff', border: '1px solid var(--div)',
+        background: 'var(--panel)', border: '1px solid var(--border)',
         borderRadius: 10, padding: '14px 14px',
         textAlign: 'left', cursor: 'pointer',
         transition: 'all 0.15s',

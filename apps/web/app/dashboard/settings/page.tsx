@@ -180,7 +180,7 @@ function GeneralTab() {
             </label>
             <input
               type="email" defaultValue="vinc.hafner@gmail.com"
-              readOnly style={{ ...FIELD_STYLE, background: '#f7f5f2', color: 'var(--meta)', cursor: 'default' }}
+              readOnly style={{ ...FIELD_STYLE, background: 'var(--subtle)', color: 'var(--meta)', cursor: 'default' }}
             />
             <p style={{ fontSize: 12, color: 'var(--meta)', marginTop: 5, fontWeight: 300 }}>
               Email is set by your OAuth provider and cannot be changed here.
@@ -427,7 +427,7 @@ function DeveloperTab() {
           rows={5}
           style={{
             width: '100%', padding: '12px 14px', borderRadius: 9,
-            border: '1.5px solid var(--border)', background: '#fff',
+            border: '1.5px solid var(--border)', background: 'var(--panel)',
             color: 'var(--text)', fontSize: 14, fontFamily: 'JetBrains Mono, monospace',
             outline: 'none', resize: 'vertical', boxSizing: 'border-box',
             lineHeight: 1.6,

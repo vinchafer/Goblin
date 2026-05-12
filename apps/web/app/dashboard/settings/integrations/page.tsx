@@ -17,24 +17,28 @@ export default async function IntegrationsPage({ searchParams }: { searchParams:
   const success = params.github === 'connected';
 
   return (
-    <div className="max-w-2xl">
-      <h1 className="text-2xl font-semibold mb-6" style={{ color: 'var(--goblin-slate)' }}>Integrations</h1>
+    <div style={{ maxWidth: 800 }}>
+      <h1 style={{ fontSize: 24, fontWeight: 600, color: 'var(--text)', marginBottom: 8, fontFamily: 'DM Sans, sans-serif' }}>
+        Integrations
+      </h1>
+      <p style={{ fontSize: 14, color: 'var(--meta)', marginBottom: 32 }}>
+        Connect external services to push code, deploy, and automate your workflow.
+      </p>
 
       {success && (
-        <div className="mb-6 p-4 rounded-lg" style={{ backgroundColor: 'rgba(74, 124, 59, 0.1)', color: 'var(--goblin-good)' }}>
+        <div style={{ marginBottom: 24, padding: '12px 16px', borderRadius: 10, background: 'rgba(74,124,59,0.1)', color: 'var(--good)', fontSize: 13, fontFamily: 'DM Sans, sans-serif', fontWeight: 500 }}>
           ✓ GitHub connected successfully!
         </div>
       )}
 
-      <div className="border rounded-xl p-5" style={{ borderColor: 'var(--goblin-light)' }}>
-        <div className="flex items-center justify-between">
+      <div style={{ background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: 14, padding: '20px 24px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
           <div>
-            <h3 className="font-medium mb-1" style={{ color: 'var(--goblin-slate)' }}>GitHub</h3>
-            <p className="text-sm" style={{ color: 'var(--goblin-gray)' }}>
+            <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginBottom: 4, fontFamily: 'DM Sans, sans-serif' }}>GitHub</h3>
+            <p style={{ fontSize: 13, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif' }}>
               Push generated projects directly to GitHub repositories
             </p>
           </div>
-
           <GitHubConnectButton connected={githubConnected} username={profile?.github_username} />
         </div>
       </div>
