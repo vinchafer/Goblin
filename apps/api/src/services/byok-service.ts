@@ -279,7 +279,11 @@ export async function getActiveKey(userId: string, provider: ByokProvider): Prom
 
   if (!data) return null;
 
-  return decryptData(data.key_encrypted);
+  try {
+    return decryptData(data.key_encrypted);
+  } catch {
+    throw new Error('API key needs to be re-entered. Please go to Settings → API Keys.');
+  }
 }
 
 export { testKey };

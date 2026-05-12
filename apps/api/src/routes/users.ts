@@ -10,6 +10,41 @@ const users = new Hono<{ Variables: Variables }>();
 
 users.use('*', authMiddleware);
 
+// PATCH /api/users/me — update default model preferences
+users.patch('/me', async (c) => {
+  const userId = c.get('userId');
+  const body = await c.req.json();
+  const schema = z.object({
+    default_chat_model: z.string().nullable().optional(),
+    default_code_model: z.string().nullable().optional(),
+  });
+  const result = schema.safeParse(body);
+  if (!result.success) return c.json({ error: 'Invalid body' }, 400);
+
+  const update: Record<string, unknown> = {};
+  if ('default_chat_model' in result.data) update.default_chat_model = result.data.default_chat_model;
+  if ('default_code_model' in result.data) update.default_code_model = result.data.default_code_model;
+
+  if (Object.keys(update).length === 0) return c.json({ success: true });
+
+  const supabase = getSupabaseAdmin();
+  await supabase.from('users').update(update).eq('id', userId).throwOnError();
+  return c.json({ success: true });
+});
+
+// GET /api/users/me — get user prefs
+users.get('/me', async (c) => {
+  const userId = c.get('userId');
+  const supabase = getSupabaseAdmin();
+  const { data } = await supabase
+    .from('users')
+    .select('default_chat_model, default_code_model, plan')
+    .eq('id', userId)
+    .single();
+  if (!data) return c.json({ error: 'User not found' }, 404);
+  return c.json(data);
+});
+
 // GET /api/users/me/fallback-chain
 users.get('/me/fallback-chain', async (c) => {
   const userId = c.get('userId');
@@ -62,7 +97,7 @@ users.get('/me/usage', async (c) => {
   const tierMap: Record<string, number> = { byok: 0, free_api: 0, goblin_hosted: 0 };
   for (const r of allRuns) {
     const t = (r.source_tier as string) ?? 'byok';
-    if (t in tierMap) tierMap[t]++;
+    if (t in tierMap) tierMap[t] = (tierMap[t] ?? 0) + 1;
   }
 
   // By model (top 5)

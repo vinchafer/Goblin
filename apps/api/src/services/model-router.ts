@@ -70,19 +70,47 @@ async function resolveByokKey(
 
   if (!keys || keys.length === 0) return null;
 
+  function safeDecrypt(encrypted: string): string {
+    try {
+      return decryptData(encrypted);
+    } catch {
+      throw new GoblinError('decryption_error', 'API key needs to be re-entered. Please go to Settings → API Keys.');
+    }
+  }
+
   if (preferredProvider) {
     const match = keys.find(k => k.provider === preferredProvider);
-    if (match) return { provider: match.provider as ProviderName, apiKey: decryptData(match.key_encrypted) };
+    if (match) return { provider: match.provider as ProviderName, apiKey: safeDecrypt(match.key_encrypted) };
+  }
+
+  // Single key: auto-select it without further lookup
+  if (keys.length === 1) {
+    const only = keys[0]!;
+    return { provider: only.provider as ProviderName, apiKey: safeDecrypt(only.key_encrypted) };
+  }
+
+  // Multiple keys: check user's saved default provider preference
+  const { data: userRow } = await sb
+    .from('users')
+    .select('default_chat_model')
+    .eq('id', userId)
+    .single();
+
+  if (userRow?.default_chat_model) {
+    const defaultProvider = slugToProvider(userRow.default_chat_model as string);
+    if (defaultProvider) {
+      const match = keys.find(k => k.provider === defaultProvider);
+      if (match) return { provider: match.provider as ProviderName, apiKey: safeDecrypt(match.key_encrypted) };
+    }
   }
 
   for (const provider of PROVIDER_PRIORITY) {
     const match = keys.find(k => k.provider === provider);
-    if (match) return { provider, apiKey: decryptData(match.key_encrypted) };
+    if (match) return { provider, apiKey: safeDecrypt(match.key_encrypted) };
   }
 
-  const first = keys[0];
-  if (!first) return null;
-  return { provider: first.provider as ProviderName, apiKey: decryptData(first.key_encrypted) };
+  const first = keys[0]!;
+  return { provider: first.provider as ProviderName, apiKey: safeDecrypt(first.key_encrypted) };
 }
 
 function resolveFreeApi(): (FreePoolEntry & { provider: ProviderName }) | null {

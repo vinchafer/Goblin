@@ -241,6 +241,28 @@ export function ChatTab({ projectId }: ChatTabProps) {
         </div>
       )}
 
+      {/* Decryption error banner */}
+      {error && error.includes('re-entered') && (
+        <div style={{
+          background: 'rgba(184,92,60,0.06)', borderBottom: '1px solid rgba(184,92,60,0.2)',
+          padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0,
+        }}>
+          <div style={{ flex: 1, fontSize: 13, color: 'var(--danger)', fontFamily: 'DM Sans, sans-serif' }}>
+            {error}
+          </div>
+          <button
+            onClick={() => router.push('/dashboard/settings/keys')}
+            style={{
+              background: 'var(--moss)', color: '#fff', border: 'none',
+              borderRadius: 6, padding: '6px 14px', fontSize: 12, fontWeight: 500,
+              cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: 'DM Sans, sans-serif',
+            }}
+          >
+            Go to API Keys →
+          </button>
+        </div>
+      )}
+
       {/* Load older messages */}
       {hasMore && (
         <div style={{ textAlign: 'center', padding: '8px 0', flexShrink: 0 }}>

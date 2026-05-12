@@ -1,8 +1,9 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { SettingsLayout } from '@/components/settings/settings-layout';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useTheme, type Theme } from '@/lib/theme';
+import { getAuthHeaders, API_URL } from '@/lib/api';
 
 const FIELD_STYLE = {
   width: '100%',
@@ -259,36 +260,131 @@ function GeneralTab() {
   );
 }
 
-const MODELS = [
-  'Claude Sonnet 4.6 (Anthropic)',
-  'Gemini 2.0 Flash (Google)',
-  'GPT-4o (OpenAI)',
-  'Llama 3.3 70B (Groq)',
-  'DeepSeek V3',
+interface ModelOption { slug: string; label: string; }
+
+const BYOK_MODELS: ModelOption[] = [
+  { slug: 'anthropic/claude-sonnet-4-6', label: 'Claude Sonnet 4.6 (Anthropic)' },
+  { slug: 'anthropic/claude-opus-4-5',   label: 'Claude Opus 4.5 (Anthropic)' },
+  { slug: 'anthropic/claude-haiku-4-5',  label: 'Claude Haiku 4.5 (Anthropic)' },
+  { slug: 'openai/gpt-4o',               label: 'GPT-4o (OpenAI)' },
+  { slug: 'openai/gpt-4o-mini',          label: 'GPT-4o Mini (OpenAI)' },
+  { slug: 'openai/o1',                   label: 'o1 (OpenAI)' },
+  { slug: 'openai/o3-mini',              label: 'o3-mini (OpenAI)' },
+  { slug: 'gemini/gemini-2.0-flash',     label: 'Gemini 2.0 Flash (Google)' },
+  { slug: 'gemini/gemini-1.5-pro',       label: 'Gemini 1.5 Pro (Google)' },
+  { slug: 'groq/llama-3.3-70b-versatile', label: 'Llama 3.3 70B (Groq)' },
+  { slug: 'groq/mixtral-8x7b-32768',     label: 'Mixtral 8x7B (Groq)' },
+  { slug: 'deepseek/deepseek-chat',      label: 'DeepSeek V3' },
+  { slug: 'deepseek/deepseek-reasoner',  label: 'DeepSeek R1' },
+  { slug: 'mistral/mistral-large-latest', label: 'Mistral Large' },
+  { slug: 'xai/grok-3',                  label: 'Grok 3 (xAI)' },
+  { slug: 'free/gemini-flash',           label: 'Gemini Flash (Free)' },
+  { slug: 'free/llama-70b',              label: 'Llama 3.3 70B (Free)' },
 ];
 
+function DefaultModelDropdown({
+  label, description, value, onChange, saving,
+}: {
+  label: string; description: string; value: string; onChange: (v: string) => void; saving: boolean;
+}) {
+  return (
+    <div>
+      <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text)', marginBottom: 4 }}>
+        {label}
+      </label>
+      <p style={{ fontSize: 12, color: 'var(--meta)', marginBottom: 8 }}>{description}</p>
+      <select
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        disabled={saving}
+        style={{ ...FIELD_STYLE, cursor: 'pointer', height: 44 }}
+        onFocus={e => (e.target.style.borderColor = 'var(--moss)')}
+        onBlur={e => (e.target.style.borderColor = 'var(--border)')}
+      >
+        <option value="">— Auto (use connected key) —</option>
+        {BYOK_MODELS.map(m => <option key={m.slug} value={m.slug}>{m.label}</option>)}
+      </select>
+    </div>
+  );
+}
+
 function DeveloperTab() {
-  const [defaultModel, setDefaultModel] = useState(MODELS[0]);
+  const [defaultChatModel, setDefaultChatModel] = useState('');
+  const [defaultCodeModel, setDefaultCodeModel] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const [timeoutSetting, setTimeoutSetting] = useState('30');
   const [systemPrompt, setSystemPrompt] = useState('');
 
+  useEffect(() => {
+    fetch(`${API_URL}/api/users/me`, { headers: { 'Content-Type': 'application/json' } })
+      .then(r => r.json())
+      .then(d => {
+        if (d.default_chat_model) setDefaultChatModel(d.default_chat_model as string);
+        if (d.default_code_model) setDefaultCodeModel(d.default_code_model as string);
+      })
+      .catch(() => {});
+  }, []);
+
+  const saveModels = async () => {
+    setSaving(true);
+    try {
+      const headers = await getAuthHeaders();
+      await fetch(`${API_URL}/api/users/me`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({
+          default_chat_model: defaultChatModel || null,
+          default_code_model: defaultCodeModel || null,
+        }),
+      });
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2500);
+    } catch { /* ignore */ }
+    finally { setSaving(false); }
+  };
+
   return (
     <>
-      {/* Default Model */}
+      {/* Default Models */}
       <div style={CARD_STYLE}>
         <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 18, color: 'var(--moss)', fontWeight: 700, marginBottom: 4, letterSpacing: '-0.3px' }}>
-          Default Model
+          Default Models
         </h2>
-        <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 20 }}>Used for all new chats unless overridden per-chat</p>
-        <select
-          value={defaultModel}
-          onChange={e => setDefaultModel(e.target.value)}
-          style={{ ...FIELD_STYLE, cursor: 'pointer', height: 44 }}
-          onFocus={e => (e.target.style.borderColor = 'var(--moss)')}
-          onBlur={e => (e.target.style.borderColor = 'var(--border)')}
-        >
-          {MODELS.map(m => <option key={m} value={m}>{m}</option>)}
-        </select>
+        <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 20 }}>Per-use-case defaults. Only models with a connected key will work.</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 18, marginBottom: 16 }}>
+          <DefaultModelDropdown
+            label="Standard-Model für Chat"
+            description="Used for all chat conversations unless overridden."
+            value={defaultChatModel}
+            onChange={setDefaultChatModel}
+            saving={saving}
+          />
+          <DefaultModelDropdown
+            label="Standard-Model für Code"
+            description="Used when generating or editing code."
+            value={defaultCodeModel}
+            onChange={setDefaultCodeModel}
+            saving={saving}
+          />
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button
+            onClick={saveModels}
+            disabled={saving}
+            style={{
+              background: 'var(--moss)', color: '#fff', border: 'none', borderRadius: 8,
+              padding: '10px 22px', fontSize: 13, fontWeight: 500,
+              cursor: saving ? 'not-allowed' : 'pointer',
+              fontFamily: 'DM Sans, sans-serif', minHeight: 40, opacity: saving ? 0.7 : 1,
+            }}
+            onMouseEnter={e => { if (!saving) (e.currentTarget.style.background = 'var(--moss2)'); }}
+            onMouseLeave={e => (e.currentTarget.style.background = 'var(--moss)')}
+          >
+            {saving ? 'Saving...' : 'Save'}
+          </button>
+          {saved && <span style={{ fontSize: 13, color: 'var(--good)', fontFamily: 'DM Sans, sans-serif', fontWeight: 500 }}>✓ Saved</span>}
+        </div>
       </div>
 
       {/* Request Timeout */}

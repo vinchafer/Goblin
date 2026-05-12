@@ -2,7 +2,7 @@
 // LiteLLM docs: https://docs.litellm.ai/docs/
 
 export class GoblinError extends Error {
-  constructor(public code: 'rate_limit' | 'invalid_key' | 'model_not_found' | 'provider_down' | 'timeout' | 'unknown', message: string) {
+  constructor(public code: 'rate_limit' | 'invalid_key' | 'model_not_found' | 'provider_down' | 'timeout' | 'unknown' | 'decryption_error', message: string) {
     super(message);
     this.name = 'GoblinError';
   }
