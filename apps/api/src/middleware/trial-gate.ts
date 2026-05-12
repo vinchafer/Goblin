@@ -3,22 +3,19 @@ import { getSupabaseAdmin } from '../lib/supabase';
 
 const TRIAL_DAYS = 3;
 
-// Paths that skip the trial gate
+// Paths that skip the trial gate entirely (public routes, webhooks, OAuth callbacks)
 const SKIP_PATHS = [
+  '/api/billing/webhook',
   '/api/billing',
   '/api/users',
   '/health',
   '/version',
-  '/api/github/connect',
   '/api/github/callback',
+  '/api/templates',
 ];
 
 // Check if request is BYOK-backed (no trial cost to Goblin)
 function isByokPath(path: string): boolean {
-  // BYOK requests hit /api/chat/stream or /api/projects/:id/generate
-  // They skip trial only if we can determine they're BYOK — we can't at middleware level.
-  // Trial gate applies only to Goblin-hosted and Free-API pool usage.
-  // For now: trial blocks all cloud routes except BYOK settings and billing.
   return path.startsWith('/api/byok-keys');
 }
 
@@ -30,8 +27,17 @@ export const trialGate = createMiddleware(async (c, next) => {
     return next();
   }
 
-  const userId = c.get('userId') as string | undefined;
-  if (!userId) return next(); // auth middleware already handled this
+  // Resolve userId — either pre-set by per-route authMiddleware or from Bearer token
+  let userId = c.get('userId') as string | undefined;
+  if (!userId) {
+    const authHeader = c.req.header('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) return next(); // no token → per-route auth will reject
+    const token = authHeader.substring(7);
+    const supabase = getSupabaseAdmin();
+    const { data: { user } } = await supabase.auth.getUser(token);
+    if (!user) return next(); // invalid token → per-route auth will reject
+    userId = user.id;
+  }
 
   const supabase = getSupabaseAdmin();
 

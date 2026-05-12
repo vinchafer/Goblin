@@ -55,6 +55,7 @@ import logger, { logRequest } from './lib/logger';
 
 initSentry();
 import { generalRateLimit } from './middleware/rate-limit';
+import { trialGate } from './middleware/trial-gate';
 import { chat } from './routes/chat';
 import { billing } from './routes/billing';
 import { projects } from './routes/projects';
@@ -129,6 +130,9 @@ app.use('*', cors({
 
 // Global rate limit: 60 req/min per IP/user — applied to all /api/* routes
 app.use('/api/*', generalRateLimit);
+
+// Trial gate: blocks expired-trial users from API calls (migration 0030)
+app.use('/api/*', trialGate);
 
 // Request logging
 app.use('*', async (c, next) => {
