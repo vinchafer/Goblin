@@ -54,15 +54,18 @@ support.post('/chat', async (c) => {
 
   const { message, history } = parsed.data;
   const supabase = getSupabaseAdmin();
-  const discordWebhookUrl = process.env.DISCORD_SUPPORT_WEBHOOK_URL;
+
+  // Fetch user email for escalation reply-to
+  const { data: userData } = await supabase.auth.admin.getUserById(userId);
+  const userEmail = userData?.user?.email ?? '';
 
   return streamSSE(c, async (stream) => {
     for await (const chunk of streamSupportAgent({
       userId,
+      userEmail,
       userMessage: message,
       history: history as SupportMessage[],
       supabase,
-      discordWebhookUrl,
     })) {
       await stream.writeSSE({ data: chunk });
     }

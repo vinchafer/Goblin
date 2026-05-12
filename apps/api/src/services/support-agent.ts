@@ -6,6 +6,7 @@ import OpenAI from 'openai';
 import { type SupabaseClient } from '@supabase/supabase-js';
 import { resolveModel } from './model-router';
 import { getKnowledgeBase } from './support-knowledge';
+import { sendSupportEscalation } from './support-email';
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 
@@ -83,18 +84,18 @@ export interface SupportMessage {
 
 interface StreamSupportAgentParams {
   userId: string;
+  userEmail: string;
   userMessage: string;
   history: SupportMessage[];
   supabase: SupabaseClient;
-  discordWebhookUrl?: string;
 }
 
 export async function* streamSupportAgent({
   userId,
+  userEmail,
   userMessage,
   history,
   supabase,
-  discordWebhookUrl,
 }: StreamSupportAgentParams): AsyncGenerator<string, void, unknown> {
   // PII check
   if (hasPII(userMessage)) {
@@ -114,7 +115,7 @@ export async function* streamSupportAgent({
       message: userMessage.slice(0, 500),
       abuse_flag: true,
       created_at: new Date().toISOString(),
-    }).then(() => {}).catch(() => {});
+    }).then(() => {}, () => {});
 
     yield JSON.stringify({ type: 'message', content: "I'm here to help with Goblin questions. What can I help you with?" });
     yield JSON.stringify({ type: 'done' });
@@ -145,15 +146,35 @@ ${knowledge}`;
   const escalationKeywords = ['refund', 'cancel subscription', 'delete account', 'billing dispute', 'charged twice'];
   const needsEscalation = escalationKeywords.some(kw => userMessage.toLowerCase().includes(kw));
 
-  if (needsEscalation && discordWebhookUrl) {
-    // Fire escalation webhook
-    fetch(discordWebhookUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        content: `**Support Escalation** — User ${userId}\nMessage: ${userMessage.slice(0, 200)}`,
-      }),
+  if (needsEscalation) {
+    const ticketId = crypto.randomUUID();
+    sendSupportEscalation({
+      ticketId,
+      userId,
+      userEmail,
+      plan: ctx.plan,
+      history: [...history, { role: 'user', content: userMessage }],
+      escalationReason: userMessage.slice(0, 200),
+      timestamp: new Date().toISOString(),
+    }).then(result => {
+      supabase.from('support_tickets').insert({
+        id: ticketId,
+        user_id: userId,
+        message: userMessage.slice(0, 1000),
+        email_sent: result.ok,
+        email_error: result.error ?? null,
+        created_at: new Date().toISOString(),
+      }).then(() => {}, () => {});
     }).catch(() => {});
+
+    const isGerman = /[äöüÄÖÜß]/.test(userMessage) || /\b(ich|du|bitte|kannst|hilf|danke)\b/i.test(userMessage);
+    const escalationMsg = isGerman
+      ? 'Ich konnte dir hier leider nicht ganz weiterhelfen. Dein Anliegen ist bei unserem Support-Team — sie melden sich innerhalb von 24–48h per Email zurück. Wir haben gerade viele Anfragen, danke für deine Geduld!'
+      : "I couldn't fully help here, so I've sent your message to our support team. They'll reply via email within 24–48 hours. We're getting lots of requests right now — thanks for your patience!";
+
+    yield JSON.stringify({ type: 'message', content: escalationMsg });
+    yield JSON.stringify({ type: 'done' });
+    return;
   }
 
   // Resolve model
@@ -204,14 +225,27 @@ ${knowledge}`;
       }
     }
 
-    // Check if agent wants to escalate
-    if (fullResponse.toLowerCase().includes("escalate") && discordWebhookUrl && !needsEscalation) {
-      fetch(discordWebhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: `**Support Escalation (agent-triggered)** — User ${userId}\nConversation: ${messages.slice(-2).map(m => `${m.role}: ${m.content}`).join('\n')}`,
-        }),
+    // Check if agent wants to escalate (agent-triggered, not keyword-triggered)
+    if (fullResponse.toLowerCase().includes('escalate') && !needsEscalation) {
+      const ticketId = crypto.randomUUID();
+      sendSupportEscalation({
+        ticketId,
+        userId,
+        userEmail,
+        plan: ctx.plan,
+        history: [...history, { role: 'user', content: userMessage }, { role: 'assistant', content: fullResponse }],
+        escalationReason: 'Agent-triggered escalation',
+        timestamp: new Date().toISOString(),
+      }).then(result => {
+        supabase.from('support_tickets').insert({
+          id: ticketId,
+          user_id: userId,
+          message: userMessage.slice(0, 1000),
+          response: fullResponse.slice(0, 2000),
+          email_sent: result.ok,
+          email_error: result.error ?? null,
+          created_at: new Date().toISOString(),
+        }).then(() => {}, () => {});
       }).catch(() => {});
     }
 
@@ -221,7 +255,7 @@ ${knowledge}`;
       message: userMessage.slice(0, 1000),
       response: fullResponse.slice(0, 2000),
       created_at: new Date().toISOString(),
-    }).then(() => {}).catch(() => {});
+    }).then(() => {}, () => {});
 
     yield JSON.stringify({ type: 'done' });
   } catch (err: unknown) {
