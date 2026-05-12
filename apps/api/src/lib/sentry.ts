@@ -21,13 +21,23 @@ export function initSentry() {
 
 export function captureError(err: unknown, context?: Record<string, unknown>) {
   if (!process.env.SENTRY_DSN) {
-    console.error('[ERROR]', err, context);
     return;
   }
   Sentry.withScope(scope => {
     if (context) scope.setExtras(context);
     Sentry.captureException(err);
   });
+}
+
+export function setSentryUser(userId: string, plan?: string) {
+  Sentry.setUser({ id: userId });
+  if (plan) Sentry.setTag('user_plan', plan);
+}
+
+export function setSentryTags(tags: { provider?: string; route?: string; tier?: string }) {
+  if (tags.provider) Sentry.setTag('provider', tags.provider);
+  if (tags.route) Sentry.setTag('route', tags.route);
+  if (tags.tier) Sentry.setTag('tier', tags.tier);
 }
 
 export { Sentry };

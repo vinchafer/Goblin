@@ -1,9 +1,9 @@
 import { createMiddleware } from 'hono/factory';
 import { getSupabaseAdmin } from '../lib/supabase';
+import logger from '../lib/logger';
 
 export const authMiddleware = createMiddleware(async (c, next) => {
   const authHeader = c.req.header('Authorization');
-  console.log('Auth middleware:', { path: c.req.path, hasAuth: !!authHeader, prefix: authHeader?.slice(0, 20) });
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return c.json({ error: 'Unauthorized' }, 401);
@@ -16,6 +16,7 @@ export const authMiddleware = createMiddleware(async (c, next) => {
   const { data: { user }, error } = await supabase.auth.getUser(token);
   
   if (error || !user) {
+    logger.warn({ path: c.req.path }, 'auth_invalid_token');
     return c.json({ error: 'Invalid token' }, 401);
   }
 

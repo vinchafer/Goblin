@@ -50,6 +50,31 @@ async function getRecentErrors(supabase: Awaited<ReturnType<typeof createClient>
   return data ?? [];
 }
 
+async function getTrialStats(supabase: Awaited<ReturnType<typeof createClient>>) {
+  const now = new Date().toISOString();
+  const [active, expired, converted] = await Promise.all([
+    supabase.from('users')
+      .select('id', { count: 'exact', head: true })
+      .not('cloud_trial_started_at', 'is', null)
+      .gt('cloud_trial_ends_at', now)
+      .neq('plan', 'pro'),
+    supabase.from('users')
+      .select('id', { count: 'exact', head: true })
+      .not('cloud_trial_started_at', 'is', null)
+      .lt('cloud_trial_ends_at', now)
+      .neq('plan', 'pro'),
+    supabase.from('users')
+      .select('id', { count: 'exact', head: true })
+      .not('cloud_trial_started_at', 'is', null)
+      .eq('plan', 'pro'),
+  ]);
+  return {
+    active: active.count ?? 0,
+    expired: expired.count ?? 0,
+    converted: converted.count ?? 0,
+  };
+}
+
 const ROW = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--div)' } as const;
 const LABEL = { fontSize: 13, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif' } as const;
 const VALUE = { fontSize: 13, fontWeight: 500, color: 'var(--text)', fontFamily: 'DM Sans, sans-serif' } as const;
@@ -63,10 +88,11 @@ function Dot({ ok }: { ok: boolean }) {
 export default async function AdminHealthPage() {
   const supabase = await createClient();
 
-  const [dbStats, apiHealth, recentErrors] = await Promise.all([
+  const [dbStats, apiHealth, recentErrors, trialStats] = await Promise.all([
     getDbStats(supabase),
     getApiHealth(),
     getRecentErrors(supabase),
+    getTrialStats(supabase),
   ]);
 
   const webCommit = process.env.VERCEL_GIT_COMMIT_SHA || process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA || 'local';
@@ -113,6 +139,28 @@ export default async function AdminHealthPage() {
             <span style={VALUE}>{count.toLocaleString()}</span>
           </div>
         ))}
+      </div>
+
+      {/* Trial Stats */}
+      <div style={CARD}>
+        <h2 style={H2}>Trial Funnel</h2>
+        <div style={ROW}>
+          <span style={LABEL}>Active trials</span>
+          <span style={{ ...VALUE, color: 'var(--moss)' }}>{trialStats.active.toLocaleString()}</span>
+        </div>
+        <div style={ROW}>
+          <span style={LABEL}>Expired (not converted)</span>
+          <span style={{ ...VALUE, color: 'var(--meta)' }}>{trialStats.expired.toLocaleString()}</span>
+        </div>
+        <div style={ROW}>
+          <span style={LABEL}>Converted to Pro</span>
+          <span style={{ ...VALUE, color: 'var(--success)' }}>{trialStats.converted.toLocaleString()}</span>
+        </div>
+        {(trialStats.expired + trialStats.converted) > 0 && (
+          <div style={{ marginTop: 10, fontSize: 12, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif' }}>
+            Conversion rate: {Math.round(trialStats.converted / (trialStats.expired + trialStats.converted) * 100)}%
+          </div>
+        )}
       </div>
 
       {/* Env Vars */}

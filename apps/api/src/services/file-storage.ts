@@ -8,6 +8,7 @@ import {
   DeleteObjectsCommand,
 } from '@aws-sdk/client-s3';
 import type { S3ClientConfig } from '@aws-sdk/client-s3';
+import logger from '../lib/logger';
 
 // DEV ONLY — nicht für Production. Hetzner Keys in .env eintragen.
 // Capped at 500 entries to prevent unbounded growth in long-running dev sessions.
@@ -53,7 +54,7 @@ function getS3Client(): S3Client | null {
 
   _s3Client = new S3Client(config);
   _s3Available = true;
-  console.log('[file-storage] Hetzner S3 client initialized');
+  logger.info({}, 's3_client_initialized');
   return _s3Client;
 }
 
@@ -280,7 +281,7 @@ export async function checkStorageConnection(): Promise<boolean> {
     await s3.send(new ListObjectsV2Command({ Bucket: getBucket(), MaxKeys: 1 }));
     return true;
   } catch (e) {
-    console.error('[file-storage] Connection check failed:', e);
+    logger.error({ err: e instanceof Error ? e.message : String(e) }, 's3_connection_check_failed');
     return false;
   }
 }

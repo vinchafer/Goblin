@@ -7,6 +7,7 @@ import { createRepo, pushFiles, disconnectGitHub, saveGitHubConnection, getDecry
 import { listFiles, getFile } from '../services/file-storage';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { sendToUser } from '../services/notification-service';
+import logger from '../lib/logger';
 
 type Variables = { userId: string }
 const github = new Hono<{ Variables: Variables }>();
@@ -86,7 +87,7 @@ github.get('/callback', async (c) => {
       body: '✅ GitHub connected successfully',
       url: '/dashboard',
       tag: 'github-connected',
-    }).catch((err: unknown) => console.error('[github] notification failed:', err));
+    }).catch((err: unknown) => logger.warn({ err: err instanceof Error ? err.message : String(err) }, 'github_notification_failed'));
     
     return c.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard?github=connected`);
   } catch {

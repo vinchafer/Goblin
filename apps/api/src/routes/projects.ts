@@ -8,6 +8,7 @@ import { createZip, listFiles, getFile, uploadFile, deleteFile, deleteProject } 
 import { getSupabaseAdmin } from '../lib/supabase';
 import { createTwoFilesPatch } from 'diff';
 import { createProjectFromTemplate } from './templates';
+import logger from '../lib/logger';
 
 type Variables = { userId: string }
 const projects = new Hono<{ Variables: Variables }>();
@@ -42,12 +43,7 @@ projects.get('/', async (c) => {
 // Create new project
 projects.post('/', async (c) => {
   const userId = c.get('userId');
-  console.log('POST /api/projects called', {
-    origin: c.req.header('origin'),
-    hasAuth: !!c.req.header('authorization'),
-    contentType: c.req.header('content-type'),
-    userId,
-  });
+  logger.debug({ user_id: userId }, 'project_create_start');
   const body = await c.req.json();
 
   const result = CreateProjectSchema.safeParse(body);
@@ -73,7 +69,7 @@ projects.post('/', async (c) => {
     .single();
 
   if (error) {
-    console.error('Supabase insert error (projects):', { message: error.message, code: error.code, details: error.details });
+    logger.error({ user_id: userId, db_code: error.code, db_message: error.message }, 'project_create_failed');
     return c.json({ error: error.message || 'Failed to create project', code: error.code }, 500);
   }
 
@@ -141,7 +137,7 @@ projects.delete('/:id', async (c) => {
 
   // Best-effort storage cleanup — don't block response on failure
   deleteProject(projectId).catch((err) =>
-    console.error(`Storage cleanup failed for project ${projectId}:`, err)
+    logger.error({ project_id: projectId, err: err instanceof Error ? err.message : String(err) }, 'storage_cleanup_failed')
   );
 
   return c.json({ success: true });
