@@ -141,6 +141,30 @@ export function ChatMessageItem({ msg, isStreaming, onSendToCode }: Props) {
                 {codeBlocks.map((block, i) => (
                   <CodeBlock key={i} {...block} onSendToCode={onSendToCode} />
                 ))}
+                {codeBlocks.length > 1 && (
+                  <button
+                    onClick={() => {
+                      const combined = codeBlocks.map((b, i) => `// File: ${b.filename || `block-${i + 1}.${b.language || 'txt'}`}\n${b.code}`).join('\n\n');
+                      onSendToCode(combined, 'all-blocks.js');
+                    }}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 6,
+                      marginTop: 6, padding: '7px 14px',
+                      background: 'rgba(212,169,74,0.12)',
+                      border: '1px solid rgba(212,169,74,0.35)',
+                      borderRadius: 8, cursor: 'pointer',
+                      fontSize: 12, fontWeight: 600,
+                      color: 'var(--ochre-dark)',
+                      fontFamily: 'DM Sans, sans-serif',
+                      transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(212,169,74,0.2)')}
+                    onMouseLeave={e => (e.currentTarget.style.background = 'rgba(212,169,74,0.12)')}
+                  >
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="5 12 12 5 19 12"/><polyline points="5 19 12 12 19 19"/></svg>
+                    Send All {codeBlocks.length} blocks →
+                  </button>
+                )}
               </div>
             )}
 
