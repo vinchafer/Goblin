@@ -32,6 +32,12 @@ function detectInjection(text: string): boolean {
   return INJECTION_PATTERNS.some(re => re.test(text));
 }
 
+function detectGerman(text: string): boolean {
+  const germanWords = /\b(ich|du|wir|ihr|bitte|kannst|hilf|danke|hallo|wie|was|warum|nicht|aber|auch|noch|schon|mal|dann|jetzt|hier|sein|haben|werden|können|müssen|sollen)\b/i;
+  const germanChars = /[äöüÄÖÜß]/;
+  return germanChars.test(text) || (germanWords.test(text) && text.split(' ').length > 2);
+}
+
 // PII patterns
 const PII_PATTERNS = [
   /sk-[A-Za-z0-9\-_]{20,}/g,
@@ -142,8 +148,21 @@ ${knowledge}`;
     { role: 'user', content: userMessage },
   ];
 
+  // Abuse pattern: repeated identical messages (>4 in session)
+  const recentUserMessages = history.filter(m => m.role === 'user').map(m => m.content.toLowerCase().trim());
+  const currentLower = userMessage.toLowerCase().trim();
+  const repeatCount = recentUserMessages.filter(m => m === currentLower || (m.length > 10 && currentLower.includes(m.slice(0, 20)))).length;
+  if (repeatCount >= 4) {
+    supabase.from('support_tickets').insert({
+      user_id: userId,
+      message: userMessage.slice(0, 500),
+      abuse_flag: true,
+      created_at: new Date().toISOString(),
+    }).then(() => {}, () => {});
+  }
+
   // Check if escalation is needed based on keywords
-  const escalationKeywords = ['refund', 'cancel subscription', 'delete account', 'billing dispute', 'charged twice'];
+  const escalationKeywords = ['refund', 'cancel subscription', 'delete account', 'billing dispute', 'charged twice', 'charge me', 'overcharged', 'money back'];
   const needsEscalation = escalationKeywords.some(kw => userMessage.toLowerCase().includes(kw));
 
   if (needsEscalation) {
@@ -167,10 +186,10 @@ ${knowledge}`;
       }).then(() => {}, () => {});
     }).catch(() => {});
 
-    const isGerman = /[äöüÄÖÜß]/.test(userMessage) || /\b(ich|du|bitte|kannst|hilf|danke)\b/i.test(userMessage);
+    const isGerman = detectGerman(userMessage) || history.some(m => m.role === 'user' && detectGerman(m.content));
     const escalationMsg = isGerman
-      ? 'Ich konnte dir hier leider nicht ganz weiterhelfen. Dein Anliegen ist bei unserem Support-Team — sie melden sich innerhalb von 24–48h per Email zurück. Wir haben gerade viele Anfragen, danke für deine Geduld!'
-      : "I couldn't fully help here, so I've sent your message to our support team. They'll reply via email within 24–48 hours. We're getting lots of requests right now — thanks for your patience!";
+      ? 'Ich konnte dir hier leider nicht ganz weiterhelfen. Ich habe deinen Fall an unser Support-Team weitergeleitet — sie melden sich innerhalb von 24–48h per Email zurück.'
+      : "I wasn't able to fully solve this here. I've flagged your case for our support team — they'll reply to your email within 24–48 hours.";
 
     yield JSON.stringify({ type: 'message', content: escalationMsg });
     yield JSON.stringify({ type: 'done' });
@@ -226,7 +245,7 @@ ${knowledge}`;
     }
 
     // Check if agent wants to escalate (agent-triggered, not keyword-triggered)
-    if (fullResponse.toLowerCase().includes('escalate') && !needsEscalation) {
+    if ((fullResponse.toLowerCase().includes('escalate') || fullResponse.toLowerCase().includes('support team')) && !needsEscalation) {
       const ticketId = crypto.randomUUID();
       sendSupportEscalation({
         ticketId,

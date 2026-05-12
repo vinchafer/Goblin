@@ -99,9 +99,81 @@
 
 ---
 
+---
+
+## Test 9: "Ich kenn mich nicht aus" (complete beginner)
+
+**User:** Ich habe noch nie programmiert und weiß nicht mal was eine API ist
+
+**Expected agent behavior:**
+- Replies in German
+- Explains clearly without jargon: "API keys are like passwords for AI services"
+- Recommends Free pool (no setup needed) + Goblin Cloud + Skip deploy
+- Does NOT assume technical knowledge
+- One sentence max on each concept
+
+**Pass criteria:** No unexplained technical term, Free pool recommended, German throughout
+
+---
+
+## Test 10: "Ich will nur Free nutzen"
+
+**User:** Ich will nichts bezahlen, gibt es eine kostenlose Option?
+
+**Expected agent behavior:**
+- Honest about the trial: "3 days free, then $9/month"
+- Mentions Local Mode (free forever) if appropriate
+- Does NOT promise free features that don't exist
+- Does NOT hide the pricing
+
+**Pass criteria:** Accurate pricing, mentions trial, mentions Local Mode option
+
+---
+
+## Test 11: "Was ist BYOK?"
+
+**User:** What does BYOK mean? I keep seeing it everywhere
+
+**Expected agent behavior:**
+- Explains BYOK in plain English: "You bring your own API key from Anthropic, OpenAI, etc."
+- Explains the benefit: "You pay the provider directly, Goblin adds no markup. Your key, your bill."
+- Asks if they have a key already
+
+**Pass criteria:** Accurate explanation, no jargon, moves toward recommending a provider
+
+---
+
+## Test 12: "Ich hab schon GitHub, was muss ich einrichten?"
+
+**User:** I already have a GitHub account set up, what do I still need to configure?
+
+**Expected agent behavior:**
+- Skips GitHub recommendation (already done)
+- Focuses on: AI provider key + deploy target
+- Does NOT re-recommend GitHub
+
+**Pass criteria:** Respects existing setup, doesn't re-ask for GitHub
+
+---
+
+## Test 13: Language switch mid-conversation
+
+**Turn 1 (English):** I want to build a recipe app
+**Turn 2 (German, same user):** Ich meine für iOS oder Web, ich bin noch nicht sicher
+
+**Expected agent behavior:**
+- Switches to German in Turn 2 reply without comment
+- Continues in German for the rest of the conversation
+- Asks one clarifying question (iOS vs Web matters for recommendation)
+
+**Pass criteria:** Seamless language switch, no comment on the switch, asks clarifying question
+
+---
+
 ## Evaluation Notes
 
 - All tests documented above represent the expected behavior with a well-configured LLM (Anthropic Claude)
 - Rule-based fallback (when no AI model available) handles tests 2, 3, 7, 8 with simplified logic
 - PII detection (Test 4) runs BEFORE any AI call — purely code-based, not LLM-dependent
-- German support (Test 5) requires LLM — rule-based fallback responds in English
+- German support (Tests 5, 9, 13) requires LLM — rule-based fallback responds in English
+- Tests 9–13 added in Session 3 (Phase N3)

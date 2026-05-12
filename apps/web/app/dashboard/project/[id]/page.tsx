@@ -18,7 +18,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
     .select('id, name, description, preview_url')
     .eq('id', id)
     .eq('user_id', user.id)
-    .single();
+    .single() as { data: { id: string; name: string; description: string | null; preview_url: string | null } | null; error: unknown };
 
   if (error || !project) {
     notFound();
