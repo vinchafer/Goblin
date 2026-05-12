@@ -98,7 +98,7 @@ export async function apiStream(
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: res.statusText }))
-    throw new Error(err.message || `Stream error ${res.status}`)
+    throw new Error(err.message || err.error || `Stream error ${res.status}`)
   }
   const reader = res.body!.getReader()
   const decoder = new TextDecoder()

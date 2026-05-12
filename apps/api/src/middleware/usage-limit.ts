@@ -13,8 +13,14 @@ export const usageLimitMiddleware = createMiddleware(async (c, next) => {
     .eq('id', userId)
     .single();
 
-  if (error || !user) {
-    return c.json({ error: 'User not found' }, 404);
+  if (error) {
+    return c.json({ error: 'Failed to check usage limit' }, 500);
+  }
+
+  if (!user) {
+    // User exists in auth but not in users table — allow with free-tier defaults
+    // (happens when onboarding trigger fails; don't block valid auth users)
+    return next();
   }
 
   let used = user.monthly_requests_used ?? 0;
