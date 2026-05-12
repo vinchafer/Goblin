@@ -82,7 +82,7 @@ export function Hero() {
           </div>
         </div>
         {/* App layout */}
-        <div style={{ background: '#fff', display: 'grid', gridTemplateColumns: '180px 1fr 260px', height: 340 }}>
+        <div style={{ background: '#F7F4ED', display: 'grid', gridTemplateColumns: '180px 1fr 260px', height: 340 }}>
           {/* Sidebar */}
           <div style={{ background: '#f7f3ec', borderRight: '1px solid #e4ddd2', padding: 12 }}>
             <div style={{ fontFamily: 'Fraunces, serif', fontSize: 16, color: 'var(--moss)', fontWeight: 700, paddingBottom: 10, borderBottom: '1px solid #e4ddd2', marginBottom: 10 }}>
