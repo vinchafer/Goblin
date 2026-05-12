@@ -354,14 +354,14 @@ function DeveloperTab() {
         <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 20 }}>Per-use-case defaults. Only models with a connected key will work.</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18, marginBottom: 16 }}>
           <DefaultModelDropdown
-            label="Standard-Model für Chat"
+            label="Default Chat Model"
             description="Used for all chat conversations unless overridden."
             value={defaultChatModel}
             onChange={setDefaultChatModel}
             saving={saving}
           />
           <DefaultModelDropdown
-            label="Standard-Model für Code"
+            label="Default Code Model"
             description="Used when generating or editing code."
             value={defaultCodeModel}
             onChange={setDefaultCodeModel}

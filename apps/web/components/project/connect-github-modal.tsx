@@ -1,13 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { X, Github, Loader2, ExternalLink } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 interface ConnectGitHubModalProps {
   open: boolean;
   onClose: () => void;
   onConnected: () => void;
+}
+
+function GitHubIcon({ size = 24 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/>
+    </svg>
+  );
 }
 
 export function ConnectGitHubModal({ open, onClose, onConnected }: ConnectGitHubModalProps) {
@@ -20,96 +27,106 @@ export function ConnectGitHubModal({ open, onClose, onConnected }: ConnectGitHub
   const handleConnect = async () => {
     setLoading(true);
     setError(null);
-
     try {
       const session = await supabase.auth.getSession();
       const accessToken = session.data.session?.access_token;
-      if (!accessToken) throw new Error("Not authenticated");
+      if (!accessToken) throw new Error('Not authenticated');
 
       const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
-      const response = await fetch(`${apiBase}/api/github/connect`, {
+      const res = await fetch(`${apiBase}/api/github/connect`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${accessToken}`
-        }
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
       });
-
-      if (!response.ok) {
-        throw new Error('Failed to start GitHub connection');
-      }
-
-      const data = await response.json();
-      
-      // Redirect to GitHub OAuth
+      if (!res.ok) throw new Error('Could not reach GitHub — try again in a moment.');
+      const data = await res.json() as { url: string };
       window.location.href = data.url;
-      
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to connect to GitHub';
-      setError(errorMessage);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Connection failed. Check your internet and try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleClose = () => {
-    setLoading(false);
-    setError(null);
-    onClose();
-  };
+  const handleClose = () => { setLoading(false); setError(null); onClose(); };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="bg-white rounded-xl shadow-2xl max-w-md w-full m-4">
-        <div className="p-5 border-b flex items-center justify-between" style={{ borderColor: 'var(--goblin-light)' }}>
-          <h2 className="text-lg font-semibold" style={{ color: 'var(--goblin-slate)' }}>Connect GitHub</h2>
-          <button onClick={handleClose} className="p-1 rounded hover:bg-gray-100">
-            <X className="w-5 h-5" style={{ color: 'var(--goblin-gray)' }} />
-          </button>
+    <div
+      onClick={handleClose}
+      style={{ position: 'fixed', inset: 0, zIndex: 50, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.5)', padding: 16 }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{ background: 'var(--panel)', borderRadius: 14, boxShadow: 'var(--shadow-lg)', maxWidth: 440, width: '100%', overflow: 'hidden' }}
+      >
+        {/* Header */}
+        <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <h2 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', fontFamily: 'DM Sans, sans-serif' }}>Connect GitHub</h2>
+          <button onClick={handleClose} style={{ background: 'none', border: 'none', color: 'var(--meta)', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: '2px 4px' }}>×</button>
         </div>
 
-        <div className="p-5 space-y-4">
-          <div className="text-center py-2">
-            <div className="w-16 h-16 rounded-full mx-auto mb-4 flex items-center justify-center" style={{ backgroundColor: 'rgba(74, 124, 59, 0.1)' }}>
-              <Github className="w-8 h-8" style={{ color: 'var(--goblin-good)' }} />
+        {/* Body */}
+        <div style={{ padding: '24px 20px' }}>
+          <div style={{ textAlign: 'center', marginBottom: 20 }}>
+            <div style={{
+              width: 56, height: 56, borderRadius: '50%',
+              background: 'rgba(45,74,43,0.1)', margin: '0 auto 14px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'var(--moss)',
+            }}>
+              <GitHubIcon size={24} />
             </div>
-            <h3 className="text-lg font-semibold mb-2" style={{ color: 'var(--goblin-slate)' }}>Connect GitHub to push your code</h3>
-            <p className="mb-4 text-sm" style={{ color: 'var(--goblin-gray)' }}>
-              You need to connect your GitHub account to push your project to a repository.
-              This will create a new repository with all your project files.
+            <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', fontFamily: 'DM Sans, sans-serif', marginBottom: 8 }}>
+              Push your project to GitHub
+            </h3>
+            <p style={{ fontSize: 13, color: 'var(--meta)', lineHeight: 1.6, fontFamily: 'DM Sans, sans-serif' }}>
+              Connect your GitHub account once — then push any project with one click. We create a private repo and upload your files.
             </p>
           </div>
 
           {error && (
-            <div className="p-3 rounded-lg text-sm" style={{ backgroundColor: 'rgba(184, 92, 60, 0.1)', color: 'var(--goblin-warn)' }}>
+            <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(184,92,60,0.08)', border: '1px solid rgba(184,92,60,0.2)', color: 'var(--danger)', fontSize: 13, fontFamily: 'DM Sans, sans-serif', marginBottom: 16 }}>
               {error}
             </div>
           )}
 
-          <div className="space-y-3">
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <button
               onClick={handleConnect}
               disabled={loading}
-              className="w-full py-3 rounded-lg flex items-center justify-center gap-2 font-medium disabled:opacity-50"
-              style={{ backgroundColor: 'var(--goblin-slate)', color: 'white' }}
+              style={{
+                width: '100%', padding: '11px 0',
+                background: loading ? 'rgba(45,74,43,0.5)' : 'var(--moss)',
+                color: '#fff', border: 'none', borderRadius: 9,
+                fontSize: 14, fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer',
+                fontFamily: 'DM Sans, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                transition: 'background 0.15s',
+              }}
+              onMouseEnter={e => { if (!loading) e.currentTarget.style.background = 'var(--moss-2)'; }}
+              onMouseLeave={e => { if (!loading) e.currentTarget.style.background = 'var(--moss)'; }}
             >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Github className="w-4 h-4" />}
-              {loading ? 'Connecting...' : 'Connect GitHub'}
+              <GitHubIcon size={16} />
+              {loading ? 'Opening GitHub…' : 'Connect GitHub'}
             </button>
-
             <button
               onClick={handleClose}
-              className="w-full py-2 rounded-lg text-sm font-medium"
-              style={{ border: '1px solid var(--goblin-light)', color: 'var(--goblin-gray)' }}
+              style={{
+                width: '100%', padding: '9px 0',
+                background: 'transparent', border: '1px solid var(--border)',
+                color: 'var(--meta)', borderRadius: 9,
+                fontSize: 13, fontWeight: 500, cursor: 'pointer',
+                fontFamily: 'DM Sans, sans-serif',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'var(--subtle)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
             >
-              Cancel
+              Not now
             </button>
           </div>
 
-          <div className="text-xs text-center pt-4" style={{ color: 'var(--goblin-gray)' }}>
-            <p>You'll be redirected to GitHub to authorize Goblin.</p>
-            <p>We only request minimal permissions to create repositories.</p>
-          </div>
+          <p style={{ fontSize: 11, color: 'var(--text-faint)', textAlign: 'center', marginTop: 14, fontFamily: 'DM Sans, sans-serif', lineHeight: 1.5 }}>
+            You'll be redirected to GitHub to authorize Goblin.<br />
+            We only request repo-creation access — nothing else.
+          </p>
         </div>
       </div>
     </div>
