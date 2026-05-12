@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { TrialBanner } from "@/components/app-shell/trial-banner";
@@ -30,7 +30,6 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const { activeTab, setActiveTab, injectionCount, setShowNewProjectModal } = useApp();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const router = useRouter();
 
   const handleLogout = useCallback(async () => {
@@ -61,16 +60,16 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
     },
   });
 
-  // Show first-run tour if redirected from onboarding or it's a fresh account
+  // Show first-run tour if redirected from onboarding (?tour=1) or fresh account
   useEffect(() => {
-    const tourDone = typeof window !== 'undefined' && localStorage.getItem('goblin_tour_done');
+    const tourDone = localStorage.getItem('goblin_tour_done');
     if (tourDone) return;
 
-    const fromOnboarding = searchParams.get('tour') === '1';
+    const fromOnboarding = new URLSearchParams(window.location.search).get('tour') === '1';
     if (fromOnboarding || isFirstLogin) {
       setShowTour(true);
     }
-  }, [searchParams, isFirstLogin]);
+  }, [isFirstLogin]);
 
   const handleTourDone = useCallback(() => {
     setShowTour(false);
