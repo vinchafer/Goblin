@@ -79,7 +79,7 @@ export function CodeBlock({ code, language, filename, onSendToCode }: CodeBlockP
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
           width: '100%', padding: '9px 14px',
           background: 'var(--ochre)', border: 'none', cursor: 'pointer',
-          fontSize: 13, fontWeight: 600, color: '#fff',
+          fontSize: 13, fontWeight: 600, color: '#1a1200',
           fontFamily: 'DM Sans, sans-serif',
           transition: 'background 0.15s',
         }}

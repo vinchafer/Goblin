@@ -28,7 +28,7 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
   const [showTour, setShowTour] = useState(false);
   const [cmdPaletteOpen, setCmdPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
-  const { activeTab, setActiveTab, injectionCount, setShowNewProjectModal } = useApp();
+  const { activeTab, setActiveTab, injectionCount, setShowNewProjectModal, previewUrl: contextPreviewUrl } = useApp();
   const pathname = usePathname();
   const router = useRouter();
 
@@ -104,7 +104,7 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
         projectName={activeProjectName}
         showTabs={isWorkspace}
         injectionCount={injectionCount}
-        previewUrl={previewUrl}
+        previewUrl={contextPreviewUrl ?? undefined}
       />
       <TrialBanner />
 

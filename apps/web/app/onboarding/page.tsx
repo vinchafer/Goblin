@@ -1,6 +1,6 @@
 ﻿'use client';
 import { useEffect, useState, useCallback } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getAuthHeaders, API_URL } from '@/lib/api';
 
@@ -270,7 +270,7 @@ function Step2CodeHosting({ onNext, onSkip, selected, onSelect }: {
 
         <OptionCard selected={selected === 'gitlab'} onClick={() => onSelect('gitlab')} disabled>
           <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', marginBottom: 4 }}>
-            GitLab <span style={{ fontSize: 10, background: '#F0ECE4', color: 'var(--disabled)', padding: '1px 6px', borderRadius: 4, fontWeight: 600, marginLeft: 6 }}>Coming soon</span>
+            GitLab <span style={{ fontSize: 10, background: 'var(--subtle)', color: 'var(--disabled)', padding: '1px 6px', borderRadius: 4, fontWeight: 600, marginLeft: 6 }}>Coming soon</span>
           </div>
           <div style={{ fontSize: 12, color: 'var(--disabled)', lineHeight: 1.5 }}>
             GitLab support is planned for Phase 2. Use GitHub for now.
@@ -431,10 +431,13 @@ function Step4Done({ state }: { state: OnboardingState }) {
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const resume = searchParams.get('resume') === 'true';
 
   const [step, setStep] = useState(0);
+  const [resume, setResume] = useState(false);
+
+  useEffect(() => {
+    setResume(new URLSearchParams(window.location.search).get('resume') === 'true');
+  }, []);
   const [state, setState] = useState<OnboardingState>({
     current_step: 0, completed: false,
   });
@@ -543,16 +546,6 @@ export default function OnboardingPage() {
           <Step4Done state={state} />
         )}
 
-        {step >= 4 && step < TOTAL_STEPS - 1 && (
-          <div style={{ textAlign: 'center', marginTop: 16 }}>
-            <button
-              onClick={() => router.push('/dashboard')}
-              style={{ background: 'none', border: 'none', color: 'var(--disabled)', fontSize: 13, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', textDecoration: 'underline' }}
-            >
-              Go to dashboard
-            </button>
-          </div>
-        )}
       </div>
     </div>
   );

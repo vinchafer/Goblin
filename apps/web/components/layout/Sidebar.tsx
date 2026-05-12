@@ -125,8 +125,8 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
         style={{
           width: sidebarWidth,
           minWidth: sidebarWidth,
-          background: '#F2EDE4',
-          borderRight: '1px solid #DDD7CC',
+          background: 'var(--subtle)',
+          borderRight: '1px solid var(--border)',
           display: 'flex',
           flexDirection: 'column',
           height: '100%',
@@ -142,7 +142,7 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
         <div style={{
           height: 56, display: 'flex', alignItems: 'center',
           padding: collapsed ? '0 12px' : '0 16px',
-          borderBottom: '1px solid #DDD7CC', flexShrink: 0,
+          borderBottom: '1px solid var(--border)', flexShrink: 0,
           gap: 10, justifyContent: collapsed ? 'center' : 'flex-start',
         }}>
           {!collapsed ? (
@@ -173,7 +173,7 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
                 style={{
                   width: 24, height: 24, borderRadius: 6,
                   background: 'transparent',
-                  border: '1px solid #DDD7CC',
+                  border: '1px solid var(--border)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   cursor: 'pointer', color: '#8C857A', flexShrink: 0,
                   transition: 'background 0.15s',
@@ -311,10 +311,11 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
         {/* ── Bottom Nav ── */}
         <div style={{
           padding: collapsed ? '8px' : '8px 12px',
-          borderTop: '1px solid #DDD7CC', flexShrink: 0,
+          borderTop: '1px solid var(--border)', flexShrink: 0,
           display: 'flex', flexDirection: 'column', gap: 2,
         }}>
           {[
+            { label: 'API Keys', path: '/dashboard/settings/keys' },
             { label: 'Billing',  path: '/dashboard/settings/billing' },
             { label: 'Settings', path: '/dashboard/settings' },
           ].map(({ label, path }) => (
@@ -326,7 +327,7 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
                 width: '100%', background: 'none', border: 'none',
                 padding: collapsed ? '8px 0' : '8px',
                 borderRadius: 7, fontSize: 12,
-                color: '#6B6560', cursor: 'pointer',
+                color: 'var(--sidebar-meta)', cursor: 'pointer',
                 display: 'flex', alignItems: 'center',
                 justifyContent: collapsed ? 'center' : 'flex-start',
                 fontFamily: 'DM Sans, sans-serif',
@@ -349,9 +350,9 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
           position: 'fixed',
           bottom: 0, left: 0, right: 0,
           maxHeight: '82dvh',
-          background: '#F2EDE4',
+          background: 'var(--subtle)',
           borderRadius: '18px 18px 0 0',
-          borderTop: '1px solid #DDD7CC',
+          borderTop: '1px solid var(--border)',
           display: 'flex', flexDirection: 'column',
           zIndex: 40,
           transform: isOpen ? 'translateY(0)' : 'translateY(100%)',
@@ -370,7 +371,7 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
             padding: '10px 0 6px', cursor: 'pointer', flexShrink: 0,
           }}
         >
-          <div style={{ width: 36, height: 4, borderRadius: 2, background: '#C8C0B4' }} />
+          <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border)' }} />
         </div>
 
         {/* Header row */}
@@ -460,8 +461,9 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
         <RecentChats pathname={pathname} navigate={navigate} />
 
         {/* Bottom nav mobile */}
-        <div style={{ padding: '8px 12px', borderTop: '1px solid #DDD7CC', flexShrink: 0, display: 'flex', gap: 8 }}>
+        <div style={{ padding: '8px 12px', borderTop: '1px solid var(--border)', flexShrink: 0, display: 'flex', gap: 8 }}>
           {[
+            { label: 'API Keys', path: '/dashboard/settings/keys' },
             { label: 'Billing',  path: '/dashboard/settings/billing' },
             { label: 'Settings', path: '/dashboard/settings' },
           ].map(({ label, path }) => (
@@ -540,7 +542,7 @@ function RecentChats({ pathname, navigate }: { pathname: string; navigate: (path
   }
 
   return (
-    <div style={{ borderTop: '1px solid #DDD7CC', padding: '8px 0 0' }}>
+    <div style={{ borderTop: '1px solid var(--border)', padding: '8px 0 0' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 16px 6px' }}>
         <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '1.2px', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
