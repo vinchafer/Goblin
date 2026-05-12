@@ -45,6 +45,15 @@ onboarding.put('/state', async (c) => {
     .single();
 
   if (error) return c.json({ error: error.message }, 500);
+
+  // Mirror completion to users table (requires migration 0034)
+  if (result.data.completed === true) {
+    await supabase
+      .from('users')
+      .update({ onboarding_completed: true })
+      .eq('id', userId);
+  }
+
   return c.json(data);
 });
 

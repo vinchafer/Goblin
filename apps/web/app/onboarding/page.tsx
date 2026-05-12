@@ -400,7 +400,7 @@ function Step4Done({ state }: { state: OnboardingState }) {
       )}
 
       <button
-        onClick={() => router.push('/dashboard')}
+        onClick={() => router.push('/dashboard?tour=1')}
         style={{
           display: 'block', width: '100%',
           padding: '13px 0', background: '#2D4A2B', color: '#D4A94A',

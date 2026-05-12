@@ -50,6 +50,9 @@ END $$;
 -- SELECT column_name FROM information_schema.columns WHERE table_name = 'users' AND column_name IN ('cloud_trial_started_at', 'cloud_trial_ends_at');
 -- SELECT table_name FROM information_schema.tables WHERE table_name = 'onboarding_steps';
 
+-- ── Migration 0032: Email sent column for support tickets (may already exist) -
+-- (no-op if already applied)
+
 -- ── Migration 0033: Support tickets table ────────────────────────────────────
 CREATE TABLE IF NOT EXISTS support_tickets (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -60,6 +63,8 @@ CREATE TABLE IF NOT EXISTS support_tickets (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
+ALTER TABLE support_tickets ADD COLUMN IF NOT EXISTS email_sent BOOLEAN;
+ALTER TABLE support_tickets ADD COLUMN IF NOT EXISTS email_error TEXT;
 ALTER TABLE support_tickets ENABLE ROW LEVEL SECURITY;
 
 DO $$
@@ -70,3 +75,10 @@ BEGIN
     CREATE POLICY "Users see own tickets" ON support_tickets FOR SELECT USING (auth.uid() = user_id);
   END IF;
 END $$;
+
+-- ── Migration 0034: Onboarding completed flag on users ──────────────────────
+ALTER TABLE users ADD COLUMN IF NOT EXISTS onboarding_completed BOOLEAN DEFAULT FALSE;
+
+-- ── Verification queries ─────────────────────────────────────────────────────
+-- SELECT column_name FROM information_schema.columns WHERE table_name = 'support_tickets' AND column_name IN ('email_sent', 'email_error');
+-- SELECT column_name FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'onboarding_completed';

@@ -1,21 +1,19 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
-import { WelcomeModal } from "@/components/onboarding/welcome-modal";
 import { TrialBanner } from "@/components/app-shell/trial-banner";
 import { SupportBubble } from "@/components/support/support-bubble";
 import { CommandPalette, useCommandPalette } from "@/components/ui/CommandPalette";
 import { ShortcutsHelp } from "@/components/ui/ShortcutsHelp";
 import { ShortcutsTooltip } from "@/components/ui/ShortcutsTooltip";
+import { FirstRunTour } from "@/components/onboarding/first-run-tour";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useApp } from "@/contexts/app-context";
 import { createClient } from "@/lib/supabase/client";
 import type { Project } from "@goblin/shared/src/schemas";
-
-const ONBOARDED_KEY = 'goblin_onboarded';
 
 interface DashboardShellProps {
   projects: Project[];
@@ -27,11 +25,12 @@ interface DashboardShellProps {
 
 export function DashboardShell({ projects, children, previewUrl, isFirstLogin, userName }: DashboardShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [showWelcome, setShowWelcome] = useState(false);
+  const [showTour, setShowTour] = useState(false);
   const [cmdPaletteOpen, setCmdPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const { activeTab, setActiveTab, injectionCount, setShowNewProjectModal } = useApp();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
 
   const handleLogout = useCallback(async () => {
@@ -62,15 +61,20 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
     },
   });
 
+  // Show first-run tour if redirected from onboarding or it's a fresh account
   useEffect(() => {
-    if (!isFirstLogin) return;
-    const alreadyOnboarded = typeof window !== 'undefined' && localStorage.getItem(ONBOARDED_KEY);
-    if (!alreadyOnboarded) setShowWelcome(true);
-  }, [isFirstLogin]);
+    const tourDone = typeof window !== 'undefined' && localStorage.getItem('goblin_tour_done');
+    if (tourDone) return;
 
-  const handleWelcomeComplete = useCallback(() => {
-    setShowWelcome(false);
-    if (typeof window !== 'undefined') localStorage.setItem(ONBOARDED_KEY, '1');
+    const fromOnboarding = searchParams.get('tour') === '1';
+    if (fromOnboarding || isFirstLogin) {
+      setShowTour(true);
+    }
+  }, [searchParams, isFirstLogin]);
+
+  const handleTourDone = useCallback(() => {
+    setShowTour(false);
+    if (typeof window !== 'undefined') localStorage.setItem('goblin_tour_done', '1');
   }, []);
 
   const activeProjectId = (() => {
@@ -120,9 +124,7 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
         </main>
       </div>
 
-      {showWelcome && (
-        <WelcomeModal userName={userName} onComplete={handleWelcomeComplete} />
-      )}
+      {showTour && <FirstRunTour onDone={handleTourDone} />}
 
       <CommandPalette
         open={cmdPaletteOpen}
