@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useEffect, useRef, useCallback } from 'react';
 import { EditorView, basicSetup } from 'codemirror';
 import { EditorState } from '@codemirror/state';
@@ -25,7 +25,7 @@ const goblinTheme = EditorView.theme({
   '.cm-selectionBackground': { background: 'rgba(201,147,58,0.15) !important' },
   '.cm-tooltip': { background: '#1e2a1c', border: '1px solid #2d4a2b' },
   '.cm-completionLabel': { color: '#8aaa85' },
-  '.cm-completionMatchedText': { color: '#c9933a', textDecoration: 'none', fontWeight: 600 },
+  '.cm-completionMatchedText': { color: 'var(--ochre-dark)', textDecoration: 'none', fontWeight: 600 },
   '.cm-matchingBracket': { background: 'rgba(201,147,58,0.2)', outline: '1px solid rgba(201,147,58,0.4)' },
   '.cm-tooltip-autocomplete': { background: '#1e2a1c', border: '1px solid #2d4a2b' },
   '.cm-tooltip-autocomplete ul li[aria-selected]': { background: 'rgba(201,147,58,0.15)' },

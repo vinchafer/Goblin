@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+﻿import { createClient } from "@/lib/supabase/server";
 import { SettingsLayout } from "@/components/settings/settings-layout";
 import { KeysList } from "@/components/settings/keys-list";
 
@@ -14,10 +14,10 @@ export default async function KeysSettingsPage() {
   return (
     <SettingsLayout>
       <div style={{ maxWidth: '800px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 600, color: '#2A2A2A', marginBottom: '8px', fontFamily: 'DM Sans, sans-serif' }}>
+        <h1 style={{ fontSize: '24px', fontWeight: 600, color: 'var(--text)', marginBottom: '8px', fontFamily: 'DM Sans, sans-serif' }}>
           API Keys
         </h1>
-        <p style={{ fontSize: '14px', color: '#6B6B6B', marginBottom: '32px' }}>
+        <p style={{ fontSize: '14px', color: 'var(--meta)', marginBottom: '32px' }}>
           Connect your own API keys for different AI providers. Your keys are encrypted at rest and never stored in plaintext.
         </p>
 

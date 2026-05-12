@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -63,7 +63,7 @@ function ProgressBar({ step }: { step: number }) {
       {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
         <div key={i} style={{
           height: 4, flex: 1, maxWidth: 48, borderRadius: 2,
-          background: i < step ? '#2D4A2B' : i === step ? 'rgba(45,74,43,0.4)' : '#E8E4DC',
+          background: i < step ? 'var(--moss)' : i === step ? 'rgba(45,74,43,0.4)' : 'var(--div)',
           transition: 'background 0.3s ease',
         }} />
       ))}
@@ -77,7 +77,7 @@ function SkipButton({ onSkip }: { onSkip: () => void }) {
       onClick={onSkip}
       style={{
         background: 'none', border: 'none',
-        color: '#9B9B9B', fontSize: 13,
+        color: 'var(--disabled)', fontSize: 13,
         cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
         padding: '4px 0',
         textDecoration: 'underline',
@@ -99,15 +99,15 @@ function OptionCard({
       style={{
         width: '100%', textAlign: 'left',
         background: selected ? 'rgba(45,74,43,0.06)' : '#fff',
-        border: `2px solid ${selected ? '#2D4A2B' : '#E8E4DC'}`,
+        border: `2px solid ${selected ? 'var(--moss)' : 'var(--div)'}`,
         borderRadius: 12, padding: '14px 16px',
         cursor: disabled ? 'not-allowed' : 'pointer',
         transition: 'all 0.15s',
         opacity: disabled ? 0.5 : 1,
         fontFamily: 'DM Sans, sans-serif',
       }}
-      onMouseEnter={e => { if (!selected && !disabled) e.currentTarget.style.borderColor = '#2D4A2B'; }}
-      onMouseLeave={e => { if (!selected && !disabled) e.currentTarget.style.borderColor = '#E8E4DC'; }}
+      onMouseEnter={e => { if (!selected && !disabled) e.currentTarget.style.borderColor = 'var(--moss)'; }}
+      onMouseLeave={e => { if (!selected && !disabled) e.currentTarget.style.borderColor = 'var(--div)'; }}
     >
       {children}
     </button>
@@ -119,10 +119,10 @@ function OptionCard({
 function Step0Welcome({ onNext, onGoalSelect, selectedGoal }: { onNext: (goal: string) => void; onGoalSelect: (g: string) => void; selectedGoal?: string | null }) {
   return (
     <div>
-      <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 26, fontWeight: 700, color: '#2A2A2A', marginBottom: 8, letterSpacing: '-0.5px' }}>
+      <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 26, fontWeight: 700, color: 'var(--text)', marginBottom: 8, letterSpacing: '-0.5px' }}>
         What do you want to build first?
       </h1>
-      <p style={{ fontSize: 14, color: '#6B6B6B', fontFamily: 'DM Sans, sans-serif', marginBottom: 28, lineHeight: 1.6 }}>
+      <p style={{ fontSize: 14, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif', marginBottom: 28, lineHeight: 1.6 }}>
         Pick a starting point — we&apos;ll tailor Goblin to your goal.
       </p>
 
@@ -133,17 +133,17 @@ function Step0Welcome({ onNext, onGoalSelect, selectedGoal }: { onNext: (goal: s
             onClick={() => { onGoalSelect(g.label); onNext(g.label); }}
             style={{
               background: selectedGoal === g.label ? 'rgba(45,74,43,0.08)' : '#fff',
-              border: `2px solid ${selectedGoal === g.label ? '#2D4A2B' : '#E8E4DC'}`,
+              border: `2px solid ${selectedGoal === g.label ? 'var(--moss)' : 'var(--div)'}`,
               borderRadius: 12, padding: '16px 14px',
               cursor: 'pointer', textAlign: 'left',
               transition: 'all 0.15s',
               fontFamily: 'DM Sans, sans-serif',
             }}
-            onMouseEnter={e => { if (selectedGoal !== g.label) e.currentTarget.style.borderColor = '#2D4A2B'; }}
-            onMouseLeave={e => { if (selectedGoal !== g.label) e.currentTarget.style.borderColor = '#E8E4DC'; }}
+            onMouseEnter={e => { if (selectedGoal !== g.label) e.currentTarget.style.borderColor = 'var(--moss)'; }}
+            onMouseLeave={e => { if (selectedGoal !== g.label) e.currentTarget.style.borderColor = 'var(--div)'; }}
           >
             <div style={{ fontSize: 24, marginBottom: 6 }}>{g.icon}</div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#2A2A2A' }}>{g.label}</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{g.label}</div>
           </button>
         ))}
       </div>
@@ -152,7 +152,7 @@ function Step0Welcome({ onNext, onGoalSelect, selectedGoal }: { onNext: (goal: s
         <button
           onClick={() => onNext('custom')}
           style={{
-            background: 'none', border: 'none', color: '#9B9B9B',
+            background: 'none', border: 'none', color: 'var(--disabled)',
             fontSize: 13, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
             textDecoration: 'underline', textDecorationColor: 'rgba(0,0,0,0.15)',
           }}
@@ -168,7 +168,7 @@ function Step0Welcome({ onNext, onGoalSelect, selectedGoal }: { onNext: (goal: s
             background: 'rgba(45,74,43,0.06)',
             border: '1px solid rgba(45,74,43,0.2)',
             borderRadius: 8, fontSize: 12, fontWeight: 600,
-            color: '#2D4A2B', textDecoration: 'none',
+            color: 'var(--moss)', textDecoration: 'none',
             fontFamily: 'DM Sans, sans-serif',
           }}
         >
@@ -186,25 +186,25 @@ function Step1AiProvider({ onNext, onSkip, selected, onSelect }: {
 }) {
   return (
     <div>
-      <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 26, fontWeight: 700, color: '#2A2A2A', marginBottom: 8, letterSpacing: '-0.5px' }}>
+      <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 26, fontWeight: 700, color: 'var(--text)', marginBottom: 8, letterSpacing: '-0.5px' }}>
         How do you want Goblin to think?
       </h1>
-      <p style={{ fontSize: 14, color: '#6B6B6B', fontFamily: 'DM Sans, sans-serif', marginBottom: 28, lineHeight: 1.6 }}>
+      <p style={{ fontSize: 14, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif', marginBottom: 28, lineHeight: 1.6 }}>
         Goblin routes your requests to AI providers. All paths work — pick what fits.
       </p>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
         {AI_PROVIDERS.map(p => (
           <OptionCard key={p.id} selected={selected === p.id} onClick={() => onSelect(p.id)}>
-            <div style={{ fontWeight: 600, fontSize: 14, color: '#2A2A2A', marginBottom: 4 }}>{p.label}</div>
-            <div style={{ fontSize: 12, color: '#6B6B6B', lineHeight: 1.5, marginBottom: p.providers ? 10 : 0 }}>
+            <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', marginBottom: 4 }}>{p.label}</div>
+            <div style={{ fontSize: 12, color: 'var(--meta)', lineHeight: 1.5, marginBottom: p.providers ? 10 : 0 }}>
               {p.description}
             </div>
             {selected === p.id && p.providers && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
                 {p.providers.map(prov => (
                   <a key={prov.name} href={prov.href} target="_blank" rel="noopener noreferrer"
-                    style={{ fontSize: 12, color: '#2D4A2B', textDecoration: 'none', fontWeight: 500 }}
+                    style={{ fontSize: 12, color: 'var(--moss)', textDecoration: 'none', fontWeight: 500 }}
                     onClick={e => e.stopPropagation()}
                   >
                     {prov.name} →
@@ -222,8 +222,8 @@ function Step1AiProvider({ onNext, onSkip, selected, onSelect }: {
           onClick={() => selected && onNext(selected)}
           disabled={!selected}
           style={{
-            padding: '10px 24px', background: selected ? '#2D4A2B' : '#E8E4DC',
-            color: selected ? '#fff' : '#9B9B9B',
+            padding: '10px 24px', background: selected ? 'var(--moss)' : 'var(--div)',
+            color: selected ? '#fff' : 'var(--disabled)',
             border: 'none', borderRadius: 9, fontSize: 13, fontWeight: 600,
             cursor: selected ? 'pointer' : 'not-allowed',
             fontFamily: 'DM Sans, sans-serif', transition: 'all 0.15s',
@@ -242,26 +242,26 @@ function Step2CodeHosting({ onNext, onSkip, selected, onSelect }: {
 }) {
   return (
     <div>
-      <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 26, fontWeight: 700, color: '#2A2A2A', marginBottom: 8, letterSpacing: '-0.5px' }}>
+      <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 26, fontWeight: 700, color: 'var(--text)', marginBottom: 8, letterSpacing: '-0.5px' }}>
         Where should your code live?
       </h1>
-      <p style={{ fontSize: 14, color: '#6B6B6B', fontFamily: 'DM Sans, sans-serif', marginBottom: 28, lineHeight: 1.6 }}>
+      <p style={{ fontSize: 14, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif', marginBottom: 28, lineHeight: 1.6 }}>
         Goblin can push your projects to GitHub automatically.
       </p>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
         <OptionCard selected={selected === 'github'} onClick={() => onSelect('github')}>
-          <div style={{ fontWeight: 600, fontSize: 14, color: '#2A2A2A', marginBottom: 4 }}>
-            GitHub <span style={{ fontSize: 10, background: 'rgba(45,74,43,0.1)', color: '#2D4A2B', padding: '1px 6px', borderRadius: 4, fontWeight: 600, marginLeft: 6 }}>Recommended</span>
+          <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', marginBottom: 4 }}>
+            GitHub <span style={{ fontSize: 10, background: 'rgba(45,74,43,0.1)', color: 'var(--moss)', padding: '1px 6px', borderRadius: 4, fontWeight: 600, marginLeft: 6 }}>Recommended</span>
           </div>
-          <div style={{ fontSize: 12, color: '#6B6B6B', lineHeight: 1.5 }}>
+          <div style={{ fontSize: 12, color: 'var(--meta)', lineHeight: 1.5 }}>
             Connect your GitHub account. Push code with one click, open source or private.
           </div>
           {selected === 'github' && (
             <a
               href="/api/github/connect"
               onClick={e => e.stopPropagation()}
-              style={{ display: 'inline-block', marginTop: 10, fontSize: 12, color: '#2D4A2B', fontWeight: 600, textDecoration: 'none' }}
+              style={{ display: 'inline-block', marginTop: 10, fontSize: 12, color: 'var(--moss)', fontWeight: 600, textDecoration: 'none' }}
             >
               Connect GitHub →
             </a>
@@ -269,17 +269,17 @@ function Step2CodeHosting({ onNext, onSkip, selected, onSelect }: {
         </OptionCard>
 
         <OptionCard selected={selected === 'gitlab'} onClick={() => onSelect('gitlab')} disabled>
-          <div style={{ fontWeight: 600, fontSize: 14, color: '#2A2A2A', marginBottom: 4 }}>
-            GitLab <span style={{ fontSize: 10, background: '#F0ECE4', color: '#9B9B9B', padding: '1px 6px', borderRadius: 4, fontWeight: 600, marginLeft: 6 }}>Coming soon</span>
+          <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', marginBottom: 4 }}>
+            GitLab <span style={{ fontSize: 10, background: '#F0ECE4', color: 'var(--disabled)', padding: '1px 6px', borderRadius: 4, fontWeight: 600, marginLeft: 6 }}>Coming soon</span>
           </div>
-          <div style={{ fontSize: 12, color: '#9B9B9B', lineHeight: 1.5 }}>
+          <div style={{ fontSize: 12, color: 'var(--disabled)', lineHeight: 1.5 }}>
             GitLab support is planned for Phase 2. Use GitHub for now.
           </div>
         </OptionCard>
 
         <OptionCard selected={selected === 'goblin_cloud'} onClick={() => onSelect('goblin_cloud')}>
-          <div style={{ fontWeight: 600, fontSize: 14, color: '#2A2A2A', marginBottom: 4 }}>Goblin Cloud only</div>
-          <div style={{ fontSize: 12, color: '#6B6B6B', lineHeight: 1.5 }}>
+          <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', marginBottom: 4 }}>Goblin Cloud only</div>
+          <div style={{ fontSize: 12, color: 'var(--meta)', lineHeight: 1.5 }}>
             Keep everything in Goblin. No GitHub needed. Download as ZIP anytime.
           </div>
         </OptionCard>
@@ -291,8 +291,8 @@ function Step2CodeHosting({ onNext, onSkip, selected, onSelect }: {
           onClick={() => selected && onNext(selected)}
           disabled={!selected}
           style={{
-            padding: '10px 24px', background: selected ? '#2D4A2B' : '#E8E4DC',
-            color: selected ? '#fff' : '#9B9B9B',
+            padding: '10px 24px', background: selected ? 'var(--moss)' : 'var(--div)',
+            color: selected ? '#fff' : 'var(--disabled)',
             border: 'none', borderRadius: 9, fontSize: 13, fontWeight: 600,
             cursor: selected ? 'pointer' : 'not-allowed',
             fontFamily: 'DM Sans, sans-serif', transition: 'all 0.15s',
@@ -311,33 +311,33 @@ function Step3DeployTarget({ onNext, onSkip, selected, onSelect }: {
 }) {
   return (
     <div>
-      <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 26, fontWeight: 700, color: '#2A2A2A', marginBottom: 8, letterSpacing: '-0.5px' }}>
+      <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 26, fontWeight: 700, color: 'var(--text)', marginBottom: 8, letterSpacing: '-0.5px' }}>
         Where should your app go live?
       </h1>
-      <p style={{ fontSize: 14, color: '#6B6B6B', fontFamily: 'DM Sans, sans-serif', marginBottom: 28, lineHeight: 1.6 }}>
+      <p style={{ fontSize: 14, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif', marginBottom: 28, lineHeight: 1.6 }}>
         You can always change this later — or skip it for now.
       </p>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 24 }}>
         <OptionCard selected={selected === 'vercel'} onClick={() => onSelect('vercel')}>
-          <div style={{ fontWeight: 600, fontSize: 14, color: '#2A2A2A', marginBottom: 4 }}>
-            Vercel <span style={{ fontSize: 10, background: 'rgba(45,74,43,0.1)', color: '#2D4A2B', padding: '1px 6px', borderRadius: 4, fontWeight: 600, marginLeft: 6 }}>Recommended for web</span>
+          <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', marginBottom: 4 }}>
+            Vercel <span style={{ fontSize: 10, background: 'rgba(45,74,43,0.1)', color: 'var(--moss)', padding: '1px 6px', borderRadius: 4, fontWeight: 600, marginLeft: 6 }}>Recommended for web</span>
           </div>
-          <div style={{ fontSize: 12, color: '#6B6B6B', lineHeight: 1.5 }}>
+          <div style={{ fontSize: 12, color: 'var(--meta)', lineHeight: 1.5 }}>
             Deploy in seconds. Free tier available. Best for Next.js, React, and static sites.
           </div>
         </OptionCard>
 
         <OptionCard selected={selected === 'netlify'} onClick={() => onSelect('netlify')} disabled>
-          <div style={{ fontWeight: 600, fontSize: 14, color: '#2A2A2A', marginBottom: 4 }}>
-            Netlify <span style={{ fontSize: 10, background: '#F0ECE4', color: '#9B9B9B', padding: '1px 6px', borderRadius: 4, fontWeight: 600, marginLeft: 6 }}>Coming soon</span>
+          <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', marginBottom: 4 }}>
+            Netlify <span style={{ fontSize: 10, background: '#F0ECE4', color: 'var(--disabled)', padding: '1px 6px', borderRadius: 4, fontWeight: 600, marginLeft: 6 }}>Coming soon</span>
           </div>
-          <div style={{ fontSize: 12, color: '#9B9B9B', lineHeight: 1.5 }}>Netlify support is in Phase 2.</div>
+          <div style={{ fontSize: 12, color: 'var(--disabled)', lineHeight: 1.5 }}>Netlify support is in Phase 2.</div>
         </OptionCard>
 
         <OptionCard selected={selected === 'preview_only'} onClick={() => onSelect('preview_only')}>
-          <div style={{ fontWeight: 600, fontSize: 14, color: '#2A2A2A', marginBottom: 4 }}>Just preview in Goblin</div>
-          <div style={{ fontSize: 12, color: '#6B6B6B', lineHeight: 1.5 }}>
+          <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', marginBottom: 4 }}>Just preview in Goblin</div>
+          <div style={{ fontSize: 12, color: 'var(--meta)', lineHeight: 1.5 }}>
             No external deploy. See your app in the Preview tab — good for prototyping.
           </div>
         </OptionCard>
@@ -348,7 +348,7 @@ function Step3DeployTarget({ onNext, onSkip, selected, onSelect }: {
         <button
           onClick={() => selected ? onNext(selected) : onNext('skip')}
           style={{
-            padding: '10px 24px', background: '#2D4A2B', color: '#fff',
+            padding: '10px 24px', background: 'var(--moss)', color: '#fff',
             border: 'none', borderRadius: 9, fontSize: 13, fontWeight: 600,
             cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
           }}
@@ -379,10 +379,10 @@ function Step4Done({ state }: { state: OnboardingState }) {
   return (
     <div style={{ textAlign: 'center' }}>
       <div style={{ fontSize: 48, marginBottom: 16 }}>🎉</div>
-      <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 26, fontWeight: 700, color: '#2A2A2A', marginBottom: 8, letterSpacing: '-0.5px' }}>
+      <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 26, fontWeight: 700, color: 'var(--text)', marginBottom: 8, letterSpacing: '-0.5px' }}>
         You&apos;re ready to build.
       </h1>
-      <p style={{ fontSize: 14, color: '#6B6B6B', fontFamily: 'DM Sans, sans-serif', marginBottom: 28, lineHeight: 1.6 }}>
+      <p style={{ fontSize: 14, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif', marginBottom: 28, lineHeight: 1.6 }}>
         Goblin is set up and ready. Start your first project.
       </p>
 
@@ -392,7 +392,7 @@ function Step4Done({ state }: { state: OnboardingState }) {
           borderRadius: 10, padding: '12px 16px', marginBottom: 28, textAlign: 'left',
         }}>
           {setupDone.map(item => (
-            <div key={item} style={{ fontSize: 12, color: '#2D4A2B', fontFamily: 'DM Sans, sans-serif', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div key={item} style={{ fontSize: 12, color: 'var(--moss)', fontFamily: 'DM Sans, sans-serif', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 6 }}>
               <span>✓</span> {item}
             </div>
           ))}
@@ -403,7 +403,7 @@ function Step4Done({ state }: { state: OnboardingState }) {
         onClick={() => router.push('/dashboard?tour=1')}
         style={{
           display: 'block', width: '100%',
-          padding: '13px 0', background: '#2D4A2B', color: '#D4A94A',
+          padding: '13px 0', background: 'var(--moss)', color: 'var(--ochre)',
           border: 'none', borderRadius: 10, fontSize: 15, fontWeight: 700,
           cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
           marginBottom: 12,
@@ -416,7 +416,7 @@ function Step4Done({ state }: { state: OnboardingState }) {
         onClick={() => router.push('/dashboard/settings/keys')}
         style={{
           display: 'block', width: '100%',
-          padding: '11px 0', background: 'transparent', color: '#2D4A2B',
+          padding: '11px 0', background: 'transparent', color: 'var(--moss)',
           border: '1.5px solid rgba(45,74,43,0.3)', borderRadius: 10, fontSize: 13, fontWeight: 500,
           cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
         }}
@@ -487,7 +487,7 @@ export default function OnboardingPage() {
   if (!loaded) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100dvh' }}>
-        <div style={{ width: 32, height: 32, borderRadius: '50%', border: '3px solid #E8E4DC', borderTopColor: '#2D4A2B', animation: 'spin 0.8s linear infinite' }} />
+        <div style={{ width: 32, height: 32, borderRadius: '50%', border: '3px solid #E8E4DC', borderTopColor: 'var(--moss)', animation: 'spin 0.8s linear infinite' }} />
         <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
       </div>
     );
@@ -497,10 +497,10 @@ export default function OnboardingPage() {
     <div style={{ minHeight: '100dvh', background: 'var(--cream)', display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '32px 16px 64px' }}>
       {/* Logo */}
       <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', gap: 8 }}>
-        <div style={{ width: 36, height: 36, borderRadius: 9, background: '#2D4A2B', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <span style={{ fontSize: 16, fontWeight: 700, color: '#D4A94A', fontFamily: 'Fraunces, serif' }}>G</span>
+        <div style={{ width: 36, height: 36, borderRadius: 9, background: 'var(--moss)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--ochre)', fontFamily: 'Fraunces, serif' }}>G</span>
         </div>
-        <span style={{ fontFamily: 'Fraunces, serif', fontSize: 18, fontWeight: 700, color: '#2D4A2B', letterSpacing: '-0.3px' }}>
+        <span style={{ fontFamily: 'Fraunces, serif', fontSize: 18, fontWeight: 700, color: 'var(--moss)', letterSpacing: '-0.3px' }}>
           Goblin
         </span>
       </div>
@@ -547,7 +547,7 @@ export default function OnboardingPage() {
           <div style={{ textAlign: 'center', marginTop: 16 }}>
             <button
               onClick={() => router.push('/dashboard')}
-              style={{ background: 'none', border: 'none', color: '#9B9B9B', fontSize: 13, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', textDecoration: 'underline' }}
+              style={{ background: 'none', border: 'none', color: 'var(--disabled)', fontSize: 13, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', textDecoration: 'underline' }}
             >
               Go to dashboard
             </button>

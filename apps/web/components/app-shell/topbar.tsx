@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useState, useEffect } from 'react';
@@ -100,7 +100,7 @@ export function Topbar({
   return (
     <header style={{
       height: 48,
-      background: '#2D4A2B',
+      background: 'var(--moss)',
       display: 'flex',
       alignItems: 'center',
       padding: '0 16px',
@@ -136,7 +136,7 @@ export function Topbar({
           onClick={() => router.push('/dashboard')}
           style={{
             fontFamily: 'Fraunces, serif', fontSize: 18,
-            color: '#D4A94A', fontWeight: 700,
+            color: 'var(--ochre)', fontWeight: 700,
             letterSpacing: '-0.5px',
             userSelect: 'none', background: 'none', border: 'none',
             cursor: 'pointer', padding: '6px 4px',
@@ -205,7 +205,7 @@ export function Topbar({
                   position: 'absolute', bottom: 0, left: '50%',
                   transform: 'translateX(-50%)',
                   width: '60%', height: 2,
-                  background: '#D4A94A', borderRadius: '1px 1px 0 0',
+                  background: 'var(--ochre)', borderRadius: '1px 1px 0 0',
                   display: 'block',
                 }} />
               )}
@@ -213,7 +213,7 @@ export function Topbar({
                 <span style={{
                   position: 'absolute', top: 10, right: 10,
                   width: 5, height: 5, borderRadius: '50%',
-                  background: '#D4A94A',
+                  background: 'var(--ochre)',
                 }} />
               )}
             </button>
@@ -234,13 +234,13 @@ export function Topbar({
           aria-label="User menu"
           style={{
             width: 30, height: 30, borderRadius: '50%',
-            background: '#c9933a', border: 'none',
+            background: 'var(--ochre-dark)', border: 'none',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontSize: 12, fontWeight: 700, color: '#2a1f0f',
             cursor: 'pointer', transition: 'background 0.15s',
           }}
           onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#e8b05a'}
-          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = '#c9933a'}
+          onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'var(--ochre-dark)'}
         >
           {userInfo?.avatarInitial ?? 'U'}
         </button>

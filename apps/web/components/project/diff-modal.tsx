@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { parsePatch } from "diff";
@@ -72,9 +72,9 @@ export function DiffModal({ filePath, currentContent, proposedContent, diff, onA
               {hasChanges && (
                 <>
                   {' · '}
-                  <span style={{ color: '#4a7c3b' }}>+{addCount}</span>
+                  <span style={{ color: 'var(--success)' }}>+{addCount}</span>
                   {' '}
-                  <span style={{ color: '#b85c3c' }}>−{removeCount}</span>
+                  <span style={{ color: 'var(--danger)' }}>−{removeCount}</span>
                 </>
               )}
             </div>
@@ -106,12 +106,12 @@ export function DiffModal({ filePath, currentContent, proposedContent, diff, onA
                     style={{
                       display: 'flex', alignItems: 'flex-start',
                       background: line.type === 'add' ? 'rgba(74,124,59,0.15)' : line.type === 'remove' ? 'rgba(184,92,60,0.12)' : 'transparent',
-                      borderLeft: `3px solid ${line.type === 'add' ? '#4a7c3b' : line.type === 'remove' ? '#b85c3c' : 'transparent'}`,
+                      borderLeft: `3px solid ${line.type === 'add' ? 'var(--success)' : line.type === 'remove' ? 'var(--danger)' : 'transparent'}`,
                     }}
                   >
                     <span style={{
                       width: 20, flexShrink: 0, textAlign: 'center', padding: '1px 0',
-                      color: line.type === 'add' ? '#4a7c3b' : line.type === 'remove' ? '#b85c3c' : '#2d4a2b',
+                      color: line.type === 'add' ? 'var(--success)' : line.type === 'remove' ? 'var(--danger)' : 'var(--moss)',
                       fontSize: 11, userSelect: 'none',
                     }}>
                       {line.type === 'add' ? '+' : line.type === 'remove' ? '−' : ' '}
@@ -151,8 +151,8 @@ export function DiffModal({ filePath, currentContent, proposedContent, diff, onA
             onClick={onApply}
             disabled={!hasChanges}
             style={{
-              background: hasChanges ? '#2D4A2B' : 'rgba(45,74,43,0.3)',
-              border: 'none', color: hasChanges ? '#D4A94A' : '#4a6a4a',
+              background: hasChanges ? 'var(--moss)' : 'rgba(45,74,43,0.3)',
+              border: 'none', color: hasChanges ? 'var(--ochre)' : '#4a6a4a',
               borderRadius: 8, padding: '8px 22px',
               fontSize: 13, fontWeight: 600, cursor: hasChanges ? 'pointer' : 'not-allowed',
               fontFamily: 'DM Sans, sans-serif',

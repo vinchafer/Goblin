@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiGet } from '@/lib/api';
@@ -47,13 +47,13 @@ export function TrialBanner() {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         gap: 12, flexShrink: 0, flexWrap: 'wrap',
       }}>
-        <span style={{ fontSize: 13, color: '#B85C3C', fontFamily: 'DM Sans, sans-serif', fontWeight: 500 }}>
+        <span style={{ fontSize: 13, color: 'var(--danger)', fontFamily: 'DM Sans, sans-serif', fontWeight: 500 }}>
           Your free trial has ended.
         </span>
         <button
           onClick={() => router.push('/dashboard/upgrade')}
           style={{
-            padding: '5px 14px', background: '#B85C3C', color: '#fff',
+            padding: '5px 14px', background: 'var(--danger)', color: '#fff',
             border: 'none', borderRadius: 7, fontSize: 12, fontWeight: 600,
             cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
           }}
@@ -77,7 +77,7 @@ export function TrialBanner() {
       }}>
         <span style={{
           fontSize: 12, fontFamily: 'DM Sans, sans-serif',
-          color: urgent ? '#b88a20' : '#2D4A2B', fontWeight: 500, flex: 1,
+          color: urgent ? '#b88a20' : 'var(--moss)', fontWeight: 500, flex: 1,
         }}>
           {days === 0
             ? 'Trial ends today.'

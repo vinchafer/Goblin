@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState } from 'react';
 
 const STEPS = [
@@ -64,17 +64,17 @@ export function FirstRunTour({ onDone }: FirstRunTourProps) {
           {STEPS.map((_, i) => (
             <div key={i} style={{
               height: 4, flex: 1, borderRadius: 2,
-              background: i <= step ? '#2D4A2B' : '#E8E4DC',
+              background: i <= step ? 'var(--moss)' : 'var(--div)',
               transition: 'background 0.2s',
             }} />
           ))}
         </div>
 
         <div style={{ fontSize: 28, marginBottom: 10 }}>{current.icon}</div>
-        <h3 style={{ fontSize: 16, fontWeight: 700, color: '#2A2A2A', margin: '0 0 8px', letterSpacing: '-0.3px' }}>
+        <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', margin: '0 0 8px', letterSpacing: '-0.3px' }}>
           {current.title}
         </h3>
-        <p style={{ fontSize: 13, color: '#6B6B6B', lineHeight: 1.6, margin: '0 0 20px' }}>
+        <p style={{ fontSize: 13, color: 'var(--meta)', lineHeight: 1.6, margin: '0 0 20px' }}>
           {current.body}
         </p>
 
@@ -83,7 +83,7 @@ export function FirstRunTour({ onDone }: FirstRunTourProps) {
             onClick={onDone}
             style={{
               background: 'none', border: 'none',
-              color: '#9B9B9B', fontSize: 12, cursor: 'pointer',
+              color: 'var(--disabled)', fontSize: 12, cursor: 'pointer',
               textDecoration: 'underline', textDecorationColor: 'rgba(0,0,0,0.15)',
             }}
           >
@@ -94,7 +94,7 @@ export function FirstRunTour({ onDone }: FirstRunTourProps) {
             onClick={() => isLast ? onDone() : setStep(s => s + 1)}
             style={{
               padding: '9px 20px',
-              background: '#2D4A2B', color: '#D4A94A',
+              background: 'var(--moss)', color: 'var(--ochre)',
               border: 'none', borderRadius: 8,
               fontSize: 13, fontWeight: 600,
               cursor: 'pointer',

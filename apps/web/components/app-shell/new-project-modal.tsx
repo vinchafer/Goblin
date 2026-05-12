@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -7,10 +7,10 @@ import { createClient } from "@/lib/supabase/client";
 import type { Project } from "@goblin/shared/src/schemas";
 
 const COLOR_PRESETS = [
-  { hex: '#D4A94A', label: 'Ochre' },
-  { hex: '#2D4A2B', label: 'Moss' },
-  { hex: '#B85C3C', label: 'Rust' },
-  { hex: '#2A2A2A', label: 'Slate' },
+  { hex: 'var(--ochre)', label: 'Ochre' },
+  { hex: 'var(--moss)', label: 'Moss' },
+  { hex: 'var(--danger)', label: 'Rust' },
+  { hex: 'var(--text)', label: 'Slate' },
   { hex: '#7A4A8A', label: 'Purple' },
   { hex: '#4A7A7A', label: 'Teal' },
   { hex: '#8A3A5A', label: 'Pink' },

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { SupportChat } from './support-chat';
@@ -27,7 +27,7 @@ export function SupportBubble() {
               position: 'fixed',
               bottom: 84, right: 20,
               width: 360, height: 520,
-              background: '#F7F4ED',
+              background: 'var(--cream)',
               borderRadius: 16,
               border: '1px solid #E8E4DC',
               boxShadow: '0 8px 40px rgba(0,0,0,0.18)',
@@ -50,7 +50,7 @@ export function SupportBubble() {
           bottom: 20, right: 20,
           width: 54, height: 54,
           borderRadius: '50%',
-          background: open ? '#1a2e18' : '#2D4A2B',
+          background: open ? '#1a2e18' : 'var(--moss)',
           border: 'none',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           cursor: 'pointer',
@@ -66,7 +66,7 @@ export function SupportBubble() {
             <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         ) : (
-          <span style={{ fontFamily: 'Fraunces, serif', fontSize: 20, fontWeight: 700, color: '#D4A94A', lineHeight: 1 }}>?</span>
+          <span style={{ fontFamily: 'Fraunces, serif', fontSize: 20, fontWeight: 700, color: 'var(--ochre)', lineHeight: 1 }}>?</span>
         )}
       </button>
 

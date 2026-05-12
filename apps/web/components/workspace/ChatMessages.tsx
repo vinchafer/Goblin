@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useRef, useEffect } from "react";
 import { ChatMessageItem } from "./ChatMessage";
@@ -52,12 +52,12 @@ function EmptyState({ onSuggestion }: { onSuggestion: (s: string) => void }) {
       <div style={{ fontSize: 48, marginBottom: 14, lineHeight: 1, userSelect: 'none' }}>👺</div>
       <h3 style={{
         fontFamily: 'Fraunces, serif', fontSize: 22,
-        color: '#2D4A2B', fontWeight: 700, marginBottom: 8, letterSpacing: '-0.3px',
+        color: 'var(--moss)', fontWeight: 700, marginBottom: 8, letterSpacing: '-0.3px',
       }}>
         Dein Goblin ist bereit.
       </h3>
       <p style={{
-        fontSize: 13, color: '#6B6B6B',
+        fontSize: 13, color: 'var(--meta)',
         fontFamily: 'DM Sans, sans-serif',
         marginBottom: 8, maxWidth: 340, lineHeight: 1.6,
       }}>
@@ -75,14 +75,14 @@ function EmptyState({ onSuggestion }: { onSuggestion: (s: string) => void }) {
               onClick={() => onSuggestion(s.prompt)}
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
-                fontSize: 13, color: '#4A4A4A',
+                fontSize: 13, color: 'var(--text-2)',
                 fontFamily: 'DM Sans, sans-serif', textAlign: 'left',
                 padding: '4px 0', lineHeight: 1.5, display: 'flex', alignItems: 'flex-start', gap: 8,
               }}
-              onMouseEnter={e => (e.currentTarget.style.color = '#2D4A2B')}
-              onMouseLeave={e => (e.currentTarget.style.color = '#4A4A4A')}
+              onMouseEnter={e => (e.currentTarget.style.color = 'var(--moss)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-2)')}
             >
-              <span style={{ color: '#D4A94A', flexShrink: 0, fontSize: 12, marginTop: 2 }}>•</span>
+              <span style={{ color: 'var(--ochre)', flexShrink: 0, fontSize: 12, marginTop: 2 }}>•</span>
               <span>&ldquo;{s.label}&rdquo;</span>
             </button>
           </li>
@@ -97,12 +97,12 @@ function EmptyState({ onSuggestion }: { onSuggestion: (s: string) => void }) {
             style={{
               padding: '7px 14px', borderRadius: 20,
               border: '1px solid #DDD7CC',
-              background: '#fff', color: '#2A2A2A',
+              background: '#fff', color: 'var(--text)',
               fontSize: 12, fontFamily: 'DM Sans, sans-serif',
               cursor: 'pointer', transition: 'all 0.15s',
             }}
-            onMouseEnter={e => { e.currentTarget.style.background = '#2D4A2B'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = '#2D4A2B'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = '#2A2A2A'; e.currentTarget.style.borderColor = '#DDD7CC'; }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'var(--moss)'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'var(--moss)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = 'var(--text)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
           >
             {s.label}
           </button>
@@ -180,7 +180,7 @@ export function ChatMessages({
               {isNoModel ? (
                 <>
                   No model connected.{' '}
-                  <a href="/dashboard/settings/keys" style={{ color: '#D4A94A', fontWeight: 600, textDecoration: 'underline' }}>
+                  <a href="/dashboard/settings/keys" style={{ color: 'var(--ochre)', fontWeight: 600, textDecoration: 'underline' }}>
                     Add an API key →
                   </a>
                 </>
@@ -188,7 +188,7 @@ export function ChatMessages({
             </span>
             <button
               onClick={onDismissError}
-              style={{ fontSize: 16, background: 'none', border: 'none', color: '#9C9589', cursor: 'pointer', lineHeight: 1, padding: '0 2px', flexShrink: 0 }}
+              style={{ fontSize: 16, background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', lineHeight: 1, padding: '0 2px', flexShrink: 0 }}
               aria-label="Dismiss"
             >×</button>
           </div>
@@ -201,7 +201,7 @@ export function ChatMessages({
       {tokenInfo && (
         <div style={{
           padding: '3px 16px', flexShrink: 0,
-          fontSize: 11, color: '#9C9589',
+          fontSize: 11, color: 'var(--text-faint)',
           fontFamily: 'JetBrains Mono, monospace',
           background: 'var(--cream, #F7F4ED)',
           display: 'flex', gap: 6, alignItems: 'center',

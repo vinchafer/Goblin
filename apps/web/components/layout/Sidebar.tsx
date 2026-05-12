@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
@@ -31,8 +31,8 @@ interface SidebarProps {
 }
 
 const PROJECT_COLORS = [
-  '#D4A94A', '#4A7C3B', '#7A4A8A',
-  '#3A6B8A', '#B85C3C', '#4A7A7A', '#2D4A2B',
+  'var(--ochre)', 'var(--success)', '#7A4A8A',
+  '#3A6B8A', 'var(--danger)', '#4A7A7A', 'var(--moss)',
 ];
 
 function timeAgo(dateStr?: string): string {
@@ -151,7 +151,7 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
                 onClick={() => navigate('/dashboard')}
                 style={{
                   fontFamily: 'Fraunces, serif', fontSize: 17,
-                  color: '#2D4A2B', fontWeight: 700, letterSpacing: '-0.3px',
+                  color: 'var(--moss)', fontWeight: 700, letterSpacing: '-0.3px',
                   cursor: 'pointer', userSelect: 'none', flexShrink: 0,
                 }}
               >
@@ -193,7 +193,7 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
                 background: 'rgba(45,74,43,0.08)',
                 border: 'none',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', color: '#2D4A2B', flexShrink: 0,
+                cursor: 'pointer', color: 'var(--moss)', flexShrink: 0,
                 transition: 'background 0.15s',
               }}
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(45,74,43,0.14)')}
@@ -210,7 +210,7 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
             onClick={() => { setShowNewProjectModal(true); onClose?.(); }}
             title="New Project"
             style={{
-              width: '100%', background: '#2D4A2B', color: '#fff',
+              width: '100%', background: 'var(--moss)', color: '#fff',
               border: 'none', borderRadius: 8,
               padding: collapsed ? '8px 0' : '9px 12px',
               fontSize: 13, fontWeight: 500,
@@ -225,7 +225,7 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
               whiteSpace: 'nowrap',
             }}
             onMouseEnter={e => (e.currentTarget.style.background = '#3A5A37')}
-            onMouseLeave={e => (e.currentTarget.style.background = '#2D4A2B')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'var(--moss)')}
           >
             <span style={{ fontSize: 16, flexShrink: 0, lineHeight: 1 }}>＋</span>
             {!collapsed && 'New Project'}
@@ -239,7 +239,7 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
               padding: '4px 16px 6px',
               fontSize: 10, fontWeight: 600,
               letterSpacing: '1.2px', textTransform: 'uppercase',
-              color: '#9C9589',
+              color: 'var(--text-faint)',
             }}>
               Projects
             </div>
@@ -249,7 +249,7 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
             !collapsed && (
               <div style={{
                 padding: '8px 16px', fontSize: 12,
-                color: '#9C9589', fontStyle: 'italic',
+                color: 'var(--text-faint)', fontStyle: 'italic',
                 fontFamily: 'DM Sans, sans-serif',
               }}>
                 No projects yet
@@ -286,14 +286,14 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
                       <>
                         <span style={{
                           fontSize: 13, fontWeight: active ? 600 : 400,
-                          color: active ? '#2D4A2B' : '#2A2A2A',
+                          color: active ? 'var(--moss)' : 'var(--text)',
                           flex: 1, overflow: 'hidden', textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
                           fontFamily: 'DM Sans, sans-serif',
                         }}>
                           {p.name}
                         </span>
-                        <span style={{ fontSize: 10, color: '#9C9589', flexShrink: 0 }}>
+                        <span style={{ fontSize: 10, color: 'var(--text-faint)', flexShrink: 0 }}>
                           {timeAgo(p.updated_at ?? p.last_active)}
                         </span>
                       </>
@@ -382,7 +382,7 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
             onClick={() => navigate('/dashboard')}
             style={{
               fontFamily: 'Fraunces, serif', fontSize: 17,
-              color: '#2D4A2B', fontWeight: 700, letterSpacing: '-0.3px',
+              color: 'var(--moss)', fontWeight: 700, letterSpacing: '-0.3px',
               cursor: 'pointer', userSelect: 'none',
             }}
           >
@@ -403,14 +403,14 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
           <button
             onClick={() => { setShowNewProjectModal(true); onClose?.(); }}
             style={{
-              width: '100%', background: '#2D4A2B', color: '#fff',
+              width: '100%', background: 'var(--moss)', color: '#fff',
               border: 'none', borderRadius: 8, padding: '9px 12px',
               fontSize: 13, fontWeight: 500, cursor: 'pointer',
               display: 'flex', alignItems: 'center', gap: 7,
               fontFamily: 'DM Sans, sans-serif', transition: 'background 0.15s', minHeight: 36,
             }}
             onMouseEnter={e => (e.currentTarget.style.background = '#3A5A37')}
-            onMouseLeave={e => (e.currentTarget.style.background = '#2D4A2B')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'var(--moss)')}
           >
             <span style={{ fontSize: 16, lineHeight: 1 }}>＋</span>
             New Project
@@ -421,7 +421,7 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
         <div style={{ flex: 1, overflowY: 'auto' }}>
           <div style={{
             padding: '4px 16px 6px', fontSize: 10, fontWeight: 600,
-            letterSpacing: '1.2px', textTransform: 'uppercase', color: '#9C9589',
+            letterSpacing: '1.2px', textTransform: 'uppercase', color: 'var(--text-faint)',
           }}>Projects</div>
           <div style={{ padding: '0 8px 8px' }}>
             {projects.map((p, i) => {
@@ -443,11 +443,11 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
                   <div style={{ width: 8, height: 8, borderRadius: '50%', background: dotColor, flexShrink: 0 }} />
                   <span style={{
                     fontSize: 13, fontWeight: active ? 600 : 400,
-                    color: active ? '#2D4A2B' : '#2A2A2A',
+                    color: active ? 'var(--moss)' : 'var(--text)',
                     flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                     fontFamily: 'DM Sans, sans-serif',
                   }}>{p.name}</span>
-                  <span style={{ fontSize: 10, color: '#9C9589', flexShrink: 0 }}>
+                  <span style={{ fontSize: 10, color: 'var(--text-faint)', flexShrink: 0 }}>
                     {timeAgo(p.updated_at ?? p.last_active)}
                   </span>
                 </div>
@@ -543,15 +543,15 @@ function RecentChats({ pathname, navigate }: { pathname: string; navigate: (path
     <div style={{ borderTop: '1px solid #DDD7CC', padding: '8px 0 0' }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 16px 6px' }}>
-        <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '1.2px', textTransform: 'uppercase', color: '#9C9589' }}>
+        <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '1.2px', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
           Recent Chats
         </span>
         <button
           onClick={handleNewChat}
           title="New chat"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: '#9C9589', padding: '0 2px', lineHeight: 1, display: 'flex', alignItems: 'center' }}
-          onMouseEnter={e => (e.currentTarget.style.color = '#2D4A2B')}
-          onMouseLeave={e => (e.currentTarget.style.color = '#9C9589')}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: 'var(--text-faint)', padding: '0 2px', lineHeight: 1, display: 'flex', alignItems: 'center' }}
+          onMouseEnter={e => (e.currentTarget.style.color = 'var(--moss)')}
+          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}
         >
           +
         </button>
@@ -560,10 +560,10 @@ function RecentChats({ pathname, navigate }: { pathname: string; navigate: (path
       <div style={{ padding: '0 8px 8px' }}>
         {loading ? (
           [1, 2].map(i => (
-            <div key={i} style={{ height: 28, borderRadius: 6, background: '#EDE8DC', marginBottom: 2, animation: 'pulse 1.5s ease infinite' }} />
+            <div key={i} style={{ height: 28, borderRadius: 6, background: 'var(--div)', marginBottom: 2, animation: 'pulse 1.5s ease infinite' }} />
           ))
         ) : sessions.length === 0 ? (
-          <div style={{ padding: '4px 8px', fontSize: 12, color: '#9C9589', fontStyle: 'italic', fontFamily: 'DM Sans, sans-serif' }}>
+          <div style={{ padding: '4px 8px', fontSize: 12, color: 'var(--text-faint)', fontStyle: 'italic', fontFamily: 'DM Sans, sans-serif' }}>
             No chats yet
           </div>
         ) : (
@@ -585,13 +585,13 @@ function RecentChats({ pathname, navigate }: { pathname: string; navigate: (path
                   onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                 >
                   <span style={{
-                    fontSize: 12, color: active ? '#2D4A2B' : '#2A2A2A',
+                    fontSize: 12, color: active ? 'var(--moss)' : 'var(--text)',
                     flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                     fontFamily: 'DM Sans, sans-serif', fontWeight: active ? 600 : 400,
                   }}>
                     {s.title || 'New chat'}
                   </span>
-                  <span style={{ fontSize: 10, color: '#9C9589', flexShrink: 0 }}>
+                  <span style={{ fontSize: 10, color: 'var(--text-faint)', flexShrink: 0 }}>
                     {timeAgoShort(s.updated_at)}
                   </span>
                 </div>
@@ -600,9 +600,9 @@ function RecentChats({ pathname, navigate }: { pathname: string; navigate: (path
             {sessions.length === 5 && (
               <button
                 onClick={() => navigate('/dashboard/chat')}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: '#9C9589', padding: '4px 8px', fontFamily: 'DM Sans, sans-serif', width: '100%', textAlign: 'left' }}
-                onMouseEnter={e => (e.currentTarget.style.color = '#2D4A2B')}
-                onMouseLeave={e => (e.currentTarget.style.color = '#9C9589')}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: 'var(--text-faint)', padding: '4px 8px', fontFamily: 'DM Sans, sans-serif', width: '100%', textAlign: 'left' }}
+                onMouseEnter={e => (e.currentTarget.style.color = 'var(--moss)')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}
               >
                 See all chats →
               </button>

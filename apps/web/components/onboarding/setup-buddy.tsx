@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { getAuthHeaders, API_URL } from '@/lib/api';
 import { RecommendationCard, SetupCompleteCard } from './recommendation-card';
@@ -171,19 +171,19 @@ export function SetupBuddy({ initialState, isResume }: SetupBuddyProps) {
               {msg.role === 'assistant' && (
                 <div style={{
                   width: 30, height: 30, borderRadius: '50%',
-                  background: '#2D4A2B', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  background: 'var(--moss)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                   flexShrink: 0, marginTop: 2,
                 }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: '#D4A94A', fontFamily: 'Fraunces, serif' }}>G</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ochre)', fontFamily: 'Fraunces, serif' }}>G</span>
                 </div>
               )}
               <div style={{
                 maxWidth: '80%',
                 padding: '10px 14px',
                 borderRadius: msg.role === 'user' ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
-                background: msg.piiWarning ? 'rgba(184,92,60,0.08)' : msg.role === 'user' ? '#2D4A2B' : '#fff',
+                background: msg.piiWarning ? 'rgba(184,92,60,0.08)' : msg.role === 'user' ? 'var(--moss)' : '#fff',
                 border: msg.piiWarning ? '1px solid rgba(184,92,60,0.3)' : msg.role === 'assistant' ? '1px solid #E8E4DC' : 'none',
-                color: msg.role === 'user' ? 'rgba(255,255,255,0.92)' : '#2A2A2A',
+                color: msg.role === 'user' ? 'rgba(255,255,255,0.92)' : 'var(--text)',
                 fontSize: 13, lineHeight: 1.6,
               } as React.CSSProperties}>
                 <MessageText content={msg.content} />
@@ -210,14 +210,14 @@ export function SetupBuddy({ initialState, isResume }: SetupBuddyProps) {
         {/* Streaming assistant message */}
         {streaming && (
           <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-            <div style={{ width: 30, height: 30, borderRadius: '50%', background: '#2D4A2B', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: '#D4A94A', fontFamily: 'Fraunces, serif' }}>G</span>
+            <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--moss)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 2 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--ochre)', fontFamily: 'Fraunces, serif' }}>G</span>
             </div>
-            <div style={{ maxWidth: '80%', padding: '10px 14px', borderRadius: '14px 14px 14px 4px', background: '#fff', border: '1px solid #E8E4DC', fontSize: 13, lineHeight: 1.6, color: '#2A2A2A' }}>
+            <div style={{ maxWidth: '80%', padding: '10px 14px', borderRadius: '14px 14px 14px 4px', background: '#fff', border: '1px solid #E8E4DC', fontSize: 13, lineHeight: 1.6, color: 'var(--text)' }}>
               {streamingText ? <MessageText content={streamingText} /> : (
                 <div style={{ display: 'flex', gap: 4, alignItems: 'center', height: 20 }}>
                   {[0, 1, 2].map(i => (
-                    <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: '#2D4A2B', animation: 'bounce 1.2s ease-in-out infinite', animationDelay: `${i * 0.16}s` }} />
+                    <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--moss)', animation: 'bounce 1.2s ease-in-out infinite', animationDelay: `${i * 0.16}s` }} />
                   ))}
                 </div>
               )}
@@ -226,7 +226,7 @@ export function SetupBuddy({ initialState, isResume }: SetupBuddyProps) {
         )}
 
         {error && (
-          <div style={{ background: 'rgba(184,92,60,0.08)', border: '1px solid rgba(184,92,60,0.25)', borderRadius: 8, padding: '10px 14px', fontSize: 12, color: '#B85C3C' }}>
+          <div style={{ background: 'rgba(184,92,60,0.08)', border: '1px solid rgba(184,92,60,0.25)', borderRadius: 8, padding: '10px 14px', fontSize: 12, color: 'var(--danger)' }}>
             {error}
           </div>
         )}
@@ -250,25 +250,25 @@ export function SetupBuddy({ initialState, isResume }: SetupBuddyProps) {
               border: '1.5px solid #E8E4DC', borderRadius: 10,
               fontSize: 13, fontFamily: 'DM Sans, sans-serif',
               resize: 'none', outline: 'none',
-              background: '#fff', color: '#2A2A2A',
+              background: '#fff', color: 'var(--text)',
               lineHeight: 1.5,
               transition: 'border-color 0.15s',
             }}
-            onFocus={e => (e.target.style.borderColor = '#2D4A2B')}
-            onBlur={e => (e.target.style.borderColor = '#E8E4DC')}
+            onFocus={e => (e.target.style.borderColor = 'var(--moss)')}
+            onBlur={e => (e.target.style.borderColor = 'var(--div)')}
           />
           <button
             onClick={() => send(input)}
             disabled={!input.trim() || streaming}
             style={{
               width: 38, height: 38, borderRadius: 10,
-              background: input.trim() && !streaming ? '#2D4A2B' : '#E8E4DC',
+              background: input.trim() && !streaming ? 'var(--moss)' : 'var(--div)',
               border: 'none', cursor: input.trim() && !streaming ? 'pointer' : 'not-allowed',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               transition: 'background 0.15s', flexShrink: 0,
             }}
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={input.trim() && !streaming ? '#D4A94A' : '#9B9B9B'} strokeWidth="2.5" strokeLinecap="round">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={input.trim() && !streaming ? 'var(--ochre)' : 'var(--disabled)'} strokeWidth="2.5" strokeLinecap="round">
               <line x1="22" y1="2" x2="11" y2="13" />
               <polygon points="22 2 15 22 11 13 2 9 22 2" />
             </svg>

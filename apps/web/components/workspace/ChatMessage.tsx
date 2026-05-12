@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useRef, useEffect } from "react";
 import { CodeBlock } from "./CodeBlock";
@@ -68,7 +68,7 @@ export function ChatMessageItem({ msg, isStreaming, onSendToCode }: Props) {
       <div className="animate-msg-appear" style={{ display: 'flex', justifyContent: 'flex-end', maxWidth: '100%' }}>
         <div style={{
           maxWidth: '76%',
-          background: '#2D4A2B',
+          background: 'var(--moss)',
           color: '#fff',
           borderRadius: '16px 4px 16px 16px',
           padding: '10px 14px',
@@ -88,7 +88,7 @@ export function ChatMessageItem({ msg, isStreaming, onSendToCode }: Props) {
       {/* Goblin avatar */}
       <div style={{
         width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
-        background: '#2D4A2B',
+        background: 'var(--moss)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         fontSize: 13, marginTop: 2,
         animation: isThinking ? 'goblin-think 1.8s ease-in-out infinite' : undefined,
@@ -99,14 +99,14 @@ export function ChatMessageItem({ msg, isStreaming, onSendToCode }: Props) {
       <div style={{ flex: 1, minWidth: 0 }}>
         {isThinking ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0' }}>
-            <span style={{ fontSize: 13, color: '#9C9589', fontFamily: 'DM Sans, sans-serif' }}>
+            <span style={{ fontSize: 13, color: 'var(--text-faint)', fontFamily: 'DM Sans, sans-serif' }}>
               {thinkingPhrase}
             </span>
             <div style={{ display: 'flex', gap: 3 }}>
               {[0, 1, 2].map(i => (
                 <div key={i} style={{
                   width: 4, height: 4, borderRadius: '50%',
-                  background: '#D4A94A',
+                  background: 'var(--ochre)',
                   animation: 'goblinPulse 1.2s ease-in-out infinite',
                   animationDelay: `${i * 0.16}s`,
                 }} />
@@ -130,7 +130,7 @@ export function ChatMessageItem({ msg, isStreaming, onSendToCode }: Props) {
             {isStreaming && msg.id === 'streaming' && msg.content.length > 0 && (
               <span style={{
                 display: 'inline-block', width: 2, height: 14,
-                background: '#D4A94A', marginLeft: 2, verticalAlign: 'text-bottom',
+                background: 'var(--ochre)', marginLeft: 2, verticalAlign: 'text-bottom',
                 animation: 'blink 0.8s step-end infinite',
               }} />
             )}
@@ -147,7 +147,7 @@ export function ChatMessageItem({ msg, isStreaming, onSendToCode }: Props) {
             {/* Model attribution */}
             {modelLabel && !isStreaming && (
               <div style={{
-                marginTop: 6, fontSize: 11, color: '#9C9589',
+                marginTop: 6, fontSize: 11, color: 'var(--text-faint)',
                 fontFamily: 'DM Sans, sans-serif',
               }}>
                 {modelLabel}

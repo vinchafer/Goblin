@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -18,8 +18,8 @@ interface Project {
 }
 
 const PROJECT_COLORS = [
-  '#D4A94A', '#4A7C3B', '#7A4A8A',
-  '#3A6B8A', '#B85C3C', '#4A7A7A', '#2D4A2B',
+  'var(--ochre)', 'var(--success)', '#7A4A8A',
+  '#3A6B8A', 'var(--danger)', '#4A7A7A', 'var(--moss)',
 ];
 
 const STARTER_CARDS = [

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState, useCallback } from 'react';
 
@@ -20,16 +20,16 @@ const STATUS_OPTIONS = ['investigating', 'identified', 'monitoring', 'resolved']
 const SEVERITY_OPTIONS = ['minor', 'major', 'critical'];
 
 const STATUS_COLOR: Record<string, string> = {
-  investigating: '#B85C3C',
-  identified:    '#D4A94A',
+  investigating: 'var(--danger)',
+  identified:    'var(--ochre)',
   monitoring:    '#3A6B8A',
-  resolved:      '#4A7C3B',
+  resolved:      'var(--success)',
 };
 
 const SEVERITY_COLOR: Record<string, string> = {
   minor:    '#8aaa85',
-  major:    '#D4A94A',
-  critical: '#B85C3C',
+  major:    'var(--ochre)',
+  critical: 'var(--danger)',
 };
 
 const BLANK = { title: '', status: 'investigating', severity: 'minor', description: '' };

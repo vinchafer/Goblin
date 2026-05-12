@@ -11,7 +11,7 @@ const FIELD_STYLE = {
   padding: '0 14px',
   borderRadius: 9,
   border: '1.5px solid var(--border)',
-  background: '#fff',
+  background: 'var(--panel)',
   color: 'var(--text)',
   fontSize: 16,
   fontFamily: 'DM Sans, sans-serif',

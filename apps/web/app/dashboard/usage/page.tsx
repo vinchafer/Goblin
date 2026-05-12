@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useEffect, useState } from 'react';
 import { apiGet } from '@/lib/api';
 
@@ -23,25 +23,25 @@ const TIER_LABELS: Record<string, string> = {
 };
 
 const TIER_COLORS: Record<string, string> = {
-  byok: '#2D4A2B',
-  free_api: '#D4A94A',
+  byok: 'var(--moss)',
+  free_api: 'var(--ochre)',
   goblin_hosted: '#3A6B8A',
 };
 
 function PlanBar({ used, limit }: { used: number; limit: number }) {
   const pct = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 0;
-  const color = pct > 85 ? '#B85C3C' : pct > 60 ? '#D4A94A' : '#2D4A2B';
+  const color = pct > 85 ? 'var(--danger)' : pct > 60 ? 'var(--ochre)' : 'var(--moss)';
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-        <span style={{ fontSize: 13, color: '#2A2A2A', fontFamily: 'DM Sans, sans-serif', fontWeight: 600 }}>
+        <span style={{ fontSize: 13, color: 'var(--text)', fontFamily: 'DM Sans, sans-serif', fontWeight: 600 }}>
           {used.toLocaleString()} / {limit > 0 ? limit.toLocaleString() : '∞'} requests
         </span>
-        <span style={{ fontSize: 13, color: '#6B6B6B', fontFamily: 'DM Sans, sans-serif' }}>
+        <span style={{ fontSize: 13, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif' }}>
           {pct}% used
         </span>
       </div>
-      <div style={{ height: 8, background: '#E8E4DC', borderRadius: 4, overflow: 'hidden' }}>
+      <div style={{ height: 8, background: 'var(--div)', borderRadius: 4, overflow: 'hidden' }}>
         <div style={{
           height: '100%',
           width: `${pct}%`,
@@ -56,7 +56,7 @@ function PlanBar({ used, limit }: { used: number; limit: number }) {
 
 function TierBar({ byTier, total }: { byTier: UsageData['byTier']; total: number }) {
   if (total === 0) return (
-    <div style={{ fontSize: 12, color: '#9B9B9B', fontFamily: 'DM Sans, sans-serif', padding: '8px 0' }}>
+    <div style={{ fontSize: 12, color: 'var(--disabled)', fontFamily: 'DM Sans, sans-serif', padding: '8px 0' }}>
       No requests in this period.
     </div>
   );
@@ -76,7 +76,7 @@ function TierBar({ byTier, total }: { byTier: UsageData['byTier']; total: number
         {(['byok', 'free_api', 'goblin_hosted'] as const).map(tier => (
           <div key={tier} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div style={{ width: 10, height: 10, borderRadius: 2, background: TIER_COLORS[tier], flexShrink: 0 }} />
-            <span style={{ fontSize: 12, color: '#6B6B6B', fontFamily: 'DM Sans, sans-serif' }}>
+            <span style={{ fontSize: 12, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif' }}>
               {TIER_LABELS[tier]}: {byTier[tier]}
             </span>
           </div>
@@ -96,8 +96,8 @@ function Section({ title, subtitle, children }: { title: string; subtitle?: stri
       marginBottom: 16,
     }}>
       <div style={{ marginBottom: subtitle ? 4 : 16 }}>
-        <h2 style={{ fontSize: 15, fontWeight: 600, color: '#2A2A2A', fontFamily: 'DM Sans, sans-serif', margin: 0 }}>{title}</h2>
-        {subtitle && <p style={{ fontSize: 12, color: '#9B9B9B', fontFamily: 'DM Sans, sans-serif', marginTop: 2, marginBottom: 16 }}>{subtitle}</p>}
+        <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', fontFamily: 'DM Sans, sans-serif', margin: 0 }}>{title}</h2>
+        {subtitle && <p style={{ fontSize: 12, color: 'var(--disabled)', fontFamily: 'DM Sans, sans-serif', marginTop: 2, marginBottom: 16 }}>{subtitle}</p>}
       </div>
       {children}
     </div>
@@ -124,10 +124,10 @@ export default function UsagePage() {
     <div style={{ maxWidth: 680, margin: '0 auto', padding: '32px 24px 64px' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 28, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#2A2A2A', fontFamily: 'DM Sans, sans-serif', margin: 0, marginBottom: 4 }}>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', fontFamily: 'DM Sans, sans-serif', margin: 0, marginBottom: 4 }}>
             Usage
           </h1>
-          <p style={{ fontSize: 13, color: '#9B9B9B', fontFamily: 'DM Sans, sans-serif', margin: 0 }}>
+          <p style={{ fontSize: 13, color: 'var(--disabled)', fontFamily: 'DM Sans, sans-serif', margin: 0 }}>
             Track your AI request usage across all sessions.
           </p>
         </div>
@@ -140,7 +140,7 @@ export default function UsagePage() {
                 padding: '5px 12px', borderRadius: 7, fontSize: 12, fontWeight: 500,
                 border: period === p ? '2px solid #2D4A2B' : '1px solid #E8E4DC',
                 background: period === p ? 'rgba(45,74,43,0.08)' : '#fff',
-                color: period === p ? '#2D4A2B' : '#6B6B6B',
+                color: period === p ? 'var(--moss)' : 'var(--meta)',
                 cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
               }}
             >
@@ -153,13 +153,13 @@ export default function UsagePage() {
       {loading && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {[180, 120, 120, 100].map((h, i) => (
-            <div key={i} style={{ height: h, background: '#F7F4ED', borderRadius: 12, animation: 'pulse 1.5s ease-in-out infinite' }} />
+            <div key={i} style={{ height: h, background: 'var(--cream)', borderRadius: 12, animation: 'pulse 1.5s ease-in-out infinite' }} />
           ))}
         </div>
       )}
 
       {error && (
-        <div style={{ background: '#FDF2EE', border: '1px solid rgba(184,92,60,0.3)', borderRadius: 10, padding: '14px 16px', fontSize: 13, color: '#B85C3C', fontFamily: 'DM Sans, sans-serif' }}>
+        <div style={{ background: '#FDF2EE', border: '1px solid rgba(184,92,60,0.3)', borderRadius: 10, padding: '14px 16px', fontSize: 13, color: 'var(--danger)', fontFamily: 'DM Sans, sans-serif' }}>
           Couldn&apos;t load usage data. Check your connection.
         </div>
       )}
@@ -176,7 +176,7 @@ export default function UsagePage() {
               {data.daysUntilReset !== null && <Stat label="Days until reset" value={data.daysUntilReset.toString()} />}
             </div>
             <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid #F0ECE4', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 12, color: '#6B6B6B', fontFamily: 'DM Sans, sans-serif' }}>
+              <span style={{ fontSize: 12, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif' }}>
                 BYOK requests don&apos;t count toward your plan limit.
               </span>
             </div>
@@ -190,13 +190,13 @@ export default function UsagePage() {
           {/* By model */}
           <Section title="Top Models">
             {data.byModel.length === 0 ? (
-              <div style={{ fontSize: 12, color: '#9B9B9B', fontFamily: 'DM Sans, sans-serif' }}>No data yet.</div>
+              <div style={{ fontSize: 12, color: 'var(--disabled)', fontFamily: 'DM Sans, sans-serif' }}>No data yet.</div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {data.byModel.map(({ model, count }) => (
                   <div key={model} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div style={{
-                      flex: 1, height: 28, background: '#F7F4ED', borderRadius: 6, overflow: 'hidden', position: 'relative',
+                      flex: 1, height: 28, background: 'var(--cream)', borderRadius: 6, overflow: 'hidden', position: 'relative',
                     }}>
                       <div style={{
                         height: '100%',
@@ -207,12 +207,12 @@ export default function UsagePage() {
                       }} />
                       <span style={{
                         position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)',
-                        fontSize: 12, color: '#2A2A2A', fontFamily: 'DM Sans, sans-serif', fontWeight: 500,
+                        fontSize: 12, color: 'var(--text)', fontFamily: 'DM Sans, sans-serif', fontWeight: 500,
                       }}>
                         {model.split('/').pop() ?? model}
                       </span>
                     </div>
-                    <span style={{ fontSize: 12, color: '#6B6B6B', fontFamily: 'DM Sans, sans-serif', flexShrink: 0, minWidth: 40, textAlign: 'right' }}>
+                    <span style={{ fontSize: 12, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif', flexShrink: 0, minWidth: 40, textAlign: 'right' }}>
                       {count}
                     </span>
                   </div>
@@ -226,9 +226,9 @@ export default function UsagePage() {
             <Section title="Top Projects">
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {data.byProject.map(({ projectId, name, count }) => (
-                  <div key={projectId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', background: '#F7F4ED', borderRadius: 7 }}>
-                    <span style={{ fontSize: 13, color: '#2A2A2A', fontFamily: 'DM Sans, sans-serif', fontWeight: 500 }}>{name}</span>
-                    <span style={{ fontSize: 12, color: '#6B6B6B', fontFamily: 'DM Sans, sans-serif' }}>{count} requests</span>
+                  <div key={projectId} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', background: 'var(--cream)', borderRadius: 7 }}>
+                    <span style={{ fontSize: 13, color: 'var(--text)', fontFamily: 'DM Sans, sans-serif', fontWeight: 500 }}>{name}</span>
+                    <span style={{ fontSize: 12, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif' }}>{count} requests</span>
                   </div>
                 ))}
               </div>
@@ -237,15 +237,15 @@ export default function UsagePage() {
 
           {/* Routing settings link */}
           <div style={{
-            background: '#F7F4ED', border: '1px solid #E8E4DC',
+            background: 'var(--cream)', border: '1px solid #E8E4DC',
             borderRadius: 10, padding: '14px 16px',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
           }}>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 600, color: '#2A2A2A', fontFamily: 'DM Sans, sans-serif', marginBottom: 2 }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', fontFamily: 'DM Sans, sans-serif', marginBottom: 2 }}>
                 Auto-Fallback Routing
               </div>
-              <div style={{ fontSize: 12, color: '#6B6B6B', fontFamily: 'DM Sans, sans-serif' }}>
+              <div style={{ fontSize: 12, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif' }}>
                 Configure which provider Goblin switches to when you hit rate limits.
               </div>
             </div>
@@ -253,7 +253,7 @@ export default function UsagePage() {
               href="/dashboard/settings/routing"
               style={{
                 flexShrink: 0, padding: '7px 14px',
-                background: '#2D4A2B', color: '#fff',
+                background: 'var(--moss)', color: '#fff',
                 borderRadius: 7, fontSize: 12, fontWeight: 600,
                 fontFamily: 'DM Sans, sans-serif', textDecoration: 'none',
                 whiteSpace: 'nowrap',
@@ -275,10 +275,10 @@ export default function UsagePage() {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div style={{ fontSize: 10, color: '#9B9B9B', fontFamily: 'DM Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>
+      <div style={{ fontSize: 10, color: 'var(--disabled)', fontFamily: 'DM Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>
         {label}
       </div>
-      <div style={{ fontSize: 16, fontWeight: 700, color: '#2A2A2A', fontFamily: 'DM Sans, sans-serif' }}>
+      <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', fontFamily: 'DM Sans, sans-serif' }}>
         {value}
       </div>
     </div>

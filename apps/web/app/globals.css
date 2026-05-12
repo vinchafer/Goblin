@@ -159,6 +159,61 @@
   --goblin-ochre2: #f0cf8a;
 }
 
+/* Auto dark mode via system preference — overridden by data-theme if user picks manually */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --moss:     #3a5e38;
+    --moss-2:   #4a7848;
+    --moss-3:   #2a4a28;
+    --ochre:    #e8bf6a;
+    --ochre-2:  #f0cf8a;
+    --bark:     #e8d5b0;
+    --cream:    #1a1e18;
+    --subtle:   #1e2420;
+    --div:      #2d3d2b;
+    --white:    #1e2420;
+    --panel:    #1e2420;
+    --surface:  #1a1e18;
+    --text:     #e8f0e6;
+    --text-2:   #c8d8c6;
+    --meta:     #8aaa85;
+    --disabled: #4a5a49;
+    --success:  #5aac4b;
+    --error:    #e87060;
+    --warning:  #e8bf6a;
+    --good:     #5aac4b;
+    --danger:   #e87060;
+    --border:       #3d5a3b;
+    --text-faint:   #6a8a67;
+    --sidebar-meta: #8aaa85;
+    --shadow-sm:    0 1px 3px rgba(0,0,0,0.2), 0 1px 2px rgba(0,0,0,0.15);
+    --shadow-md:    0 4px 16px rgba(0,0,0,0.3);
+    --shadow-lg:    0 8px 32px rgba(0,0,0,0.4);
+    --moss2:        #4a7848;
+    --ochre-dark:   #f0cf8a;
+    --code-bg:      #111a0f;
+    --code-bg-dark: #0d140b;
+    --code-fg:      #a8d5a2;
+    --code-root:    #0a0f09;
+    --code-root-2:  #080c07;
+    --goblin-moss:   #3a5e38;
+    --goblin-ochre:  #e8bf6a;
+    --goblin-cream:  #1a1e18;
+    --goblin-cream2: #1e2420;
+    --goblin-bark:   #e8d5b0;
+    --goblin-slate:  #e8f0e6;
+    --goblin-gray:   #8aaa85;
+    --goblin-light:  #2d3d2b;
+    --goblin-border: #3d5a3b;
+    --goblin-meta:   #8aaa85;
+    --goblin-text:   #e8f0e6;
+    --goblin-good:   #5aac4b;
+    --goblin-warn:   #e87060;
+    --goblin-moss2:  #4a7848;
+    --goblin-ochre2: #f0cf8a;
+  }
+}
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; font-size: 16px; }
 

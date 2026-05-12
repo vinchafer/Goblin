@@ -1,11 +1,11 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 const PLAN_INFO: Record<string, { label: string; price: number; requests: number; color: string }> = {
   seed:  { label: 'Seed',  price: 9,  requests: 200,  color: '#8B6914' },
-  craft: { label: 'Craft', price: 19, requests: 800,  color: '#2D4A2B' },
+  craft: { label: 'Craft', price: 19, requests: 800,  color: 'var(--moss)' },
   forge: { label: 'Forge', price: 39, requests: 3000, color: '#1a2d5a' },
 };
 

@@ -1,4 +1,4 @@
-const CODE_LINES = [
+﻿const CODE_LINES = [
   'export function Navbar() {',
   '  const [dark, setDark] = useState(false)',
   '  const toggle = () => setDark(d => !d)',
@@ -42,14 +42,14 @@ export function SendToCodeDemo() {
                 <div style={{ background: 'var(--cream)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', fontSize: 13 }}>
                   Done! Here is the updated Navbar:
                   <div style={{ background: '#1a2018', borderRadius: 8, padding: '10px 12px', margin: '8px 0', fontFamily: 'JetBrains Mono, monospace', fontSize: 11, color: '#8aaa85', lineHeight: 1.7 }}>
-                    <span style={{ color: '#c9933a' }}>export function</span> <span style={{ color: '#7dd3a8' }}>Navbar</span>() {'{'}<br />
-                    &nbsp;&nbsp;<span style={{ color: '#c9933a' }}>const</span> [dark, setDark] = useState(false)<br />
-                    &nbsp;&nbsp;<span style={{ color: '#c9933a' }}>return</span> &lt;<span style={{ color: '#7dd3a8' }}>nav</span>&gt;...&lt;/<span style={{ color: '#7dd3a8' }}>nav</span>&gt;<br />
+                    <span style={{ color: 'var(--ochre-dark)' }}>export function</span> <span style={{ color: '#7dd3a8' }}>Navbar</span>() {'{'}<br />
+                    &nbsp;&nbsp;<span style={{ color: 'var(--ochre-dark)' }}>const</span> [dark, setDark] = useState(false)<br />
+                    &nbsp;&nbsp;<span style={{ color: 'var(--ochre-dark)' }}>return</span> &lt;<span style={{ color: '#7dd3a8' }}>nav</span>&gt;...&lt;/<span style={{ color: '#7dd3a8' }}>nav</span>&gt;<br />
                     {'}'}
                   </div>
                   <div style={{
                     display: 'inline-flex', alignItems: 'center', gap: 6,
-                    background: '#4a7c3b', color: '#fff',
+                    background: 'var(--success)', color: '#fff',
                     borderRadius: 7, padding: '7px 14px', fontSize: 13, fontWeight: 600,
                     fontFamily: 'DM Sans, sans-serif',
                   }}>
@@ -70,7 +70,7 @@ export function SendToCodeDemo() {
             </div>
             <div style={{ flex: 1, padding: '14px 16px', fontFamily: 'JetBrains Mono, monospace', fontSize: 11, lineHeight: 1.8 }}>
               <span style={{ color: '#3d6038' }}>// Navbar.tsx &mdash; injected</span><br />
-              <span style={{ color: '#c9933a' }}>import</span> <span style={{ color: '#8aaa85' }}>{'{ useState }'}</span> <span style={{ color: '#c9933a' }}>from</span> <span style={{ color: '#98c379' }}>&apos;react&apos;</span><br /><br />
+              <span style={{ color: 'var(--ochre-dark)' }}>import</span> <span style={{ color: '#8aaa85' }}>{'{ useState }'}</span> <span style={{ color: 'var(--ochre-dark)' }}>from</span> <span style={{ color: '#98c379' }}>&apos;react&apos;</span><br /><br />
               {CODE_LINES.map((line, i) => (
                 <span key={i} style={{ display: 'block', background: 'rgba(201,147,58,0.07)', borderLeft: '2px solid var(--ochre)', margin: '0 -16px', padding: '1px 16px', color: '#8aaa85' }}>{line}</span>
               ))}

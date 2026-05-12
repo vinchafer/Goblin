@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getAuthHeaders, API_URL } from '@/lib/api';
@@ -72,8 +72,8 @@ export function RecommendationCard({ data, onConfirm }: RecommendationCardProps)
         borderRadius: 10, padding: '10px 14px',
         display: 'flex', alignItems: 'center', gap: 8,
       }}>
-        <span style={{ color: '#4A7C3B', fontSize: 14 }}>✓</span>
-        <span style={{ fontSize: 12, color: '#4A7C3B', fontFamily: 'DM Sans, sans-serif', fontWeight: 600 }}>
+        <span style={{ color: 'var(--success)', fontSize: 14 }}>✓</span>
+        <span style={{ fontSize: 12, color: 'var(--success)', fontFamily: 'DM Sans, sans-serif', fontWeight: 600 }}>
           {CATEGORY_LABELS[data.category]}: {data.recommended.label}
         </span>
       </div>
@@ -90,7 +90,7 @@ export function RecommendationCard({ data, onConfirm }: RecommendationCardProps)
     }}>
       <div style={{
         fontSize: 10, fontWeight: 700, letterSpacing: '0.8px',
-        color: '#9B9B9B', textTransform: 'uppercase',
+        color: 'var(--disabled)', textTransform: 'uppercase',
         fontFamily: 'DM Sans, sans-serif', marginBottom: 8,
       }}>
         {CATEGORY_LABELS[data.category]}
@@ -103,18 +103,18 @@ export function RecommendationCard({ data, onConfirm }: RecommendationCardProps)
         borderRadius: 9, padding: '10px 12px', marginBottom: 10,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: '#2D4A2B', fontFamily: 'DM Sans, sans-serif' }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--moss)', fontFamily: 'DM Sans, sans-serif' }}>
             {data.recommended.label}
           </span>
           <span style={{
             fontSize: 9, fontWeight: 700, padding: '1px 6px', borderRadius: 3,
-            background: 'rgba(45,74,43,0.1)', color: '#2D4A2B',
+            background: 'rgba(45,74,43,0.1)', color: 'var(--moss)',
             fontFamily: 'DM Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '0.5px',
           }}>
             Recommended
           </span>
         </div>
-        <div style={{ fontSize: 11, color: '#6B6B6B', fontFamily: 'DM Sans, sans-serif', lineHeight: 1.5, marginBottom: 10 }}>
+        <div style={{ fontSize: 11, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif', lineHeight: 1.5, marginBottom: 10 }}>
           {data.recommended.reason}
         </div>
         <button
@@ -122,7 +122,7 @@ export function RecommendationCard({ data, onConfirm }: RecommendationCardProps)
           disabled={confirming}
           style={{
             width: '100%', padding: '7px',
-            background: '#2D4A2B', color: '#D4A94A',
+            background: 'var(--moss)', color: 'var(--ochre)',
             border: 'none', borderRadius: 7,
             fontSize: 12, fontWeight: 700,
             cursor: confirming ? 'not-allowed' : 'pointer',
@@ -141,7 +141,7 @@ export function RecommendationCard({ data, onConfirm }: RecommendationCardProps)
             onClick={() => setShowAlts(a => !a)}
             style={{
               background: 'none', border: 'none', padding: 0,
-              fontSize: 11, color: '#9B9B9B', cursor: 'pointer',
+              fontSize: 11, color: 'var(--disabled)', cursor: 'pointer',
               fontFamily: 'DM Sans, sans-serif', textDecoration: 'underline',
               textDecorationColor: 'rgba(0,0,0,0.15)',
             }}
@@ -159,12 +159,12 @@ export function RecommendationCard({ data, onConfirm }: RecommendationCardProps)
                   style={{
                     padding: '7px 10px', background: 'transparent',
                     border: '1px solid #E8E4DC', borderRadius: 7,
-                    fontSize: 12, color: '#2A2A2A', cursor: 'pointer',
+                    fontSize: 12, color: 'var(--text)', cursor: 'pointer',
                     fontFamily: 'DM Sans, sans-serif', textAlign: 'left',
                     transition: 'border-color 0.1s',
                   }}
-                  onMouseEnter={e => (e.currentTarget.style.borderColor = '#2D4A2B')}
-                  onMouseLeave={e => (e.currentTarget.style.borderColor = '#E8E4DC')}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--moss)')}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--div)')}
                 >
                   {alt.label}
                 </button>
@@ -197,11 +197,11 @@ export function SetupCompleteCard({ data }: { data: SetupCompleteData }) {
       maxWidth: 360,
     }}>
       <div style={{ fontSize: 16, marginBottom: 10 }}>🎉</div>
-      <div style={{ fontSize: 14, fontWeight: 700, color: '#2D4A2B', fontFamily: 'DM Sans, sans-serif', marginBottom: 8 }}>
+      <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--moss)', fontFamily: 'DM Sans, sans-serif', marginBottom: 8 }}>
         Setup complete!
       </div>
       {Object.entries(data.summary).map(([key, val]) => (
-        <div key={key} style={{ fontSize: 12, color: '#4A7C3B', fontFamily: 'DM Sans, sans-serif', marginBottom: 3 }}>
+        <div key={key} style={{ fontSize: 12, color: 'var(--success)', fontFamily: 'DM Sans, sans-serif', marginBottom: 3 }}>
           ✓ {labels[key] ?? key}: {val}
         </div>
       ))}
@@ -209,7 +209,7 @@ export function SetupCompleteCard({ data }: { data: SetupCompleteData }) {
         onClick={() => router.push('/dashboard')}
         style={{
           display: 'block', width: '100%', marginTop: 14,
-          padding: '9px', background: '#2D4A2B', color: '#D4A94A',
+          padding: '9px', background: 'var(--moss)', color: 'var(--ochre)',
           border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 700,
           cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
         }}

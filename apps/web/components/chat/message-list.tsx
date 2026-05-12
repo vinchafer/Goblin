@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useRef } from "react";
 import { MessageContent } from "./message-content";
@@ -61,13 +61,13 @@ export function MessageList({ messages, isStreaming, currentStreamingMessage, is
     return (
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', paddingBottom: 40 }}>
         {/* Goblin Logo - small, Moss */}
-        <div style={{ width: 48, height: 48, borderRadius: 12, background: '#2D4A2B', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
-          <span style={{ fontSize: 20, fontWeight: 700, color: '#FFFFFF', fontFamily: 'Fraunces, serif' }}>G</span>
+        <div style={{ width: 48, height: 48, borderRadius: 12, background: 'var(--moss)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
+          <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--white)', fontFamily: 'Fraunces, serif' }}>G</span>
         </div>
-        <h2 style={{ fontSize: 24, fontWeight: 600, color: '#2A2A2A', marginBottom: 8, fontFamily: 'Fraunces, serif' }}>
+        <h2 style={{ fontSize: 24, fontWeight: 600, color: 'var(--text)', marginBottom: 8, fontFamily: 'Fraunces, serif' }}>
           What are you building today?
         </h2>
-        <p style={{ fontSize: 14, color: '#6B6B6B', marginBottom: 32 }}>
+        <p style={{ fontSize: 14, color: 'var(--meta)', marginBottom: 32 }}>
           Describe your project or ask me anything.
         </p>
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 8, maxWidth: 400 }}>
@@ -80,8 +80,8 @@ export function MessageList({ messages, isStreaming, currentStreamingMessage, is
                 borderRadius: 20,
                 fontSize: 12,
                 fontWeight: 500,
-                backgroundColor: '#FFFFFF',
-                color: '#2A2A2A',
+                backgroundColor: 'var(--white)',
+                color: 'var(--text)',
                 border: '1px solid #EDE8DC',
                 cursor: 'pointer',
                 transition: 'all 0.15s',
@@ -89,12 +89,12 @@ export function MessageList({ messages, isStreaming, currentStreamingMessage, is
               }}
               onMouseEnter={e => { 
                 e.currentTarget.style.backgroundColor = '#F7F3EC'; 
-                e.currentTarget.style.borderColor = '#D4A94A';
+                e.currentTarget.style.borderColor = 'var(--ochre)';
                 e.currentTarget.style.transform = 'translateY(-1px)';
               }}
               onMouseLeave={e => { 
-                e.currentTarget.style.backgroundColor = '#FFFFFF'; 
-                e.currentTarget.style.borderColor = '#EDE8DC';
+                e.currentTarget.style.backgroundColor = 'var(--white)'; 
+                e.currentTarget.style.borderColor = 'var(--div)';
                 e.currentTarget.style.transform = 'translateY(0)';
               }}
             >
@@ -117,7 +117,7 @@ export function MessageList({ messages, isStreaming, currentStreamingMessage, is
         >
           {message.role === 'assistant' && (
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, flexShrink: 0 }}>
-              <div style={{ width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#2D4A2B' }}>
+              <div style={{ width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--moss)' }}>
                 <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>G</span>
               </div>
               {message.model_used && message.source_tier && (
@@ -133,9 +133,9 @@ export function MessageList({ messages, isStreaming, currentStreamingMessage, is
               maxWidth: message.role === 'user' ? '75%' : '85%',
               padding: '12px 16px',
               borderRadius: message.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-              backgroundColor: message.role === 'user' ? '#2D4A2B' : '#FFFFFF',
+              backgroundColor: message.role === 'user' ? 'var(--moss)' : 'var(--white)',
               border: message.role === 'assistant' ? '1px solid #EDE8DC' : 'none',
-              color: message.role === 'user' ? 'rgba(255, 255, 255, 0.92)' : '#2A2A2A',
+              color: message.role === 'user' ? 'rgba(255, 255, 255, 0.92)' : 'var(--text)',
               fontFamily: 'DM Sans, sans-serif',
               fontSize: 14,
               lineHeight: 1.5,
@@ -145,7 +145,7 @@ export function MessageList({ messages, isStreaming, currentStreamingMessage, is
           </div>
 
           {message.role === 'user' && (
-            <div style={{ width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#D4A94A', flexShrink: 0 }}>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--ochre)', flexShrink: 0 }}>
               <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>U</span>
             </div>
           )}
@@ -155,11 +155,11 @@ export function MessageList({ messages, isStreaming, currentStreamingMessage, is
       {isStreaming && (
         <div style={{ display: 'flex', gap: 12, marginBottom: 16, justifyContent: 'flex-start' }}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, flexShrink: 0 }}>
-            <div style={{ width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#2D4A2B' }}>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--moss)' }}>
               <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>G</span>
             </div>
             {showMetaBadge && (
-              <span style={{ fontSize: 10, color: '#6B6B6B', whiteSpace: 'nowrap', maxWidth: 64, overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: 'JetBrains Mono, monospace' }}>
+              <span style={{ fontSize: 10, color: 'var(--meta)', whiteSpace: 'nowrap', maxWidth: 64, overflow: 'hidden', textOverflow: 'ellipsis', fontFamily: 'JetBrains Mono, monospace' }}>
                 via {metaInfo.model.split('-').slice(0, 2).join('-')} · {(metaInfo.sourceTier as string) === 'byok' ? 'BYOK' : (metaInfo.sourceTier as string) === 'free_api' ? 'Free' : 'Hosted'}
               </span>
             )}
@@ -169,9 +169,9 @@ export function MessageList({ messages, isStreaming, currentStreamingMessage, is
               maxWidth: '85%',
               padding: '12px 16px',
               borderRadius: '16px 16px 16px 4px',
-              backgroundColor: '#FFFFFF',
+              backgroundColor: 'var(--white)',
               border: '1px solid #EDE8DC',
-              color: '#2A2A2A',
+              color: 'var(--text)',
               fontFamily: 'DM Sans, sans-serif',
               fontSize: 14,
               lineHeight: 1.5,
@@ -181,9 +181,9 @@ export function MessageList({ messages, isStreaming, currentStreamingMessage, is
               <MessageContent content={currentStreamingMessage} role="assistant" />
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', gap: 4, height: 24 }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#2D4A2B', animation: 'bounce 1.4s infinite ease-in-out' }} />
-                <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#2D4A2B', animation: 'bounce 1.4s infinite ease-in-out', animationDelay: '0.16s' }} />
-                <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: '#2D4A2B', animation: 'bounce 1.4s infinite ease-in-out', animationDelay: '0.32s' }} />
+                <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: 'var(--moss)', animation: 'bounce 1.4s infinite ease-in-out' }} />
+                <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: 'var(--moss)', animation: 'bounce 1.4s infinite ease-in-out', animationDelay: '0.16s' }} />
+                <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: 'var(--moss)', animation: 'bounce 1.4s infinite ease-in-out', animationDelay: '0.32s' }} />
               </div>
             )}
           </div>

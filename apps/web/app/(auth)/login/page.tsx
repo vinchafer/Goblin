@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -55,9 +55,9 @@ const OAUTH_CONFIG: Record<Provider, {
   border: string;
   hoverBg: string;
 }> = {
-  google: { label: 'Continue with Google', icon: <GoogleIcon />, bg: '#ffffff', color: '#3c4043', border: '#dadce0', hoverBg: '#f8f9fa' },
-  github: { label: 'Continue with GitHub', icon: <GitHubIcon />, bg: '#24292e', color: '#ffffff', border: '#24292e', hoverBg: '#2f363d' },
-  apple:  { label: 'Continue with Apple',  icon: <AppleIcon />,  bg: '#000000', color: '#ffffff', border: '#000000', hoverBg: '#1a1a1a' },
+  google: { label: 'Continue with Google', icon: <GoogleIcon />, bg: 'var(--white)', color: '#3c4043', border: '#dadce0', hoverBg: '#f8f9fa' },
+  github: { label: 'Continue with GitHub', icon: <GitHubIcon />, bg: '#24292e', color: 'var(--white)', border: '#24292e', hoverBg: '#2f363d' },
+  apple:  { label: 'Continue with Apple',  icon: <AppleIcon />,  bg: '#000000', color: 'var(--white)', border: '#000000', hoverBg: '#1a1a1a' },
 };
 
 function OAuthButton({ provider, onClick, loading }: {
@@ -242,7 +242,7 @@ export default function LoginPage() {
                   boxSizing: 'border-box',
                   transition: 'border-color 0.15s',
                 }}
-                onFocus={e => (e.target.style.borderColor = '#2D4A2B')}
+                onFocus={e => (e.target.style.borderColor = 'var(--moss)')}
                 onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.1)')}
               />
               <button
@@ -251,7 +251,7 @@ export default function LoginPage() {
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                   width: '100%', height: 48,
-                  background: email.trim() ? '#2D4A2B' : 'rgba(255,255,255,0.06)',
+                  background: email.trim() ? 'var(--moss)' : 'rgba(255,255,255,0.06)',
                   color: email.trim() ? '#fff' : 'rgba(255,255,255,0.2)',
                   border: 'none',
                   borderRadius: 10,

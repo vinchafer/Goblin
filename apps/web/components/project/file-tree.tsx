@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -205,7 +205,7 @@ export function FileTree({ projectId, files, onFileClick, onFilesChanged }: File
                 setInlineInput({ mode: 'new-file', parentPath: contextMenu.path });
                 setInputValue('');
               }} />
-              <div style={{ height: 1, background: '#2d4a2b', margin: '4px 0' }} />
+              <div style={{ height: 1, background: 'var(--moss)', margin: '4px 0' }} />
               <ContextItem icon="🗑" label="Delete Folder" danger onClick={() => {
                 setContextMenu(null);
                 setDeleteTarget({ path: contextMenu.path, name: contextMenu.path.split('/').pop() || contextMenu.path });
@@ -223,7 +223,7 @@ export function FileTree({ projectId, files, onFileClick, onFilesChanged }: File
                 copyPath(contextMenu.path);
                 setContextMenu(null);
               }} />
-              <div style={{ height: 1, background: '#2d4a2b', margin: '4px 0' }} />
+              <div style={{ height: 1, background: 'var(--moss)', margin: '4px 0' }} />
               <ContextItem icon="🗑" label="Delete" danger onClick={() => {
                 setContextMenu(null);
                 setDeleteTarget({ path: contextMenu.path, name: contextMenu.path.split('/').pop() || contextMenu.path });
@@ -244,7 +244,7 @@ export function FileTree({ projectId, files, onFileClick, onFilesChanged }: File
             padding: '16px 20px', minWidth: 240,
           }}>
             <div style={{ fontSize: 13, color: '#c5d0c0', fontFamily: 'DM Sans, sans-serif', marginBottom: 12 }}>
-              Delete <span style={{ color: '#c9933a', fontFamily: 'JetBrains Mono, monospace' }}>{deleteTarget.name}</span>?
+              Delete <span style={{ color: 'var(--ochre-dark)', fontFamily: 'JetBrains Mono, monospace' }}>{deleteTarget.name}</span>?
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button

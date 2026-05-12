@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { X, Eye, EyeOff, AlertTriangle, Loader2, ExternalLink } from "lucide-react";
@@ -209,8 +209,8 @@ export function AddKeyModal({ open, onClose, onKeyAdded }: AddKeyModalProps) {
               disabled={loading || !label || !key}
               className="flex-1 py-3 rounded-lg flex items-center justify-center gap-2 font-medium disabled:opacity-50"
               style={{
-                backgroundColor: '#D4A94A',
-                color: '#3A2E1F',
+                backgroundColor: 'var(--ochre)',
+                color: 'var(--bark)',
                 fontWeight: 600,
               }}
             >

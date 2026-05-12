@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 
@@ -29,7 +29,7 @@ export function CodeBlock({ code, language, filename, onSendToCode }: CodeBlockP
         padding: '6px 14px', gap: 8,
       }}>
         <span style={{
-          flex: 1, fontSize: 11, color: '#9C9589',
+          flex: 1, fontSize: 11, color: 'var(--text-faint)',
           fontFamily: 'JetBrains Mono, monospace', letterSpacing: '0.03em',
         }}>
           {label}
@@ -38,7 +38,7 @@ export function CodeBlock({ code, language, filename, onSendToCode }: CodeBlockP
           onClick={copy}
           style={{
             background: 'none', border: 'none',
-            color: copied ? '#4A7C3B' : '#9C9589',
+            color: copied ? 'var(--success)' : 'var(--text-faint)',
             fontSize: 11, cursor: 'pointer',
             fontFamily: 'DM Sans, sans-serif',
             padding: '2px 8px', borderRadius: 4,
@@ -78,13 +78,13 @@ export function CodeBlock({ code, language, filename, onSendToCode }: CodeBlockP
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
           width: '100%', padding: '9px 14px',
-          background: '#D4A94A', border: 'none', cursor: 'pointer',
+          background: 'var(--ochre)', border: 'none', cursor: 'pointer',
           fontSize: 13, fontWeight: 600, color: '#fff',
           fontFamily: 'DM Sans, sans-serif',
           transition: 'background 0.15s',
         }}
         onMouseEnter={e => (e.currentTarget.style.background = '#e8b05a')}
-        onMouseLeave={e => (e.currentTarget.style.background = '#D4A94A')}
+        onMouseLeave={e => (e.currentTarget.style.background = 'var(--ochre)')}
       >
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
           <polyline points="5 12 12 5 19 12"/><polyline points="5 19 12 12 19 19"/>

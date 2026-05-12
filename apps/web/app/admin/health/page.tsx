@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+﻿import { createClient } from '@/lib/supabase/server';
 
 const ENV_VARS = [
   'NEXT_PUBLIC_API_URL',
@@ -57,7 +57,7 @@ const CARD = { background: 'var(--panel)', border: '1px solid var(--div)', borde
 const H2 = { fontFamily: 'Fraunces, serif', fontSize: 16, fontWeight: 700, color: 'var(--moss)', marginBottom: 14, letterSpacing: '-0.3px' } as const;
 
 function Dot({ ok }: { ok: boolean }) {
-  return <span style={{ width: 8, height: 8, borderRadius: '50%', background: ok ? '#4A7C3B' : '#B85C3C', display: 'inline-block', marginRight: 6 }} />;
+  return <span style={{ width: 8, height: 8, borderRadius: '50%', background: ok ? 'var(--success)' : 'var(--danger)', display: 'inline-block', marginRight: 6 }} />;
 }
 
 export default async function AdminHealthPage() {
@@ -96,7 +96,7 @@ export default async function AdminHealthPage() {
           </span>
         </div>
         {apiHealth?.gitCommit && webCommit !== 'local' && (
-          <div style={{ marginTop: 10, fontSize: 12, color: apiHealth.gitCommit.slice(0, 7) === webCommit.slice(0, 7) ? '#4A7C3B' : '#B85C3C', fontFamily: 'DM Sans, sans-serif' }}>
+          <div style={{ marginTop: 10, fontSize: 12, color: apiHealth.gitCommit.slice(0, 7) === webCommit.slice(0, 7) ? 'var(--success)' : 'var(--danger)', fontFamily: 'DM Sans, sans-serif' }}>
             {apiHealth.gitCommit.slice(0, 7) === webCommit.slice(0, 7)
               ? 'Commits in sync'
               : `Commits differ — API: ${apiHealth.gitCommit.slice(0, 7)}, Web: ${webCommit.slice(0, 7)}`}
@@ -123,7 +123,7 @@ export default async function AdminHealthPage() {
           return (
             <div key={v} style={ROW}>
               <span style={{ ...LABEL, fontFamily: 'JetBrains Mono, monospace', fontSize: 12 }}>{v}</span>
-              <span style={{ fontSize: 12, fontWeight: 600, color: set ? '#4A7C3B' : '#B85C3C', fontFamily: 'DM Sans, sans-serif' }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: set ? 'var(--success)' : 'var(--danger)', fontFamily: 'DM Sans, sans-serif' }}>
                 <Dot ok={set} />{set ? 'Set' : 'Missing'}
               </span>
             </div>
@@ -140,7 +140,7 @@ export default async function AdminHealthPage() {
           recentErrors.map((r: { id: string; status: string; error_message?: string | null; created_at: string }) => (
             <div key={r.id} style={{ ...ROW, flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 10, fontWeight: 700, background: 'rgba(184,92,60,0.1)', color: '#B85C3C', padding: '1px 6px', borderRadius: 3, fontFamily: 'DM Sans, sans-serif' }}>FAILED</span>
+                <span style={{ fontSize: 10, fontWeight: 700, background: 'rgba(184,92,60,0.1)', color: 'var(--danger)', padding: '1px 6px', borderRadius: 3, fontFamily: 'DM Sans, sans-serif' }}>FAILED</span>
                 <span style={{ fontSize: 11, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif' }}>{new Date(r.created_at).toLocaleString()}</span>
               </div>
               {r.error_message && (

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useApp } from '@/contexts/app-context';
 
 function ChatIcon() {
@@ -40,7 +40,7 @@ export function BottomTabBar() {
   return (
     <nav style={{
       height: 56,
-      background: '#ffffff',
+      background: 'var(--white)',
       borderTop: '1px solid #e5e5e5',
       display: 'flex',
       zIndex: 50,

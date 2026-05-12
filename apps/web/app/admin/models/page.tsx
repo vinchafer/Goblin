@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState, useCallback } from 'react';
 
@@ -24,7 +24,7 @@ const BLANK: Omit<Model, 'id'> = {
 };
 
 const LAYER_COLORS: Record<string, string> = {
-  byok: '#2D4A2B', free_api: '#1a2d5a', goblin_hosted: '#7A4A8A',
+  byok: 'var(--moss)', free_api: '#1a2d5a', goblin_hosted: '#7A4A8A',
 };
 
 export default function AdminModelsPage() {

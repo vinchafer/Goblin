@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { Icons } from '@/components/ui/icons';
 
 const PROBLEMS = [
@@ -36,7 +36,7 @@ export function TheProblem() {
           <div style={{ fontSize: 11, fontWeight: 500, letterSpacing: '0.12em', textTransform: 'uppercase' as const, color: 'var(--ochre)', marginBottom: 16, fontFamily: 'DM Sans, sans-serif' }}>The problem</div>
           <h2 style={{
             fontFamily: 'Fraunces, serif', fontSize: 'clamp(32px, 5vw, 48px)',
-            color: '#F7F4ED', lineHeight: 1.1, letterSpacing: '-1.5px', fontWeight: 700, marginBottom: 16,
+            color: 'var(--cream)', lineHeight: 1.1, letterSpacing: '-1.5px', fontWeight: 700, marginBottom: 16,
           }}>
             Building with AI<br />should not feel like this.
           </h2>
@@ -54,7 +54,7 @@ export function TheProblem() {
               <div style={{ color: 'var(--ochre)', marginBottom: 18, opacity: 0.9 }}>
                 <Icon size={22} strokeWidth={1.5} />
               </div>
-              <div style={{ fontFamily: 'Fraunces, serif', fontSize: 19, color: '#F7F4ED', fontWeight: 700, marginBottom: 8, letterSpacing: '-0.3px' }}>{title}</div>
+              <div style={{ fontFamily: 'Fraunces, serif', fontSize: 19, color: 'var(--cream)', fontWeight: 700, marginBottom: 8, letterSpacing: '-0.3px' }}>{title}</div>
               <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', lineHeight: 1.65, fontWeight: 400, marginBottom: 20, flex: 1, fontFamily: 'DM Sans, sans-serif' }}>{desc}</div>
               <div style={{
                 display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 500,

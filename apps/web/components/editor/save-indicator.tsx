@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState, useEffect } from 'react';
 
 type SaveState = 'idle' | 'unsaved' | 'saving' | 'saved';
@@ -37,9 +37,9 @@ export function SaveIndicator({ saving, isDirty }: SaveIndicatorProps) {
 
   const config: Record<SaveState, { dot: string; label: string; color: string }> = {
     idle:    { dot: 'transparent', label: '',                color: 'transparent' },
-    unsaved: { dot: '#D4A94A',     label: 'Unsaved changes', color: '#D4A94A' },
+    unsaved: { dot: 'var(--ochre)',     label: 'Unsaved changes', color: 'var(--ochre)' },
     saving:  { dot: '#8aaa85',     label: 'Saving…',         color: '#8aaa85' },
-    saved:   { dot: '#4a7c3b',     label: 'Saved ✓',         color: '#4a7c3b' },
+    saved:   { dot: 'var(--success)',     label: 'Saved ✓',         color: 'var(--success)' },
   };
 
   const { dot, label, color } = config[status];

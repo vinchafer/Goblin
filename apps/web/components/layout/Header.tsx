@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -72,7 +72,7 @@ export function Header({
 
   return (
     <header style={{
-      height: 56, background: '#2D4A2B',
+      height: 56, background: 'var(--moss)',
       display: 'flex', alignItems: 'center',
       padding: '0 16px', gap: 12, flexShrink: 0,
       borderBottom: '1px solid #3A5A37',
@@ -100,7 +100,7 @@ export function Header({
         onClick={() => router.push('/dashboard')}
         style={{
           fontFamily: 'Fraunces, serif', fontSize: 20,
-          color: '#D4A94A', fontWeight: 700, letterSpacing: '-0.5px',
+          color: 'var(--ochre)', fontWeight: 700, letterSpacing: '-0.5px',
           background: 'none', border: 'none', cursor: 'pointer',
           padding: '8px 4px', userSelect: 'none', flexShrink: 0,
         }}
@@ -152,7 +152,7 @@ export function Header({
                 <span style={{
                   position: 'absolute', top: 3, right: 3,
                   width: 6, height: 6, borderRadius: '50%',
-                  background: '#D4A94A',
+                  background: 'var(--ochre)',
                 }} />
               )}
             </button>
@@ -168,13 +168,13 @@ export function Header({
           onClick={() => setMenuOpen(p => !p)}
           style={{
             width: 32, height: 32, borderRadius: '50%',
-            background: '#c9933a', border: 'none',
+            background: 'var(--ochre-dark)', border: 'none',
             fontSize: 13, fontWeight: 700, color: '#2a1f0f',
             cursor: 'pointer', transition: 'background 0.15s',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}
           onMouseEnter={e => (e.currentTarget.style.background = '#e8b05a')}
-          onMouseLeave={e => (e.currentTarget.style.background = '#c9933a')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'var(--ochre-dark)')}
         >
           {user?.initial ?? 'G'}
         </button>

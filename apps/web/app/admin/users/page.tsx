@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useEffect, useState, useCallback } from 'react';
 
@@ -37,7 +37,7 @@ const CARD_STYLE = {
 };
 
 const PLAN_BADGE: Record<string, string> = {
-  seed: '#92701a', craft: '#2D4A2B', forge: '#1a2d5a',
+  seed: '#92701a', craft: 'var(--moss)', forge: '#1a2d5a',
 };
 
 export default function AdminUsersPage() {

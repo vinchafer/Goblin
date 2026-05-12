@@ -1,4 +1,4 @@
-export function HowItWorks() {
+﻿export function HowItWorks() {
   const steps = [
     {
       num: '01',
@@ -46,7 +46,7 @@ export function HowItWorks() {
                   zIndex: 0,
                 }}>
                   <span style={{
-                    fontSize: 18, color: '#c9933a', position: 'absolute', right: 8, top: -9,
+                    fontSize: 18, color: 'var(--ochre-dark)', position: 'absolute', right: 8, top: -9,
                   }}>→</span>
                 </div>
               )}
@@ -54,7 +54,7 @@ export function HowItWorks() {
               {/* Big number */}
               <div style={{
                 fontFamily: 'Fraunces, serif', fontSize: 56, fontWeight: 900,
-                color: '#c9933a', lineHeight: 1, letterSpacing: '-3px',
+                color: 'var(--ochre-dark)', lineHeight: 1, letterSpacing: '-3px',
                 marginBottom: 12, position: 'relative', zIndex: 1,
               }}>
                 {step.num}
@@ -85,7 +85,7 @@ export function HowItWorks() {
             <div key={step.num} style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
               <div style={{
                 fontFamily: 'Fraunces, serif', fontSize: 36, fontWeight: 900,
-                color: '#c9933a', lineHeight: 1, flexShrink: 0, minWidth: 40,
+                color: 'var(--ochre-dark)', lineHeight: 1, flexShrink: 0, minWidth: 40,
               }}>
                 {step.num}
               </div>

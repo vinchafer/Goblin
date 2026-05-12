@@ -1,4 +1,4 @@
-import type { Metadata, Viewport } from 'next'
+﻿import type { Metadata, Viewport } from 'next'
 import { Fraunces, DM_Sans, JetBrains_Mono } from 'next/font/google'
 import { Toaster } from 'sonner'
 import { ThemeProvider } from '@/lib/theme'
@@ -16,7 +16,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: 'cover',
-  themeColor: '#2D4A2B',
+  themeColor: 'var(--moss)',
 }
 
 export const metadata: Metadata = {
@@ -33,7 +33,7 @@ export const metadata: Metadata = {
     'apple-mobile-web-app-capable': 'yes',
     'apple-mobile-web-app-status-bar-style': 'black-translucent',
     'apple-mobile-web-app-title': 'Goblin',
-    'msapplication-TileColor': '#2D4A2B',
+    'msapplication-TileColor': 'var(--moss)',
     'format-detection': 'telephone=no',
   },
   icons: {
@@ -91,7 +91,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             style: {
               background: '#1a1a18',
               border: '1px solid #2D4A2B',
-              color: '#F7F4ED',
+              color: 'var(--cream)',
               fontFamily: 'DM Sans, sans-serif',
               fontSize: 13,
             },

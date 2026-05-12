@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useEffect, useState, useCallback } from 'react';
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors,
@@ -43,7 +43,7 @@ function SortableStep({ step, onRemove }: { step: ChainStep; onRemove: (id: stri
     transition,
     opacity: isDragging ? 0.5 : 1,
     background: '#fff',
-    border: `1px solid ${step.type === 'block' ? 'rgba(184,92,60,0.3)' : '#E8E4DC'}`,
+    border: `1px solid ${step.type === 'block' ? 'rgba(184,92,60,0.3)' : 'var(--div)'}`,
     borderRadius: 9,
     padding: '10px 12px',
     display: 'flex',
@@ -65,7 +65,7 @@ function SortableStep({ step, onRemove }: { step: ChainStep; onRemove: (id: stri
       <div style={{ flex: 1, minWidth: 0 }}>
         <span style={{
           fontSize: 13, fontWeight: 600,
-          color: step.type === 'block' ? '#B85C3C' : '#2A2A2A',
+          color: step.type === 'block' ? 'var(--danger)' : 'var(--text)',
           fontFamily: 'DM Sans, sans-serif',
         }}>
           {step.label}
@@ -75,7 +75,7 @@ function SortableStep({ step, onRemove }: { step: ChainStep; onRemove: (id: stri
             marginLeft: 8, fontSize: 10, fontWeight: 600,
             padding: '1px 6px', borderRadius: 4,
             background: step.tier === 'byok' ? 'rgba(45,74,43,0.1)' : 'rgba(212,169,74,0.15)',
-            color: step.tier === 'byok' ? '#2D4A2B' : '#b88a20',
+            color: step.tier === 'byok' ? 'var(--moss)' : '#b88a20',
             fontFamily: 'DM Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '0.3px',
           }}>
             {step.tier === 'byok' ? 'BYOK' : step.tier === 'free_api' ? 'Free' : 'Hosted'}
@@ -91,7 +91,7 @@ function SortableStep({ step, onRemove }: { step: ChainStep; onRemove: (id: stri
           background: 'none', border: 'none', borderRadius: 5,
           color: '#C0BAB0', cursor: 'pointer', fontSize: 14,
         }}
-        onMouseEnter={e => (e.currentTarget.style.color = '#B85C3C')}
+        onMouseEnter={e => (e.currentTarget.style.color = 'var(--danger)')}
         onMouseLeave={e => (e.currentTarget.style.color = '#C0BAB0')}
       >
         ×
@@ -199,15 +199,15 @@ export default function RoutingSettingsPage() {
   return (
     <SettingsLayout>
       <div style={{ maxWidth: 540 }}>
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: '#2A2A2A', fontFamily: 'DM Sans, sans-serif', marginBottom: 4 }}>
+        <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', fontFamily: 'DM Sans, sans-serif', marginBottom: 4 }}>
           Auto-Fallback Routing
         </h1>
-        <p style={{ fontSize: 13, color: '#6B6B6B', fontFamily: 'DM Sans, sans-serif', marginBottom: 24, lineHeight: 1.6 }}>
+        <p style={{ fontSize: 13, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif', marginBottom: 24, lineHeight: 1.6 }}>
           Drag to reorder. When a provider hits a rate limit, Goblin automatically tries the next one. The <strong>Block</strong> step stops routing and shows an error.
         </p>
 
         {loading ? (
-          <div style={{ height: 200, background: '#F7F4ED', borderRadius: 12, animation: 'pulse 1.5s ease-in-out infinite' }} />
+          <div style={{ height: 200, background: 'var(--cream)', borderRadius: 12, animation: 'pulse 1.5s ease-in-out infinite' }} />
         ) : (
           <>
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -220,7 +220,7 @@ export default function RoutingSettingsPage() {
                     <div style={{
                       border: '2px dashed #E8E4DC', borderRadius: 9,
                       padding: '20px', textAlign: 'center',
-                      fontSize: 13, color: '#9B9B9B', fontFamily: 'DM Sans, sans-serif',
+                      fontSize: 13, color: 'var(--disabled)', fontFamily: 'DM Sans, sans-serif',
                     }}>
                       Add at least one provider to your fallback chain.
                     </div>
@@ -238,7 +238,7 @@ export default function RoutingSettingsPage() {
                     padding: '7px 14px',
                     background: '#fff', border: '1px solid #E8E4DC',
                     borderRadius: 8, fontSize: 12, fontWeight: 600,
-                    color: '#2D4A2B', cursor: 'pointer',
+                    color: 'var(--moss)', cursor: 'pointer',
                     fontFamily: 'DM Sans, sans-serif',
                   }}
                 >
@@ -261,10 +261,10 @@ export default function RoutingSettingsPage() {
                           style={{
                             display: 'block', width: '100%', padding: '8px 14px',
                             background: 'none', border: 'none', textAlign: 'left',
-                            fontSize: 13, color: '#2A2A2A', cursor: 'pointer',
+                            fontSize: 13, color: 'var(--text)', cursor: 'pointer',
                             fontFamily: 'DM Sans, sans-serif',
                           }}
-                          onMouseEnter={e => (e.currentTarget.style.background = '#F7F4ED')}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'var(--cream)')}
                           onMouseLeave={e => (e.currentTarget.style.background = 'none')}
                         >
                           {opt.label}
@@ -282,7 +282,7 @@ export default function RoutingSettingsPage() {
                     padding: '7px 14px',
                     background: '#fff', border: '1px solid rgba(184,92,60,0.3)',
                     borderRadius: 8, fontSize: 12, fontWeight: 600,
-                    color: '#B85C3C', cursor: 'pointer',
+                    color: 'var(--danger)', cursor: 'pointer',
                     fontFamily: 'DM Sans, sans-serif',
                   }}
                 >
@@ -297,7 +297,7 @@ export default function RoutingSettingsPage() {
                 disabled={saving}
                 style={{
                   padding: '9px 22px',
-                  background: '#2D4A2B', color: '#fff',
+                  background: 'var(--moss)', color: '#fff',
                   border: 'none', borderRadius: 8,
                   fontSize: 13, fontWeight: 600,
                   cursor: saving ? 'not-allowed' : 'pointer',
@@ -308,7 +308,7 @@ export default function RoutingSettingsPage() {
                 {saving ? 'Saving...' : 'Save chain'}
               </button>
               {saved && (
-                <span style={{ fontSize: 13, color: '#4A7C3B', fontFamily: 'DM Sans, sans-serif', fontWeight: 500 }}>
+                <span style={{ fontSize: 13, color: 'var(--success)', fontFamily: 'DM Sans, sans-serif', fontWeight: 500 }}>
                   ✓ Saved
                 </span>
               )}

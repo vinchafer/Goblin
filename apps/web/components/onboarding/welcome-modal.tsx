@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -56,7 +56,7 @@ function SendToCodeMockup() {
           background: 'rgba(212,169,74,0.15)',
           border: '1px solid rgba(212,169,74,0.4)',
           borderRadius: 6, padding: '5px 12px',
-          fontSize: 12, color: '#D4A94A',
+          fontSize: 12, color: 'var(--ochre)',
           cursor: 'default', fontFamily: 'DM Sans, sans-serif',
           display: 'inline-flex', alignItems: 'center', gap: 5,
           animation: 'send-pulse 2s ease-in-out infinite',
@@ -126,7 +126,7 @@ export function WelcomeModal({ userName, onComplete }: WelcomeModalProps) {
           {DOTS.map(i => (
             <div key={i} style={{
               height: 3, borderRadius: 2, flex: 1, maxWidth: 40,
-              background: i === slide ? '#D4A94A' : 'rgba(255,255,255,0.15)',
+              background: i === slide ? 'var(--ochre)' : 'rgba(255,255,255,0.15)',
               transition: 'background 0.3s',
             }} />
           ))}
@@ -141,7 +141,7 @@ export function WelcomeModal({ userName, onComplete }: WelcomeModalProps) {
               <h1 style={{
                 fontFamily: 'Fraunces, serif',
                 fontSize: 30, fontWeight: 700,
-                color: '#D4A94A', letterSpacing: '-0.8px',
+                color: 'var(--ochre)', letterSpacing: '-0.8px',
                 marginTop: 20, marginBottom: 10,
               }}>
                 Willkommen{firstName ? `, ${firstName}` : ''} 👺
@@ -155,13 +155,13 @@ export function WelcomeModal({ userName, onComplete }: WelcomeModalProps) {
               <button
                 onClick={() => setSlide(1)}
                 style={{
-                  width: '100%', background: '#2D4A2B', color: '#fff',
+                  width: '100%', background: 'var(--moss)', color: '#fff',
                   border: 'none', borderRadius: 12, padding: '14px 0',
                   fontSize: 15, fontWeight: 600, cursor: 'pointer',
                   fontFamily: 'DM Sans, sans-serif', transition: 'background 0.15s',
                 }}
-                onMouseEnter={e => (e.currentTarget.style.background = '#3A5E38')}
-                onMouseLeave={e => (e.currentTarget.style.background = '#2D4A2B')}
+                onMouseEnter={e => (e.currentTarget.style.background = 'var(--moss-2)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'var(--moss)')}
               >
                 Weiter →
               </button>
@@ -184,20 +184,20 @@ export function WelcomeModal({ userName, onComplete }: WelcomeModalProps) {
                 fontFamily: 'DM Sans, sans-serif', lineHeight: 1.6, marginBottom: 24,
               }}>
                 Goblin schreibt den Code.<br />
-                Du tippst <span style={{ color: '#D4A94A', fontWeight: 600 }}>[→ Send to Code]</span>.
+                Du tippst <span style={{ color: 'var(--ochre)', fontWeight: 600 }}>[→ Send to Code]</span>.
               </p>
               <SendToCodeMockup />
               <button
                 onClick={() => setSlide(2)}
                 style={{
                   width: '100%', marginTop: 28,
-                  background: '#2D4A2B', color: '#fff',
+                  background: 'var(--moss)', color: '#fff',
                   border: 'none', borderRadius: 12, padding: '14px 0',
                   fontSize: 15, fontWeight: 600, cursor: 'pointer',
                   fontFamily: 'DM Sans, sans-serif', transition: 'background 0.15s',
                 }}
-                onMouseEnter={e => (e.currentTarget.style.background = '#3A5E38')}
-                onMouseLeave={e => (e.currentTarget.style.background = '#2D4A2B')}
+                onMouseEnter={e => (e.currentTarget.style.background = 'var(--moss-2)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'var(--moss)')}
               >
                 Weiter →
               </button>
@@ -226,14 +226,14 @@ export function WelcomeModal({ userName, onComplete }: WelcomeModalProps) {
                 <button
                   onClick={handleApiKeys}
                   style={{
-                    width: '100%', background: '#D4A94A', color: '#1a0f00',
+                    width: '100%', background: 'var(--ochre)', color: '#1a0f00',
                     border: 'none', borderRadius: 12, padding: '14px 0',
                     fontSize: 15, fontWeight: 700, cursor: 'pointer',
                     fontFamily: 'DM Sans, sans-serif', transition: 'background 0.15s',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                   }}
-                  onMouseEnter={e => (e.currentTarget.style.background = '#E8BF6A')}
-                  onMouseLeave={e => (e.currentTarget.style.background = '#D4A94A')}
+                  onMouseEnter={e => (e.currentTarget.style.background = 'var(--ochre-2)')}
+                  onMouseLeave={e => (e.currentTarget.style.background = 'var(--ochre)')}
                 >
                   🔑 API Key verbinden →
                 </button>

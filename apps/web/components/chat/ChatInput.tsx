@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { toast } from 'sonner';
@@ -127,14 +127,14 @@ function ModelHub({
         <span style={{ fontSize: 18, flexShrink: 0, lineHeight: 1.2 }}>{getProviderIcon(m.provider)}</span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 13, fontWeight: active ? 600 : 500, color: '#2A2A2A', fontFamily: 'DM Sans, sans-serif' }}>
+            <span style={{ fontSize: 13, fontWeight: active ? 600 : 500, color: 'var(--text)', fontFamily: 'DM Sans, sans-serif' }}>
               {m.name}
             </span>
             {badge}
-            {active && <span style={{ fontSize: 10, background: '#2D4A2B', color: '#fff', padding: '1px 5px', borderRadius: 3, fontWeight: 600, fontFamily: 'DM Sans, sans-serif' }}>✓ ACTIVE</span>}
+            {active && <span style={{ fontSize: 10, background: 'var(--moss)', color: '#fff', padding: '1px 5px', borderRadius: 3, fontWeight: 600, fontFamily: 'DM Sans, sans-serif' }}>✓ ACTIVE</span>}
           </div>
           {m.description && (
-            <div style={{ fontSize: 11, color: '#6B6B6B', marginTop: 2, fontFamily: 'DM Sans, sans-serif', lineHeight: 1.4 }}>
+            <div style={{ fontSize: 11, color: 'var(--meta)', marginTop: 2, fontFamily: 'DM Sans, sans-serif', lineHeight: 1.4 }}>
               {m.description}
             </div>
           )}
@@ -150,7 +150,7 @@ function ModelHub({
         <div style={{
           padding: '6px 14px 4px',
           fontSize: 10, fontWeight: 700, letterSpacing: '1.2px',
-          textTransform: 'uppercase', color: '#9C9589',
+          textTransform: 'uppercase', color: 'var(--text-faint)',
           fontFamily: 'DM Sans, sans-serif',
         }}>{title}</div>
         {children}
@@ -178,8 +178,8 @@ function ModelHub({
           style={{
             width: '100%', border: '1px solid #EDE8DC', borderRadius: 8,
             padding: '7px 12px', fontSize: 13, outline: 'none',
-            fontFamily: 'DM Sans, sans-serif', background: '#F7F4ED',
-            color: '#2A2A2A',
+            fontFamily: 'DM Sans, sans-serif', background: 'var(--cream)',
+            color: 'var(--text)',
           }}
         />
       </div>
@@ -194,9 +194,9 @@ function ModelHub({
               style={{
                 padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 500,
                 border: '1px solid',
-                borderColor: activeTag === tag ? '#2D4A2B' : '#DDD7CC',
-                background: activeTag === tag ? '#2D4A2B' : 'transparent',
-                color: activeTag === tag ? '#fff' : '#6B6B6B',
+                borderColor: activeTag === tag ? 'var(--moss)' : 'var(--border)',
+                background: activeTag === tag ? 'var(--moss)' : 'transparent',
+                color: activeTag === tag ? '#fff' : 'var(--meta)',
                 cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
                 transition: 'all 0.1s',
               }}
@@ -214,7 +214,7 @@ function ModelHub({
             <ModelRow
               key={m.slug}
               m={m}
-              badge={<span style={{ fontSize: 10, background: '#4A7C3B', color: '#fff', padding: '1px 6px', borderRadius: 3, fontWeight: 600, fontFamily: 'DM Sans, sans-serif' }}>KEY ✓</span>}
+              badge={<span style={{ fontSize: 10, background: 'var(--success)', color: '#fff', padding: '1px 6px', borderRadius: 3, fontWeight: 600, fontFamily: 'DM Sans, sans-serif' }}>KEY ✓</span>}
             />
           ))}
         </Section>
@@ -234,16 +234,16 @@ function ModelHub({
             <div key={m.slug} style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10, opacity: 0.5 }}>
               <span style={{ fontSize: 18 }}>👺</span>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 500, color: '#2A2A2A', fontFamily: 'DM Sans, sans-serif' }}>{m.name}</div>
-                {m.description && <div style={{ fontSize: 11, color: '#6B6B6B', fontFamily: 'DM Sans, sans-serif' }}>{m.description}</div>}
+                <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)', fontFamily: 'DM Sans, sans-serif' }}>{m.name}</div>
+                {m.description && <div style={{ fontSize: 11, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif' }}>{m.description}</div>}
               </div>
-              <span style={{ fontSize: 10, background: '#9C9589', color: '#fff', padding: '2px 7px', borderRadius: 4, fontWeight: 600, fontFamily: 'DM Sans, sans-serif', flexShrink: 0 }}>SOON</span>
+              <span style={{ fontSize: 10, background: 'var(--text-faint)', color: '#fff', padding: '2px 7px', borderRadius: 4, fontWeight: 600, fontFamily: 'DM Sans, sans-serif', flexShrink: 0 }}>SOON</span>
             </div>
           ))}
         </Section>
 
         {byokModels.length === 0 && freeModels.length === 0 && (
-          <div style={{ padding: '24px', textAlign: 'center', color: '#9C9589', fontFamily: 'DM Sans, sans-serif', fontSize: 13 }}>
+          <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-faint)', fontFamily: 'DM Sans, sans-serif', fontSize: 13 }}>
             <div style={{ fontSize: 32, marginBottom: 8 }}>🔑</div>
             Add an API key in Settings → API Keys to unlock models.
           </div>
@@ -290,7 +290,7 @@ function VoiceButton({ onTranscript, disabled }: { onTranscript: (t: string) => 
     <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
       {label && (
         <span style={{
-          fontSize: 11, color: recording ? '#B85C3C' : 'var(--meta)',
+          fontSize: 11, color: recording ? 'var(--danger)' : 'var(--meta)',
           fontFamily: 'DM Sans, sans-serif',
           animation: 'goblin-pulse 1.2s ease-in-out infinite',
         }}>
@@ -488,11 +488,11 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
           style={{
             display: 'flex', flexDirection: 'column',
             border: '1.5px solid #DDD7CC', borderRadius: 14,
-            background: '#F7F4ED',
+            background: 'var(--cream)',
             transition: 'border-color 0.15s',
           }}
-          onFocusCapture={e => (e.currentTarget.style.borderColor = '#2D4A2B')}
-          onBlurCapture={e => (e.currentTarget.style.borderColor = '#DDD7CC')}
+          onFocusCapture={e => (e.currentTarget.style.borderColor = 'var(--moss)')}
+          onBlurCapture={e => (e.currentTarget.style.borderColor = 'var(--border)')}
         >
           {/* Textarea */}
           <textarea
@@ -505,7 +505,7 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
             rows={1}
             style={{
               resize: 'none', border: 'none', background: 'transparent',
-              outline: 'none', fontSize: 14, color: '#2A2A2A',
+              outline: 'none', fontSize: 14, color: 'var(--text)',
               fontFamily: 'DM Sans, sans-serif', lineHeight: '22px',
               maxHeight: `${6 * 22 + 20}px`, overflowY: 'auto',
               padding: '12px 14px 6px',
@@ -561,14 +561,14 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
               disabled={!hasInput || disabled}
               style={{
                 width: 32, height: 32, borderRadius: 8,
-                background: hasInput && !disabled ? '#2D4A2B' : '#DDD7CC',
+                background: hasInput && !disabled ? 'var(--moss)' : 'var(--border)',
                 border: 'none', cursor: hasInput && !disabled ? 'pointer' : 'not-allowed',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 transition: 'all 0.15s', flexShrink: 0,
-                color: hasInput && !disabled ? '#fff' : '#9C9589',
+                color: hasInput && !disabled ? '#fff' : 'var(--text-faint)',
               }}
               onMouseEnter={e => { if (hasInput && !disabled) e.currentTarget.style.background = '#3A5A37'; }}
-              onMouseLeave={e => { if (hasInput && !disabled) e.currentTarget.style.background = '#2D4A2B'; }}
+              onMouseLeave={e => { if (hasInput && !disabled) e.currentTarget.style.background = 'var(--moss)'; }}
             >
               {disabled ? (
                 <svg style={{ animation: 'inputSpin 0.8s linear infinite' }} width="14" height="14" viewBox="0 0 24 24" fill="none">

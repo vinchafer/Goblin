@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState } from 'react';
 
 type Viewport = '375' | '768' | '1440';
@@ -112,7 +112,7 @@ export function PreviewTab({ projectId, previewUrl }: PreviewTabProps) {
       <div style={{
         flex: 1, display: 'flex', alignItems: 'flex-start',
         justifyContent: 'center',
-        background: viewport === '1440' ? '#fff' : '#6b6b6b',
+        background: viewport === '1440' ? '#fff' : 'var(--meta)',
         overflow: 'auto',
         padding: viewport === '1440' ? 0 : 20,
       }}>

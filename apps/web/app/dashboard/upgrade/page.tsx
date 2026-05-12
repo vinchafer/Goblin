@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState } from 'react';
 import { getAuthHeaders, API_URL } from '@/lib/api';
 
@@ -39,14 +39,14 @@ export default function UpgradePage() {
   return (
     <div style={{ maxWidth: 480, margin: '0 auto', padding: '48px 24px', textAlign: 'center' }}>
       {/* Logo */}
-      <div style={{ width: 56, height: 56, borderRadius: 14, background: '#2D4A2B', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
-        <span style={{ fontSize: 24, fontWeight: 700, color: '#D4A94A', fontFamily: 'Fraunces, serif' }}>G</span>
+      <div style={{ width: 56, height: 56, borderRadius: 14, background: 'var(--moss)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+        <span style={{ fontSize: 24, fontWeight: 700, color: 'var(--ochre)', fontFamily: 'Fraunces, serif' }}>G</span>
       </div>
 
-      <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 28, fontWeight: 700, color: '#2A2A2A', marginBottom: 8, letterSpacing: '-0.5px' }}>
+      <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 28, fontWeight: 700, color: 'var(--text)', marginBottom: 8, letterSpacing: '-0.5px' }}>
         Upgrade to Goblin
       </h1>
-      <p style={{ fontSize: 14, color: '#6B6B6B', fontFamily: 'DM Sans, sans-serif', lineHeight: 1.6, marginBottom: 32 }}>
+      <p style={{ fontSize: 14, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif', lineHeight: 1.6, marginBottom: 32 }}>
         Build from anywhere. No token panic. No copy-paste.
       </p>
 
@@ -58,18 +58,18 @@ export default function UpgradePage() {
         boxShadow: '0 4px 24px rgba(45,74,43,0.08)',
       }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 6 }}>
-          <span style={{ fontSize: 40, fontWeight: 800, color: '#2D4A2B', fontFamily: 'Fraunces, serif' }}>$9</span>
-          <span style={{ fontSize: 14, color: '#6B6B6B', fontFamily: 'DM Sans, sans-serif' }}>/month</span>
+          <span style={{ fontSize: 40, fontWeight: 800, color: 'var(--moss)', fontFamily: 'Fraunces, serif' }}>$9</span>
+          <span style={{ fontSize: 14, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif' }}>/month</span>
         </div>
-        <div style={{ fontSize: 12, color: '#9B9B9B', fontFamily: 'DM Sans, sans-serif', marginBottom: 20 }}>
+        <div style={{ fontSize: 12, color: 'var(--disabled)', fontFamily: 'DM Sans, sans-serif', marginBottom: 20 }}>
           Cancel anytime. No commitment.
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
           {FEATURES.map(f => (
             <div key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-              <span style={{ color: '#4A7C3B', fontSize: 14, flexShrink: 0, marginTop: 1 }}>✓</span>
-              <span style={{ fontSize: 13, color: '#2A2A2A', fontFamily: 'DM Sans, sans-serif', lineHeight: 1.4 }}>{f}</span>
+              <span style={{ color: 'var(--success)', fontSize: 14, flexShrink: 0, marginTop: 1 }}>✓</span>
+              <span style={{ fontSize: 13, color: 'var(--text)', fontFamily: 'DM Sans, sans-serif', lineHeight: 1.4 }}>{f}</span>
             </div>
           ))}
         </div>
@@ -79,26 +79,26 @@ export default function UpgradePage() {
           disabled={loading}
           style={{
             width: '100%', padding: '13px 0',
-            background: loading ? 'rgba(45,74,43,0.6)' : '#2D4A2B',
-            color: '#D4A94A', border: 'none', borderRadius: 10,
+            background: loading ? 'rgba(45,74,43,0.6)' : 'var(--moss)',
+            color: 'var(--ochre)', border: 'none', borderRadius: 10,
             fontSize: 15, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer',
             fontFamily: 'DM Sans, sans-serif', letterSpacing: '0.2px',
             transition: 'background 0.15s',
           }}
           onMouseEnter={e => { if (!loading) e.currentTarget.style.background = '#3a5f38'; }}
-          onMouseLeave={e => { if (!loading) e.currentTarget.style.background = '#2D4A2B'; }}
+          onMouseLeave={e => { if (!loading) e.currentTarget.style.background = 'var(--moss)'; }}
         >
           {loading ? 'Redirecting to checkout...' : 'Get Goblin — $9/mo'}
         </button>
 
         {error && (
-          <div style={{ marginTop: 12, fontSize: 12, color: '#B85C3C', fontFamily: 'DM Sans, sans-serif', textAlign: 'center' }}>
+          <div style={{ marginTop: 12, fontSize: 12, color: 'var(--danger)', fontFamily: 'DM Sans, sans-serif', textAlign: 'center' }}>
             {error}
           </div>
         )}
       </div>
 
-      <div style={{ fontSize: 12, color: '#9B9B9B', fontFamily: 'DM Sans, sans-serif', lineHeight: 1.6 }}>
+      <div style={{ fontSize: 12, color: 'var(--disabled)', fontFamily: 'DM Sans, sans-serif', lineHeight: 1.6 }}>
         Secure checkout via Stripe. Your card is never stored by Goblin.
       </div>
     </div>

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useRef } from "react";
 import { useApp, type AppModel } from "@/contexts/app-context";
@@ -170,13 +170,13 @@ export function ModelSwitcher() {
   const getBadge = (model: ModelFromAPI) => {
     if (model.layer === 'byok') {
       if (activeProviders.includes(model.provider)) {
-        return { text: 'BYOK ✓', color: '#4a7c3b' }; // green
+        return { text: 'BYOK ✓', color: 'var(--success)' }; // green
       } else {
-        return { text: 'Add key →', color: '#b85c3c' }; // red
+        return { text: 'Add key →', color: 'var(--danger)' }; // red
       }
     }
     if (model.layer === 'free_api') {
-      return { text: 'FREE', color: '#4a7c3b' }; // green
+      return { text: 'FREE', color: 'var(--success)' }; // green
     }
     if (model.layer === 'goblin_hosted') {
       return { text: 'SOON', color: '#6b6560' }; // gray

@@ -1,4 +1,4 @@
-export const metadata = { title: 'Built with Goblin — Badge' };
+﻿export const metadata = { title: 'Built with Goblin — Badge' };
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://justgoblin.com';
 
@@ -6,7 +6,7 @@ const BADGES = [
   {
     id: 'standard',
     label: 'Standard',
-    bg: '#f0ebe0',
+    bg: 'var(--subtle)',
     src: '/badge.svg',
     html: `<a href="${APP_URL}" target="_blank" rel="noopener"><img src="${APP_URL}/badge.svg" alt="Built with Goblin" width="140" height="28" /></a>`,
     md: `[![Built with Goblin](${APP_URL}/badge.svg)](${APP_URL})`,
@@ -22,7 +22,7 @@ const BADGES = [
   {
     id: 'minimal',
     label: 'Minimal',
-    bg: '#f0ebe0',
+    bg: 'var(--subtle)',
     src: '/badge-minimal.svg',
     html: `<a href="${APP_URL}" target="_blank" rel="noopener"><img src="${APP_URL}/badge-minimal.svg" alt="Built with Goblin" width="100" height="22" /></a>`,
     md: `[![Built with Goblin](${APP_URL}/badge-minimal.svg)](${APP_URL})`,

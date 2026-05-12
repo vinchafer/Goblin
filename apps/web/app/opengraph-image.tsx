@@ -1,4 +1,4 @@
-import { ImageResponse } from 'next/og';
+﻿import { ImageResponse } from 'next/og';
 
 export const runtime = 'edge';
 
@@ -20,7 +20,7 @@ export default async function Image() {
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: '#2D4A2B',
+          backgroundColor: 'var(--moss)',
         }}
       >
         <div
@@ -37,7 +37,7 @@ export default async function Image() {
         <div
           style={{
             fontSize: 36,
-            color: '#D4A94A',
+            color: 'var(--ochre)',
             fontWeight: 500,
           }}
         >

@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useState, useEffect } from 'react';
 import { isLocalModeAvailable } from '@/lib/hardware-check';
 
@@ -81,7 +81,7 @@ export function LocalCloudSwitch() {
             letterSpacing: '0.5px',
             cursor: 'pointer',
             background: mode === 'cloud' ? 'rgba(212,169,74,0.2)' : 'transparent',
-            color: mode === 'cloud' ? '#D4A94A' : 'rgba(255,255,255,0.4)',
+            color: mode === 'cloud' ? 'var(--ochre)' : 'rgba(255,255,255,0.4)',
             transition: 'all 0.15s',
           }}
         >
@@ -111,7 +111,7 @@ export function LocalCloudSwitch() {
             href="https://justgoblin.com/download"
             style={{
               display: 'inline-block', marginTop: 6,
-              fontSize: 11, color: '#D4A94A',
+              fontSize: 11, color: 'var(--ochre)',
               fontFamily: 'DM Sans, sans-serif',
               textDecoration: 'none',
             }}

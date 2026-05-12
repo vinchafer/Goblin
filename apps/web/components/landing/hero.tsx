@@ -1,4 +1,4 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 
 export function Hero() {
   return (
@@ -34,7 +34,7 @@ export function Hero() {
 
       <h1 style={{
         fontFamily: 'Fraunces, serif', fontSize: 'clamp(40px, 6vw, 72px)',
-        lineHeight: 1.08, fontWeight: 700, color: '#F7F4ED',
+        lineHeight: 1.08, fontWeight: 700, color: 'var(--cream)',
         letterSpacing: '-2px', marginBottom: 28, maxWidth: 760,
         position: 'relative', zIndex: 1,
       }}>
@@ -53,7 +53,7 @@ export function Hero() {
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center', position: 'relative', zIndex: 1, marginBottom: 64 }}>
         <Link href="/login" style={{
-          background: '#F7F4ED', color: '#0f1410', padding: '13px 28px',
+          background: 'var(--cream)', color: '#0f1410', padding: '13px 28px',
           borderRadius: 9, fontSize: 14, fontWeight: 600, textDecoration: 'none',
           display: 'inline-flex', alignItems: 'center', gap: 8,
           fontFamily: 'DM Sans, sans-serif',
@@ -88,7 +88,7 @@ export function Hero() {
             <div style={{ fontFamily: 'Fraunces, serif', fontSize: 16, color: 'var(--moss)', fontWeight: 700, paddingBottom: 10, borderBottom: '1px solid #e4ddd2', marginBottom: 10 }}>
               Goblin<span style={{ color: 'var(--ochre)' }}>.</span>
             </div>
-            {([['#c9933a', 'MyStartup', true], ['#4a7c3b', 'NewsletterAI', false], ['#7a4a8a', 'LeadMagnet', false]] as [string, string, boolean][]).map(([c, n, a]) => (
+            {([['var(--ochre-dark)', 'MyStartup', true], ['var(--success)', 'NewsletterAI', false], ['#7a4a8a', 'LeadMagnet', false]] as [string, string, boolean][]).map(([c, n, a]) => (
               <div key={n} style={{
                 display: 'flex', alignItems: 'center', gap: 8, padding: '6px 8px', borderRadius: 7, marginBottom: 3,
                 background: a ? 'rgba(201,147,58,0.1)' : 'transparent',
@@ -116,7 +116,7 @@ export function Hero() {
                 <div style={{ background: 'var(--cream)', border: '1px solid var(--border)', borderRadius: 10, padding: '8px 12px', fontSize: 11 }}>
                   Done! Here is the updated Navbar:
                   <div style={{ background: '#1a2018', borderRadius: 6, padding: '7px 9px', margin: '6px 0', fontFamily: 'JetBrains Mono, monospace', fontSize: 10, color: '#8aaa85', lineHeight: 1.6 }}>
-                    <span style={{ color: '#c9933a' }}>export function</span> <span style={{ color: '#7dd3a8' }}>Navbar</span>()&nbsp;{'{'}..<br />{'}'  }
+                    <span style={{ color: 'var(--ochre-dark)' }}>export function</span> <span style={{ color: '#7dd3a8' }}>Navbar</span>()&nbsp;{'{'}..<br />{'}'  }
                   </div>
                   <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: 'var(--ochre)', color: 'var(--bark)', borderRadius: 6, padding: '5px 11px', fontSize: 11, fontWeight: 600 }}>Send to Code</div>
                 </div>

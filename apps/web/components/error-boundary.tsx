@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { Component, type ReactNode, type ErrorInfo } from 'react';
 
 interface Props {
@@ -38,16 +38,16 @@ export class ErrorBoundary extends Component<Props, State> {
           fontFamily: 'DM Sans, sans-serif',
         }}>
           <div style={{ fontSize: 32, marginBottom: 12 }}>💀</div>
-          <div style={{ fontSize: 15, fontWeight: 600, color: '#2A2A2A', marginBottom: 6 }}>
+          <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginBottom: 6 }}>
             Goblin hiccupped.
           </div>
-          <div style={{ fontSize: 13, color: '#6B6B6B', marginBottom: 20, lineHeight: 1.5 }}>
+          <div style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 20, lineHeight: 1.5 }}>
             Your work is safe. This tab crashed but other tabs should still work.
           </div>
           <button
             onClick={() => this.setState({ hasError: false, error: null })}
             style={{
-              padding: '8px 18px', background: '#2D4A2B', color: '#fff',
+              padding: '8px 18px', background: 'var(--moss)', color: '#fff',
               border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600,
               cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
             }}
@@ -56,8 +56,8 @@ export class ErrorBoundary extends Component<Props, State> {
           </button>
           {process.env.NODE_ENV === 'development' && this.state.error && (
             <details style={{ marginTop: 16, maxWidth: 400, textAlign: 'left' }}>
-              <summary style={{ fontSize: 11, color: '#9B9B9B', cursor: 'pointer' }}>Error details</summary>
-              <pre style={{ fontSize: 10, color: '#B85C3C', marginTop: 8, overflow: 'auto' }}>
+              <summary style={{ fontSize: 11, color: 'var(--disabled)', cursor: 'pointer' }}>Error details</summary>
+              <pre style={{ fontSize: 10, color: 'var(--danger)', marginTop: 8, overflow: 'auto' }}>
                 {this.state.error.message}
               </pre>
             </details>

@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server';
+﻿import { createClient } from '@/lib/supabase/server';
 
 interface VersionData {
   version: string;
@@ -81,7 +81,7 @@ async function getIncidents(): Promise<Incident[]> {
 }
 
 function StatusDot({ status }: { status: string }) {
-  const color = status === 'ok' ? '#4a7c3b' : status === 'degraded' || status === 'skip' ? '#D4A94A' : '#b85c3c';
+  const color = status === 'ok' ? 'var(--success)' : status === 'degraded' || status === 'skip' ? 'var(--ochre)' : 'var(--danger)';
   return (
     <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: color, flexShrink: 0, boxShadow: `0 0 6px ${color}` }} />
   );
@@ -102,10 +102,10 @@ const SERVICE_LABELS: Record<string, string> = {
 };
 
 const INCIDENT_STATUS_COLOR: Record<string, string> = {
-  investigating: '#B85C3C',
-  identified:    '#D4A94A',
+  investigating: 'var(--danger)',
+  identified:    'var(--ochre)',
   monitoring:    '#3A6B8A',
-  resolved:      '#4A7C3B',
+  resolved:      'var(--success)',
 };
 
 const SEVERITY_ICON: Record<string, string> = {
@@ -121,7 +121,7 @@ export default async function StatusPage() {
   const resolvedIncidents = incidents.filter(i => i.status === 'resolved');
 
   const overall = health?.status ?? 'down';
-  const overallColor = overall === 'ok' ? '#4a7c3b' : overall === 'degraded' ? '#D4A94A' : '#b85c3c';
+  const overallColor = overall === 'ok' ? 'var(--success)' : overall === 'degraded' ? 'var(--ochre)' : 'var(--danger)';
   const overallLabel = overall === 'ok'
     ? activeIncidents.length > 0 ? '⚠ Active incidents' : '✓ All systems operational'
     : overall === 'degraded' ? '⚠ Partial outage' : '✗ Major outage';
@@ -216,7 +216,7 @@ export default async function StatusPage() {
                   <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{inc.title}</div>
                   <div style={{ fontSize: 11, color: 'var(--meta)', marginTop: 2 }}>{new Date(inc.created_at).toLocaleDateString()}</div>
                 </div>
-                <span style={{ fontSize: 11, fontWeight: 700, color: '#4A7C3B', background: 'rgba(74,124,59,0.1)', padding: '2px 7px', borderRadius: 4 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--success)', background: 'rgba(74,124,59,0.1)', padding: '2px 7px', borderRadius: 4 }}>
                   Resolved
                 </span>
               </div>
@@ -249,7 +249,7 @@ export default async function StatusPage() {
             </div>
           ))}
           {webVersion && apiVersion && webVersion.gitCommit !== 'unknown' && apiVersion.gitCommit !== 'unknown' && (
-            <div style={{ padding: '10px 20px', fontSize: 12, color: webVersion.gitCommit === apiVersion.gitCommit ? '#4A7C3B' : '#D4A94A', fontWeight: 600 }}>
+            <div style={{ padding: '10px 20px', fontSize: 12, color: webVersion.gitCommit === apiVersion.gitCommit ? 'var(--success)' : 'var(--ochre)', fontWeight: 600 }}>
               {webVersion.gitCommit === apiVersion.gitCommit ? '✓ Web and API on same commit' : '⚠ Web and API on different commits'}
             </div>
           )}

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
@@ -108,7 +108,7 @@ function CodeBlock({ language, value, messageId }: { language: string; value: st
           onClick={() => { setPendingCodePayload({ content: value, filename: filenameHint }); setActiveTab('code'); }}
           style={{
             padding: '5px 12px', borderRadius: 5, fontSize: 11, fontWeight: 600,
-            background: '#c9933a', color: '#2a1f0f', border: 'none', cursor: 'pointer',
+            background: 'var(--ochre-dark)', color: '#2a1f0f', border: 'none', cursor: 'pointer',
             display: 'flex', alignItems: 'center', gap: 4,
           }}
         >

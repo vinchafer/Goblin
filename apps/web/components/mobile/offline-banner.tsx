@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 import { useEffect, useState } from 'react';
 
 export function OfflineBanner() {
@@ -32,7 +32,7 @@ export function OfflineBanner() {
     return (
       <div style={{
         position: 'fixed', top: 0, left: 0, right: 0,
-        background: '#4A7C3B', color: '#fff',
+        background: 'var(--success)', color: '#fff',
         padding: '8px 16px', textAlign: 'center',
         fontSize: 13, fontFamily: 'DM Sans, sans-serif', fontWeight: 500,
         zIndex: 1000, animation: 'slideDown 0.2s ease',
@@ -45,7 +45,7 @@ export function OfflineBanner() {
   return (
     <div style={{
       position: 'fixed', top: 0, left: 0, right: 0,
-      background: '#B85C3C', color: '#fff',
+      background: 'var(--danger)', color: '#fff',
       padding: '8px 16px',
       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
       fontSize: 13, fontFamily: 'DM Sans, sans-serif', fontWeight: 500,

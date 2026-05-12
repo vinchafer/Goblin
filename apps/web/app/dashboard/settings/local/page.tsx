@@ -1,10 +1,10 @@
-'use client';
+﻿'use client';
 import { useState } from 'react';
 import { detectHardware, getModelRecommendations, isLocalModeAvailable, type HardwareInfo, type ModelRecommendation } from '@/lib/hardware-check';
 
 const tagColors: Record<string, string> = {
-  recommended: '#D4A94A',
-  fast: '#4A7C3B',
+  recommended: 'var(--ochre)',
+  fast: 'var(--success)',
   capable: '#3A6B8A',
   powerful: '#7B3A8A',
 };
@@ -23,7 +23,7 @@ function ModelCard({ model, onCopy }: { model: ModelRecommendation; onCopy: (cmd
     }}>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: '#2A2A2A', fontFamily: 'DM Sans, sans-serif' }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', fontFamily: 'DM Sans, sans-serif' }}>
             {model.name}
           </span>
           <span style={{
@@ -36,7 +36,7 @@ function ModelCard({ model, onCopy }: { model: ModelRecommendation; onCopy: (cmd
             {model.tag}
           </span>
         </div>
-        <div style={{ fontSize: 11, color: '#6B6B6B', fontFamily: 'var(--font-code, monospace)' }}>
+        <div style={{ fontSize: 11, color: 'var(--meta)', fontFamily: 'var(--font-code, monospace)' }}>
           {model.pullCommand}
         </div>
       </div>
@@ -45,7 +45,7 @@ function ModelCard({ model, onCopy }: { model: ModelRecommendation; onCopy: (cmd
         style={{
           flexShrink: 0,
           padding: '6px 12px',
-          background: '#2D4A2B',
+          background: 'var(--moss)',
           color: '#fff',
           border: 'none',
           borderRadius: 7,
@@ -56,7 +56,7 @@ function ModelCard({ model, onCopy }: { model: ModelRecommendation; onCopy: (cmd
           transition: 'background 0.15s',
         }}
         onMouseEnter={e => (e.currentTarget.style.background = '#3a5f38')}
-        onMouseLeave={e => (e.currentTarget.style.background = '#2D4A2B')}
+        onMouseLeave={e => (e.currentTarget.style.background = 'var(--moss)')}
       >
         Copy
       </button>
@@ -89,12 +89,12 @@ export default function LocalSettingsPage() {
     <div style={{ maxWidth: 640, margin: '0 auto', padding: '32px 24px' }}>
       <h1 style={{
         fontSize: 22, fontWeight: 700,
-        color: '#2A2A2A', fontFamily: 'DM Sans, sans-serif',
+        color: 'var(--text)', fontFamily: 'DM Sans, sans-serif',
         marginBottom: 6,
       }}>
         Local Mode
       </h1>
-      <p style={{ fontSize: 13, color: '#6B6B6B', fontFamily: 'DM Sans, sans-serif', marginBottom: 28, lineHeight: 1.6 }}>
+      <p style={{ fontSize: 13, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif', marginBottom: 28, lineHeight: 1.6 }}>
         Run AI models on your own hardware for free — no API keys, no usage limits. Requires the Goblin Desktop App and Ollama installed locally.
       </p>
 
@@ -111,17 +111,17 @@ export default function LocalSettingsPage() {
         }}>
           <span style={{ fontSize: 18, flexShrink: 0 }}>🖥</span>
           <div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#2A2A2A', fontFamily: 'DM Sans, sans-serif', marginBottom: 4 }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', fontFamily: 'DM Sans, sans-serif', marginBottom: 4 }}>
               Desktop App required
             </div>
-            <div style={{ fontSize: 12, color: '#6B6B6B', fontFamily: 'DM Sans, sans-serif', lineHeight: 1.5 }}>
+            <div style={{ fontSize: 12, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif', lineHeight: 1.5 }}>
               Local mode only works in the Goblin Desktop App (Tauri). Your browser can&apos;t connect to localhost Ollama for security reasons.
             </div>
             <a
               href="https://justgoblin.com/download"
               style={{
                 display: 'inline-block', marginTop: 8,
-                fontSize: 12, color: '#2D4A2B', fontWeight: 600,
+                fontSize: 12, color: 'var(--moss)', fontWeight: 600,
                 fontFamily: 'DM Sans, sans-serif', textDecoration: 'none',
               }}
             >
@@ -137,10 +137,10 @@ export default function LocalSettingsPage() {
         borderRadius: 12, padding: '20px',
         marginBottom: 24,
       }}>
-        <h2 style={{ fontSize: 15, fontWeight: 600, color: '#2A2A2A', fontFamily: 'DM Sans, sans-serif', marginBottom: 4 }}>
+        <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', fontFamily: 'DM Sans, sans-serif', marginBottom: 4 }}>
           Hardware Check
         </h2>
-        <p style={{ fontSize: 12, color: '#6B6B6B', fontFamily: 'DM Sans, sans-serif', marginBottom: 16 }}>
+        <p style={{ fontSize: 12, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif', marginBottom: 16 }}>
           Detects your RAM and GPU to recommend which models will run smoothly.
         </p>
 
@@ -149,7 +149,7 @@ export default function LocalSettingsPage() {
             onClick={runCheck}
             style={{
               padding: '9px 18px',
-              background: '#2D4A2B', color: '#fff',
+              background: 'var(--moss)', color: '#fff',
               border: 'none', borderRadius: 8,
               fontSize: 13, fontWeight: 600,
               fontFamily: 'DM Sans, sans-serif',
@@ -157,7 +157,7 @@ export default function LocalSettingsPage() {
               transition: 'background 0.15s',
             }}
             onMouseEnter={e => (e.currentTarget.style.background = '#3a5f38')}
-            onMouseLeave={e => (e.currentTarget.style.background = '#2D4A2B')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'var(--moss)')}
           >
             Check My Hardware
           </button>
@@ -169,7 +169,7 @@ export default function LocalSettingsPage() {
               {hw.gpuName && <HwBadge label="GPU" value={hw.gpuName.replace(/\(.*\)/, '').trim()} />}
             </div>
             {!hw.isTauri && (
-              <p style={{ fontSize: 11, color: '#9B9B9B', fontFamily: 'DM Sans, sans-serif', marginTop: 8 }}>
+              <p style={{ fontSize: 11, color: 'var(--disabled)', fontFamily: 'DM Sans, sans-serif', marginTop: 8 }}>
                 * RAM estimate from browser (capped at 8GB). Desktop App shows exact values.
               </p>
             )}
@@ -177,7 +177,7 @@ export default function LocalSettingsPage() {
               onClick={runCheck}
               style={{
                 marginTop: 12, padding: '6px 12px',
-                background: 'none', color: '#6B6B6B',
+                background: 'none', color: 'var(--meta)',
                 border: '1px solid #e8e4dc', borderRadius: 6,
                 fontSize: 11, fontFamily: 'DM Sans, sans-serif',
                 cursor: 'pointer',
@@ -192,17 +192,17 @@ export default function LocalSettingsPage() {
       {/* Model Recommendations */}
       {checked && (
         <div>
-          <h2 style={{ fontSize: 15, fontWeight: 600, color: '#2A2A2A', fontFamily: 'DM Sans, sans-serif', marginBottom: 4 }}>
+          <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', fontFamily: 'DM Sans, sans-serif', marginBottom: 4 }}>
             Recommended Models
           </h2>
-          <p style={{ fontSize: 12, color: '#6B6B6B', fontFamily: 'DM Sans, sans-serif', marginBottom: 14 }}>
+          <p style={{ fontSize: 12, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif', marginBottom: 14 }}>
             Click Copy to get the Ollama install command. Run it in your terminal.
           </p>
 
           {models.length === 0 ? (
             <div style={{
               background: '#FDF8EF', border: '1px solid #e8d9b8',
-              borderRadius: 10, padding: '16px', fontSize: 13, color: '#6B6B6B',
+              borderRadius: 10, padding: '16px', fontSize: 13, color: 'var(--meta)',
               fontFamily: 'DM Sans, sans-serif',
             }}>
               Your device has less than 2GB available RAM. Consider using Cloud mode for AI inference.
@@ -222,7 +222,7 @@ export default function LocalSettingsPage() {
           {copied && (
             <div style={{
               position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
-              background: '#2D4A2B', color: '#fff',
+              background: 'var(--moss)', color: '#fff',
               padding: '8px 16px', borderRadius: 8,
               fontSize: 12, fontFamily: 'DM Sans, sans-serif',
               boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
@@ -237,13 +237,13 @@ export default function LocalSettingsPage() {
       {/* Install Ollama */}
       <div style={{
         marginTop: 28,
-        background: '#F7F4ED', border: '1px solid #e8e4dc',
+        background: 'var(--cream)', border: '1px solid #e8e4dc',
         borderRadius: 10, padding: '14px 16px',
       }}>
-        <div style={{ fontSize: 13, fontWeight: 600, color: '#2A2A2A', fontFamily: 'DM Sans, sans-serif', marginBottom: 6 }}>
+        <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', fontFamily: 'DM Sans, sans-serif', marginBottom: 6 }}>
           Don&apos;t have Ollama?
         </div>
-        <div style={{ fontSize: 12, color: '#6B6B6B', fontFamily: 'DM Sans, sans-serif', marginBottom: 10, lineHeight: 1.5 }}>
+        <div style={{ fontSize: 12, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif', marginBottom: 10, lineHeight: 1.5 }}>
           Ollama runs large language models locally on your computer. Free, open source.
         </div>
         <a
@@ -253,7 +253,7 @@ export default function LocalSettingsPage() {
           style={{
             display: 'inline-block',
             padding: '7px 14px',
-            background: '#2D4A2B', color: '#fff',
+            background: 'var(--moss)', color: '#fff',
             borderRadius: 7, fontSize: 12, fontWeight: 600,
             fontFamily: 'DM Sans, sans-serif', textDecoration: 'none',
           }}
@@ -268,15 +268,15 @@ export default function LocalSettingsPage() {
 function HwBadge({ label, value }: { label: string; value: string }) {
   return (
     <div style={{
-      background: '#F7F4ED', border: '1px solid #e8e4dc',
+      background: 'var(--cream)', border: '1px solid #e8e4dc',
       borderRadius: 7, padding: '6px 12px',
       display: 'flex', flexDirection: 'column', gap: 2,
       minWidth: 80,
     }}>
-      <span style={{ fontSize: 10, color: '#9B9B9B', fontFamily: 'DM Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+      <span style={{ fontSize: 10, color: 'var(--disabled)', fontFamily: 'DM Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
         {label}
       </span>
-      <span style={{ fontSize: 13, fontWeight: 600, color: '#2A2A2A', fontFamily: 'DM Sans, sans-serif' }}>
+      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', fontFamily: 'DM Sans, sans-serif' }}>
         {value}
       </span>
     </div>
