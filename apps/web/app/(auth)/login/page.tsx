@@ -99,7 +99,7 @@ function OAuthButton({ provider, onClick, loading }: {
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [mode, setMode] = useState<Mode>('signup');
+  const [mode, setMode] = useState<Mode>('signin');
   const [oauthLoading, setOauthLoading] = useState<Provider | null>(null);
   const [email, setEmail] = useState('');
   const [emailLoading, setEmailLoading] = useState(false);
@@ -108,6 +108,9 @@ export default function LoginPage() {
   useEffect(() => {
     const error = searchParams.get('error');
     if (error) toast.error(decodeURIComponent(error));
+    // Allow deep-linking to signup mode via ?mode=signup
+    const m = searchParams.get('mode');
+    if (m === 'signup') setMode('signup');
   }, [searchParams]);
 
   const switchMode = (m: Mode) => {

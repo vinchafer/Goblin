@@ -15,3 +15,5 @@ dist
 turbo
 .vercel
 *.tsbuildinfo
+playwright-report/
+test-results/

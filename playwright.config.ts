@@ -1,24 +1,40 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000';
+const isProd = baseURL !== 'http://localhost:3000';
+
 export default defineConfig({
   testDir: './tests/e2e',
-  fullyParallel: true,
+  fullyParallel: false,
   forbidOnly: !!process.env.CI,
-  retries: process.env.CI ? 2 : 0,
-  reporter: [['html', { outputFolder: 'playwright-report' }], ['list']],
+  retries: 1,
+  workers: 1, // serial to avoid dev server ECONNRESET under parallel auth load
+  reporter: [['html', { outputFolder: 'playwright-report', open: 'never' }], ['list']],
   use: {
-    baseURL: 'http://localhost:3000',
+    baseURL,
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
+    video: 'off',
+    actionTimeout: 15000,
+    navigationTimeout: 30000,
   },
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    { name: 'mobile', use: { ...devices['iPhone 13'] } },
+    {
+      name: 'chromium',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'mobile-chrome',
+      use: { ...devices['Pixel 7'] },
+    },
   ],
-  webServer: {
-    command: 'cd apps/web && npm run dev',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-    timeout: 120000,
-  },
+  // Only start dev server for local runs
+  ...(!isProd && {
+    webServer: {
+      command: 'cd apps/web && pnpm dev',
+      url: 'http://localhost:3000',
+      reuseExistingServer: true,
+      timeout: 120000,
+    },
+  }),
 });

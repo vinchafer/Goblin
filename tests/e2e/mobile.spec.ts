@@ -59,17 +59,17 @@ test.describe('Mobile layout — login page', () => {
   test('login page shows OAuth buttons on mobile', async ({ page }) => {
     await page.goto('/login');
     await expect(
-      page.getByRole('button', { name: /sign in with google/i })
+      page.getByRole('button', { name: /continue with google/i })
     ).toBeVisible();
     await expect(
-      page.getByRole('button', { name: /sign in with github/i })
+      page.getByRole('button', { name: /continue with github/i })
     ).toBeVisible();
   });
 
   test('OAuth buttons meet minimum 44 px touch-target height', async ({ page }) => {
     await page.goto('/login');
 
-    const buttons = page.getByRole('button', { name: /sign in with/i });
+    const buttons = page.getByRole('button', { name: /continue with/i });
     const count = await buttons.count();
     expect(count).toBeGreaterThan(0);
 

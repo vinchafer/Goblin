@@ -6,11 +6,17 @@
     "dev": "pnpm --filter \"./apps/**\" dev",
     "build": "pnpm --filter \"./packages/**\" build && pnpm --filter \"./apps/**\" build",
     "lint": "pnpm --recursive lint",
-    "typecheck": "pnpm --recursive typecheck"
+    "typecheck": "pnpm --recursive typecheck",
+    "test": "dotenv -e .env -- playwright test",
+    "test:ui": "dotenv -e .env -- playwright test --ui",
+    "test:report": "playwright show-report",
+    "test:prod": "dotenv -e .env -- cross-env PLAYWRIGHT_BASE_URL=https://justgoblin.com playwright test"
   },
   "devDependencies": {
     "@playwright/test": "^1.44.0",
     "@types/node": "^22",
+    "cross-env": "^10.1.0",
+    "dotenv-cli": "^11.0.0",
     "typescript": "^5.5"
   },
   "packageManager": "pnpm@9.15.4",

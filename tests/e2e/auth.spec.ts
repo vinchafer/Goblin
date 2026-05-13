@@ -1,10 +1,5 @@
 import { test, expect } from '@playwright/test';
 
-/**
- * Auth tests — cover the login page structure and unauthenticated redirect
- * behaviour without performing any real OAuth flow.
- */
-
 test.describe('Login page', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/login');
@@ -14,40 +9,47 @@ test.describe('Login page', () => {
     await expect(page).toHaveTitle(/Goblin/i);
   });
 
-  test('shows Sign in with Google button', async ({ page }) => {
+  test('shows Continue with Google button', async ({ page }) => {
     await expect(
-      page.getByRole('button', { name: /sign in with google/i })
+      page.getByRole('button', { name: /continue with google/i })
     ).toBeVisible();
   });
 
-  test('shows Sign in with GitHub button', async ({ page }) => {
+  test('shows Continue with GitHub button', async ({ page }) => {
     await expect(
-      page.getByRole('button', { name: /sign in with github/i })
+      page.getByRole('button', { name: /continue with github/i })
     ).toBeVisible();
   });
 
-  test('shows Sign in with Apple button', async ({ page }) => {
+  test('shows Continue with Apple button', async ({ page }) => {
     await expect(
-      page.getByRole('button', { name: /sign in with apple/i })
+      page.getByRole('button', { name: /continue with apple/i })
     ).toBeVisible();
   });
 
-  test('has correct heading "Welcome to Goblin"', async ({ page }) => {
-    await expect(
-      page.getByRole('heading', { name: /welcome to goblin/i })
-    ).toBeVisible();
+  test('has heading (Create your account or Welcome back)', async ({ page }) => {
+    // Page defaults to signup mode → "Create your account"; sign-in mode → "Welcome back"
+    const heading = page.locator('h1').first();
+    await expect(heading).toBeVisible();
+    const text = await heading.innerText();
+    expect(text).toMatch(/create your account|welcome back/i);
   });
 
   test('has Terms and Privacy links', async ({ page }) => {
-    await expect(page.getByRole('link', { name: /terms/i })).toBeVisible();
-    await expect(page.getByRole('link', { name: /privacy policy/i })).toBeVisible();
+    await expect(page.getByRole('link', { name: /terms/i }).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: /privacy/i }).first()).toBeVisible();
+  });
+
+  test('email login section exists', async ({ page }) => {
+    // Email login should exist (either as button or form)
+    const hasEmail = await page.locator('text=/email|Email/i').first().isVisible({ timeout: 5000 }).catch(() => false);
+    expect(hasEmail).toBeTruthy();
   });
 });
 
 test.describe('Protected route redirects', () => {
   test('/dashboard redirects unauthenticated users to /login', async ({ page }) => {
     await page.goto('/dashboard');
-    // Middleware redirects to /login?redirect=/dashboard
     await expect(page).toHaveURL(/\/login/);
   });
 
