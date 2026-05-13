@@ -74,7 +74,7 @@ health.get('/deep', async (c) => {
   if (litellmUrl) {
     const t = Date.now();
     try {
-      const res = await fetch(`${litellmUrl}/health`, { signal: AbortSignal.timeout(3000) });
+      const res = await fetch(`${litellmUrl}/health/readiness`, { signal: AbortSignal.timeout(3000) });
       checks.litellm = { status: res.ok ? 'ok' : 'fail', latencyMs: Date.now() - t };
       if (!res.ok && overallStatus === 'ok') overallStatus = 'degraded';
     } catch {
