@@ -124,3 +124,27 @@ export async function cleanupTestUsers(page: Page): Promise<void> {
 export async function saveAuthState(context: BrowserContext, path: string): Promise<void> {
   await context.storageState({ path });
 }
+
+/**
+ * Navigate to dashboard and click the first project.
+ * Returns projectId from URL.
+ */
+export async function openFirstProject(page: Page): Promise<string> {
+  await page.goto(`${BASE_URL}/dashboard`);
+  await page.waitForLoadState('networkidle');
+
+  const row = page.locator('.project-row').first();
+  const rowExists = await row.isVisible({ timeout: 8000 }).catch(() => false);
+
+  if (!rowExists) {
+    throw new Error('No projects found in dashboard for test account');
+  }
+
+  await row.click();
+  await page.waitForURL(/\/dashboard\/project\//, { timeout: 15000 });
+
+  const url = page.url();
+  const match = url.match(/\/dashboard\/project\/([^/?]+)/);
+  if (!match) throw new Error(`Could not parse projectId from URL: ${url}`);
+  return match[1];
+}
