@@ -4,6 +4,8 @@ import { SettingsLayout } from '@/components/settings/settings-layout';
 import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useTheme, type Theme } from '@/lib/theme';
 import { getAuthHeaders, API_URL } from '@/lib/api';
+import { createClient } from '@/lib/supabase/client';
+import { toast } from 'sonner';
 
 const FIELD_STYLE = {
   width: '100%',
@@ -139,6 +141,44 @@ function AppearanceSection() {
 
 function GeneralTab() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
+  const [displayName, setDisplayName] = useState('');
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileDirty, setProfileDirty] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        setUserEmail(data.user.email ?? '');
+        const name = data.user.user_metadata?.display_name
+          ?? data.user.user_metadata?.full_name
+          ?? data.user.email?.split('@')[0]
+          ?? '';
+        setDisplayName(name);
+      }
+    });
+  }, []);
+
+  const avatarInitial = displayName?.[0]?.toUpperCase() ?? userEmail?.[0]?.toUpperCase() ?? '?';
+
+  const saveProfile = async () => {
+    setSavingProfile(true);
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.updateUser({
+        data: { display_name: displayName },
+      });
+      if (error) throw error;
+      toast.success('Profile saved.');
+      setProfileDirty(false);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Save failed.');
+    } finally {
+      setSavingProfile(false);
+    }
+  };
 
   return (
     <>
@@ -156,10 +196,10 @@ function GeneralTab() {
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             fontFamily: 'Fraunces, serif', fontSize: 20, fontWeight: 700,
             flexShrink: 0,
-          }}>V</div>
+          }}>{avatarInitial}</div>
           <div>
-            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>Vince</div>
-            <div style={{ fontSize: 13, color: 'var(--meta)' }}>vinc.hafner@gmail.com</div>
+            <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>{displayName || userEmail}</div>
+            <div style={{ fontSize: 13, color: 'var(--meta)' }}>{userEmail}</div>
           </div>
         </div>
 
@@ -169,7 +209,10 @@ function GeneralTab() {
               Display Name
             </label>
             <input
-              type="text" defaultValue="Vince" style={FIELD_STYLE}
+              type="text"
+              value={displayName}
+              onChange={e => { setDisplayName(e.target.value); setProfileDirty(true); }}
+              style={FIELD_STYLE}
               onFocus={e => (e.target.style.borderColor = 'var(--moss)')}
               onBlur={e => (e.target.style.borderColor = 'var(--border)')}
             />
@@ -179,24 +222,32 @@ function GeneralTab() {
               Email
             </label>
             <input
-              type="email" defaultValue="vinc.hafner@gmail.com"
-              readOnly style={{ ...FIELD_STYLE, background: 'var(--subtle)', color: 'var(--meta)', cursor: 'default' }}
+              type="email"
+              value={userEmail}
+              readOnly
+              style={{ ...FIELD_STYLE, background: 'var(--subtle)', color: 'var(--meta)', cursor: 'default' }}
             />
             <p style={{ fontSize: 12, color: 'var(--meta)', marginTop: 5, fontWeight: 300 }}>
-              Email is set by your OAuth provider and cannot be changed here.
+              Email cannot be changed here. Contact support if needed.
             </p>
           </div>
           <div style={{ paddingTop: 8, borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'flex-end' }}>
             <button
+              onClick={saveProfile}
+              disabled={savingProfile || !profileDirty}
               style={{
-                background: 'var(--moss)', color: '#fff', border: 'none', borderRadius: 8,
+                background: profileDirty ? 'var(--moss)' : 'var(--subtle)',
+                color: profileDirty ? '#fff' : 'var(--meta)',
+                border: 'none', borderRadius: 8,
                 padding: '10px 22px', fontSize: 13, fontWeight: 500,
-                cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', minHeight: 40,
+                cursor: savingProfile || !profileDirty ? 'not-allowed' : 'pointer',
+                fontFamily: 'DM Sans, sans-serif', minHeight: 40,
+                transition: 'background 0.15s',
               }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'var(--moss2)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'var(--moss)')}
+              onMouseEnter={e => { if (profileDirty) e.currentTarget.style.background = 'var(--moss2)'; }}
+              onMouseLeave={e => { if (profileDirty) e.currentTarget.style.background = 'var(--moss)'; }}
             >
-              Save changes
+              {savingProfile ? 'Saving…' : 'Save changes'}
             </button>
           </div>
         </div>
@@ -222,7 +273,10 @@ function GeneralTab() {
               This will permanently delete your account and all data. Type DELETE to confirm.
             </p>
             <input
-              type="text" placeholder="Type DELETE to confirm"
+              type="text"
+              value={deleteConfirmText}
+              onChange={e => setDeleteConfirmText(e.target.value)}
+              placeholder="Type DELETE to confirm"
               style={{ ...FIELD_STYLE, height: 40, fontSize: 13, border: '1.5px solid rgba(184,92,60,0.4)' }}
             />
             <div style={{ display: 'flex', gap: 8 }}>
