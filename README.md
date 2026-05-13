@@ -58,6 +58,19 @@ supabase/
   seeds/        # Template marketplace seed data
 ```
 
+## Authentication
+
+Goblin supports two sign-in methods:
+
+| Method | Flow | Default |
+|--------|------|---------|
+| **Magic Link** | Enter email → get a link → click to sign in | ✅ Default |
+| **Password** | Enter email + password → sign in immediately | Toggle on login page |
+
+Both methods coexist on the `/login` page via a toggle. Password sign-up includes strength indicator and Terms acceptance. Forgot password → `/auth/reset-password`.
+
+OAuth via Google, GitHub, or Apple is also supported.
+
 ## Features
 
 - **Chat-to-code** — describe what to build, AI generates files

@@ -1,4 +1,4 @@
-# Bug Registry — Session 5
+# Bug Registry — Session 5 + 6A
 
 Generated: 2026-05-12 (Phase V2 — Test Run Local)
 
@@ -15,7 +15,7 @@ None found — all main paths functional.
 ## 🟡 MAJOR
 
 ### BUG-001: Login page defaults to "Create account" mode instead of "Sign in"
-**Status:** OPEN  
+**Status:** FIXED (Session 6A, W1) — `useState<Mode>('signin')` → `'login'`  
 **Found by:** Auth test + screenshot inspection  
 **Description:** Navigating to `/login` shows "Create your account" heading and "Create account with Email" button. New/returning users both land on signup mode. Most returning users would expect to "sign in", not "create account". This creates friction.  
 **Impact:** UX confusion for returning users  
@@ -24,7 +24,7 @@ None found — all main paths functional.
 **Repro:** Navigate to `/login`
 
 ### BUG-002: FirstRunTour modal blocks all UI interactions
-**Status:** OPEN (by design, but has UX problem)  
+**Status:** FIXED (Session 6A, W5) — Prominenter × Close-Button hinzugefügt  
 **Found by:** Project workspace tests  
 **Description:** FirstRunTour shows for all first-time users (isFirstLogin = no projects + no keys). While the tour is showing, the backdrop intercepts ALL pointer events including navigation buttons. User can't click "New Project" or anything else until they dismiss the tour.  
 **Impact:** First-time users may feel stuck if they miss that they can click the backdrop  
