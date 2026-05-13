@@ -9,6 +9,7 @@ export const dynamic = 'force-dynamic';
 
 type Provider = 'google' | 'github' | 'apple';
 type Mode = 'signup' | 'login';
+type AuthMethod = 'magic' | 'password';
 
 function Spinner() {
   return (
@@ -96,14 +97,30 @@ function OAuthButton({ provider, onClick, loading }: {
   );
 }
 
+function PasswordStrengthBar({ strength }: { strength: { score: number; label: string; color: string } }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden' }}>
+        <div style={{ height: '100%', width: `${(strength.score / 5) * 100}%`, background: strength.color, transition: 'width 0.2s, background 0.2s' }} />
+      </div>
+      <span style={{ fontSize: 11, color: strength.color, minWidth: 40 }}>{strength.label}</span>
+    </div>
+  );
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [mode, setMode] = useState<Mode>('signin');
+  const [mode, setMode] = useState<Mode>('login');
+  const [authMethod, setAuthMethod] = useState<AuthMethod>('magic');
   const [oauthLoading, setOauthLoading] = useState<Provider | null>(null);
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [emailLoading, setEmailLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   useEffect(() => {
     const error = searchParams.get('error');
@@ -116,6 +133,89 @@ export default function LoginPage() {
   const switchMode = (m: Mode) => {
     setMode(m);
     setEmailSent(false);
+    setResetSent(false);
+    setPassword('');
+    setTermsAccepted(false);
+  };
+
+  const switchMethod = (m: AuthMethod) => {
+    setAuthMethod(m);
+    setEmailSent(false);
+    setResetSent(false);
+    setPassword('');
+  };
+
+  const passwordStrength = (pw: string): { score: number; label: string; color: string } => {
+    if (pw.length === 0) return { score: 0, label: '', color: 'transparent' };
+    let score = 0;
+    if (pw.length >= 8) score++;
+    if (pw.length >= 12) score++;
+    if (/[A-Z]/.test(pw)) score++;
+    if (/[0-9]/.test(pw)) score++;
+    if (/[^A-Za-z0-9]/.test(pw)) score++;
+    if (score <= 1) return { score, label: 'Weak', color: '#ef4444' };
+    if (score <= 3) return { score, label: 'Fair', color: '#f59e0b' };
+    return { score, label: 'Strong', color: '#A8C6A0' };
+  };
+
+  const signInWithPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim() || !password || passwordLoading) return;
+    if (mode === 'signup' && !termsAccepted) {
+      toast.error('Please accept the Terms to continue.');
+      return;
+    }
+    if (mode === 'signup' && password.length < 8) {
+      toast.error('Password must be at least 8 characters.');
+      return;
+    }
+    setPasswordLoading(true);
+    try {
+      const supabase = createClient();
+      if (mode === 'signup') {
+        const { error } = await supabase.auth.signUp({
+          email: email.trim(),
+          password,
+          options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+        });
+        if (error) throw error;
+        setEmailSent(true);
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email: email.trim(),
+          password,
+        });
+        if (error) {
+          if (error.message.toLowerCase().includes('invalid')) {
+            toast.error('Incorrect email or password.');
+          } else {
+            throw error;
+          }
+          return;
+        }
+        router.push('/dashboard');
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Authentication failed.');
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
+  const sendPasswordReset = async () => {
+    if (!email.trim()) {
+      toast.error('Enter your email first.');
+      return;
+    }
+    const supabase = createClient();
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/auth/reset-password`,
+    });
+    if (error) {
+      toast.error(error.message);
+    } else {
+      setResetSent(true);
+    }
   };
 
   const signInWithOAuth = async (provider: Provider) => {
@@ -200,8 +300,32 @@ export default function LoginPage() {
               : 'Sign in to continue building.'}
           </p>
 
-          {/* Email / Magic Link — primary action */}
-          {emailSent ? (
+          {/* Auth method toggle */}
+          <div style={{ display: 'flex', gap: 0, background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: 3, marginBottom: 4 }}>
+            {(['magic', 'password'] as AuthMethod[]).map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => switchMethod(m)}
+                style={{
+                  flex: 1, height: 34,
+                  background: authMethod === m ? 'rgba(255,255,255,0.1)' : 'none',
+                  border: 'none',
+                  borderRadius: 8,
+                  fontSize: 13, fontWeight: 500,
+                  color: authMethod === m ? '#fff' : 'rgba(255,255,255,0.35)',
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font-dm-sans), DM Sans, sans-serif',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {m === 'magic' ? '✉ Magic Link' : '🔑 Password'}
+              </button>
+            ))}
+          </div>
+
+          {/* Magic Link */}
+          {authMethod === 'magic' && (emailSent ? (
             <div className="auth-success-box">
               <div style={{ fontSize: 28, marginBottom: 10 }}>📬</div>
               <p style={{ fontSize: 14, color: '#A8C6A0', fontWeight: 600, margin: '0 0 4px' }}>
@@ -212,15 +336,7 @@ export default function LoginPage() {
               </p>
               <button
                 onClick={() => setEmailSent(false)}
-                style={{
-                  marginTop: 14,
-                  background: 'none',
-                  border: 'none',
-                  color: 'rgba(255,255,255,0.3)',
-                  fontSize: 12,
-                  cursor: 'pointer',
-                  fontFamily: 'DM Sans, sans-serif',
-                }}
+                style={{ marginTop: 14, background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', fontSize: 12, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}
               >
                 ← Use a different email
               </button>
@@ -237,13 +353,9 @@ export default function LoginPage() {
                   width: '100%', height: 48, padding: '0 14px',
                   background: 'rgba(255,255,255,0.06)',
                   border: '1.5px solid rgba(255,255,255,0.1)',
-                  borderRadius: 10,
-                  fontSize: 14,
-                  color: '#fff',
-                  outline: 'none',
+                  borderRadius: 10, fontSize: 14, color: '#fff', outline: 'none',
                   fontFamily: 'var(--font-dm-sans), DM Sans, sans-serif',
-                  boxSizing: 'border-box',
-                  transition: 'border-color 0.15s',
+                  boxSizing: 'border-box', transition: 'border-color 0.15s',
                 }}
                 onFocus={e => (e.target.style.borderColor = 'var(--moss)')}
                 onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.1)')}
@@ -256,8 +368,7 @@ export default function LoginPage() {
                   width: '100%', height: 48,
                   background: email.trim() ? 'var(--moss)' : 'rgba(255,255,255,0.06)',
                   color: email.trim() ? '#fff' : 'rgba(255,255,255,0.2)',
-                  border: 'none',
-                  borderRadius: 10,
+                  border: 'none', borderRadius: 10,
                   fontSize: 14, fontWeight: 600,
                   fontFamily: 'var(--font-dm-sans), DM Sans, sans-serif',
                   cursor: emailLoading || !email.trim() ? 'not-allowed' : 'pointer',
@@ -272,6 +383,122 @@ export default function LoginPage() {
                 )}
                 {emailLoading ? 'Sending…' : mode === 'signup' ? 'Create account with Email' : 'Sign in with Email'}
               </button>
+            </form>
+          ))}
+
+          {/* Password */}
+          {authMethod === 'password' && emailSent && (
+            <div className="auth-success-box">
+              <div style={{ fontSize: 28, marginBottom: 10 }}>📬</div>
+              <p style={{ fontSize: 14, color: '#A8C6A0', fontWeight: 600, margin: '0 0 4px' }}>Verify your email</p>
+              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', margin: 0, lineHeight: 1.5 }}>
+                Check <strong style={{ color: 'rgba(255,255,255,0.55)' }}>{email}</strong> and click the link.
+              </p>
+              <button
+                onClick={() => { setEmailSent(false); setResetSent(false); }}
+                style={{ marginTop: 14, background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', fontSize: 12, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}
+              >
+                ← Back
+              </button>
+            </div>
+          )}
+          {authMethod === 'password' && !emailSent && resetSent && (
+            <div className="auth-success-box">
+              <div style={{ fontSize: 28, marginBottom: 10 }}>🔑</div>
+              <p style={{ fontSize: 14, color: '#A8C6A0', fontWeight: 600, margin: '0 0 4px' }}>Reset link sent</p>
+              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', margin: 0 }}>
+                Check <strong style={{ color: 'rgba(255,255,255,0.55)' }}>{email}</strong>.
+              </p>
+              <button
+                onClick={() => setResetSent(false)}
+                style={{ marginTop: 14, background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', fontSize: 12, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}
+              >
+                ← Back
+              </button>
+            </div>
+          )}
+          {authMethod === 'password' && !emailSent && !resetSent && (
+            <form onSubmit={signInWithPassword} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <input
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                placeholder="your@email.com"
+                required
+                autoComplete="email"
+                style={{
+                  width: '100%', height: 48, padding: '0 14px',
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1.5px solid rgba(255,255,255,0.1)',
+                  borderRadius: 10, fontSize: 14, color: '#fff', outline: 'none',
+                  fontFamily: 'var(--font-dm-sans), DM Sans, sans-serif',
+                  boxSizing: 'border-box', transition: 'border-color 0.15s',
+                }}
+                onFocus={e => (e.target.style.borderColor = 'var(--moss)')}
+                onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.1)')}
+              />
+              <input
+                type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                placeholder={mode === 'signup' ? 'Create password (min. 8 chars)' : 'Password'}
+                required
+                autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+                style={{
+                  width: '100%', height: 48, padding: '0 14px',
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1.5px solid rgba(255,255,255,0.1)',
+                  borderRadius: 10, fontSize: 14, color: '#fff', outline: 'none',
+                  fontFamily: 'var(--font-dm-sans), DM Sans, sans-serif',
+                  boxSizing: 'border-box', transition: 'border-color 0.15s',
+                }}
+                onFocus={e => (e.target.style.borderColor = 'var(--moss)')}
+                onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.1)')}
+              />
+              {mode === 'signup' && password.length > 0 && (
+                <PasswordStrengthBar strength={passwordStrength(password)} />
+              )}
+              {mode === 'signup' && (
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>
+                  <input
+                    type="checkbox"
+                    checked={termsAccepted}
+                    onChange={e => setTermsAccepted(e.target.checked)}
+                    style={{ accentColor: 'var(--moss)', width: 14, height: 14 }}
+                  />
+                  I agree to the{' '}
+                  <a href="/terms" style={{ color: 'rgba(255,255,255,0.55)', textDecoration: 'none' }}>Terms</a>
+                  {' '}and{' '}
+                  <a href="/privacy" style={{ color: 'rgba(255,255,255,0.55)', textDecoration: 'none' }}>Privacy Policy</a>
+                </label>
+              )}
+              <button
+                type="submit"
+                disabled={passwordLoading || !email.trim() || !password || (mode === 'signup' && !termsAccepted)}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  width: '100%', height: 48,
+                  background: (email.trim() && password) ? 'var(--moss)' : 'rgba(255,255,255,0.06)',
+                  color: (email.trim() && password) ? '#fff' : 'rgba(255,255,255,0.2)',
+                  border: 'none', borderRadius: 10,
+                  fontSize: 14, fontWeight: 600,
+                  fontFamily: 'var(--font-dm-sans), DM Sans, sans-serif',
+                  cursor: passwordLoading ? 'not-allowed' : 'pointer',
+                  transition: 'background 0.15s',
+                }}
+              >
+                {passwordLoading ? <Spinner /> : null}
+                {passwordLoading ? 'Please wait…' : mode === 'signup' ? 'Create account' : 'Sign in'}
+              </button>
+              {mode === 'login' && (
+                <button
+                  type="button"
+                  onClick={sendPasswordReset}
+                  style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', fontSize: 12, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', textAlign: 'right' }}
+                >
+                  Forgot password?
+                </button>
+              )}
             </form>
           )}
 
