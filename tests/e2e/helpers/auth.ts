@@ -3,6 +3,57 @@ import { type Page, type BrowserContext } from '@playwright/test';
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000';
 const TEST_TOKEN = process.env.TEST_AUTH_TOKEN || 'goblin-playwright-test-token-2026';
 
+export interface RealTestSession {
+  email: string;
+}
+
+/**
+ * Login with the real Goblin test account (password auth).
+ * Uses TEST_ACCOUNT_EMAIL + TEST_ACCOUNT_PASSWORD from .env.
+ * Account has free-pool access — can test streaming, routing, etc.
+ * Do NOT delete this account after tests.
+ */
+export async function loginAsRealTestUser(page: Page): Promise<RealTestSession> {
+  const email = process.env.TEST_ACCOUNT_EMAIL;
+  const password = process.env.TEST_ACCOUNT_PASSWORD;
+
+  if (!email || !password) {
+    throw new Error('TEST_ACCOUNT_EMAIL and TEST_ACCOUNT_PASSWORD must be set in .env');
+  }
+
+  await page.goto(`${BASE_URL}/login`);
+  await page.waitForLoadState('networkidle');
+
+  // Switch to Password tab (button text includes emoji: '🔑 Password')
+  await page.locator('button', { hasText: 'Password' }).last().click();
+
+  // Fill credentials
+  await page.getByPlaceholder('your@email.com').fill(email);
+  await page.getByPlaceholder('Password').fill(password);
+
+  // Submit
+  await page.getByRole('button', { name: /^Sign in$/i }).click();
+
+  // Wait for dashboard
+  await page.waitForURL(/\/dashboard/, { timeout: 20000 });
+
+  return { email };
+}
+
+/**
+ * Cleanup only test-created projects (prefix [E2E-TEST]).
+ * Never deletes the real test account.
+ */
+export async function cleanupTestProjects(page: Page): Promise<void> {
+  await page.request.delete(`${BASE_URL}/api/test-auth/projects`, {
+    headers: {
+      'X-Test-Auth-Token': TEST_TOKEN,
+      'Content-Type': 'application/json',
+    },
+    data: { namePrefix: '[E2E-TEST]' },
+  }).catch(() => { /* ignore — endpoint may not exist yet */ });
+}
+
 export interface TestSession {
   email: string;
   userId: string;
