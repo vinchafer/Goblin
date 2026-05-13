@@ -8,12 +8,68 @@ export interface RealTestSession {
 }
 
 /**
- * Login with the real Goblin test account (password auth).
- * Uses TEST_ACCOUNT_EMAIL + TEST_ACCOUNT_PASSWORD from .env.
+ * Login with the real Goblin test account.
+ * Uses Supabase Admin API to generate a magic link, then navigates to it.
+ * This sets proper server-side cookies (works on local + production).
  * Account has free-pool access — can test streaming, routing, etc.
  * Do NOT delete this account after tests.
  */
 export async function loginAsRealTestUser(page: Page): Promise<RealTestSession> {
+  const email = process.env.TEST_ACCOUNT_EMAIL;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!email) throw new Error('TEST_ACCOUNT_EMAIL must be set in .env');
+  if (!supabaseUrl || !serviceRoleKey) {
+    throw new Error('NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in .env');
+  }
+
+  // /auth/magic-callback handles the hash-fragment tokens (works on local + production)
+  const redirectTo = `${BASE_URL}/auth/magic-callback`;
+
+  // Use Supabase Admin API to generate a magic link for the real test account
+  const res = await page.request.post(`${supabaseUrl}/auth/v1/admin/generate_link`, {
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': serviceRoleKey,
+      'Authorization': `Bearer ${serviceRoleKey}`,
+    },
+    data: { type: 'magiclink', email, options: { redirectTo } },
+  });
+
+  if (!res.ok()) {
+    const body = await res.text();
+    throw new Error(`Magic link generation failed (${res.status()}): ${body}`);
+  }
+
+  const data = await res.json() as { action_link?: string; properties?: { action_link?: string } };
+  const link = data.action_link || data.properties?.action_link;
+
+  if (!link) throw new Error(`No action_link in response: ${JSON.stringify(data)}`);
+
+  // Navigate through the magic link → /auth/magic-callback → /dashboard
+  await page.goto(link);
+  await page.waitForLoadState('domcontentloaded');
+
+  // Supabase may redirect to site root if redirectTo is not in allowlist.
+  // Detect this and manually navigate to magic-callback with the hash preserved.
+  const currentUrl = page.url();
+  const hash = new URL(currentUrl).hash;
+  if (hash.includes('access_token') && !currentUrl.includes('/auth/')) {
+    // Tokens are in the hash but we're on the wrong page — navigate to magic-callback
+    await page.goto(`${BASE_URL}/auth/magic-callback${hash}`);
+  }
+
+  await page.waitForURL(/\/dashboard/, { timeout: 30000 });
+
+  return { email };
+}
+
+/**
+ * Login via actual password UI — use this to test the password login page itself.
+ * Use loginAsRealTestUser() for all other tests that just need to be authenticated.
+ */
+export async function loginViaPasswordUI(page: Page): Promise<void> {
   const email = process.env.TEST_ACCOUNT_EMAIL;
   const password = process.env.TEST_ACCOUNT_PASSWORD;
 
@@ -24,20 +80,17 @@ export async function loginAsRealTestUser(page: Page): Promise<RealTestSession> 
   await page.goto(`${BASE_URL}/login`);
   await page.waitForLoadState('networkidle');
 
-  // Switch to Password tab (button text includes emoji: '🔑 Password')
-  await page.locator('button', { hasText: 'Password' }).last().click();
+  // Switch to Password tab
+  const pwTab = page.locator('button').filter({ hasText: /Password/ }).last();
+  await pwTab.waitFor({ state: 'visible', timeout: 10000 });
+  await pwTab.click();
 
-  // Fill credentials
   await page.getByPlaceholder('your@email.com').fill(email);
-  await page.getByPlaceholder('Password').fill(password);
-
-  // Submit
-  await page.getByRole('button', { name: /^Sign in$/i }).click();
-
-  // Wait for dashboard
+  // Target password input by type, scoped to visible form
+  await page.locator('input[type="password"]').fill(password);
+  // Submit via keyboard — avoids ambiguous button text
+  await page.locator('input[type="password"]').press('Enter');
   await page.waitForURL(/\/dashboard/, { timeout: 20000 });
-
-  return { email };
 }
 
 /**
