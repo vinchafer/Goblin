@@ -45,9 +45,14 @@ function getS3Client(): S3Client | null {
   // Normalize endpoint — ensure https:// prefix
   const endpoint = rawEndpoint.startsWith('http') ? rawEndpoint : `https://${rawEndpoint}`;
 
+  // Auto-detect region from Backblaze endpoint (s3.eu-central-003.backblazeb2.com → eu-central-003)
+  // Falls back to STORAGE_REGION env var, then to us-east-1
+  const b2RegionMatch = endpoint.match(/s3\.([^.]+)\.backblazeb2\.com/);
+  const region = b2RegionMatch?.[1] ?? process.env.STORAGE_REGION ?? 'us-east-1';
+
   const config: S3ClientConfig = {
     endpoint,
-    region: process.env.STORAGE_REGION || 'fsn1',
+    region,
     credentials: { accessKeyId, secretAccessKey },
     forcePathStyle: true,
   };
@@ -274,14 +279,15 @@ export async function createZip(projectId: string): Promise<Buffer> {
   return Buffer.from(await zip.generateAsync({ type: 'uint8array' }));
 }
 
-export async function checkStorageConnection(): Promise<boolean> {
+export async function checkStorageConnection(): Promise<{ ok: boolean; error?: string }> {
   const s3 = getS3Client();
-  if (!s3) return false;
+  if (!s3) return { ok: false, error: 'storage_not_configured' };
   try {
     await s3.send(new ListObjectsV2Command({ Bucket: getBucket(), MaxKeys: 1 }));
-    return true;
+    return { ok: true };
   } catch (e) {
-    logger.error({ err: e instanceof Error ? e.message : String(e) }, 's3_connection_check_failed');
-    return false;
+    const msg = e instanceof Error ? e.message : String(e);
+    logger.error({ err: msg }, 's3_connection_check_failed');
+    return { ok: false, error: msg };
   }
 }

@@ -43,12 +43,17 @@ health.get('/deep', async (c) => {
     } else {
       const t = Date.now();
       try {
-        const ok = await Promise.race([
+        const result = await Promise.race([
           checkStorageConnection(),
-          new Promise<boolean>((_, rej) => setTimeout(() => rej(new Error('timeout')), 5000)),
-        ]) as boolean;
-        (checks as Record<string, unknown>).storage = { status: ok ? 'ok' : 'fail', latencyMs: Date.now() - t, env: envPresent };
-        if (!ok && overallStatus === 'ok') overallStatus = 'degraded';
+          new Promise<never>((_, rej) => setTimeout(() => rej(new Error('timeout')), 5000)),
+        ]);
+        (checks as Record<string, unknown>).storage = {
+          status: result.ok ? 'ok' : 'fail',
+          latencyMs: Date.now() - t,
+          env: envPresent,
+          ...(result.error ? { error: result.error } : {}),
+        };
+        if (!result.ok && overallStatus === 'ok') overallStatus = 'degraded';
       } catch (err: unknown) {
         (checks as Record<string, unknown>).storage = {
           status: 'fail',
@@ -62,7 +67,10 @@ health.get('/deep', async (c) => {
   }
 
   // LiteLLM
-  const litellmUrl = process.env.LITELLM_BASE_URL;
+  const litellmRaw = process.env.LITELLM_BASE_URL;
+  const litellmUrl = litellmRaw
+    ? (litellmRaw.startsWith('http') ? litellmRaw.replace(/\/$/, '') : `https://${litellmRaw.replace(/\/$/, '')}`)
+    : null;
   if (litellmUrl) {
     const t = Date.now();
     try {
