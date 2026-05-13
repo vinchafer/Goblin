@@ -1,0 +1,42 @@
+model_list:
+  # Free Pool — Goblin's own keys, registered as virtual models
+  - model_name: free/llama-70b
+    litellm_params:
+      model: groq/llama-3.3-70b-versatile
+      api_key: os.environ/GROQ_FREE_API_KEY
+
+  - model_name: free/llama-70b-cerebras
+    litellm_params:
+      model: cerebras/llama-3.3-70b
+      api_key: os.environ/CEREBRAS_FREE_API_KEY
+
+  - model_name: free/gemini-flash
+    litellm_params:
+      model: gemini/gemini-2.0-flash
+      api_key: os.environ/GOOGLE_FREE_API_KEY
+
+  - model_name: free/deepseek
+    litellm_params:
+      model: openrouter/deepseek/deepseek-chat
+      api_key: os.environ/OPENROUTER_FREE_API_KEY
+
+  # BYOK pass-through — model name is provider-prefixed, api_key comes from request body
+  # LiteLLM natively routes anthropic/, openai/, groq/, etc. prefixes
+  # No explicit config needed; LiteLLM uses api_key from request body for auth
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+
+litellm_settings:
+  drop_params: true
+  set_verbose: false
+  cache: false
+  streaming: true
+  # Allow api_key override per request (needed for BYOK routing)
+  forward_openai_org_id: false
+
+router_settings:
+  routing_strategy: simple-shuffle
+  timeout: 60
+  num_retries: 2
+  retry_after: 5

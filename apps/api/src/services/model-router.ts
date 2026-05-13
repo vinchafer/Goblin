@@ -22,6 +22,8 @@ export interface RouteResult {
   baseURL: string;
   model: string;
   modelSlug: string;
+  // LiteLLM-native model name for pass-through routing (provider/model format)
+  litellmModel: string;
 }
 
 // ─── Free-API Pool ────────────────────────────────────────────────────────────
@@ -32,13 +34,15 @@ interface FreePoolEntry {
   baseURL: string;
   model: string;
   slug: string;
+  // LiteLLM-native model identifier (provider/model format for pass-through routing)
+  litellmModel: string;
 }
 
 const FREE_API_POOL: FreePoolEntry[] = [
-  { provider: 'google',   envVar: 'GOOGLE_FREE_API_KEY',     baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/', model: 'gemini-2.0-flash',        slug: 'free/gemini-flash' },
-  { provider: 'groq',     envVar: 'GROQ_FREE_API_KEY',       baseURL: 'https://api.groq.com/openai/v1',                          model: 'llama-3.3-70b-versatile', slug: 'free/llama-70b' },
-  { provider: 'openai',   envVar: 'CEREBRAS_FREE_API_KEY',   baseURL: 'https://api.cerebras.ai/v1',                              model: 'llama-3.3-70b',           slug: 'free/llama-70b-cerebras' },
-  { provider: 'deepseek', envVar: 'OPENROUTER_FREE_API_KEY', baseURL: 'https://openrouter.ai/api/v1',                            model: 'deepseek/deepseek-chat',  slug: 'free/deepseek' },
+  { provider: 'google',   envVar: 'GOOGLE_FREE_API_KEY',     baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/', model: 'gemini-2.0-flash',        slug: 'free/gemini-flash',        litellmModel: 'gemini/gemini-2.0-flash' },
+  { provider: 'groq',     envVar: 'GROQ_FREE_API_KEY',       baseURL: 'https://api.groq.com/openai/v1',                          model: 'llama-3.3-70b-versatile', slug: 'free/llama-70b',           litellmModel: 'groq/llama-3.3-70b-versatile' },
+  { provider: 'openai',   envVar: 'CEREBRAS_FREE_API_KEY',   baseURL: 'https://api.cerebras.ai/v1',                              model: 'llama-3.3-70b',           slug: 'free/llama-70b-cerebras',  litellmModel: 'cerebras/llama-3.3-70b' },
+  { provider: 'deepseek', envVar: 'OPENROUTER_FREE_API_KEY', baseURL: 'https://openrouter.ai/api/v1',                            model: 'deepseek/deepseek-chat',  slug: 'free/deepseek',            litellmModel: 'openrouter/deepseek/deepseek-chat' },
 ];
 
 // Provider priority for auto-selection
@@ -167,13 +171,15 @@ export async function resolveModel(
     const baseURL = providerCfg?.baseURL ?? '';
     const defaultModel = providerCfg?.models[0]?.id ?? 'gpt-4o';
     const resolvedModel = modelId ?? defaultModel;
+    const slug = preferredModel ?? `${byok.provider}/${resolvedModel}`;
     return {
       layer: 'byok',
       provider: byok.provider,
       apiKey: byok.apiKey,
       baseURL,
       model: resolvedModel,
-      modelSlug: preferredModel ?? `${byok.provider}/${resolvedModel}`,
+      modelSlug: slug,
+      litellmModel: slug, // provider/model format, LiteLLM routes natively
     };
   }
 
@@ -187,6 +193,7 @@ export async function resolveModel(
       baseURL: free.baseURL,
       model: free.model,
       modelSlug: free.slug,
+      litellmModel: free.litellmModel, // provider-prefixed for LiteLLM pass-through
     };
   }
 
@@ -200,6 +207,7 @@ export async function resolveModel(
       baseURL: hosted.endpoint,
       model: 'goblin-hosted-llama-3.3-70b',
       modelSlug: 'goblin/llama-3.3-70b',
+      litellmModel: 'openai/goblin-hosted-llama-3.3-70b',
     };
   }
 
@@ -257,7 +265,7 @@ export async function* streamCompletion({
   const litellmBase = process.env.LITELLM_BASE_URL;
   if (litellmBase) {
     try {
-      for await (const delta of litellmStream(route.modelSlug, messages, { apiKey: route.apiKey, timeout: timeoutMs })) {
+      for await (const delta of litellmStream(route.litellmModel, messages, { apiKey: route.apiKey, timeout: timeoutMs })) {
         if (delta.type === 'delta' && delta.content) {
           yield JSON.stringify({ type: 'delta', content: delta.content });
         } else if (delta.type === 'usage') {

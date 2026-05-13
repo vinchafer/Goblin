@@ -54,15 +54,26 @@ export async function* litellmStream(
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), options.timeout ?? 120_000);
 
+  // Authenticate to LiteLLM with master key; pass provider API key in body for BYOK routing
+  const masterKey = process.env.LITELLM_MASTER_KEY;
+  const authHeader = masterKey ? `Bearer ${masterKey}` : (options.apiKey ? `Bearer ${options.apiKey}` : undefined);
+
   let response: Response;
   try {
     response = await fetch(`${base}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(options.apiKey ? { Authorization: `Bearer ${options.apiKey}` } : {}),
+        ...(authHeader ? { Authorization: authHeader } : {}),
       },
-      body: JSON.stringify({ model, messages, stream: true, stream_options: { include_usage: true } }),
+      body: JSON.stringify({
+        model,
+        messages,
+        stream: true,
+        stream_options: { include_usage: true },
+        // Pass user's provider key so LiteLLM forwards it to the actual provider
+        ...(masterKey && options.apiKey ? { api_key: options.apiKey } : {}),
+      }),
       signal: controller.signal,
     });
   } catch (err: unknown) {
