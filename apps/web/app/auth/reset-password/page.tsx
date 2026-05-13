@@ -13,20 +13,27 @@ function ResetPasswordForm() {
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
 
+  const [error, setError] = useState<string | null>(null);
+
   useEffect(() => {
-    // Supabase puts the tokens in the URL hash — the client SDK handles it automatically
     const supabase = createClient();
     supabase.auth.onAuthStateChange((event) => {
       if (event === 'PASSWORD_RECOVERY') setReady(true);
     });
-    // Also handle code-based flow
     const code = searchParams.get('code');
     if (code) {
-      supabase.auth.exchangeCodeForSession(code).then(({ error }) => {
-        if (error) toast.error('Reset link expired. Request a new one.');
+      supabase.auth.exchangeCodeForSession(code).then(({ error: err }) => {
+        if (err) setError('Reset link expired or already used. Request a new one.');
         else setReady(true);
       });
+    } else {
+      // No code param — show error after brief delay (allow hash-based flow to fire)
+      const timer = setTimeout(() => {
+        if (!ready) setError('Invalid reset link. Request a new password reset.');
+      }, 2000);
+      return () => clearTimeout(timer);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   const handleReset = async (e: React.FormEvent) => {
@@ -38,8 +45,8 @@ function ResetPasswordForm() {
     const { error } = await supabase.auth.updateUser({ password });
     setLoading(false);
     if (error) { toast.error(error.message); return; }
-    toast.success('Password updated!');
-    router.push('/dashboard');
+    toast.success('Password updated! Please sign in.');
+    router.push('/login');
   };
 
   const inputStyle: React.CSSProperties = {
@@ -57,7 +64,14 @@ function ResetPasswordForm() {
       <div className="auth-card-wrapper">
         <h1 className="auth-card-title">Set new password</h1>
         <p className="auth-card-subtitle">Choose a strong password for your account.</p>
-        {ready ? (
+        {error ? (
+          <div style={{ textAlign: 'center' }}>
+            <p style={{ color: '#ef4444', fontSize: 14, marginBottom: 16 }}>{error}</p>
+            <a href="/login" style={{ color: 'var(--moss)', fontSize: 14, textDecoration: 'none' }}>
+              ← Back to sign in
+            </a>
+          </div>
+        ) : ready ? (
           <form onSubmit={handleReset} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <input
               type="password"
