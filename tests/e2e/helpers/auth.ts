@@ -53,14 +53,18 @@ export async function loginAsRealTestUser(page: Page): Promise<RealTestSession> 
 
   // Supabase may redirect to site root if redirectTo is not in allowlist.
   // Detect this and manually navigate to magic-callback with the hash preserved.
+  // IMPORTANT: use the CURRENT origin (after redirect) to avoid 307 non-www→www redirect
+  // which drops the hash fragment.
   const currentUrl = page.url();
-  const hash = new URL(currentUrl).hash;
+  const parsed = new URL(currentUrl);
+  const hash = parsed.hash;
   if (hash.includes('access_token') && !currentUrl.includes('/auth/')) {
-    // Tokens are in the hash but we're on the wrong page — navigate to magic-callback
-    await page.goto(`${BASE_URL}/auth/magic-callback${hash}`);
+    // Use the current origin to stay on the same domain (avoids redirect loop that drops hash)
+    const sameOriginCallbackUrl = `${parsed.origin}/auth/magic-callback${hash}`;
+    await page.goto(sameOriginCallbackUrl);
   }
 
-  await page.waitForURL(/\/dashboard/, { timeout: 30000 });
+  await page.waitForURL(/\/dashboard/, { timeout: 35000 });
 
   return { email };
 }
@@ -180,6 +184,7 @@ export async function saveAuthState(context: BrowserContext, path: string): Prom
 
 /**
  * Navigate to dashboard and click the first project.
+ * If no projects exist, creates one via Supabase Admin API.
  * Returns projectId from URL.
  */
 export async function openFirstProject(page: Page): Promise<string> {
@@ -190,10 +195,53 @@ export async function openFirstProject(page: Page): Promise<string> {
   const rowExists = await row.isVisible({ timeout: 8000 }).catch(() => false);
 
   if (!rowExists) {
-    throw new Error('No projects found in dashboard for test account');
+    // No projects — create one via Supabase Admin so the test can proceed
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const email = process.env.TEST_ACCOUNT_EMAIL;
+
+    if (supabaseUrl && serviceRoleKey && email) {
+      // Find user ID
+      const usersRes = await page.request.get(`${supabaseUrl}/auth/v1/admin/users?page=1&per_page=100`, {
+        headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}` },
+      });
+      const usersData = await usersRes.json() as { users: Array<{ id: string; email: string }> };
+      const user = usersData.users?.find((u) => u.email === email);
+
+      if (user) {
+        const projectId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`;
+        await page.request.post(`${supabaseUrl}/rest/v1/projects`, {
+          headers: {
+            apikey: serviceRoleKey,
+            Authorization: `Bearer ${serviceRoleKey}`,
+            'Content-Type': 'application/json',
+            Prefer: 'return=minimal',
+          },
+          data: {
+            id: projectId,
+            name: '[E2E-TEST] Auto-created Test Project',
+            description: 'Created automatically by Playwright for testing',
+            user_id: user.id,
+            color: '#2D4A2B',
+          },
+        });
+
+        // Reload dashboard
+        await page.reload();
+        await page.waitForLoadState('networkidle');
+
+        const newRow = page.locator('.project-row').first();
+        const newRowExists = await newRow.isVisible({ timeout: 5000 }).catch(() => false);
+        if (!newRowExists) {
+          throw new Error('Could not create or find test project');
+        }
+      }
+    }
   }
 
-  await row.click();
+  const firstRow = page.locator('.project-row').first();
+  await firstRow.waitFor({ state: 'visible', timeout: 8000 });
+  await firstRow.click();
   await page.waitForURL(/\/dashboard\/project\//, { timeout: 15000 });
 
   const url = page.url();
