@@ -59,6 +59,24 @@ export function FirstRunTour({ onDone }: FirstRunTourProps) {
           fontFamily: 'DM Sans, sans-serif',
         }}
       >
+        {/* Close button — top right */}
+        <button
+          onClick={onDone}
+          aria-label="Close tour"
+          style={{
+            position: 'absolute', top: 12, right: 12,
+            width: 28, height: 28, borderRadius: '50%',
+            background: 'var(--div)', border: 'none',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            cursor: 'pointer', fontSize: 16, color: 'var(--meta)',
+            lineHeight: 1, transition: 'background 0.15s',
+          }}
+          onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.12)')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'var(--div)')}
+        >
+          ×
+        </button>
+
         {/* Step dots */}
         <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
           {STEPS.map((_, i) => (
