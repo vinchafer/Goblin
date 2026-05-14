@@ -6,13 +6,13 @@ const PROBLEMS = [
     Icon: Icons.Zap,
     title: 'Token panic',
     desc: 'Claude Pro locks you out after 2 hours. You end up counting tokens instead of shipping.',
-    fix: 'Fair-use unlimited inference',
+    fix: 'BYOK — pay your provider directly',
   },
   {
     Icon: Icons.Monitor,
     title: 'Hardware wall',
     desc: 'Powerful models need 48GB+ VRAM. Your laptop cannot run them locally.',
-    fix: 'Cloud-hosted GPU inference',
+    fix: 'Build from phone, tablet, or any device',
   },
   {
     Icon: Icons.Clipboard,

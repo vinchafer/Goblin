@@ -46,9 +46,9 @@ export function Hero() {
         fontSize: 18, color: 'rgba(255,255,255,0.55)', maxWidth: 480, lineHeight: 1.7,
         marginBottom: 48, fontWeight: 400, position: 'relative', zIndex: 1,
       }}>
-        Describe what you want to build.<br />
-        Your goblin writes the code.<br />
-        No token limits. No laptop required.
+        Build anywhere. Code anything.<br />
+        Your ideas shouldn&apos;t wait for hardware.<br />
+        No token panic. No vendor lock-in.
       </p>
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center', position: 'relative', zIndex: 1, marginBottom: 64 }}>

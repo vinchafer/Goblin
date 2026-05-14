@@ -2,19 +2,22 @@ import { Icons } from '@/components/ui/icons';
 
 const OPTIONS = [
   {
-    Icon: Icons.Cloud,
-    title: 'Goblin Hosted',
-    description: 'Our GPUs. Fair-use unlimited. Always on.',
+    Icon: Icons.Lock,
+    title: 'Bring Your Own Key',
+    description: 'Connect your Claude, OpenAI, Google, Groq key. No markup — you pay the provider directly.',
+    badge: null,
   },
   {
     Icon: Icons.Gift,
-    title: 'Free-API Pool',
-    description: 'Gemini, Groq when available. Gratis extra.',
+    title: 'Free Provider Tiers',
+    description: 'Groq, Google AI Studio, and OpenRouter offer generous free tiers. Connect your own account in one click.',
+    badge: null,
   },
   {
-    Icon: Icons.Lock,
-    title: 'Bring Your Own Key',
-    description: 'Your Claude, your OpenAI. No markup.',
+    Icon: Icons.Cloud,
+    title: 'Goblin Hosted',
+    description: 'Open-source models (Qwen Coder 14B, Llama 3.3 70B) hosted by us. No key needed — included in your plan.',
+    badge: 'Coming Soon',
   },
 ];
 
@@ -27,21 +30,33 @@ export function ModelRoutingExplainer() {
           fontSize: 'clamp(24px, 4vw, 40px)', color: 'var(--moss)',
           letterSpacing: '-1.5px', marginBottom: 12,
         }}>
-          Three ways your goblin stays fed.
+          Your AI, your choice.
         </h2>
         <p style={{
           textAlign: 'center', fontSize: 14, color: 'var(--meta)',
           fontFamily: 'DM Sans, sans-serif', fontWeight: 300, marginBottom: 56,
         }}>
-          Your goblin switches automatically. You never hit a wall.
+          Use any provider. No vendor lock-in. Ever.
         </p>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20 }}>
           {OPTIONS.map((option) => (
             <div key={option.title} style={{
               padding: '28px 24px', borderRadius: 12, border: '1px solid var(--border)',
-              background: '#fff', textAlign: 'center',
+              background: '#fff', textAlign: 'center', position: 'relative',
+              opacity: option.badge ? 0.75 : 1,
             }}>
+              {option.badge && (
+                <div style={{
+                  position: 'absolute', top: -11, left: '50%', transform: 'translateX(-50%)',
+                  background: 'rgba(212,169,74,0.9)', color: '#fff', fontSize: 10,
+                  fontWeight: 700, padding: '2px 10px', borderRadius: 20,
+                  fontFamily: 'DM Sans, sans-serif', letterSpacing: '0.05em',
+                  textTransform: 'uppercase' as const, whiteSpace: 'nowrap' as const,
+                }}>
+                  {option.badge}
+                </div>
+              )}
               <div style={{
                 width: 44, height: 44, borderRadius: 10, background: 'rgba(30,58,28,0.07)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',

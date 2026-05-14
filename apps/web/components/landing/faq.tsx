@@ -11,8 +11,8 @@ const QUESTIONS = [
     a: "Yes, absolutely. Go to Settings → API Keys and paste your key. We encrypt it at rest and use it exclusively for your requests. No markup, no middleman."
   },
   {
-    q: "Why is Local mode free?",
-    a: "Local mode runs models on your own computer using Ollama — there's nothing for us to charge for. You use your own GPU, your own electricity. Cloud mode (storage, mobile access, push notifications) is what the $9/mo covers."
+    q: "What AI models can I use?",
+    a: "Any model you want, via BYOK (bring your own key). Connect Anthropic, OpenAI, Google, Groq, Mistral, xAI, DeepSeek, and more. Many providers offer generous free tiers — Groq and Google AI Studio are great starting points. Goblin-hosted open-source models (Qwen Coder 14B, Llama 3.3 70B) are coming soon."
   },
   {
     q: "What happens after my trial?",
