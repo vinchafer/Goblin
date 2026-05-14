@@ -204,3 +204,11 @@ ALTER TABLE users ALTER COLUMN plan SET DEFAULT 'build';
 
 -- Verifikation: 0 Rows mit alten Plan-Namen sollten zurückkommen
 SELECT COUNT(*) as legacy_plan_rows FROM users WHERE plan IN ('seed', 'craft', 'forge');
+
+-- ============================================================================
+-- 11. SESSION 8 — Migration 0034: Per-User Encryption Salt (C-3 fix)
+-- ============================================================================
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS encryption_salt TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS encryption_migrated_at TIMESTAMPTZ;
+ALTER TABLE byok_keys ADD COLUMN IF NOT EXISTS key_encrypted_legacy TEXT;

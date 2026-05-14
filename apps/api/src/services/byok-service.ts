@@ -1,6 +1,9 @@
 import type { ByokProvider, CreateByokKey, ByokKey } from '@goblin/shared/src/schemas';
 import { getSupabaseAdmin } from '../lib/supabase';
-import { encryptData, decryptData } from './encryption';
+import {
+  encryptData, decryptData,
+  encryptUserData, decryptUserData, generateUserSalt
+} from './encryption';
 
 export type ValidationResult = 'valid' | 'invalid' | 'timeout' | 'unsupported' | 'error';
 
@@ -182,6 +185,28 @@ async function testKey(provider: ByokProvider, rawKey: string): Promise<{ valid:
   }
 }
 
+async function getOrCreateUserSalt(userId: string): Promise<string> {
+  const supabase = getSupabaseAdmin();
+
+  const { data: user } = await supabase
+    .from('users')
+    .select('encryption_salt')
+    .eq('id', userId)
+    .single();
+
+  if (user?.encryption_salt) {
+    return user.encryption_salt as string;
+  }
+
+  const salt = generateUserSalt();
+  await supabase
+    .from('users')
+    .update({ encryption_salt: salt })
+    .eq('id', userId);
+
+  return salt;
+}
+
 export async function createKey(
   userId: string,
   provider: ByokProvider,
@@ -208,7 +233,8 @@ export async function createKey(
     throw new Error(testResult.error || 'Invalid key');
   }
 
-  const encrypted = encryptData(rawKey);
+  const userSalt = await getOrCreateUserSalt(userId);
+  const encrypted = encryptUserData(rawKey, userSalt);
   // Store last 4 chars for display — never more
   const keyHint = rawKey.slice(-4);
   const resolvedLabel = label?.trim() || provider;
@@ -267,20 +293,38 @@ export async function revokeKey(userId: string, keyId: string): Promise<void> {
 export async function getActiveKey(userId: string, provider: ByokProvider): Promise<string | null> {
   const supabase = getSupabaseAdmin();
 
-  const { data } = await supabase
-    .from('byok_keys')
-    .select('key_encrypted')
-    .eq('user_id', userId)
-    .eq('provider', provider)
-    .eq('status', 'active')
-    .order('last_used', { ascending: false })
-    .limit(1)
-    .single();
+  const [keyResult, userResult] = await Promise.all([
+    supabase
+      .from('byok_keys')
+      .select('key_encrypted')
+      .eq('user_id', userId)
+      .eq('provider', provider)
+      .eq('status', 'active')
+      .order('last_used', { ascending: false })
+      .limit(1)
+      .single(),
+    supabase
+      .from('users')
+      .select('encryption_salt')
+      .eq('id', userId)
+      .single(),
+  ]);
 
-  if (!data) return null;
+  if (!keyResult.data) return null;
+
+  const userSalt = userResult.data?.encryption_salt as string | null;
 
   try {
-    return decryptData(data.key_encrypted);
+    if (userSalt) {
+      // Per-user-salt (Phase Z2) — attempt new decryption first
+      try {
+        return decryptUserData(keyResult.data.key_encrypted, userSalt);
+      } catch {
+        // Fall through to legacy decryption for keys not yet migrated
+      }
+    }
+    // Legacy decryption (static salt)
+    return decryptData(keyResult.data.key_encrypted);
   } catch {
     throw new Error('API key needs to be re-entered. Please go to Settings → API Keys.');
   }
