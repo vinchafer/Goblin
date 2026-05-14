@@ -3,6 +3,7 @@
 import { useRef, useEffect } from "react";
 import { ChatMessageItem } from "./ChatMessage";
 import type { ChatMessage } from "@goblin/shared/src/schemas";
+import { GoblinMark } from "@/components/ui/goblin-mark";
 
 // ─── Pricing ──────────────────────────────────────────────────────────────────
 
@@ -49,7 +50,7 @@ function EmptyState({ onSuggestion }: { onSuggestion: (s: string) => void }) {
       alignItems: 'center', justifyContent: 'center',
       padding: '40px 24px', textAlign: 'center',
     }}>
-      <div style={{ fontSize: 48, marginBottom: 14, lineHeight: 1, userSelect: 'none' }}>👺</div>
+      <div style={{ marginBottom: 14 }}><GoblinMark size={52} /></div>
       <h3 style={{
         fontFamily: 'Fraunces, serif', fontSize: 22,
         color: 'var(--moss)', fontWeight: 700, marginBottom: 8, letterSpacing: '-0.3px',

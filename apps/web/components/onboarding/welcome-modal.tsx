@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/contexts/app-context';
+import { GoblinMark } from '@/components/ui/goblin-mark';
 
 interface WelcomeModalProps {
   userName?: string;
@@ -11,15 +12,10 @@ interface WelcomeModalProps {
 
 function GoblinIcon({ size = 72, animate = false }: { size?: number; animate?: boolean }) {
   return (
-    <div style={{
-      fontSize: size,
-      lineHeight: 1,
-      display: 'inline-block',
-      animation: animate ? 'goblin-wobble 2.4s ease-in-out infinite' : undefined,
-      userSelect: 'none',
-    }}>
-      👺
-    </div>
+    <GoblinMark
+      size={size}
+      className={animate ? 'goblin-wobble-loop' : undefined}
+    />
   );
 }
 
@@ -144,7 +140,7 @@ export function WelcomeModal({ userName, onComplete }: WelcomeModalProps) {
                 color: 'var(--ochre)', letterSpacing: '-0.8px',
                 marginTop: 20, marginBottom: 10,
               }}>
-                Willkommen{firstName ? `, ${firstName}` : ''} 👺
+                Willkommen{firstName ? `, ${firstName}` : ''}
               </h1>
               <p style={{
                 fontSize: 16, color: 'rgba(255,255,255,0.6)',

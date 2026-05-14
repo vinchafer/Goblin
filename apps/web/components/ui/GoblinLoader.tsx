@@ -1,4 +1,5 @@
 'use client';
+import { GoblinMark } from './goblin-mark';
 
 export type GoblinLoaderVariant =
   | 'thinking'
@@ -13,7 +14,7 @@ interface GoblinLoaderProps {
   variant?: GoblinLoaderVariant;
 }
 
-const SIZE = { sm: 28, md: 44, lg: 72 };
+const SIZE = { sm: 20, md: 32, lg: 56 };
 const FONT = { sm: 12, md: 14, lg: 18 };
 
 function PulseDots({ count = 3 }: { count?: number }) {
@@ -75,12 +76,13 @@ export function GoblinLoader({
         alignItems: 'center', justifyContent: 'center',
         gap: 12, padding: 40,
       }}>
-        <div className="goblin-wobble-loop" style={{ fontSize: iconSize, lineHeight: 1, userSelect: 'none' }}>
-          👺
-        </div>
+        <GoblinMark
+          size={iconSize}
+          className="goblin-wobble-loop"
+        />
         <span style={{
           fontFamily: 'Fraunces, serif', fontSize: 20,
-          color: 'var(--ochre)', fontWeight: 700, letterSpacing: '-0.3px',
+          color: 'var(--moss)', fontWeight: 700, letterSpacing: '-0.3px',
         }}>
           Goblin
         </span>
@@ -94,9 +96,7 @@ export function GoblinLoader({
         display: 'flex', flexDirection: 'column',
         alignItems: 'center', gap: 10, padding: 24,
       }}>
-        <div className="goblin-think" style={{ fontSize: iconSize, lineHeight: 1, userSelect: 'none' }}>
-          👺
-        </div>
+        <GoblinMark size={iconSize} className="goblin-think" />
         <span style={{ fontSize: fontSize, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif' }}>
           {label}
         </span>
@@ -107,9 +107,7 @@ export function GoblinLoader({
 
   if (variant === 'deploy') {
     return (
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 10,
-      }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
         <span style={{ fontSize: iconSize * 0.6, animation: 'goblin-think 2s ease-in-out infinite', display: 'inline-block' }}>
           ☁️
         </span>
@@ -123,12 +121,8 @@ export function GoblinLoader({
 
   // thinking / files (default inline layout)
   return (
-    <div style={{
-      display: 'flex', alignItems: 'center', gap: 8,
-    }}>
-      <div className="goblin-think" style={{ fontSize: iconSize * 0.55, lineHeight: 1, userSelect: 'none' }}>
-        👺
-      </div>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <GoblinMark size={Math.round(iconSize * 0.75)} className="goblin-think" />
       <span style={{
         fontSize: fontSize, color: 'var(--meta)',
         fontFamily: 'DM Sans, sans-serif',

@@ -1,4 +1,5 @@
 ﻿import Link from "next/link";
+import { GoblinMark } from "@/components/ui/goblin-mark";
 
 export default function NotFound() {
   return (
@@ -7,7 +8,7 @@ export default function NotFound() {
       alignItems: 'center', justifyContent: 'center',
       background: 'var(--cream)', padding: '24px', textAlign: 'center',
     }}>
-      <div style={{ fontSize: 72, lineHeight: 1, marginBottom: 24 }}>👺</div>
+      <div style={{ marginBottom: 24 }}><GoblinMark size={80} /></div>
       <h1 style={{
         fontFamily: 'Fraunces, serif', fontSize: 'clamp(32px, 6vw, 56px)',
         color: 'var(--moss)', fontWeight: 900, letterSpacing: '-2px',
