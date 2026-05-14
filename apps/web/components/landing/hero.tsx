@@ -35,22 +35,21 @@ export function Hero() {
       </div>
 
       <h1 style={{
-        fontFamily: 'Fraunces, serif', fontSize: 'clamp(40px, 6vw, 72px)',
-        lineHeight: 1.08, fontWeight: 700, color: 'var(--moss)',
-        letterSpacing: '-2px', marginBottom: 28, maxWidth: 760,
+        fontFamily: 'Fraunces, serif', fontSize: 'clamp(40px, 6vw, 76px)',
+        lineHeight: 1.04, fontWeight: 700, color: 'var(--moss)',
+        letterSpacing: '-2.5px', marginBottom: 24, maxWidth: 820,
         position: 'relative', zIndex: 1,
       }}>
-        The Cloud Workshop<br />
-        <em style={{ fontStyle: 'italic', color: 'var(--ochre-dark, #C9933A)' }}>for Builders.</em>
+        Code from anywhere.<br />
+        <em style={{ fontStyle: 'italic', color: 'var(--ochre-dark, #C9933A)' }}>Ship from your phone.</em>
       </h1>
 
       <p style={{
-        fontSize: 18, color: 'var(--text-2)', maxWidth: 480, lineHeight: 1.7,
-        marginBottom: 48, fontWeight: 400, position: 'relative', zIndex: 1,
+        fontSize: 19, color: 'var(--text-2)', maxWidth: 540, lineHeight: 1.6,
+        marginBottom: 40, fontWeight: 400, position: 'relative', zIndex: 1,
       }}>
-        Build anywhere. Code anything.<br />
-        Your ideas shouldn&apos;t wait for hardware.<br />
-        No token panic. No vendor lock-in.
+        Goblin is the AI workshop for builders who don&apos;t want to wait for a laptop.
+        Bring your own API keys. Push to GitHub. Deploy to Vercel.
       </p>
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center', position: 'relative', zIndex: 1, marginBottom: 64 }}>

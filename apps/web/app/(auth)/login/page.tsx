@@ -1,13 +1,15 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
+import { GoblinMark } from '@/components/ui/goblin-mark';
 
 export const dynamic = 'force-dynamic';
 
-type Provider = 'google' | 'github' | 'apple';
+type Provider = 'google' | 'github';
 type Mode = 'signup' | 'login';
 type AuthMethod = 'magic' | 'password';
 
@@ -40,74 +42,6 @@ function GitHubIcon() {
   );
 }
 
-function AppleIcon() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-      <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/>
-    </svg>
-  );
-}
-
-const OAUTH_CONFIG: Record<Provider, {
-  label: string;
-  icon: React.ReactNode;
-  bg: string;
-  color: string;
-  border: string;
-  hoverBg: string;
-}> = {
-  google: { label: 'Continue with Google', icon: <GoogleIcon />, bg: 'var(--white)', color: '#3c4043', border: '#dadce0', hoverBg: '#f8f9fa' },
-  github: { label: 'Continue with GitHub', icon: <GitHubIcon />, bg: '#24292e', color: 'var(--white)', border: '#24292e', hoverBg: '#2f363d' },
-  apple:  { label: 'Continue with Apple',  icon: <AppleIcon />,  bg: '#000000', color: 'var(--white)', border: '#000000', hoverBg: '#1a1a1a' },
-};
-
-function OAuthButton({ provider, onClick, loading }: {
-  provider: Provider;
-  onClick: () => void;
-  loading: boolean;
-}) {
-  const cfg = OAUTH_CONFIG[provider];
-  const [hovered, setHovered] = useState(false);
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={loading}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-        width: '100%', height: 46,
-        background: hovered ? cfg.hoverBg : cfg.bg,
-        color: cfg.color,
-        border: `1.5px solid ${cfg.border}`,
-        borderRadius: 10,
-        fontSize: 14, fontWeight: 500,
-        fontFamily: 'var(--font-dm-sans), DM Sans, sans-serif',
-        cursor: loading ? 'not-allowed' : 'pointer',
-        opacity: loading ? 0.7 : 1,
-        transition: 'transform 0.15s, background 0.15s',
-        transform: hovered && !loading ? 'translateY(-1px)' : 'none',
-      }}
-    >
-      {loading ? <Spinner /> : cfg.icon}
-      {cfg.label}
-    </button>
-  );
-}
-
-function PasswordStrengthBar({ strength }: { strength: { score: number; label: string; color: string } }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-      <div style={{ flex: 1, height: 3, background: 'rgba(255,255,255,0.08)', borderRadius: 2, overflow: 'hidden' }}>
-        <div style={{ height: '100%', width: `${(strength.score / 5) * 100}%`, background: strength.color, transition: 'width 0.2s, background 0.2s' }} />
-      </div>
-      <span style={{ fontSize: 11, color: strength.color, minWidth: 40 }}>{strength.label}</span>
-    </div>
-  );
-}
-
 function EyeIcon({ open }: { open: boolean }) {
   return open ? (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -121,6 +55,77 @@ function EyeIcon({ open }: { open: boolean }) {
     </svg>
   );
 }
+
+const FIELD: React.CSSProperties = {
+  width: '100%', height: 46, padding: '0 14px',
+  background: 'var(--panel)', color: 'var(--text)',
+  border: '1.5px solid var(--border)', borderRadius: 10,
+  fontSize: 14, fontFamily: 'var(--font-dm-sans), DM Sans, sans-serif',
+  outline: 'none', boxSizing: 'border-box',
+  transition: 'border-color 0.15s, box-shadow 0.15s',
+};
+
+const PRIMARY_BTN: React.CSSProperties = {
+  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+  width: '100%', height: 46,
+  background: 'var(--moss)', color: '#fff',
+  border: 'none', borderRadius: 10,
+  fontSize: 14, fontWeight: 600,
+  fontFamily: 'var(--font-dm-sans), DM Sans, sans-serif',
+  cursor: 'pointer', transition: 'background 0.15s, box-shadow 0.15s',
+  boxShadow: '0 1px 2px rgba(45,74,43,0.18)',
+};
+
+const OAUTH_CONFIG: Record<Provider, { label: string; icon: React.ReactNode; }> = {
+  google: { label: 'Continue with Google', icon: <GoogleIcon /> },
+  github: { label: 'Continue with GitHub', icon: <GitHubIcon /> },
+};
+
+function OAuthButton({ provider, onClick, loading }: { provider: Provider; onClick: () => void; loading: boolean }) {
+  const cfg = OAUTH_CONFIG[provider];
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={loading}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+        width: '100%', height: 46,
+        background: hovered ? 'var(--subtle)' : 'var(--panel)',
+        color: 'var(--text)',
+        border: '1.5px solid var(--border)', borderRadius: 10,
+        fontSize: 14, fontWeight: 500,
+        fontFamily: 'var(--font-dm-sans), DM Sans, sans-serif',
+        cursor: loading ? 'not-allowed' : 'pointer',
+        opacity: loading ? 0.7 : 1,
+        transition: 'background 0.15s, border-color 0.15s',
+      }}
+    >
+      {loading ? <Spinner /> : cfg.icon}
+      {cfg.label}
+    </button>
+  );
+}
+
+function PasswordStrengthBar({ strength }: { strength: { score: number; label: string; color: string } }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ flex: 1, height: 3, background: 'var(--subtle)', borderRadius: 2, overflow: 'hidden' }}>
+        <div style={{ height: '100%', width: `${(strength.score / 5) * 100}%`, background: strength.color, transition: 'width 0.2s, background 0.2s' }} />
+      </div>
+      <span style={{ fontSize: 11, color: strength.color, minWidth: 40, fontWeight: 600 }}>{strength.label}</span>
+    </div>
+  );
+}
+
+const VALUE_BULLETS = [
+  { title: 'Build from your phone', body: 'Real coding sessions on iPad, iPhone, anywhere. Not a watered-down chat.' },
+  { title: 'Bring your own keys', body: 'Anthropic, OpenAI, Groq, Mistral — encrypted at rest, never sent to us.' },
+  { title: 'Ship to GitHub + Vercel', body: 'One click from chat to commit to live preview.' },
+];
 
 export default function LoginPage() {
   const router = useRouter();
@@ -140,25 +145,12 @@ export default function LoginPage() {
   useEffect(() => {
     const error = searchParams.get('error');
     if (error) toast.error(decodeURIComponent(error));
-    // Allow deep-linking to signup mode via ?mode=signup
     const m = searchParams.get('mode');
     if (m === 'signup') setMode('signup');
   }, [searchParams]);
 
-  const switchMode = (m: Mode) => {
-    setMode(m);
-    setEmailSent(false);
-    setResetSent(false);
-    setPassword('');
-    setTermsAccepted(false);
-  };
-
-  const switchMethod = (m: AuthMethod) => {
-    setAuthMethod(m);
-    setEmailSent(false);
-    setResetSent(false);
-    setPassword('');
-  };
+  const switchMode = (m: Mode) => { setMode(m); setEmailSent(false); setResetSent(false); setPassword(''); setTermsAccepted(false); };
+  const switchMethod = (m: AuthMethod) => { setAuthMethod(m); setEmailSent(false); setResetSent(false); setPassword(''); };
 
   const passwordStrength = (pw: string): { score: number; label: string; color: string } => {
     if (pw.length === 0) return { score: 0, label: '', color: 'transparent' };
@@ -168,69 +160,48 @@ export default function LoginPage() {
     if (/[A-Z]/.test(pw)) score++;
     if (/[0-9]/.test(pw)) score++;
     if (/[^A-Za-z0-9]/.test(pw)) score++;
-    if (score <= 1) return { score, label: 'Weak', color: '#ef4444' };
-    if (score <= 3) return { score, label: 'Fair', color: '#f59e0b' };
-    return { score, label: 'Strong', color: '#A8C6A0' };
+    if (score <= 1) return { score, label: 'Weak', color: 'var(--danger)' };
+    if (score <= 3) return { score, label: 'Fair', color: 'var(--ochre-dark, #C9933A)' };
+    return { score, label: 'Strong', color: 'var(--success)' };
   };
 
   const signInWithPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !password || passwordLoading) return;
-    if (mode === 'signup' && !termsAccepted) {
-      toast.error('Please accept the Terms to continue.');
-      return;
-    }
-    if (mode === 'signup' && password.length < 8) {
-      toast.error('Password must be at least 8 characters.');
-      return;
-    }
+    if (mode === 'signup' && !termsAccepted) { toast.error('Please accept the Terms to continue.'); return; }
+    if (mode === 'signup' && password.length < 8) { toast.error('Password must be at least 8 characters.'); return; }
     setPasswordLoading(true);
     try {
       const supabase = createClient();
       if (mode === 'signup') {
         const { error } = await supabase.auth.signUp({
-          email: email.trim(),
-          password,
+          email: email.trim(), password,
           options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
         });
         if (error) throw error;
         setEmailSent(true);
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
-          email: email.trim(),
-          password,
-        });
+        const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
         if (error) {
-          if (error.message.toLowerCase().includes('invalid')) {
-            toast.error('Incorrect email or password.');
-          } else {
-            throw error;
-          }
+          if (error.message.toLowerCase().includes('invalid')) toast.error('Incorrect email or password.');
+          else throw error;
           return;
         }
         router.push('/dashboard');
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Authentication failed.');
-    } finally {
-      setPasswordLoading(false);
-    }
+    } finally { setPasswordLoading(false); }
   };
 
   const sendPasswordReset = async () => {
-    if (!email.trim()) {
-      toast.error('Enter your email first.');
-      return;
-    }
+    if (!email.trim()) { toast.error('Enter your email first.'); return; }
     const supabase = createClient();
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
       redirectTo: `${window.location.origin}/auth/reset-password`,
     });
-    if (error) {
-      toast.error(error.message);
-    } else {
-      setResetSent(true);
-    }
+    if (error) toast.error(error.message);
+    else setResetSent(true);
   };
 
   const signInWithOAuth = async (provider: Provider) => {
@@ -257,200 +228,277 @@ export default function LoginPage() {
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithOtp({
         email: email.trim(),
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-          shouldCreateUser: mode === 'signup',
-        },
+        options: { emailRedirectTo: `${window.location.origin}/auth/callback`, shouldCreateUser: mode === 'signup' },
       });
       if (error) {
-        // Supabase returns this when shouldCreateUser=false and no account exists
         if (error.message.toLowerCase().includes('signup') || error.message.toLowerCase().includes('not found')) {
           toast.error('No account found. Switch to "Create account" to sign up.');
-        } else {
-          throw error;
-        }
+        } else throw error;
         return;
       }
       setEmailSent(true);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to send magic link.');
-    } finally {
-      setEmailLoading(false);
-    }
+    } finally { setEmailLoading(false); }
   };
 
+  const SuccessBox = ({ icon, title, body, onBack }: { icon: string; title: string; body: React.ReactNode; onBack: () => void }) => (
+    <div style={{
+      textAlign: 'center', padding: '24px 20px',
+      background: 'rgba(74,124,59,0.06)', border: '1px solid rgba(74,124,59,0.2)',
+      borderRadius: 12,
+    }}>
+      <div style={{ fontSize: 32, marginBottom: 10 }}>{icon}</div>
+      <p style={{ fontSize: 14, color: 'var(--success)', fontWeight: 600, margin: '0 0 4px' }}>{title}</p>
+      <p style={{ fontSize: 13, color: 'var(--text-2)', margin: 0, lineHeight: 1.5 }}>{body}</p>
+      <button
+        onClick={onBack}
+        style={{ marginTop: 14, background: 'none', border: 'none', color: 'var(--meta)', fontSize: 12, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}
+      >
+        ← Use a different email
+      </button>
+    </div>
+  );
+
   return (
-    <>
+    <div style={{
+      minHeight: '100dvh', display: 'grid',
+      gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
+      background: 'var(--cream)',
+      fontFamily: 'var(--font-dm-sans), DM Sans, sans-serif',
+    }} className="auth-grid">
+
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900&display=swap');
-        ::placeholder { color: rgba(255,255,255,0.25) !important; }
+        @media (max-width: 900px) {
+          .auth-grid { grid-template-columns: 1fr !important; }
+          .auth-brand-panel { display: none !important; }
+        }
+        .auth-grid input::placeholder { color: var(--disabled); }
+        .auth-grid input:focus { border-color: var(--moss) !important; box-shadow: 0 0 0 3px rgba(45,74,43,0.1) !important; }
       `}</style>
 
-      <div className="auth-page">
+      {/* LEFT — Brand panel */}
+      <div
+        className="auth-brand-panel"
+        style={{
+          background: 'linear-gradient(135deg, var(--moss-3, #1E3220) 0%, var(--moss) 100%)',
+          color: '#fff',
+          padding: '48px 56px',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          position: 'relative',
+          overflow: 'hidden',
+        }}
+      >
+        {/* Dot pattern overlay */}
+        <div style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.4,
+          backgroundImage: 'radial-gradient(circle, rgba(212,169,74,0.15) 1px, transparent 1px)',
+          backgroundSize: '24px 24px',
+        }} />
 
-        {/* Logo */}
-        <div className="auth-logo">Goblin.</div>
+        {/* Logo + tagline */}
+        <Link
+          href="/"
+          style={{
+            display: 'inline-flex', alignItems: 'center', gap: 10,
+            textDecoration: 'none', color: 'inherit', position: 'relative', zIndex: 1,
+            width: 'fit-content',
+          }}
+        >
+          <GoblinMark size={28} />
+          <span style={{ fontFamily: 'Fraunces, serif', fontSize: 24, fontWeight: 700, letterSpacing: '-0.5px' }}>
+            Goblin<span style={{ color: 'var(--ochre)' }}>.</span>
+          </span>
+        </Link>
 
-        {/* Mode toggle */}
-        <div className="auth-mode-toggle">
-          {(['signup', 'login'] as Mode[]).map((m) => (
-            <button
-              key={m}
-              onClick={() => switchMode(m)}
-              className={`auth-mode-btn${mode === m ? ' active' : ''}`}
-            >
-              {m === 'signup' ? 'Create account' : 'Sign in'}
-            </button>
-          ))}
+        {/* Value props */}
+        <div style={{ position: 'relative', zIndex: 1 }}>
+          <h2 style={{
+            fontFamily: 'Fraunces, serif', fontSize: 32, fontWeight: 700,
+            letterSpacing: '-1px', lineHeight: 1.15, marginBottom: 32,
+            maxWidth: 380,
+          }}>
+            The cloud workshop<br />
+            <span style={{ color: 'var(--ochre)', fontStyle: 'italic' }}>for builders.</span>
+          </h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 18, maxWidth: 380 }}>
+            {VALUE_BULLETS.map(b => (
+              <div key={b.title} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                <span style={{
+                  flexShrink: 0, marginTop: 4,
+                  width: 16, height: 16, borderRadius: '50%',
+                  background: 'rgba(212,169,74,0.18)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="var(--ochre)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12"/>
+                  </svg>
+                </span>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 2 }}>{b.title}</div>
+                  <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>{b.body}</div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* Card */}
-        <div className="auth-card-wrapper">
-          <h1 className="auth-card-title">
+        {/* Bottom — security badge */}
+        <div style={{
+          display: 'inline-flex', alignItems: 'center', gap: 8,
+          fontSize: 12, color: 'rgba(255,255,255,0.55)',
+          position: 'relative', zIndex: 1, width: 'fit-content',
+        }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2"/>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          AES-256 encrypted · Keys never leave your account
+        </div>
+      </div>
+
+      {/* RIGHT — Form panel */}
+      <div style={{
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        padding: '40px 24px', minHeight: '100dvh',
+      }}>
+        <div style={{ width: '100%', maxWidth: 380 }}>
+
+          {/* Mobile logo */}
+          <Link
+            href="/"
+            className="mobile-only"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 8,
+              textDecoration: 'none', marginBottom: 24, justifyContent: 'center',
+            }}
+          >
+            <GoblinMark size={24} />
+            <span style={{ fontFamily: 'Fraunces, serif', fontSize: 22, color: 'var(--moss)', fontWeight: 700 }}>
+              Goblin<span style={{ color: 'var(--ochre)' }}>.</span>
+            </span>
+          </Link>
+
+          {/* Header */}
+          <h1 style={{
+            fontFamily: 'Fraunces, serif', fontSize: 28, color: 'var(--moss)',
+            fontWeight: 700, letterSpacing: '-0.6px', marginBottom: 6,
+          }}>
             {mode === 'signup' ? 'Create your account' : 'Welcome back'}
           </h1>
-          <p className="auth-card-subtitle">
+          <p style={{ fontSize: 14, color: 'var(--meta)', marginBottom: 28, lineHeight: 1.5 }}>
             {mode === 'signup'
-              ? 'Build your first project in minutes.'
-              : 'Sign in to continue building.'}
+              ? <>Free during beta · No credit card</>
+              : <>Sign in to continue building.</>}
           </p>
 
+          {/* OAuth first (preferred path) */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 18 }}>
+            <OAuthButton provider="google" onClick={() => signInWithOAuth('google')} loading={oauthLoading === 'google'} />
+            <OAuthButton provider="github" onClick={() => signInWithOAuth('github')} loading={oauthLoading === 'github'} />
+          </div>
+
+          {/* Divider */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '20px 0 18px' }}>
+            <div style={{ flex: 1, height: 1, background: 'var(--div)' }} />
+            <span style={{ fontSize: 11, color: 'var(--meta)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>
+              or with email
+            </span>
+            <div style={{ flex: 1, height: 1, background: 'var(--div)' }} />
+          </div>
+
           {/* Auth method toggle */}
-          <div style={{ display: 'flex', gap: 0, background: 'rgba(255,255,255,0.05)', borderRadius: 10, padding: 3, marginBottom: 4 }}>
+          <div style={{
+            display: 'flex', gap: 0,
+            background: 'var(--subtle)', border: '1px solid var(--div)',
+            borderRadius: 10, padding: 3, marginBottom: 14,
+          }}>
             {(['magic', 'password'] as AuthMethod[]).map((m) => (
               <button
                 key={m}
                 type="button"
                 onClick={() => switchMethod(m)}
                 style={{
-                  flex: 1, height: 34,
-                  background: authMethod === m ? 'rgba(255,255,255,0.1)' : 'none',
-                  border: 'none',
-                  borderRadius: 8,
+                  flex: 1, height: 32,
+                  background: authMethod === m ? 'var(--panel)' : 'none',
+                  boxShadow: authMethod === m ? 'var(--shadow-sm)' : 'none',
+                  border: 'none', borderRadius: 8,
                   fontSize: 13, fontWeight: 500,
-                  color: authMethod === m ? '#fff' : 'rgba(255,255,255,0.35)',
+                  color: authMethod === m ? 'var(--text)' : 'var(--meta)',
                   cursor: 'pointer',
-                  fontFamily: 'var(--font-dm-sans), DM Sans, sans-serif',
+                  fontFamily: 'inherit',
                   transition: 'all 0.15s',
                 }}
               >
-                {m === 'magic' ? '✉ Magic Link' : '🔑 Password'}
+                {m === 'magic' ? 'Magic Link' : 'Password'}
               </button>
             ))}
           </div>
 
           {/* Magic Link */}
           {authMethod === 'magic' && (emailSent ? (
-            <div className="auth-success-box">
-              <div style={{ fontSize: 28, marginBottom: 10 }}>📬</div>
-              <p style={{ fontSize: 14, color: '#A8C6A0', fontWeight: 600, margin: '0 0 4px' }}>
-                Magic link sent
-              </p>
-              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', margin: 0, lineHeight: 1.5 }}>
-                Check <strong style={{ color: 'rgba(255,255,255,0.55)' }}>{email}</strong> and click the link.
-              </p>
-              <button
-                onClick={() => setEmailSent(false)}
-                style={{ marginTop: 14, background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', fontSize: 12, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}
-              >
-                ← Use a different email
-              </button>
-            </div>
+            <SuccessBox
+              icon="📬"
+              title="Magic link sent"
+              body={<>Check <strong style={{ color: 'var(--text)' }}>{email}</strong> and click the link.</>}
+              onBack={() => setEmailSent(false)}
+            />
           ) : (
-            <form onSubmit={signInWithEmail} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <form onSubmit={signInWithEmail} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <input
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                placeholder="your@email.com"
+                placeholder="you@example.com"
                 required
-                style={{
-                  width: '100%', height: 48, padding: '0 14px',
-                  background: 'rgba(255,255,255,0.06)',
-                  border: '1.5px solid rgba(255,255,255,0.1)',
-                  borderRadius: 10, fontSize: 14, color: '#fff', outline: 'none',
-                  fontFamily: 'var(--font-dm-sans), DM Sans, sans-serif',
-                  boxSizing: 'border-box', transition: 'border-color 0.15s',
-                }}
-                onFocus={e => (e.target.style.borderColor = 'var(--moss)')}
-                onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.1)')}
+                style={FIELD}
               />
               <button
                 type="submit"
                 disabled={emailLoading || !email.trim()}
                 style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  width: '100%', height: 48,
-                  background: email.trim() ? 'var(--moss)' : 'rgba(255,255,255,0.06)',
-                  color: email.trim() ? '#fff' : 'rgba(255,255,255,0.2)',
-                  border: 'none', borderRadius: 10,
-                  fontSize: 14, fontWeight: 600,
-                  fontFamily: 'var(--font-dm-sans), DM Sans, sans-serif',
+                  ...PRIMARY_BTN,
+                  background: email.trim() ? 'var(--moss)' : 'var(--subtle)',
+                  color: email.trim() ? '#fff' : 'var(--disabled)',
+                  boxShadow: email.trim() ? PRIMARY_BTN.boxShadow : 'none',
                   cursor: emailLoading || !email.trim() ? 'not-allowed' : 'pointer',
-                  transition: 'background 0.15s',
                 }}
               >
-                {emailLoading ? <Spinner /> : (
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <rect x="2" y="4" width="20" height="16" rx="2"/>
-                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
-                  </svg>
-                )}
-                {emailLoading ? 'Sending…' : mode === 'signup' ? 'Create account with Email' : 'Sign in with Email'}
+                {emailLoading ? <Spinner /> : null}
+                {emailLoading ? 'Sending…' : 'Send magic link'}
               </button>
             </form>
           ))}
 
           {/* Password */}
           {authMethod === 'password' && emailSent && (
-            <div className="auth-success-box">
-              <div style={{ fontSize: 28, marginBottom: 10 }}>📬</div>
-              <p style={{ fontSize: 14, color: '#A8C6A0', fontWeight: 600, margin: '0 0 4px' }}>Verify your email</p>
-              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', margin: 0, lineHeight: 1.5 }}>
-                Check <strong style={{ color: 'rgba(255,255,255,0.55)' }}>{email}</strong> and click the link.
-              </p>
-              <button
-                onClick={() => { setEmailSent(false); setResetSent(false); }}
-                style={{ marginTop: 14, background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', fontSize: 12, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}
-              >
-                ← Back
-              </button>
-            </div>
+            <SuccessBox
+              icon="📬"
+              title="Verify your email"
+              body={<>Check <strong style={{ color: 'var(--text)' }}>{email}</strong> and click the link.</>}
+              onBack={() => { setEmailSent(false); setResetSent(false); }}
+            />
           )}
           {authMethod === 'password' && !emailSent && resetSent && (
-            <div className="auth-success-box">
-              <div style={{ fontSize: 28, marginBottom: 10 }}>🔑</div>
-              <p style={{ fontSize: 14, color: '#A8C6A0', fontWeight: 600, margin: '0 0 4px' }}>Reset link sent</p>
-              <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.35)', margin: 0 }}>
-                Check <strong style={{ color: 'rgba(255,255,255,0.55)' }}>{email}</strong>.
-              </p>
-              <button
-                onClick={() => setResetSent(false)}
-                style={{ marginTop: 14, background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', fontSize: 12, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}
-              >
-                ← Back
-              </button>
-            </div>
+            <SuccessBox
+              icon="🔑"
+              title="Reset link sent"
+              body={<>Check <strong style={{ color: 'var(--text)' }}>{email}</strong>.</>}
+              onBack={() => setResetSent(false)}
+            />
           )}
           {authMethod === 'password' && !emailSent && !resetSent && (
-            <form onSubmit={signInWithPassword} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <form onSubmit={signInWithPassword} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <input
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                placeholder="your@email.com"
+                placeholder="you@example.com"
                 required
                 autoComplete="email"
-                style={{
-                  width: '100%', height: 48, padding: '0 14px',
-                  background: 'rgba(255,255,255,0.06)',
-                  border: '1.5px solid rgba(255,255,255,0.1)',
-                  borderRadius: 10, fontSize: 14, color: '#fff', outline: 'none',
-                  fontFamily: 'var(--font-dm-sans), DM Sans, sans-serif',
-                  boxSizing: 'border-box', transition: 'border-color 0.15s',
-                }}
-                onFocus={e => (e.target.style.borderColor = 'var(--moss)')}
-                onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.1)')}
+                style={FIELD}
               />
               <div style={{ position: 'relative' }}>
                 <input
@@ -460,16 +508,7 @@ export default function LoginPage() {
                   placeholder={mode === 'signup' ? 'Create password (min. 8 chars)' : 'Password'}
                   required
                   autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
-                  style={{
-                    width: '100%', height: 48, padding: '0 44px 0 14px',
-                    background: 'rgba(255,255,255,0.06)',
-                    border: '1.5px solid rgba(255,255,255,0.1)',
-                    borderRadius: 10, fontSize: 14, color: '#fff', outline: 'none',
-                    fontFamily: 'var(--font-dm-sans), DM Sans, sans-serif',
-                    boxSizing: 'border-box', transition: 'border-color 0.15s',
-                  }}
-                  onFocus={e => (e.target.style.borderColor = 'var(--moss)')}
-                  onBlur={e => (e.target.style.borderColor = 'rgba(255,255,255,0.1)')}
+                  style={{ ...FIELD, paddingRight: 44 }}
                 />
                 <button
                   type="button"
@@ -477,11 +516,11 @@ export default function LoginPage() {
                   style={{
                     position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
                     background: 'none', border: 'none', cursor: 'pointer',
-                    color: 'rgba(255,255,255,0.35)', padding: 4, display: 'flex', alignItems: 'center',
+                    color: 'var(--meta)', padding: 4, display: 'flex', alignItems: 'center',
                     transition: 'color 0.15s',
                   }}
-                  onMouseEnter={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.7)')}
-                  onMouseLeave={e => (e.currentTarget.style.color = 'rgba(255,255,255,0.35)')}
+                  onMouseEnter={e => (e.currentTarget.style.color = 'var(--text)')}
+                  onMouseLeave={e => (e.currentTarget.style.color = 'var(--meta)')}
                   tabIndex={-1}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
@@ -492,32 +531,30 @@ export default function LoginPage() {
                 <PasswordStrengthBar strength={passwordStrength(password)} />
               )}
               {mode === 'signup' && (
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 12, color: 'rgba(255,255,255,0.4)' }}>
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', fontSize: 12, color: 'var(--meta)', lineHeight: 1.5 }}>
                   <input
                     type="checkbox"
                     checked={termsAccepted}
                     onChange={e => setTermsAccepted(e.target.checked)}
-                    style={{ accentColor: 'var(--moss)', width: 14, height: 14 }}
+                    style={{ accentColor: 'var(--moss)', width: 14, height: 14, marginTop: 2 }}
                   />
-                  I agree to the{' '}
-                  <a href="/terms" style={{ color: 'rgba(255,255,255,0.55)', textDecoration: 'none' }}>Terms</a>
-                  {' '}and{' '}
-                  <a href="/privacy" style={{ color: 'rgba(255,255,255,0.55)', textDecoration: 'none' }}>Privacy Policy</a>
+                  <span>
+                    I agree to the{' '}
+                    <a href="/terms" style={{ color: 'var(--moss)', textDecoration: 'none' }}>Terms</a>
+                    {' '}and{' '}
+                    <a href="/privacy" style={{ color: 'var(--moss)', textDecoration: 'none' }}>Privacy Policy</a>
+                  </span>
                 </label>
               )}
               <button
                 type="submit"
                 disabled={passwordLoading || !email.trim() || !password || (mode === 'signup' && !termsAccepted)}
                 style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                  width: '100%', height: 48,
-                  background: (email.trim() && password) ? 'var(--moss)' : 'rgba(255,255,255,0.06)',
-                  color: (email.trim() && password) ? '#fff' : 'rgba(255,255,255,0.2)',
-                  border: 'none', borderRadius: 10,
-                  fontSize: 14, fontWeight: 600,
-                  fontFamily: 'var(--font-dm-sans), DM Sans, sans-serif',
+                  ...PRIMARY_BTN,
+                  background: (email.trim() && password) ? 'var(--moss)' : 'var(--subtle)',
+                  color: (email.trim() && password) ? '#fff' : 'var(--disabled)',
+                  boxShadow: (email.trim() && password) ? PRIMARY_BTN.boxShadow : 'none',
                   cursor: passwordLoading ? 'not-allowed' : 'pointer',
-                  transition: 'background 0.15s',
                 }}
               >
                 {passwordLoading ? <Spinner /> : null}
@@ -527,7 +564,13 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={sendPasswordReset}
-                  style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)', fontSize: 12, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', textAlign: 'right' }}
+                  style={{
+                    background: 'none', border: 'none', color: 'var(--meta)',
+                    fontSize: 12, cursor: 'pointer', fontFamily: 'inherit',
+                    textAlign: 'right', padding: 0, marginTop: 2,
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.color = 'var(--moss)')}
+                  onMouseLeave={e => (e.currentTarget.style.color = 'var(--meta)')}
                 >
                   Forgot password?
                 </button>
@@ -535,35 +578,38 @@ export default function LoginPage() {
             </form>
           )}
 
-          {/* Divider */}
-          <div className="auth-divider">
-            <div className="auth-divider-line" />
-            <span className="auth-divider-text">or</span>
-            <div className="auth-divider-line" />
-          </div>
+          {/* Mode switcher */}
+          <p style={{
+            textAlign: 'center', marginTop: 28, fontSize: 13, color: 'var(--meta)',
+            paddingTop: 20, borderTop: '1px solid var(--div)',
+          }}>
+            {mode === 'signup' ? 'Already have an account? ' : 'New to Goblin? '}
+            <button
+              onClick={() => switchMode(mode === 'signup' ? 'login' : 'signup')}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: 'var(--moss)', fontWeight: 600, fontSize: 13,
+                fontFamily: 'inherit', textDecoration: 'none', padding: 0,
+              }}
+              onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
+              onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
+            >
+              {mode === 'signup' ? 'Sign in →' : 'Create an account →'}
+            </button>
+          </p>
 
-          {/* OAuth */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-
-            <OAuthButton provider="google" onClick={() => signInWithOAuth('google')} loading={oauthLoading === 'google'} />
-            <OAuthButton provider="github" onClick={() => signInWithOAuth('github')} loading={oauthLoading === 'github'} />
-          </div>
-
-          {/* Terms */}
-          <p className="auth-terms">
+          {/* Footer */}
+          <p style={{
+            marginTop: 24, fontSize: 11, color: 'var(--disabled)',
+            textAlign: 'center', lineHeight: 1.7,
+          }}>
             By continuing you agree to our{' '}
-            <a href="/terms"   style={{ color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>Terms</a>
-            {' '}and{' '}
-            <a href="/privacy" style={{ color: 'rgba(255,255,255,0.35)', textDecoration: 'none' }}>Privacy Policy</a>
+            <a href="/terms" style={{ color: 'var(--meta)', textDecoration: 'none' }}>Terms</a>
+            {' · '}
+            <a href="/privacy" style={{ color: 'var(--meta)', textDecoration: 'none' }}>Privacy</a>
           </p>
         </div>
-
-        {/* Footer */}
-        <p className="auth-footer">
-          © 2026 Goblin ·{' '}
-          <a href="/privacy" style={{ color: 'inherit', textDecoration: 'none' }}>Privacy</a>
-        </p>
       </div>
-    </>
+    </div>
   );
 }

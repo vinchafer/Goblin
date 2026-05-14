@@ -1,8 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { SettingsLayout } from '@/components/settings/settings-layout';
-import { usePushNotifications } from '@/hooks/usePushNotifications';
-import { useTheme, type Theme } from '@/lib/theme';
 import { getAuthHeaders, API_URL } from '@/lib/api';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
@@ -29,115 +27,6 @@ const CARD_STYLE = {
   padding: '28px 28px 24px',
   marginBottom: 20,
 };
-
-function NotificationsSection() {
-  const { subscribe, unsubscribe, isSubscribed, isSupported, loading } = usePushNotifications();
-  const [sendingTest, setSendingTest] = useState(false);
-  const [testResult, setTestResult] = useState<string | null>(null);
-
-  const handleToggle = async () => {
-    if (isSubscribed) await unsubscribe();
-    else await subscribe();
-  };
-
-  const handleSendTest = async () => {
-    setSendingTest(true);
-    setTestResult(null);
-    try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || ''}/api/notifications/test`, { method: 'POST' });
-      setTestResult(res.ok ? '✓ Test notification sent!' : '✗ Failed to send test notification');
-    } catch {
-      setTestResult('✗ Failed to send test');
-    } finally {
-      setSendingTest(false);
-      setTimeout(() => setTestResult(null), 4000);
-    }
-  };
-
-  if (!isSupported && !loading) return null;
-
-  return (
-    <div style={CARD_STYLE}>
-      <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 18, color: 'var(--moss)', fontWeight: 700, marginBottom: 4, letterSpacing: '-0.3px' }}>
-        Build Notifications
-      </h2>
-      <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 20 }}>Get notified when builds complete</p>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-        <button
-          onClick={handleToggle}
-          disabled={loading}
-          style={{
-            background: isSubscribed ? 'var(--good)' : 'var(--moss)', color: '#fff',
-            border: 'none', borderRadius: 8, padding: '10px 22px',
-            fontSize: 13, fontWeight: 500, cursor: loading ? 'not-allowed' : 'pointer',
-            fontFamily: 'DM Sans, sans-serif', opacity: loading ? 0.6 : 1,
-          }}
-        >
-          {loading ? '...' : isSubscribed ? '✓ Enabled' : 'Enable'}
-        </button>
-        {isSubscribed && (
-          <button
-            onClick={handleSendTest}
-            disabled={sendingTest}
-            style={{
-              background: 'transparent', color: 'var(--meta)',
-              border: '1px solid var(--border)', borderRadius: 8, padding: '9px 18px',
-              fontSize: 13, fontWeight: 500, cursor: sendingTest ? 'not-allowed' : 'pointer',
-              fontFamily: 'DM Sans, sans-serif',
-            }}
-          >
-            {sendingTest ? 'Sending...' : 'Send test'}
-          </button>
-        )}
-      </div>
-      {testResult && (
-        <p style={{ fontSize: 12, color: testResult.startsWith('✓') ? 'var(--good)' : 'var(--danger)', marginTop: 8 }}>
-          {testResult}
-        </p>
-      )}
-    </div>
-  );
-}
-
-function AppearanceSection() {
-  const { theme, setTheme } = useTheme();
-  const options: { value: Theme; label: string; icon: string }[] = [
-    { value: 'light', label: 'Light', icon: '☀️' },
-    { value: 'dark',  label: 'Dark',  icon: '🌙' },
-    { value: 'system', label: 'System', icon: '💻' },
-  ];
-  return (
-    <div style={CARD_STYLE}>
-      <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 18, color: 'var(--moss)', fontWeight: 700, marginBottom: 4, letterSpacing: '-0.3px' }}>
-        Appearance
-      </h2>
-      <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 20 }}>Theme and display preferences</p>
-      <div style={{ display: 'flex', gap: 8 }}>
-        {options.map(opt => {
-          const isActive = theme === opt.value;
-          return (
-            <button
-              key={opt.value}
-              onClick={() => setTheme(opt.value)}
-              style={{
-                padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 500,
-                border: isActive ? '2px solid var(--moss)' : '1.5px solid var(--border)',
-                background: isActive ? 'rgba(45,74,43,0.1)' : 'transparent',
-                color: isActive ? 'var(--moss)' : 'var(--meta)',
-                cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
-                display: 'flex', alignItems: 'center', gap: 6,
-                transition: 'all 0.15s',
-              }}
-            >
-              <span>{opt.icon}</span>
-              {opt.label}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 function AdvancedModeSection() {
   const [enabled, setEnabled] = useState(false);
@@ -324,14 +213,8 @@ function GeneralTab() {
         </div>
       </div>
 
-      {/* Appearance card */}
-      <AppearanceSection />
-
       {/* Advanced Mode */}
       <AdvancedModeSection />
-
-      {/* Notifications */}
-      <NotificationsSection />
 
       {/* Danger zone */}
       <div style={{ ...CARD_STYLE, border: '1px solid rgba(184,92,60,0.25)' }}>

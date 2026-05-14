@@ -1,6 +1,7 @@
 ﻿'use client';
 import { useState } from 'react';
-import { DeviceMobile, Laptop, Monitor, ArrowClockwise, ArrowSquareOut } from '@phosphor-icons/react';
+import { DeviceMobile, Laptop, Monitor, ArrowClockwise, ArrowSquareOut, Globe, GithubLogo, RocketLaunch } from '@phosphor-icons/react';
+import Link from 'next/link';
 
 type Viewport = '375' | '768' | '1440';
 
@@ -30,30 +31,84 @@ export function PreviewTab({ projectId, previewUrl }: PreviewTabProps) {
     return (
       <div style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center',
-        justifyContent: 'center', height: '100%', gap: 20, padding: 48,
-        textAlign: 'center',
+        justifyContent: 'center', height: '100%', gap: 0, padding: '48px 24px',
+        textAlign: 'center', background: 'var(--cream)',
       }}>
-        <div style={{ fontSize: 56 }}>🌐</div>
-        <h3 style={{
-          fontFamily: 'Fraunces, serif', fontSize: 26, color: 'var(--moss)',
-          fontWeight: 700, letterSpacing: '-0.5px',
-        }}>No preview yet</h3>
-        <p style={{
-          fontSize: 14, color: 'var(--meta)', maxWidth: 360,
-          lineHeight: 1.65, fontWeight: 300,
+        <div style={{
+          width: 64, height: 64, borderRadius: 16,
+          background: 'rgba(45,74,43,0.06)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          marginBottom: 20,
         }}>
-          Deploy your project to Vercel to see a live preview here.
-          Add your Vercel token in Settings → API Keys.
+          <Globe size={32} weight="duotone" color="var(--moss)" />
+        </div>
+        <h3 style={{
+          fontFamily: 'Fraunces, serif', fontSize: 24, color: 'var(--moss)',
+          fontWeight: 700, letterSpacing: '-0.5px', marginBottom: 8,
+        }}>Nothing to preview yet</h3>
+        <p style={{
+          fontSize: 14, color: 'var(--meta)', maxWidth: 400,
+          lineHeight: 1.65, marginBottom: 28,
+        }}>
+          Push your project to GitHub, then connect Vercel to deploy.
+          Live previews appear here automatically.
         </p>
-        <a
-          href="/dashboard/settings/keys"
-          style={{
-            background: 'var(--moss)', color: '#fff', padding: '10px 20px',
-            borderRadius: 9, fontSize: 13, fontWeight: 500, textDecoration: 'none',
-          }}
-        >
-          Add Vercel Token →
-        </a>
+
+        {/* 3-step guide cards */}
+        <div style={{
+          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
+          gap: 10, width: '100%', maxWidth: 480, marginBottom: 24,
+        }}>
+          {[
+            { icon: GithubLogo, step: '1', label: 'Push to GitHub', desc: 'Connect from Code tab' },
+            { icon: RocketLaunch, step: '2', label: 'Add Vercel token', desc: 'Settings → API Keys' },
+            { icon: Globe, step: '3', label: 'Auto-deploy', desc: 'Preview shows here' },
+          ].map(s => (
+            <div key={s.step} style={{
+              background: 'var(--panel)', border: '1px solid var(--border)',
+              borderRadius: 10, padding: '14px 12px', textAlign: 'left',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                <span style={{
+                  fontSize: 10, fontWeight: 700, color: 'var(--ochre-dark, #C9933A)',
+                  background: 'rgba(212,169,74,0.15)', padding: '1px 6px', borderRadius: 4,
+                  letterSpacing: '0.04em',
+                }}>STEP {s.step}</span>
+                <s.icon size={14} weight="regular" color="var(--meta)" />
+              </div>
+              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>
+                {s.label}
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--meta)', lineHeight: 1.4 }}>
+                {s.desc}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ display: 'flex', gap: 8 }}>
+          <Link
+            href="/dashboard/settings/keys"
+            style={{
+              background: 'var(--moss)', color: '#fff', padding: '10px 20px',
+              borderRadius: 9, fontSize: 13, fontWeight: 600, textDecoration: 'none',
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              boxShadow: '0 1px 2px rgba(45,74,43,0.18)',
+            }}
+          >
+            Add Vercel Token →
+          </Link>
+          <Link
+            href="/dashboard/settings/integrations"
+            style={{
+              background: 'transparent', color: 'var(--moss)', padding: '10px 20px',
+              borderRadius: 9, fontSize: 13, fontWeight: 500, textDecoration: 'none',
+              border: '1.5px solid var(--border)',
+            }}
+          >
+            Connect GitHub
+          </Link>
+        </div>
       </div>
     );
   }

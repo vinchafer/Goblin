@@ -189,11 +189,48 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
                 onSave={(content) => tab.saveFile(content, true)}
               />
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', textAlign: 'center', padding: 32 }}>
-                <div style={{ fontSize: 32, color: '#4a6a4a', fontFamily: 'JetBrains Mono, monospace', marginBottom: 14, opacity: 0.5 }}>{'</>'}</div>
-                <p style={{ fontSize: 13, color: '#8aaa85', fontFamily: 'DM Sans, sans-serif', marginBottom: 6 }}>
-                  {tab.files.length > 0 ? 'Select a file to start editing' : 'No files yet — start chatting to generate code.'}
-                </p>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', textAlign: 'center', padding: 32, background: '#141a12' }}>
+                <div style={{
+                  width: 56, height: 56, borderRadius: 12,
+                  background: 'rgba(138,170,133,0.08)',
+                  border: '1px solid rgba(138,170,133,0.15)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontFamily: 'JetBrains Mono, monospace', fontSize: 22, color: '#8aaa85',
+                  marginBottom: 18,
+                }}>{'</>'}</div>
+                {tab.files.length > 0 ? (
+                  <>
+                    <h3 style={{ fontFamily: 'Fraunces, serif', fontSize: 20, color: '#c5d0c0', fontWeight: 700, marginBottom: 6, letterSpacing: '-0.3px' }}>
+                      Select a file
+                    </h3>
+                    <p style={{ fontSize: 13, color: '#7aaa75', fontFamily: 'DM Sans, sans-serif', maxWidth: 320, lineHeight: 1.55 }}>
+                      Pick a file from the tree on the left to start editing.
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <h3 style={{ fontFamily: 'Fraunces, serif', fontSize: 20, color: '#c5d0c0', fontWeight: 700, marginBottom: 6, letterSpacing: '-0.3px' }}>
+                      No code yet
+                    </h3>
+                    <p style={{ fontSize: 13, color: '#7aaa75', fontFamily: 'DM Sans, sans-serif', maxWidth: 360, lineHeight: 1.6, marginBottom: 20 }}>
+                      Open the Chat tab and ask Goblin to build something.<br />
+                      Use <span style={{ background: 'rgba(212,169,74,0.12)', color: 'var(--ochre)', padding: '1px 6px', borderRadius: 4, fontFamily: 'JetBrains Mono, monospace', fontSize: 11 }}>Send to Code</span> on any generated snippet.
+                    </p>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button
+                        onClick={() => window.dispatchEvent(new CustomEvent('goblin:switchTab', { detail: 'chat' }))}
+                        style={{
+                          background: 'rgba(212,169,74,0.12)', color: 'var(--ochre)',
+                          border: '1px solid rgba(212,169,74,0.35)',
+                          borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 600,
+                          cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
+                        }}
+                      >
+                        Open Chat →
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>

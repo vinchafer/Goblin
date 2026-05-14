@@ -333,69 +333,104 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* RIGHT — What's New */}
+          {/* RIGHT — Changelog + Community */}
           <div className="dash-right" style={{ width: 260, flexShrink: 0 }}>
-            <h2 style={{
-              fontFamily: 'DM Sans, sans-serif', fontSize: 13, fontWeight: 600,
-              color: 'var(--meta)', letterSpacing: '0.02em',
-              marginBottom: 16, textTransform: 'uppercase',
+            <div style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              marginBottom: 14,
             }}>
-              What&apos;s new
-            </h2>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 0, borderTop: '1px solid var(--div)' }}>
-              {UPDATES.map((u) => (
-                <div
-                  key={u.title}
-                  style={{ padding: '14px 0', borderBottom: '1px solid var(--div)' }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                    <span style={{
-                      fontSize: 10, fontWeight: 600, color: 'var(--moss)',
-                      background: 'rgba(45,74,43,0.08)', padding: '1px 6px',
-                      borderRadius: 3, fontFamily: 'DM Sans, sans-serif',
-                    }}>{u.tag}</span>
-                    <span style={{ fontSize: 11, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif' }}>{u.date}</span>
-                  </div>
-                  <div style={{
-                    fontSize: 13, fontWeight: 500, color: 'var(--text)',
-                    marginBottom: 3, fontFamily: 'DM Sans, sans-serif', lineHeight: 1.35,
-                  }}>
-                    {u.title}
-                  </div>
-                  <div style={{ fontSize: 12, color: 'var(--meta)', lineHeight: 1.5, fontFamily: 'DM Sans, sans-serif' }}>
-                    {u.desc}
-                  </div>
-                </div>
-              ))}
+              <h2 style={{
+                fontFamily: 'DM Sans, sans-serif', fontSize: 11, fontWeight: 700,
+                color: 'var(--meta)', letterSpacing: '0.1em',
+                textTransform: 'uppercase',
+              }}>
+                Changelog
+              </h2>
+              <a
+                href="https://github.com/justgoblin/changelog"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ fontSize: 11, color: 'var(--meta)', textDecoration: 'none', fontFamily: 'DM Sans, sans-serif' }}
+                onMouseEnter={e => (e.currentTarget.style.color = 'var(--moss)')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'var(--meta)')}
+              >
+                All →
+              </a>
             </div>
 
-            {/* Community */}
-            <div style={{ marginTop: 24 }}>
-              <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)', marginBottom: 10, fontFamily: 'DM Sans, sans-serif' }}>
-                Community
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 28 }}>
+              {UPDATES.map((u) => {
+                const tagColor = u.tag === 'New' ? 'var(--moss)'
+                  : u.tag === 'Security' ? 'var(--danger)'
+                  : 'var(--ochre-dark, #C9933A)';
+                const tagBg = u.tag === 'New' ? 'rgba(45,74,43,0.08)'
+                  : u.tag === 'Security' ? 'rgba(184,92,60,0.08)'
+                  : 'rgba(212,169,74,0.12)';
+                return (
+                  <div key={u.title} style={{ position: 'relative', paddingLeft: 16 }}>
+                    {/* Timeline dot */}
+                    <div style={{
+                      position: 'absolute', left: 0, top: 6,
+                      width: 7, height: 7, borderRadius: '50%',
+                      background: tagColor, opacity: 0.6,
+                    }} />
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                      <span style={{
+                        fontSize: 9, fontWeight: 700, color: tagColor,
+                        background: tagBg, padding: '1px 6px',
+                        borderRadius: 3, fontFamily: 'DM Sans, sans-serif',
+                        letterSpacing: '0.04em', textTransform: 'uppercase',
+                      }}>{u.tag}</span>
+                      <span style={{ fontSize: 10, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif' }}>{u.date}</span>
+                    </div>
+                    <div style={{
+                      fontSize: 13, fontWeight: 600, color: 'var(--text)',
+                      marginBottom: 3, fontFamily: 'DM Sans, sans-serif', lineHeight: 1.35,
+                    }}>
+                      {u.title}
+                    </div>
+                    <div style={{ fontSize: 12, color: 'var(--meta)', lineHeight: 1.5, fontFamily: 'DM Sans, sans-serif' }}>
+                      {u.desc}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Community card */}
+            <div style={{
+              background: 'var(--panel)', border: '1px solid var(--border)',
+              borderRadius: 12, padding: '14px 16px',
+            }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 6, fontFamily: 'DM Sans, sans-serif' }}>
+                Join the community
               </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div style={{ fontSize: 12, color: 'var(--meta)', marginBottom: 12, lineHeight: 1.5 }}>
+                Get help, share builds, and shape what Goblin becomes.
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
                 <a
                   href="https://discord.gg/goblin"
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{ fontSize: 13, color: 'var(--moss)', fontFamily: 'DM Sans, sans-serif', textDecoration: 'none' }}
-                  onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
-                  onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
-                >
-                  Discord →
-                </a>
+                  style={{
+                    flex: 1, fontSize: 12, color: 'var(--moss)',
+                    background: 'var(--subtle)', border: '1px solid var(--border)',
+                    borderRadius: 7, padding: '6px 10px', textAlign: 'center',
+                    fontFamily: 'DM Sans, sans-serif', textDecoration: 'none', fontWeight: 500,
+                  }}
+                >Discord</a>
                 <a
                   href="https://twitter.com/justgoblin"
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{ fontSize: 13, color: 'var(--moss)', fontFamily: 'DM Sans, sans-serif', textDecoration: 'none' }}
-                  onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
-                  onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
-                >
-                  Build in public →
-                </a>
+                  style={{
+                    flex: 1, fontSize: 12, color: 'var(--moss)',
+                    background: 'var(--subtle)', border: '1px solid var(--border)',
+                    borderRadius: 7, padding: '6px 10px', textAlign: 'center',
+                    fontFamily: 'DM Sans, sans-serif', textDecoration: 'none', fontWeight: 500,
+                  }}
+                >X / Twitter</a>
               </div>
             </div>
           </div>
