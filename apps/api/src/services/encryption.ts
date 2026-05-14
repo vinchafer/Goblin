@@ -31,7 +31,14 @@ export function encryptData(plaintext: string): string {
 export function decryptData(encryptedBase64: string): string {
   try {
     const key = deriveKey();
-    const data = Buffer.from(encryptedBase64, 'base64');
+    // Handle PostgreSQL BYTEA hex-escape format (\x{hex}) returned by PostgREST.
+    // The column stores UTF-8 bytes of the base64 string; the hex must be decoded
+    // back to the original base64 before decrypting.
+    let base64 = encryptedBase64;
+    if (typeof encryptedBase64 === 'string' && encryptedBase64.startsWith('\\x')) {
+      base64 = Buffer.from(encryptedBase64.slice(2), 'hex').toString('utf-8');
+    }
+    const data = Buffer.from(base64, 'base64');
 
     const iv = data.subarray(0, 16);
     const authTag = data.subarray(16, 32);
