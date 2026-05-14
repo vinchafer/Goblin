@@ -1,4 +1,12 @@
-# Bug Registry — Session 5 + 6A
+# Bug Registry — Sessions 5-8
+
+## Session 8 Status-Update (2026-05-14)
+- **C-3 (Static Salt):** FIXED — per-user-salt implemented (Phase Z2)
+- **C-8 (Free-Tier-Reselling):** FIXED — FREE_API_POOL disabled (Phase Z4)
+- **C-7 (Goblin-Hosted Marketing):** FIXED — Coming Soon badge, honest claims (Phase Z6)
+
+---
+# Original: Session 5 + 6A
 
 Generated: 2026-05-12 (Phase V2 — Test Run Local)
 
