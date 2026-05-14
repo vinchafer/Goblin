@@ -39,12 +39,10 @@ interface FreePoolEntry {
   litellmModel: string;
 }
 
-const FREE_API_POOL: FreePoolEntry[] = [
-  { provider: 'google',   envVar: 'GOOGLE_FREE_API_KEY',     baseURL: 'https://generativelanguage.googleapis.com/v1beta/openai/', model: 'gemini-2.0-flash',        slug: 'free/gemini-flash',        litellmModel: 'gemini/gemini-2.0-flash' },
-  { provider: 'groq',     envVar: 'GROQ_FREE_API_KEY',       baseURL: 'https://api.groq.com/openai/v1',                          model: 'llama-3.3-70b-versatile', slug: 'free/llama-70b',           litellmModel: 'groq/llama-3.3-70b-versatile' },
-  { provider: 'openai',   envVar: 'CEREBRAS_FREE_API_KEY',   baseURL: 'https://api.cerebras.ai/v1',                              model: 'llama-3.3-70b',           slug: 'free/llama-70b-cerebras',  litellmModel: 'cerebras/llama-3.3-70b' },
-  { provider: 'deepseek', envVar: 'OPENROUTER_FREE_API_KEY', baseURL: 'https://openrouter.ai/api/v1',                            model: 'deepseek/deepseek-chat',  slug: 'free/deepseek',            litellmModel: 'openrouter/deepseek/deepseek-chat' },
-];
+// FREE_API_POOL (Goblin-owned keys) is intentionally disabled — Strategy V1 C-8 fix.
+// Goblin does not resell provider free tiers. Users must connect their own API keys (BYOK).
+// Free-tier provider recommendations are shown in Settings → API Keys.
+const FREE_API_POOL: FreePoolEntry[] = [];
 
 // Provider priority for auto-selection
 export const PROVIDER_PRIORITY: ProviderName[] = ['anthropic', 'openai', 'deepseek', 'groq', 'mistral', 'google', 'xai', 'together'];
@@ -228,7 +226,11 @@ export async function resolveModel(
     };
   }
 
-  throw new GoblinError('unknown', 'No model connected. Add an API key in Settings to start chatting.');
+  throw new GoblinError(
+    'unknown',
+    'No AI model connected. Add your own API key in Settings → API Keys. ' +
+    'Free options: Groq (groq.com), Google AI Studio (aistudio.google.com), OpenRouter (openrouter.ai).'
+  );
 }
 
 // ─── Streaming ────────────────────────────────────────────────────────────────

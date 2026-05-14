@@ -15,11 +15,9 @@ const REQUIRED_ENV = [
   'STRIPE_PRICE_POWER_TIER1',
 ]
 
-// Optional env vars for Free-API Pool (Layer 2 routing)
-// GOOGLE_FREE_API_KEY=          # Gemini 2.0 Flash
-// GROQ_FREE_API_KEY=            # Llama 3.3 70B
-// CEREBRAS_FREE_API_KEY=        # Llama 3.3 70B
-// OPENROUTER_FREE_API_KEY=      # Various free models
+// Deprecated: Free-API Pool env vars (removed Strategy V1 C-8 — no more reselling)
+// Remove GROQ_FREE_API_KEY, GOOGLE_FREE_API_KEY, CEREBRAS_FREE_API_KEY, OPENROUTER_FREE_API_KEY from Railway
+// Users must connect their own API keys (BYOK) — see Settings → API Keys for free-tier recommendations
 
 // Optional env vars for Goblin Hosted GPU (Phase 3)
 // GOBLIN_GPU_ENDPOINT=          # vLLM-compatible endpoint URL
