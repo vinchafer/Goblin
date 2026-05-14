@@ -212,3 +212,24 @@ SELECT COUNT(*) as legacy_plan_rows FROM users WHERE plan IN ('seed', 'craft', '
 ALTER TABLE users ADD COLUMN IF NOT EXISTS encryption_salt TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS encryption_migrated_at TIMESTAMPTZ;
 ALTER TABLE byok_keys ADD COLUMN IF NOT EXISTS key_encrypted_legacy TEXT;
+
+-- ============================================================================
+-- 12. SESSION 8 — Migration 0035: Goblin-Hosted Usage Tracking (Layer C prep)
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS goblin_hosted_usage (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE NOT NULL,
+  month TEXT NOT NULL,
+  call_count INTEGER DEFAULT 0,
+  last_call_at TIMESTAMPTZ,
+  UNIQUE(user_id, month)
+);
+
+CREATE INDEX IF NOT EXISTS idx_goblin_hosted_usage_user_month ON goblin_hosted_usage(user_id, month);
+
+ALTER TABLE goblin_hosted_usage ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users see own hosted usage" ON goblin_hosted_usage;
+CREATE POLICY "Users see own hosted usage" ON goblin_hosted_usage
+  FOR SELECT USING (auth.uid() = user_id);

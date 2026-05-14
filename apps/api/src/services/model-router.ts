@@ -1,8 +1,8 @@
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import { type SupabaseClient } from '@supabase/supabase-js';
-import { decryptData } from './encryption';
 import { getGoblinHostedConfig } from './goblin-hosted';
+import { decryptData, decryptUserData } from './encryption';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { PROVIDERS, PROVIDER_BASE_URLS, type ProviderId } from '../config/providers';
 import { GoblinError, isGoblinError, litellmStream } from './litellm-client';
@@ -66,16 +66,33 @@ async function resolveByokKey(
 ): Promise<{ provider: ProviderName; apiKey: string } | null> {
   const sb = supabase ?? getSupabaseAdmin();
 
-  const { data: keys } = await sb
-    .from('byok_keys')
-    .select('provider, key_encrypted')
-    .eq('user_id', userId)
-    .eq('status', 'active');
+  const [keysResult, userResult] = await Promise.all([
+    sb
+      .from('byok_keys')
+      .select('provider, key_encrypted')
+      .eq('user_id', userId)
+      .eq('status', 'active'),
+    sb
+      .from('users')
+      .select('encryption_salt')
+      .eq('id', userId)
+      .single(),
+  ]);
 
+  const keys = keysResult.data;
   if (!keys || keys.length === 0) return null;
+
+  const userSalt = (userResult.data as { encryption_salt?: string } | null)?.encryption_salt ?? null;
 
   function safeDecrypt(encrypted: string): string {
     try {
+      if (userSalt) {
+        try {
+          return decryptUserData(encrypted, userSalt);
+        } catch {
+          // Fall through to legacy
+        }
+      }
       return decryptData(encrypted);
     } catch {
       throw new GoblinError('decryption_error', 'API key needs to be re-entered. Please go to Settings → API Keys.');
