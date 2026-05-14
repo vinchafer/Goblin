@@ -155,16 +155,18 @@ export default function DashboardPage() {
               <button
                 onClick={() => setShowNewProjectModal(true)}
                 style={{
-                  background: 'transparent', color: 'var(--moss)',
-                  border: '1px solid var(--div)',
-                  borderRadius: 7, padding: '7px 14px',
-                  fontSize: 13, fontWeight: 500, cursor: 'pointer',
+                  background: 'var(--moss)', color: '#fff',
+                  border: 'none',
+                  borderRadius: 8, padding: '8px 16px',
+                  fontSize: 13, fontWeight: 600, cursor: 'pointer',
                   fontFamily: 'DM Sans, sans-serif', transition: 'background 0.15s',
+                  display: 'flex', alignItems: 'center', gap: 6,
                 }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'var(--subtle)')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                onMouseEnter={e => (e.currentTarget.style.background = 'var(--moss-2)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'var(--moss)')}
               >
-                + New project
+                <span style={{ fontSize: 16, lineHeight: 1, marginTop: -1 }}>+</span>
+                New project
               </button>
             </div>
 

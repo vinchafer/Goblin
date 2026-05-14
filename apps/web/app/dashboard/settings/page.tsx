@@ -618,6 +618,12 @@ function DeveloperTab() {
 export default function SettingsPage() {
   const [tab, setTab] = useState<'general' | 'developer'>('general');
 
+  // Read ?tab=developer from URL to show developer tools directly
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('tab') === 'developer') setTab('developer');
+  }, []);
+
   const tabStyle = (active: boolean) => ({
     padding: '8px 18px', borderRadius: 8, fontSize: 13, fontWeight: 500 as const,
     border: 'none', cursor: 'pointer' as const,
@@ -631,10 +637,12 @@ export default function SettingsPage() {
     <SettingsLayout>
       <div style={{ marginBottom: 28 }}>
         <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 22, fontWeight: 700, color: 'var(--moss)', marginBottom: 6, letterSpacing: '-0.3px' }}>
-          Account Settings
+          {tab === 'developer' ? 'Developer Tools' : 'Profile & Account'}
         </h1>
         <p style={{ fontSize: 13, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif' }}>
-          Manage your profile, notifications, and developer preferences.
+          {tab === 'developer'
+            ? 'Advanced model settings, system prompt, and developer preferences.'
+            : 'Manage your profile, appearance, and notifications.'}
         </p>
       </div>
 
@@ -644,7 +652,7 @@ export default function SettingsPage() {
         background: 'var(--panel)', border: '1px solid var(--border)',
         borderRadius: 11, marginBottom: 28, width: 'fit-content',
       }}>
-        <button style={tabStyle(tab === 'general')} onClick={() => setTab('general')}>General</button>
+        <button style={tabStyle(tab === 'general')} onClick={() => setTab('general')}>Account</button>
         <button style={tabStyle(tab === 'developer')} onClick={() => setTab('developer')}>Developer</button>
       </div>
 

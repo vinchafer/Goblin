@@ -6,26 +6,28 @@ export function Hero() {
       minHeight: '100vh', display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center', textAlign: 'center',
       padding: '120px 24px 80px', position: 'relative', overflow: 'hidden',
-      background: '#0f1410',
+      background: 'var(--cream)',
     }}>
-      {/* Subtle grid */}
+      {/* Subtle dot grid */}
       <div style={{
         position: 'absolute', inset: 0, pointerEvents: 'none',
-        backgroundImage: 'linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px)',
-        backgroundSize: '48px 48px',
+        backgroundImage: 'radial-gradient(circle, var(--border) 1px, transparent 1px)',
+        backgroundSize: '32px 32px',
+        opacity: 0.6,
       }} />
-      {/* Radial glow */}
+      {/* Top moss glow — subtle */}
       <div style={{
-        position: 'absolute', inset: 0, pointerEvents: 'none',
-        background: 'radial-gradient(ellipse 70% 45% at 50% 0%, rgba(30,58,28,0.5) 0%, transparent 70%)',
+        position: 'absolute', top: 0, left: '50%', transform: 'translateX(-50%)',
+        width: '70%', height: '40%', pointerEvents: 'none',
+        background: 'radial-gradient(ellipse at top, rgba(45,74,43,0.07) 0%, transparent 70%)',
       }} />
 
-      {/* Beta badge — no animation */}
+      {/* Beta badge */}
       <div style={{
         display: 'inline-flex', alignItems: 'center', gap: 8,
-        background: 'rgba(201,147,58,0.1)', border: '1px solid rgba(201,147,58,0.25)',
-        borderRadius: 100, padding: '5px 14px', fontSize: 11, fontWeight: 500,
-        color: 'var(--ochre)', letterSpacing: '0.08em', textTransform: 'uppercase',
+        background: 'rgba(201,147,58,0.1)', border: '1px solid rgba(201,147,58,0.3)',
+        borderRadius: 100, padding: '5px 14px', fontSize: 11, fontWeight: 600,
+        color: 'var(--ochre-dark, #C9933A)', letterSpacing: '0.08em', textTransform: 'uppercase',
         marginBottom: 36, position: 'relative', zIndex: 1,
       }}>
         <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--ochre)', display: 'inline-block' }} />
@@ -34,16 +36,16 @@ export function Hero() {
 
       <h1 style={{
         fontFamily: 'Fraunces, serif', fontSize: 'clamp(40px, 6vw, 72px)',
-        lineHeight: 1.08, fontWeight: 700, color: 'var(--cream)',
+        lineHeight: 1.08, fontWeight: 700, color: 'var(--moss)',
         letterSpacing: '-2px', marginBottom: 28, maxWidth: 760,
         position: 'relative', zIndex: 1,
       }}>
         The Cloud Workshop<br />
-        <em style={{ fontStyle: 'italic', color: 'var(--ochre)' }}>for Builders.</em>
+        <em style={{ fontStyle: 'italic', color: 'var(--ochre-dark, #C9933A)' }}>for Builders.</em>
       </h1>
 
       <p style={{
-        fontSize: 18, color: 'rgba(255,255,255,0.55)', maxWidth: 480, lineHeight: 1.7,
+        fontSize: 18, color: 'var(--text-2)', maxWidth: 480, lineHeight: 1.7,
         marginBottom: 48, fontWeight: 400, position: 'relative', zIndex: 1,
       }}>
         Build anywhere. Code anything.<br />
@@ -53,15 +55,15 @@ export function Hero() {
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center', position: 'relative', zIndex: 1, marginBottom: 64 }}>
         <Link href="/login" style={{
-          background: 'var(--cream)', color: '#0f1410', padding: '13px 28px',
+          background: 'var(--moss)', color: '#fff', padding: '13px 28px',
           borderRadius: 9, fontSize: 14, fontWeight: 600, textDecoration: 'none',
           display: 'inline-flex', alignItems: 'center', gap: 8,
-          fontFamily: 'DM Sans, sans-serif',
+          fontFamily: 'DM Sans, sans-serif', boxShadow: '0 2px 12px rgba(45,74,43,0.25)',
         }}>Start Building &rarr;</Link>
         <a href="#how-it-works" style={{
-          background: 'transparent', color: 'rgba(255,255,255,0.65)', padding: '13px 24px',
+          background: 'transparent', color: 'var(--meta)', padding: '13px 24px',
           borderRadius: 9, fontSize: 14, fontWeight: 400, textDecoration: 'none',
-          border: '1px solid rgba(255,255,255,0.12)',
+          border: '1px solid var(--border)',
           fontFamily: 'DM Sans, sans-serif',
         }}>See how it works &darr;</a>
       </div>
@@ -69,7 +71,7 @@ export function Hero() {
       {/* App window mockup */}
       <div style={{
         width: '100%', maxWidth: 900, borderRadius: 14, overflow: 'hidden',
-        boxShadow: '0 40px 120px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.06)',
+        boxShadow: '0 24px 80px rgba(45,74,43,0.15), 0 0 0 1px var(--border)',
         position: 'relative', zIndex: 1,
       }}>
         {/* Window chrome */}

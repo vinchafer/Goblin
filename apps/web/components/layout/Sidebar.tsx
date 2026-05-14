@@ -5,6 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useApp } from '@/contexts/app-context';
 import { createClient } from '@/lib/supabase/client';
 import { apiGet } from '@/lib/api';
+import { Key, CreditCard, Gear } from '@phosphor-icons/react';
 
 interface ChatSession {
   id: string;
@@ -315,29 +316,30 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
           display: 'flex', flexDirection: 'column', gap: 2,
         }}>
           {[
-            { label: 'API Keys', path: '/dashboard/settings/keys' },
-            { label: 'Billing',  path: '/dashboard/settings/billing' },
-            { label: 'Settings', path: '/dashboard/settings' },
-          ].map(({ label, path }) => (
+            { label: 'API Keys', path: '/dashboard/settings/keys',    Icon: Key },
+            { label: 'Billing',  path: '/dashboard/settings/billing', Icon: CreditCard },
+            { label: 'Settings', path: '/dashboard/settings',         Icon: Gear },
+          ].map(({ label, path, Icon }) => (
             <button
               key={path}
               onClick={() => navigate(path)}
-              title={label}
+              title={collapsed ? label : undefined}
               style={{
                 width: '100%', background: 'none', border: 'none',
-                padding: collapsed ? '8px 0' : '8px',
+                padding: collapsed ? '8px 0' : '8px 10px',
                 borderRadius: 7, fontSize: 12,
                 color: 'var(--sidebar-meta)', cursor: 'pointer',
                 display: 'flex', alignItems: 'center',
+                gap: collapsed ? 0 : 8,
                 justifyContent: collapsed ? 'center' : 'flex-start',
                 fontFamily: 'DM Sans, sans-serif',
-                minHeight: 36, transition: 'background 0.1s',
+                minHeight: 34, transition: 'background 0.1s, color 0.1s',
               }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.05)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.05)'; e.currentTarget.style.color = 'var(--text)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--sidebar-meta)'; }}
             >
+              <Icon size={14} style={{ flexShrink: 0, opacity: 0.7 }} />
               {!collapsed && label}
-              {collapsed && <span style={{ fontSize: 10, fontWeight: 600 }}>{label.slice(0, 2)}</span>}
             </button>
           ))}
         </div>
@@ -463,10 +465,10 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
         {/* Bottom nav mobile */}
         <div style={{ padding: '8px 12px', borderTop: '1px solid var(--border)', flexShrink: 0, display: 'flex', gap: 8 }}>
           {[
-            { label: 'API Keys', path: '/dashboard/settings/keys' },
-            { label: 'Billing',  path: '/dashboard/settings/billing' },
-            { label: 'Settings', path: '/dashboard/settings' },
-          ].map(({ label, path }) => (
+            { label: 'API Keys', path: '/dashboard/settings/keys',    Icon: Key },
+            { label: 'Billing',  path: '/dashboard/settings/billing', Icon: CreditCard },
+            { label: 'Settings', path: '/dashboard/settings',         Icon: Gear },
+          ].map(({ label, path, Icon }) => (
             <button
               key={path}
               onClick={() => navigate(path)}
@@ -475,10 +477,12 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
                 padding: '8px', borderRadius: 7, fontSize: 12,
                 color: '#6B6560', cursor: 'pointer',
                 fontFamily: 'DM Sans, sans-serif', minHeight: 36, transition: 'background 0.1s',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
               }}
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.05)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'none')}
             >
+              <Icon size={14} />
               {label}
             </button>
           ))}
