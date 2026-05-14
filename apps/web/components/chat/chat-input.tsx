@@ -13,7 +13,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
   const [value, setValue] = useState("");
   const [toast, setToast] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const { isListening, isSupported, startListening } = useVoiceInput(
+  const { isListening, isSupported, startListening, stopListening } = useVoiceInput(
     (text) => setValue(prev => prev + (prev ? ' ' : '') + text)
   );
 
@@ -55,15 +55,22 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
             maxHeight: '200px'
           }}
         />
-        {/* Mic button — left side */}
-        <button
-          disabled
-          className="absolute left-2 bottom-2 w-10 h-10 rounded-lg flex items-center justify-center opacity-30"
-          title="Voice input (coming soon)"
-          style={{ color: 'var(--goblin-gray)' }}
-        >
-          <Microphone className="w-4 h-4" />
-        </button>
+        {/* Mic button — left side (voice input) */}
+        {isSupported && (
+          <button
+            onClick={isListening ? stopListening : startListening}
+            className="absolute left-2 bottom-2 w-10 h-10 rounded-lg flex items-center justify-center touch-manipulation transition-all"
+            title={isListening ? 'Stop listening' : 'Voice input'}
+            style={{
+              color: isListening ? 'var(--danger)' : 'var(--goblin-gray)',
+              background: isListening ? 'rgba(184,92,60,0.1)' : 'none',
+              border: 'none',
+              cursor: 'pointer',
+            }}
+          >
+            <Microphone className="w-4 h-4" style={{ animation: isListening ? 'pulse 1s ease-in-out infinite' : undefined }} />
+          </button>
+        )}
         {/* Send button */}
         <button
           onClick={handleSubmit}

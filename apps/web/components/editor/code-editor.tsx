@@ -48,10 +48,11 @@ interface CodeEditorProps {
   filename: string;
   onChange?: (content: string) => void;
   onSave?: (content: string) => void;
+  onEditorReady?: (view: EditorView) => void;
   readOnly?: boolean;
 }
 
-export function CodeEditor({ content, filename, onChange, onSave, readOnly = false }: CodeEditorProps) {
+export function CodeEditor({ content, filename, onChange, onSave, onEditorReady, readOnly = false }: CodeEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
 
@@ -89,6 +90,7 @@ export function CodeEditor({ content, filename, onChange, onSave, readOnly = fal
 
     const view = new EditorView({ state, parent: containerRef.current });
     viewRef.current = view;
+    onEditorReady?.(view);
 
     return () => { view.destroy(); viewRef.current = null; };
   }, [filename]); // eslint-disable-line react-hooks/exhaustive-deps

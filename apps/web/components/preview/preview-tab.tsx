@@ -1,5 +1,6 @@
 ﻿'use client';
 import { useState } from 'react';
+import { DeviceMobile, Laptop, Monitor, ArrowClockwise, ArrowSquareOut } from '@phosphor-icons/react';
 
 type Viewport = '375' | '768' | '1440';
 
@@ -13,10 +14,10 @@ export function PreviewTab({ projectId, previewUrl }: PreviewTabProps) {
   const [reloadKey, setReloadKey] = useState(0);
   const [loading, setLoading] = useState(true);
 
-  const vpLabels: Record<Viewport, string> = {
-    '375': '📱',
-    '768': '💻',
-    '1440': '🖥',
+  const vpIcons: Record<Viewport, React.ReactNode> = {
+    '375': <DeviceMobile size={14} weight="bold" />,
+    '768': <Laptop size={14} weight="bold" />,
+    '1440': <Monitor size={14} weight="bold" />,
   };
 
   const widths: Record<Viewport, string> = {
@@ -69,15 +70,22 @@ export function PreviewTab({ projectId, previewUrl }: PreviewTabProps) {
         {/* Viewport switcher */}
         <div style={{ display: 'flex', background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: 7, padding: 2, gap: 1 }}>
           {(['375', '768', '1440'] as Viewport[]).map(v => (
-            <button key={v} onClick={() => setViewport(v)} style={{
-              padding: '3px 10px', borderRadius: 5, fontSize: 11,
-              border: 'none', cursor: 'pointer',
-              background: viewport === v ? 'rgba(212,169,74,0.18)' : 'transparent',
-              color: viewport === v ? 'var(--ochre-dark, #C9933A)' : 'var(--meta)',
-              outline: viewport === v ? '1.5px solid rgba(212,169,74,0.4)' : 'none',
-              fontFamily: 'DM Sans, sans-serif', fontWeight: 600,
-              transition: 'all 0.15s', minWidth: 36,
-            }}>{vpLabels[v]}</button>
+            <button
+              key={v}
+              onClick={() => setViewport(v)}
+              title={v === '375' ? 'Mobile (375px)' : v === '768' ? 'Tablet (768px)' : 'Desktop'}
+              style={{
+                padding: '4px 10px', borderRadius: 5,
+                border: 'none', cursor: 'pointer',
+                background: viewport === v ? 'rgba(212,169,74,0.18)' : 'transparent',
+                color: viewport === v ? 'var(--ochre-dark, #C9933A)' : 'var(--meta)',
+                outline: viewport === v ? '1.5px solid rgba(212,169,74,0.4)' : 'none',
+                transition: 'all 0.15s', minWidth: 32,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              {vpIcons[v]}
+            </button>
           ))}
         </div>
 
@@ -98,14 +106,14 @@ export function PreviewTab({ projectId, previewUrl }: PreviewTabProps) {
 
         <button
           onClick={() => { setLoading(true); setReloadKey(k => k + 1); }}
-          style={{ background: 'none', border: 'none', color: 'var(--meta)', cursor: 'pointer', fontSize: 15, padding: '4px 6px', lineHeight: 1 }}
+          style={{ background: 'none', border: 'none', color: 'var(--meta)', cursor: 'pointer', padding: '4px 6px', lineHeight: 1, display: 'flex', alignItems: 'center' }}
           title="Reload"
-        >↺</button>
+        ><ArrowClockwise size={14} weight="bold" /></button>
         <a
           href={previewUrl} target="_blank" rel="noopener noreferrer"
           style={{ color: 'var(--meta)', fontSize: 13, textDecoration: 'none', padding: '4px 6px', lineHeight: 1, display: 'flex', alignItems: 'center' }}
           title="Open in new tab"
-        >↗</a>
+        ><ArrowSquareOut size={14} weight="bold" /></a>
       </div>
 
       {/* Iframe area */}
