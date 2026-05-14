@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/cjs/styles/prism";
-import { Copy, Check, ArrowRight, ArrowUpRight } from "lucide-react";
+import { Copy, Check, ArrowRight, ArrowUpRight } from "@phosphor-icons/react";
 import { useParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { useApp } from "@/contexts/app-context";

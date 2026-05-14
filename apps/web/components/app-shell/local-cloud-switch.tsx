@@ -96,8 +96,8 @@ export function LocalCloudSwitch() {
           top: 'calc(100% + 8px)',
           left: '50%',
           transform: 'translateX(-50%)',
-          background: '#1a2e18',
-          border: '1px solid #2d5229',
+          background: 'var(--moss-dark)',
+          border: '1px solid var(--moss-border-dark)',
           borderRadius: 8,
           padding: '8px 12px',
           width: 220,
@@ -121,8 +121,8 @@ export function LocalCloudSwitch() {
           {/* Arrow */}
           <div style={{
             position: 'absolute', top: -5, left: '50%',
-            width: 10, height: 10, background: '#1a2e18',
-            border: '1px solid #2d5229', borderBottom: 'none', borderRight: 'none',
+            width: 10, height: 10, background: 'var(--moss-dark)',
+            border: '1px solid var(--moss-border-dark)', borderBottom: 'none', borderRight: 'none',
             transform: 'translateX(-50%) rotate(45deg)',
           }} />
         </div>

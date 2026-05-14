@@ -1,6 +1,6 @@
 "use client";
 
-import { Loader2 } from "lucide-react";
+import { CircleNotch } from "@phosphor-icons/react";
 import { useBuildStatus } from "@/contexts/build-context";
 
 export function BuildStatus() {
@@ -21,7 +21,7 @@ export function BuildStatus() {
       {isBuilding ? (
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" style={{ color: "var(--goblin-ochre)" }} />
+            <CircleNotch className="w-3.5 h-3.5 animate-spin shrink-0" style={{ color: "var(--goblin-ochre)" }} />
             <span
               className="text-xs truncate"
               style={{ color: "var(--goblin-bark)", fontFamily: "var(--font-jetbrains-mono)" }}

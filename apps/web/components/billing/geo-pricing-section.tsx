@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Check } from 'lucide-react';
+import { Check } from '@phosphor-icons/react';
 
 type GeoTier = 1 | 2 | 3;
 

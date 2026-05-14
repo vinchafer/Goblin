@@ -2,7 +2,6 @@
 
 import { useEffect, useRef } from "react";
 import { MessageContent } from "./message-content";
-import { Bot, User, Sparkles } from "lucide-react";
 import type { ChatMessage } from "@goblin/shared/src/schemas";
 
 interface MessageListProps {

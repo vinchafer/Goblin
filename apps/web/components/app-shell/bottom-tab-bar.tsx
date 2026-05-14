@@ -41,7 +41,7 @@ export function BottomTabBar() {
     <nav style={{
       height: 56,
       background: 'var(--white)',
-      borderTop: '1px solid #e5e5e5',
+      borderTop: '1px solid var(--div)',
       display: 'flex',
       zIndex: 50,
       paddingBottom: 'env(safe-area-inset-bottom, 0px)',

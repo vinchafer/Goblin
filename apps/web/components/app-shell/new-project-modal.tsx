@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { X, Loader2 } from "lucide-react";
+import { X, CircleNotch } from "@phosphor-icons/react";
 import { createClient } from "@/lib/supabase/client";
 import type { Project } from "@goblin/shared/src/schemas";
 
@@ -230,7 +230,7 @@ export function NewProjectModal({ onClose, onProjectCreated }: NewProjectModalPr
               display: 'flex', alignItems: 'center', gap: 7,
             }}
           >
-            {loading && <Loader2 size={14} style={{ animation: 'spin 0.8s linear infinite' }} />}
+            {loading && <CircleNotch size={14} style={{ animation: 'spin 0.8s linear infinite' }} />}
             {loading ? 'Creating…' : 'Create Project'}
           </button>
         </div>

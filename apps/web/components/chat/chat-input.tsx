@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send, Mic } from "lucide-react";
+import { PaperPlaneTilt, Microphone } from "@phosphor-icons/react";
 import { useVoiceInput } from "@/hooks/use-voice-input";
 
 interface ChatInputProps {
@@ -62,7 +62,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
           title="Voice input (coming soon)"
           style={{ color: 'var(--goblin-gray)' }}
         >
-          <Mic className="w-4 h-4" />
+          <Microphone className="w-4 h-4" />
         </button>
         {/* Send button */}
         <button
@@ -71,7 +71,7 @@ export function ChatInput({ onSend, disabled }: ChatInputProps) {
           className="absolute right-2 bottom-2 w-10 h-10 rounded-lg flex items-center justify-center disabled:opacity-50 touch-manipulation transition-opacity"
           style={{ backgroundColor: 'var(--goblin-moss)' }}
         >
-          <Send className="w-4 h-4 text-white" />
+          <PaperPlaneTilt className="w-4 h-4 text-white" />
         </button>
       </div>
       <p className="text-xs text-center mt-2" style={{ color: 'var(--goblin-gray)' }}>

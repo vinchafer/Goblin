@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Circle, Plus } from "lucide-react";
+import { Circle, Plus } from "@phosphor-icons/react";
 import { useApp } from "@/contexts/app-context";
 import type { Project } from "@goblin/shared/src/schemas";
 import { NewProjectModal } from "./new-project-modal";

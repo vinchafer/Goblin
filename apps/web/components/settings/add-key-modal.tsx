@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { useState } from "react";
-import { X, Eye, EyeOff, AlertTriangle, Loader2, ExternalLink } from "lucide-react";
+import { X, Eye, EyeSlash, Warning, CircleNotch, ArrowSquareOut } from "@phosphor-icons/react";
 import type { ByokKey } from "@goblin/shared/src/schemas";
 import { createClient } from "@/lib/supabase/client";
 
@@ -156,14 +156,14 @@ export function AddKeyModal({ open, onClose, onKeyAdded }: AddKeyModalProps) {
                 className="absolute right-3 top-1/2 -translate-y-1/2"
               >
                 {showKey
-                  ? <EyeOff className="w-4 h-4" style={{ color: 'var(--goblin-gray)' }} />
+                  ? <EyeSlash className="w-4 h-4" style={{ color: 'var(--goblin-gray)' }} />
                   : <Eye className="w-4 h-4" style={{ color: 'var(--goblin-gray)' }} />
                 }
               </button>
             </div>
 
             <div className="flex items-start gap-2 mt-3 text-xs" style={{ color: 'var(--goblin-gray)' }}>
-              <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" style={{ color: 'var(--goblin-warn)' }} />
+              <Warning className="w-4 h-4 shrink-0 mt-0.5" style={{ color: 'var(--goblin-warn)' }} />
               <p>
                 Your key is encrypted at rest. It's used only to call {provider}'s API on your behalf.
                 Never share this key publicly.
@@ -180,7 +180,7 @@ export function AddKeyModal({ open, onClose, onKeyAdded }: AddKeyModalProps) {
                   className="inline-flex items-center gap-1 font-medium hover:underline"
                   style={{ color: 'var(--goblin-moss)' }}
                 >
-                  {PROVIDER_KEY_URLS[provider].label} <ExternalLink className="w-3 h-3" />
+                  {PROVIDER_KEY_URLS[provider].label} <ArrowSquareOut className="w-3 h-3" />
                 </a>
               </div>
             )}
@@ -214,7 +214,7 @@ export function AddKeyModal({ open, onClose, onKeyAdded }: AddKeyModalProps) {
                 fontWeight: 600,
               }}
             >
-              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Connect →'}
+              {loading ? <CircleNotch className="w-4 h-4 animate-spin" /> : 'Connect →'}
             </button>
           </div>
         </form>

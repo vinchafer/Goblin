@@ -83,6 +83,11 @@
   --auth-text:   #ffffff;
   --auth-meta:   rgba(255,255,255,0.38);
 
+  /* Dark surface vars (always dark, used in topbar dropdown / code panels) */
+  --moss-dark:        #1a2e18;
+  --moss-border-dark: #2d5229;
+  --bark-dark:        #2a1f0f;
+
   /* backwards-compat aliases */
   --goblin-moss:   #2D4A2B;
   --goblin-ochre:  #D4A94A;

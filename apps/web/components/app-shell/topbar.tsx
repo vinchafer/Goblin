@@ -105,7 +105,7 @@ export function Topbar({
       alignItems: 'center',
       padding: '0 16px',
       flexShrink: 0,
-      borderBottom: '1px solid #3A5A37',
+      borderBottom: '1px solid var(--moss-border-dark)',
       position: 'relative',
       zIndex: 50,
     }}>
@@ -236,10 +236,10 @@ export function Topbar({
             width: 30, height: 30, borderRadius: '50%',
             background: 'var(--ochre-dark)', border: 'none',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 12, fontWeight: 700, color: '#2a1f0f',
+            fontSize: 12, fontWeight: 700, color: 'var(--bark-dark)',
             cursor: 'pointer', transition: 'background 0.15s',
           }}
-          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = '#e8b05a'}
+          onMouseEnter={e => (e.currentTarget as HTMLElement).style.background = 'var(--ochre-2)'}
           onMouseLeave={e => (e.currentTarget as HTMLElement).style.background = 'var(--ochre-dark)'}
         >
           {userInfo?.avatarInitial ?? 'U'}
@@ -253,7 +253,7 @@ export function Topbar({
             />
             <div style={{
               position: 'absolute', right: 0, top: 'calc(100% + 6px)',
-              background: '#1a2e18', border: '1px solid #2d5229',
+              background: 'var(--moss-dark)', border: '1px solid var(--moss-border-dark)',
               borderRadius: 10, padding: '4px 0',
               minWidth: 220, zIndex: 100,
               boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
@@ -261,7 +261,7 @@ export function Topbar({
               {userInfo && (
                 <div style={{
                   padding: '10px 14px',
-                  borderBottom: '1px solid #2d5229',
+                  borderBottom: '1px solid var(--moss-border-dark)',
                   marginBottom: 4,
                 }}>
                   {userInfo.name && (
@@ -295,7 +295,7 @@ export function Topbar({
               <MenuItem onClick={() => { router.push('/dashboard/settings/billing'); setMenuOpen(false); }}>
                 Billing
               </MenuItem>
-              <div style={{ height: 1, background: '#2d5229', margin: '4px 8px' }} />
+              <div style={{ height: 1, background: 'var(--moss-border-dark)', margin: '4px 8px' }} />
               <MenuItem onClick={handleSignOut}>
                 Sign out
               </MenuItem>

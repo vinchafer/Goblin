@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, CheckCircle, AlertCircle } from "lucide-react";
+import { CircleNotch, CheckCircle, WarningCircle } from "@phosphor-icons/react";
 import { createClient } from "@/lib/supabase/client";
 import { useBuildStatus } from "@/contexts/build-context";
 
@@ -118,9 +118,9 @@ export function GenerationProgress({ projectId, byokKeyId, prompt, onComplete }:
         {status === 'complete' ? (
           <CheckCircle className="w-5 h-5" style={{ color: 'var(--goblin-good)' }} />
         ) : status === 'error' ? (
-          <AlertCircle className="w-5 h-5" style={{ color: 'var(--goblin-warn)' }} />
+          <WarningCircle className="w-5 h-5" style={{ color: 'var(--goblin-warn)' }} />
         ) : (
-          <Loader2 className="w-5 h-5 animate-spin" style={{ color: 'var(--goblin-moss)' }} />
+          <CircleNotch className="w-5 h-5 animate-spin" style={{ color: 'var(--goblin-moss)' }} />
         )}
         <span className="font-medium" style={{ color: 'var(--goblin-slate)' }}>
           {status === 'planning' && 'Planning project structure...'}
