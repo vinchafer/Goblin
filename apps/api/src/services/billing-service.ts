@@ -1,6 +1,7 @@
 import Stripe from 'stripe';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { getPlans, getPlanFromPriceId } from '../config/plans';
+import { getGeoTier, getPriceForTier, type GeoTier } from '../config/geo-pricing';
 
 let _stripe: Stripe | null = null;
 
@@ -13,7 +14,11 @@ function getStripe(): Stripe {
   return _stripe;
 }
 
-export async function createCheckoutSession(userId: string, targetPlan: string): Promise<string> {
+export async function createCheckoutSession(
+  userId: string,
+  targetPlan: string,
+  countryCode?: string | null,
+): Promise<string> {
   const supabase = getSupabaseAdmin();
   const stripe = getStripe();
 
@@ -27,22 +32,21 @@ export async function createCheckoutSession(userId: string, targetPlan: string):
     throw new Error('User not found');
   }
 
+  const tier = getGeoTier(countryCode ?? null) as GeoTier;
+  const priceId = getPriceForTier(targetPlan, tier) ?? getPlans()[targetPlan]?.stripePriceId;
+
+  if (!priceId) {
+    throw new Error(`No price configured for plan: ${targetPlan}`);
+  }
+
   const session = await stripe.checkout.sessions.create({
     customer: user.stripe_customer_id ?? undefined,
     customer_email: !user.stripe_customer_id ? user.email : undefined,
     mode: 'subscription',
-    line_items: [
-      {
-        price: getPlans()[targetPlan]?.stripePriceId,
-        quantity: 1
-      }
-    ],
+    line_items: [{ price: priceId, quantity: 1 }],
     success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing?success=true`,
     cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing?canceled=true`,
-    metadata: {
-      userId,
-      plan: targetPlan
-    }
+    metadata: { userId, plan: targetPlan, geo_tier: String(tier) },
   });
 
   return session.url!;

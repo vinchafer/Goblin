@@ -11,6 +11,7 @@ import {
   resetMonthlyUsage
 } from '../services/billing-service';
 import { getSupabaseAdmin } from '../lib/supabase';
+import { getGeoTier, PLAN_PRICES, TIER_LABELS } from '../config/geo-pricing';
 
 type Variables = { userId: string }
 const billing = new Hono<{ Variables: Variables }>();
@@ -23,12 +24,35 @@ billing.post('/create-checkout-session', authMiddleware, async (c) => {
   const userId = c.get('userId');
   const body = await c.req.json();
 
-  const schema = z.object({ targetPlan: z.enum(['build', 'pro', 'power']) });
+  const schema = z.object({
+    targetPlan: z.enum(['build', 'pro', 'power']),
+    countryCode: z.string().length(2).optional(),
+  });
   const result = schema.safeParse(body);
   if (!result.success) return c.json({ error: 'Invalid plan' }, 400);
 
-  const checkoutUrl = await createCheckoutSession(userId, result.data.targetPlan);
+  // Detect country from Cloudflare header (most reliable), fallback to client-provided
+  const cfCountry = c.req.header('CF-IPCountry');
+  const countryCode = cfCountry ?? result.data.countryCode ?? null;
+
+  const checkoutUrl = await createCheckoutSession(userId, result.data.targetPlan, countryCode);
   return c.json({ checkoutUrl });
+});
+
+// GET /api/billing/geo-pricing — returns tier + prices for current user's region
+billing.get('/geo-pricing', async (c) => {
+  const cfCountry = c.req.header('CF-IPCountry') ?? null;
+  const tier = getGeoTier(cfCountry);
+  return c.json({
+    tier,
+    country: cfCountry,
+    label: TIER_LABELS[tier],
+    prices: {
+      build: PLAN_PRICES.build[tier],
+      pro:   PLAN_PRICES.pro[tier],
+      power: PLAN_PRICES.power[tier],
+    },
+  });
 });
 
 billing.post('/create-portal-session', authMiddleware, async (c) => {

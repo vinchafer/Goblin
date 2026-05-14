@@ -1,4 +1,4 @@
-import { PricingSection } from '@/components/landing/pricing-section';
+import { GeoPricingSection } from '@/components/billing/geo-pricing-section';
 import { FAQ } from '@/components/landing/faq';
 import Link from 'next/link';
 
@@ -19,7 +19,7 @@ export default function PricingPage() {
         </Link>
       </nav>
 
-      <PricingSection />
+      <GeoPricingSection />
       <FAQ />
     </div>
   );
