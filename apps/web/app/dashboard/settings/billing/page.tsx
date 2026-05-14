@@ -41,9 +41,12 @@ export default async function BillingSettingsPage() {
   return (
     <SettingsLayout>
       <div className="max-w-4xl">
-        <h1 className="text-2xl font-semibold mb-6" style={{ color: 'var(--goblin-slate)' }}>
+        <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 22, fontWeight: 700, color: 'var(--moss)', marginBottom: 6, letterSpacing: '-0.3px' }}>
           Billing & Plan
         </h1>
+        <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 28, fontFamily: 'DM Sans, sans-serif' }}>
+          Manage your subscription, usage, and payment methods.
+        </p>
 
         <UsageDisplay used={used} limit={limit} resetDate={resetDate} />
 

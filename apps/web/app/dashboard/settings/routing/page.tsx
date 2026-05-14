@@ -199,7 +199,7 @@ export default function RoutingSettingsPage() {
   return (
     <SettingsLayout>
       <div style={{ maxWidth: 540 }}>
-        <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', fontFamily: 'DM Sans, sans-serif', marginBottom: 4 }}>
+        <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 22, fontWeight: 700, color: 'var(--moss)', marginBottom: 6, letterSpacing: '-0.3px' }}>
           Auto-Fallback Routing
         </h1>
         <p style={{ fontSize: 13, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif', marginBottom: 24, lineHeight: 1.6 }}>

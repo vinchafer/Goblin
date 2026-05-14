@@ -20,10 +20,10 @@ export default async function IntegrationsPage({ searchParams }: { searchParams:
   return (
     <SettingsLayout>
     <div style={{ maxWidth: 800 }}>
-      <h1 style={{ fontSize: 24, fontWeight: 600, color: 'var(--text)', marginBottom: 8, fontFamily: 'DM Sans, sans-serif' }}>
+      <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 22, fontWeight: 700, color: 'var(--moss)', marginBottom: 6, letterSpacing: '-0.3px' }}>
         Integrations
       </h1>
-      <p style={{ fontSize: 14, color: 'var(--meta)', marginBottom: 32 }}>
+      <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 28, fontFamily: 'DM Sans, sans-serif' }}>
         Connect external services to push code, deploy, and automate your workflow.
       </p>
 

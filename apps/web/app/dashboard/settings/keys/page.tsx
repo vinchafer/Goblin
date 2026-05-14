@@ -21,10 +21,10 @@ export default async function KeysSettingsPage() {
   return (
     <SettingsLayout>
       <div style={{ maxWidth: '800px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 600, color: 'var(--text)', marginBottom: '8px', fontFamily: 'DM Sans, sans-serif' }}>
+        <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 22, fontWeight: 700, color: 'var(--moss)', marginBottom: 6, letterSpacing: '-0.3px' }}>
           API Keys
         </h1>
-        <p style={{ fontSize: '14px', color: 'var(--meta)', marginBottom: '32px' }}>
+        <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 28, fontFamily: 'DM Sans, sans-serif' }}>
           Connect your own API keys. Keys are encrypted at rest with your account&apos;s unique key — never stored in plaintext.
         </p>
 
