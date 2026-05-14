@@ -60,8 +60,11 @@ export const trialGate = createMiddleware(async (c, next) => {
   const plan = user.plan as string | null;
   const hasActiveSub = !!user.stripe_subscription_id;
 
-  // Active subscriber → always pass
-  if (hasActiveSub || (plan && plan !== 'free')) return next();
+  // Active subscriber OR paid plan → always pass.
+  // 'trial' is NOT a paid plan — it means the user is on their free trial period.
+  // The previous check (plan !== 'free') was wrong: it let 'trial' users bypass forever.
+  const PAID_PLANS = ['seed', 'craft', 'forge'];
+  if (hasActiveSub || (plan !== null && PAID_PLANS.includes(plan))) return next();
 
   // No trial started → start one
   if (!user.cloud_trial_started_at) {
