@@ -3,6 +3,7 @@ import OpenAI from 'openai';
 import { type SupabaseClient } from '@supabase/supabase-js';
 import { decryptData } from './encryption';
 import { getGoblinHostedConfig } from './goblin-hosted';
+import { getSupabaseAdmin } from '../lib/supabase';
 import { PROVIDERS, PROVIDER_BASE_URLS, type ProviderId } from '../config/providers';
 import { GoblinError, isGoblinError, litellmStream } from './litellm-client';
 import { formatTokenDisplay } from '../config/pricing';
@@ -63,8 +64,7 @@ async function resolveByokKey(
   preferredModel?: string,
   supabase?: SupabaseClient,
 ): Promise<{ provider: ProviderName; apiKey: string } | null> {
-  const { createClient } = await import('@supabase/supabase-js');
-  const sb = supabase ?? createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+  const sb = supabase ?? getSupabaseAdmin();
 
   const { data: keys } = await sb
     .from('byok_keys')
@@ -256,7 +256,7 @@ export async function* streamCompletion({
   });
 
   const { createClient } = await import('@supabase/supabase-js');
-  const sb = supabase ?? createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+  const sb = supabase ?? getSupabaseAdmin();
 
   const { data: agentRun } = await sb
     .from('agent_runs')
@@ -342,7 +342,7 @@ export async function saveFallbackChain(userId: string, chain: string[], supabas
   // Store in a dedicated user preferences table or use project-level preferences
   // For now: store in Supabase user metadata via service role
   const { createClient } = await import('@supabase/supabase-js');
-  const sb = supabase ?? createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+  const sb = supabase ?? getSupabaseAdmin();
   await sb.auth.admin.updateUserById(userId, { user_metadata: { fallback_chain: chain } });
 }
 
