@@ -178,12 +178,14 @@ export function MessageList({ messages, isStreaming, currentStreamingMessage, is
             }}
           >
             {currentStreamingMessage ? (
-              <MessageContent content={currentStreamingMessage} role="assistant" />
+              <div className="streaming-cursor">
+                <MessageContent content={currentStreamingMessage} role="assistant" />
+              </div>
             ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 4, height: 24 }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: 'var(--moss)', animation: 'bounce 1.4s infinite ease-in-out' }} />
-                <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: 'var(--moss)', animation: 'bounce 1.4s infinite ease-in-out', animationDelay: '0.16s' }} />
-                <span style={{ width: 6, height: 6, borderRadius: '50%', backgroundColor: 'var(--moss)', animation: 'bounce 1.4s infinite ease-in-out', animationDelay: '0.32s' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, height: 24 }}>
+                <span style={{ width: 5, height: 5, borderRadius: '50%', backgroundColor: 'var(--moss)', opacity: 0.8, animation: 'goblin-pulse 1.4s infinite ease-in-out' }} />
+                <span style={{ width: 5, height: 5, borderRadius: '50%', backgroundColor: 'var(--moss)', opacity: 0.8, animation: 'goblin-pulse 1.4s infinite ease-in-out', animationDelay: '0.22s' }} />
+                <span style={{ width: 5, height: 5, borderRadius: '50%', backgroundColor: 'var(--moss)', opacity: 0.8, animation: 'goblin-pulse 1.4s infinite ease-in-out', animationDelay: '0.44s' }} />
               </div>
             )}
           </div>

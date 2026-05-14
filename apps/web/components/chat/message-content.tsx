@@ -86,31 +86,54 @@ function CodeBlock({ language, value, messageId }: { language: string; value: st
   };
 
   return (
-    <div className="relative my-3 rounded-lg overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-2 bg-gray-800 text-gray-300 text-xs">
-        <span>{language}</span>
-        <button onClick={handleCopy} className="flex items-center gap-1 hover:text-white min-h-[44px]">
-          {copied ? <Check className="w-4 h-4 text-green-400" /> : <Copy className="w-4 h-4" />}
-          {copied ? "Copied" : "Copy"}
+    <div style={{ margin: '10px 0', borderRadius: 10, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.06)', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>
+      {/* Header bar */}
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        padding: '8px 14px', background: 'var(--code-bg)',
+        borderBottom: '1px solid rgba(255,255,255,0.06)',
+      }}>
+        <span style={{
+          fontSize: 11, fontWeight: 600, color: 'var(--code-fg)', fontFamily: 'JetBrains Mono, monospace',
+          letterSpacing: '0.05em', opacity: 0.8,
+        }}>
+          {language || 'code'}
+        </span>
+        <button
+          onClick={handleCopy}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 5, background: 'none',
+            border: 'none', cursor: 'pointer', color: copied ? '#5aac4b' : 'rgba(255,255,255,0.45)',
+            fontSize: 11, fontFamily: 'DM Sans, sans-serif', padding: '2px 0',
+            transition: 'color 0.15s',
+          }}
+        >
+          {copied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+          {copied ? 'Copied!' : 'Copy'}
         </button>
       </div>
-      <div className="overflow-x-auto">
+      {/* Code body */}
+      <div style={{ overflowX: 'auto' }}>
         <SyntaxHighlighter
           style={oneDark}
           language={language}
-          customStyle={{ margin: 0, borderRadius: 0, minWidth: 'max-content' }}
+          customStyle={{ margin: 0, borderRadius: 0, minWidth: 'max-content', fontSize: 13, lineHeight: 1.6, background: 'var(--code-root)' }}
         >
           {value}
         </SyntaxHighlighter>
       </div>
-      <div style={{ display: 'flex', gap: 4, background: '#1a1a1a', padding: '4px 8px', justifyContent: 'flex-end' }}>
+      {/* Footer: Send to Code */}
+      <div style={{ background: 'var(--code-root-2)', padding: '6px 10px', display: 'flex', justifyContent: 'flex-end' }}>
         <button
           onClick={() => { setPendingCodePayload({ content: value, filename: filenameHint }); setActiveTab('code'); }}
           style={{
-            padding: '5px 12px', borderRadius: 5, fontSize: 11, fontWeight: 600,
-            background: 'var(--ochre-dark)', color: '#2a1f0f', border: 'none', cursor: 'pointer',
-            display: 'flex', alignItems: 'center', gap: 4,
+            padding: '5px 12px', borderRadius: 6, fontSize: 11, fontWeight: 600,
+            background: 'var(--ochre)', color: '#1a1000', border: 'none', cursor: 'pointer',
+            display: 'flex', alignItems: 'center', gap: 4, fontFamily: 'DM Sans, sans-serif',
+            transition: 'opacity 0.15s',
           }}
+          onMouseOver={e => (e.currentTarget.style.opacity = '0.85')}
+          onMouseOut={e => (e.currentTarget.style.opacity = '1')}
         >
           <ArrowUpRight className="w-3 h-3" />
           Send to Code

@@ -27,10 +27,11 @@ export function SettingsLayout({ children }: { children: ReactNode }) {
       {/* Sidebar nav */}
       <nav className="card card-sm" style={{ padding: 0, overflow: 'hidden', position: 'sticky', top: 16 }}>
         <div style={{
-          padding: '14px 16px 12px',
+          padding: '16px 16px 14px',
           borderBottom: '1px solid var(--div)',
           fontFamily: 'Fraunces, serif',
-          fontSize: 15, color: 'var(--moss)', fontWeight: 700,
+          fontSize: 13, color: 'var(--meta)', fontWeight: 600,
+          letterSpacing: '0.08em', textTransform: 'uppercase',
         }}>
           Settings
         </div>
@@ -45,9 +46,10 @@ export function SettingsLayout({ children }: { children: ReactNode }) {
               style={{
                 borderRadius: 0,
                 borderLeft: active ? '3px solid var(--ochre)' : '3px solid transparent',
-                fontWeight: active ? 600 : 500,
-                color: active ? 'var(--moss)' : undefined,
-                minHeight: 40,
+                fontWeight: active ? 600 : 400,
+                color: active ? 'var(--moss)' : 'var(--text-2)',
+                minHeight: 42,
+                fontSize: 14,
               }}
             >
               {item.label}

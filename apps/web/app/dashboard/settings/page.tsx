@@ -555,6 +555,15 @@ export default function SettingsPage() {
 
   return (
     <SettingsLayout>
+      <div style={{ marginBottom: 28 }}>
+        <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 22, fontWeight: 700, color: 'var(--moss)', marginBottom: 6, letterSpacing: '-0.3px' }}>
+          Account Settings
+        </h1>
+        <p style={{ fontSize: 13, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif' }}>
+          Manage your profile, notifications, and developer preferences.
+        </p>
+      </div>
+
       {/* Tab switcher */}
       <div style={{
         display: 'flex', gap: 4, padding: '4px',

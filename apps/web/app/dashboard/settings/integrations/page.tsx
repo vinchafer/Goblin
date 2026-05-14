@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { GitHubConnectButton } from "./github-connect-button";
+import { SettingsLayout } from "@/components/settings/settings-layout";
 
 export default async function IntegrationsPage({ searchParams }: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
   const params = await searchParams;
@@ -17,6 +18,7 @@ export default async function IntegrationsPage({ searchParams }: { searchParams:
   const success = params.github === 'connected';
 
   return (
+    <SettingsLayout>
     <div style={{ maxWidth: 800 }}>
       <h1 style={{ fontSize: 24, fontWeight: 600, color: 'var(--text)', marginBottom: 8, fontFamily: 'DM Sans, sans-serif' }}>
         Integrations
@@ -43,5 +45,6 @@ export default async function IntegrationsPage({ searchParams }: { searchParams:
         </div>
       </div>
     </div>
+    </SettingsLayout>
   );
 }

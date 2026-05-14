@@ -200,26 +200,27 @@ export default function DashboardPage() {
 
             {/* Empty state */}
             {!loading && !error && projects.length === 0 && (
-              <div style={{ paddingTop: 40, borderTop: '1px solid var(--div)' }}>
-                <div style={{ marginBottom: 8 }}>
+              <div style={{ paddingTop: 48 }}>
+                <div style={{ marginBottom: 28 }}>
                   <h2 style={{
-                    fontFamily: 'Fraunces, serif', fontSize: 22,
-                    color: 'var(--moss)', fontWeight: 700, marginBottom: 6, letterSpacing: '-0.3px',
+                    fontFamily: 'Fraunces, serif', fontSize: 24,
+                    color: 'var(--moss)', fontWeight: 700, marginBottom: 8, letterSpacing: '-0.4px',
                   }}>
                     What do you want to build?
                   </h2>
                   <p style={{
-                    fontSize: 13, color: 'var(--meta)', marginBottom: 24,
+                    fontSize: 14, color: 'var(--meta)', marginBottom: 0,
                     fontFamily: 'DM Sans, sans-serif', lineHeight: 1.6,
+                    maxWidth: 480,
                   }}>
-                    Pick a starting point or describe your own idea.
+                    Describe your idea and Goblin will build it — or pick a starting point below.
                   </p>
                 </div>
 
                 <div style={{
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))',
-                  gap: 10, marginBottom: 24,
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+                  gap: 12, marginBottom: 28,
                 }}>
                   {STARTER_CARDS.map(c => (
                     <StarterCard
@@ -229,7 +230,6 @@ export default function DashboardPage() {
                       prompt={c.prompt}
                       onClick={(prompt) => {
                         setShowNewProjectModal(true);
-                        // Store prefill prompt for modal to pick up
                         sessionStorage.setItem('goblin_prefill_prompt', prompt);
                       }}
                     />
@@ -240,10 +240,13 @@ export default function DashboardPage() {
                   onClick={() => setShowNewProjectModal(true)}
                   style={{
                     background: 'var(--moss)', color: '#fff', border: 'none',
-                    borderRadius: 8, padding: '10px 20px',
-                    fontSize: 13, fontWeight: 500, cursor: 'pointer',
+                    borderRadius: 8, padding: '11px 22px',
+                    fontSize: 14, fontWeight: 500, cursor: 'pointer',
                     fontFamily: 'DM Sans, sans-serif',
+                    transition: 'opacity 0.15s',
                   }}
+                  onMouseOver={e => (e.currentTarget.style.opacity = '0.85')}
+                  onMouseOut={e => (e.currentTarget.style.opacity = '1')}
                 >
                   Start with a blank project
                 </button>
