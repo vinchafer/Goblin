@@ -46,13 +46,15 @@ interface StreamDelta {
 export async function* litellmStream(
   model: string,
   messages: ChatMessage[],
-  options: { apiKey?: string; timeout?: number } = {},
+  options: { apiKey?: string; timeout?: number; signal?: AbortSignal } = {},
 ): AsyncGenerator<StreamDelta> {
   const base = getLiteLLMBase();
   if (!base) return; // Signal: use direct SDK
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), options.timeout ?? 120_000);
+  // Propagate caller's cancellation (e.g. client disconnect) to the provider request.
+  options.signal?.addEventListener('abort', () => controller.abort());
 
   // Authenticate to LiteLLM with master key; pass provider API key in body for BYOK routing
   const masterKey = process.env.LITELLM_MASTER_KEY;

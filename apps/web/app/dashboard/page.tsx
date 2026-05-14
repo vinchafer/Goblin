@@ -32,10 +32,10 @@ const STARTER_CARDS = [
 ];
 
 const UPDATES = [
-  { tag: 'New', title: 'Claude Sonnet 4.6 available', desc: 'Latest Anthropic model now available via BYOK.', date: 'Apr 2026' },
+  { tag: 'New', title: 'BYOK Streaming fixed', desc: 'Anthropic, OpenAI, and Groq keys now stream reliably with full tier routing.', date: 'May 2026' },
+  { tag: 'New', title: 'Claude Sonnet 4.6 available', desc: 'Latest Anthropic model now available via BYOK.', date: 'May 2026' },
   { tag: 'Update', title: 'Send to Code on mobile', desc: 'Works on iOS and Android browsers.', date: 'Apr 2026' },
-  { tag: 'Security', title: 'Security hardened', desc: 'Atomic usage limits and XSS protection upgraded.', date: 'Apr 2026' },
-  { tag: 'Update', title: 'UI overhaul', desc: 'Dashboard, settings, and chat redesigned.', date: 'Mar 2026' },
+  { tag: 'Security', title: 'Security hardened', desc: 'CORS hardened, process stability improved, stream cancellation propagated.', date: 'May 2026' },
 ];
 
 function timeAgo(dateStr?: string): string {

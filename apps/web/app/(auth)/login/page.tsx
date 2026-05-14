@@ -514,7 +514,6 @@ export default function LoginPage() {
 
             <OAuthButton provider="google" onClick={() => signInWithOAuth('google')} loading={oauthLoading === 'google'} />
             <OAuthButton provider="github" onClick={() => signInWithOAuth('github')} loading={oauthLoading === 'github'} />
-            <OAuthButton provider="apple"  onClick={() => signInWithOAuth('apple')}  loading={oauthLoading === 'apple'}  />
           </div>
 
           {/* Terms */}

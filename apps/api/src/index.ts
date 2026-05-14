@@ -87,9 +87,12 @@ const CORS_EXACT = new Set([
   ...(process.env.ALLOWED_ORIGINS?.split(',').map(s => s.trim()).filter(Boolean) ?? []),
 ].filter(Boolean) as string[]);
 
-// Wildcard patterns compiled to anchored regexes
-const CORS_PATTERNS = [
-  /^https:\/\/[^./]+\.vercel\.app$/,
+// Wildcard patterns: only allow Goblin's own Vercel deployments, not arbitrary *.vercel.app.
+// An attacker could deploy evilclone.vercel.app and use it as a CORS bypass.
+const GOBLIN_VERCEL_PROJECT = process.env.VERCEL_PROJECT_ID || 'goblin-web';
+const CORS_PATTERNS: RegExp[] = [
+  // Only match preview deployments for the known project (e.g. goblin-web-*.vercel.app)
+  new RegExp(`^https:\\/\\/${GOBLIN_VERCEL_PROJECT}[^./]*\\.vercel\\.app$`),
 ];
 
 function isAllowedOrigin(origin: string): boolean {
@@ -179,14 +182,19 @@ app.route('/api/onboarding', onboarding);
 app.route('/api/onboarding-agent', onboardingAgent);
 app.route('/api/support', support);
 
+// uncaughtException is truly unrecoverable — exit and let the process manager restart.
 process.on('uncaughtException', (err) => {
-  console.error('[FATAL] Uncaught exception:', err);
+  console.error('[FATAL] Uncaught exception — restarting:', err);
+  captureError(err, { type: 'uncaughtException' });
   process.exit(1);
 });
 
+// unhandledRejection is often a background fire-and-forget (e.g. a DB insert that timed out).
+// Crashing here takes down all concurrent streaming users. Log it, capture it, but stay up.
 process.on('unhandledRejection', (reason) => {
-  console.error('[FATAL] Unhandled rejection:', reason);
-  process.exit(1);
+  const err = reason instanceof Error ? reason : new Error(String(reason));
+  console.error('[WARN] Unhandled promise rejection (not crashing):', err.message);
+  captureError(err, { type: 'unhandledRejection' });
 });
 
 const port = parseInt(process.env.PORT || process.env.API_PORT || '3001', 10);

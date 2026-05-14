@@ -97,6 +97,7 @@ chat.post('/stream', chatStreamRateLimit, usageLimitMiddleware, async (c) => {
         chatHistory: chatHistory || [],
         modelPreference: modelSlug,
         supabase,
+        signal: abortController.signal,
       })) {
         if (abortController.signal.aborted) break;
 

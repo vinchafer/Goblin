@@ -53,7 +53,17 @@ export function decryptData(encryptedBase64: string): string {
     ]);
 
     return decrypted.toString('utf-8');
-  } catch {
+  } catch (err) {
+    // Log structure allows ops to detect BYTEA format drift or ENCRYPTION_KEY mismatch
+    // without exposing the plaintext key or ciphertext in logs.
+    const inputType = typeof encryptedBase64 === 'string'
+      ? (encryptedBase64.startsWith('\\x') ? 'bytea-hex' : 'base64')
+      : typeof encryptedBase64;
+    console.error('[encryption] decryptData failed', {
+      inputType,
+      inputLength: typeof encryptedBase64 === 'string' ? encryptedBase64.length : 0,
+      error: err instanceof Error ? err.message : String(err),
+    });
     throw new Error('Decryption failed — key may be invalid or data is corrupted');
   }
 }

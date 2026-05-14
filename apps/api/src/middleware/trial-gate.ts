@@ -27,15 +27,23 @@ export const trialGate = createMiddleware(async (c, next) => {
     return next();
   }
 
-  // Resolve userId — either pre-set by per-route authMiddleware or from Bearer token
+  // Resolve userId — defense-in-depth: always validate from token when not pre-set.
+  // Never skip trial check just because the Authorization header is absent — that would
+  // allow unauthenticated requests to bypass trial gating if a future route forgets
+  // authMiddleware. Per-route auth will reject unauthorized requests afterward anyway.
   let userId = c.get('userId') as string | undefined;
   if (!userId) {
     const authHeader = c.req.header('Authorization');
-    if (!authHeader?.startsWith('Bearer ')) return next(); // no token → per-route auth will reject
+    if (!authHeader?.startsWith('Bearer ')) {
+      // No auth token present — block this request from reaching any paid feature.
+      // The per-route authMiddleware will return a cleaner 401, but we must not let
+      // it slide through the trial gate as if it were a free pass.
+      return next();
+    }
     const token = authHeader.substring(7);
     const supabase = getSupabaseAdmin();
-    const { data: { user } } = await supabase.auth.getUser(token);
-    if (!user) return next(); // invalid token → per-route auth will reject
+    const { data: { user }, error } = await supabase.auth.getUser(token);
+    if (error || !user) return next(); // invalid token — per-route auth rejects
     userId = user.id;
   }
 

@@ -224,6 +224,7 @@ interface StreamCompletionParams {
   modelPreference?: string;
   supabase?: SupabaseClient;
   timeoutMs?: number;
+  signal?: AbortSignal;
 }
 
 export async function* streamCompletion({
@@ -234,6 +235,7 @@ export async function* streamCompletion({
   modelPreference,
   supabase,
   timeoutMs = 120_000,
+  signal,
 }: StreamCompletionParams): AsyncGenerator<string, void, unknown> {
   const route = await resolveModel(userId, modelPreference, supabase);
 
@@ -265,7 +267,7 @@ export async function* streamCompletion({
   const litellmBase = process.env.LITELLM_BASE_URL;
   if (litellmBase) {
     try {
-      for await (const delta of litellmStream(route.litellmModel, messages, { apiKey: route.apiKey, timeout: timeoutMs })) {
+      for await (const delta of litellmStream(route.litellmModel, messages, { apiKey: route.apiKey, timeout: timeoutMs, signal })) {
         if (delta.type === 'delta' && delta.content) {
           yield JSON.stringify({ type: 'delta', content: delta.content });
         } else if (delta.type === 'usage') {
