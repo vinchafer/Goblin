@@ -10,13 +10,14 @@ const users = new Hono<{ Variables: Variables }>();
 
 users.use('*', authMiddleware);
 
-// PATCH /api/users/me — update default model preferences
+// PATCH /api/users/me — update default model preferences + advanced_mode
 users.patch('/me', async (c) => {
   const userId = c.get('userId');
   const body = await c.req.json();
   const schema = z.object({
     default_chat_model: z.string().nullable().optional(),
     default_code_model: z.string().nullable().optional(),
+    advanced_mode: z.boolean().optional(),
   });
   const result = schema.safeParse(body);
   if (!result.success) return c.json({ error: 'Invalid body' }, 400);
@@ -24,6 +25,7 @@ users.patch('/me', async (c) => {
   const update: Record<string, unknown> = {};
   if ('default_chat_model' in result.data) update.default_chat_model = result.data.default_chat_model;
   if ('default_code_model' in result.data) update.default_code_model = result.data.default_code_model;
+  if ('advanced_mode' in result.data) update.advanced_mode = result.data.advanced_mode;
 
   if (Object.keys(update).length === 0) return c.json({ success: true });
 
@@ -38,7 +40,7 @@ users.get('/me', async (c) => {
   const supabase = getSupabaseAdmin();
   const { data } = await supabase
     .from('users')
-    .select('default_chat_model, default_code_model, plan')
+    .select('default_chat_model, default_code_model, plan, advanced_mode')
     .eq('id', userId)
     .single();
   if (!data) return c.json({ error: 'User not found' }, 404);

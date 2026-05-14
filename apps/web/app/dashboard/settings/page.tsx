@@ -139,6 +139,77 @@ function AppearanceSection() {
   );
 }
 
+function AdvancedModeSection() {
+  const [enabled, setEnabled] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    fetch(`${API_URL}/api/users/me`)
+      .then(r => r.json())
+      .then(d => { if (typeof d.advanced_mode === 'boolean') setEnabled(d.advanced_mode); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const toggle = async () => {
+    setSaving(true);
+    const next = !enabled;
+    try {
+      const headers = await getAuthHeaders();
+      await fetch(`${API_URL}/api/users/me`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ advanced_mode: next }),
+      });
+      setEnabled(next);
+      toast.success(next ? 'Advanced mode enabled.' : 'Advanced mode disabled.');
+    } catch {
+      toast.error('Failed to save preference.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div style={CARD_STYLE}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
+        <div>
+          <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 18, color: 'var(--moss)', fontWeight: 700, marginBottom: 4, letterSpacing: '-0.3px' }}>
+            Advanced Mode
+          </h2>
+          <p style={{ fontSize: 13, color: 'var(--meta)', lineHeight: 1.6 }}>
+            Unlock developer tools: token counts, model latency, custom LiteLLM config, per-project routing,
+            file-tree hidden files, and more. No impact on default-mode users.
+          </p>
+        </div>
+        <button
+          onClick={toggle}
+          disabled={loading || saving}
+          aria-label="Toggle advanced mode"
+          style={{
+            position: 'relative', display: 'inline-block', width: 44, height: 24,
+            flexShrink: 0, cursor: loading || saving ? 'not-allowed' : 'pointer',
+            border: 'none', background: 'transparent', padding: 0, marginTop: 2,
+          }}
+        >
+          <div style={{
+            position: 'absolute', inset: 0, borderRadius: 12,
+            background: enabled ? 'var(--moss)' : 'var(--border)',
+            transition: 'background 0.2s',
+          }} />
+          <div style={{
+            position: 'absolute', top: 2, left: enabled ? 22 : 2, width: 20, height: 20,
+            borderRadius: '50%', background: '#fff',
+            transition: 'left 0.2s',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+          }} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function GeneralTab() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [userEmail, setUserEmail] = useState('');
@@ -255,6 +326,9 @@ function GeneralTab() {
 
       {/* Appearance card */}
       <AppearanceSection />
+
+      {/* Advanced Mode */}
+      <AdvancedModeSection />
 
       {/* Notifications */}
       <NotificationsSection />

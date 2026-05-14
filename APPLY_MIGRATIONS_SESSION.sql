@@ -259,3 +259,9 @@ ALTER TABLE project_secrets ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Users manage own project secrets" ON project_secrets;
 CREATE POLICY "Users manage own project secrets" ON project_secrets
   FOR ALL USING (auth.uid() = user_id);
+
+-- ============================================================================
+-- 14. SESSION 8 — Advanced Mode column
+-- ============================================================================
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS advanced_mode BOOLEAN NOT NULL DEFAULT false;
