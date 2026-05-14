@@ -11,19 +11,22 @@ import {
   Shuffle,
   Robot,
 } from '@phosphor-icons/react';
+import { useAdvancedMode } from '@/hooks/use-advanced-mode';
 
-const NAV_ITEMS = [
-  { href: '/dashboard/settings',              label: 'Account',      Icon: User },
-  { href: '/dashboard/settings/keys',         label: 'API Keys',     Icon: Key },
-  { href: '/dashboard/settings/integrations', label: 'Integrations', Icon: LinkIcon },
-  { href: '/dashboard/settings/billing',      label: 'Billing',      Icon: CreditCard },
-  { href: '/dashboard/settings/local',        label: 'Local Mode',   Icon: Desktop },
-  { href: '/dashboard/settings/routing',      label: 'Routing',      Icon: Shuffle },
-  { href: '/dashboard/settings/hosted',       label: 'Hosted AI',    Icon: Robot },
+const BASE_ITEMS = [
+  { href: '/dashboard/settings',              label: 'Account',      Icon: User,     advanced: false },
+  { href: '/dashboard/settings/keys',         label: 'API Keys',     Icon: Key,      advanced: false },
+  { href: '/dashboard/settings/integrations', label: 'Integrations', Icon: LinkIcon, advanced: false },
+  { href: '/dashboard/settings/billing',      label: 'Billing',      Icon: CreditCard, advanced: false },
+  { href: '/dashboard/settings/hosted',       label: 'Hosted AI',    Icon: Robot,    advanced: false },
+  { href: '/dashboard/settings/local',        label: 'Local Mode',   Icon: Desktop,  advanced: true },
+  { href: '/dashboard/settings/routing',      label: 'Routing',      Icon: Shuffle,  advanced: true },
 ];
 
 export function SettingsLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const { isAdvancedMode } = useAdvancedMode();
+  const NAV_ITEMS = BASE_ITEMS.filter(item => !item.advanced || isAdvancedMode);
 
   return (
     <div className="settings-grid" style={{

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AppProvider } from "@/contexts/app-context";
 import { DashboardShell } from "@/components/app-shell/dashboard-shell";
+import { AdvancedModeProvider } from "@/components/ui/advanced-mode-provider";
 import type { Project } from "@goblin/shared/src/schemas";
 
 export default async function DashboardLayout({
@@ -47,13 +48,15 @@ export default async function DashboardLayout({
 
   return (
     <AppProvider>
-      <DashboardShell
-        projects={(projects as Project[]) || []}
-        isFirstLogin={isFirstLogin}
-        userName={user?.user_metadata?.full_name ?? user?.email}
-      >
-        {children}
-      </DashboardShell>
+      <AdvancedModeProvider>
+        <DashboardShell
+          projects={(projects as Project[]) || []}
+          isFirstLogin={isFirstLogin}
+          userName={user?.user_metadata?.full_name ?? user?.email}
+        >
+          {children}
+        </DashboardShell>
+      </AdvancedModeProvider>
     </AppProvider>
   );
 }

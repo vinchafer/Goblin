@@ -3,6 +3,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useState, useEffect } from 'react';
 import { LocalCloudSwitch } from './local-cloud-switch';
+import { useAdvancedMode } from '@/hooks/use-advanced-mode';
 
 function MenuItem({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
   return (
@@ -75,6 +76,7 @@ export function Topbar({
   const [menuOpen, setMenuOpen] = useState(false);
   const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
   const supabase = createClient();
+  const { isAdvancedMode } = useAdvancedMode();
 
   useEffect(() => {
     loadUser();
@@ -225,6 +227,27 @@ export function Topbar({
 
       {/* RIGHT: Local/Cloud Switch + Avatar */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+        {isAdvancedMode && (
+          <button
+            onClick={() => router.push('/dashboard/settings')}
+            title="Advanced mode — click to manage"
+            style={{
+              background: 'rgba(212,169,74,0.18)',
+              border: '1px solid rgba(212,169,74,0.35)',
+              borderRadius: 5,
+              padding: '2px 8px',
+              fontSize: 10,
+              fontWeight: 700,
+              color: 'var(--ochre)',
+              fontFamily: 'DM Sans, sans-serif',
+              letterSpacing: '0.06em',
+              cursor: 'pointer',
+              textTransform: 'uppercase',
+            }}
+          >
+            Advanced
+          </button>
+        )}
         <LocalCloudSwitch />
 
         {/* Avatar + Dropdown */}
