@@ -74,6 +74,7 @@ import { chatSessions } from './routes/chat-sessions';
 import { onboarding } from './routes/onboarding';
 import { onboardingAgent } from './routes/onboarding-agent';
 import { support } from './routes/support';
+import { secrets } from './routes/secrets';
 
 const app = new Hono();
 
@@ -181,6 +182,7 @@ app.route('/api/chat-sessions', chatSessions);
 app.route('/api/onboarding', onboarding);
 app.route('/api/onboarding-agent', onboardingAgent);
 app.route('/api/support', support);
+app.route('/api/projects', secrets);
 
 // uncaughtException is truly unrecoverable — exit and let the process manager restart.
 process.on('uncaughtException', (err) => {
