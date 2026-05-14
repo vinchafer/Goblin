@@ -23,7 +23,7 @@ billing.post('/create-checkout-session', authMiddleware, async (c) => {
   const userId = c.get('userId');
   const body = await c.req.json();
 
-  const schema = z.object({ targetPlan: z.enum(['seed', 'craft', 'forge']) });
+  const schema = z.object({ targetPlan: z.enum(['build', 'pro', 'power']) });
   const result = schema.safeParse(body);
   if (!result.success) return c.json({ error: 'Invalid plan' }, 400);
 

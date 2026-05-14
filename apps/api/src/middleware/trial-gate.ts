@@ -63,7 +63,7 @@ export const trialGate = createMiddleware(async (c, next) => {
   // Active subscriber OR paid plan → always pass.
   // 'trial' is NOT a paid plan — it means the user is on their free trial period.
   // The previous check (plan !== 'free') was wrong: it let 'trial' users bypass forever.
-  const PAID_PLANS = ['seed', 'craft', 'forge'];
+  const PAID_PLANS = ['build', 'pro', 'power'];
   if (hasActiveSub || (plan !== null && PAID_PLANS.includes(plan))) return next();
 
   // No trial started → start one

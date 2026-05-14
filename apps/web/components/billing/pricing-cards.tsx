@@ -4,38 +4,42 @@ import { Check } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 const PLANS = {
-  seed: {
-    name: "Seed",
+  build: {
+    name: "Build",
     price: 9,
     features: [
       "200 monthly requests",
-      "Unlimited projects",
+      "10 projects",
+      "BYOK — all AI providers",
+      "5 GB cloud storage",
       "GitHub push integration",
       "Community support"
     ]
   },
-  craft: {
-    name: "Craft",
+  pro: {
+    name: "Pro",
     price: 19,
     popular: true,
     features: [
       "800 monthly requests",
-      "Unlimited projects",
+      "50 projects",
+      "BYOK — all AI providers",
+      "20 GB cloud storage",
       "GitHub push integration",
-      "Priority support",
-      "Priority model access"
+      "Priority support"
     ]
   },
-  forge: {
-    name: "Forge",
+  power: {
+    name: "Power",
     price: 39,
     features: [
-      "3000 monthly requests",
+      "3,000 monthly requests",
       "Unlimited projects",
+      "BYOK — all AI providers",
+      "100 GB cloud storage",
       "GitHub push integration",
-      "Dedicated support",
-      "Beta features access",
-      "Custom model fine-tuning"
+      "Priority support",
+      "Beta features access"
     ]
   }
 } as const;

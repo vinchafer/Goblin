@@ -23,7 +23,7 @@ export default function BillingSuccessPage() {
         </div>
 
         <h1 className="text-2xl font-semibold mb-3" style={{ color: 'var(--goblin-slate)' }}>
-          Welcome to Craft!
+          Subscription activated!
         </h1>
 
         <p className="mb-6" style={{ color: 'var(--goblin-gray)' }}>

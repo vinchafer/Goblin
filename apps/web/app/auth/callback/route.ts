@@ -27,7 +27,7 @@ export async function GET(request: Request) {
     .insert({
       id: user.id,
       email: user.email ?? '',
-      plan: 'seed',
+      plan: 'build',
       monthly_requests_used: 0,
     })
     .then(() => {}, () => {

@@ -37,7 +37,7 @@ const CARD_STYLE = {
 };
 
 const PLAN_BADGE: Record<string, string> = {
-  seed: '#92701a', craft: 'var(--moss)', forge: '#1a2d5a',
+  build: '#92701a', pro: 'var(--moss)', power: '#1a2d5a',
 };
 
 export default function AdminUsersPage() {
@@ -254,7 +254,7 @@ export default function AdminUsersPage() {
                 </div>
               ))}
               <div style={{ marginTop: 20, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {['seed', 'craft', 'forge'].map(p => (
+                {['build', 'pro', 'power'].map(p => (
                   <button
                     key={p}
                     onClick={() => handleAction(selectedUser.id, 'plan', p)}

@@ -150,18 +150,18 @@ admin.get('/stats', async (c) => {
       .from('users')
       .select('plan')
       .is('deleted_at', null)
-      .in('plan', ['seed', 'craft', 'forge']),
+      .in('plan', ['build', 'pro', 'power']),
   ]);
 
-  const planMap = { seed: 0, craft: 0, forge: 0 } as { seed: number; craft: number; forge: number };
+  const planMap = { build: 0, pro: 0, power: 0 } as { build: number; pro: number; power: number };
   (planCounts ?? []).forEach((row) => {
     const p = (row as { plan: string }).plan as keyof typeof planMap;
     if (p in planMap) planMap[p]++;
   });
 
-  const paidUsers = planMap.seed + planMap.craft + planMap.forge;
+  const paidUsers = planMap.build + planMap.pro + planMap.power;
   const estimatedMrr =
-    planMap.seed * 9 + planMap.craft * 19 + planMap.forge * 39;
+    planMap.build * 9 + planMap.pro * 19 + planMap.power * 39;
 
   return c.json({
     total_users:   totalUsers ?? 0,

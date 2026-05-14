@@ -38,7 +38,7 @@ export const usageLimitMiddleware = createMiddleware(async (c, next) => {
   }
 
   const plans = getPlans();
-  const limit = user.monthly_limit ?? plans[user.plan ?? 'seed']?.monthlyRequests ?? 200;
+  const limit = user.monthly_limit ?? plans[user.plan ?? 'build']?.monthlyRequests ?? 200;
 
   if (used >= limit) {
     return c.json({ error: 'Monthly request limit reached. Upgrade your plan.' }, 429);

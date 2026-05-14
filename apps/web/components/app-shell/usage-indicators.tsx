@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 interface UsageData {
-  plan: "seed" | "craft" | "forge";
+  plan: "build" | "pro" | "power";
   monthly_requests_used: number;
   monthly_limit: number;
 }

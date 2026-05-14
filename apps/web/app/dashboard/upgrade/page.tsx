@@ -25,7 +25,7 @@ export default function UpgradePage() {
       const res = await fetch(`${API_URL}/api/billing/create-checkout-session`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ plan: 'seed', successUrl: `${window.location.origin}/dashboard/settings/billing/success`, cancelUrl: `${window.location.origin}/dashboard/upgrade` }),
+        body: JSON.stringify({ targetPlan: 'build', successUrl: `${window.location.origin}/dashboard/settings/billing/success`, cancelUrl: `${window.location.origin}/dashboard/upgrade` }),
       });
       if (!res.ok) throw new Error('Could not start checkout. Please try again.');
       const data = await res.json() as { url: string };

@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { plan = 'seed', redirectTo = 'http://localhost:3000/auth/test-callback' } = body;
+  const { plan = 'build', redirectTo = 'http://localhost:3000/auth/test-callback' } = body;
   const testEmail = body.email || `playwright-${crypto.randomUUID()}@test.justgoblin.com`;
 
   const supabase = adminClient();

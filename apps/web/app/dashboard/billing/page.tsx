@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 const PLAN_INFO: Record<string, { label: string; price: number; requests: number; color: string }> = {
-  seed:  { label: 'Seed',  price: 9,  requests: 200,  color: '#8B6914' },
-  craft: { label: 'Craft', price: 19, requests: 800,  color: 'var(--moss)' },
-  forge: { label: 'Forge', price: 39, requests: 3000, color: '#1a2d5a' },
+  build: { label: 'Build', price: 9,  requests: 200,  color: '#8B6914' },
+  pro:   { label: 'Pro',   price: 19, requests: 800,  color: 'var(--moss)' },
+  power: { label: 'Power', price: 39, requests: 3000, color: '#1a2d5a' },
 };
 
 interface Invoice {
@@ -130,8 +130,8 @@ export default function BillingDashboardPage() {
     );
   }
 
-  const plan = usage?.plan ?? 'seed';
-  const planInfo = PLAN_INFO[plan] ?? PLAN_INFO['seed']!;
+  const plan = usage?.plan ?? 'build';
+  const planInfo = PLAN_INFO[plan] ?? PLAN_INFO['build']!;
   const usedPct = usage ? Math.min(100, Math.round((usage.used / usage.limit) * 100)) : 0;
   const isNearLimit = usedPct >= 80;
 
@@ -215,7 +215,7 @@ export default function BillingDashboardPage() {
             fontSize: 13, color: '#8B6914', fontFamily: 'DM Sans, sans-serif',
           }}>
             ⚠️ You&apos;ve used {usedPct}% of your monthly limit.{' '}
-            <button onClick={() => handleUpgrade(plan === 'seed' ? 'craft' : 'forge')}
+            <button onClick={() => handleUpgrade(plan === 'build' ? 'pro' : 'power')}
               style={{ background: 'none', border: 'none', color: 'var(--ochre)', fontWeight: 600, cursor: 'pointer', padding: 0, fontSize: 13 }}>
               Upgrade plan →
             </button>

@@ -1,4 +1,5 @@
--- GOBLIN — Session 7 Migration Drift Fix
+-- GOBLIN — Session 8 Migration (includes Session 7 fixes + new)
+-- NEUE Migrations in Session 8: 0033 (plan rename), 0034 (user salt), 0035 (hosted usage), 0036 (secrets)
 -- Datum: 2026-05-14
 -- Ausführen in: Supabase Studio → SQL Editor
 -- Alle Statements sind idempotent (IF NOT EXISTS). Keine Daten werden gelöscht.
@@ -186,3 +187,20 @@ UNION ALL SELECT 'push_subscriptions', COUNT(*) FROM push_subscriptions
 UNION ALL SELECT 'build_runs', COUNT(*) FROM build_runs
 UNION ALL SELECT 'templates', COUNT(*) FROM templates
 UNION ALL SELECT 'incidents', COUNT(*) FROM incidents;
+
+-- ============================================================================
+-- 10. SESSION 8 — Migration 0033: Plan-Namen Rename
+-- ============================================================================
+
+UPDATE users SET plan = 'build' WHERE plan = 'seed';
+UPDATE users SET plan = 'pro'   WHERE plan = 'craft';
+UPDATE users SET plan = 'power' WHERE plan = 'forge';
+
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_plan_check;
+ALTER TABLE users ADD CONSTRAINT users_plan_check
+  CHECK (plan IN ('trial', 'build', 'pro', 'power'));
+
+ALTER TABLE users ALTER COLUMN plan SET DEFAULT 'build';
+
+-- Verifikation: 0 Rows mit alten Plan-Namen sollten zurückkommen
+SELECT COUNT(*) as legacy_plan_rows FROM users WHERE plan IN ('seed', 'craft', 'forge');

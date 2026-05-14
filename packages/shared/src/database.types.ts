@@ -16,7 +16,7 @@ export interface Database {
         Row: {
           id: string
           email: string
-          plan: 'seed' | 'craft' | 'forge'
+          plan: 'trial' | 'build' | 'pro' | 'power'
           stripe_customer_id: string | null
           monthly_requests_used: number
           billing_cycle_start: string | null

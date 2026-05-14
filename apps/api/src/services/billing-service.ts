@@ -74,8 +74,8 @@ export async function handleSubscriptionCreated(subscription: Stripe.Subscriptio
   const supabase = getSupabaseAdmin();
   const userId = subscription.metadata.userId;
   const priceId = subscription.items.data[0]?.price.id || '';
-  const plan = getPlanFromPriceId(priceId) || 'seed';
-  const planConfig = getPlans()[plan] ?? getPlans()['seed']!;
+  const plan = getPlanFromPriceId(priceId) || 'build';
+  const planConfig = getPlans()[plan] ?? getPlans()['build']!;
 
   await supabase
     .from('users')
@@ -92,8 +92,8 @@ export async function handleSubscriptionCreated(subscription: Stripe.Subscriptio
 export async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Promise<void> {
   const supabase = getSupabaseAdmin();
   const priceId = subscription.items.data[0]?.price.id || '';
-  const plan = getPlanFromPriceId(priceId) || 'seed';
-  const planConfig = getPlans()[plan] ?? getPlans()['seed']!;
+  const plan = getPlanFromPriceId(priceId) || 'build';
+  const planConfig = getPlans()[plan] ?? getPlans()['build']!;
 
   await supabase
     .from('users')
@@ -111,8 +111,8 @@ export async function handleSubscriptionDeleted(subscription: Stripe.Subscriptio
   await supabase
     .from('users')
     .update({
-      plan: 'seed',
-      monthly_limit: getPlans()['seed']!.monthlyRequests,
+      plan: 'build',
+      monthly_limit: getPlans()['build']!.monthlyRequests,
       stripe_subscription_id: null
     })
     .eq('stripe_subscription_id', subscription.id);

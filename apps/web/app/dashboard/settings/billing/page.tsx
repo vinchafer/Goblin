@@ -14,7 +14,7 @@ export default async function BillingSettingsPage() {
     .single() as unknown as { data: { plan: string; monthly_requests_used: number; monthly_limit: number; stripe_subscription_id: string | null; subscription_current_period_end: string | null } | null };
 
   const hasSubscription = !!userData?.stripe_subscription_id;
-  const currentPlan = userData?.plan || 'seed';
+  const currentPlan = userData?.plan || 'build';
   const used = userData?.monthly_requests_used || 0;
   const limit = userData?.monthly_limit || 200;
   const resetDate = userData?.subscription_current_period_end || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
