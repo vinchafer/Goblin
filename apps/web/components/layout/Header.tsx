@@ -340,6 +340,22 @@ export function Header({
                 </div>
               )}
               <button
+                data-testid="menu-item-help"
+                onClick={() => { setMenuOpen(false); router.push('/help'); }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  width: '100%', padding: '8px 14px',
+                  background: 'none', border: 'none',
+                  color: 'rgba(255,255,255,0.8)', fontSize: 13,
+                  fontFamily: 'DM Sans, sans-serif', cursor: 'pointer',
+                  textAlign: 'left', transition: 'background 0.1s',
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
+                onMouseLeave={e => (e.currentTarget.style.background = 'none')}
+              >
+                Hilfe & Support
+              </button>
+              <button
                 onClick={handleSignOut}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 8,

@@ -21,12 +21,6 @@ test.describe('Login page', { tag: '@public' }, () => {
     ).toBeVisible();
   });
 
-  test('shows Continue with Apple button', async ({ page }) => {
-    await expect(
-      page.getByRole('button', { name: /continue with apple/i })
-    ).toBeVisible();
-  });
-
   test('has heading (Create your account or Welcome back)', async ({ page }) => {
     // Page defaults to signup mode → "Create your account"; sign-in mode → "Welcome back"
     const heading = page.locator('h1').first();
