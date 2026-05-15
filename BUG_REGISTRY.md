@@ -1,4 +1,14 @@
-# Bug Registry — Sessions 5-8
+# Bug Registry — Sessions 5-9C
+
+## Session 9C Status-Update (2026-05-14)
+- **BUG-010 (Mobile "+ New Project" → "Invalid project data"):** FIXED — `COLORS` array in `new-project-modal.tsx` sendete `'var(--ochre)'` statt hex; Backend regex `/^#[0-9A-Fa-f]{6}$/` rejected. Mapped zu echten hex values (`#D4A94A`, `#2D4A2B`, etc.).
+- **BUG-011 (Pricing inkonsistent: Landing 1 Plan vs Billing 3 Plans):** FIXED — Landing nutzt jetzt `GeoPricingSection` (3 Plans + Geo-Tiers, single source via `apps/api/src/config/geo-pricing.ts`).
+- **BUG-012 (Mobile-Sidebar slidet von unten statt links):** FIXED — `transform: translateY` → `translateX(-100%) → translateX(0)`, position `bottom` → `top: 0; left: 0; bottom: 0`, width `85vw max 320px`. Claude/ChatGPT Pattern.
+- **BUG-013 (Recent Chats zeigt keine Project-Chats):** FIXED — `/api/chat-sessions` joint jetzt `projects(id, name)`, Frontend zeigt `📁 ProjectName` Badge unterhalb des Chat-Titles.
+- **BUG-014 (Floating Help-Button "?" überdeckt Send-Button):** FIXED — `<SupportBubble />` aus `dashboard-shell.tsx` entfernt. Hilfe via Avatar-Dropdown → "Help & Support".
+- **BUG-015 (Support-Beta öffnet aber antwortet nicht):** FIXED — Support-Chat ersetzt durch `/help` FAQ-Page (7 Akkordeon-FAQs) + `support@justgoblin.com` mailto-CTA.
+- **Mobile Bottom-Nav Cleanup:** API Keys / Billing / Settings aus Mobile-Sidebar Bottom-Row entfernt — jetzt User-Pill (Avatar + Name + Gear-Icon) → öffnet Settings.
+- **Footer Cryptic-Icons:** "D X G" Buchstaben-Avatare → echte Labels "Discord", "Twitter", "GitHub" als Pills.
 
 ## Session 8 Status-Update (2026-05-14)
 - **C-3 (Static Salt):** FIXED — per-user-salt implemented (Phase Z2)
