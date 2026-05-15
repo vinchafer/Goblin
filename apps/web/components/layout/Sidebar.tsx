@@ -207,44 +207,42 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
           )}
         </div>
 
-        {/* ── New Project ── */}
-        <div style={{ padding: collapsed ? '10px 8px' : '10px 12px', flexShrink: 0 }}>
-          <button
-            onClick={() => { setShowNewProjectModal(true); onClose?.(); }}
-            title="New Project"
-            style={{
-              width: '100%', background: 'var(--moss)', color: '#fff',
-              border: 'none', borderRadius: 8,
-              padding: collapsed ? '8px 0' : '9px 12px',
-              fontSize: 13, fontWeight: 500,
-              cursor: 'pointer',
-              display: 'flex', alignItems: 'center',
-              gap: collapsed ? 0 : 7,
-              justifyContent: 'center',
-              fontFamily: 'DM Sans, sans-serif',
-              transition: 'background 0.15s',
-              minHeight: 36,
-              overflow: 'hidden',
-              whiteSpace: 'nowrap',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.background = '#3A5A37')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'var(--moss)')}
-          >
-            <span style={{ fontSize: 16, flexShrink: 0, lineHeight: 1 }}>＋</span>
-            {!collapsed && 'New Project'}
-          </button>
-        </div>
-
         {/* ── Projects List ── */}
-        <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+        <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, paddingTop: 8 }}>
           {!collapsed && (
             <div style={{
-              padding: '4px 16px 6px',
-              fontSize: 10, fontWeight: 600,
-              letterSpacing: '1.2px', textTransform: 'uppercase',
-              color: 'var(--text-faint)',
+              padding: '4px 12px 6px 16px',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             }}>
-              Projects
+              <button
+                onClick={() => navigate('/dashboard')}
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                  fontSize: 10, fontWeight: 600, letterSpacing: '1.2px',
+                  textTransform: 'uppercase', color: 'var(--text-faint)',
+                  fontFamily: 'DM Sans, sans-serif',
+                }}
+              >
+                Projects
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowNewProjectModal(true); onClose?.(); }}
+                title="New Project"
+                aria-label="New Project"
+                data-testid="sidebar-projects-plus"
+                style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  padding: 4, borderRadius: 4, color: 'var(--text-faint)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: 22, height: 22, transition: 'background 0.12s, color 0.12s',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(45,74,43,0.10)'; e.currentTarget.style.color = 'var(--moss)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--text-faint)'; }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+              </button>
             </div>
           )}
 
@@ -394,30 +392,39 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
           } as React.CSSProperties}>×</button>
         </div>
 
-        {/* New Project */}
-        <div style={{ padding: '4px 16px 12px', flexShrink: 0 }}>
-          <button
-            onClick={() => { setShowNewProjectModal(true); onClose?.(); }}
-            data-testid="sidebar-new-project"
-            style={{
-              width: '100%', background: 'var(--moss)', color: '#fff',
-              border: 'none', borderRadius: 10, padding: '12px 16px',
-              fontSize: 15, fontWeight: 500, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: 10,
-              fontFamily: 'DM Sans, sans-serif', minHeight: 44,
-            }}
-          >
-            <span style={{ fontSize: 18, lineHeight: 1 }}>＋</span>
-            New Project
-          </button>
-        </div>
-
         {/* Projects */}
-        <div style={{ flexShrink: 0 }}>
+        <div style={{ flexShrink: 0, paddingTop: 4 }}>
           <div style={{
-            padding: '12px 20px 8px', fontSize: 11, fontWeight: 600,
-            letterSpacing: '1.2px', textTransform: 'uppercase', color: 'var(--text-faint)',
-          }}>Projects</div>
+            padding: '12px 12px 8px 20px',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          }}>
+            <button
+              onClick={() => navigate('/dashboard')}
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+                fontSize: 11, fontWeight: 600, letterSpacing: '1.2px',
+                textTransform: 'uppercase', color: 'var(--text-faint)',
+                fontFamily: 'DM Sans, sans-serif',
+              }}
+            >
+              Projects
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowNewProjectModal(true); onClose?.(); }}
+              data-testid="sidebar-new-project"
+              aria-label="New Project"
+              style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                padding: 6, borderRadius: 4, color: 'var(--text-faint)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                minWidth: 32, minHeight: 32,
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+            </button>
+          </div>
           <div style={{ padding: '0 12px 8px' }}>
             {projects.length === 0 ? (
               <div style={{ padding: '8px 12px', fontSize: 13, color: 'var(--text-faint)', fontStyle: 'italic', fontFamily: 'DM Sans, sans-serif' }}>
@@ -547,18 +554,35 @@ function RecentChats({ pathname, navigate }: { pathname: string; navigate: (path
   return (
     <div style={{ borderTop: '1px solid var(--border)', padding: '8px 0 0' }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 16px 6px' }}>
-        <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: '1.2px', textTransform: 'uppercase', color: 'var(--text-faint)' }}>
-          Recent Chats
-        </span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 12px 6px 16px' }}>
         <button
-          onClick={handleNewChat}
-          title="New chat"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: 'var(--text-faint)', padding: '0 2px', lineHeight: 1, display: 'flex', alignItems: 'center' }}
-          onMouseEnter={e => (e.currentTarget.style.color = 'var(--moss)')}
-          onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}
+          onClick={() => navigate('/dashboard/chat')}
+          style={{
+            background: 'none', border: 'none', cursor: 'pointer', padding: 0,
+            fontSize: 10, fontWeight: 600, letterSpacing: '1.2px',
+            textTransform: 'uppercase', color: 'var(--text-faint)',
+            fontFamily: 'DM Sans, sans-serif',
+          }}
         >
-          +
+          Recent Chats
+        </button>
+        <button
+          onClick={(e) => { e.stopPropagation(); handleNewChat(); }}
+          title="New chat"
+          aria-label="New chat"
+          data-testid="sidebar-chats-plus"
+          style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            padding: 4, borderRadius: 4, color: 'var(--text-faint)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            width: 22, height: 22, transition: 'background 0.12s, color 0.12s',
+          }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(45,74,43,0.10)'; e.currentTarget.style.color = 'var(--moss)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--text-faint)'; }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
         </button>
       </div>
 
