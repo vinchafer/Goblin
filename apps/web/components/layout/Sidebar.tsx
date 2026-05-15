@@ -6,6 +6,7 @@ import { useApp } from '@/contexts/app-context';
 import { createClient } from '@/lib/supabase/client';
 import { apiGet } from '@/lib/api';
 import { Gear } from '@phosphor-icons/react';
+import { RecentChatRow } from '@/components/sidebar/RecentChatRow';
 
 interface ChatSession {
   id: string;
@@ -607,48 +608,15 @@ function RecentChats({ pathname, navigate }: { pathname: string; navigate: (path
           </div>
         ) : (
           <>
-            {sessions.map(s => {
-              const active = pathname.includes(s.id);
-              return (
-                <div
-                  key={s.id}
-                  onClick={() => navigate(`/dashboard/chat/${s.id}`)}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    padding: '6px 8px', borderRadius: 6, cursor: 'pointer', marginBottom: 1,
-                    background: active ? 'rgba(212,169,74,0.1)' : 'transparent',
-                    borderLeft: active ? '2px solid var(--ochre)' : '2px solid transparent',
-                    transition: 'all 0.1s',
-                  }}
-                  onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0.04)'; }}
-                  onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
-                >
-                  <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                    <span style={{
-                      fontSize: 12, color: active ? 'var(--moss)' : 'var(--text)',
-                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                      fontFamily: 'DM Sans, sans-serif', fontWeight: active ? 600 : 400,
-                    }}>
-                      {s.title || 'New chat'}
-                    </span>
-                    {s.project_name && (
-                      <span style={{
-                        fontSize: 10, color: 'var(--text-faint)',
-                        background: 'rgba(0,0,0,0.05)', padding: '1px 6px',
-                        borderRadius: 5, alignSelf: 'flex-start',
-                        fontFamily: 'DM Sans, sans-serif', maxWidth: '100%',
-                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                      }}>
-                        📁 {s.project_name}
-                      </span>
-                    )}
-                  </div>
-                  <span style={{ fontSize: 10, color: 'var(--text-faint)', flexShrink: 0 }}>
-                    {timeAgoShort(s.updated_at)}
-                  </span>
-                </div>
-              );
-            })}
+            {sessions.map(s => (
+              <RecentChatRow
+                key={s.id}
+                chat={s}
+                active={pathname.includes(s.id)}
+                onNavigate={(id) => navigate(`/dashboard/chat/${id}`)}
+                onUpdate={loadSessions}
+              />
+            ))}
             {sessions.length === 5 && (
               <button
                 onClick={() => navigate('/dashboard/chat')}

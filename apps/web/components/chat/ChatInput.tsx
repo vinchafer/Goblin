@@ -4,6 +4,7 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { apiGet } from '@/lib/api';
 import { createClient } from '@/lib/supabase/client';
+import { ComposerPlusPopover, type PlusAction } from './ComposerPlusPopover';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -466,6 +467,17 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
   };
 
   const hasInput = input.trim().length > 0;
+  const plusBtnRef = useRef<HTMLButtonElement>(null);
+  const [plusOpen, setPlusOpen] = useState(false);
+  const [websearchOn, setWebsearchOn] = useState(false);
+
+  const handlePlusAction = (action: PlusAction) => {
+    if (action === 'websearch') {
+      setWebsearchOn(v => !v);
+      return;
+    }
+    toast.info(`${action} — kommt in 9E`);
+  };
 
   return (
     <div style={{ padding: '10px 16px 12px', background: '#fff', borderTop: '1px solid #EDE8DC', flexShrink: 0 }}>
@@ -513,12 +525,36 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
             }}
           />
 
-          {/* Bottom row: model pill (left) + hint + send (right) */}
+          {/* Bottom row: plus + model pill (left) + hint + send (right) */}
           <div style={{
             display: 'flex', alignItems: 'center',
             padding: '4px 8px 8px',
             gap: 6,
           }}>
+            <button
+              ref={plusBtnRef}
+              onClick={() => setPlusOpen(o => !o)}
+              data-testid="composer-plus"
+              aria-label="Anhang hinzufügen"
+              style={{
+                width: 28, height: 28, borderRadius: '50%',
+                border: '1px solid var(--border-subtle)',
+                background: 'var(--panel)',
+                cursor: 'pointer', display: 'flex',
+                alignItems: 'center', justifyContent: 'center',
+                color: 'var(--meta)', flexShrink: 0,
+              }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+            <ComposerPlusPopover
+              open={plusOpen}
+              onClose={() => setPlusOpen(false)}
+              anchorRef={plusBtnRef}
+              onAction={handlePlusAction}
+              websearchOn={websearchOn}
+            />
+
             {/* Model picker pill — left */}
             <button
               onClick={openHub}

@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import { apiStream } from "@/lib/api";
 import { ChatInput, useChatModel } from "@/components/chat/ChatInput";
 import type { SelectedModel } from "@/components/chat/ChatInput";
+import { EmptyChat } from "@/components/chat/EmptyChat";
+import { useUser } from "@/lib/hooks/useUser";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -464,7 +466,7 @@ export function StandaloneChat({ sessionId, initialMessages = [] }: StandaloneCh
       {/* Messages */}
       <div style={{ flex: 1, overflowY: "auto", padding: "20px 16px", display: "flex", flexDirection: "column", gap: 16 }}>
         {messages.length === 0
-          ? <EmptyState onSuggestion={p => handleSubmit(p, selectedModel)} />
+          ? <EmptyChatBound onSuggestion={p => handleSubmit(p, selectedModel)} />
           : messages.map(m => (
             <Message key={m.id} msg={m} isStreaming={isStreaming} />
           ))
@@ -506,4 +508,9 @@ export function StandaloneChat({ sessionId, initialMessages = [] }: StandaloneCh
       </div>
     </div>
   );
+}
+
+function EmptyChatBound({ onSuggestion }: { onSuggestion: (s: string) => void }) {
+  const user = useUser();
+  return <EmptyChat userName={user.fullName || user.email?.split('@')[0] || 'Vincent'} onSuggestionClick={onSuggestion} />;
 }
