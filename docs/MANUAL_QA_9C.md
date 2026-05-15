@@ -108,9 +108,56 @@
 
 ---
 
+## 9C1 Bug-Fixes (5 zusätzliche Checks, Foundation-Fixes nach Manual-QA)
+
+- [ ] **BUG-016 — Create-Project erstellt echtes Projekt + Dashboard refresht**
+  - **Aktion:**
+    1. Sidebar → Plus-Icon neben "PROJECTS" Header
+    2. Modal öffnet → Name `BUG-016 Test`, Beschreibung optional, Create
+    3. Redirect zu `/dashboard/project/<id>` (ProjectWorkspace mit Chat|Code|Preview Pills)
+    4. Browser-Back zu `/dashboard`
+  - **Erwartung:** Projekt erscheint in Dashboard-Liste UND in Sidebar.
+  - **Bonus:** Chat-Input testen — KEINE 400-LiteLLM-Errors mehr beim Senden via `free/gemini-flash` (jetzt korrekt zu `gemini/gemini-1.5-flash` gemappt).
+
+- [ ] **BUG-017 — Sidebar: inline Plus-Icons statt großer Moss-Button**
+  - **Aktion:** Sidebar öffnen
+  - **Erwartung:** KEIN großer Moss-grüner "+ New Project" Button mehr. Stattdessen:
+    - "PROJECTS" Section-Header mit kleinem Plus-Icon (16px outline) rechts → onClick öffnet Project-Modal
+    - "RECENT CHATS" Section-Header mit Plus-Icon rechts → onClick erstellt neuen Chat
+    - Beide Labels sind klickbar (navigate zu /dashboard bzw /dashboard/chat)
+
+- [ ] **BUG-018 — Settings Bottom-Sheet überlagert + 2-Level-Navigation**
+  - **Aktion:**
+    1. Sidebar bottom → User-Pill (Avatar + Name + Gear) klicken
+    2. Settings-Sheet slidet von UNTEN (mobile) oder erscheint als zentriertes Modal (desktop)
+    3. Liste zeigt 11 Items + Section "Developer Settings" mit 5 weiteren
+    4. Tap "Profil" → Detail-Pane mit Identität/Sicherheit/Sessions/Danger Zone
+    5. Top-Left "<" zurück → zurück zur Liste
+    6. ESC oder X-Button → Sheet schließt
+  - **Erwartung:** KEIN Page-Change (URL bleibt). Sheet überlagert.
+  - **Failure-Signal:** Routing zu `/dashboard/settings` (alte Page-basierte Settings).
+
+- [ ] **BUG-019 — Header: Hamburger + Logo + Tab-Pills + Ochre Plus**
+  - **Aktion:** In Projekt-Workspace
+  - **Erwartung Mobile-Header (von links nach rechts):**
+    - Hamburger (24px outline)
+    - Goblin-Wordmark (Fraunces, var(--ochre))
+    - Tab-Pills (Chat | Code | Preview als Icons-only, active filled)
+    - Ochre Plus-FAB (36px round) — onClick öffnet Popover mit "Neuer Chat" / "Neues Projekt"
+  - **Erwartung Desktop:** wie Mobile, aber Tab-Pills zeigen Labels + Avatar-Dropdown sichtbar
+  - **Failure-Signal:** "Help" Button noch im Avatar-Menu. Tabs unsichtbar in Workspace. Plus-Button fehlt.
+
+- [ ] **BUG-020 — Recent Chats Project-Badge**
+  - **Vorbereitung:** Chat in Projekt erstellen + 1 Nachricht senden
+  - **Aktion:** Sidebar öffnen → Recent Chats scrollen
+  - **Erwartung:** Chat-Eintrag zeigt 📁 + Projekt-Name als kleines Badge unter Title.
+  - **Failure-Signal:** Nur Title sichtbar ohne Badge.
+
+---
+
 ## Result
 
-- [ ] **Alle 10 Checks green** → 9C bereit für Vercel-Deploy + Session 9D
+- [ ] **Alle 15 Checks green** → 9C+9C1 bereit für Vercel-Deploy + Session 9D
 - [ ] **Mindestens 1 red** → siehe Notes unten + Screenshots, zurück zu Claude Code
 
 ### Notes (bei red Checks)
