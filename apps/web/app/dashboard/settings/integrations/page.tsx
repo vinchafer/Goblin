@@ -2,6 +2,8 @@ import { createClient } from "@/lib/supabase/server";
 import { GitHubConnectButton } from "./github-connect-button";
 import { SettingsLayout } from "@/components/settings/settings-layout";
 
+export const dynamic = 'force-dynamic';
+
 const COMING_SOON = [
   { name: 'GitLab',    description: 'Push to GitLab repositories and trigger CI/CD pipelines.' },
   { name: 'Bitbucket', description: 'Sync with Bitbucket repositories and Jira.' },

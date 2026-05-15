@@ -1,5 +1,7 @@
 ﻿import { createClient } from '@/lib/supabase/server';
 
+export const dynamic = 'force-dynamic';
+
 const ENV_VARS = [
   'NEXT_PUBLIC_API_URL',
   'NEXT_PUBLIC_SUPABASE_URL',

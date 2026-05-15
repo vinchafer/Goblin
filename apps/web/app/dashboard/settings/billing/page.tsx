@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { SettingsLayout } from "@/components/settings/settings-layout";
 import { UsageDisplay } from "@/components/billing/usage-display";
+
+export const dynamic = 'force-dynamic';
 import { PricingCards } from "@/components/billing/pricing-cards";
 
 export default async function BillingSettingsPage() {

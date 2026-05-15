@@ -1,5 +1,7 @@
 ﻿import { createClient } from '@/lib/supabase/server';
 
+export const dynamic = 'force-dynamic';
+
 interface VersionData {
   version: string;
   gitCommit: string;

@@ -2,6 +2,8 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { ProjectWorkspace } from "@/components/project/project-workspace";
 
+export const dynamic = 'force-dynamic';
+
 interface ProjectPageProps {
   params: Promise<{ id: string }>;
 }

@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { StandaloneChat } from "@/components/chat/standalone-chat";
 
+export const dynamic = 'force-dynamic';
+
 interface StandaloneMessage {
   id: string;
   role: "user" | "assistant";

@@ -2,6 +2,8 @@
 import { SettingsLayout } from "@/components/settings/settings-layout";
 import { KeysList } from "@/components/settings/keys-list";
 
+export const dynamic = 'force-dynamic';
+
 export default async function KeysSettingsPage() {
   const supabase = await createClient();
 

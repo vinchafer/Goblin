@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { AppProvider } from "@/contexts/app-context";
 
+export const dynamic = 'force-dynamic';
+
 export default async function ProjectLayout({
   children,
 }: {
