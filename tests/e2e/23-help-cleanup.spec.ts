@@ -12,7 +12,10 @@ test.describe('9C — Help cleanup (BUG-014, BUG-015)', { tag: '@auth' }, () => 
     await expect(page.getByRole('button', { name: /open support/i })).not.toBeVisible();
   });
 
-  test('Avatar dropdown contains "Hilfe & Support" link', async ({ page }) => {
+  test('Avatar dropdown contains "Hilfe & Support" link', async ({ page, isMobile }) => {
+    // Avatar dropdown is desktop-only; mobile uses sidebar user-pill (covered elsewhere)
+    test.skip(!!isMobile, 'avatar dropdown is desktop-only — mobile uses sidebar');
+
     await loginAsRealTestUser(page); // already lands on /dashboard
     await dismissTour(page);
     await page.waitForLoadState('networkidle');
