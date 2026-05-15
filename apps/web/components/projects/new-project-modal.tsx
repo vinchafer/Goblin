@@ -5,10 +5,10 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
 const COLORS = [
-  { name: 'Ochre',  hex: 'var(--ochre)' },
-  { name: 'Moss',   hex: 'var(--moss)' },
-  { name: 'Rust',   hex: 'var(--danger)' },
-  { name: 'Slate',  hex: 'var(--text)' },
+  { name: 'Ochre',  hex: '#D4A94A' },
+  { name: 'Moss',   hex: '#2D4A2B' },
+  { name: 'Rust',   hex: '#B85C3C' },
+  { name: 'Slate',  hex: '#3A2E1F' },
   { name: 'Purple', hex: '#7A4A8A' },
   { name: 'Teal',   hex: '#4A7A7A' },
   { name: 'Pink',   hex: '#8A3A5A' },
@@ -50,7 +50,7 @@ export function NewProjectModal({ onClose, initialMode }: NewProjectModalProps) 
   const [mode, setMode] = useState<Mode>(initialMode === 'template' ? 'gallery' : 'blank');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [selectedColor, setSelectedColor] = useState(COLORS[0]?.hex ?? 'var(--ochre)');
+  const [selectedColor, setSelectedColor] = useState(COLORS[0]?.hex ?? '#D4A94A');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
