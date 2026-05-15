@@ -38,21 +38,22 @@ export function Footer() {
             <div style={{ fontSize: 13, color: 'var(--meta)', lineHeight: 1.6, fontWeight: 400 }}>
               The cloud workshop for builders who ship from anywhere.
             </div>
-            <div style={{ marginTop: 20, display: 'flex', gap: 10 }}>
+            <div style={{ marginTop: 20, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {[
                 { label: 'Discord', href: 'https://discord.gg/goblin' },
-                { label: 'X', href: 'https://twitter.com/justgoblin' },
-                { label: 'GitHub', href: 'https://github.com/justgoblin' },
+                { label: 'Twitter', href: 'https://twitter.com/justgoblin' },
+                { label: 'GitHub',  href: 'https://github.com/justgoblin' },
               ].map(s => (
                 <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" style={{
-                  width: 32, height: 32, borderRadius: 8, border: '1px solid var(--border)',
-                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 11, color: 'var(--meta)', textDecoration: 'none',
+                  padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border)',
+                  display: 'inline-flex', alignItems: 'center',
+                  fontSize: 12, color: 'var(--meta)', textDecoration: 'none',
                   background: 'var(--panel)', transition: 'all 0.15s',
+                  fontFamily: 'DM Sans, sans-serif', fontWeight: 500,
                 }}
                   onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--moss)'; (e.currentTarget as HTMLElement).style.color = 'var(--moss)'; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'; (e.currentTarget as HTMLElement).style.color = 'var(--meta)'; }}
-                >{s.label[0]}</a>
+                >{s.label}</a>
               ))}
             </div>
           </div>
