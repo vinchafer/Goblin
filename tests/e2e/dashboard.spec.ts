@@ -7,7 +7,7 @@ import { test, expect } from '@playwright/test';
  * any visitor who hits a protected URL.
  */
 
-test.describe('Dashboard — unauthenticated access', () => {
+test.describe('Dashboard — unauthenticated access', { tag: '@public' }, () => {
   test('GET /dashboard redirects to /login', async ({ page }) => {
     const response = await page.goto('/dashboard');
     // After following redirects we must be on the login page

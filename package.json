@@ -10,7 +10,11 @@
     "test": "dotenv -e .env -- playwright test",
     "test:ui": "dotenv -e .env -- playwright test --ui",
     "test:report": "playwright show-report",
-    "test:prod": "dotenv -e .env -- cross-env PLAYWRIGHT_BASE_URL=https://justgoblin.com playwright test"
+    "test:prod": "dotenv -e .env -- cross-env PLAYWRIGHT_BASE_URL=https://justgoblin.com playwright test",
+    "test:e2e:public": "playwright test --project=public-desktop --project=public-mobile",
+    "test:e2e:auth": "dotenv -e .env -- playwright test --project=auth-desktop --project=auth-mobile",
+    "test:e2e:local": "dotenv -e .env -- playwright test --project=local-only",
+    "test:e2e:ci": "playwright test --project=public-desktop --project=public-mobile --project=auth-desktop --project=auth-mobile"
   },
   "devDependencies": {
     "@playwright/test": "^1.44.0",

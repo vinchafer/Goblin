@@ -1,82 +1,79 @@
-# Goblin E2E Tests
+# E2E Tests
 
 Playwright tests live here. Single root setup — `playwright.config.ts` in repo root, tests in `tests/e2e/`.
 
-## Run locally
+## Tag system
+
+Tests are organized in three categories via Playwright tags:
+
+### @public
+Public routes, no authentication. Always runs (CI + local).
+- Landing, Pricing, /help, /status, footer, login-page renders
+
+### @auth
+Authenticated routes, no BYOK touchpoint. Runs in CI + local.
+- Mobile sidebar, mobile create-project, help-cleanup, avatar-menu
+
+### @local-only
+Tests requiring BYOK, real Stripe, email delivery, or external APIs. **NOT in CI.**
+- BYOK decrypt + usage
+- Stripe Checkout / Webhook
+- Real AI streaming, Send-to-Code, multi-block
+- GitHub OAuth integration
+- Email delivery (Resend)
+- Push notifications
+- Synthetic test-user creation (`/api/test-auth` route)
+
+## Commands
+
+| Command | Scope |
+|---|---|
+| `pnpm test:e2e:public` | Only @public |
+| `pnpm test:e2e:auth` | Only @auth (real test user login) |
+| `pnpm test:e2e:local` | Only @local-only (run locally before push) |
+| `pnpm test:e2e:ci` | @public + @auth (what CI runs) |
+| `pnpm test` | All tests |
+
+## CI behavior
+
+GitHub Actions runs `pnpm test:e2e:ci`. @local-only is owner responsibility before significant pushes.
+
+## Test-auth route security
+
+`/api/test-auth` has 4 guard layers:
+
+1. `NODE_ENV !== 'production'` (hardblock)
+2. `ENABLE_TEST_AUTH === 'true'` (explicit enable)
+3. Origin = localhost OR `CI === 'true'` (origin check)
+4. `SUPABASE_SERVICE_ROLE_KEY` set (config check)
+
+In production: always returns 403. **Never set `ENABLE_TEST_AUTH` in production env.**
+
+## Before significant pushes
 
 ```bash
-# All tests, both projects (chromium + mobile-chrome)
-pnpm test
-
-# UI mode for debugging
-pnpm test:ui
-
-# Production target (deployed)
-pnpm test:prod
-
-# Specific file
-pnpm test tests/e2e/19-mobile-create-project.spec.ts
-
-# Specific project (viewport)
-pnpm test --project=mobile-chrome
-pnpm test --project=chromium
-
-# HTML report after run
-pnpm test:report
+pnpm test:e2e:ci      # public + auth
+pnpm test:e2e:local   # BYOK, Stripe, real AI
+git push
 ```
-
-`pnpm dev` should be running on `localhost:3000`, OR Playwright will auto-start it via `webServer` config (slower first run).
-
-## Required ENV vars (`.env` in root)
-
-```
-NEXT_PUBLIC_SUPABASE_URL=...
-NEXT_PUBLIC_SUPABASE_ANON_KEY=...
-SUPABASE_SERVICE_ROLE_KEY=...     # admin API for magic-link generation
-TEST_ACCOUNT_EMAIL=...            # real seeded test account
-TEST_ACCOUNT_PASSWORD=...         # for password-flow tests only
-NEXT_PUBLIC_API_URL=...           # Hono API base (e.g. http://localhost:8787)
-```
-
-`SUPABASE_SERVICE_ROLE_KEY` is required for the magic-link helper (`loginAsRealTestUser`) to bypass email delivery in tests.
-
-## Auth helpers (`helpers/auth.ts`)
-
-| Helper | Use for |
-|---|---|
-| `loginAsRealTestUser(page)` | **Default.** Generates magic link via Supabase Admin API, navigates to `/auth/magic-callback`, lands on `/dashboard`. Works local + prod. |
-| `loginViaPasswordUI(page)` | Only when testing the password-login UI itself. |
-| `loginAsTestUser(page, opts)` | Disposable test users via `/api/test-auth` route (route may not exist — fallback to `loginAsRealTestUser`). |
-| `dismissTour(page)` | Closes FirstRunTour modal if it appears. |
-| `openFirstProject(page)` | Navigates `/dashboard`, clicks first `.project-row`, returns projectId. Auto-creates a project if none exist. |
-| `cleanupTestProjects(page)` | Removes projects with `[E2E-TEST]` prefix via test-auth route. |
-
-## Test naming convention
-
-```
-NN-descriptive-name.spec.ts
-```
-
-Existing range:
-- `02-08` — original suite (auth, dashboard, project, onboarding, settings, errors, mobile-auth, hydration)
-- `10-17` — streaming, send-to-code, multi-block, generate, byok, trial, github, magic-link
-- `18-24` — **9C** — pricing, mobile-create-project, mobile-sidebar, recent-chats, workspace-tabs, help-cleanup, footer
-
-Next free: `25+`.
 
 ## Adding a new test
 
-1. Create `tests/e2e/NN-name.spec.ts`
-2. Import helpers from `./helpers/auth`
-3. Use `data-testid` selectors over text where possible (more stable across i18n / copy changes)
-4. For mobile-only tests: `test.use({ ...devices['Pixel 7'] })` at file top
-5. Run with `pnpm test tests/e2e/NN-name.spec.ts` until green
-6. Commit alongside the production-code change it covers
+1. Create file in `tests/e2e/`
+2. Pick a tag:
+   - No login → `@public`
+   - Login required, no BYOK → `@auth`
+   - BYOK / Stripe / email / push → `@local-only`
+3. Tag at describe level:
 
-## CI integration (TODO)
+```typescript
+import { test, expect } from '@playwright/test';
+import { loginAsRealTestUser } from './helpers/auth';
 
-Not yet wired. When wiring:
-- Skip `webServer` in CI (deploy-preview URL via `PLAYWRIGHT_BASE_URL`)
-- `retries: 2` for flake-tolerance (already in config)
-- Upload `playwright-report/` as artifact on failure
-- Mask `SUPABASE_SERVICE_ROLE_KEY` + `TEST_ACCOUNT_PASSWORD` in CI secrets
+test.describe('Feature name', { tag: '@auth' }, () => {
+  test('does the thing', async ({ page }) => {
+    await loginAsRealTestUser(page);
+    // ...
+  });
+});
+```

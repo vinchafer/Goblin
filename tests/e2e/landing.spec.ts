@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Landing page', () => {
+test.describe('Landing page', { tag: '@public' }, () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
   });

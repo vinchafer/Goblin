@@ -3,7 +3,7 @@ import { loginAsRealTestUser } from './helpers/auth';
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000';
 
-test.describe('GitHub Integration', () => {
+test.describe('GitHub Integration', { tag: '@local-only' }, () => {
   test('integrations settings page loads', async ({ page }) => {
     await loginAsRealTestUser(page);
     await page.goto(`${BASE_URL}/dashboard/settings/integrations`);

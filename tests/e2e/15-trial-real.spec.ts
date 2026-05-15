@@ -6,7 +6,7 @@ const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000';
 // NOTE: DB manipulation (expire trial, then reset) is not done here to avoid
 // corrupting the real test account. Those checks are done via API health endpoint.
 
-test.describe('Trial Gate — real test account', () => {
+test.describe('Trial Gate — real test account', { tag: '@local-only' }, () => {
   test('dashboard loads without 402 for active trial user', async ({ page }) => {
     await loginAsRealTestUser(page);
     await page.goto(`${BASE_URL}/dashboard`);

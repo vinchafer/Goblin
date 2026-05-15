@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('9C — Footer social labels not single letters', () => {
+test.describe('9C — Footer social labels not single letters', { tag: '@public' }, () => {
   test('Footer shows full text labels Discord/Twitter/GitHub', async ({ page }) => {
     await page.goto('/');
     await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));

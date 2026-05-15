@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { loginAsTestUser, dismissTour, cleanupTestUsers } from './helpers/auth';
 
-test.describe('Project Workspace', () => {
+test.describe('Project Workspace', { tag: '@local-only' }, () => {
   let projectId: string | null = null;
   let testEmail: string;
 

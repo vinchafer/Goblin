@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('9C — Pricing Consistency Landing↔Billing', () => {
+test.describe('9C — Pricing Consistency Landing↔Billing', { tag: '@public' }, () => {
   test('Landing page shows 3 plan cards with prices', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('domcontentloaded');

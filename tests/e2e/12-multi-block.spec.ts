@@ -3,7 +3,7 @@ import { loginAsRealTestUser, openFirstProject, dismissTour } from './helpers/au
 
 const GROQ_KEY_SET = !!process.env.GROQ_FREE_API_KEY;
 
-test.describe('Multi-block code responses', () => {
+test.describe('Multi-block code responses', { tag: '@local-only' }, () => {
   let projectId: string;
 
   test.beforeAll(async ({ browser }) => {

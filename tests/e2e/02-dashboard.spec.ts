@@ -3,7 +3,7 @@ import { loginAsTestUser, dismissTour, cleanupTestUsers } from './helpers/auth';
 
 const API_URL = 'https://goblinapi-production.up.railway.app';
 
-test.describe('Dashboard — authenticated', () => {
+test.describe('Dashboard — authenticated', { tag: '@local-only' }, () => {
   let authToken: string | null = null;
   let testEmail: string;
   let testUserId: string;

@@ -50,7 +50,7 @@ async function ensureProject(page: Page, userId: string): Promise<string> {
 
 // ─── Y1.1 Magic Link E2E ──────────────────────────────────────────────────────
 
-test.describe('Y1.1 — Magic Link E2E', () => {
+test.describe('Y1.1 — Magic Link E2E', { tag: '@local-only' }, () => {
   test('full magic link flow: admin token → navigate → session active → dashboard loads', async ({ page }) => {
     const session = await loginAsRealTestUser(page);
     expect(session.email).toBe(TEST_EMAIL);
@@ -79,7 +79,7 @@ test.describe('Y1.1 — Magic Link E2E', () => {
 
 // ─── Y1.2 BYOK Streaming ─────────────────────────────────────────────────────
 
-test.describe('Y1.2 — BYOK Streaming', () => {
+test.describe('Y1.2 — BYOK Streaming', { tag: '@local-only' }, () => {
   let accessToken = '';
   let projectId = '';
   let byokKeyId = '';
@@ -185,7 +185,7 @@ test.describe('Y1.2 — BYOK Streaming', () => {
 
 // ─── Y1.3 Trial Gate ─────────────────────────────────────────────────────────
 
-test.describe('Y1.3 — Trial Gate', () => {
+test.describe('Y1.3 — Trial Gate', { tag: '@local-only' }, () => {
   let accessToken = '';
   let userId = '';
   let projectId = '';

@@ -6,7 +6,7 @@ import { test, expect } from '@playwright/test';
  * try/catch so CI with a placeholder Supabase URL can still pass.
  */
 
-test.describe('/status page', () => {
+test.describe('/status page', { tag: '@public' }, () => {
   test('loads with HTTP 200', async ({ page }) => {
     const response = await page.goto('/status');
     expect(response?.status()).toBe(200);

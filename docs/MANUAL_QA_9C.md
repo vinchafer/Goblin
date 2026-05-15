@@ -177,3 +177,18 @@ BUG-XXX: Beschreibung was passiert ist + Screenshot-Path
 - ❌ Footer Social-Icons als Single-Letters
 - ❌ Landing-Pricing als Single-Plan ($9 only)
 - ❌ Modal-Submit "Erstellen" → roter "invalid project data" Error
+
+## Vor wichtigen Pushes — Lokales E2E
+
+Zusätzlich zur Manual-QA:
+```bash
+pnpm test:e2e:local
+```
+
+Deckt Bereiche ab, die CI nicht testet:
+- BYOK Decrypt + Usage
+- Stripe Checkout
+- Echte AI-Responses (Streaming, Send-to-Code, multi-block)
+- Email-Delivery (Resend)
+- Push-Notifications
+- GitHub OAuth

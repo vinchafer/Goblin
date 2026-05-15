@@ -3,7 +3,7 @@ import { loginAsRealTestUser, dismissTour } from './helpers/auth';
 
 test.use({ ...devices['Pixel 7'] });
 
-test.describe('9C — Mobile Create Project (BUG-010)', () => {
+test.describe('9C — Mobile Create Project (BUG-010)', { tag: '@auth' }, () => {
   test('Mobile FAB → modal → submit → no "invalid project data"', async ({ page }) => {
     await loginAsRealTestUser(page);
     await dismissTour(page);

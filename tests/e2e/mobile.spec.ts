@@ -8,7 +8,7 @@ import { test, expect } from '@playwright/test';
 
 const MOBILE_VIEWPORT = { width: 390, height: 844 };
 
-test.describe('Mobile layout — landing page', () => {
+test.describe('Mobile layout — landing page', { tag: '@public' }, () => {
   test.use({ viewport: MOBILE_VIEWPORT });
 
   test('/ loads on mobile without errors', async ({ page }) => {

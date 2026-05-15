@@ -3,7 +3,7 @@ import { loginAsRealTestUser, openFirstProject, dismissTour } from './helpers/au
 
 const GROQ_KEY_SET = !!process.env.GROQ_FREE_API_KEY;
 
-test.describe('Send to Code — real end-to-end', () => {
+test.describe('Send to Code — real end-to-end', { tag: '@local-only' }, () => {
   let projectId: string;
 
   test.beforeAll(async ({ browser }) => {

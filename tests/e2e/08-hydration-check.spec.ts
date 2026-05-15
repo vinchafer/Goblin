@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { loginAsTestUser, cleanupTestUsers } from './helpers/auth';
 
-test.describe('Hydration + Runtime Checks', () => {
+test.describe('Hydration + Runtime Checks', { tag: '@local-only' }, () => {
   let testEmail: string;
 
   test.beforeAll(async ({ browser }) => {

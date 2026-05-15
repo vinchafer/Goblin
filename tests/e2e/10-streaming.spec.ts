@@ -4,7 +4,7 @@ import { loginAsRealTestUser, openFirstProject, dismissTour } from './helpers/au
 const GROQ_KEY_SET = !!process.env.GROQ_FREE_API_KEY;
 const TEST_MESSAGE = 'Write a hello world function in Python. Keep it short.';
 
-test.describe('Streaming — real test account + Free Pool', () => {
+test.describe('Streaming — real test account + Free Pool', { tag: '@local-only' }, () => {
   let projectId: string;
 
   test.beforeAll(async ({ browser }) => {

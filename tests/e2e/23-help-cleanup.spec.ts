@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { loginAsRealTestUser, dismissTour } from './helpers/auth';
 
-test.describe('9C — Help cleanup (BUG-014, BUG-015)', () => {
+test.describe('9C — Help cleanup (BUG-014, BUG-015)', { tag: '@auth' }, () => {
   test('No floating SupportBubble button on dashboard', async ({ page }) => {
     await loginAsRealTestUser(page);
     await dismissTour(page);

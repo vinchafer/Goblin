@@ -3,7 +3,7 @@ import { loginAsTestUser, cleanupTestUsers } from './helpers/auth';
 
 const MOBILE_VIEWPORT = { width: 390, height: 844 };
 
-test.describe('Mobile — authenticated flow', () => {
+test.describe('Mobile — authenticated flow', { tag: '@local-only' }, () => {
   test.use({ viewport: MOBILE_VIEWPORT });
 
   let testEmail: string;

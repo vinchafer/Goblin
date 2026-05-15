@@ -20,6 +20,34 @@ export default defineConfig({
   },
   projects: [
     {
+      name: 'public-desktop',
+      grep: /@public/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'public-mobile',
+      grep: /@public/,
+      use: { ...devices['Pixel 7'] },
+    },
+    {
+      name: 'auth-desktop',
+      grep: /@auth/,
+      grepInvert: /@local-only/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
+      name: 'auth-mobile',
+      grep: /@auth/,
+      grepInvert: /@local-only/,
+      use: { ...devices['Pixel 7'] },
+    },
+    {
+      name: 'local-only',
+      grep: /@local-only/,
+      use: { ...devices['Desktop Chrome'] },
+    },
+    // Legacy aliases — preserved for existing tooling that targets these names
+    {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },

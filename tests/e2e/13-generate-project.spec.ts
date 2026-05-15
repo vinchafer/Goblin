@@ -4,7 +4,7 @@ import { loginAsRealTestUser, openFirstProject, dismissTour } from './helpers/au
 const GROQ_KEY_SET = !!process.env.GROQ_FREE_API_KEY;
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000';
 
-test.describe('Project workspace — existing project', () => {
+test.describe('Project workspace — existing project', { tag: '@local-only' }, () => {
   let projectId: string;
 
   test.beforeAll(async ({ browser }) => {

@@ -4,7 +4,7 @@ import { loginAsTestUser, cleanupTestUsers } from './helpers/auth';
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000';
 const TEST_TOKEN = process.env.TEST_AUTH_TOKEN || 'goblin-playwright-test-token-2026';
 
-test.describe('Onboarding flow', () => {
+test.describe('Onboarding flow', { tag: '@local-only' }, () => {
   test.afterAll(async ({ browser }) => {
     const page = await browser.newPage();
     await cleanupTestUsers(page);

@@ -3,7 +3,7 @@ import { loginAsRealTestUser, dismissTour } from './helpers/auth';
 
 test.use({ ...devices['Pixel 7'] });
 
-test.describe('9C — Mobile Sidebar slides from LEFT (BUG-012)', () => {
+test.describe('9C — Mobile Sidebar slides from LEFT (BUG-012)', { tag: '@auth' }, () => {
   test('Sidebar opens anchored to left edge, not bottom', async ({ page }) => {
     await loginAsRealTestUser(page);
     await dismissTour(page);

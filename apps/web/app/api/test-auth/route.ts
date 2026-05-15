@@ -1,7 +1,47 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-// Only available when ENABLE_TEST_AUTH=true — never enable in production
+export const dynamic = 'force-dynamic';
+
+// 4-layer guard — never enable in production
+function guardTestAuth(request: NextRequest): NextResponse | null {
+  // LAYER 1: Production hardblock
+  if (process.env.NODE_ENV === 'production' && process.env.VERCEL_ENV === 'production') {
+    return NextResponse.json({ error: 'Test auth not available in production' }, { status: 403 });
+  }
+
+  // LAYER 2: Explicit enable flag
+  if (process.env.ENABLE_TEST_AUTH !== 'true') {
+    return NextResponse.json(
+      { error: 'Test auth disabled — set ENABLE_TEST_AUTH=true' },
+      { status: 403 }
+    );
+  }
+
+  // LAYER 3: Origin / CI check
+  const origin = request.headers.get('origin') || '';
+  const referer = request.headers.get('referer') || '';
+  const host = request.headers.get('host') || '';
+  const isLocalhost =
+    origin.startsWith('http://localhost') ||
+    origin.startsWith('http://127.0.0.1') ||
+    referer.startsWith('http://localhost') ||
+    referer.startsWith('http://127.0.0.1') ||
+    host.startsWith('localhost') ||
+    host.startsWith('127.0.0.1');
+  const isCI = process.env.CI === 'true';
+  if (!isLocalhost && !isCI) {
+    return NextResponse.json({ error: 'Origin not allowed for test auth' }, { status: 403 });
+  }
+
+  // LAYER 4: Required env vars
+  if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    return NextResponse.json({ error: 'Service role key not configured' }, { status: 500 });
+  }
+
+  return null;
+}
+
 const isTestEnabled = () => process.env.ENABLE_TEST_AUTH === 'true';
 
 function adminClient() {
@@ -13,9 +53,8 @@ function adminClient() {
 }
 
 export async function POST(request: NextRequest) {
-  if (!isTestEnabled()) {
-    return NextResponse.json({ error: 'Not available' }, { status: 403 });
-  }
+  const blocked = guardTestAuth(request);
+  if (blocked) return blocked;
 
   const testToken = process.env.TEST_AUTH_TOKEN;
   if (!testToken) {
@@ -114,9 +153,8 @@ export async function POST(request: NextRequest) {
 
 // Delete test users after test run
 export async function DELETE(request: NextRequest) {
-  if (!isTestEnabled()) {
-    return NextResponse.json({ error: 'Not available' }, { status: 403 });
-  }
+  const blocked = guardTestAuth(request);
+  if (blocked) return blocked;
 
   const testToken = process.env.TEST_AUTH_TOKEN;
   const authHeader = request.headers.get('X-Test-Auth-Token');

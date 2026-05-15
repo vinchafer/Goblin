@@ -154,6 +154,17 @@ export async function loginAsTestUser(
   return { email, userId, projectId };
 }
 
+export async function logoutTestUser(page: Page): Promise<void> {
+  const pill = page.locator('[data-testid="user-pill"]');
+  if (await pill.isVisible({ timeout: 2000 }).catch(() => false)) {
+    await pill.click();
+    const logoutBtn = page.locator('button, a').filter({ hasText: /Abmelden|Logout|Sign out/i }).first();
+    await logoutBtn.click().catch(() => {});
+  }
+  await page.context().clearCookies();
+  await page.goto(`${BASE_URL}/`);
+}
+
 // Dismiss FirstRunTour if present
 export async function dismissTour(page: Page): Promise<void> {
   const skipBtn = page.locator('button:has-text("Skip tour"), button:has-text("Skip")').first();
