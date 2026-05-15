@@ -39,6 +39,10 @@ interface AppContextType {
   injectionCount: number;
   showNewProjectModal: boolean;
   setShowNewProjectModal: (show: boolean) => void;
+  showSettingsSheet: boolean;
+  setShowSettingsSheet: (show: boolean) => void;
+  settingsInitialItem: string | null;
+  setSettingsInitialItem: (item: string | null) => void;
   pendingCodePayload: { content: string; filename?: string } | null;
   setPendingCodePayload: (payload: { content: string; filename?: string } | null) => void;
   previewUrl: string | null;
@@ -60,6 +64,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [activeModel, setActiveModel] = useState<AppModel>(DEFAULT_MODEL);
   const [pendingInjections, setPendingInjections] = useState<PendingInjection[]>([]);
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
+  const [showSettingsSheet, setShowSettingsSheet] = useState(false);
+  const [settingsInitialItem, setSettingsInitialItem] = useState<string | null>(null);
   const [pendingCodePayload, setPendingCodePayload] = useState<{ content: string; filename?: string } | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const clearPendingInjections = useCallback(() => setPendingInjections([]), []);
@@ -105,6 +111,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
       injectionCount,
       showNewProjectModal,
       setShowNewProjectModal,
+      showSettingsSheet,
+      setShowSettingsSheet,
+      settingsInitialItem,
+      setSettingsInitialItem,
       pendingCodePayload,
       setPendingCodePayload,
       previewUrl,

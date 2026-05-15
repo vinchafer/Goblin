@@ -339,27 +339,6 @@ export function Header({
                   </div>
                 </div>
               )}
-              {[
-                { label: 'Settings', path: '/dashboard/settings' },
-              ].map(item => (
-                <button
-                  key={item.path}
-                  onClick={() => { router.push(item.path); setMenuOpen(false); }}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    width: '100%', padding: '8px 14px',
-                    background: 'none', border: 'none',
-                    color: 'rgba(255,255,255,0.8)', fontSize: 13,
-                    fontFamily: 'DM Sans, sans-serif', cursor: 'pointer',
-                    textAlign: 'left', transition: 'background 0.1s',
-                  }}
-                  onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
-                  onMouseLeave={e => (e.currentTarget.style.background = 'none')}
-                >
-                  {item.label}
-                </button>
-              ))}
-              <div style={{ height: 1, background: '#2d5229', margin: '4px 8px' }} />
               <button
                 onClick={handleSignOut}
                 style={{

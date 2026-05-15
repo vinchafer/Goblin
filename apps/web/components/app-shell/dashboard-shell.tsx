@@ -8,6 +8,7 @@ import { TrialBanner } from "@/components/app-shell/trial-banner";
 import { CommandPalette, useCommandPalette } from "@/components/ui/CommandPalette";
 import { ShortcutsHelp } from "@/components/ui/ShortcutsHelp";
 import { ShortcutsTooltip } from "@/components/ui/ShortcutsTooltip";
+import { SettingsSheet } from "@/components/settings/settings-sheet";
 import dynamic from "next/dynamic";
 const FirstRunTour = dynamic(() => import("@/components/onboarding/first-run-tour").then(m => m.FirstRunTour), { ssr: false });
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -28,7 +29,7 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
   const [showTour, setShowTour] = useState(false);
   const [cmdPaletteOpen, setCmdPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
-  const { activeTab, setActiveTab, injectionCount, setShowNewProjectModal, previewUrl: contextPreviewUrl } = useApp();
+  const { activeTab, setActiveTab, injectionCount, setShowNewProjectModal, previewUrl: contextPreviewUrl, setShowSettingsSheet } = useApp();
   const pathname = usePathname();
   const router = useRouter();
 
@@ -51,7 +52,7 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
     onTabCode: () => setActiveTab('code'),
     onTabPreview: () => setActiveTab('preview'),
     onToggleSidebar: () => setMobileOpen(s => !s),
-    onSettings: () => router.push('/dashboard/settings'),
+    onSettings: () => setShowSettingsSheet(true),
     onNewProject: () => setShowNewProjectModal(true),
     onShortcutsHelp: () => setShortcutsOpen(true),
     onFocusChat: () => {
@@ -137,6 +138,8 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
       />
 
       <ShortcutsTooltip />
+
+      <SettingsSheet />
     </div>
   );
 }

@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation';
 import { useApp } from '@/contexts/app-context';
 import { createClient } from '@/lib/supabase/client';
 import { apiGet } from '@/lib/api';
-import { Key, CreditCard, Gear } from '@phosphor-icons/react';
+import { Gear } from '@phosphor-icons/react';
 
 interface ChatSession {
   id: string;
@@ -74,7 +74,7 @@ const STORAGE_KEY = 'goblin:sidebar:collapsed';
 export function Sidebar({ projects = [], activeProjectId, userEmail, userName, isOpen = false, onClose }: SidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { setShowNewProjectModal } = useApp();
+  const { setShowNewProjectModal, setShowSettingsSheet } = useApp();
 
   const [collapsed, setCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -309,39 +309,49 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
         {/* ── Recent Chats ── */}
         {!collapsed && <RecentChats pathname={pathname} navigate={navigate} />}
 
-        {/* ── Bottom Nav ── */}
+        {/* ── User Pill (Settings entry-point) ── */}
         <div style={{
-          padding: collapsed ? '8px' : '8px 12px',
+          padding: collapsed ? '8px' : '10px 12px',
           borderTop: '1px solid var(--border)', flexShrink: 0,
-          display: 'flex', flexDirection: 'column', gap: 2,
         }}>
-          {[
-            { label: 'API Keys', path: '/dashboard/settings/keys',    Icon: Key },
-            { label: 'Billing',  path: '/dashboard/settings/billing', Icon: CreditCard },
-            { label: 'Settings', path: '/dashboard/settings',         Icon: Gear },
-          ].map(({ label, path, Icon }) => (
-            <button
-              key={path}
-              onClick={() => navigate(path)}
-              title={collapsed ? label : undefined}
-              style={{
-                width: '100%', background: 'none', border: 'none',
-                padding: collapsed ? '8px 0' : '8px 10px',
-                borderRadius: 7, fontSize: 12,
-                color: 'var(--sidebar-meta)', cursor: 'pointer',
-                display: 'flex', alignItems: 'center',
-                gap: collapsed ? 0 : 8,
-                justifyContent: collapsed ? 'center' : 'flex-start',
-                fontFamily: 'DM Sans, sans-serif',
-                minHeight: 34, transition: 'background 0.1s, color 0.1s',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.05)'; e.currentTarget.style.color = 'var(--text)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--sidebar-meta)'; }}
-            >
-              <Icon size={14} style={{ flexShrink: 0, opacity: 0.7 }} />
-              {!collapsed && label}
-            </button>
-          ))}
+          <button
+            onClick={() => { setShowSettingsSheet(true); onClose?.(); }}
+            data-testid="user-pill-desktop"
+            title={collapsed ? 'Profil & Einstellungen' : undefined}
+            aria-label="Profil & Einstellungen"
+            style={{
+              display: 'flex', alignItems: 'center', gap: collapsed ? 0 : 10,
+              width: '100%',
+              padding: collapsed ? '6px 0' : '8px 10px',
+              borderRadius: collapsed ? 10 : 24,
+              background: 'var(--panel, #fff)',
+              border: '1px solid var(--border)',
+              cursor: 'pointer', minHeight: 40,
+              fontFamily: 'DM Sans, sans-serif',
+              justifyContent: collapsed ? 'center' : 'flex-start',
+              transition: 'background 0.12s',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(45,74,43,0.04)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'var(--panel, #fff)')}
+          >
+            <span style={{
+              width: collapsed ? 32 : 28, height: collapsed ? 32 : 28, borderRadius: '50%',
+              background: 'var(--moss)', color: '#fff',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontWeight: 700, fontSize: 13, flexShrink: 0,
+            }}>{initial}</span>
+            {!collapsed && (
+              <span style={{
+                fontSize: 13, fontWeight: 500, color: 'var(--text)', flex: 1, textAlign: 'left',
+                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+              }}>
+                {displayName}
+              </span>
+            )}
+            {!collapsed && (
+              <Gear size={14} style={{ color: 'var(--text-faint)', flexShrink: 0 }} />
+            )}
+          </button>
         </div>
       </aside>
 
@@ -468,7 +478,7 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
         {/* User pill bottom-left (settings entry, not main-nav) */}
         <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
           <button
-            onClick={() => navigate('/dashboard/settings')}
+            onClick={() => { setShowSettingsSheet(true); onClose?.(); }}
             aria-label="Account & settings"
             data-testid="user-pill"
             style={{
