@@ -15,13 +15,21 @@ chatSessions.get('/', async (c) => {
 
   const { data, error } = await supabase
     .from('chat_sessions')
-    .select('id, title, model_slug, created_at, updated_at, project_id')
+    .select('id, title, model_slug, created_at, updated_at, project_id, projects(id, name)')
     .eq('user_id', userId)
     .order('updated_at', { ascending: false })
     .limit(50);
 
   if (error) return c.json({ error: 'Failed to fetch sessions' }, 500);
-  return c.json(data ?? []);
+
+  // Flatten joined project into project_name field
+  const flat = (data ?? []).map((s: Record<string, unknown>) => {
+    const proj = s.projects as { name?: string } | null;
+    const { projects: _omit, ...rest } = s;
+    void _omit;
+    return { ...rest, project_name: proj?.name ?? null };
+  });
+  return c.json(flat);
 });
 
 // POST /api/chat-sessions — create new session

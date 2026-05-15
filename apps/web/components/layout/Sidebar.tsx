@@ -11,6 +11,8 @@ interface ChatSession {
   id: string;
   title: string | null;
   updated_at: string;
+  project_id?: string | null;
+  project_name?: string | null;
 }
 
 interface Project {
@@ -345,89 +347,81 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
         </div>
       </aside>
 
-      {/* Mobile sidebar (bottom sheet) */}
+      {/* Mobile sidebar — slides from LEFT (Claude/ChatGPT pattern) */}
       <aside
         className="goblin-sidebar-mobile"
         style={{
           position: 'fixed',
-          bottom: 0, left: 0, right: 0,
-          maxHeight: '82dvh',
+          top: 0, bottom: 0, left: 0,
+          width: '85vw', maxWidth: 320,
           background: 'var(--subtle)',
-          borderRadius: '18px 18px 0 0',
-          borderTop: '1px solid var(--border)',
+          borderRight: '1px solid var(--border)',
           display: 'flex', flexDirection: 'column',
           zIndex: 40,
-          transform: isOpen ? 'translateY(0)' : 'translateY(100%)',
+          transform: isOpen ? 'translateX(0)' : 'translateX(-100%)',
           transition: 'transform 0.28s cubic-bezier(0.4,0,0.2,1)',
-          boxShadow: isOpen ? '0 -8px 40px rgba(0,0,0,0.2)' : 'none',
+          boxShadow: isOpen ? '8px 0 40px rgba(0,0,0,0.2)' : 'none',
           overflowY: 'auto',
           overscrollBehavior: 'contain',
           WebkitOverflowScrolling: 'touch',
+          paddingTop: 'env(safe-area-inset-top, 0px)',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         } as React.CSSProperties}
       >
-        {/* Drag handle */}
-        <div
-          onClick={onClose}
-          style={{
-            display: 'flex', justifyContent: 'center',
-            padding: '10px 0 6px', cursor: 'pointer', flexShrink: 0,
-          }}
-        >
-          <div style={{ width: 36, height: 4, borderRadius: 2, background: 'var(--border)' }} />
-        </div>
-
-        {/* Header row */}
+        {/* Header row — logo + close */}
         <div style={{
           display: 'flex', alignItems: 'center',
-          padding: '4px 16px 12px', flexShrink: 0,
+          padding: '24px 20px 16px', flexShrink: 0,
         }}>
           <div
-            onClick={() => navigate('/dashboard')}
+            onClick={() => { navigate('/dashboard'); }}
             style={{
-              fontFamily: 'Fraunces, serif', fontSize: 17,
-              color: 'var(--moss)', fontWeight: 700, letterSpacing: '-0.3px',
+              fontFamily: 'Fraunces, serif', fontSize: 28,
+              color: 'var(--moss)', fontWeight: 400, letterSpacing: '-0.5px',
               cursor: 'pointer', userSelect: 'none',
             }}
           >
-            Goblin<span style={{ opacity: 0.45 }}>.</span>
+            Goblin
           </div>
           <div style={{ flex: 1 }} />
-          <button onClick={onClose} style={{
-            background: 'none', border: 'none', fontSize: 20,
+          <button onClick={onClose} aria-label="Close sidebar" style={{
+            background: 'rgba(0,0,0,0.04)', border: 'none', fontSize: 18,
             color: '#8C857A', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            width: 32, height: 32, borderRadius: 6,
+            width: 36, height: 36, borderRadius: 18,
             WebkitTapHighlightColor: 'transparent',
           } as React.CSSProperties}>×</button>
         </div>
 
         {/* New Project */}
-        <div style={{ padding: '10px 12px', flexShrink: 0 }}>
+        <div style={{ padding: '4px 16px 12px', flexShrink: 0 }}>
           <button
             onClick={() => { setShowNewProjectModal(true); onClose?.(); }}
             style={{
               width: '100%', background: 'var(--moss)', color: '#fff',
-              border: 'none', borderRadius: 8, padding: '9px 12px',
-              fontSize: 13, fontWeight: 500, cursor: 'pointer',
-              display: 'flex', alignItems: 'center', gap: 7,
-              fontFamily: 'DM Sans, sans-serif', transition: 'background 0.15s', minHeight: 36,
+              border: 'none', borderRadius: 10, padding: '12px 16px',
+              fontSize: 15, fontWeight: 500, cursor: 'pointer',
+              display: 'flex', alignItems: 'center', gap: 10,
+              fontFamily: 'DM Sans, sans-serif', minHeight: 44,
             }}
-            onMouseEnter={e => (e.currentTarget.style.background = '#3A5A37')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'var(--moss)')}
           >
-            <span style={{ fontSize: 16, lineHeight: 1 }}>＋</span>
+            <span style={{ fontSize: 18, lineHeight: 1 }}>＋</span>
             New Project
           </button>
         </div>
 
         {/* Projects */}
-        <div style={{ flex: 1, overflowY: 'auto' }}>
+        <div style={{ flexShrink: 0 }}>
           <div style={{
-            padding: '4px 16px 6px', fontSize: 10, fontWeight: 600,
+            padding: '12px 20px 8px', fontSize: 11, fontWeight: 600,
             letterSpacing: '1.2px', textTransform: 'uppercase', color: 'var(--text-faint)',
           }}>Projects</div>
-          <div style={{ padding: '0 8px 8px' }}>
-            {projects.map((p, i) => {
+          <div style={{ padding: '0 12px 8px' }}>
+            {projects.length === 0 ? (
+              <div style={{ padding: '8px 12px', fontSize: 13, color: 'var(--text-faint)', fontStyle: 'italic', fontFamily: 'DM Sans, sans-serif' }}>
+                No projects yet
+              </div>
+            ) : projects.map((p, i) => {
               const active = activeProjectId === p.id;
               const dotColor = p.color ?? PROJECT_COLORS[i % PROJECT_COLORS.length]!;
               return (
@@ -435,22 +429,20 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
                   key={p.id}
                   onClick={() => navigate(`/dashboard/project/${p.id}`)}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    padding: '7px 8px', borderRadius: 7, cursor: 'pointer', marginBottom: 1,
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '10px 12px', borderRadius: 8, cursor: 'pointer', marginBottom: 2,
                     background: active ? 'rgba(212,169,74,0.13)' : 'transparent',
-                    border: active ? '1px solid rgba(212,169,74,0.25)' : '1px solid transparent',
+                    minHeight: 44,
                   }}
-                  onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0.05)'; }}
-                  onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                 >
-                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: dotColor, flexShrink: 0 }} />
+                  <div style={{ width: 10, height: 10, borderRadius: '50%', background: dotColor, flexShrink: 0 }} />
                   <span style={{
-                    fontSize: 13, fontWeight: active ? 600 : 400,
+                    fontSize: 15, fontWeight: active ? 600 : 400,
                     color: active ? 'var(--moss)' : 'var(--text)',
                     flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                     fontFamily: 'DM Sans, sans-serif',
                   }}>{p.name}</span>
-                  <span style={{ fontSize: 10, color: 'var(--text-faint)', flexShrink: 0 }}>
+                  <span style={{ fontSize: 11, color: 'var(--text-faint)', flexShrink: 0 }}>
                     {timeAgo(p.updated_at ?? p.last_active)}
                   </span>
                 </div>
@@ -459,33 +451,37 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
           </div>
         </div>
 
-        {/* Recent Chats mobile */}
-        <RecentChats pathname={pathname} navigate={navigate} />
+        {/* Recent Chats */}
+        <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+          <RecentChats pathname={pathname} navigate={navigate} />
+        </div>
 
-        {/* Bottom nav mobile */}
-        <div style={{ padding: '8px 12px', borderTop: '1px solid var(--border)', flexShrink: 0, display: 'flex', gap: 8 }}>
-          {[
-            { label: 'API Keys', path: '/dashboard/settings/keys',    Icon: Key },
-            { label: 'Billing',  path: '/dashboard/settings/billing', Icon: CreditCard },
-            { label: 'Settings', path: '/dashboard/settings',         Icon: Gear },
-          ].map(({ label, path, Icon }) => (
-            <button
-              key={path}
-              onClick={() => navigate(path)}
-              style={{
-                flex: 1, background: 'none', border: 'none',
-                padding: '8px', borderRadius: 7, fontSize: 12,
-                color: '#6B6560', cursor: 'pointer',
-                fontFamily: 'DM Sans, sans-serif', minHeight: 36, transition: 'background 0.1s',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
-              }}
-              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.05)')}
-              onMouseLeave={e => (e.currentTarget.style.background = 'none')}
-            >
-              <Icon size={14} />
-              {label}
-            </button>
-          ))}
+        {/* User pill bottom-left (settings entry, not main-nav) */}
+        <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
+          <button
+            onClick={() => navigate('/dashboard/settings')}
+            aria-label="Account & settings"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              width: '100%',
+              padding: '8px 10px', borderRadius: 24,
+              background: 'var(--panel, #fff)',
+              border: '1px solid var(--border)',
+              cursor: 'pointer', minHeight: 44,
+              fontFamily: 'DM Sans, sans-serif',
+            }}
+          >
+            <span style={{
+              width: 32, height: 32, borderRadius: '50%',
+              background: 'var(--moss)', color: '#fff',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontWeight: 700, fontSize: 14, flexShrink: 0,
+            }}>{initial}</span>
+            <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)', flex: 1, textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {displayName}
+            </span>
+            <Gear size={16} style={{ color: 'var(--text-faint)', flexShrink: 0 }} />
+          </button>
         </div>
       </aside>
 
@@ -590,13 +586,26 @@ function RecentChats({ pathname, navigate }: { pathname: string; navigate: (path
                   onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0.04)'; }}
                   onMouseLeave={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
                 >
-                  <span style={{
-                    fontSize: 12, color: active ? 'var(--moss)' : 'var(--text)',
-                    flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                    fontFamily: 'DM Sans, sans-serif', fontWeight: active ? 600 : 400,
-                  }}>
-                    {s.title || 'New chat'}
-                  </span>
+                  <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <span style={{
+                      fontSize: 12, color: active ? 'var(--moss)' : 'var(--text)',
+                      overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      fontFamily: 'DM Sans, sans-serif', fontWeight: active ? 600 : 400,
+                    }}>
+                      {s.title || 'New chat'}
+                    </span>
+                    {s.project_name && (
+                      <span style={{
+                        fontSize: 10, color: 'var(--text-faint)',
+                        background: 'rgba(0,0,0,0.05)', padding: '1px 6px',
+                        borderRadius: 5, alignSelf: 'flex-start',
+                        fontFamily: 'DM Sans, sans-serif', maxWidth: '100%',
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      }}>
+                        📁 {s.project_name}
+                      </span>
+                    )}
+                  </div>
                   <span style={{ fontSize: 10, color: 'var(--text-faint)', flexShrink: 0 }}>
                     {timeAgoShort(s.updated_at)}
                   </span>
