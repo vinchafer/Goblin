@@ -209,6 +209,7 @@ export function Header({
                 { label: 'API Keys', path: '/dashboard/settings/keys' },
                 { label: 'Billing',  path: '/dashboard/settings/billing' },
                 { label: 'Settings', path: '/dashboard/settings' },
+                { label: 'Help & Support', path: '/help' },
               ].map(item => (
                 <button
                   key={item.path}

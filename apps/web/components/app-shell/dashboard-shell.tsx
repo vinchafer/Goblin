@@ -5,7 +5,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { TrialBanner } from "@/components/app-shell/trial-banner";
-import { SupportBubble } from "@/components/support/support-bubble";
 import { CommandPalette, useCommandPalette } from "@/components/ui/CommandPalette";
 import { ShortcutsHelp } from "@/components/ui/ShortcutsHelp";
 import { ShortcutsTooltip } from "@/components/ui/ShortcutsTooltip";
@@ -138,7 +137,6 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
       />
 
       <ShortcutsTooltip />
-      <SupportBubble />
     </div>
   );
 }
