@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useApp } from '@/contexts/app-context';
@@ -97,29 +97,37 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const supabase = createClient();
-        const { data: { session } } = await supabase.auth.getSession();
-        const token = session?.access_token;
-        if (!token) { router.push('/login'); return; }
+  const loadProjects = useCallback(async () => {
+    try {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) { router.push('/login'); return; }
 
-        const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
-        const res = await fetch(`${apiBase}/api/projects`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
+      const res = await fetch(`${apiBase}/api/projects`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-        if (!res.ok) throw new Error('Failed to load projects');
-        setProjects(await res.json());
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Something went wrong');
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
+      if (!res.ok) throw new Error('Failed to load projects');
+      setProjects(await res.json());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
   }, [router]);
+
+  useEffect(() => { loadProjects(); }, [loadProjects]);
+
+  // Refresh when modal closes (covers create-then-back-navigate)
+  const prevModalOpen = useRef(false);
+  useEffect(() => {
+    if (prevModalOpen.current && !showNewProjectModal) {
+      loadProjects();
+    }
+    prevModalOpen.current = showNewProjectModal;
+  }, [showNewProjectModal, loadProjects]);
 
   return (
     <div style={{ height: '100%', background: 'var(--cream)', overflowY: 'auto' }}>

@@ -140,8 +140,22 @@ function resolveFreeApi(): (FreePoolEntry & { provider: ProviderName }) | null {
   return null;
 }
 
+// Goblin-internal tier-tagged slugs → LiteLLM-native model identifier
+// "free/" prefix is tier metadata, not a provider — strip and map to real provider model
+const FREE_SLUG_TO_LITELLM: Record<string, { provider: ProviderName; litellm: string }> = {
+  'free/gemini-flash':    { provider: 'google',  litellm: 'gemini/gemini-1.5-flash' },
+  'free/groq-llama':      { provider: 'groq',    litellm: 'groq/llama-3.3-70b-versatile' },
+  'free/openrouter-free': { provider: 'openrouter', litellm: 'openrouter/meta-llama/llama-3.3-70b-instruct:free' },
+};
+
+function resolveFreeSlug(slug: string): { provider: ProviderName; litellm: string } | undefined {
+  return FREE_SLUG_TO_LITELLM[slug];
+}
+
 // Map modelSlug prefix to provider
 function slugToProvider(slug: string): ProviderName | undefined {
+  const free = resolveFreeSlug(slug);
+  if (free) return free.provider;
   const prefix = slug.split('/')[0];
   if (!prefix) return undefined;
   const providerMap: Record<string, ProviderName> = {
@@ -155,9 +169,14 @@ function slugToProvider(slug: string): ProviderName | undefined {
 
 // Extract the actual model ID from a slug (strip provider prefix)
 function slugToModelId(slug: string): string {
+  const free = resolveFreeSlug(slug);
+  if (free) {
+    // strip provider prefix from litellm slug: 'gemini/gemini-1.5-flash' → 'gemini-1.5-flash'
+    const parts = free.litellm.split('/');
+    return parts.slice(1).join('/');
+  }
   const parts = slug.split('/');
   if (parts.length <= 1) return slug;
-  // together_ai/meta-llama/... → meta-llama/...
   if (parts[0] === 'together_ai' || parts[0] === 'fireworks_ai') {
     return parts.slice(1).join('/');
   }
@@ -187,6 +206,9 @@ export async function resolveModel(
     const defaultModel = providerCfg?.models[0]?.id ?? 'gpt-4o';
     const resolvedModel = modelId ?? defaultModel;
     const slug = preferredModel ?? `${byok.provider}/${resolvedModel}`;
+    // free/ slugs are Goblin-internal tier tags — translate to real provider/model for LiteLLM
+    const free = preferredModel ? resolveFreeSlug(preferredModel) : undefined;
+    const litellmModel = free?.litellm ?? slug;
     return {
       layer: 'byok',
       provider: byok.provider,
@@ -194,7 +216,7 @@ export async function resolveModel(
       baseURL,
       model: resolvedModel,
       modelSlug: slug,
-      litellmModel: slug, // provider/model format, LiteLLM routes natively
+      litellmModel,
     };
   }
 
