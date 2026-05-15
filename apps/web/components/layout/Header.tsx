@@ -83,6 +83,7 @@ export function Header({
         onClick={onMenuToggle}
         className="goblin-hamburger"
         aria-label="Open menu"
+        data-testid="mobile-hamburger"
         style={{
           background: 'none', border: 'none',
           color: 'rgba(255,255,255,0.65)', fontSize: 18,
@@ -166,6 +167,8 @@ export function Header({
       <div style={{ position: 'relative', flexShrink: 0 }}>
         <button
           onClick={() => setMenuOpen(p => !p)}
+          data-testid="avatar-button"
+          aria-label="Open account menu"
           style={{
             width: 32, height: 32, borderRadius: '50%',
             background: 'var(--ochre-dark)', border: 'none',

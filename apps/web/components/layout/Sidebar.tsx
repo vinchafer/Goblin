@@ -350,6 +350,7 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
       {/* Mobile sidebar — slides from LEFT (Claude/ChatGPT pattern) */}
       <aside
         className="goblin-sidebar-mobile"
+        data-testid="mobile-sidebar"
         style={{
           position: 'fixed',
           top: 0, bottom: 0, left: 0,
@@ -397,6 +398,7 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
         <div style={{ padding: '4px 16px 12px', flexShrink: 0 }}>
           <button
             onClick={() => { setShowNewProjectModal(true); onClose?.(); }}
+            data-testid="sidebar-new-project"
             style={{
               width: '100%', background: 'var(--moss)', color: '#fff',
               border: 'none', borderRadius: 10, padding: '12px 16px',
@@ -461,6 +463,7 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
           <button
             onClick={() => navigate('/dashboard/settings')}
             aria-label="Account & settings"
+            data-testid="user-pill"
             style={{
               display: 'flex', alignItems: 'center', gap: 10,
               width: '100%',

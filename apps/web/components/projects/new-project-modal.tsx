@@ -187,6 +187,7 @@ export function NewProjectModal({ onClose, initialMode }: NewProjectModalProps) 
                 <input
                   type="text" value={name} onChange={e => setName(e.target.value.slice(0, 50))}
                   placeholder="My Awesome Project" required maxLength={50} autoFocus
+                  data-testid="project-name-input"
                   style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 14, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: 'var(--surface)', color: 'var(--text)', boxSizing: 'border-box' }}
                   onFocus={e => (e.target.style.borderColor = 'var(--moss)')}
                   onBlur={e => (e.target.style.borderColor = 'var(--border)')}
@@ -220,6 +221,7 @@ export function NewProjectModal({ onClose, initialMode }: NewProjectModalProps) 
               {error && <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(184,92,60,0.1)', color: 'var(--danger)', fontSize: 13, marginBottom: 16 }}>{error}</div>}
 
               <button type="submit" disabled={!name.trim() || loading}
+                data-testid="project-create-submit"
                 style={{ width: '100%', padding: '12px 20px', borderRadius: 10, background: 'var(--moss)', color: 'var(--ochre)', border: 'none', fontSize: 15, fontWeight: 600, cursor: loading ? 'wait' : 'pointer', fontFamily: 'DM Sans, sans-serif', opacity: !name.trim() ? 0.5 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                 {loading ? <Spinner /> : 'Create project →'}
               </button>
