@@ -4,7 +4,7 @@ import { TheProblem } from '@/components/landing/the-problem';
 import { HowItWorks } from '@/components/landing/how-it-works';
 import { SendToCodeDemo } from '@/components/landing/send-to-code-demo';
 import { IslandFlow } from '@/components/landing/island-flow';
-import { PricingSection } from '@/components/landing/pricing-section';
+import { GeoPricingSection } from '@/components/billing/geo-pricing-section';
 import { LandingFaq } from '@/components/landing/faq';
 import { Footer } from '@/components/landing/footer';
 
@@ -17,7 +17,7 @@ export default function Home() {
       <HowItWorks />
       <SendToCodeDemo />
       <IslandFlow />
-      <PricingSection />
+      <GeoPricingSection />
       <LandingFaq />
       <Footer />
     </div>
