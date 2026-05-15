@@ -25,9 +25,15 @@ jobs:
           CI: true
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co' }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder' }}
+          NEXT_PUBLIC_API_URL: http://localhost:3001
           TEST_ACCOUNT_EMAIL: ${{ secrets.TEST_ACCOUNT_EMAIL }}
           TEST_ACCOUNT_PASSWORD: ${{ secrets.TEST_ACCOUNT_PASSWORD }}
+          # API backend env (required by apps/api startup validation)
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ENCRYPTION_KEY: ${{ secrets.ENCRYPTION_KEY || 'ci-test-encryption-key-not-for-prod' }}
+          STRIPE_PRICE_BUILD_TIER1: ${{ secrets.STRIPE_PRICE_BUILD_TIER1 || 'price_ci_stub_build' }}
+          STRIPE_PRICE_PRO_TIER1: ${{ secrets.STRIPE_PRICE_PRO_TIER1 || 'price_ci_stub_pro' }}
+          STRIPE_PRICE_POWER_TIER1: ${{ secrets.STRIPE_PRICE_POWER_TIER1 || 'price_ci_stub_power' }}
       - uses: actions/upload-artifact@v4
         if: always()
         with:

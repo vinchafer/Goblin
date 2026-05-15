@@ -28,13 +28,23 @@ export default defineConfig({
       use: { ...devices['Pixel 7'] },
     },
   ],
-  // Only start dev server for local runs
+  // Only start dev servers for local runs
   ...(!isProd && {
-    webServer: {
-      command: 'cd apps/web && pnpm dev',
-      url: 'http://localhost:3000',
-      reuseExistingServer: true,
-      timeout: 120000,
-    },
+    webServer: [
+      {
+        command: 'pnpm --filter @goblin/api dev',
+        url: 'http://localhost:3001/health',
+        reuseExistingServer: !process.env.CI,
+        timeout: 60000,
+        stdout: 'pipe',
+        stderr: 'pipe',
+      },
+      {
+        command: 'cd apps/web && pnpm dev',
+        url: 'http://localhost:3000',
+        reuseExistingServer: !process.env.CI,
+        timeout: 120000,
+      },
+    ],
   }),
 });
