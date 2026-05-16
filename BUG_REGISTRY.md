@@ -131,3 +131,19 @@ None found — all main paths functional.
 - Mobile: no horizontal overflow, settings usable ✅
 - Landing page: loads, pricing visible, footer links ✅
 - Login page: OAuth buttons ("Continue with Google/GitHub/Apple") ✅
+
+---
+
+## Session 9B — Features Implemented (2026-05-15)
+
+- [FEAT-026] Sentry edge config + Next.js withSentryConfig wrapper (fallback when no auth token)
+- [FEAT-027] `lib/heartbeat.ts` Better-Stack ping (reused `/health/deep` for dependency status)
+- [FEAT-028] `completion_costs` table + `trackCompletion` hook in both streaming paths (LiteLLM + direct SDK)
+- [FEAT-029] `/api/admin/cost-summary` + `/admin/costs` page (30-day per-provider aggregate)
+- [FEAT-030] Eval framework: `eval_tasks` + `eval_results` schema, 5 seed tasks, 4 providers (Anthropic Sonnet 4.6, OpenAI gpt-4o-mini, Gemini 2.5 Flash, Groq Llama 3.3)
+- [FEAT-031] Daily eval cron 04:00 UTC + manual trigger `POST /api/internal/eval/run` + `pnpm eval:run`
+- [FEAT-032] `/api/admin/evals/latest` + `/api/admin/evals/trends` + `/admin/evals` dashboard
+- [FEAT-033] `docs/OPERATIONS_RUNBOOK.md`
+
+## Session 9B — E2E Added
+- `32-foundation-ops.spec.ts`, `33-health-deep.spec.ts`, `34-admin-costs.spec.ts`, `35-admin-evals.spec.ts`

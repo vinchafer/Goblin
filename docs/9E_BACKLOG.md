@@ -66,6 +66,33 @@
 - static.spec.ts /status page contains "Status" — pre-existing flaky (passes
   on retry typically). Not 9D scope.
 
+## Deferred from 9B (2026-05-15)
+
+### Eval-Framework
+- Real TS-compile check (currently substring scoring only)
+- UI to add/edit/disable eval tasks (currently SQL-only)
+- Regression alerts vs historical baseline
+- More tasks: SQL gen, refactoring, multi-step debugging
+- Weighted scoring (compile > keyword match)
+- A/B between provider model tiers (Opus vs Sonnet, GPT-5 vs gpt-4o-mini)
+- Route eval-calls through LiteLLM for parity with prod
+
+### Operations
+- Slack/Email alert webhook from Sentry
+- Better-Stack alert routing to Vincent SMS
+- Cost-Dashboard spend trend chart
+- Cost-Dashboard per-user leaderboard
+- Cost-Dashboard threshold alert (e.g. > $50/mo)
+- Backup-restore drill (quarterly) — script + runbook
+- API per-user rate-limiting
+
+### DD V2 (Stream C — pending Opus session)
+- DD V2 doc update with 9D + 9B status
+- Risk-mitigation rewrites (deployment, BYOK security, scale-out)
+- Pricing-story refresh (3-Tier with Floor $3)
+- Architecture-diagram refresh
+- Reviewable PDF export
+
 ## Already known (pre-9D)
 - Supabase Custom Domain `auth.justgoblin.com`
 - Stripe Tax activation
