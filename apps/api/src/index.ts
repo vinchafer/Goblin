@@ -73,6 +73,8 @@ import { onboarding } from './routes/onboarding';
 import { onboardingAgent } from './routes/onboarding-agent';
 import { support } from './routes/support';
 import { secrets } from './routes/secrets';
+import { internalEval } from './routes/internal-eval';
+import { startCron } from './lib/cron';
 
 const app = new Hono();
 
@@ -181,6 +183,10 @@ app.route('/api/onboarding', onboarding);
 app.route('/api/onboarding-agent', onboardingAgent);
 app.route('/api/support', support);
 app.route('/api/projects', secrets);
+app.route('/api/internal/eval', internalEval);
+
+// 9B-5 — daily eval suite at 04:00 UTC (production only)
+startCron();
 
 // uncaughtException is truly unrecoverable — exit and let the process manager restart.
 process.on('uncaughtException', (err) => {
