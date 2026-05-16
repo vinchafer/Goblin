@@ -7,6 +7,7 @@ import { getSupabaseAdmin } from '../lib/supabase';
 import { PROVIDERS, PROVIDER_BASE_URLS, type ProviderId } from '../config/providers';
 import { GoblinError, isGoblinError, litellmStream } from './litellm-client';
 import { formatTokenDisplay } from '../config/pricing';
+import { trackCompletion } from '../lib/track-completion';
 
 export type { GoblinError };
 export { isGoblinError };
@@ -321,6 +322,14 @@ export async function* streamCompletion({
       if (agentRun) {
         await sb.from('agent_runs').update({ status: 'success', input_tokens: inputTokens, output_tokens: outputTokens, completed_at: new Date().toISOString() }).eq('id', agentRun.id);
       }
+      await trackCompletion({
+        userId,
+        provider: route.provider,
+        model: route.model,
+        sourceTier: route.layer,
+        tokensIn: inputTokens,
+        tokensOut: outputTokens,
+      });
       yield JSON.stringify({ type: 'done', input_tokens: inputTokens, output_tokens: outputTokens, token_display: tokenDisplay, source_tier: route.layer, model_used: route.model });
       return;
     } catch (err) {
@@ -367,6 +376,14 @@ export async function* streamCompletion({
     if (agentRun) {
       await sb.from('agent_runs').update({ status: 'success', input_tokens: inputTokens, output_tokens: outputTokens, completed_at: new Date().toISOString() }).eq('id', agentRun.id);
     }
+    await trackCompletion({
+      userId,
+      provider: route.provider,
+      model: route.model,
+      sourceTier: route.layer,
+      tokensIn: inputTokens,
+      tokensOut: outputTokens,
+    });
     yield JSON.stringify({ type: 'done', input_tokens: inputTokens, output_tokens: outputTokens, token_display: tokenDisplay, source_tier: route.layer, model_used: route.model });
   } catch (err: unknown) {
     if (agentRun) {

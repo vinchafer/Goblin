@@ -378,6 +378,106 @@ admin.delete('/incidents/:id', async (c) => {
 
 // ─── Health (kept from original) ─────────────────────────────────────────────
 
+// ─── 9B-2 Cost summary ────────────────────────────────────────────────────────
+
+admin.get('/cost-summary', async (c) => {
+  const supabase = getSupabaseAdmin();
+  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const { data, error } = await supabase
+    .from('completion_costs')
+    .select('provider, model, cost_usd, tokens_in, tokens_out, created_at')
+    .gte('created_at', since)
+    .order('created_at', { ascending: false })
+    .limit(10000);
+
+  if (error) return c.json({ error: error.message }, 500);
+
+  const byProvider = new Map<string, { cost: number; tokens: number; completions: number }>();
+  let totalCost = 0;
+  let totalCompletions = 0;
+
+  for (const row of data ?? []) {
+    const entry = byProvider.get(row.provider) ?? { cost: 0, tokens: 0, completions: 0 };
+    entry.cost += Number(row.cost_usd);
+    entry.tokens += Number(row.tokens_in) + Number(row.tokens_out);
+    entry.completions += 1;
+    byProvider.set(row.provider, entry);
+    totalCost += Number(row.cost_usd);
+    totalCompletions += 1;
+  }
+
+  return c.json({
+    period: '30d',
+    total_cost_usd: Number(totalCost.toFixed(4)),
+    total_completions: totalCompletions,
+    by_provider: Array.from(byProvider.entries()).map(([provider, stats]) => ({
+      provider,
+      cost_usd: Number(stats.cost.toFixed(4)),
+      tokens: stats.tokens,
+      completions: stats.completions,
+    })),
+  });
+});
+
+// ─── 9B-6 Eval results ────────────────────────────────────────────────────────
+
+admin.get('/evals/latest', async (c) => {
+  const sb = getSupabaseAdmin();
+  const { data: latest } = await sb
+    .from('eval_results')
+    .select('run_id, created_at')
+    .order('created_at', { ascending: false })
+    .limit(1);
+
+  if (!latest || latest.length === 0) {
+    return c.json({ run_id: null, timestamp: null, results: [] });
+  }
+
+  const runId = latest[0]!.run_id;
+  const { data: results, error } = await sb
+    .from('eval_results')
+    .select('*')
+    .eq('run_id', runId);
+
+  if (error) return c.json({ error: error.message }, 500);
+
+  return c.json({ run_id: runId, timestamp: latest[0]!.created_at, results: results ?? [] });
+});
+
+admin.get('/evals/trends', async (c) => {
+  const sb = getSupabaseAdmin();
+  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const { data, error } = await sb
+    .from('eval_results')
+    .select('provider, model, score, created_at')
+    .gte('created_at', since)
+    .order('created_at', { ascending: true });
+
+  if (error) return c.json({ error: error.message }, 500);
+
+  const buckets = new Map<string, Map<string, { sum: number; count: number }>>();
+  for (const row of data ?? []) {
+    const day = (row.created_at as string).slice(0, 10);
+    if (!buckets.has(day)) buckets.set(day, new Map());
+    const inner = buckets.get(day)!;
+    const entry = inner.get(row.provider) ?? { sum: 0, count: 0 };
+    entry.sum += Number(row.score ?? 0);
+    entry.count += 1;
+    inner.set(row.provider, entry);
+  }
+
+  const trends = Array.from(buckets.entries()).flatMap(([day, providers]) =>
+    Array.from(providers.entries()).map(([provider, stats]) => ({
+      day,
+      provider,
+      avg_score: Number((stats.sum / stats.count).toFixed(3)),
+      runs: stats.count,
+    }))
+  );
+
+  return c.json({ period: '30d', trends });
+});
+
 admin.get('/health', async (c) => {
   const supabase = getSupabaseAdmin();
 
