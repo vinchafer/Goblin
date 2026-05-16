@@ -54,6 +54,18 @@
 ## Reference Screenshots
 - Comparison-Doc um konkrete Screenshot-Verweise erweitern: `docs/Reference Screenshots/Mobile/Claude/X.jpeg`
 
+## CI / E2E
+- Re-enable 29-empty-and-context.spec.ts in CI subset (currently @local-only).
+  NewChatPage POST /api/chat-sessions returns 401/500 intermittently in CI
+  for the real test account, causing fallback to /dashboard. Need either:
+  (a) seed a chat session for real test account before run, or
+  (b) fix auth middleware so test-account magic-link cookies authenticate
+  the API call reliably, or
+  (c) test composer-plus via project workspace chat-tab instead of standalone
+  /dashboard/chat (different mount path).
+- static.spec.ts /status page contains "Status" — pre-existing flaky (passes
+  on retry typically). Not 9D scope.
+
 ## Already known (pre-9D)
 - Supabase Custom Domain `auth.justgoblin.com`
 - Stripe Tax activation
