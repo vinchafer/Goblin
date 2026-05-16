@@ -1,25 +1,20 @@
 import { test, expect } from '@playwright/test';
 import { loginAsRealTestUser, dismissTour } from './helpers/auth';
 
-async function openSettingsSheet(page: import('@playwright/test').Page, isMobile: boolean) {
-  await page.goto('/dashboard');
+async function openSettingsSheet(page: import('@playwright/test').Page) {
   await page.waitForLoadState('networkidle');
   await dismissTour(page);
-  // Mobile sidebar is closed by default — open via hamburger first
-  if (isMobile) {
-    await page.click('[data-testid="mobile-hamburger"]');
-    await page.waitForTimeout(300);
-    await page.click('[data-testid="user-pill"]');
-  } else {
-    await page.click('[data-testid="user-pill-desktop"]');
-  }
+  // header-avatar is uniform path on both viewports (mobile + desktop)
+  await page.locator('[data-testid="header-avatar"]').waitFor({ state: 'visible', timeout: 10000 });
+  await page.click('[data-testid="header-avatar"]');
+  await page.click('[data-testid="avatar-menu-settings"]');
   await expect(page.locator('[data-testid="settings-sheet"]')).toBeVisible({ timeout: 5000 });
 }
 
 test.describe('@auth 9D-1 Settings Structure', () => {
-  test('Settings Sheet — Profile-Card + 5 Groups visible', async ({ page, isMobile }) => {
+  test('Settings Sheet — Profile-Card + 5 Groups visible', async ({ page }) => {
     await loginAsRealTestUser(page);
-    await openSettingsSheet(page, !!isMobile);
+    await openSettingsSheet(page);
 
     await expect(page.locator('[data-testid="profile-card"]')).toBeVisible();
 
@@ -34,9 +29,9 @@ test.describe('@auth 9D-1 Settings Structure', () => {
     await expect(page.locator('[data-testid="row-signout"]')).toBeVisible();
   });
 
-  test('Profile: edit name, save, persists across reload', async ({ page, isMobile }) => {
+  test('Profile: edit name, save, persists across reload', async ({ page }) => {
     await loginAsRealTestUser(page);
-    await openSettingsSheet(page, !!isMobile);
+    await openSettingsSheet(page);
     await page.click('[data-testid="profile-card"]');
     const input = page.locator('[data-testid="form-name"] input');
     await expect(input).toBeVisible();
@@ -45,14 +40,14 @@ test.describe('@auth 9D-1 Settings Structure', () => {
     await page.click('[data-testid="profile-save"]');
     await page.waitForTimeout(1000);
     await page.reload();
-    await openSettingsSheet(page, !!isMobile);
+    await openSettingsSheet(page);
     await page.click('[data-testid="profile-card"]');
     await expect(page.locator('[data-testid="form-name"] input')).toHaveValue(newName);
   });
 
-  test('Stack-Navigation: open Funktionen, back returns to root', async ({ page, isMobile }) => {
+  test('Stack-Navigation: open Funktionen, back returns to root', async ({ page }) => {
     await loginAsRealTestUser(page);
-    await openSettingsSheet(page, !!isMobile);
+    await openSettingsSheet(page);
     await page.click('[data-testid="row-funktionen"]');
     await expect(page.locator('text=Funktionen').first()).toBeVisible();
     await page.click('[aria-label="Zurück"]');
