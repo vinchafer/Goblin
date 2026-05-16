@@ -1,13 +1,24 @@
 import { test, expect } from '@playwright/test';
-import { loginAsRealTestUser } from './helpers/auth';
+import { loginAsRealTestUser, dismissTour } from './helpers/auth';
+
+async function openFunktionen(page: import('@playwright/test').Page, isMobile: boolean) {
+  await page.goto('/dashboard');
+  await page.waitForLoadState('networkidle');
+  await dismissTour(page);
+  if (isMobile) {
+    await page.click('[data-testid="mobile-hamburger"]');
+    await page.waitForTimeout(300);
+    await page.click('[data-testid="user-pill"]');
+  } else {
+    await page.click('[data-testid="user-pill-desktop"]');
+  }
+  await page.click('[data-testid="row-funktionen"]');
+}
 
 test.describe('@auth 9D-3 IOSToggle', () => {
-  test('Feature toggle persists across reload', async ({ page }) => {
-    await page.setViewportSize({ width: 375, height: 812 });
+  test('Feature toggle persists across reload', async ({ page, isMobile }) => {
     await loginAsRealTestUser(page);
-    await page.goto('/dashboard');
-    await page.click('button:has-text("Einstellungen"), [aria-label*="Einstellungen" i]');
-    await page.click('[data-testid="row-funktionen"]');
+    await openFunktionen(page, !!isMobile);
 
     const toggle = page.locator('[data-testid="toggle-memory"]');
     await expect(toggle).toBeVisible();
@@ -17,23 +28,20 @@ test.describe('@auth 9D-3 IOSToggle', () => {
     await expect(toggle).toHaveAttribute('aria-checked', after);
 
     await page.reload();
-    await page.click('button:has-text("Einstellungen"), [aria-label*="Einstellungen" i]');
-    await page.click('[data-testid="row-funktionen"]');
+    await openFunktionen(page, !!isMobile);
     await expect(page.locator('[data-testid="toggle-memory"]')).toHaveAttribute('aria-checked', after);
   });
 
-  test('Toggle uses moss-green background when on', async ({ page }) => {
-    await page.setViewportSize({ width: 375, height: 812 });
+  test('Toggle uses moss background when on', async ({ page, isMobile }) => {
     await loginAsRealTestUser(page);
-    await page.goto('/dashboard');
-    await page.click('button:has-text("Einstellungen"), [aria-label*="Einstellungen" i]');
-    await page.click('[data-testid="row-funktionen"]');
+    await openFunktionen(page, !!isMobile);
 
     const toggle = page.locator('[data-testid="toggle-web_search"]');
+    await expect(toggle).toBeVisible();
     const checked = await toggle.getAttribute('aria-checked');
     if (checked !== 'true') await toggle.click();
     const bg = await toggle.evaluate((el) => getComputedStyle(el).backgroundColor);
-    // moss = #2D4A2B = rgb(45, 74, 43)
-    expect(bg).toMatch(/rgb\(45,\s*74,\s*43\)/);
+    // moss light = rgb(45,74,43), dark = rgb(58,94,56). Either is correct.
+    expect(bg).toMatch(/rgb\((45|58),\s*(74|94),\s*(43|56)\)/);
   });
 });
