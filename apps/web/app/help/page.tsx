@@ -22,10 +22,6 @@ const FAQS: Faq[] = [
     a: 'Anthropic (Claude), OpenAI (GPT), Google (Gemini), Groq, OpenRouter, Mistral und weitere. Du kannst pro Projekt Modelle wählen.',
   },
   {
-    q: 'Wie funktioniert das Geo-Pricing?',
-    a: 'Plans (Build $9 / Pro $19 / Power $39) sind regional gestaffelt. Latam und Osteuropa zahlen weniger, Indien und Subsahara-Afrika nochmal weniger. Region wird automatisch erkannt; manuell umschaltbar.',
-  },
-  {
     q: 'Kann ich jederzeit kündigen?',
     a: 'Ja. In den Billing-Einstellungen → Stripe-Customer-Portal. Sub läuft bis zum Periodenende, dann beendet — kein Auto-Renew danach.',
   },

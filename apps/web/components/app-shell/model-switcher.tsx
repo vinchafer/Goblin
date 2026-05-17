@@ -40,6 +40,7 @@ export function ModelSwitcher() {
   const [models, setModels] = useState<ModelFromAPI[]>([]);
   const [byokKeys, setByokKeys] = useState<ByokKeyInfo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [recommendedTokens, setRecommendedTokens] = useState<string[]>([]);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
 
@@ -149,6 +150,39 @@ export function ModelSwitcher() {
 
     fetchData();
   }, [supabase]);
+
+  // 9R: fetch top-3 recommended for coding (public endpoint, no auth)
+  useEffect(() => {
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
+    fetch(`${apiBase}/api/rankings?task=coding&limit=3`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        type RankRow = {
+          ranked_models?: { id?: string; display_name?: string };
+        };
+        const rows = (data?.rankings ?? []) as RankRow[];
+        const tokens: string[] = [];
+        for (const row of rows) {
+          const id = row.ranked_models?.id ?? '';
+          const name = (row.ranked_models?.display_name ?? '').toLowerCase();
+          if (id) tokens.push(id.toLowerCase());
+          if (name) tokens.push(name);
+        }
+        setRecommendedTokens(tokens);
+      })
+      .catch(() => {
+        // fail silently — picker works without recommendations
+      });
+  }, []);
+
+  function isRecommended(model: ModelFromAPI): boolean {
+    if (recommendedTokens.length === 0) return false;
+    const slug = (model.slug || model.id || '').toLowerCase();
+    const name = (model.name || '').toLowerCase();
+    return recommendedTokens.some(
+      (t) => t.includes(slug) || slug.includes(t) || t.includes(name) || name.includes(t),
+    );
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -264,7 +298,8 @@ export function ModelSwitcher() {
               </a>
             </div>
           ) : (
-            TIER_ORDER.map(tier => {
+            <>
+            {TIER_ORDER.map(tier => {
               const tierModels = groupedModels[tier];
               if (!tierModels?.length) return null;
               return (
@@ -293,6 +328,23 @@ export function ModelSwitcher() {
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontSize: 13, color: 'var(--text)', fontFamily: 'DM Sans, sans-serif', display: 'flex', alignItems: 'center', gap: 6 }}>
                             {model.name}
+                            {isRecommended(model) && (
+                              <span
+                                title="Empfohlen für Coding-Tasks (basierend auf 5 Public Benchmarks)"
+                                style={{
+                                  fontSize: 9,
+                                  fontWeight: 700,
+                                  letterSpacing: '0.5px',
+                                  padding: '2px 5px',
+                                  borderRadius: 3,
+                                  background: 'var(--moss-green-soft)',
+                                  color: 'var(--moss-green)',
+                                  lineHeight: 1,
+                                }}
+                              >
+                                EMPFOHLEN
+                              </span>
+                            )}
                             {model.provider && PROVIDER_URLS[model.provider] && model.requires_key && (
                               <span
                                 onClick={e => { e.stopPropagation(); window.open(PROVIDER_URLS[model.provider], '_blank', 'noopener,noreferrer'); }}
@@ -322,7 +374,13 @@ export function ModelSwitcher() {
                   })}
                 </div>
               );
-            })
+            })}
+            <div style={{ borderTop: '1px solid var(--div)', marginTop: 4, padding: '8px 12px', textAlign: 'center' }}>
+              <a href="/models" style={{ fontSize: 12, color: 'var(--moss)', fontWeight: 600, textDecoration: 'none' }}>
+                Alle Modelle anzeigen →
+              </a>
+            </div>
+            </>
           )}
         </div>
       )}

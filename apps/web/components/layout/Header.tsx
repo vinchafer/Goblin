@@ -201,15 +201,15 @@ export function Header({
           aria-label="Create new"
           style={{
             width: 36, height: 36, borderRadius: '50%',
-            background: 'var(--ochre)', color: '#fff',
-            border: 'none', cursor: 'pointer',
+            background: 'transparent', color: 'rgba(255,255,255,0.9)',
+            border: '1px solid rgba(255,255,255,0.35)', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'transform 0.12s, background 0.15s',
+            transition: 'background 0.15s, border-color 0.15s',
           }}
-          onMouseEnter={e => (e.currentTarget.style.background = '#e8b863')}
-          onMouseLeave={e => (e.currentTarget.style.background = 'var(--ochre)')}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.1)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.6)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.35)'; }}
         >
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
         </button>
@@ -220,9 +220,9 @@ export function Header({
               role="menu"
               style={{
                 position: 'absolute', right: 0, top: 'calc(100% + 8px)',
-                background: '#fff', border: '1px solid var(--div)',
+                background: 'var(--panel)', border: '1px solid var(--border-subtle)',
                 borderRadius: 10, padding: 4, minWidth: 220, zIndex: 100,
-                boxShadow: '0 8px 24px rgba(0,0,0,0.18)',
+                boxShadow: 'var(--shadow-popover)',
               }}
             >
               {[

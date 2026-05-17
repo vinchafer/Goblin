@@ -19,7 +19,6 @@ const PLANS = {
   pro: {
     name: "Pro",
     price: 19,
-    popular: true,
     features: [
       "800 monthly requests",
       "50 projects",
@@ -82,7 +81,7 @@ export function PricingCards({ currentPlan, showUpgrade = true }: PricingCardsPr
     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
       {(Object.entries(PLANS) as [PlanId, typeof PLANS[PlanId]][]).map(([planId, plan]) => {
         const isCurrentPlan = currentPlan === planId;
-        const isPopular = "popular" in plan && plan.popular;
+        const isPopular = false;
 
         return (
           <div

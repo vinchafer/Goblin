@@ -165,16 +165,19 @@ export default function DashboardPage() {
                 style={{
                   background: 'var(--moss)', color: '#fff',
                   border: 'none',
-                  borderRadius: 8, padding: '8px 16px',
-                  fontSize: 13, fontWeight: 600, cursor: 'pointer',
+                  borderRadius: 8, padding: '8px 14px',
+                  fontSize: 13, fontWeight: 500, cursor: 'pointer',
                   fontFamily: 'DM Sans, sans-serif', transition: 'background 0.15s',
                   display: 'flex', alignItems: 'center', gap: 6,
+                  flexShrink: 0,
                 }}
                 onMouseEnter={e => (e.currentTarget.style.background = 'var(--moss-2)')}
                 onMouseLeave={e => (e.currentTarget.style.background = 'var(--moss)')}
               >
-                <span style={{ fontSize: 16, lineHeight: 1, marginTop: -1 }}>+</span>
-                New project
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" style={{ flexShrink: 0 }}>
+                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                <span>New</span>
               </button>
             </div>
 

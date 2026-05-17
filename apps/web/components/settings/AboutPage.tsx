@@ -26,6 +26,10 @@ export function AboutPage() {
         }}>G</div>
         <div style={{ marginTop: 12, fontSize: 20, fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-brand)' }}>Goblin</div>
         <div style={{ marginTop: 4, fontSize: 13, color: 'var(--text-meta)' }}>Version {VERSION} · {COMMIT.slice(0, 7)}</div>
+        <div style={{ marginTop: 10, fontSize: 13, color: 'var(--text-meta)', textAlign: 'center', maxWidth: 280 }}>
+          The cloud workshop for builders who ship from anywhere.
+        </div>
+        <div style={{ marginTop: 12, fontSize: 12, color: 'var(--text-meta)' }}>Made in Switzerland 🇨🇭</div>
       </div>
 
       <SettingsGroup label="Rechtliches">

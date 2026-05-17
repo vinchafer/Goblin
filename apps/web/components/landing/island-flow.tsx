@@ -1,59 +1,69 @@
-import { Icons } from '@/components/ui/icons';
+import { DeviceMobile, ChatCircle, Code, Terminal, GitBranch, TriangleDashed, BellRinging, Globe } from '@phosphor-icons/react/dist/ssr';
 
-type StepIcon = keyof typeof Icons;
-
-const STEPS: { Icon: StepIcon; label: string; sub: string; highlight: boolean }[] = [
-  { Icon: 'Mobile', label: 'Open Goblin', sub: 'Santorini', highlight: false },
-  { Icon: 'MessageCircle', label: 'Chat with AI', sub: 'describe it', highlight: false },
-  { Icon: 'Code', label: 'Send to Code', sub: 'one tap', highlight: true },
-  { Icon: 'Terminal', label: 'Build', sub: 'you decide', highlight: false },
-  { Icon: 'GitBranch', label: 'Push to GitHub', sub: 'auto push', highlight: false },
-  { Icon: 'Triangle', label: 'Vercel', sub: '~34 seconds', highlight: false },
-  { Icon: 'Bell', label: 'Live', sub: 'push notif', highlight: true },
-  { Icon: 'Globe', label: 'Preview', sub: 'tap to see', highlight: false },
+const STEPS = [
+  { Icon: DeviceMobile, label: 'Open Goblin', sub: 'On your phone, tablet, or laptop' },
+  { Icon: ChatCircle, label: 'Chat with AI', sub: 'Describe what you want to build' },
+  { Icon: Code, label: 'Send to Code', sub: 'One tap. No copy-paste.' },
+  { Icon: Terminal, label: 'Build', sub: 'You decide what runs and when' },
+  { Icon: GitBranch, label: 'Push to GitHub', sub: 'Automatic, with commit messages' },
+  { Icon: TriangleDashed, label: 'Deploy to Vercel', sub: '~34 seconds, every time' },
+  { Icon: BellRinging, label: 'Live notification', sub: 'Push to your phone when it ships' },
+  { Icon: Globe, label: 'Preview', sub: 'Tap to see your live site' },
 ];
 
 export function IslandFlow() {
   return (
-    <section id="how-it-works" style={{ background: '#0e0e0c', padding: '100px 40px' }}>
-      <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: 72 }}>
+    <section id="how-it-works" style={{ background: '#0e0e0c', padding: '100px 24px' }}>
+      <div style={{ maxWidth: 820, margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: 64 }}>
           <div style={{ fontSize: 11, fontWeight: 500, letterSpacing: 2, textTransform: 'uppercase' as const, color: 'var(--ochre)', marginBottom: 16 }}>The island flow</div>
           <h2 style={{
-            fontFamily: 'Fraunces, serif', fontSize: 'clamp(36px, 5vw, 56px)',
-            color: '#fff', lineHeight: 1.05, letterSpacing: '-2px', fontWeight: 900, marginBottom: 16,
+            fontFamily: 'Fraunces, serif', fontSize: 'clamp(32px, 5vw, 48px)',
+            color: '#fff', lineHeight: 1.05, letterSpacing: '-1.5px', fontWeight: 700, marginBottom: 16,
           }}>
             From beach to{' '}<em style={{ fontStyle: 'italic', color: 'var(--ochre)' }}>deployed.</em>
           </h2>
-          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.35)', maxWidth: 480, margin: '0 auto', lineHeight: 1.6, fontWeight: 300 }}>
+          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.4)', maxWidth: 480, margin: '0 auto', lineHeight: 1.6, fontWeight: 300 }}>
             Build your SaaS from Santorini. No laptop. No copy-paste. No token panic.
           </p>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap', gap: 6 }}>
-          {STEPS.map((s, i) => {
-            const IconComp = Icons[s.Icon];
-            return (
-              <div key={s.label} style={{ display: 'contents' }}>
-                <div style={{
-                  background: s.highlight ? 'rgba(201,147,58,0.08)' : '#1a1a18',
-                  border: `1px solid ${s.highlight ? 'var(--ochre)' : 'rgba(255,255,255,0.06)'}`,
-                  borderRadius: 12, padding: '18px 22px', textAlign: 'center',
-                  minWidth: 100, transition: 'all 0.15s',
-                  boxShadow: s.highlight ? '0 0 24px rgba(201,147,58,0.12)' : 'none',
-                }}>
-                  <div style={{ marginBottom: 8, color: s.highlight ? 'var(--ochre)' : 'rgba(255,255,255,0.45)', display: 'flex', justifyContent: 'center' }}>
-                    <IconComp size={20} strokeWidth={1.5} />
-                  </div>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: s.highlight ? 'var(--ochre)' : 'rgba(255,255,255,0.7)', marginBottom: 4 }}>{s.label}</div>
-                  <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.25)' }}>{s.sub}</div>
-                </div>
-                {i < STEPS.length - 1 && (
-                  <div style={{ color: 'rgba(255,255,255,0.12)', fontSize: 14, flexShrink: 0 }}>&#8594;</div>
-                )}
+        <div style={{ position: 'relative', maxWidth: 560, margin: '0 auto' }}>
+          {/* Vertical connector line */}
+          <div style={{
+            position: 'absolute',
+            left: 24, top: 30, bottom: 30,
+            width: 2,
+            background: 'linear-gradient(180deg, transparent 0%, rgba(201,147,58,0.5) 10%, rgba(201,147,58,0.5) 90%, transparent 100%)',
+          }} />
+
+          {STEPS.map((s, i) => (
+            <div key={s.label} style={{
+              display: 'flex', alignItems: 'flex-start', gap: 20,
+              marginBottom: i < STEPS.length - 1 ? 28 : 0,
+              position: 'relative', zIndex: 1,
+            }}>
+              <div style={{
+                width: 50, height: 50, flexShrink: 0,
+                background: '#1a1a18',
+                border: '1px solid rgba(201,147,58,0.35)',
+                borderRadius: '50%',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                <s.Icon size={22} weight="duotone" color="var(--ochre)" />
               </div>
-            );
-          })}
+              <div style={{ paddingTop: 6 }}>
+                <h4 style={{
+                  fontFamily: 'DM Sans, sans-serif', fontSize: 17, fontWeight: 600,
+                  color: '#fff', margin: 0, marginBottom: 4, lineHeight: 1.2,
+                }}>{s.label}</h4>
+                <p style={{
+                  color: 'rgba(255,255,255,0.45)', fontSize: 14, margin: 0, lineHeight: 1.45,
+                  fontFamily: 'DM Sans, sans-serif',
+                }}>{s.sub}</p>
+              </div>
+            </div>
+          ))}
         </div>
 
         <div style={{ textAlign: 'center', marginTop: 56 }}>

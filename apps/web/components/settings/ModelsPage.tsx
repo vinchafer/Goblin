@@ -1,0 +1,359 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import { createClient } from '@/lib/supabase/client';
+import { SettingsCard } from '../ui/SettingsCard';
+
+type Tab = 'rankings' | 'keys' | 'advanced';
+type TaskType = 'coding' | 'reasoning' | 'speed' | 'cost-efficiency' | 'general';
+
+interface RankingRow {
+  rank: number;
+  composite_score: number;
+  source_count: number;
+  ranked_models: {
+    id: string;
+    provider: string;
+    display_name: string;
+    family: string;
+    context_tokens: number | null;
+    pricing_in_per_million: number | null;
+    is_open_source: boolean;
+  };
+}
+
+interface ByokKeyRow { provider: string; key_hint?: string | null; status?: string }
+
+interface ModelAdvanced {
+  modelId: string;
+  temperature: number;
+  maxTokens: number;
+  systemPrompt: string;
+}
+
+const TASK_LABELS: Record<TaskType, string> = {
+  'coding': 'Coding',
+  'reasoning': 'Reasoning',
+  'speed': 'Speed',
+  'cost-efficiency': 'Kosten',
+  'general': 'Allgemein',
+};
+
+const PROVIDERS = ['anthropic', 'openai', 'google', 'mistral', 'groq', 'together', 'deepseek', 'fireworks'] as const;
+const PROVIDER_LABELS: Record<string, string> = {
+  anthropic: 'Anthropic', openai: 'OpenAI', google: 'Google', mistral: 'Mistral',
+  groq: 'Groq', together: 'Together AI', deepseek: 'DeepSeek', fireworks: 'Fireworks AI',
+};
+
+const ADV_KEY = 'goblin-model-advanced';
+const DEFAULT_KEY = 'goblin-default-model';
+
+export function ModelsPage() {
+  const [tab, setTab] = useState<Tab>('rankings');
+
+  return (
+    <div style={{ padding: '0 0 24px', fontFamily: 'var(--font-ui)' }}>
+      <div style={{ padding: '4px 20px 12px' }}>
+        <p style={{ fontSize: 13, color: 'var(--text-meta)', margin: 0, lineHeight: 1.5 }}>
+          Rankings aus 5 öffentlichen Benchmarks. Alle 6 Stunden aktualisiert.
+        </p>
+      </div>
+
+      <div style={{
+        display: 'flex', gap: 4, padding: '0 16px',
+        borderBottom: '1px solid var(--border-subtle)', marginBottom: 16,
+      }}>
+        {([
+          { id: 'rankings', label: 'Rankings' },
+          { id: 'keys', label: 'Meine Keys' },
+          { id: 'advanced', label: 'Erweitert' },
+        ] as { id: Tab; label: string }[]).map((t) => (
+          <button
+            key={t.id}
+            onClick={() => setTab(t.id)}
+            data-testid={`models-tab-${t.id}`}
+            style={{
+              padding: '10px 16px',
+              background: 'transparent', border: 'none',
+              borderBottom: '2px solid',
+              borderColor: tab === t.id ? 'var(--moss)' : 'transparent',
+              color: tab === t.id ? 'var(--text)' : 'var(--text-meta)',
+              fontSize: 14, fontWeight: tab === t.id ? 600 : 400,
+              cursor: 'pointer', fontFamily: 'var(--font-ui)',
+              marginBottom: -1,
+            }}
+          >{t.label}</button>
+        ))}
+      </div>
+
+      <div style={{ padding: '0 16px' }}>
+        {tab === 'rankings' && <RankingsTab />}
+        {tab === 'keys' && <KeysTab />}
+        {tab === 'advanced' && <AdvancedTab />}
+      </div>
+    </div>
+  );
+}
+
+function RankingsTab() {
+  const [task, setTask] = useState<TaskType>('coding');
+  const [rows, setRows] = useState<RankingRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [defaultId, setDefaultId] = useState<string | null>(null);
+
+  useEffect(() => {
+    setDefaultId(localStorage.getItem(DEFAULT_KEY));
+  }, []);
+
+  useEffect(() => {
+    setLoading(true);
+    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
+    fetch(`${apiBase}/api/rankings?task=${task}&limit=30`)
+      .then(r => r.ok ? r.json() : { rankings: [] })
+      .then(d => setRows(d.rankings ?? []))
+      .catch(() => setRows([]))
+      .finally(() => setLoading(false));
+  }, [task]);
+
+  function setDefault(modelId: string) {
+    setDefaultId(modelId);
+    localStorage.setItem(DEFAULT_KEY, modelId);
+  }
+
+  return (
+    <>
+      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 16, paddingBottom: 4 }}>
+        {(Object.keys(TASK_LABELS) as TaskType[]).map((t) => (
+          <button
+            key={t}
+            onClick={() => setTask(t)}
+            data-testid={`task-${t}`}
+            style={{
+              padding: '8px 14px', borderRadius: 999,
+              background: task === t ? 'var(--moss)' : 'transparent',
+              border: '1px solid', borderColor: task === t ? 'var(--moss)' : 'var(--border-subtle)',
+              color: task === t ? '#fff' : 'var(--text-2)',
+              fontSize: 13, fontWeight: 500, cursor: 'pointer',
+              whiteSpace: 'nowrap', fontFamily: 'var(--font-ui)',
+              flexShrink: 0,
+            }}
+          >{TASK_LABELS[t]}</button>
+        ))}
+      </div>
+
+      {loading && <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-meta)' }}>Lade Rankings…</div>}
+      {!loading && rows.length === 0 && (
+        <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-meta)', fontSize: 14 }}>
+          Noch keine Daten für diesen Task. Refresh läuft alle 6h.
+        </div>
+      )}
+      {!loading && rows.map((r) => {
+        const m = r.ranked_models;
+        const isDefault = defaultId === m.id;
+        return (
+          <div key={m.id} style={{
+            padding: '14px 16px', marginBottom: 8,
+            background: 'var(--panel)',
+            border: '1px solid', borderColor: isDefault ? 'var(--moss)' : 'var(--border-subtle)',
+            borderRadius: 12,
+            display: 'flex', alignItems: 'center', gap: 12,
+          }}>
+            <span style={{
+              width: 30, fontSize: 13, color: 'var(--text-meta)',
+              fontFamily: 'var(--font-mono)', flexShrink: 0,
+            }}>#{r.rank}</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontWeight: 600, color: 'var(--text)', fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {m.display_name}
+              </div>
+              <div style={{ color: 'var(--text-meta)', fontSize: 12, marginTop: 2 }}>
+                {m.provider} · Score {(r.composite_score * 100).toFixed(0)} · {r.source_count} Quellen
+                {m.context_tokens ? ` · ${(m.context_tokens / 1000).toFixed(0)}k Context` : ''}
+              </div>
+            </div>
+            {isDefault ? (
+              <span style={{
+                padding: '4px 10px', borderRadius: 8,
+                background: 'var(--moss-green-soft)', color: 'var(--moss)',
+                fontSize: 11, fontWeight: 600, flexShrink: 0,
+              }}>DEFAULT</span>
+            ) : (
+              <button onClick={() => setDefault(m.id)} style={{
+                padding: '4px 10px', borderRadius: 8,
+                background: 'transparent', border: '1px solid var(--border-subtle)',
+                color: 'var(--text-2)', fontSize: 11, fontWeight: 600,
+                cursor: 'pointer', fontFamily: 'var(--font-ui)', flexShrink: 0,
+              }}>Default</button>
+            )}
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+function KeysTab() {
+  const [keys, setKeys] = useState<ByokKeyRow[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { setLoading(false); return; }
+      const { data } = await supabase.from('byok_keys').select('provider, key_hint, status').eq('user_id', session.user.id);
+      setKeys((data ?? []) as ByokKeyRow[]);
+      setLoading(false);
+    })();
+  }, []);
+
+  if (loading) return <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-meta)' }}>Lade Keys…</div>;
+
+  return (
+    <>
+      <p style={{ fontSize: 13, color: 'var(--text-meta)', marginBottom: 12, lineHeight: 1.5 }}>
+        Hinterlege deine eigenen API-Keys. Goblin routet direkt über deinen Provider —
+        du zahlst nur das, was du verbrauchst, ohne Goblin-Margen.
+      </p>
+      <SettingsCard>
+        {PROVIDERS.map((p) => {
+          const k = keys.find(x => x.provider === p && x.status !== 'revoked');
+          return (
+            <div key={p} style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 12, borderBottom: '1px solid var(--border-hairline)' }}>
+              <span style={{
+                width: 32, height: 32, borderRadius: 8, background: 'var(--subtle)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 13, fontWeight: 700, color: 'var(--meta)', fontFamily: 'var(--font-mono)',
+              }}>{(PROVIDER_LABELS[p] ?? p)[0]?.toUpperCase()}</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{PROVIDER_LABELS[p] ?? p}</div>
+                <div style={{ fontSize: 13, color: 'var(--text-meta)', marginTop: 2 }}>
+                  {k ? `sk-…${k.key_hint ?? '****'}` : 'Nicht verbunden'}
+                </div>
+              </div>
+              <a href="/dashboard/settings/keys" style={{
+                padding: '6px 12px', borderRadius: 8,
+                background: k ? 'transparent' : 'var(--moss)',
+                color: k ? 'var(--text-2)' : '#fff',
+                border: '1px solid', borderColor: k ? 'var(--border-subtle)' : 'var(--moss)',
+                fontSize: 12, fontWeight: 600, textDecoration: 'none',
+                fontFamily: 'var(--font-ui)',
+              }}>{k ? 'Verwalten' : 'Hinzufügen'}</a>
+            </div>
+          );
+        })}
+      </SettingsCard>
+    </>
+  );
+}
+
+function AdvancedTab() {
+  const [advanced, setAdvanced] = useState<Record<string, ModelAdvanced>>({});
+  const [models, setModels] = useState<{ id: string; display_name: string; provider: string }[]>([]);
+  const [openId, setOpenId] = useState<string | null>(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(ADV_KEY);
+      if (raw) setAdvanced(JSON.parse(raw));
+    } catch {}
+    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
+    fetch(`${apiBase}/api/rankings?task=coding&limit=10`)
+      .then(r => r.ok ? r.json() : { rankings: [] })
+      .then(d => setModels(((d.rankings as RankingRow[] | undefined) ?? []).map(r => ({
+        id: r.ranked_models.id,
+        display_name: r.ranked_models.display_name,
+        provider: r.ranked_models.provider,
+      }))))
+      .catch(() => {});
+  }, []);
+
+  function update(modelId: string, patch: Partial<ModelAdvanced>) {
+    const next = {
+      ...advanced,
+      [modelId]: {
+        modelId,
+        temperature: 0.7,
+        maxTokens: 4096,
+        systemPrompt: '',
+        ...(advanced[modelId] ?? {}),
+        ...patch,
+      },
+    };
+    setAdvanced(next);
+    try { localStorage.setItem(ADV_KEY, JSON.stringify(next)); } catch {}
+  }
+
+  const inputStyle: React.CSSProperties = {
+    width: '100%', padding: '10px 12px',
+    background: 'var(--subtle)', border: '1px solid var(--border-subtle)',
+    borderRadius: 8, color: 'var(--text)', fontSize: 14,
+    fontFamily: 'var(--font-ui)', outline: 'none',
+  };
+
+  return (
+    <>
+      <p style={{ fontSize: 13, color: 'var(--text-meta)', marginBottom: 12, lineHeight: 1.5 }}>
+        Standardwerte pro Modell. Gilt für neue Chats.
+      </p>
+      {models.length === 0 && (
+        <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-meta)', fontSize: 14 }}>
+          Lade Modelle…
+        </div>
+      )}
+      {models.map((m) => {
+        const cfg = advanced[m.id] ?? { modelId: m.id, temperature: 0.7, maxTokens: 4096, systemPrompt: '' };
+        const open = openId === m.id;
+        return (
+          <div key={m.id} style={{
+            background: 'var(--panel)', border: '1px solid var(--border-subtle)',
+            borderRadius: 12, marginBottom: 8, overflow: 'hidden',
+          }}>
+            <button onClick={() => setOpenId(open ? null : m.id)} style={{
+              width: '100%', padding: 14, background: 'transparent', border: 'none',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              cursor: 'pointer', textAlign: 'left',
+            }}>
+              <div>
+                <div style={{ fontWeight: 600, color: 'var(--text)', fontSize: 15 }}>{m.display_name}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-meta)', marginTop: 2 }}>
+                  {m.provider} · temp {cfg.temperature.toFixed(1)} · {cfg.maxTokens} tok
+                </div>
+              </div>
+              <span style={{ color: 'var(--text-meta)', fontSize: 16, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>⌄</span>
+            </button>
+            {open && (
+              <div style={{ padding: '0 14px 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <span style={{ fontSize: 12, color: 'var(--text-meta)', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Temperature</span><span>{cfg.temperature.toFixed(1)}</span>
+                  </span>
+                  <input type="range" min={0} max={1} step={0.1} value={cfg.temperature}
+                    onChange={(e) => update(m.id, { temperature: parseFloat(e.target.value) })}
+                    style={{ accentColor: 'var(--moss)' }}
+                  />
+                </label>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <span style={{ fontSize: 12, color: 'var(--text-meta)' }}>Max Tokens</span>
+                  <input type="number" min={100} max={32000} step={100} value={cfg.maxTokens}
+                    onChange={(e) => update(m.id, { maxTokens: parseInt(e.target.value, 10) || 4096 })}
+                    style={inputStyle}
+                  />
+                </label>
+                <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  <span style={{ fontSize: 12, color: 'var(--text-meta)' }}>System Prompt (optional)</span>
+                  <textarea value={cfg.systemPrompt}
+                    onChange={(e) => update(m.id, { systemPrompt: e.target.value })}
+                    placeholder="z.B. Antworte immer auf Deutsch…"
+                    style={{ ...inputStyle, minHeight: 60, resize: 'vertical' }}
+                    maxLength={1000}
+                  />
+                </label>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </>
+  );
+}

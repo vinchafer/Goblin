@@ -1,27 +1,27 @@
 ﻿'use client';
-import { Icons } from '@/components/ui/icons';
+import { Cpu, Lightning, Copy, Browsers, Check } from '@phosphor-icons/react';
 
 const PROBLEMS = [
   {
-    Icon: Icons.Zap,
+    Icon: Lightning,
     title: 'Token panic',
     desc: 'Claude Pro locks you out after 2 hours. You end up counting tokens instead of shipping.',
     fix: 'BYOK — pay your provider directly',
   },
   {
-    Icon: Icons.Monitor,
+    Icon: Cpu,
     title: 'Hardware wall',
     desc: 'Powerful models need 48GB+ VRAM. Your laptop cannot run them locally.',
     fix: 'Build from phone, tablet, or any device',
   },
   {
-    Icon: Icons.Clipboard,
+    Icon: Copy,
     title: 'Copy-paste hell',
     desc: 'Chat, copy, switch tabs, paste, find the right file. Every. Single. Time.',
     fix: 'One-tap Send to Code',
   },
   {
-    Icon: Icons.Layout,
+    Icon: Browsers,
     title: 'IDE overwhelm',
     desc: 'Cursor and VS Code were not built for builders who just want to ship fast.',
     fix: 'Focused builder UI',
@@ -52,7 +52,7 @@ export function TheProblem() {
               borderRadius: 12, padding: '28px 24px', display: 'flex', flexDirection: 'column',
             }}>
               <div style={{ color: 'var(--ochre)', marginBottom: 18, opacity: 0.9 }}>
-                <Icon size={22} strokeWidth={1.5} />
+                <Icon size={28} weight="duotone" />
               </div>
               <div style={{ fontFamily: 'Fraunces, serif', fontSize: 19, color: 'var(--cream)', fontWeight: 700, marginBottom: 8, letterSpacing: '-0.3px' }}>{title}</div>
               <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.4)', lineHeight: 1.65, fontWeight: 400, marginBottom: 20, flex: 1, fontFamily: 'DM Sans, sans-serif' }}>{desc}</div>
@@ -61,7 +61,7 @@ export function TheProblem() {
                 color: 'var(--ochre)', background: 'rgba(201,147,58,0.1)', border: '1px solid rgba(201,147,58,0.2)',
                 borderRadius: 100, padding: '4px 12px', alignSelf: 'flex-start', fontFamily: 'DM Sans, sans-serif',
               }}>
-                <Icons.Check size={11} strokeWidth={2} /> {fix}
+                <Check size={11} weight="bold" /> {fix}
               </div>
             </div>
           ))}

@@ -78,7 +78,7 @@ export function Footer() {
 
         {/* Bottom bar */}
         <div style={{ borderTop: '1px solid var(--div)', paddingTop: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, fontSize: 12, color: 'var(--meta)' }}>
-          <span>© 2026 Goblin · Made by Vincent in Switzerland 🇨🇭</span>
+          <span>© 2026 Goblin · Made in Switzerland 🇨🇭</span>
           <span style={{ color: 'var(--meta)' }}>Build anywhere. Code anything.</span>
         </div>
       </div>

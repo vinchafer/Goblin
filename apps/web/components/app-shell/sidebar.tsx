@@ -168,10 +168,11 @@ export function Sidebar({ projects = [], chats = [], activeProjectId, onProjectS
         }}>
           {!collapsed && (
             <span style={{
-              fontFamily: 'Fraunces, serif', fontSize: 18, color: 'var(--moss)',
-              fontWeight: 700, letterSpacing: '-0.5px', userSelect: 'none',
+              fontFamily: 'DM Sans, sans-serif', fontSize: 11, color: 'var(--meta)',
+              fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase' as const,
+              userSelect: 'none',
             }}>
-              Goblin<span style={{ color: 'var(--ochre)' }}>.</span>
+              Workspace
             </span>
           )}
           <button
@@ -399,7 +400,7 @@ export function Sidebar({ projects = [], chats = [], activeProjectId, onProjectS
         {/* QUICK LINKS */}
         <div style={{ padding: collapsed ? '8px 6px' : '8px 8px', borderTop: '1px solid var(--div)', flexShrink: 0 }}>
           <QuickLink icon={Gear} label="Settings" path="/dashboard/settings" />
-          <QuickLink icon={Key} label="API Keys" path="/dashboard/settings/keys" />
+          <QuickLink icon={Key} label="Models" path="/models" />
           <QuickLink icon={ChartBar} label="Usage" path="/dashboard/usage" />
           <QuickLink icon={ArrowSquareOut} label="Docs" path="https://docs.goblin.app" external />
         </div>

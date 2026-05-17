@@ -38,20 +38,48 @@ function timeAgoShort(dateStr: string): string {
 
 export function RecentChatRow({ chat, active, onNavigate, onUpdate }: RecentChatRowProps) {
   const [contextOpen, setContextOpen] = useState(false);
+  const [pressing, setPressing] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressFired = useRef(false);
+  const startPos = useRef<{ x: number; y: number } | null>(null);
 
-  const onPointerDown = () => {
+  const clearTimers = () => {
+    if (timer.current) { clearTimeout(timer.current); timer.current = null; }
+    if (hintTimer.current) { clearTimeout(hintTimer.current); hintTimer.current = null; }
+  };
+
+  const onPointerDown = (e: React.PointerEvent) => {
     longPressFired.current = false;
+    startPos.current = { x: e.clientX, y: e.clientY };
+    setPressing(true);
+    const hapticsEnabled = typeof localStorage !== 'undefined' && localStorage.getItem('goblin-haptic') !== 'false';
+    hintTimer.current = setTimeout(() => {
+      if (hapticsEnabled && navigator.vibrate) navigator.vibrate(8);
+    }, 200);
     timer.current = setTimeout(() => {
       longPressFired.current = true;
-      if (typeof navigator !== 'undefined' && navigator.vibrate) navigator.vibrate(20);
+      if (hapticsEnabled && navigator.vibrate) navigator.vibrate([20, 30, 20]);
       setContextOpen(true);
+      setPressing(false);
     }, 500);
   };
 
+  const onPointerMove = (e: React.PointerEvent) => {
+    if (!startPos.current) return;
+    const dx = e.clientX - startPos.current.x;
+    const dy = e.clientY - startPos.current.y;
+    if (Math.hypot(dx, dy) > 10) {
+      clearTimers();
+      setPressing(false);
+      startPos.current = null;
+    }
+  };
+
   const onPointerUp = () => {
-    if (timer.current) clearTimeout(timer.current);
+    clearTimers();
+    setPressing(false);
+    startPos.current = null;
   };
 
   const onClick = () => {
@@ -84,6 +112,7 @@ export function RecentChatRow({ chat, active, onNavigate, onUpdate }: RecentChat
       <div
         data-testid="recent-chat-row"
         onPointerDown={onPointerDown}
+        onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
         onClick={onClick}
@@ -97,8 +126,10 @@ export function RecentChatRow({ chat, active, onNavigate, onUpdate }: RecentChat
           marginBottom: 1,
           background: active ? 'rgba(212,169,74,0.1)' : 'transparent',
           borderLeft: active ? '2px solid var(--ochre)' : '2px solid transparent',
-          transition: 'background 0.1s',
+          transition: 'background 0.15s, transform 0.15s ease',
           userSelect: 'none',
+          transform: pressing ? 'scale(0.97)' : 'scale(1)',
+          boxShadow: pressing ? '0 2px 12px rgba(0,0,0,0.12)' : 'none',
         }}
       >
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>

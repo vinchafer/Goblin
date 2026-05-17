@@ -163,8 +163,8 @@ function ModelHub({
     <div
       style={{
         position: 'absolute', bottom: 'calc(100% + 8px)', left: 0, right: 0,
-        background: '#fff', border: '1px solid #EDE8DC',
-        borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.14)',
+        background: 'var(--panel)', border: '1px solid var(--border-subtle)',
+        borderRadius: 12, boxShadow: 'var(--shadow-popover)',
         zIndex: 200, overflow: 'hidden',
         maxHeight: 480, display: 'flex', flexDirection: 'column',
       }}
@@ -300,20 +300,27 @@ function VoiceButton({ onTranscript, disabled }: { onTranscript: (t: string) => 
       )}
       <button
         onClick={toggle}
+        aria-label={recording ? 'Aufnahme stoppen' : 'Sprachaufnahme'}
         title={recording ? 'Aufnahme stoppen' : 'Sprachaufnahme'}
         style={{
-          width: 28, height: 28, borderRadius: 7, border: 'none',
+          width: 32, height: 32, borderRadius: '50%', border: 'none',
           background: recording ? 'rgba(184,92,60,0.12)' : 'transparent',
           cursor: disabled ? 'not-allowed' : 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 14, flexShrink: 0,
+          color: recording ? 'var(--rust)' : 'var(--text-2)',
+          flexShrink: 0,
           boxShadow: recording ? '0 0 0 2px rgba(184,92,60,0.4)' : 'none',
           animation: recording ? 'goblin-pulse 1.2s ease-in-out infinite' : undefined,
           transition: 'all 0.15s',
           opacity: disabled ? 0.4 : 1,
         }}
       >
-        🎤
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+          <line x1="12" y1="19" x2="12" y2="23"/>
+          <line x1="8" y1="23" x2="16" y2="23"/>
+        </svg>
       </button>
     </div>
   );
@@ -480,7 +487,7 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
   };
 
   return (
-    <div style={{ padding: '10px 16px 12px', background: '#fff', borderTop: '1px solid #EDE8DC', flexShrink: 0 }}>
+    <div style={{ padding: '10px 16px 12px', background: 'var(--panel)', borderTop: '1px solid var(--border-subtle)', flexShrink: 0 }}>
       <div ref={hubRef} style={{ position: 'relative' }}>
         {hubOpen && (
           <ModelHub
@@ -499,12 +506,12 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
         <div
           style={{
             display: 'flex', flexDirection: 'column',
-            border: '1.5px solid #DDD7CC', borderRadius: 14,
-            background: 'var(--cream)',
+            border: '1.5px solid var(--border-subtle)', borderRadius: 14,
+            background: 'var(--subtle)',
             transition: 'border-color 0.15s',
           }}
           onFocusCapture={e => (e.currentTarget.style.borderColor = 'var(--moss)')}
-          onBlurCapture={e => (e.currentTarget.style.borderColor = 'var(--border)')}
+          onBlurCapture={e => (e.currentTarget.style.borderColor = 'var(--border-subtle)')}
         >
           {/* Textarea */}
           <textarea

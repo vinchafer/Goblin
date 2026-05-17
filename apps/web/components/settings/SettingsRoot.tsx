@@ -8,11 +8,18 @@ import { SettingsRow } from '../ui/SettingsRow';
 import { ProfileCard } from './ProfileCard';
 import { ProfilePage } from './ProfilePage';
 import { FeaturesPage } from './FeaturesPage';
-import { ApiKeysPage } from './ApiKeysPage';
 import { AppearancePage } from './AppearancePage';
 import { LanguagePage } from './LanguagePage';
 import { AboutPage } from './AboutPage';
-import { StubPage } from './StubPage';
+import { BillingPage } from './BillingPage';
+import { UsagePage } from './UsagePage';
+import { PersonalizationPage } from './PersonalizationPage';
+import { ConnectorsPage } from './ConnectorsPage';
+import { NotificationsPage } from './NotificationsPage';
+import { PrivacyPage } from './PrivacyPage';
+import { ReportProblemPage } from './ReportProblemPage';
+import { HelpCenterPage } from './HelpCenterPage';
+import { ModelsPage } from './ModelsPage';
 import { useUser } from '@/lib/hooks/useUser';
 import { useAuth } from '@/lib/hooks/useAuth';
 
@@ -46,8 +53,10 @@ export function SettingsRoot() {
 
   useEffect(() => {
     setHapticEnabled(localStorage.getItem('goblin-haptic') !== 'false');
-    const stored = localStorage.getItem('goblin-appearance') as Appearance | null;
-    if (stored) setAppearance(stored);
+    const stored = localStorage.getItem('goblin_theme');
+    if (stored === 'light') setAppearance('Hell');
+    else if (stored === 'dark') setAppearance('Dunkel');
+    else setAppearance('System');
   }, []);
 
   const handleHapticChange = (v: boolean) => {
@@ -57,7 +66,8 @@ export function SettingsRoot() {
 
   const handleAppearanceChange = (v: Appearance) => {
     setAppearance(v);
-    localStorage.setItem('goblin-appearance', v);
+    const key = v === 'Hell' ? 'light' : v === 'Dunkel' ? 'dark' : 'system';
+    localStorage.setItem('goblin_theme', key);
   };
 
   return (
@@ -77,13 +87,13 @@ export function SettingsRoot() {
             icon={<I.Dollar />}
             label="Abrechnung"
             right={user.plan.name}
-            onClick={() => push('billing', <StubPage title="Abrechnung" />, 'Abrechnung')}
+            onClick={() => push('billing', <BillingPage />, 'Abrechnung')}
           />
           <SettingsRow
             testId="row-nutzung"
             icon={<I.Chart />}
             label="Nutzung"
-            onClick={() => push('usage', <StubPage title="Nutzung" />, 'Nutzung')}
+            onClick={() => push('usage', <UsagePage />, 'Nutzung')}
           />
         </SettingsCard>
       </SettingsGroup>
@@ -94,7 +104,7 @@ export function SettingsRoot() {
             testId="row-personalisierung"
             icon={<I.Sparkles />}
             label="Personalisierung"
-            onClick={() => push('personalization', <StubPage title="Personalisierung" />, 'Personalisierung')}
+            onClick={() => push('personalization', <PersonalizationPage />, 'Personalisierung')}
           />
           <SettingsRow
             testId="row-funktionen"
@@ -106,13 +116,13 @@ export function SettingsRoot() {
             testId="row-konnektoren"
             icon={<I.Plug />}
             label="Konnektoren"
-            onClick={() => push('connectors', <StubPage title="Konnektoren" />, 'Konnektoren')}
+            onClick={() => push('connectors', <ConnectorsPage />, 'Konnektoren')}
           />
           <SettingsRow
-            testId="row-api-keys"
+            testId="row-models"
             icon={<I.Key />}
-            label="API Keys"
-            onClick={() => push('api-keys', <ApiKeysPage />, 'API Keys')}
+            label="Modelle"
+            onClick={() => push('models', <ModelsPage />, 'Modelle')}
           />
         </SettingsCard>
       </SettingsGroup>
@@ -151,7 +161,7 @@ export function SettingsRoot() {
             testId="row-notifications"
             icon={<I.Bell />}
             label="Benachrichtigungen"
-            onClick={() => push('notifications', <StubPage title="Benachrichtigungen" />, 'Benachrichtigungen')}
+            onClick={() => push('notifications', <NotificationsPage />, 'Benachrichtigungen')}
           />
           <SettingsRow
             testId="row-haptic"
@@ -165,7 +175,7 @@ export function SettingsRoot() {
             testId="row-privacy"
             icon={<I.Shield />}
             label="Datenschutz"
-            onClick={() => push('privacy', <StubPage title="Datenschutz" />, 'Datenschutz')}
+            onClick={() => push('privacy', <PrivacyPage />, 'Datenschutz')}
           />
         </SettingsCard>
       </SettingsGroup>
@@ -176,13 +186,13 @@ export function SettingsRoot() {
             testId="row-report"
             icon={<I.Flag />}
             label="Problem melden"
-            onClick={() => window.open('mailto:support@justgoblin.com')}
+            onClick={() => push('report', <ReportProblemPage />, 'Problem melden')}
           />
           <SettingsRow
             testId="row-help"
             icon={<I.Question />}
             label="Hilfecenter"
-            onClick={() => { window.location.href = '/help'; }}
+            onClick={() => push('help', <HelpCenterPage />, 'Hilfecenter')}
           />
           <SettingsRow
             testId="row-about"
