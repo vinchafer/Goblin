@@ -1,5 +1,8 @@
 # 9E Backlog — Deferred from 9D (2026-05-15)
 
+## 9P Follow-ups
+- E2E flake: `26-settings-structure profile-save persists across reload` — bumped wait 1000→1500ms in 9P-test-sync. If still flaky, investigate ProfilePage save race: `setShowNewProjectModal` cache + Supabase `updateUser` round-trip may resolve before user_metadata propagates to next `supabase.auth.getUser()` call.
+
 ## Security / Auth
 - 2FA TOTP implementation (otpauth + QR + 6-digit verify + 10 backup-codes) — placeholders in ProfilePage
 - Passkeys (WebAuthn via @simplewebauthn) — placeholders in ProfilePage
@@ -98,3 +101,21 @@
 - Stripe Tax activation
 - GROQ_FREE_API_KEY removal from Railway (Layer B cleanup)
 - ENCRYPTION_KEY setup für CI
+
+## Deferred from 9R (2026-05-16) — Model Intelligence Layer
+
+### Paid API integration (~2-3 weeks)
+- Artificial Analysis API subscription (~$50/Mo) → AdapterArtificialAnalysis
+- Goblin-eigene Mini-Evals gegen Top-5 (weekly, ~$5/Mo)
+  - LLM-as-Judge with Sonnet 4.6 or GPT-5
+  - 10-20 Goblin-specific tasks (real user flows)
+- A/B test TASK_WEIGHTS based on user feedback
+- LMArena ELO when official API becomes available
+
+### Operational
+- Canonicalize audit: monthly /admin/rankings check, ensure no duplicate canonical IDs
+- TASK_WEIGHTS tuning (currently hardcoded in `aggregator.ts`)
+- Notifications when a model jumps ranks significantly
+- Trend charts per model on detail page
+- Join `ranked_models` to internal `models` table via canonical ID (so ModelPicker "EMPFOHLEN" badge no longer relies on substring matching)
+- Optional drop migration for unused `eval_tasks` / `eval_results` tables (kept for now, no harm)
