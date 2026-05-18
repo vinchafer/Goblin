@@ -44,10 +44,13 @@ function extractModelName(combined: string): string | null {
   if (!combined) return null;
 
   const parens = combined.match(/\(([^)]+)\)/);
-  if (parens) return parens[1].trim();
+  if (parens?.[1]) return parens[1].trim();
 
   const plusSplit = combined.split('+');
-  if (plusSplit.length > 1) return plusSplit[plusSplit.length - 1].trim();
+  if (plusSplit.length > 1) {
+    const tail = plusSplit[plusSplit.length - 1];
+    if (tail) return tail.trim();
+  }
 
   return combined.trim();
 }

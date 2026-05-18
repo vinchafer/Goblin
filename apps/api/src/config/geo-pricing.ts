@@ -50,7 +50,9 @@ export function getPriceForTier(plan: string, tier: GeoTier): string | undefined
   return prices[plan]?.[tier] ?? prices[plan]?.[1];
 }
 
-export const PLAN_PRICES: Record<string, Record<GeoTier, number>> = {
+export type PlanName = 'build' | 'pro' | 'power';
+
+export const PLAN_PRICES: Record<PlanName, Record<GeoTier, number>> = {
   build: { 1: 9,  2: 4, 3: 3  },
   pro:   { 1: 19, 2: 9, 3: 6  },
   power: { 1: 39, 2: 19, 3: 12 },
