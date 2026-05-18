@@ -28,7 +28,7 @@
     "codemirror": "^6.0.2",
     "diff": "^9.0.0",
     "lucide-react": "^0.400.0",
-    "next": "^16.2.4",
+    "next": "^16.2.6",
     "posthog-js": "^1.240.6",
     "react": "19.0.0",
     "react-dom": "19.0.0",
