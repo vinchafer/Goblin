@@ -12,6 +12,7 @@ const SKIP_PATHS = [
   '/version',
   '/api/github/callback',
   '/api/templates',
+  '/api/rankings',
 ];
 
 // Check if request is BYOK-backed (no trial cost to Goblin)

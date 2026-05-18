@@ -1,0 +1,98 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+
+interface SourceStatus {
+  id: string;
+  name: string;
+  url: string;
+  enabled: boolean;
+  last_fetched_at: string | null;
+  last_status: 'ok' | 'fail' | null;
+  last_error: string | null;
+  last_record_count: number;
+}
+
+export default function AdminRankingsPage() {
+  const [sources, setSources] = useState<SourceStatus[]>([]);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
+    // Public sources endpoint works for admin page too (no secrets in it).
+    fetch(`${apiBase}/api/rankings/sources`)
+      .then((r) => (r.ok ? r.json() : Promise.reject(`${r.status}`)))
+      .then((data) => setSources(data.sources ?? []))
+      .catch((e) => setError(String(e)));
+  }, []);
+
+  if (error)
+    return (
+      <div style={{ padding: 64, textAlign: 'center', color: 'var(--rust)' }}>Fehler: {error}</div>
+    );
+
+  return (
+    <div style={{ padding: 32, maxWidth: 1000, margin: '0 auto', fontFamily: 'var(--font-ui)' }}>
+      <h1
+        style={{
+          fontFamily: 'var(--font-display)',
+          fontSize: 28,
+          fontWeight: 600,
+          marginBottom: 24,
+        }}
+      >
+        Rankings — Source Status
+      </h1>
+
+      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+        <thead>
+          <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+            <th style={cellStyle(true)}>Source</th>
+            <th style={cellStyle(true)}>Status</th>
+            <th style={cellStyle(true)}>Last Fetch</th>
+            <th style={cellStyle(true)}>Records</th>
+          </tr>
+        </thead>
+        <tbody>
+          {sources.map((s) => (
+            <tr key={s.id} style={{ borderBottom: '1px solid var(--border-hairline)' }}>
+              <td style={cellStyle(false)}>{s.name}</td>
+              <td style={cellStyle(false)}>
+                <span
+                  style={{
+                    color: s.last_status === 'ok' ? 'var(--moss-green)' : 'var(--rust)',
+                    fontWeight: 600,
+                  }}
+                >
+                  {s.last_status ?? '—'}
+                </span>
+              </td>
+              <td style={cellStyle(false)}>
+                {s.last_fetched_at ? new Date(s.last_fetched_at).toLocaleString('de-CH') : '—'}
+              </td>
+              <td style={cellStyle(false)}>{s.last_record_count}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+
+      <p style={{ marginTop: 24, fontSize: 12, color: 'var(--text-meta)' }}>
+        Manual trigger:{' '}
+        <code style={{ fontFamily: 'var(--font-mono)' }}>
+          curl -X POST -H "x-admin-key: $ADMIN_API_KEY"
+          $API_URL/api/admin/rankings/refresh
+        </code>
+      </p>
+    </div>
+  );
+}
+
+function cellStyle(header: boolean): React.CSSProperties {
+  return {
+    padding: '10px 12px',
+    textAlign: 'left',
+    fontSize: 13,
+    fontWeight: header ? 600 : 400,
+    color: header ? 'var(--text-meta)' : 'var(--text-1)',
+  };
+}

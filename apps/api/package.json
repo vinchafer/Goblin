@@ -10,7 +10,6 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "eval:run": "tsx scripts/run-eval.ts",
     "generate-vapid": "node -e \"const wp=require('web-push');const k=wp.generateVAPIDKeys();console.log('VAPID_PUBLIC_KEY='+k.publicKey);console.log('VAPID_PRIVATE_KEY='+k.privateKey);\""
   },
   "dependencies": {
@@ -21,9 +20,11 @@
     "@octokit/rest": "^21.0.0",
     "@sentry/node": "^10.51.0",
     "@supabase/supabase-js": "^2.45.0",
+    "@types/js-yaml": "^4.0.9",
     "diff": "^9.0.0",
     "dotenv": "^16.4.0",
     "hono": "^4.6.0",
+    "js-yaml": "^4.1.1",
     "jszip": "^3.10.1",
     "openai": "^4.52.0",
     "pino": "^10.3.1",

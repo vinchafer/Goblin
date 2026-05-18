@@ -1,12 +1,11 @@
 import logger from './logger';
-import { runEvalSuite } from './eval/runner';
+import { runRankingsAggregator } from './rankings/aggregator';
 
 let scheduled = false;
 
 /**
- * Lightweight in-process scheduler. Daily at 04:00 UTC.
- * Uses setInterval (1 min tick) rather than a cron lib to avoid an extra dep.
- * No-op outside production.
+ * Lightweight in-process scheduler. No-op outside production.
+ * Rankings aggregator: every 6h (00, 06, 12, 18 UTC).
  */
 export function startCron(): void {
   if (scheduled) return;
@@ -15,19 +14,22 @@ export function startCron(): void {
     return;
   }
 
-  let lastFiredDay = -1;
+  let lastRankingsSlot = -1;
   setInterval(() => {
     const now = new Date();
     const utcHour = now.getUTCHours();
     const utcMinute = now.getUTCMinutes();
-    const utcDay = now.getUTCDate();
-    if (utcHour === 4 && utcMinute < 2 && lastFiredDay !== utcDay) {
-      lastFiredDay = utcDay;
-      logger.info('cron tick — firing eval suite');
-      runEvalSuite().catch((e) => logger.error({ error: (e as Error).message }, 'cron eval failed'));
+
+    const slot = Math.floor(utcHour / 6);
+    if (utcHour % 6 === 0 && utcMinute < 2 && lastRankingsSlot !== slot) {
+      lastRankingsSlot = slot;
+      logger.info('cron tick — firing rankings aggregator');
+      runRankingsAggregator().catch((e) =>
+        logger.error({ error: (e as Error).message }, 'cron rankings failed'),
+      );
     }
   }, 60_000);
 
   scheduled = true;
-  logger.info('cron scheduled — daily 04:00 UTC');
+  logger.info('cron scheduled — rankings every 6h');
 }
