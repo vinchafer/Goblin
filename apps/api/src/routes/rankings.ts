@@ -101,7 +101,7 @@ rankings.get('/sources', async (c) => {
   const supabase = getSupabaseAdmin();
   const { data, error } = await supabase
     .from('model_sources')
-    .select('id, name, url, description, enabled, last_fetched_at, last_status, last_record_count')
+    .select('id, name, url, description, enabled, last_fetched_at, last_status, last_error, last_record_count')
     .order('id', { ascending: true });
   if (error) return c.json({ error: 'query_failed' }, 500);
   return c.json({ sources: data ?? [] });

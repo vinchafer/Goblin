@@ -8,9 +8,20 @@ interface SourceStatus {
   url: string;
   enabled: boolean;
   last_fetched_at: string | null;
-  last_status: 'ok' | 'fail' | null;
+  last_status: 'ok' | 'fail' | 'disabled' | null;
   last_error: string | null;
   last_record_count: number;
+}
+
+function statusColor(status: SourceStatus['last_status'], enabled: boolean): string {
+  if (!enabled || status === 'disabled') return 'var(--text-meta)';
+  if (status === 'ok') return 'var(--moss-green)';
+  return 'var(--rust)';
+}
+
+function statusLabel(status: SourceStatus['last_status'], enabled: boolean): string {
+  if (!enabled || status === 'disabled') return 'disabled';
+  return status ?? '—';
 }
 
 export default function AdminRankingsPage() {
@@ -54,25 +65,36 @@ export default function AdminRankingsPage() {
           </tr>
         </thead>
         <tbody>
-          {sources.map((s) => (
-            <tr key={s.id} style={{ borderBottom: '1px solid var(--border-hairline)' }}>
-              <td style={cellStyle(false)}>{s.name}</td>
-              <td style={cellStyle(false)}>
-                <span
-                  style={{
-                    color: s.last_status === 'ok' ? 'var(--moss-green)' : 'var(--rust)',
-                    fontWeight: 600,
-                  }}
-                >
-                  {s.last_status ?? '—'}
-                </span>
-              </td>
-              <td style={cellStyle(false)}>
-                {s.last_fetched_at ? new Date(s.last_fetched_at).toLocaleString('de-CH') : '—'}
-              </td>
-              <td style={cellStyle(false)}>{s.last_record_count}</td>
-            </tr>
-          ))}
+          {sources.map((s) => {
+            const isDisabled = !s.enabled || s.last_status === 'disabled';
+            return (
+              <tr
+                key={s.id}
+                style={{
+                  borderBottom: '1px solid var(--border-hairline)',
+                  opacity: isDisabled ? 0.55 : 1,
+                }}
+              >
+                <td style={cellStyle(false)}>{s.name}</td>
+                <td style={cellStyle(false)}>
+                  <span
+                    title={s.last_error ?? undefined}
+                    style={{
+                      color: statusColor(s.last_status, s.enabled),
+                      fontWeight: 600,
+                      cursor: s.last_error ? 'help' : 'default',
+                    }}
+                  >
+                    {statusLabel(s.last_status, s.enabled)}
+                  </span>
+                </td>
+                <td style={cellStyle(false)}>
+                  {s.last_fetched_at ? new Date(s.last_fetched_at).toLocaleString('de-CH') : '—'}
+                </td>
+                <td style={cellStyle(false)}>{s.last_record_count}</td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
 
