@@ -181,12 +181,66 @@ export default function LoginPage() {
         if (error) throw error;
         setEmailSent(true);
       } else {
-        const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+        const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
+
+        // 11B-3: account lockout pre-flight.
+        try {
+          const lockoutResp = await fetch(
+            `${apiBase}/api/auth/lockout-check?email=${encodeURIComponent(email.trim())}`,
+          );
+          const lockout = await lockoutResp.json().catch(() => ({ locked: false }));
+          if (lockout.locked) {
+            const mins = Math.ceil((lockout.retryAfterSeconds ?? 0) / 60);
+            toast.error(`Account vorübergehend gesperrt. Versuche es in ${mins} Min erneut.`);
+            return;
+          }
+        } catch {
+          /* lockout-check unavailable — fail-open, attempt sign-in */
+        }
+
+        const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+
+        // Log the attempt either way (fire-and-forget).
+        void fetch(`${apiBase}/api/auth/login-attempt`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: email.trim(),
+            success: !error,
+            failureReason: error?.message,
+          }),
+        }).catch(() => undefined);
+
         if (error) {
           if (error.message.toLowerCase().includes('invalid')) toast.error('Incorrect email or password.');
           else throw error;
           return;
         }
+        // 11B-2: if 2FA is enabled for this user, gate at the 2FA step before
+        // we drop them into /dashboard. We stay signed-in but the 2FA page
+        // signs out if verification fails or is abandoned.
+        try {
+          const r = await fetch(`${apiBase}/api/auth/2fa/status`, {
+            headers: { Authorization: `Bearer ${data.session?.access_token ?? ''}` },
+          });
+          const s = await r.json().catch(() => ({ enabled: false }));
+          if (s.enabled && data.user?.id) {
+            router.push(`/login/2fa?userId=${encodeURIComponent(data.user.id)}`);
+            return;
+          }
+        } catch {
+          /* if status lookup fails, fall through to dashboard — defence
+             still happens at server side for any sensitive endpoints */
+        }
+
+        // 11B-4: register the just-issued session so it shows up in Active
+        // Sessions and triggers a "new device" email if needed. Fire and
+        // forget — never block the redirect.
+        void fetch(`${apiBase}/api/account/sessions/register`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${data.session?.access_token ?? ''}` },
+        }).catch(() => undefined);
+
         router.push('/dashboard');
       }
     } catch (err) {

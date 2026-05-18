@@ -8,6 +8,8 @@ import { useUser } from '@/lib/hooks/useUser';
 import { useSheetStack } from '../ui/SheetStack';
 import { SecurityPage } from './SecurityPage';
 import { PrivacyPage } from './PrivacyPage';
+import { TwoFactorPage } from './TwoFactorPage';
+import { SessionsPage } from './SessionsPage';
 
 const Edit14 = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -105,9 +107,9 @@ export function ProfilePage() {
       <SettingsGroup label="Sicherheit">
         <SettingsCard>
           <SettingsRow icon={<KeyIcon />} label="Passwort ändern" onClick={() => push('security', <SecurityPage />, 'Passwort ändern')} />
-          <SettingsRow icon={<ShieldIcon />} label="Zwei-Faktor-Authentifizierung" right="Bald" rightVariant="text" disabled />
+          <SettingsRow icon={<ShieldIcon />} label="Zwei-Faktor-Authentifizierung" onClick={() => push('2fa', <TwoFactorPage />, 'Zwei-Faktor-Authentifizierung')} />
           <SettingsRow icon={<FingerprintIcon />} label="Passkeys" right="Bald" rightVariant="text" disabled />
-          <SettingsRow icon={<DeviceIcon />} label="Aktive Sitzungen" right="Bald" rightVariant="text" disabled />
+          <SettingsRow icon={<DeviceIcon />} label="Aktive Sitzungen" onClick={() => push('sessions', <SessionsPage />, 'Aktive Sitzungen')} />
         </SettingsCard>
       </SettingsGroup>
 
