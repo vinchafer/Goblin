@@ -4,6 +4,7 @@ import {
   encryptData, decryptData,
   encryptUserData, decryptUserData, generateUserSalt
 } from './encryption';
+import { encryptApiKeyV2, decryptApiKey } from '../lib/byok-encryption';
 
 export type ValidationResult = 'valid' | 'invalid' | 'timeout' | 'unsupported' | 'error';
 
@@ -233,8 +234,21 @@ export async function createKey(
     throw new Error(testResult.error || 'Invalid key');
   }
 
-  const userSalt = await getOrCreateUserSalt(userId);
-  const encrypted = encryptUserData(rawKey, userSalt);
+  // 11B-1: New keys go straight to v2 (Vault-managed KEK). Existing v1 rows
+  // lazy-migrate on first decrypt via decryptApiKey().
+  let encryptedBlob: string;
+  let vaultSecretId: string | null = null;
+  let encryptionVersion = 1;
+  try {
+    const v2 = await encryptApiKeyV2(userId, rawKey);
+    encryptedBlob = v2.ciphertextB64;
+    vaultSecretId = v2.vaultSecretId;
+    encryptionVersion = v2.version;
+  } catch {
+    // Vault not yet provisioned / RPC missing — fall back to v1 (legacy).
+    const userSalt = await getOrCreateUserSalt(userId);
+    encryptedBlob = encryptUserData(rawKey, userSalt);
+  }
   // Store last 4 chars for display — never more
   const keyHint = rawKey.slice(-4);
   const resolvedLabel = label?.trim() || provider;
@@ -242,9 +256,11 @@ export async function createKey(
   const insertData: Record<string, unknown> = {
     user_id: userId,
     provider,
-    key_encrypted: encrypted,
+    key_encrypted: encryptedBlob,
     key_hint: keyHint,
     validated_at: new Date().toISOString(),
+    encryption_version: encryptionVersion,
+    vault_secret_id: vaultSecretId,
   };
 
   const { data } = await supabase
@@ -296,7 +312,7 @@ export async function getActiveKey(userId: string, provider: ByokProvider): Prom
   const [keyResult, userResult] = await Promise.all([
     supabase
       .from('byok_keys')
-      .select('key_encrypted')
+      .select('id, key_encrypted, encryption_version, vault_secret_id')
       .eq('user_id', userId)
       .eq('provider', provider)
       .eq('status', 'active')
@@ -312,19 +328,27 @@ export async function getActiveKey(userId: string, provider: ByokProvider): Prom
 
   if (!keyResult.data) return null;
 
-  const userSalt = userResult.data?.encryption_salt as string | null;
+  const userSalt = (userResult.data?.encryption_salt as string | null) ?? null;
+  const row = keyResult.data as {
+    id: string;
+    key_encrypted: string;
+    encryption_version: number | null;
+    vault_secret_id: string | null;
+  };
 
   try {
-    if (userSalt) {
-      // Per-user-salt (Phase Z2) — attempt new decryption first
-      try {
-        return decryptUserData(keyResult.data.key_encrypted, userSalt);
-      } catch {
-        // Fall through to legacy decryption for keys not yet migrated
-      }
-    }
-    // Legacy decryption (static salt)
-    return decryptData(keyResult.data.key_encrypted);
+    const { plaintext } = await decryptApiKey(
+      userId,
+      row.id,
+      {
+        ciphertextB64: row.key_encrypted,
+        version: row.encryption_version ?? 1,
+        vaultSecretId: row.vault_secret_id,
+        userSaltB64: userSalt,
+      },
+      { provider },
+    );
+    return plaintext;
   } catch {
     throw new Error('API key needs to be re-entered. Please go to Settings → API Keys.');
   }

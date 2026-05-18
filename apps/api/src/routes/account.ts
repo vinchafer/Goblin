@@ -311,4 +311,133 @@ account.post('/change-password', authMiddleware, async (c) => {
   return c.json({ success: true, message: 'Passwort geändert. Du musst dich neu einloggen.' });
 });
 
+/**
+ * POST /api/account/sessions/register
+ * Called by the web app right after a successful Supabase sign-in (and after
+ * the optional 2FA step) to record the just-issued access_token in
+ * user_sessions. Sends a "new device" email if this UA hasn't been seen.
+ */
+account.post('/sessions/register', authMiddleware, async (c) => {
+  const userId = c.get('userId');
+  const authHeader = c.req.header('Authorization') ?? '';
+  const sessionToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+  if (!sessionToken) return c.json({ error: 'Missing token' }, 400);
+
+  const supabase = getSupabaseAdmin();
+  const { data: userResp } = await supabase.auth.admin.getUserById(userId);
+  const email = userResp?.user?.email ?? '';
+
+  const ipAddress =
+    c.req.header('cf-connecting-ip') ||
+    c.req.header('x-forwarded-for')?.split(',')[0]?.trim() ||
+    undefined;
+  const userAgent = c.req.header('user-agent') ?? undefined;
+
+  const { createUserSession } = await import('../middleware/session-tracking');
+  const id = await createUserSession({
+    userId,
+    sessionToken,
+    email,
+    ipAddress,
+    userAgent,
+  });
+  return c.json({ ok: true, sessionId: id });
+});
+
+/**
+ * GET /api/account/sessions
+ * Lists active sessions for the current user. Marks the request's own
+ * session by hash so the UI can flag it.
+ */
+account.get('/sessions', authMiddleware, async (c) => {
+  const userId = c.get('userId');
+  const supabase = getSupabaseAdmin();
+  const authHeader = c.req.header('Authorization') ?? '';
+  const sessionToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+  const { sha256: hash } = await import('../middleware/session-tracking');
+  const currentHash = sessionToken ? hash(sessionToken) : null;
+
+  const { data, error } = await supabase
+    .from('user_sessions')
+    .select('id, session_token_hash, device_label, ip_address, last_active_at, created_at, expires_at')
+    .eq('user_id', userId)
+    .eq('revoked', false)
+    .gt('expires_at', new Date().toISOString())
+    .order('last_active_at', { ascending: false });
+  if (error) return c.json({ error: 'Could not load sessions' }, 500);
+
+  const sessions = (data ?? []).map((row) => ({
+    id: row.id,
+    device_label: row.device_label,
+    ip_address: row.ip_address,
+    last_active_at: row.last_active_at,
+    created_at: row.created_at,
+    expires_at: row.expires_at,
+    isCurrent: currentHash !== null && row.session_token_hash === currentHash,
+  }));
+
+  return c.json({ sessions });
+});
+
+/**
+ * POST /api/account/sessions/:id/revoke
+ */
+account.post('/sessions/:id/revoke', authMiddleware, async (c) => {
+  const userId = c.get('userId');
+  const sessionId = c.req.param('id');
+  const supabase = getSupabaseAdmin();
+  const { error } = await supabase
+    .from('user_sessions')
+    .update({ revoked: true, revoked_at: new Date().toISOString() })
+    .eq('id', sessionId)
+    .eq('user_id', userId);
+  if (error) return c.json({ error: 'Could not revoke session' }, 500);
+  return c.json({ success: true });
+});
+
+/**
+ * POST /api/account/sessions/revoke-others
+ * Revokes every session for the user except the one making this request.
+ */
+account.post('/sessions/revoke-others', authMiddleware, async (c) => {
+  const userId = c.get('userId');
+  const authHeader = c.req.header('Authorization') ?? '';
+  const sessionToken = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
+  if (!sessionToken) return c.json({ error: 'Missing token' }, 400);
+
+  const supabase = getSupabaseAdmin();
+  const { sha256: hash } = await import('../middleware/session-tracking');
+  const currentHash = hash(sessionToken);
+
+  const { error } = await supabase
+    .from('user_sessions')
+    .update({ revoked: true, revoked_at: new Date().toISOString() })
+    .eq('user_id', userId)
+    .eq('revoked', false)
+    .neq('session_token_hash', currentHash);
+  if (error) return c.json({ error: 'Could not revoke sessions' }, 500);
+  return c.json({ success: true });
+});
+
+/**
+ * GET /api/account/byok-decrypt-log
+ * Returns the latest decrypt audit entries for the current user.
+ */
+account.get('/byok-decrypt-log', authMiddleware, async (c) => {
+  const userId = c.get('userId');
+  const limitRaw = parseInt(c.req.query('limit') ?? '50', 10);
+  const limit = Math.min(Math.max(isFinite(limitRaw) ? limitRaw : 50, 1), 200);
+
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from('byok_decrypt_log')
+    .select('id, provider, operation, ip_address, user_agent, created_at')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) return c.json({ error: 'Could not fetch log' }, 500);
+  return c.json({ entries: data ?? [] });
+});
+
 export { account };
