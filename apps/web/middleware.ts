@@ -37,6 +37,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/imprint') ||
     pathname.startsWith('/help') ||
     pathname.startsWith('/pricing') ||
+    pathname.startsWith('/models') ||
     pathname.startsWith('/_next/') ||
     pathname.startsWith('/api/');
 
