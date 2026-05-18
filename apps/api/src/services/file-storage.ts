@@ -261,6 +261,58 @@ export async function deleteProject(projectId: string): Promise<void> {
 }
 
 /**
+ * Delete everything under `users/{userId}/` from object storage. Best-effort,
+ * used by the GDPR hard-delete cron. Returns the number of objects removed.
+ */
+export async function deleteUserStorage(userId: string): Promise<number> {
+  const prefix = `users/${userId}/`;
+  const s3 = getS3Client();
+
+  if (!s3) {
+    let n = 0;
+    for (const key of memoryStorage.keys()) {
+      if (key.startsWith(prefix)) {
+        memoryStorage.delete(key);
+        n++;
+      }
+    }
+    return n;
+  }
+
+  const keys: { Key: string }[] = [];
+  let continuationToken: string | undefined;
+  do {
+    const response = await s3.send(
+      new ListObjectsV2Command({
+        Bucket: getBucket(),
+        Prefix: prefix,
+        ContinuationToken: continuationToken,
+      }),
+    );
+    if (response.Contents) {
+      for (const obj of response.Contents) {
+        if (obj.Key) keys.push({ Key: obj.Key });
+      }
+    }
+    continuationToken = response.NextContinuationToken;
+  } while (continuationToken);
+
+  if (keys.length === 0) return 0;
+
+  // S3 caps DeleteObjects at 1000 per call.
+  for (let i = 0; i < keys.length; i += 1000) {
+    const batch = keys.slice(i, i + 1000);
+    await s3.send(
+      new DeleteObjectsCommand({
+        Bucket: getBucket(),
+        Delete: { Objects: batch, Quiet: true },
+      }),
+    );
+  }
+  return keys.length;
+}
+
+/**
  * Create a ZIP file containing all project files.
  * Returns a Buffer of the ZIP data.
  */
