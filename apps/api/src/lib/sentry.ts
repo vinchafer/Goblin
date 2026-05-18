@@ -6,8 +6,8 @@ export function initSentry() {
 
   Sentry.init({
     dsn,
-    environment: process.env.NODE_ENV ?? 'development',
-    tracesSampleRate: process.env.NODE_ENV === 'production' ? 0.05 : 1.0,
+    environment: process.env.SENTRY_ENVIRONMENT ?? process.env.RAILWAY_ENVIRONMENT ?? 'production',
+    tracesSampleRate: Number(process.env.SENTRY_TRACES_SAMPLE_RATE ?? 0.05),
     beforeSend(event) {
       // Never send API keys or secrets to Sentry
       const scrub = ['apiKey', 'key', 'secret', 'password', 'token', 'key_encrypted', 'ENCRYPTION_KEY'];

@@ -3,9 +3,9 @@ import pino from 'pino';
 const SENSITIVE_PATHS = ['apiKey', 'key', 'secret', 'password', 'token', 'key_encrypted', 'authorization'];
 
 const logger = pino({
-  level: process.env.LOG_LEVEL ?? (process.env.NODE_ENV === 'production' ? 'info' : 'debug'),
+  level: process.env.LOG_LEVEL ?? 'info',
   redact: { paths: SENSITIVE_PATHS, censor: '[REDACTED]' },
-  ...(process.env.NODE_ENV !== 'production' && {
+  ...(process.env.PRETTY_LOGS === 'true' && {
     transport: {
       target: 'pino-pretty',
       options: { colorize: true, translateTime: 'HH:MM:ss', ignore: 'pid,hostname' },

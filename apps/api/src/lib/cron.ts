@@ -4,13 +4,13 @@ import { runRankingsAggregator } from './rankings/aggregator';
 let scheduled = false;
 
 /**
- * Lightweight in-process scheduler. No-op outside production.
+ * Lightweight in-process scheduler. No-op unless ENABLE_CRON=true.
  * Rankings aggregator: every 6h (00, 06, 12, 18 UTC).
  */
 export function startCron(): void {
   if (scheduled) return;
-  if (process.env.NODE_ENV !== 'production') {
-    logger.info('cron disabled (NODE_ENV != production)');
+  if (process.env.ENABLE_CRON !== 'true') {
+    logger.info('cron disabled (ENABLE_CRON != true)');
     return;
   }
 
