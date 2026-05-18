@@ -5,6 +5,9 @@ import { SettingsCard } from '../ui/SettingsCard';
 import { SettingsGroup } from '../ui/SettingsGroup';
 import { SettingsRow } from '../ui/SettingsRow';
 import { useUser } from '@/lib/hooks/useUser';
+import { useSheetStack } from '../ui/SheetStack';
+import { SecurityPage } from './SecurityPage';
+import { PrivacyPage } from './PrivacyPage';
 
 const Edit14 = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -22,6 +25,7 @@ const TrashIcon = ({ color = 'currentColor' }: { color?: string }) => <svg width
 
 export function ProfilePage() {
   const { user, updateProfile } = useUser();
+  const { push } = useSheetStack();
   const [name, setName] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [saving, setSaving] = useState(false);
@@ -100,7 +104,7 @@ export function ProfilePage() {
 
       <SettingsGroup label="Sicherheit">
         <SettingsCard>
-          <SettingsRow icon={<KeyIcon />} label="Passwort ändern" onClick={() => alert('In Arbeit — 9E')} />
+          <SettingsRow icon={<KeyIcon />} label="Passwort ändern" onClick={() => push('security', <SecurityPage />, 'Passwort ändern')} />
           <SettingsRow icon={<ShieldIcon />} label="Zwei-Faktor-Authentifizierung" right="Bald" rightVariant="text" disabled />
           <SettingsRow icon={<FingerprintIcon />} label="Passkeys" right="Bald" rightVariant="text" disabled />
           <SettingsRow icon={<DeviceIcon />} label="Aktive Sitzungen" right="Bald" rightVariant="text" disabled />
@@ -147,7 +151,7 @@ export function ProfilePage() {
             label="Konto löschen"
             labelColor="var(--rust)"
             rightVariant="chevron"
-            onClick={() => alert('Konto-Löschen → 9E (braucht Confirm-Flow)')}
+            onClick={() => push('privacy', <PrivacyPage />, 'Datenschutz')}
           />
         </SettingsCard>
       </SettingsGroup>
