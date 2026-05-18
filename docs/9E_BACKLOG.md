@@ -102,6 +102,16 @@
 - GROQ_FREE_API_KEY removal from Railway (Layer B cleanup)
 - ENCRYPTION_KEY setup für CI
 
+## Model Intelligence — Source Coverage (Session 10, 2026-05-18)
+
+### LiveBench (currently disabled)
+- Disabled since Session 10 (2026-05-18) via migration `0041_disable_livebench.sql`
+- Reason: No official structured data export
+- Tracked: https://github.com/LiveBench/LiveBench/issues/82 (open since Nov 2024)
+- Re-enable trigger: Official LiveBench API or JSON dump becomes available
+- Workaround considered + rejected: Web scraping (ToS violation, JS-rendered, fragile)
+- Workaround considered + deferred: Own mini-evals via paid APIs (9R-V2 scope)
+
 ## Deferred from 9R (2026-05-16) — Model Intelligence Layer
 
 ### Paid API integration (~2-3 weeks)

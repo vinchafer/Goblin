@@ -71,9 +71,29 @@ export async function runRankingsAggregator(): Promise<{
   const runId = randomUUID();
   const supabase = getSupabaseAdmin();
 
-  logger.info({ runId, adapterCount: ADAPTERS.length }, 'rankings aggregator starting');
+  const { data: sourceRows } = await supabase
+    .from('model_sources')
+    .select('id, enabled');
+  const enabledIds = new Set(
+    (sourceRows ?? []).filter((s: { enabled: boolean | null }) => s.enabled !== false).map((s: { id: string }) => s.id),
+  );
+  // If model_sources is empty (fresh install), default to running all adapters.
+  const adaptersToRun = sourceRows && sourceRows.length > 0
+    ? ADAPTERS.filter((a) => enabledIds.has(a.id))
+    : ADAPTERS;
+  const disabledAdapters = ADAPTERS.filter((a) => !adaptersToRun.includes(a)).map((a) => a.id);
 
-  const results: AdapterResult[] = await Promise.all(ADAPTERS.map((a) => a.fetch()));
+  logger.info(
+    {
+      runId,
+      adapterCount: adaptersToRun.length,
+      totalAdapters: ADAPTERS.length,
+      disabledAdapters,
+    },
+    'rankings aggregator starting',
+  );
+
+  const results: AdapterResult[] = await Promise.all(adaptersToRun.map((a) => a.fetch()));
   const failed: string[] = [];
 
   for (const r of results) {
@@ -202,11 +222,11 @@ export async function runRankingsAggregator(): Promise<{
     'rankings aggregator finished',
   );
 
-  if (failed.length < ADAPTERS.length) {
+  if (failed.length < adaptersToRun.length) {
     await pingHeartbeat();
   }
 
-  return { runId, sources: ADAPTERS.length, modelsAdded, rankingsWritten, failed };
+  return { runId, sources: adaptersToRun.length, modelsAdded, rankingsWritten, failed };
 }
 
 async function computeCompositeRankings(supabase: SupabaseClient): Promise<void> {

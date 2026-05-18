@@ -1,3 +1,18 @@
+/**
+ * LiveBench Adapter — DISABLED as of 2026-05-18 (Session 10).
+ *
+ * Reason: LiveBench does not provide an official data export.
+ * See: https://github.com/LiveBench/LiveBench/issues/82
+ *
+ * The aggregator skips this adapter when model_sources.enabled = false
+ * (set by migration 0041_disable_livebench.sql). The code below stays
+ * as a skeleton for future re-enable.
+ *
+ * To re-enable:
+ * 1. Verify LiveBench publishes an official JSON/CSV endpoint
+ * 2. Update the URL constants and parsing logic
+ * 3. Set model_sources.enabled = true via SQL migration
+ */
 import type { SourceAdapter, AdapterResult, RawAdapterEntry } from '../types';
 import { canonicalize } from '../canonicalize';
 import logger from '../../logger';
