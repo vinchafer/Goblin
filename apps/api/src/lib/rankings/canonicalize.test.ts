@@ -33,3 +33,33 @@ describe('canonicalize', () => {
     expect(extractFamily('deepseek/deepseek-r1')).toBe('deepseek');
   });
 });
+
+describe('canonicalize — SWE-Bench style names', () => {
+  it('handles space-separated Claude names', () => {
+    expect(canonicalize('Claude 3.5 Sonnet')).toBe('anthropic/claude-3-5-sonnet');
+    expect(canonicalize('Claude 3.7 Sonnet')).toBe('anthropic/claude-3-7-sonnet');
+    expect(canonicalize('Claude Sonnet 4')).toBe('anthropic/claude-sonnet-4');
+  });
+
+  it('handles space-separated GPT names', () => {
+    expect(canonicalize('GPT-4o')).toBe('openai/gpt-4o');
+    expect(canonicalize('GPT-4')).toBe('openai/gpt-4');
+  });
+
+  it('handles space-separated Gemini names', () => {
+    expect(canonicalize('Gemini 1.5 Pro')).toBe('google/gemini-1-5-pro');
+  });
+
+  it('handles space-separated DeepSeek names', () => {
+    expect(canonicalize('DeepSeek V3')).toBe('deepseek/deepseek-v3');
+    expect(canonicalize('DeepSeek R1')).toBe('deepseek/deepseek-r1');
+  });
+
+  it('handles Qwen variants', () => {
+    expect(canonicalize('Qwen2.5-Coder')).toBe('alibaba/qwen2-5-coder');
+  });
+
+  it('handles Llama with size suffix', () => {
+    expect(canonicalize('Llama 3.1 405B')).toBe('meta/llama-3-1-405b');
+  });
+});

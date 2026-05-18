@@ -33,6 +33,7 @@ export function canonicalize(raw: string): string {
 
   model = model.replace(DATE_SUFFIX_RE, '').replace(DATE_DASH_RE, '');
   model = model.replace(/\./g, '-');
+  model = model.replace(/\s+/g, '-');
 
   if (!provider) {
     if (model.startsWith('claude')) provider = 'anthropic';
