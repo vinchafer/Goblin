@@ -1,6 +1,7 @@
 import logger from './logger';
 import { runRankingsAggregator } from './rankings/aggregator';
 import { hardDeletePendingAccounts } from '../jobs/hard-delete-pending-accounts';
+import { expireStaleSessions } from '../jobs/expire-stale-sessions';
 
 let scheduled = false;
 
@@ -18,6 +19,7 @@ export function startCron(): void {
 
   let lastRankingsSlot = -1;
   let lastHardDeleteDay = -1;
+  let lastSessionSweepHour = -1;
 
   setInterval(() => {
     const now = new Date();
@@ -34,6 +36,13 @@ export function startCron(): void {
       );
     }
 
+    if (utcMinute < 2 && lastSessionSweepHour !== utcHour) {
+      lastSessionSweepHour = utcHour;
+      expireStaleSessions().catch((e) =>
+        logger.error({ error: (e as Error).message }, 'cron expire-stale-sessions failed'),
+      );
+    }
+
     if (utcHour === 3 && utcMinute < 2 && lastHardDeleteDay !== utcDay) {
       lastHardDeleteDay = utcDay;
       logger.info('cron tick — firing hard-delete pending accounts');
@@ -46,5 +55,5 @@ export function startCron(): void {
   }, 60_000);
 
   scheduled = true;
-  logger.info('cron scheduled — rankings every 6h, hard-delete daily 03:00 UTC');
+  logger.info('cron scheduled — rankings 6h, hard-delete daily 03:00 UTC, session sweep hourly');
 }

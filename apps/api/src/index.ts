@@ -76,6 +76,8 @@ import { secrets } from './routes/secrets';
 import { rankings } from './routes/rankings';
 import { adminRankings } from './routes/admin-rankings';
 import { account } from './routes/account';
+import { auth2fa } from './routes/auth-2fa';
+import { auth } from './routes/auth';
 import { startCron } from './lib/cron';
 
 const app = new Hono();
@@ -188,6 +190,8 @@ app.route('/api/projects', secrets);
 app.route('/api/rankings', rankings);
 app.route('/api/admin/rankings', adminRankings);
 app.route('/api/account', account);
+app.route('/api/auth/2fa', auth2fa);
+app.route('/api/auth', auth);
 
 // 9R — rankings aggregator every 6h (production only)
 startCron();
