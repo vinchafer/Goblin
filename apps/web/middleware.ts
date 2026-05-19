@@ -40,6 +40,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/models') ||
     pathname.startsWith('/cancel-deletion') ||
     pathname.startsWith('/deletion-pending') ||
+    pathname.startsWith('/shared/') ||
     pathname.startsWith('/_next/') ||
     pathname.startsWith('/api/');
 

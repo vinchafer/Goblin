@@ -221,6 +221,100 @@ chatSessions.patch('/:id', async (c) => {
   return c.json({ success: true });
 });
 
+// POST /api/chat-sessions/:id/pin
+chatSessions.post('/:id/pin', async (c) => {
+  const userId = c.get('userId');
+  const sessionId = c.req.param('id');
+  const supabase = getSupabaseAdmin();
+  const { error } = await supabase
+    .from('chat_sessions')
+    .update({ pinned: true, pinned_at: new Date().toISOString() })
+    .eq('id', sessionId)
+    .eq('user_id', userId);
+  if (error) return c.json({ error: 'Failed to pin' }, 500);
+  return c.json({ success: true });
+});
+
+chatSessions.post('/:id/unpin', async (c) => {
+  const userId = c.get('userId');
+  const sessionId = c.req.param('id');
+  const supabase = getSupabaseAdmin();
+  await supabase
+    .from('chat_sessions')
+    .update({ pinned: false, pinned_at: null })
+    .eq('id', sessionId)
+    .eq('user_id', userId);
+  return c.json({ success: true });
+});
+
+chatSessions.post('/:id/archive', async (c) => {
+  const userId = c.get('userId');
+  const sessionId = c.req.param('id');
+  const supabase = getSupabaseAdmin();
+  await supabase
+    .from('chat_sessions')
+    .update({ archived: true, archived_at: new Date().toISOString() })
+    .eq('id', sessionId)
+    .eq('user_id', userId);
+  return c.json({ success: true });
+});
+
+chatSessions.post('/:id/unarchive', async (c) => {
+  const userId = c.get('userId');
+  const sessionId = c.req.param('id');
+  const supabase = getSupabaseAdmin();
+  await supabase
+    .from('chat_sessions')
+    .update({ archived: false, archived_at: null })
+    .eq('id', sessionId)
+    .eq('user_id', userId);
+  return c.json({ success: true });
+});
+
+// POST /api/chat-sessions/:id/share — issue a share token (idempotent: reuses existing)
+chatSessions.post('/:id/share', async (c) => {
+  const userId = c.get('userId');
+  const sessionId = c.req.param('id');
+  const supabase = getSupabaseAdmin();
+  const { data: existing } = await supabase
+    .from('chat_sessions')
+    .select('share_token')
+    .eq('id', sessionId)
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (!existing) return c.json({ error: 'Not found' }, 404);
+
+  let token = (existing as { share_token: string | null }).share_token;
+  if (!token) {
+    const { randomBytes } = await import('crypto');
+    token = randomBytes(16).toString('hex');
+    const { error } = await supabase
+      .from('chat_sessions')
+      .update({ share_token: token, share_enabled_at: new Date().toISOString() })
+      .eq('id', sessionId)
+      .eq('user_id', userId);
+    if (error) return c.json({ error: 'Failed to share' }, 500);
+  }
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://justgoblin.com';
+  return c.json({ success: true, token, url: `${appUrl}/shared/${token}` });
+});
+
+chatSessions.post('/:id/unshare', async (c) => {
+  const userId = c.get('userId');
+  const sessionId = c.req.param('id');
+  const supabase = getSupabaseAdmin();
+  await supabase
+    .from('chat_sessions')
+    .update({ share_token: null, share_enabled_at: null })
+    .eq('id', sessionId)
+    .eq('user_id', userId);
+  return c.json({ success: true });
+});
+
+// Public: shared read-only view (no auth).
+// Mounted at top-level /api/shared so the authMiddleware doesn't apply.
+
 // DELETE /api/chat-sessions/:id
 chatSessions.delete('/:id', async (c) => {
   const userId = c.get('userId');

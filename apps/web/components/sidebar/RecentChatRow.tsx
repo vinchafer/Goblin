@@ -13,11 +13,27 @@ interface RecentChatRowProps {
     title: string | null;
     updated_at: string;
     pinned?: boolean;
+    archived?: boolean;
     project_name?: string | null;
   };
   active?: boolean;
   onNavigate: (id: string) => void;
   onUpdate?: () => void;
+}
+
+async function callChatAction(chatId: string, action: string, body?: Record<string, unknown>): Promise<Response> {
+  const supabase = createClient();
+  const { data: { session } } = await supabase.auth.getSession();
+  const token = session?.access_token;
+  const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
+  return fetch(`${apiBase}/api/chat-sessions/${chatId}/${action}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  });
 }
 
 const Pin20 = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><line x1="12" y1="17" x2="12" y2="22"/><path d="M5 17h14l-2-7 2-3H7l2 3-2 7z"/></svg>;
@@ -39,6 +55,8 @@ function timeAgoShort(dateStr: string): string {
 export function RecentChatRow({ chat, active, onNavigate, onUpdate }: RecentChatRowProps) {
   const [contextOpen, setContextOpen] = useState(false);
   const [pressing, setPressing] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState(chat.title ?? '');
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressFired = useRef(false);
@@ -174,35 +192,64 @@ export function RecentChatRow({ chat, active, onNavigate, onUpdate }: RecentChat
               label={chat.pinned ? 'Anheften entfernen' : 'Anheften'}
               rightVariant="none"
               testId="ctx-pin"
-              onClick={() => { toast.info('Pin — kommt in 9E'); setContextOpen(false); }}
+              onClick={async () => {
+                setContextOpen(false);
+                const r = await callChatAction(chat.id, chat.pinned ? 'unpin' : 'pin');
+                if (r.ok) {
+                  toast.success(chat.pinned ? 'Anheften entfernt' : 'Angeheftet');
+                  onUpdate?.();
+                } else {
+                  toast.error('Konnte nicht aktualisiert werden');
+                }
+              }}
             />
             <SettingsRow
               icon={<Edit20 />}
               label="Umbenennen"
               rightVariant="none"
               testId="ctx-rename"
-              onClick={() => { toast.info('Rename — kommt in 9E'); setContextOpen(false); }}
+              onClick={() => {
+                setRenameValue(chat.title ?? '');
+                setRenaming(true);
+                setContextOpen(false);
+              }}
             />
             <SettingsRow
               icon={<Share20 />}
               label="Weitergeben"
               rightVariant="none"
               testId="ctx-share"
-              onClick={() => { toast.info('Share — kommt in 9E'); setContextOpen(false); }}
-            />
-            <SettingsRow
-              icon={<Folder20 />}
-              label="Zu Projekt hinzufügen"
-              rightVariant="chevron"
-              testId="ctx-move"
-              onClick={() => { toast.info('Move — kommt in 9E'); setContextOpen(false); }}
+              onClick={async () => {
+                setContextOpen(false);
+                const r = await callChatAction(chat.id, 'share');
+                const data = await r.json().catch(() => ({}));
+                if (r.ok && data.url) {
+                  try {
+                    await navigator.clipboard.writeText(data.url);
+                    toast.success('Link kopiert');
+                  } catch {
+                    toast.success(`Link: ${data.url}`);
+                  }
+                } else {
+                  toast.error('Konnte nicht geteilt werden');
+                }
+              }}
             />
             <SettingsRow
               icon={<Archive20 />}
-              label="Archivieren"
+              label={chat.archived ? 'Aus Archiv holen' : 'Archivieren'}
               rightVariant="none"
               testId="ctx-archive"
-              onClick={() => { toast.info('Archive — kommt in 9E'); setContextOpen(false); }}
+              onClick={async () => {
+                setContextOpen(false);
+                const r = await callChatAction(chat.id, chat.archived ? 'unarchive' : 'archive');
+                if (r.ok) {
+                  toast.success(chat.archived ? 'Aus Archiv geholt' : 'Archiviert');
+                  onUpdate?.();
+                } else {
+                  toast.error('Konnte nicht aktualisiert werden');
+                }
+              }}
             />
           </SettingsCard>
           <div style={{ marginTop: 12 }}>
@@ -219,6 +266,130 @@ export function RecentChatRow({ chat, active, onNavigate, onUpdate }: RecentChat
           </div>
         </div>
       </BottomSheet>
+
+      {renaming && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          onClick={() => setRenaming(false)}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 200,
+            padding: 16,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: 'var(--panel)',
+              padding: 20,
+              borderRadius: 'var(--radius-lg)',
+              width: '100%',
+              maxWidth: 420,
+              fontFamily: 'var(--font-ui)',
+            }}
+          >
+            <h3 style={{ margin: '0 0 12px', fontFamily: 'var(--font-brand)', fontSize: 18 }}>
+              Chat umbenennen
+            </h3>
+            <input
+              autoFocus
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              maxLength={120}
+              onKeyDown={async (e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  const v = renameValue.trim();
+                  if (!v) return;
+                  const supabase = createClient();
+                  const { data: { session } } = await supabase.auth.getSession();
+                  const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
+                  await fetch(`${apiBase}/api/chat-sessions/${chat.id}`, {
+                    method: 'PATCH',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}),
+                    },
+                    body: JSON.stringify({ title: v }),
+                  });
+                  toast.success('Umbenannt');
+                  setRenaming(false);
+                  onUpdate?.();
+                } else if (e.key === 'Escape') {
+                  setRenaming(false);
+                }
+              }}
+              style={{
+                width: '100%',
+                padding: '10px 12px',
+                border: '1px solid var(--div)',
+                borderRadius: 8,
+                fontSize: 15,
+                background: 'var(--white)',
+                color: 'var(--text)',
+                marginBottom: 12,
+                boxSizing: 'border-box',
+                fontFamily: 'var(--font-ui)',
+              }}
+            />
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button
+                onClick={() => setRenaming(false)}
+                style={{
+                  padding: '8px 14px',
+                  background: 'transparent',
+                  color: 'var(--text)',
+                  border: '1px solid var(--div)',
+                  borderRadius: 8,
+                  cursor: 'pointer',
+                  fontFamily: 'var(--font-ui)',
+                }}
+              >
+                Abbrechen
+              </button>
+              <button
+                onClick={async () => {
+                  const v = renameValue.trim();
+                  if (!v) return;
+                  const supabase = createClient();
+                  const { data: { session } } = await supabase.auth.getSession();
+                  const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
+                  await fetch(`${apiBase}/api/chat-sessions/${chat.id}`, {
+                    method: 'PATCH',
+                    headers: {
+                      'Content-Type': 'application/json',
+                      ...(session ? { Authorization: `Bearer ${session.access_token}` } : {}),
+                    },
+                    body: JSON.stringify({ title: v }),
+                  });
+                  toast.success('Umbenannt');
+                  setRenaming(false);
+                  onUpdate?.();
+                }}
+                disabled={!renameValue.trim()}
+                style={{
+                  padding: '8px 14px',
+                  background: renameValue.trim() ? 'var(--moss)' : 'rgba(0,0,0,0.10)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: 8,
+                  cursor: renameValue.trim() ? 'pointer' : 'not-allowed',
+                  fontWeight: 600,
+                  fontFamily: 'var(--font-ui)',
+                }}
+              >
+                Speichern
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

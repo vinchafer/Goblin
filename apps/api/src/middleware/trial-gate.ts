@@ -15,6 +15,7 @@ const SKIP_PATHS = [
   '/api/rankings',
   '/api/account',
   '/api/auth',
+  '/api/shared',
 ];
 
 // Check if request is BYOK-backed (no trial cost to Goblin)
