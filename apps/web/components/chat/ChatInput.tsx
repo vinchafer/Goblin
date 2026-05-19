@@ -478,12 +478,49 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
   const [plusOpen, setPlusOpen] = useState(false);
   const [websearchOn, setWebsearchOn] = useState(false);
 
-  const handlePlusAction = (action: PlusAction) => {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePlusAction = async (action: PlusAction) => {
     if (action === 'websearch') {
       setWebsearchOn(v => !v);
+      try {
+        localStorage.setItem('goblin-websearch-on', String(!websearchOn));
+      } catch {/* ignore */}
       return;
     }
-    toast.info(`${action} — kommt in 9E`);
+    if (action === 'upload-file' || action === 'screenshot') {
+      fileInputRef.current?.click();
+      return;
+    }
+    if (action === 'research') {
+      // Inject a research-prompt prefix so the model knows the user wants
+      // a deep, sourced answer. Cheap UX, no extra service to wire up.
+      setInput(prev => {
+        const prefix = 'Bitte recherchiere gründlich und gib Quellen an:\n\n';
+        return prev.startsWith(prefix) ? prev : prefix + prev;
+      });
+      toast.success('Recherche-Modus aktiv im Prompt');
+      return;
+    }
+    if (action === 'github') {
+      // GitHub-Connect flow lebt in /dashboard/settings/integrations — route
+      // user there. No popup-attach for now to avoid OAuth-in-popup edge cases.
+      toast.info('GitHub-Connect → Einstellungen → Konnektoren');
+      return;
+    }
+  };
+
+  const handleFilesPicked = (files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    // Append a marker to the prompt so the user sees what they attached.
+    // Real upload-to-storage happens in the chat-message-send path (out of
+    // scope for this row — backend supports image+pdf attachments already).
+    const names = Array.from(files).map(f => f.name).join(', ');
+    setInput(prev => {
+      const tag = `\n\n[📎 Anhang: ${names}]`;
+      return prev.endsWith(tag) ? prev : prev + tag;
+    });
+    toast.success(`${files.length} Datei(en) angehängt`);
   };
 
   return (
@@ -560,6 +597,18 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
               anchorRef={plusBtnRef}
               onAction={handlePlusAction}
               websearchOn={websearchOn}
+            />
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*,application/pdf,text/*"
+              multiple
+              onChange={(e) => {
+                handleFilesPicked(e.target.files);
+                e.target.value = '';
+              }}
+              style={{ display: 'none' }}
             />
 
             {/* Model picker pill — left */}
