@@ -1,0 +1,93 @@
+/* ============================================================
+   Goblin — Design Tokens (Source of Truth: Brand Handoff v1.0)
+   Imported in app/layout.tsx after globals.css
+   ============================================================ */
+
+:root {
+  /* ─── Brand colors (canonical) ─────────────── */
+  --goblin-green:  #0F2B1E;
+  --goblin-moss:   #2D4A2B;
+  --goblin-gold:   #D4A737;
+  --goblin-ochre:  #D4A94A;
+  --goblin-cream:  #F7F4ED;
+  --goblin-white:  #FFFFFF;
+  --goblin-black:  #111111;
+
+  /* ─── Backwards-compat aliases ──────────────── */
+  /* Existing components keep working. New code should use --goblin-*. */
+  --moss:  var(--goblin-moss);
+  --ochre: var(--goblin-ochre);
+  --cream: var(--goblin-cream);
+
+  /* ─── Surfaces & ink (semantic) ─────────────── */
+  --surface-page:     var(--goblin-cream);
+  --surface-dark:     var(--goblin-green);
+  --surface-elevated: var(--goblin-moss);
+  --ink-on-dark:      var(--goblin-cream);
+  --ink-on-light:     var(--goblin-green);
+  --ink-muted:        rgba(15, 43, 30, 0.58);
+  --ink-muted-dark:   rgba(247, 244, 237, 0.55);
+  --rule:             rgba(15, 43, 30, 0.10);
+  --rule-on-dark:     rgba(247, 244, 237, 0.10);
+
+  /* ─── Typography (canonical, brand spec) ───── */
+  --font-sans:    var(--font-dm-sans), system-ui, -apple-system, sans-serif;
+  --font-display: var(--font-fraunces), Georgia, serif;
+  /* --font-mono already defined by next/font in globals; kept canonical here */
+
+  /* ─── Type scale ───────────────────────────── */
+  --text-display: 88px;
+  --text-h1:      56px;
+  --text-h2:      40px;
+  --text-h3:      24px;
+  --text-body-l:  18px;
+  --text-body:    15px;
+  --text-small:   13px;
+  --text-mono:    12.5px;
+  --text-label:   11px;
+
+  /* ─── Radii (brand additions) ──────────────── */
+  --radius-icon: 22.5%; /* iOS app-icon — locked */
+  --radius-full: 9999px;
+
+  /* ─── Motion ───────────────────────────────── */
+  --ease-out:        cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-in-out:     cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast:   150ms;
+  --duration-base:   200ms;
+  --duration-slow:   400ms;
+}
+
+/* ============================================================
+   Dark Mode (extends existing ThemeProvider)
+   ============================================================ */
+
+[data-theme="dark"] {
+  --surface-page:     var(--goblin-green);
+  --surface-dark:     #050D08;
+  --surface-elevated: var(--goblin-moss);
+  --ink-on-light:     var(--goblin-cream);
+  --ink-muted:        var(--ink-muted-dark);
+}
+
+/* ============================================================
+   Logo animation keyframes (also injected by GoblinLogo.tsx)
+   ============================================================ */
+
+@keyframes goblin-thinking {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-3px); }
+}
+
+@keyframes goblin-working {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.6; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

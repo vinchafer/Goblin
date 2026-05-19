@@ -5,6 +5,7 @@ import { ThemeProvider } from '@/lib/theme'
 import { PostHogInit } from '@/components/analytics/PostHogInit'
 import { OfflineBanner } from '@/components/mobile/offline-banner'
 import './globals.css'
+import '../styles/design-tokens.css'
 
 const fraunces = Fraunces({ subsets: ['latin'], variable: '--font-fraunces', display: 'swap' })
 const dmSans = DM_Sans({ subsets: ['latin'], variable: '--font-dm-sans', display: 'swap' })
