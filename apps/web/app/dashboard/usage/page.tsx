@@ -138,7 +138,7 @@ export default function UsagePage() {
               onClick={() => setPeriod(p)}
               style={{
                 padding: '5px 12px', borderRadius: 7, fontSize: 12, fontWeight: 500,
-                border: period === p ? '2px solid #2D4A2B' : '1px solid #E8E4DC',
+                border: period === p ? '2px solid var(--goblin-moss)' : '1px solid #E8E4DC',
                 background: period === p ? 'rgba(45,74,43,0.08)' : '#fff',
                 color: period === p ? 'var(--moss)' : 'var(--meta)',
                 cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',

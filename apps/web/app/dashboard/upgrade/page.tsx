@@ -52,7 +52,7 @@ export default function UpgradePage() {
 
       {/* Price card */}
       <div style={{
-        background: '#fff', border: '2px solid #2D4A2B',
+        background: '#fff', border: '2px solid var(--goblin-moss)',
         borderRadius: 16, padding: '28px 28px 24px',
         marginBottom: 24, textAlign: 'left',
         boxShadow: '0 4px 24px rgba(45,74,43,0.08)',
