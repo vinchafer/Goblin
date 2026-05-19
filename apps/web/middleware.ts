@@ -29,6 +29,7 @@ export async function middleware(request: NextRequest) {
   const isPublic =
     pathname === '/' ||
     pathname === '/login' ||
+    pathname === '/signup' ||
     pathname === '/status' ||
     pathname === '/badge' ||
     pathname.startsWith('/auth/') ||
@@ -41,6 +42,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/cancel-deletion') ||
     pathname.startsWith('/deletion-pending') ||
     pathname.startsWith('/shared/') ||
+    pathname.startsWith('/brand/') ||
     pathname.startsWith('/_next/') ||
     pathname.startsWith('/api/');
 
@@ -60,5 +62,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|public).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)'],
 };
