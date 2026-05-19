@@ -6,6 +6,7 @@ import { authMiddleware } from '../middleware/auth';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { sendEmail } from '../lib/email';
 import logger from '../lib/logger';
+import { getSoftLimitStatus } from '../middleware/soft-limits';
 
 type Variables = { userId: string };
 
@@ -481,6 +482,17 @@ account.get('/byok-decrypt-log', authMiddleware, async (c) => {
 
   if (error) return c.json({ error: 'Could not fetch log' }, 500);
   return c.json({ entries: data ?? [] });
+});
+
+account.get('/soft-limit-status', authMiddleware, async (c) => {
+  const userId = c.get('userId');
+  try {
+    const status = await getSoftLimitStatus(userId);
+    return c.json(status);
+  } catch (err) {
+    logger.error({ err: (err as Error).message }, 'soft-limit-status failed');
+    return c.json({ error: 'Failed to compute soft-limit status' }, 500);
+  }
 });
 
 export { account };

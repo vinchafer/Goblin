@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { AppProvider } from "@/contexts/app-context";
 import { DashboardShell } from "@/components/app-shell/dashboard-shell";
 import { AdvancedModeProvider } from "@/components/ui/advanced-mode-provider";
+import SoftLimitBanner from "@/components/onboarding/SoftLimitBanner";
 
 export const dynamic = 'force-dynamic';
 import type { Project } from "@goblin/shared/src/schemas";
@@ -51,6 +52,7 @@ export default async function DashboardLayout({
   return (
     <AppProvider>
       <AdvancedModeProvider>
+        <SoftLimitBanner />
         <DashboardShell
           projects={(projects as Project[]) || []}
           isFirstLogin={isFirstLogin}

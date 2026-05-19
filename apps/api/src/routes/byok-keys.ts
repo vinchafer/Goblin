@@ -45,6 +45,20 @@ byokKeys.post('/', async (c) => {
     }
     const key = await createKey(userId, result.data.provider, result.data.label, result.data.key);
     invalidateModelCache(userId);
+
+    // 14-5: end trial when the user adds their first key. Only acts if no
+    // trial-end has been recorded yet; ignored on subsequent key additions.
+    try {
+      const supabase = getSupabaseAdmin();
+      await supabase
+        .from('users')
+        .update({ trial_ended_at: new Date().toISOString(), trial_end_reason: 'key_added' })
+        .eq('id', userId)
+        .is('trial_ended_at', null);
+    } catch {
+      /* non-blocking — soft-limit middleware re-evaluates on next request */
+    }
+
     return c.json(key, 201);
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'Failed to create key';
