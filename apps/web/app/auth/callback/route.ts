@@ -34,5 +34,19 @@ export async function GET(request: Request) {
       // Ignore — user row already exists (subsequent logins)
     });
 
-  return NextResponse.redirect(`${origin}/dashboard`);
+  // Route fresh sign-ins without a BYOK key into the onboarding welcome flow.
+  // Returning users with a key skip straight to the dashboard.
+  let hasKey = false;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const { count } = await (supabase as any)
+      .from('byok_keys')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id);
+    hasKey = (count ?? 0) > 0;
+  } catch {
+    /* fall through — welcome page double-checks client-side */
+  }
+
+  return NextResponse.redirect(`${origin}${hasKey ? '/dashboard' : '/welcome'}`);
 }

@@ -20,6 +20,21 @@ byokKeys.get('/', async (c) => {
   }
 });
 
+byokKeys.get('/has-any', async (c) => {
+  try {
+    const userId = c.get('userId');
+    const supabase = getSupabaseAdmin();
+    const { count, error } = await supabase
+      .from('byok_keys')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId);
+    if (error) return c.json({ exists: false }, 200);
+    return c.json({ exists: (count ?? 0) > 0 });
+  } catch {
+    return c.json({ exists: false }, 200);
+  }
+});
+
 byokKeys.post('/', async (c) => {
   try {
     const userId = c.get('userId');
