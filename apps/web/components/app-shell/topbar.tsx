@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useState, useEffect } from 'react';
 import { LocalCloudSwitch } from './local-cloud-switch';
 import { useAdvancedMode } from '@/hooks/use-advanced-mode';
+import { GoblinLogo } from '@/components/brand/GoblinLogo';
 
 function MenuItem({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
   return (
@@ -136,15 +137,14 @@ export function Topbar({
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
         <button
           onClick={() => router.push('/dashboard')}
+          aria-label="Goblin — back to dashboard"
           style={{
-            fontFamily: 'Fraunces, serif', fontSize: 18,
-            color: 'var(--ochre)', fontWeight: 700,
-            letterSpacing: '-0.5px',
             userSelect: 'none', background: 'none', border: 'none',
             cursor: 'pointer', padding: '6px 4px',
+            display: 'flex', alignItems: 'center',
           }}
         >
-          Goblin<span style={{ opacity: 0.6 }}>.</span>
+          <GoblinLogo state="idle" size={22} variant="gold" showWordmark />
         </button>
 
         {projectName && (

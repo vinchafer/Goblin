@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { MessageContent } from "./message-content";
+import { GoblinLogo } from "@/components/brand/GoblinLogo";
 import type { ChatMessage } from "@goblin/shared/src/schemas";
 
 interface MessageListProps {
@@ -181,10 +182,11 @@ export function MessageList({ messages, isStreaming, currentStreamingMessage, is
                 <MessageContent content={currentStreamingMessage} role="assistant" />
               </div>
             ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 5, height: 24 }}>
-                <span style={{ width: 5, height: 5, borderRadius: '50%', backgroundColor: 'var(--moss)', opacity: 0.8, animation: 'goblin-pulse 1.4s infinite ease-in-out' }} />
-                <span style={{ width: 5, height: 5, borderRadius: '50%', backgroundColor: 'var(--moss)', opacity: 0.8, animation: 'goblin-pulse 1.4s infinite ease-in-out', animationDelay: '0.22s' }} />
-                <span style={{ width: 5, height: 5, borderRadius: '50%', backgroundColor: 'var(--moss)', opacity: 0.8, animation: 'goblin-pulse 1.4s infinite ease-in-out', animationDelay: '0.44s' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, height: 24 }}>
+                <GoblinLogo state="thinking" size={20} variant="moss" />
+                <span style={{ fontSize: 13, color: 'var(--ink-muted)', fontFamily: 'DM Sans, sans-serif' }}>
+                  Goblin schreibt…
+                </span>
               </div>
             )}
           </div>

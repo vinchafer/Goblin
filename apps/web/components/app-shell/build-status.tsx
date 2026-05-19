@@ -1,7 +1,7 @@
 "use client";
 
-import { CircleNotch } from "@phosphor-icons/react";
 import { useBuildStatus } from "@/contexts/build-context";
+import { GoblinLogo } from "@/components/brand/GoblinLogo";
 
 export function BuildStatus() {
   const { isBuilding, progress, currentAction } = useBuildStatus();
@@ -21,7 +21,7 @@ export function BuildStatus() {
       {isBuilding ? (
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <CircleNotch className="w-3.5 h-3.5 animate-spin shrink-0" style={{ color: "var(--goblin-ochre)" }} />
+            <GoblinLogo state="working" size={16} variant="gold" />
             <span
               className="text-xs truncate"
               style={{ color: "var(--goblin-bark)", fontFamily: "var(--font-jetbrains-mono)" }}
