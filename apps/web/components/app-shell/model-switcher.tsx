@@ -15,6 +15,13 @@ const PROVIDER_URLS: Record<string, string> = {
   together: 'https://api.together.xyz/settings/api-keys',
 };
 
+// Free-tier capable providers — surfaces a badge in the picker and gets
+// sorted ahead of paid-only providers inside the BYOK group.
+const PROVIDER_FREE_TIER: Record<string, { limits: string }> = {
+  google: { limits: '15 req/min, 1500 req/Tag' },
+  groq: { limits: '30 req/min' },
+};
+
 interface ModelFromAPI {
   id: string;
   name: string;
@@ -241,6 +248,16 @@ export function ModelSwitcher() {
     groupedModels[tier].push(model);
   }
 
+  // Within BYOK, free-tier-capable providers go first so new users see the
+  // cheapest setup path at the top of the list.
+  if (groupedModels.byok) {
+    groupedModels.byok.sort((a, b) => {
+      const aFree = PROVIDER_FREE_TIER[a.provider] ? 0 : 1;
+      const bFree = PROVIDER_FREE_TIER[b.provider] ? 0 : 1;
+      return aFree - bFree;
+    });
+  }
+
   const TIER_LABELS: Record<string, string> = {
     byok: "BYOK — YOUR KEYS",
     free: "FREE — NO KEY NEEDED",
@@ -290,11 +307,25 @@ export function ModelSwitcher() {
           boxShadow: 'var(--shadow-lg)',
           maxHeight: 'calc(100vh - 80px)', overflowY: 'auto',
         }}>
-          {models.length === 0 ? (
+          {models.length === 0 || byokKeys.length === 0 ? (
             <div style={{ padding: '20px 16px', textAlign: 'center' }}>
-              <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 10 }}>No models available</p>
-              <a href="/dashboard/settings/keys" style={{ fontSize: 12, color: 'var(--ochre)', fontWeight: 600, textDecoration: 'none' }}>
-                Add API Key →
+              <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 10 }}>
+                Noch keine API-Keys konfiguriert.
+              </p>
+              <a
+                href="/onboarding/choose-provider"
+                style={{
+                  display: 'inline-block',
+                  padding: '8px 14px',
+                  background: 'var(--goblin-moss)',
+                  color: 'var(--goblin-cream)',
+                  borderRadius: 6,
+                  fontSize: 12,
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                }}
+              >
+                Free-Tier in 60 Sekunden setup →
               </a>
             </div>
           ) : (
@@ -343,6 +374,23 @@ export function ModelSwitcher() {
                                 }}
                               >
                                 EMPFOHLEN
+                              </span>
+                            )}
+                            {PROVIDER_FREE_TIER[model.provider] && (
+                              <span
+                                title={`Free-Tier: ${PROVIDER_FREE_TIER[model.provider]!.limits}`}
+                                style={{
+                                  fontSize: 9,
+                                  fontWeight: 700,
+                                  letterSpacing: '0.5px',
+                                  padding: '2px 5px',
+                                  borderRadius: 3,
+                                  background: 'var(--goblin-moss)',
+                                  color: 'var(--goblin-cream)',
+                                  lineHeight: 1,
+                                }}
+                              >
+                                FREE
                               </span>
                             )}
                             {model.provider && PROVIDER_URLS[model.provider] && model.requires_key && (
