@@ -17,12 +17,12 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: 'cover',
-  themeColor: 'var(--moss)',
+  themeColor: '#2D4A2B',
 }
 
 export const metadata: Metadata = {
   title: 'Goblin — The Cloud Workshop for Builders',
-  description: 'Build from anywhere. No laptop required.',
+  description: 'An invisible, loyal AI ally — built to ship products, automations, and ideas faster than you thought possible.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
@@ -34,18 +34,44 @@ export const metadata: Metadata = {
     'apple-mobile-web-app-capable': 'yes',
     'apple-mobile-web-app-status-bar-style': 'black-translucent',
     'apple-mobile-web-app-title': 'Goblin',
-    'msapplication-TileColor': 'var(--moss)',
+    'msapplication-TileColor': '#2D4A2B',
     'format-detection': 'telephone=no',
   },
   icons: {
-    apple: [
-      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
-      { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
-    ],
     icon: [
+      { url: '/brand/icons/goblin-favicon.svg', type: 'image/svg+xml' },
+      { url: '/brand/icons/goblin-icon-32.svg', sizes: '32x32', type: 'image/svg+xml' },
+      { url: '/brand/icons/goblin-icon-16.svg', sizes: '16x16', type: 'image/svg+xml' },
       { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
       { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
     ],
+    apple: [
+      { url: '/brand/icons/goblin-icon-256.svg', sizes: '256x256', type: 'image/svg+xml' },
+      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
+  },
+  openGraph: {
+    title: 'Goblin — The Cloud Workshop for Builders',
+    description: 'An invisible, loyal AI ally — built to ship.',
+    url: 'https://justgoblin.com',
+    siteName: 'Goblin',
+    images: [
+      {
+        url: '/brand/social/goblin-og-image.svg',
+        width: 1200,
+        height: 630,
+        alt: 'Goblin — The Cloud Workshop for Builders',
+      },
+    ],
+    locale: 'en_US',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Goblin — The Cloud Workshop for Builders',
+    description: 'An invisible, loyal AI ally — built to ship.',
+    images: ['/brand/social/goblin-og-image.svg'],
   },
 }
 
