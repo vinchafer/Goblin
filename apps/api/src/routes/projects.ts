@@ -21,6 +21,40 @@ const CreateProjectSchema = z.object({
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional()
 });
 
+// GET /api/projects/:id/instructions
+projects.get('/:id/instructions', async (c) => {
+  const userId = c.get('userId');
+  const projectId = c.req.param('id');
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from('projects')
+    .select('instructions')
+    .eq('id', projectId)
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error || !data) return c.json({ error: 'Not found' }, 404);
+  return c.json({ instructions: (data as { instructions: string | null }).instructions ?? '' });
+});
+
+// PUT /api/projects/:id/instructions  { instructions: string }
+projects.put('/:id/instructions', async (c) => {
+  const userId = c.get('userId');
+  const projectId = c.req.param('id');
+  const body = await c.req.json().catch(() => ({}));
+  const schema = z.object({ instructions: z.string().max(8000) });
+  const parsed = schema.safeParse(body);
+  if (!parsed.success) return c.json({ error: 'Invalid input' }, 400);
+
+  const supabase = getSupabaseAdmin();
+  const { error } = await supabase
+    .from('projects')
+    .update({ instructions: parsed.data.instructions })
+    .eq('id', projectId)
+    .eq('user_id', userId);
+  if (error) return c.json({ error: 'Save failed' }, 500);
+  return c.json({ success: true });
+});
+
 // List user projects
 projects.get('/', async (c) => {
   const userId = c.get('userId');
