@@ -10,6 +10,8 @@ import { SecurityPage } from './SecurityPage';
 import { PrivacyPage } from './PrivacyPage';
 import { TwoFactorPage } from './TwoFactorPage';
 import { SessionsPage } from './SessionsPage';
+import { DecryptLogPage } from './DecryptLogPage';
+import { AvatarUploader } from '../profile/AvatarUploader';
 
 const Edit14 = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -52,47 +54,11 @@ export function ProfilePage() {
   return (
     <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-ui)' }}>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '24px 0 32px' }}>
-        <div style={{ position: 'relative' }}>
-          {user.avatarUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={user.avatarUrl} alt="" style={{ width: 96, height: 96, borderRadius: '50%', objectFit: 'cover' }} />
-          ) : (
-            <span style={{
-              width: 96,
-              height: 96,
-              borderRadius: '50%',
-              background: 'var(--moss)',
-              color: '#FFFFFF',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 36,
-              fontWeight: 600,
-            }}>{initial}</span>
-          )}
-          <button
-            aria-label="Avatar ändern (Bald)"
-            disabled
-            style={{
-              position: 'absolute',
-              bottom: 0,
-              right: 0,
-              width: 32,
-              height: 32,
-              borderRadius: '50%',
-              background: 'var(--text)',
-              color: '#FFFFFF',
-              border: '2px solid var(--cream)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'not-allowed',
-              opacity: 0.5,
-            }}
-          >
-            <Edit14 />
-          </button>
-        </div>
+        <AvatarUploader
+          currentUrl={user.avatarUrl ?? null}
+          fallbackInitial={initial}
+          onUploadComplete={() => window.location.reload()}
+        />
         <div style={{ marginTop: 12, fontSize: 18, fontWeight: 600, color: 'var(--text)' }}>{name || 'Vincent'}</div>
       </div>
 
@@ -110,6 +76,7 @@ export function ProfilePage() {
           <SettingsRow icon={<ShieldIcon />} label="Zwei-Faktor-Authentifizierung" onClick={() => push('2fa', <TwoFactorPage />, 'Zwei-Faktor-Authentifizierung')} />
           <SettingsRow icon={<FingerprintIcon />} label="Passkeys" right="Bald" rightVariant="text" disabled />
           <SettingsRow icon={<DeviceIcon />} label="Aktive Sitzungen" onClick={() => push('sessions', <SessionsPage />, 'Aktive Sitzungen')} />
+          <SettingsRow icon={<KeyIcon />} label="API-Key Aktivität" onClick={() => push('decrypt-log', <DecryptLogPage />, 'API-Key Aktivität')} />
         </SettingsCard>
       </SettingsGroup>
 

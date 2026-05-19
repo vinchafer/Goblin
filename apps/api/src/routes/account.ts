@@ -312,6 +312,49 @@ account.post('/change-password', authMiddleware, async (c) => {
 });
 
 /**
+ * POST /api/account/avatar
+ * Multipart upload of an avatar image. The web app already crops + WebP-encodes
+ * the file client-side via canvas to 512x512, so we just persist the blob and
+ * write the resulting URL into user_metadata.avatar_url.
+ */
+account.post('/avatar', authMiddleware, async (c) => {
+  const userId = c.get('userId');
+  const body = await c.req.parseBody().catch(() => ({}));
+  const file = (body as Record<string, unknown>).avatar;
+  if (!(file instanceof File)) {
+    return c.json({ error: 'Kein Bild angehängt' }, 400);
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    return c.json({ error: 'Bild zu groß (max 5MB)' }, 400);
+  }
+
+  const { uploadBytes } = await import('../services/file-storage');
+  const buffer = Buffer.from(await file.arrayBuffer());
+  const key = `users/${userId}/avatar.webp`;
+  const contentType = file.type && file.type.startsWith('image/') ? file.type : 'image/webp';
+
+  try {
+    const result = await uploadBytes(key, buffer, contentType);
+    const supabase = getSupabaseAdmin();
+    const { data: userResp } = await supabase.auth.admin.getUserById(userId);
+    const newMeta = {
+      ...(userResp?.user?.user_metadata ?? {}),
+      avatar_url: result.publicUrl ?? null,
+      avatar_key: key,
+      avatar_updated_at: new Date().toISOString(),
+    };
+    await supabase.auth.admin.updateUserById(userId, { user_metadata: newMeta });
+    return c.json({ url: result.publicUrl, key });
+  } catch (e) {
+    logger.error(
+      { userIdHash: sha256(userId).slice(0, 12), error: (e as Error).message },
+      'avatar upload failed',
+    );
+    return c.json({ error: 'Upload fehlgeschlagen' }, 500);
+  }
+});
+
+/**
  * POST /api/account/sessions/register
  * Called by the web app right after a successful Supabase sign-in (and after
  * the optional 2FA step) to record the just-issued access_token in

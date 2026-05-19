@@ -261,6 +261,39 @@ export async function deleteProject(projectId: string): Promise<void> {
 }
 
 /**
+ * Upload arbitrary bytes at a given storage key with explicit content type
+ * and a long cache-control. Returns the public URL if STORAGE_PUBLIC_URL is
+ * configured (e.g. for a public-read B2 bucket), otherwise null — caller can
+ * fall back to a signed URL or store the bare key.
+ */
+export async function uploadBytes(
+  key: string,
+  body: Buffer,
+  contentType: string,
+): Promise<{ key: string; publicUrl: string | null }> {
+  const s3 = getS3Client();
+  if (!s3) {
+    memoryStorageSet(key, body.toString('base64'));
+    return { key, publicUrl: null };
+  }
+  await s3.send(
+    new PutObjectCommand({
+      Bucket: getBucket(),
+      Key: key,
+      Body: body,
+      ContentType: contentType,
+      CacheControl: 'public, max-age=31536000, immutable',
+    }),
+  );
+
+  const base = process.env.STORAGE_PUBLIC_URL;
+  return {
+    key,
+    publicUrl: base ? `${base.replace(/\/$/, '')}/${key}` : null,
+  };
+}
+
+/**
  * Delete everything under `users/{userId}/` from object storage. Best-effort,
  * used by the GDPR hard-delete cron. Returns the number of objects removed.
  */
