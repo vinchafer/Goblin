@@ -1,5 +1,6 @@
 ﻿'use client';
 import { useEffect, useState } from 'react';
+import { Icon } from '@/components/ui/icon';
 
 export function OfflineBanner() {
   const [isOffline, setIsOffline] = useState(false);
@@ -37,7 +38,7 @@ export function OfflineBanner() {
         fontSize: 13, fontFamily: 'DM Sans, sans-serif', fontWeight: 500,
         zIndex: 1000, animation: 'slideDown 0.2s ease',
       }}>
-        ✓ Back online
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Icon name="check" size={14} /> Back online</span>
       </div>
     );
   }
@@ -51,7 +52,7 @@ export function OfflineBanner() {
       fontSize: 13, fontFamily: 'DM Sans, sans-serif', fontWeight: 500,
       zIndex: 1000,
     }}>
-      <span>⚡</span>
+      <Icon name="fast" size={14} />
       <span>You&apos;re offline — your work is safe. Reconnect to continue.</span>
     </div>
   );

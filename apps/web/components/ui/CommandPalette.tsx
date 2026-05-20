@@ -3,12 +3,13 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "@/lib/theme";
+import { Icon, type IconName } from "@/components/ui/icon";
 
 export interface CommandItem {
   id: string;
   label: string;
   category: string;
-  icon?: string;
+  icon?: IconName;
   action: () => void;
   keywords?: string;
 }
@@ -174,8 +175,8 @@ export function CommandPalette({ open, onClose, commands }: Props) {
                       }}
                     >
                       {cmd.icon && (
-                        <span style={{ fontSize: 15, width: 20, textAlign: 'center', flexShrink: 0 }}>
-                          {cmd.icon}
+                        <span style={{ width: 20, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <Icon name={cmd.icon} size={16} />
                         </span>
                       )}
                       <span style={{ flex: 1 }}>{cmd.label}</span>
@@ -217,26 +218,26 @@ export function useCommandPalette({
 
   const commands: CommandItem[] = [
     // Navigation
-    { id: 'nav-dashboard', label: 'Go to Dashboard', category: 'Navigation', icon: '🏠', action: () => router.push('/dashboard'), keywords: 'home' },
-    { id: 'nav-settings', label: 'Open Settings', category: 'Navigation', icon: '⚙️', action: () => router.push('/dashboard/settings'), keywords: 'preferences' },
-    { id: 'nav-api-keys', label: 'API Keys', category: 'Navigation', icon: '🔑', action: () => router.push('/dashboard/settings/keys'), keywords: 'byok keys provider' },
+    { id: 'nav-dashboard', label: 'Go to Dashboard', category: 'Navigation', icon: 'project', action: () => router.push('/dashboard'), keywords: 'home' },
+    { id: 'nav-settings', label: 'Open Settings', category: 'Navigation', icon: 'settings', action: () => router.push('/dashboard/settings'), keywords: 'preferences' },
+    { id: 'nav-api-keys', label: 'API Keys', category: 'Navigation', icon: 'apiKey', action: () => router.push('/dashboard/settings/keys'), keywords: 'byok keys provider' },
     // Actions
-    { id: 'act-new-project', label: 'New Project', category: 'Actions', icon: '✨', action: onNewProject, keywords: 'create' },
-    { id: 'act-toggle-sidebar', label: 'Toggle Sidebar', category: 'Actions', icon: '◀', action: onToggleSidebar, keywords: 'sidebar menu close open' },
+    { id: 'act-new-project', label: 'New Project', category: 'Actions', icon: 'add', action: onNewProject, keywords: 'create' },
+    { id: 'act-toggle-sidebar', label: 'Toggle Sidebar', category: 'Actions', icon: 'menu', action: onToggleSidebar, keywords: 'sidebar menu close open' },
     // Per-project navigation
     ...projects.slice(0, 8).map(p => ({
       id: `proj-${p.id}`,
       label: `${p.name} — Chat`,
       category: 'Projects',
-      icon: '💬',
+      icon: 'chat' as const,
       action: () => router.push(`/dashboard/project/${p.id}`),
       keywords: p.name.toLowerCase(),
     })),
     // Settings
-    { id: 'theme-light', label: 'Switch to Light Mode', category: 'Settings', icon: '☀️', action: () => setTheme('light'), keywords: 'light theme appearance' },
-    { id: 'theme-dark', label: 'Switch to Dark Mode', category: 'Settings', icon: '🌙', action: () => setTheme('dark'), keywords: 'dark theme appearance' },
-    { id: 'theme-system', label: 'Use System Theme', category: 'Settings', icon: '💻', action: () => setTheme('system'), keywords: 'system theme auto' },
-    { id: 'logout', label: 'Logout', category: 'Settings', icon: '🚪', action: onLogout, keywords: 'sign out' },
+    { id: 'theme-light', label: 'Switch to Light Mode', category: 'Settings', icon: 'sun', action: () => setTheme('light'), keywords: 'light theme appearance' },
+    { id: 'theme-dark', label: 'Switch to Dark Mode', category: 'Settings', icon: 'moon', action: () => setTheme('dark'), keywords: 'dark theme appearance' },
+    { id: 'theme-system', label: 'Use System Theme', category: 'Settings', icon: 'monitor', action: () => setTheme('system'), keywords: 'system theme auto' },
+    { id: 'logout', label: 'Logout', category: 'Settings', icon: 'logout', action: onLogout, keywords: 'sign out' },
   ];
 
   return commands;

@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { apiGet } from '@/lib/api';
 import { createClient } from '@/lib/supabase/client';
 import { ComposerPlusPopover, type PlusAction } from './ComposerPlusPopover';
+import { Icon } from '@/components/ui/icon';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -245,7 +246,9 @@ function ModelHub({
 
         {byokModels.length === 0 && freeModels.length === 0 && (
           <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-faint)', fontFamily: 'DM Sans, sans-serif', fontSize: 13 }}>
-            <div style={{ fontSize: 32, marginBottom: 8 }}>🔑</div>
+            <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'center', color: 'var(--moss)' }}>
+              <Icon name="apiKey" size={28} strokeWidth={1.5} />
+            </div>
             Add an API key in Settings → API Keys to unlock models.
           </div>
         )}

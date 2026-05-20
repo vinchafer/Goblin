@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useApp } from '@/contexts/app-context';
 import { GoblinMark } from '@/components/ui/goblin-mark';
+import { Icon } from '@/components/ui/icon';
 
 interface WelcomeModalProps {
   userName?: string;
@@ -203,7 +204,9 @@ export function WelcomeModal({ userName, onComplete }: WelcomeModalProps) {
           {/* ── Slide 2 — API Key ── */}
           {slide === 2 && (
             <>
-              <div style={{ fontSize: 64, lineHeight: 1, marginBottom: 20 }}>🔑</div>
+              <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'center', color: 'var(--ochre)' }}>
+                <Icon name="apiKey" size={56} strokeWidth={1.5} />
+              </div>
               <h2 style={{
                 fontFamily: 'Fraunces, serif',
                 fontSize: 26, fontWeight: 700,
@@ -231,7 +234,7 @@ export function WelcomeModal({ userName, onComplete }: WelcomeModalProps) {
                   onMouseEnter={e => (e.currentTarget.style.background = 'var(--ochre-2)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'var(--ochre)')}
                 >
-                  🔑 API Key verbinden →
+                  <Icon name="apiKey" size={16} /> API Key verbinden →
                 </button>
                 <button
                   onClick={handleTryNow}

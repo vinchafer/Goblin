@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { Icon } from "@/components/ui/icon";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -192,7 +193,7 @@ export function FileTree({ projectId, files, onFileClick, onFilesChanged }: File
         >
           {contextMenu.inEmptyArea ? (
             <>
-              <ContextItem icon="📝" label="New File" onClick={() => {
+              <ContextItem icon={<Icon name="add" size={13} />} label="New File" onClick={() => {
                 setContextMenu(null);
                 setInlineInput({ mode: 'new-file', parentPath: '' });
                 setInputValue('');
@@ -200,31 +201,31 @@ export function FileTree({ projectId, files, onFileClick, onFilesChanged }: File
             </>
           ) : contextMenu.isFolder ? (
             <>
-              <ContextItem icon="📝" label="New File Here" onClick={() => {
+              <ContextItem icon={<Icon name="add" size={13} />} label="New File Here" onClick={() => {
                 setContextMenu(null);
                 setInlineInput({ mode: 'new-file', parentPath: contextMenu.path });
                 setInputValue('');
               }} />
               <div style={{ height: 1, background: 'var(--moss)', margin: '4px 0' }} />
-              <ContextItem icon="🗑" label="Delete Folder" danger onClick={() => {
+              <ContextItem icon={<Icon name="delete" size={13} />} label="Delete Folder" danger onClick={() => {
                 setContextMenu(null);
                 setDeleteTarget({ path: contextMenu.path, name: contextMenu.path.split('/').pop() || contextMenu.path });
               }} />
             </>
           ) : (
             <>
-              <ContextItem icon="✏️" label="Rename" onClick={() => {
+              <ContextItem icon={<Icon name="rename" size={13} />} label="Rename" onClick={() => {
                 const name = contextMenu.path.split('/').pop() || '';
                 setContextMenu(null);
                 setInlineInput({ mode: 'rename', parentPath: '', currentName: name, fullPath: contextMenu.path });
                 setInputValue(name);
               }} />
-              <ContextItem icon="📋" label="Copy Path" onClick={() => {
+              <ContextItem icon={<Icon name="copy" size={13} />} label="Copy Path" onClick={() => {
                 copyPath(contextMenu.path);
                 setContextMenu(null);
               }} />
               <div style={{ height: 1, background: 'var(--moss)', margin: '4px 0' }} />
-              <ContextItem icon="🗑" label="Delete" danger onClick={() => {
+              <ContextItem icon={<Icon name="delete" size={13} />} label="Delete" danger onClick={() => {
                 setContextMenu(null);
                 setDeleteTarget({ path: contextMenu.path, name: contextMenu.path.split('/').pop() || contextMenu.path });
               }} />
@@ -275,7 +276,7 @@ export function FileTree({ projectId, files, onFileClick, onFilesChanged }: File
   );
 }
 
-function ContextItem({ icon, label, onClick, danger }: { icon: string; label: string; onClick: () => void; danger?: boolean }) {
+function ContextItem({ icon, label, onClick, danger }: { icon: React.ReactNode; label: string; onClick: () => void; danger?: boolean }) {
   return (
     <button
       onClick={onClick}
@@ -288,7 +289,7 @@ function ContextItem({ icon, label, onClick, danger }: { icon: string; label: st
       onMouseEnter={e => (e.currentTarget.style.background = 'rgba(201,147,58,0.1)')}
       onMouseLeave={e => (e.currentTarget.style.background = 'none')}
     >
-      <span style={{ fontSize: 13 }}>{icon}</span> {label}
+      <span style={{ display: 'inline-flex', alignItems: 'center' }}>{icon}</span> {label}
     </button>
   );
 }
