@@ -6,6 +6,7 @@ import { apiStream } from "@/lib/api";
 import { ChatInput, useChatModel } from "@/components/chat/ChatInput";
 import type { SelectedModel } from "@/components/chat/ChatInput";
 import { EmptyChat } from "@/components/chat/EmptyChat";
+import { ChatKeyBanner } from "@/components/chat/ChatKeyBanner";
 import { useUser } from "@/lib/hooks/useUser";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -462,6 +463,8 @@ export function StandaloneChat({ sessionId, initialMessages = [] }: StandaloneCh
         @keyframes blink { 50%{opacity:0} }
         .ic { background:rgba(45,74,43,0.08);padding:1px 5px;border-radius:4px;font-family:JetBrains Mono,monospace;font-size:0.9em; }
       `}</style>
+
+      <ChatKeyBanner />
 
       {/* Messages */}
       <div style={{ flex: 1, overflowY: "auto", padding: "20px 16px", display: "flex", flexDirection: "column", gap: 16 }}>
