@@ -40,11 +40,23 @@ users.get('/me', async (c) => {
   const supabase = getSupabaseAdmin();
   const { data } = await supabase
     .from('users')
-    .select('default_chat_model, default_code_model, plan, advanced_mode')
+    .select('default_chat_model, default_code_model, plan, advanced_mode, is_comped')
     .eq('id', userId)
     .single();
   if (!data) return c.json({ error: 'User not found' }, 404);
-  return c.json(data);
+
+  // Pull display name from auth metadata (best-effort)
+  let displayName: string | null = null;
+  try {
+    const { data: authUser } = await supabase.auth.admin.getUserById(userId);
+    const meta = authUser.user?.user_metadata as Record<string, unknown> | undefined;
+    displayName = (meta?.display_name as string) ?? (meta?.full_name as string) ?? (meta?.name as string) ?? null;
+    if (!displayName && authUser.user?.email) {
+      displayName = authUser.user.email.split('@')[0] ?? null;
+    }
+  } catch { /* silent */ }
+
+  return c.json({ ...data, displayName });
 });
 
 // GET /api/users/me/fallback-chain
@@ -163,11 +175,14 @@ users.get('/me/trial', async (c) => {
   const supabase = getSupabaseAdmin();
   const { data: user } = await supabase
     .from('users')
-    .select('plan, stripe_subscription_id, cloud_trial_started_at, cloud_trial_ends_at, trial_extension_used')
+    .select('plan, stripe_subscription_id, cloud_trial_started_at, cloud_trial_ends_at, trial_extension_used, is_comped')
     .eq('id', userId)
     .single();
 
   if (!user) return c.json({ trialStatus: 'none' });
+
+  // Comped users have full access — no trial banner ever.
+  if (user.is_comped) return c.json({ trialStatus: 'subscribed' });
 
   const hasActiveSub = !!user.stripe_subscription_id;
   if (hasActiveSub) return c.json({ trialStatus: 'subscribed' });
