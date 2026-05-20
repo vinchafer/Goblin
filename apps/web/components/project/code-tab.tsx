@@ -2,14 +2,17 @@
 
 import dynamic from "next/dynamic";
 import { useApp, type PendingInjection } from "@/contexts/app-context";
-import { FileTree } from "./file-tree";
 import { SaveIndicator } from "@/components/editor/save-indicator";
 import { PushToGitHubModal } from "./push-to-github-modal";
 import { ConnectGitHubModal } from "./connect-github-modal";
 import { DiffModal } from "./diff-modal";
 import { BuildStatusBar } from "@/components/build/build-status-bar";
 import { InjectedBanner } from "./InjectedBanner";
-import { ActionBar } from "./ActionBar";
+import { CodeActionBar } from "@/components/code/CodeActionBar";
+import { CodeFileTabs } from "@/components/code/CodeFileTabs";
+import { CodeFileTreePanel } from "@/components/code/CodeFileTreePanel";
+import { CodeMobileFileSheet } from "@/components/code/CodeMobileFileSheet";
+import { CodeEmptyState } from "@/components/code/CodeEmptyState";
 import { useCodeTab } from "@/hooks/useCodeTab";
 import { Icon } from "@/components/ui/icon";
 import { GoblinMark } from "@/components/ui/goblin-mark";
@@ -90,19 +93,14 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
       ><Icon name="menu" size={18} /></button>
 
       {/* Mobile file tree drawer */}
-      {tab.mobileDrawerOpen && (
-        <div onClick={() => tab.setMobileDrawerOpen(false)} style={{ position: 'fixed', inset: 0, zIndex: 30, background: 'rgba(0,0,0,0.4)' }}>
-          <div onClick={e => e.stopPropagation()} style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 280, background: '#0f1410', overflowY: 'auto', boxShadow: '4px 0 20px rgba(0,0,0,0.5)' }}>
-            <div style={{ padding: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                <span style={{ fontWeight: 600, fontSize: 13, color: '#8aaa85' }}>Files</span>
-                <button onClick={() => tab.setMobileDrawerOpen(false)} aria-label="Close" style={{ background: 'none', border: 'none', color: '#6b8a6b', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="close" size={16} /></button>
-              </div>
-              <FileTree projectId={projectId} files={tab.files} onFileClick={tab.openFile} onFilesChanged={tab.fetchFiles} />
-            </div>
-          </div>
-        </div>
-      )}
+      <CodeMobileFileSheet
+        open={tab.mobileDrawerOpen}
+        projectId={projectId}
+        files={tab.files}
+        onClose={() => tab.setMobileDrawerOpen(false)}
+        onFileClick={tab.openFile}
+        onFilesChanged={tab.fetchFiles}
+      />
 
       {/* Injection Banner */}
       {pendingCode && (
@@ -119,9 +117,19 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
       )}
 
       {/* Action Bar */}
-      <ActionBar deploying={tab.deploying} onDeploy={tab.handleDeploy} onPush={tab.openPushModal} />
+      <CodeActionBar deploying={tab.deploying} onDeploy={tab.handleDeploy} onPush={tab.openPushModal} />
 
-      {/* Mobile file picker */}
+      {/* Open-file tabs */}
+      <CodeFileTabs
+        openFiles={tab.openFiles}
+        activePath={tab.activeFile?.path ?? null}
+        injectedFiles={tab.injectedFiles}
+        isDirty={tab.isDirty}
+        onSelect={tab.openFile}
+        onClose={tab.closeTab}
+      />
+
+      {/* Mobile file picker (fallback for very small screens) */}
       <div className="gb-mobile-picker" style={{ borderBottom: '1px solid #1e2a1c', background: '#0f1410', flexShrink: 0 }}>
         <select
           value={tab.activeFile?.path ?? ''}
@@ -135,38 +143,15 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
 
       {/* Desktop layout: file tree + editor */}
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
-
-        {/* File tree panel */}
-        <div
-          className="gb-filetree-panel"
-          style={{ flexDirection: 'column', borderRight: '1px solid #1e2a1c', background: '#0f1410', width: tab.fileTreeOpen ? 256 : 44, minWidth: tab.fileTreeOpen ? 256 : 44, transition: 'width 0.2s ease, min-width 0.2s ease', flexShrink: 0 }}
-        >
-          <button
-            onClick={() => tab.setFileTreeOpen(!tab.fileTreeOpen)}
-            style={{ padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 8, borderBottom: '1px solid #1e2a1c', flexShrink: 0, background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left' } as React.CSSProperties}
-          >
-            {tab.fileTreeOpen
-              ? <span style={{ fontSize: 12, fontWeight: 600, color: '#8aaa85', fontFamily: 'DM Sans, sans-serif' }}>Files</span>
-              : <Icon name="menu" size={14} color="#8aaa85" />
-            }
-          </button>
-          {tab.fileTreeOpen && (
-            <div style={{ flex: 1, overflowY: 'auto' }}>
-              {tab.loading ? (
-                <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {[1, 2, 3].map(i => <div key={i} style={{ height: 14, borderRadius: 4, background: '#1e2a1c', animation: 'pulse 1.5s ease infinite' }} />)}
-                </div>
-              ) : tab.files.length === 0 ? (
-                <div style={{ padding: 16, textAlign: 'center' }}>
-                  <p style={{ fontSize: 12, color: '#6b8a6b', marginBottom: 4 }}>No files yet</p>
-                  <p style={{ fontSize: 11, color: '#4a6a4a' }}>Start chatting to generate code.</p>
-                </div>
-              ) : (
-                <FileTree projectId={projectId} files={tab.files} onFileClick={tab.openFile} onFilesChanged={tab.fetchFiles} />
-              )}
-            </div>
-          )}
-        </div>
+        <CodeFileTreePanel
+          projectId={projectId}
+          files={tab.files}
+          loading={tab.loading}
+          open={tab.fileTreeOpen}
+          onToggle={() => tab.setFileTreeOpen(!tab.fileTreeOpen)}
+          onFileClick={tab.openFile}
+          onFilesChanged={tab.fetchFiles}
+        />
 
         {/* Editor area */}
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, background: '#141a12' }}>
@@ -188,45 +173,10 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
                 content={tab.editorContent}
                 filename={tab.activeFile.path}
                 onChange={tab.handleEditorChange}
-                onSave={(content) => tab.saveFile(content, true)}
+                onSave={(content) => tab.saveFile(content)}
               />
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', textAlign: 'center', padding: 32, background: '#141a12' }}>
-                <div style={{ marginBottom: 20 }}>
-                  <GoblinMark size={56} />
-                </div>
-                {tab.files.length > 0 ? (
-                  <>
-                    <h3 style={{ fontFamily: 'Fraunces, serif', fontSize: 22, color: '#e8eee5', fontWeight: 600, marginBottom: 8, letterSpacing: '-0.3px' }}>
-                      Wähle eine Datei
-                    </h3>
-                    <p style={{ fontSize: 14, color: '#8aaa85', fontFamily: 'DM Sans, sans-serif', maxWidth: 320, lineHeight: 1.55 }}>
-                      Tipp links auf eine Datei aus dem Baum, um sie zu bearbeiten.
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <h3 style={{ fontFamily: 'Fraunces, serif', fontSize: 24, color: '#e8eee5', fontWeight: 600, marginBottom: 8, letterSpacing: '-0.3px' }}>
-                      Noch kein Code
-                    </h3>
-                    <p style={{ fontSize: 14, color: '#8aaa85', fontFamily: 'DM Sans, sans-serif', maxWidth: 340, lineHeight: 1.6, marginBottom: 22 }}>
-                      Geh in den Chat und sag Goblin was du bauen willst. Mit „An Code senden" landet generierter Code direkt hier.
-                    </p>
-                    <button
-                      onClick={() => window.dispatchEvent(new CustomEvent('goblin:switchTab', { detail: 'chat' }))}
-                      style={{
-                        background: 'var(--moss)', color: 'var(--ochre)',
-                        border: 'none',
-                        borderRadius: 10, padding: '10px 20px', fontSize: 14, fontWeight: 600,
-                        cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
-                        display: 'inline-flex', alignItems: 'center', gap: 8,
-                      }}
-                    >
-                      <Icon name="chat" size={16} /> Chat öffnen
-                    </button>
-                  </>
-                )}
-              </div>
+              <CodeEmptyState hasFiles={tab.files.length > 0} />
             )}
           </div>
 
@@ -247,7 +197,7 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
         </div>
       </div>
 
-      {/* Mobile FABs */}
+      {/* Mobile FABs — quick deploy + push (mobile-only equivalent of CodeActionBar) */}
       <div className="gb-mobile-fab" style={{ position: 'fixed', bottom: 80, right: 16, flexDirection: 'column', gap: 8, zIndex: 40 }}>
         <button onClick={tab.openPushModal} aria-label="Push to GitHub" title="Push to GitHub" style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(30,58,28,0.95)', border: '1px solid rgba(138,170,133,0.3)', color: '#8aaa85', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' } as React.CSSProperties}>
           <Icon name="github" size={18} />

@@ -1,12 +1,15 @@
 'use client';
 
-interface ActionBarProps {
+import { Icon } from '@/components/ui/icon';
+import { GoblinMark } from '@/components/ui/goblin-mark';
+
+interface CodeActionBarProps {
   deploying: boolean;
   onDeploy: () => void;
   onPush: () => void;
 }
 
-export function ActionBar({ deploying, onDeploy, onPush }: ActionBarProps) {
+export function CodeActionBar({ deploying, onDeploy, onPush }: CodeActionBarProps) {
   return (
     <div style={{
       display: 'flex', gap: 6, alignItems: 'center',
@@ -21,13 +24,13 @@ export function ActionBar({ deploying, onDeploy, onPush }: ActionBarProps) {
           borderRadius: 6, padding: '5px 12px',
           fontSize: 12, fontWeight: 500,
           cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
-          display: 'flex', alignItems: 'center', gap: 5,
+          display: 'flex', alignItems: 'center', gap: 6,
           transition: 'border-color 0.15s',
         }}
         onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(138,170,133,0.5)')}
         onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(138,170,133,0.25)')}
       >
-        ⬆ Push GitHub
+        <Icon name="github" size={13} /> Push GitHub
       </button>
       <button
         onClick={onDeploy}
@@ -39,13 +42,15 @@ export function ActionBar({ deploying, onDeploy, onPush }: ActionBarProps) {
           fontSize: 12, fontWeight: 600,
           cursor: deploying ? 'not-allowed' : 'pointer',
           fontFamily: 'DM Sans, sans-serif',
-          display: 'flex', alignItems: 'center', gap: 5,
+          display: 'flex', alignItems: 'center', gap: 6,
           transition: 'background 0.15s',
         }}
         onMouseEnter={e => { if (!deploying) (e.currentTarget as HTMLElement).style.background = 'var(--moss-2)'; }}
         onMouseLeave={e => { if (!deploying) (e.currentTarget as HTMLElement).style.background = 'var(--moss)'; }}
       >
-        {deploying ? '▶ Deploying…' : '▶ Build'}
+        {deploying
+          ? <><GoblinMark size={14} /> Deploying…</>
+          : <><Icon name="play" size={13} /> Build</>}
       </button>
     </div>
   );
