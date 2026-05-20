@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { getModelAccess, ACCESS_COLORS } from '@/lib/model-access';
 
 type TaskType = 'coding' | 'reasoning' | 'speed' | 'cost-efficiency' | 'general';
 
@@ -120,68 +121,87 @@ export default function ModelsPage() {
               overflow: 'hidden',
             }}
           >
-            {rankings.map((r, i) => (
-              <Link
-                key={r.ranked_models.id}
-                href={`/models/${encodeURIComponent(r.ranked_models.id)}`}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 16,
-                  padding: '14px 20px',
-                  borderBottom:
-                    i < rankings.length - 1 ? '1px solid var(--border-hairline)' : 'none',
-                  textDecoration: 'none',
-                  color: 'inherit',
-                }}
-                data-testid={`rank-row-${r.ranked_models.id}`}
-              >
-                <span
+            {rankings.map((r, i) => {
+              const access = getModelAccess(r.ranked_models.provider);
+              const accessColor = ACCESS_COLORS[access.type];
+              return (
+                <Link
+                  key={r.ranked_models.id}
+                  href={`/models/${encodeURIComponent(r.ranked_models.id)}`}
                   style={{
-                    width: 32,
-                    fontSize: 14,
-                    fontWeight: 600,
-                    color: r.rank <= 3 ? 'var(--moss-green)' : 'var(--text-meta)',
-                    fontFamily: 'var(--font-mono)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 16,
+                    padding: '14px 20px',
+                    borderBottom:
+                      i < rankings.length - 1 ? '1px solid var(--border-hairline)' : 'none',
+                    textDecoration: 'none',
+                    color: 'inherit',
                   }}
+                  data-testid={`rank-row-${r.ranked_models.id}`}
                 >
-                  #{r.rank}
-                </span>
-                <span style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-1)' }}>
-                    {r.ranked_models.display_name}
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: 'var(--text-meta)',
-                      marginTop: 2,
-                      fontFamily: 'var(--font-mono)',
-                    }}
-                  >
-                    {r.ranked_models.id}
-                  </div>
-                </span>
-                <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
                   <span
                     style={{
-                      padding: '4px 10px',
-                      borderRadius: 8,
-                      background: scoreBg(r.composite_score),
-                      color: scoreFg(r.composite_score),
-                      fontSize: 13,
+                      width: 32,
+                      fontSize: 14,
                       fontWeight: 600,
+                      color: r.rank <= 3 ? 'var(--moss-green)' : 'var(--text-meta)',
                       fontFamily: 'var(--font-mono)',
                     }}
                   >
-                    {(r.composite_score * 100).toFixed(0)}
+                    #{r.rank}
                   </span>
-                  <span style={{ fontSize: 11, color: 'var(--text-meta)', marginTop: 2 }}>
-                    aus {r.source_count} Quellen
+                  <span style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-1)' }}>
+                      {r.ranked_models.display_name}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
+                      <span style={{
+                        fontSize: 11,
+                        fontWeight: 600,
+                        padding: '2px 8px',
+                        borderRadius: 999,
+                        background: accessColor.bg,
+                        color: accessColor.fg,
+                        border: `1px solid ${accessColor.border}`,
+                        fontFamily: 'DM Sans, sans-serif',
+                        letterSpacing: '0.02em',
+                      }}>
+                        {access.label}
+                      </span>
+                      <span style={{
+                        fontSize: 11,
+                        color: 'var(--text-meta)',
+                        fontFamily: 'var(--font-mono)',
+                      }}>
+                        {r.ranked_models.provider}
+                      </span>
+                    </div>
                   </span>
-                </span>
-              </Link>
-            ))}
+                  <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                    <span
+                      style={{
+                        padding: '4px 10px',
+                        borderRadius: 8,
+                        background: scoreBg(r.composite_score),
+                        color: scoreFg(r.composite_score),
+                        fontSize: 13,
+                        fontWeight: 600,
+                        fontFamily: 'var(--font-mono)',
+                      }}
+                    >
+                      {(r.composite_score * 100).toFixed(0)}
+                    </span>
+                    <span style={{ fontSize: 11, color: 'var(--text-meta)' }}>
+                      aus {r.source_count}
+                    </span>
+                  </span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ color: 'var(--text-meta)', flexShrink: 0 }}>
+                    <polyline points="9 18 15 12 9 6" />
+                  </svg>
+                </Link>
+              );
+            })}
           </div>
         )}
 

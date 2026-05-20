@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import { getModelAccess, ACCESS_COLORS } from '@/lib/model-access';
 
 interface ModelDetail {
   model: {
@@ -115,6 +116,8 @@ export default function ModelDetailPage() {
           />
         </div>
 
+        <AccessExplanation provider={m.provider} />
+
         <h2 style={{ fontSize: 18, fontWeight: 600, marginBottom: 12 }}>Composite Rankings</h2>
         <div
           style={{
@@ -215,5 +218,45 @@ function cellStyle(header: boolean): React.CSSProperties {
 function Centered({ children }: { children: React.ReactNode }) {
   return (
     <div style={{ padding: 64, textAlign: 'center', color: 'var(--text-meta)' }}>{children}</div>
+  );
+}
+
+function AccessExplanation({ provider }: { provider: string }) {
+  const access = getModelAccess(provider);
+  const c = ACCESS_COLORS[access.type];
+  return (
+    <div style={{
+      padding: '16px 18px',
+      borderRadius: 12,
+      background: c.bg,
+      borderLeft: `3px solid ${c.fg}`,
+      marginBottom: 28,
+    }}>
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        fontSize: 13, fontWeight: 600, marginBottom: 6,
+        color: c.fg, fontFamily: 'DM Sans, sans-serif',
+        textTransform: 'uppercase', letterSpacing: '0.06em',
+      }}>
+        Zugang · {access.label}
+      </div>
+      <p style={{ fontSize: 14, color: 'var(--text-1)', margin: '0 0 12px', lineHeight: 1.55 }}>
+        {access.description}
+      </p>
+      <Link
+        href={access.setupHref}
+        style={{
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+          padding: '8px 14px',
+          background: 'var(--moss-green, var(--moss))',
+          color: '#fff', borderRadius: 8,
+          fontSize: 13, fontWeight: 600,
+          textDecoration: 'none',
+          fontFamily: 'DM Sans, sans-serif',
+        }}
+      >
+        Setup starten →
+      </Link>
+    </div>
   );
 }
