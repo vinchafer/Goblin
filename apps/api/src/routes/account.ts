@@ -495,4 +495,129 @@ account.get('/soft-limit-status', authMiddleware, async (c) => {
   }
 });
 
+// ─── Phase J: invite code redemption ────────────────────────────────────────
+const RedeemInviteSchema = z.object({
+  code: z.string().min(3).max(64),
+});
+
+account.post('/redeem-invite', authMiddleware, async (c) => {
+  const userId = c.get('userId');
+  const body = await c.req.json().catch(() => ({}));
+  const parsed = RedeemInviteSchema.safeParse(body);
+  if (!parsed.success) {
+    return c.json({ error: 'Ungültiger Code' }, 400);
+  }
+  const code = parsed.data.code.trim().toUpperCase();
+  const supabase = getSupabaseAdmin();
+
+  const { data: invite } = await supabase
+    .from('invite_codes')
+    .select('*')
+    .eq('code', code)
+    .maybeSingle();
+
+  if (!invite) return c.json({ error: 'Code nicht gefunden' }, 404);
+  if (invite.expires_at && new Date(invite.expires_at as string) < new Date()) {
+    return c.json({ error: 'Code ist abgelaufen' }, 400);
+  }
+  if ((invite.use_count as number) >= (invite.max_uses as number)) {
+    return c.json({ error: 'Code wurde bereits vollständig eingelöst' }, 400);
+  }
+
+  // Idempotency: if same user already redeemed this code, no-op success.
+  if (invite.redeemed_by === userId) {
+    return c.json({ success: true, alreadyRedeemed: true });
+  }
+
+  const { error: updErr } = await supabase
+    .from('invite_codes')
+    .update({
+      use_count: (invite.use_count as number) + 1,
+      redeemed_by: userId,
+      redeemed_at: new Date().toISOString(),
+    })
+    .eq('code', code);
+
+  if (updErr) {
+    logger.error({ err: updErr.message, userId, code }, 'invite redeem update failed');
+    return c.json({ error: 'Einlösung fehlgeschlagen' }, 500);
+  }
+
+  if (invite.grants_comp) {
+    await supabase
+      .from('users')
+      .update({
+        is_comped: true,
+        comp_reason: `invite:${code}`,
+        comped_at: new Date().toISOString(),
+      })
+      .eq('id', userId);
+  }
+
+  return c.json({ success: true });
+});
+
+// ─── Phase C: per-key monthly usage summary for sidebar ─────────────────────
+const PROVIDER_LABELS: Record<string, string> = {
+  google: 'Gemini',
+  groq: 'Groq',
+  anthropic: 'Claude',
+  openai: 'OpenAI',
+  mistral: 'Mistral',
+  deepseek: 'DeepSeek',
+  xai: 'xAI',
+};
+const FREE_TIER_PROVIDERS = new Set(['google', 'groq']);
+
+account.get('/key-usage-summary', authMiddleware, async (c) => {
+  const userId = c.get('userId');
+  const supabase = getSupabaseAdmin();
+
+  const monthStart = new Date();
+  monthStart.setUTCDate(1);
+  monthStart.setUTCHours(0, 0, 0, 0);
+
+  const { data: keys } = await supabase
+    .from('byok_keys')
+    .select('provider')
+    .eq('user_id', userId);
+
+  if (!keys || keys.length === 0) {
+    return c.json({ keys: [] });
+  }
+
+  const result: Array<{
+    provider: string;
+    providerLabel: string;
+    requestsThisMonth: number;
+    isFreeTier: boolean;
+  }> = [];
+
+  // De-dup providers (one key per provider in practice, but defensive)
+  const providers = Array.from(new Set(keys.map((k: { provider: string }) => k.provider)));
+
+  for (const provider of providers) {
+    const { data: usageRows } = await supabase
+      .from('byok_key_usage')
+      .select('requests')
+      .eq('user_id', userId)
+      .eq('provider', provider)
+      .gte('period_start', monthStart.toISOString().split('T')[0]);
+
+    const requestsThisMonth = (usageRows ?? []).reduce(
+      (s: number, r: { requests: number | null }) => s + (r.requests ?? 0),
+      0
+    );
+
+    result.push({
+      provider,
+      providerLabel: PROVIDER_LABELS[provider] ?? provider,
+      requestsThisMonth,
+      isFreeTier: FREE_TIER_PROVIDERS.has(provider),
+    });
+  }
+
+  return c.json({ keys: result });
+});
+
 export { account };

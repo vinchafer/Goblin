@@ -55,11 +55,14 @@ export const trialGate = createMiddleware(async (c, next) => {
 
   const { data: user } = await supabase
     .from('users')
-    .select('plan, stripe_subscription_id, cloud_trial_started_at, cloud_trial_ends_at, trial_extension_used')
+    .select('plan, stripe_subscription_id, cloud_trial_started_at, cloud_trial_ends_at, trial_extension_used, is_comped')
     .eq('id', userId)
     .single();
 
   if (!user) return next();
+
+  // Comped users pass unconditionally
+  if ((user as { is_comped?: boolean }).is_comped) return next();
 
   const plan = user.plan as string | null;
   const hasActiveSub = !!user.stripe_subscription_id;

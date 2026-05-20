@@ -94,9 +94,117 @@ export function BillingPage() {
         </SettingsCard>
       </SettingsGroup>
 
+      <InviteCodeRedemption />
+
       <p style={{ fontSize: 12, color: 'var(--text-meta)', marginTop: 16, padding: '0 4px', lineHeight: 1.6 }}>
         Sicheres Checkout & Rechnungen über Stripe. Kündigung jederzeit im Kundenportal.
       </p>
+    </div>
+  );
+}
+
+function InviteCodeRedemption() {
+  const [open, setOpen] = useState(false);
+  const [code, setCode] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
+
+  async function redeem() {
+    setBusy(true);
+    setMsg(null);
+    try {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
+      const r = await fetch(`${apiBase}/api/account/redeem-invite`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ code: code.trim() }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (r.ok) {
+        setMsg({ kind: 'ok', text: 'Code eingelöst. Seite wird neu geladen…' });
+        setTimeout(() => window.location.reload(), 1200);
+      } else {
+        setMsg({ kind: 'err', text: data?.error ?? 'Einlösung fehlgeschlagen' });
+      }
+    } catch {
+      setMsg({ kind: 'err', text: 'Netzwerkfehler' });
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <button
+        onClick={() => setOpen(true)}
+        style={{
+          marginTop: 14,
+          background: 'none',
+          border: 'none',
+          color: 'var(--text-meta)',
+          fontSize: 13,
+          cursor: 'pointer',
+          padding: '4px 0',
+          textDecoration: 'underline',
+          fontFamily: 'var(--font-ui)',
+        }}
+      >
+        Hast du einen Invite-Code?
+      </button>
+    );
+  }
+
+  return (
+    <div style={{ marginTop: 14, padding: 16, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface)' }}>
+      <div style={{ fontSize: 13, color: 'var(--text)', marginBottom: 8, fontWeight: 600 }}>Invite-Code einlösen</div>
+      <div style={{ display: 'flex', gap: 8 }}>
+        <input
+          type="text"
+          value={code}
+          onChange={(e) => setCode(e.target.value)}
+          placeholder="GOBLIN-..."
+          autoFocus
+          style={{
+            flex: 1,
+            padding: '8px 12px',
+            border: '1px solid var(--border)',
+            borderRadius: 6,
+            background: 'var(--bg)',
+            color: 'var(--text)',
+            fontSize: 14,
+            fontFamily: 'var(--font-mono, monospace)',
+            textTransform: 'uppercase',
+          }}
+        />
+        <button
+          onClick={redeem}
+          disabled={busy || code.trim().length < 3}
+          style={{
+            padding: '8px 14px',
+            background: 'var(--moss)',
+            color: 'var(--ochre, #fff)',
+            border: 'none',
+            borderRadius: 6,
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: busy ? 'wait' : 'pointer',
+            opacity: busy ? 0.6 : 1,
+          }}
+        >
+          {busy ? '…' : 'Einlösen'}
+        </button>
+      </div>
+      {msg && (
+        <div style={{ marginTop: 8, fontSize: 12, color: msg.kind === 'ok' ? 'var(--moss)' : 'var(--danger, #c64a4a)' }}>
+          {msg.text}
+        </div>
+      )}
     </div>
   );
 }

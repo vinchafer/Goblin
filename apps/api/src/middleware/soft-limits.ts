@@ -10,10 +10,29 @@ export interface SoftLimitStatus {
   requestsLimit: number | null; // null = unlimited
   blocked: boolean;
   blockReason?: string;
+  isComped?: boolean;
 }
 
 export async function getSoftLimitStatus(userId: string): Promise<SoftLimitStatus> {
   const supabase = getSupabaseAdmin();
+
+  // Comped users bypass trial + soft limits entirely.
+  const { data: compRow } = await supabase
+    .from('users')
+    .select('is_comped')
+    .eq('id', userId)
+    .maybeSingle();
+  if (compRow?.is_comped) {
+    return {
+      hasKey: true,
+      trialActive: false,
+      trialDaysLeft: 0,
+      requestsToday: 0,
+      requestsLimit: null,
+      blocked: false,
+      isComped: true,
+    };
+  }
 
   // Does the user have any BYOK key?
   const { count: keyCount } = await supabase

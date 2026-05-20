@@ -9,7 +9,7 @@ export const usageLimitMiddleware = createMiddleware(async (c, next) => {
 
   const { data: user, error } = await supabase
     .from('users')
-    .select('plan, monthly_requests_used, monthly_limit, subscription_current_period_end')
+    .select('plan, monthly_requests_used, monthly_limit, subscription_current_period_end, is_comped')
     .eq('id', userId)
     .single();
 
@@ -20,6 +20,11 @@ export const usageLimitMiddleware = createMiddleware(async (c, next) => {
   if (!user) {
     // User exists in auth but not in users table — allow with free-tier defaults
     // (happens when onboarding trigger fails; don't block valid auth users)
+    return next();
+  }
+
+  // Comped users skip usage limits
+  if ((user as { is_comped?: boolean }).is_comped) {
     return next();
   }
 
