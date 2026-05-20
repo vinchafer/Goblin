@@ -12,6 +12,7 @@ import { TwoFactorPage } from './TwoFactorPage';
 import { SessionsPage } from './SessionsPage';
 import { DecryptLogPage } from './DecryptLogPage';
 import { AvatarUploader } from '../profile/AvatarUploader';
+import { createClient } from '@/lib/supabase/client';
 
 const Edit14 = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -33,11 +34,35 @@ export function ProfilePage() {
   const [name, setName] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [saving, setSaving] = useState(false);
+  const [locale, setLocale] = useState<'de' | 'en'>('de');
+  const [timezone, setTimezone] = useState<string>('');
+  const [loadedPrefs, setLoadedPrefs] = useState(false);
 
   useEffect(() => {
     setName(user.fullName ?? '');
     setDisplayName(user.displayName ?? '');
   }, [user.fullName, user.displayName]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const supabase = createClient();
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) return;
+        const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
+        const r = await fetch(`${apiBase}/api/account/preferences`, {
+          headers: { Authorization: `Bearer ${session.access_token}` },
+        });
+        if (r.ok) {
+          const data = await r.json();
+          if (data.locale === 'de' || data.locale === 'en') setLocale(data.locale);
+          setTimezone(data.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone);
+        }
+      } finally {
+        setLoadedPrefs(true);
+      }
+    })();
+  }, []);
 
   const isDirty = name !== (user.fullName ?? '') || displayName !== (user.displayName ?? '');
   const initial = (name?.[0] ?? user.email?.[0] ?? 'V').toUpperCase();
@@ -46,6 +71,19 @@ export function ProfilePage() {
     setSaving(true);
     try {
       await updateProfile({ fullName: name, displayName });
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
+        await fetch(`${apiBase}/api/account/preferences`, {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ locale, timezone: timezone || null }),
+        });
+      }
     } finally {
       setSaving(false);
     }
@@ -67,6 +105,41 @@ export function ProfilePage() {
           <FormReadOnly label="E-Mail-Adresse" value={user.email} testId="form-email" />
           <FormInput label="Vollständiger Name" value={name} onChange={setName} testId="form-name" />
           <FormInput label="Anzeigename" value={displayName} onChange={setDisplayName} testId="form-displayname" />
+        </SettingsCard>
+      </SettingsGroup>
+
+      <SettingsGroup label="Region">
+        <SettingsCard>
+          <div style={{ padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label style={{ fontSize: 13, color: 'var(--text-meta)' }}>Sprache</label>
+            <select
+              value={locale}
+              onChange={(e) => setLocale(e.target.value as 'de' | 'en')}
+              disabled={!loadedPrefs}
+              style={{
+                background: 'transparent', border: 'none', outline: 'none',
+                fontSize: 16, color: 'var(--text)', padding: 0, marginTop: 4,
+                fontFamily: 'var(--font-ui)', appearance: 'none',
+              }}
+            >
+              <option value="de">Deutsch</option>
+              <option value="en">English</option>
+            </select>
+          </div>
+          <div style={{ padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <label style={{ fontSize: 13, color: 'var(--text-meta)' }}>Zeitzone</label>
+            <input
+              value={timezone}
+              onChange={(e) => setTimezone(e.target.value)}
+              placeholder="Europe/Zurich"
+              disabled={!loadedPrefs}
+              style={{
+                background: 'transparent', border: 'none', outline: 'none',
+                fontSize: 16, color: 'var(--text)', padding: 0, marginTop: 4,
+                fontFamily: 'var(--font-ui)', width: '100%',
+              }}
+            />
+          </div>
         </SettingsCard>
       </SettingsGroup>
 

@@ -620,4 +620,45 @@ account.get('/key-usage-summary', authMiddleware, async (c) => {
   return c.json({ keys: result });
 });
 
+// ─── Phase H: user preferences (custom instructions, locale, tz, notifications) ───
+const PreferencesSchema = z.object({
+  custom_instructions: z.string().max(4000).optional().nullable(),
+  locale: z.enum(['de', 'en']).optional(),
+  timezone: z.string().max(64).optional().nullable(),
+  notify_build_complete: z.boolean().optional(),
+  notify_important_updates: z.boolean().optional(),
+  notify_email: z.boolean().optional(),
+  memory_enabled: z.boolean().optional(),
+});
+
+account.get('/preferences', authMiddleware, async (c) => {
+  const userId = c.get('userId');
+  const supabase = getSupabaseAdmin();
+  const { data, error } = await supabase
+    .from('users')
+    .select('custom_instructions, locale, timezone, notify_build_complete, notify_important_updates, notify_email, memory_enabled')
+    .eq('id', userId)
+    .maybeSingle();
+  if (error) return c.json({ error: 'Lookup failed' }, 500);
+  return c.json(data ?? {});
+});
+
+account.put('/preferences', authMiddleware, async (c) => {
+  const userId = c.get('userId');
+  const body = await c.req.json().catch(() => ({}));
+  const parsed = PreferencesSchema.safeParse(body);
+  if (!parsed.success) return c.json({ error: 'Invalid preferences', details: parsed.error.flatten() }, 400);
+
+  const supabase = getSupabaseAdmin();
+  const { error } = await supabase
+    .from('users')
+    .update(parsed.data)
+    .eq('id', userId);
+  if (error) {
+    logger.error({ err: error.message, userId }, 'preferences update failed');
+    return c.json({ error: 'Update failed' }, 500);
+  }
+  return c.json({ success: true });
+});
+
 export { account };

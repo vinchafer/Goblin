@@ -193,9 +193,6 @@ export function AvatarUploader({ currentUrl, fallbackInitial, onUploadComplete }
         <p style={{ color: 'var(--rust)', fontSize: 13, margin: 0 }}>{error}</p>
       )}
 
-      <p style={{ color: 'var(--meta)', fontSize: 12, margin: 0, textAlign: 'center' }}>
-        Max {MAX_FILE_SIZE_MB} MB. Wird auf 512×512 zugeschnitten und als WebP gespeichert.
-      </p>
     </div>
   );
 }
