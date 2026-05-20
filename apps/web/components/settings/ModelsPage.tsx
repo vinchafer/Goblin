@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { SettingsCard } from '../ui/SettingsCard';
+import { IOSToggle } from '../ui/IOSToggle';
+import { getModelAccess, ACCESS_COLORS } from '@/lib/model-access';
 
 type Tab = 'rankings' | 'keys' | 'advanced';
 type TaskType = 'coding' | 'reasoning' | 'speed' | 'cost-efficiency' | 'general';
@@ -100,9 +102,25 @@ function RankingsTab() {
   const [rows, setRows] = useState<RankingRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [defaultId, setDefaultId] = useState<string | null>(null);
+  const [connectedProviders, setConnectedProviders] = useState<Set<string>>(new Set());
+  const [onlyUsable, setOnlyUsable] = useState(false);
 
   useEffect(() => {
     setDefaultId(localStorage.getItem(DEFAULT_KEY));
+    (async () => {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const { data } = await supabase
+        .from('byok_keys')
+        .select('provider, status')
+        .eq('user_id', session.user.id);
+      const set = new Set<string>();
+      for (const k of (data ?? []) as { provider: string; status?: string }[]) {
+        if (k.status !== 'revoked') set.add(k.provider);
+      }
+      setConnectedProviders(set);
+    })();
   }, []);
 
   useEffect(() => {
@@ -120,9 +138,56 @@ function RankingsTab() {
     localStorage.setItem(DEFAULT_KEY, modelId);
   }
 
+  // Smart-sort: usable models first (keyed > free > free-then-byok > byok), then by rank.
+  function usabilityRank(provider: string): number {
+    if (connectedProviders.has(provider)) return 0;
+    const a = getModelAccess(provider).type;
+    if (a === 'free') return 1;
+    if (a === 'free-then-byok') return 2;
+    return 3;
+  }
+  function isUsable(provider: string): boolean {
+    return usabilityRank(provider) < 3;
+  }
+
+  const sortedRows = useMemo(() => {
+    return [...rows].sort((a, b) => {
+      const ua = usabilityRank(a.ranked_models.provider);
+      const ub = usabilityRank(b.ranked_models.provider);
+      if (ua !== ub) return ua - ub;
+      return a.rank - b.rank;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows, connectedProviders]);
+
+  const filteredRows = useMemo(
+    () => onlyUsable ? sortedRows.filter(r => isUsable(r.ranked_models.provider)) : sortedRows,
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+    [sortedRows, onlyUsable, connectedProviders],
+  );
+
+  const hasNoKeyAccess = connectedProviders.size === 0;
+
   return (
     <>
-      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 16, paddingBottom: 4 }}>
+      {/* Context banner: no keys yet → suggest free-tier */}
+      {hasNoKeyAccess && (
+        <div style={{
+          background: 'rgba(45,74,43,0.06)',
+          border: '1px solid rgba(45,74,43,0.16)',
+          borderRadius: 10, padding: '10px 14px',
+          fontSize: 13, color: 'var(--text)', marginBottom: 14,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
+        }}>
+          <span>Du hast noch keine Keys hinterlegt.</span>
+          <a href="/onboarding/choose-provider" style={{
+            color: 'var(--moss)', fontWeight: 600, textDecoration: 'none',
+            fontSize: 13, whiteSpace: 'nowrap',
+          }}>Free-Tier einrichten →</a>
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 12, paddingBottom: 4 }}>
         {(Object.keys(TASK_LABELS) as TaskType[]).map((t) => (
           <button
             key={t}
@@ -141,15 +206,31 @@ function RankingsTab() {
         ))}
       </div>
 
+      <div style={{
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        marginBottom: 12, gap: 12,
+      }}>
+        <span style={{ fontSize: 13, color: 'var(--text-meta)' }}>Nur nutzbare Modelle</span>
+        <IOSToggle value={onlyUsable} onChange={setOnlyUsable} ariaLabel="Nur nutzbare Modelle" />
+      </div>
+
       {loading && <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-meta)' }}>Lade Rankings…</div>}
-      {!loading && rows.length === 0 && (
+      {!loading && filteredRows.length === 0 && (
         <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-meta)', fontSize: 14 }}>
-          Noch keine Daten für diesen Task. Refresh läuft alle 6h.
+          {onlyUsable
+            ? 'Keine nutzbaren Modelle für diesen Task. Toggle „Nur nutzbare" ausschalten oder Free-Tier einrichten.'
+            : 'Noch keine Daten für diesen Task. Refresh läuft alle 6h.'}
         </div>
       )}
-      {!loading && rows.map((r) => {
+      {!loading && filteredRows.map((r) => {
         const m = r.ranked_models;
         const isDefault = defaultId === m.id;
+        const access = getModelAccess(m.provider);
+        const keyed = connectedProviders.has(m.provider);
+        const colors = keyed
+          ? { bg: 'rgba(45,74,43,0.10)', fg: 'var(--moss)', border: 'rgba(45,74,43,0.24)' }
+          : ACCESS_COLORS[access.type];
+        const badgeLabel = keyed ? 'Mein Key' : access.label;
         return (
           <div key={m.id} style={{
             padding: '14px 16px', marginBottom: 8,
@@ -163,8 +244,15 @@ function RankingsTab() {
               fontFamily: 'var(--font-mono)', flexShrink: 0,
             }}>#{r.rank}</span>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontWeight: 600, color: 'var(--text)', fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {m.display_name}
+              <div style={{ fontWeight: 600, color: 'var(--text)', fontSize: 15, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.display_name}</span>
+                <span style={{
+                  padding: '1px 7px', borderRadius: 6,
+                  background: colors.bg, color: colors.fg,
+                  border: `1px solid ${colors.border}`,
+                  fontSize: 10, fontWeight: 700, letterSpacing: 0.4,
+                  textTransform: 'uppercase', flexShrink: 0,
+                }}>{badgeLabel}</span>
               </div>
               <div style={{ color: 'var(--text-meta)', fontSize: 12, marginTop: 2 }}>
                 {m.provider} · Score {(r.composite_score * 100).toFixed(0)} · {r.source_count} Quellen
