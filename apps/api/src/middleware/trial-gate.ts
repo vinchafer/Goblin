@@ -18,6 +18,16 @@ const SKIP_PATHS = [
   '/api/shared',
 ];
 
+// Read-only paths that should remain accessible even after trial expiry.
+// Users must be able to *view* their projects and chats; only AI-billing
+// actions are blocked behind the paywall.
+const READ_ONLY_GET_PREFIXES = [
+  '/api/projects',
+  '/api/chat-sessions',
+  '/api/chats',
+  '/api/files',
+];
+
 // Check if request is BYOK-backed (no trial cost to Goblin)
 function isByokPath(path: string): boolean {
   return path.startsWith('/api/byok-keys');
@@ -25,9 +35,19 @@ function isByokPath(path: string): boolean {
 
 export const trialGate = createMiddleware(async (c, next) => {
   const path = c.req.path;
+  const method = c.req.method;
 
   // Skip non-gated paths
   if (SKIP_PATHS.some(p => path.startsWith(p)) || isByokPath(path)) {
+    return next();
+  }
+
+  // Allow GET on read-only resources after trial expiry — F9a: users with
+  // expired trial were seeing "Failed to load projects" because this gate
+  // returned 402 on the projects list fetch. Read access never costs Goblin
+  // anything; only paid-feature actions (model calls, build, etc.) should
+  // hit the paywall.
+  if (method === 'GET' && READ_ONLY_GET_PREFIXES.some(p => path.startsWith(p))) {
     return next();
   }
 
