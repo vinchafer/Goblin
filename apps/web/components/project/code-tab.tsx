@@ -11,6 +11,8 @@ import { BuildStatusBar } from "@/components/build/build-status-bar";
 import { InjectedBanner } from "./InjectedBanner";
 import { ActionBar } from "./ActionBar";
 import { useCodeTab } from "@/hooks/useCodeTab";
+import { Icon } from "@/components/ui/icon";
+import { GoblinMark } from "@/components/ui/goblin-mark";
 
 const CodeEditor = dynamic(
   () => import("@/components/editor/code-editor").then(m => ({ default: m.CodeEditor })),
@@ -84,8 +86,8 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
         className="gb-mobile-tree-toggle"
         onClick={() => tab.setMobileDrawerOpen(!tab.mobileDrawerOpen)}
         aria-label="Toggle file tree"
-        style={{ position: 'fixed', bottom: 80, left: 16, zIndex: 40, width: 44, height: 44, borderRadius: '50%', background: 'var(--moss)', border: 'none', color: 'var(--ochre)', fontSize: 18, cursor: 'pointer', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}
-      >☰</button>
+        style={{ position: 'fixed', bottom: 80, left: 16, zIndex: 40, width: 44, height: 44, borderRadius: '50%', background: 'var(--moss)', border: 'none', color: 'var(--ochre)', cursor: 'pointer', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}
+      ><Icon name="menu" size={18} /></button>
 
       {/* Mobile file tree drawer */}
       {tab.mobileDrawerOpen && (
@@ -94,7 +96,7 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
             <div style={{ padding: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                 <span style={{ fontWeight: 600, fontSize: 13, color: '#8aaa85' }}>Files</span>
-                <button onClick={() => tab.setMobileDrawerOpen(false)} style={{ background: 'none', border: 'none', color: '#6b8a6b', cursor: 'pointer', fontSize: 18 }}>✕</button>
+                <button onClick={() => tab.setMobileDrawerOpen(false)} aria-label="Close" style={{ background: 'none', border: 'none', color: '#6b8a6b', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="close" size={16} /></button>
               </div>
               <FileTree projectId={projectId} files={tab.files} onFileClick={tab.openFile} onFilesChanged={tab.fetchFiles} />
             </div>
@@ -145,7 +147,7 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
           >
             {tab.fileTreeOpen
               ? <span style={{ fontSize: 12, fontWeight: 600, color: '#8aaa85', fontFamily: 'DM Sans, sans-serif' }}>Files</span>
-              : <span style={{ fontSize: 14, color: '#8aaa85' }}>≡</span>
+              : <Icon name="menu" size={14} color="#8aaa85" />
             }
           </button>
           {tab.fileTreeOpen && (
@@ -190,45 +192,38 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
               />
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', textAlign: 'center', padding: 32, background: '#141a12' }}>
-                <div style={{
-                  width: 56, height: 56, borderRadius: 12,
-                  background: 'rgba(138,170,133,0.08)',
-                  border: '1px solid rgba(138,170,133,0.15)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontFamily: 'JetBrains Mono, monospace', fontSize: 22, color: '#8aaa85',
-                  marginBottom: 18,
-                }}>{'</>'}</div>
+                <div style={{ marginBottom: 20 }}>
+                  <GoblinMark size={56} />
+                </div>
                 {tab.files.length > 0 ? (
                   <>
-                    <h3 style={{ fontFamily: 'Fraunces, serif', fontSize: 20, color: '#c5d0c0', fontWeight: 700, marginBottom: 6, letterSpacing: '-0.3px' }}>
-                      Select a file
+                    <h3 style={{ fontFamily: 'Fraunces, serif', fontSize: 22, color: '#e8eee5', fontWeight: 600, marginBottom: 8, letterSpacing: '-0.3px' }}>
+                      Wähle eine Datei
                     </h3>
-                    <p style={{ fontSize: 13, color: '#7aaa75', fontFamily: 'DM Sans, sans-serif', maxWidth: 320, lineHeight: 1.55 }}>
-                      Pick a file from the tree on the left to start editing.
+                    <p style={{ fontSize: 14, color: '#8aaa85', fontFamily: 'DM Sans, sans-serif', maxWidth: 320, lineHeight: 1.55 }}>
+                      Tipp links auf eine Datei aus dem Baum, um sie zu bearbeiten.
                     </p>
                   </>
                 ) : (
                   <>
-                    <h3 style={{ fontFamily: 'Fraunces, serif', fontSize: 20, color: '#c5d0c0', fontWeight: 700, marginBottom: 6, letterSpacing: '-0.3px' }}>
-                      No code yet
+                    <h3 style={{ fontFamily: 'Fraunces, serif', fontSize: 24, color: '#e8eee5', fontWeight: 600, marginBottom: 8, letterSpacing: '-0.3px' }}>
+                      Noch kein Code
                     </h3>
-                    <p style={{ fontSize: 13, color: '#7aaa75', fontFamily: 'DM Sans, sans-serif', maxWidth: 360, lineHeight: 1.6, marginBottom: 20 }}>
-                      Open the Chat tab and ask Goblin to build something.<br />
-                      Use <span style={{ background: 'rgba(212,169,74,0.12)', color: 'var(--ochre)', padding: '1px 6px', borderRadius: 4, fontFamily: 'JetBrains Mono, monospace', fontSize: 11 }}>Send to Code</span> on any generated snippet.
+                    <p style={{ fontSize: 14, color: '#8aaa85', fontFamily: 'DM Sans, sans-serif', maxWidth: 340, lineHeight: 1.6, marginBottom: 22 }}>
+                      Geh in den Chat und sag Goblin was du bauen willst. Mit „An Code senden" landet generierter Code direkt hier.
                     </p>
-                    <div style={{ display: 'flex', gap: 8 }}>
-                      <button
-                        onClick={() => window.dispatchEvent(new CustomEvent('goblin:switchTab', { detail: 'chat' }))}
-                        style={{
-                          background: 'rgba(212,169,74,0.12)', color: 'var(--ochre)',
-                          border: '1px solid rgba(212,169,74,0.35)',
-                          borderRadius: 8, padding: '8px 16px', fontSize: 12, fontWeight: 600,
-                          cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
-                        }}
-                      >
-                        Open Chat →
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => window.dispatchEvent(new CustomEvent('goblin:switchTab', { detail: 'chat' }))}
+                      style={{
+                        background: 'var(--moss)', color: 'var(--ochre)',
+                        border: 'none',
+                        borderRadius: 10, padding: '10px 20px', fontSize: 14, fontWeight: 600,
+                        cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
+                        display: 'inline-flex', alignItems: 'center', gap: 8,
+                      }}
+                    >
+                      <Icon name="chat" size={16} /> Chat öffnen
+                    </button>
                   </>
                 )}
               </div>
@@ -239,10 +234,10 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
           {tab.pendingInjections.length > 0 && (
             <div style={{ borderTop: '1px solid rgba(212,169,74,0.25)', flexShrink: 0, background: '#141a12' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 14px', background: 'rgba(212,169,74,0.06)' }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--ochre)', fontFamily: 'DM Sans, sans-serif' }}>
-                  ✦ {tab.pendingInjections.length} pending injection{tab.pendingInjections.length !== 1 ? 's' : ''}
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--ochre)', fontFamily: 'DM Sans, sans-serif', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <Icon name="ai" size={12} /> {tab.pendingInjections.length} pending injection{tab.pendingInjections.length !== 1 ? 's' : ''}
                 </span>
-                <button onClick={tab.clearPendingInjections} style={{ background: 'none', border: 'none', color: '#6b8a6b', cursor: 'pointer', fontSize: 15, lineHeight: 1 }}>×</button>
+                <button onClick={tab.clearPendingInjections} aria-label="Clear" style={{ background: 'none', border: 'none', color: '#6b8a6b', cursor: 'pointer', display: 'flex', alignItems: 'center' }}><Icon name="close" size={14} /></button>
               </div>
               <div style={{ maxHeight: 160, overflowY: 'auto', padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {tab.pendingInjections.map(injection => <InjectionCard key={injection.id} injection={injection} />)}
@@ -254,8 +249,12 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
 
       {/* Mobile FABs */}
       <div className="gb-mobile-fab" style={{ position: 'fixed', bottom: 80, right: 16, flexDirection: 'column', gap: 8, zIndex: 40 }}>
-        <button onClick={tab.openPushModal} title="Push to GitHub" style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(30,58,28,0.95)', border: '1px solid rgba(138,170,133,0.3)', color: '#8aaa85', fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' } as React.CSSProperties}>⬆</button>
-        <button onClick={tab.handleDeploy} disabled={tab.deploying} title="Deploy" style={{ width: 56, height: 56, borderRadius: '50%', background: tab.deploying ? 'rgba(45,74,43,0.6)' : 'var(--moss)', border: 'none', color: 'var(--ochre)', fontSize: 22, cursor: tab.deploying ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 20px rgba(45,74,43,0.5)' } as React.CSSProperties}>{tab.deploying ? '…' : '▶'}</button>
+        <button onClick={tab.openPushModal} aria-label="Push to GitHub" title="Push to GitHub" style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(30,58,28,0.95)', border: '1px solid rgba(138,170,133,0.3)', color: '#8aaa85', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' } as React.CSSProperties}>
+          <Icon name="github" size={18} />
+        </button>
+        <button onClick={tab.handleDeploy} disabled={tab.deploying} aria-label="Deploy" title="Deploy" style={{ width: 56, height: 56, borderRadius: '50%', background: tab.deploying ? 'rgba(45,74,43,0.6)' : 'var(--moss)', border: 'none', color: 'var(--ochre)', cursor: tab.deploying ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 20px rgba(45,74,43,0.5)' } as React.CSSProperties}>
+          {tab.deploying ? <GoblinMark size={22} /> : <Icon name="play" size={20} />}
+        </button>
       </div>
 
       {/* Build status bar */}
@@ -280,13 +279,13 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
 }
 
 function InjectionCard({ injection }: { injection: PendingInjection }) {
-  const typeIcon = injection.payloadType === 'code' ? '</>' : injection.payloadType === 'prompt' ? '✦' : '≡';
+  const iconName = injection.payloadType === 'code' ? 'code' as const : injection.payloadType === 'prompt' ? 'ai' as const : 'layout' as const;
   const typeLabel = injection.payloadType === 'code' ? 'CODE' : injection.payloadType === 'prompt' ? 'PROMPT' : 'MIXED';
   const preview = injection.payload.length > 80 ? injection.payload.slice(0, 80) + '…' : injection.payload;
   return (
     <div className="gb-injection-card" style={{ borderRadius: 8, border: '1px solid rgba(212,169,74,0.4)', overflow: 'hidden', background: '#1a2018' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', background: 'rgba(212,169,74,0.08)', borderBottom: '1px solid rgba(212,169,74,0.25)' }}>
-        <span style={{ color: 'var(--ochre)', fontSize: 11, fontFamily: 'JetBrains Mono, monospace' }}>{typeIcon}</span>
+        <span style={{ color: 'var(--ochre)', display: 'inline-flex' }}><Icon name={iconName} size={12} /></span>
         <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: 'var(--ochre)', fontFamily: 'JetBrains Mono, monospace' }}>[{typeLabel}]</span>
         {injection.filenameHint && <span style={{ fontSize: 11, color: '#8aaa85', fontFamily: 'JetBrains Mono, monospace', marginLeft: 4 }}>{injection.filenameHint}</span>}
         <span style={{ fontSize: 10, color: '#6b8a6b', marginLeft: 'auto', fontFamily: 'DM Sans, sans-serif' }}>{new Date(injection.createdAt).toLocaleTimeString()}</span>
