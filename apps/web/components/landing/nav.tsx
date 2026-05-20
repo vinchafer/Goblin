@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
+import { GoblinWordmark } from '@/components/ui/goblin-mark';
 
 export function Nav() {
   const [scrolled, setScrolled] = useState(false);
@@ -29,9 +30,8 @@ export function Nav() {
         borderBottom: scrolled ? '1px solid rgba(0,0,0,0.08)' : '1px solid transparent',
         transition: 'all 0.2s ease',
       }}>
-        <div style={{ fontFamily: 'Fraunces, serif', fontSize: 26, color: 'var(--moss)', fontWeight: 700, letterSpacing: '-0.5px' }}>
-          Goblin<span style={{ color: 'var(--ochre)' }}>.</span>
-        </div>
+        <GoblinWordmark size="md" />
+
 
         {/* Desktop links */}
         <div style={{ display: 'flex', gap: 32 }} className="nav-desktop-links">

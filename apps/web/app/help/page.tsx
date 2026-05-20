@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { SupportChat } from '@/components/support/support-chat';
 
 interface Faq {
   q: string;
@@ -101,38 +102,79 @@ export default function HelpPage() {
           })}
         </div>
 
-        {/* Contact CTA */}
-        <div style={{
-          background: 'var(--moss)', color: '#fff',
-          borderRadius: 16, padding: '24px 24px 28px',
-          textAlign: 'center',
-        }}>
-          <h2 style={{
-            fontFamily: 'Fraunces, serif', fontSize: 20, fontWeight: 700,
-            margin: '0 0 8px',
-          }}>
-            Noch Fragen?
-          </h2>
-          <p style={{
-            fontSize: 14, opacity: 0.85,
-            fontFamily: 'DM Sans, sans-serif', margin: '0 0 18px', lineHeight: 1.5,
-          }}>
-            Schreib uns direkt — wir antworten innerhalb von 24h.
-          </p>
-          <a
-            href="mailto:support@justgoblin.com"
-            style={{
-              display: 'inline-block',
-              padding: '12px 24px', borderRadius: 24,
-              background: 'var(--ochre)', color: 'var(--moss)',
-              textDecoration: 'none', fontSize: 14, fontWeight: 600,
-              fontFamily: 'DM Sans, sans-serif',
-            }}
-          >
-            support@justgoblin.com
-          </a>
-        </div>
+        {/* Contact CTA — Goblin help agent */}
+        <HelpAgentCTA />
       </div>
+    </div>
+  );
+}
+
+function HelpAgentCTA() {
+  const [chatOpen, setChatOpen] = useState(false);
+  const [escalateOpen, setEscalateOpen] = useState(false);
+
+  return (
+    <div style={{
+      background: 'var(--moss)', color: '#fff',
+      borderRadius: 16, padding: '24px 24px 28px',
+      textAlign: 'center',
+    }}>
+      <h2 style={{
+        fontFamily: 'Fraunces, serif', fontSize: 20, fontWeight: 700,
+        margin: '0 0 8px',
+      }}>
+        Noch Fragen?
+      </h2>
+      <p style={{
+        fontSize: 14, opacity: 0.85,
+        fontFamily: 'DM Sans, sans-serif', margin: '0 0 18px', lineHeight: 1.5,
+      }}>
+        Der Goblin-Hilfe-Agent kennt das Produkt und antwortet sofort.
+      </p>
+      <button
+        onClick={() => setChatOpen(true)}
+        style={{
+          display: 'inline-flex', alignItems: 'center', gap: 8,
+          padding: '12px 24px', borderRadius: 24,
+          background: 'var(--ochre)', color: 'var(--moss)',
+          textDecoration: 'none', fontSize: 14, fontWeight: 600,
+          fontFamily: 'DM Sans, sans-serif',
+          border: 'none', cursor: 'pointer',
+        }}
+      >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+        </svg>
+        Mit Goblin-Hilfe chatten
+      </button>
+      <div style={{ marginTop: 14, fontSize: 12, opacity: 0.7 }}>
+        {!escalateOpen ? (
+          <button
+            onClick={() => setEscalateOpen(true)}
+            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', cursor: 'pointer', textDecoration: 'underline', fontSize: 12, fontFamily: 'DM Sans, sans-serif' }}
+          >
+            Komme nicht weiter, brauche einen Menschen
+          </button>
+        ) : (
+          <span>Schreib im Chat „Mensch", der Agent eskaliert automatisch.</span>
+        )}
+      </div>
+
+      {chatOpen && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 1000,
+          background: 'rgba(0,0,0,0.45)',
+          display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+        }} onClick={() => setChatOpen(false)}>
+          <div onClick={(e) => e.stopPropagation()} style={{
+            width: '100%', maxWidth: 560, height: '90dvh',
+            background: 'var(--panel)', borderTopLeftRadius: 20, borderTopRightRadius: 20,
+            overflow: 'hidden', display: 'flex', flexDirection: 'column',
+          }}>
+            <SupportChat onClose={() => setChatOpen(false)} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

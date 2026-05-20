@@ -1,5 +1,7 @@
 'use client';
 
+import { GoblinWordmark } from '@/components/ui/goblin-mark';
+
 const COLS = [
   {
     title: 'Product',
@@ -34,7 +36,7 @@ export function Footer() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 40, marginBottom: 56 }}>
           {/* Brand */}
           <div style={{ maxWidth: 220 }}>
-            <div style={{ fontFamily: 'Fraunces, serif', fontSize: 28, color: 'var(--moss)', fontWeight: 700, marginBottom: 10 }}>Goblin.</div>
+            <div style={{ marginBottom: 10 }}><GoblinWordmark size="lg" /></div>
             <div style={{ fontSize: 13, color: 'var(--meta)', lineHeight: 1.6, fontWeight: 400 }}>
               The cloud workshop for builders who ship from anywhere.
             </div>
