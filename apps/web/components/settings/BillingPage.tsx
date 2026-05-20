@@ -2,106 +2,379 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { SettingsCard } from '../ui/SettingsCard';
-import { SettingsGroup } from '../ui/SettingsGroup';
-import { SettingsRow } from '../ui/SettingsRow';
+import { Icon } from '@/components/ui/icon';
 
-interface BillingState {
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '';
+
+interface BillingStatus {
   plan: string;
-  status: string;
+  status: string | null;
   trialEndsAt: string | null;
   currentPeriodEnd: string | null;
   cardLast4: string | null;
+  cardBrand: string | null;
+  isComped: boolean;
+  compReason: string | null;
+  monthlyUsed: number;
+  monthlyLimit: number;
+}
+
+interface Invoice {
+  id: string;
+  date: string;
+  amount: number;
+  currency: string;
+  status: string | null;
+  pdf_url: string | null;
+  hosted_url: string | null;
+}
+
+interface UsageBreakdown {
+  byok: number;
+  free_api: number;
+  goblin_hosted: number;
+}
+
+const PLAN_LABEL: Record<string, string> = {
+  trial: 'Trial',
+  build: 'Build',
+  pro: 'Pro',
+  power: 'Power',
+};
+
+const PLAN_PRICE: Record<string, string> = {
+  trial: 'kostenlos',
+  build: '$9/Monat',
+  pro: '$19/Monat',
+  power: '$39/Monat',
+};
+
+const PLAN_FEATURES: Record<string, string[]> = {
+  trial: ['200 Hosted-Requests', 'Eigene API-Keys erlaubt', 'Limit endet automatisch'],
+  build: ['Unbegrenzte Projekte', 'Alle Provider via BYOK', '5 GB Speicher', 'GitHub-Push & Deploy'],
+  pro: ['Alles aus Build', 'Cloud-Credits inklusive', 'Priority Support', '20 GB Speicher'],
+  power: ['Alles aus Pro', 'Team-Features', 'SLA-Support', '100 GB Speicher'],
+};
+
+async function authHeader(): Promise<Record<string, string>> {
+  const supabase = createClient();
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return {};
+  return { Authorization: `Bearer ${session.access_token}` };
 }
 
 export function BillingPage() {
-  const [state, setState] = useState<BillingState | null>(null);
+  const [status, setStatus] = useState<BillingStatus | null>(null);
+  const [usage, setUsage] = useState<UsageBreakdown | null>(null);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [invoiceCursor, setInvoiceCursor] = useState<string | null>(null);
+  const [invoiceHasMore, setInvoiceHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => { void loadAll(); }, []);
 
-  async function load() {
+  async function loadAll() {
+    const headers = await authHeader();
+    if (!headers.Authorization) { setLoading(false); return; }
     try {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { setLoading(false); return; }
-      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
-      const r = await fetch(`${apiBase}/api/billing/status`, {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
-      if (r.ok) setState(await r.json());
+      const [statusRes, usageRes, invoicesRes] = await Promise.all([
+        fetch(`${API_BASE}/api/billing/status`, { headers }),
+        fetch(`${API_BASE}/api/billing/usage`, { headers }),
+        fetch(`${API_BASE}/api/billing/invoices`, { headers }),
+      ]);
+      if (statusRes.ok) setStatus(await statusRes.json());
+      if (usageRes.ok) {
+        const u = await usageRes.json();
+        setUsage(u.breakdown ?? { byok: 0, free_api: 0, goblin_hosted: 0 });
+      }
+      if (invoicesRes.ok) {
+        const inv = await invoicesRes.json();
+        setInvoices(inv.invoices ?? []);
+        setInvoiceHasMore(!!inv.has_more);
+        setInvoiceCursor(inv.next_cursor);
+      }
     } finally {
       setLoading(false);
     }
   }
 
+  async function loadMoreInvoices() {
+    if (!invoiceCursor || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const headers = await authHeader();
+      const res = await fetch(`${API_BASE}/api/billing/invoices?cursor=${encodeURIComponent(invoiceCursor)}`, { headers });
+      if (res.ok) {
+        const inv = await res.json();
+        setInvoices(prev => [...prev, ...(inv.invoices ?? [])]);
+        setInvoiceHasMore(!!inv.has_more);
+        setInvoiceCursor(inv.next_cursor);
+      }
+    } finally { setLoadingMore(false); }
+  }
+
   async function openPortal() {
     setBusy(true);
     try {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
-      const r = await fetch(`${apiBase}/api/billing/create-portal-session`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      });
+      const headers = await authHeader();
+      const r = await fetch(`${API_BASE}/api/billing/create-portal-session`, { method: 'POST', headers });
       if (r.ok) {
-        const { url } = await r.json();
-        if (url) window.location.href = url;
+        const { portalUrl, url } = await r.json();
+        const target = portalUrl ?? url;
+        if (target) window.location.href = target;
       }
-    } finally {
-      setBusy(false);
-    }
+    } finally { setBusy(false); }
   }
 
-  if (loading) return <div style={{ padding: 24, color: 'var(--text-meta)', fontFamily: 'var(--font-ui)' }}>Lade Abrechnung...</div>;
+  if (loading) {
+    return <div style={{ padding: 24, color: 'var(--text-meta)', fontFamily: 'var(--font-ui)' }}>Lade Abrechnung…</div>;
+  }
 
-  const plan = state?.plan ?? 'Trial';
-  const trialEnds = state?.trialEndsAt ? new Date(state.trialEndsAt).toLocaleDateString('de-DE') : null;
-  const renewsAt = state?.currentPeriodEnd ? new Date(state.currentPeriodEnd).toLocaleDateString('de-DE') : null;
+  const planKey = status?.plan ?? 'trial';
+  const planName = PLAN_LABEL[planKey] ?? planKey;
+  const planPrice = PLAN_PRICE[planKey] ?? '';
+  const features = PLAN_FEATURES[planKey] ?? [];
+  const isComped = !!status?.isComped;
+  const monthName = new Date().toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+
+  const used = status?.monthlyUsed ?? 0;
+  const limit = status?.monthlyLimit ?? 0;
+  const pct = isComped || limit === 0 ? 0 : Math.min(100, Math.round((used / limit) * 100));
 
   return (
-    <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-ui)' }}>
-      <SettingsGroup label="Aktueller Plan">
-        <SettingsCard>
+    <div style={{ padding: '0 16px 32px', fontFamily: 'var(--font-ui)' }}>
+
+      {/* Current plan */}
+      <Section title="Dein Plan">
+        <Card>
           <div style={{ padding: 20 }}>
-            <div style={{ fontSize: 13, color: 'var(--text-meta)', textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 6 }}>Plan</div>
-            <div style={{ fontSize: 24, fontWeight: 700, color: 'var(--text)', fontFamily: 'var(--font-brand)' }}>{plan}</div>
-            {trialEnds && (
-              <div style={{ marginTop: 10, fontSize: 13, color: 'var(--ochre)' }}>Trial endet {trialEnds}</div>
-            )}
-            {renewsAt && !trialEnds && (
-              <div style={{ marginTop: 10, fontSize: 13, color: 'var(--text-meta)' }}>Nächste Abbuchung {renewsAt}</div>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 14 }}>
+              <div>
+                <div style={{ fontSize: 11, color: 'var(--text-meta)', textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 6, fontWeight: 600 }}>
+                  Aktuell
+                </div>
+                <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+                  <div style={{ fontSize: 26, fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-brand)', letterSpacing: '-0.3px' }}>
+                    {isComped ? 'Vollzugriff' : planName}
+                  </div>
+                  <div style={{ fontSize: 14, color: 'var(--text-meta)' }}>
+                    {isComped ? (status?.compReason?.startsWith('invite') ? 'Invite-Code' : 'Founder') : planPrice}
+                  </div>
+                </div>
+                {!isComped && status?.trialEndsAt && (
+                  <div style={{ marginTop: 8, fontSize: 13, color: 'var(--ochre)' }}>
+                    Trial endet {new Date(status.trialEndsAt).toLocaleDateString('de-DE')}
+                  </div>
+                )}
+                {!isComped && status?.currentPeriodEnd && !status?.trialEndsAt && (
+                  <div style={{ marginTop: 8, fontSize: 13, color: 'var(--text-meta)' }}>
+                    Nächste Abbuchung {new Date(status.currentPeriodEnd).toLocaleDateString('de-DE')}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Feature list */}
+            <ul style={{ listStyle: 'none', padding: 0, margin: '12px 0 16px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {(isComped ? ['Unbegrenzte Projekte', 'Alle Provider', 'Voller Speicher', 'Alle Features'] : features).map(f => (
+                <li key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text)' }}>
+                  <Icon name="check" size={14} color="var(--moss)" />
+                  {f}
+                </li>
+              ))}
+            </ul>
+
+            {!isComped && (
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button onClick={openPortal} disabled={busy} style={primaryBtn(busy)}>
+                  {busy ? 'Lade Portal…' : 'Abo verwalten'}
+                </button>
+                <button onClick={() => { window.location.href = '/dashboard/upgrade'; }} style={outlineBtn}>
+                  Plan ändern
+                </button>
+              </div>
             )}
           </div>
-        </SettingsCard>
-      </SettingsGroup>
+        </Card>
+      </Section>
 
-      {state?.cardLast4 && (
-        <SettingsGroup label="Zahlungsmethode">
-          <SettingsCard>
-            <SettingsRow label={`•••• ${state.cardLast4}`} right="Ändern" rightVariant="text" />
-          </SettingsCard>
-        </SettingsGroup>
-      )}
+      {/* Usage */}
+      <Section title={`Verbrauch — ${monthName}`}>
+        <Card>
+          <div style={{ padding: 20 }}>
+            {isComped ? (
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
+                <div style={{ fontSize: 14, color: 'var(--text)' }}>Unbegrenzt</div>
+                <div style={{ fontSize: 13, color: 'var(--text-meta)', fontFamily: 'var(--font-mono, monospace)' }}>{used} Requests</div>
+              </div>
+            ) : (
+              <>
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 }}>
+                  <div style={{ fontSize: 13, color: 'var(--text-meta)' }}>{pct}% genutzt</div>
+                  <div style={{ fontSize: 13, color: 'var(--text)', fontFamily: 'var(--font-mono, monospace)' }}>{used} / {limit}</div>
+                </div>
+                <div style={{ height: 8, borderRadius: 4, background: 'var(--rule, rgba(0,0,0,0.08))', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${pct}%`, background: 'var(--moss)', transition: 'width 0.3s ease' }} />
+                </div>
+              </>
+            )}
+          </div>
+        </Card>
 
-      <SettingsGroup label="Verwaltung">
-        <SettingsCard>
-          <SettingsRow label={busy ? 'Lade Portal…' : 'Plan & Rechnungen verwalten'} onClick={openPortal} disabled={busy} />
-          <SettingsRow label="Upgrade ansehen" onClick={() => { window.location.href = '/dashboard/upgrade'; }} />
-        </SettingsCard>
-      </SettingsGroup>
+        {/* Stat cards */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginTop: 10 }}>
+          <StatCard icon="apiKey" label="BYOK" value={usage?.byok ?? 0} />
+          <StatCard icon="fast" label="Free" value={usage?.free_api ?? 0} />
+          <StatCard icon="rocket" label="Hosted" value={usage?.goblin_hosted ?? 0} />
+        </div>
+      </Section>
 
-      <InviteCodeRedemption />
+      {/* Payment method */}
+      <Section title="Zahlungsmethode">
+        <Card>
+          <div style={{ padding: 20 }}>
+            {isComped ? (
+              <div style={{ fontSize: 14, color: 'var(--text-meta)' }}>Nicht erforderlich</div>
+            ) : status?.cardLast4 ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <Icon name="billing" size={18} color="var(--text-meta)" />
+                  <div>
+                    <div style={{ fontSize: 14, color: 'var(--text)', fontFamily: 'var(--font-mono, monospace)' }}>
+                      {(status.cardBrand ?? '').toUpperCase()} •••• {status.cardLast4}
+                    </div>
+                  </div>
+                </div>
+                <button onClick={openPortal} disabled={busy} style={textBtn}>Ändern</button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                <div style={{ fontSize: 14, color: 'var(--text-meta)' }}>Keine Zahlungsmethode</div>
+                <button onClick={openPortal} disabled={busy} style={outlineBtn}>Hinzufügen</button>
+              </div>
+            )}
+          </div>
+        </Card>
+      </Section>
 
-      <p style={{ fontSize: 12, color: 'var(--text-meta)', marginTop: 16, padding: '0 4px', lineHeight: 1.6 }}>
+      {/* Billing history */}
+      <Section title="Rechnungs-Historie">
+        <Card>
+          {invoices.length === 0 ? (
+            <div style={{ padding: 20, fontSize: 14, color: 'var(--text-meta)' }}>Noch keine Rechnungen</div>
+          ) : (
+            <>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                {invoices.map(inv => (
+                  <li key={inv.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderBottom: '1px solid var(--rule, rgba(0,0,0,0.06))', gap: 12 }}>
+                    <div>
+                      <div style={{ fontSize: 14, color: 'var(--text)' }}>
+                        {new Date(inv.date).toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' })}
+                      </div>
+                      <div style={{ fontSize: 12, color: 'var(--text-meta)', marginTop: 2 }}>
+                        {inv.status === 'paid' ? 'Bezahlt' : inv.status ?? '—'}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{ fontSize: 14, color: 'var(--text)', fontFamily: 'var(--font-mono, monospace)' }}>
+                        {inv.amount.toFixed(2)} {inv.currency.toUpperCase()}
+                      </div>
+                      {inv.pdf_url && (
+                        <a href={inv.pdf_url} target="_blank" rel="noreferrer" style={{ color: 'var(--text-meta)', display: 'inline-flex', alignItems: 'center' }} aria-label="PDF öffnen">
+                          <Icon name="download" size={16} />
+                        </a>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+              {invoiceHasMore && (
+                <div style={{ padding: 12, textAlign: 'center' }}>
+                  <button onClick={loadMoreInvoices} disabled={loadingMore} style={textBtn}>
+                    {loadingMore ? 'Lade…' : 'Mehr laden'}
+                  </button>
+                </div>
+              )}
+            </>
+          )}
+        </Card>
+      </Section>
+
+      {!isComped && <InviteCodeRedemption />}
+
+      <p style={{ fontSize: 12, color: 'var(--text-meta)', marginTop: 20, padding: '0 4px', lineHeight: 1.6 }}>
         Sicheres Checkout & Rechnungen über Stripe. Kündigung jederzeit im Kundenportal.
       </p>
     </div>
   );
 }
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section style={{ marginBottom: 24 }}>
+      <h3 style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-meta)', textTransform: 'uppercase', letterSpacing: 1.2, margin: '0 0 10px', padding: '0 4px' }}>
+        {title}
+      </h3>
+      {children}
+    </section>
+  );
+}
+
+function Card({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{ background: 'var(--surface)', border: '1px solid var(--rule, rgba(0,0,0,0.08))', borderRadius: 12, overflow: 'hidden' }}>
+      {children}
+    </div>
+  );
+}
+
+function StatCard({ icon, label, value }: { icon: 'apiKey' | 'fast' | 'rocket'; label: string; value: number }) {
+  return (
+    <div style={{ background: 'var(--surface)', border: '1px solid var(--rule, rgba(0,0,0,0.08))', borderRadius: 12, padding: 14, display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <Icon name={icon} size={16} color="var(--moss)" />
+      <div style={{ fontSize: 22, fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-brand)', lineHeight: 1.1 }}>{value}</div>
+      <div style={{ fontSize: 11, color: 'var(--text-meta)', textTransform: 'uppercase', letterSpacing: 0.8 }}>{label}</div>
+    </div>
+  );
+}
+
+const primaryBtn = (busy: boolean): React.CSSProperties => ({
+  padding: '8px 16px',
+  background: 'var(--moss)',
+  color: 'var(--ochre, #fff)',
+  border: 'none',
+  borderRadius: 8,
+  fontSize: 13,
+  fontWeight: 600,
+  cursor: busy ? 'wait' : 'pointer',
+  opacity: busy ? 0.6 : 1,
+  fontFamily: 'var(--font-ui)',
+});
+
+const outlineBtn: React.CSSProperties = {
+  padding: '8px 16px',
+  background: 'transparent',
+  color: 'var(--text)',
+  border: '1px solid var(--rule, rgba(0,0,0,0.15))',
+  borderRadius: 8,
+  fontSize: 13,
+  fontWeight: 500,
+  cursor: 'pointer',
+  fontFamily: 'var(--font-ui)',
+};
+
+const textBtn: React.CSSProperties = {
+  padding: '6px 10px',
+  background: 'transparent',
+  color: 'var(--moss)',
+  border: 'none',
+  fontSize: 13,
+  fontWeight: 500,
+  cursor: 'pointer',
+  fontFamily: 'var(--font-ui)',
+};
 
 function InviteCodeRedemption() {
   const [open, setOpen] = useState(false);
@@ -113,16 +386,10 @@ function InviteCodeRedemption() {
     setBusy(true);
     setMsg(null);
     try {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
-      const r = await fetch(`${apiBase}/api/account/redeem-invite`, {
+      const headers = await authHeader();
+      const r = await fetch(`${API_BASE}/api/account/redeem-invite`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${session.access_token}`,
-          'Content-Type': 'application/json',
-        },
+        headers: { ...headers, 'Content-Type': 'application/json' },
         body: JSON.stringify({ code: code.trim() }),
       });
       const data = await r.json().catch(() => ({}));
@@ -134,9 +401,7 @@ function InviteCodeRedemption() {
       }
     } catch {
       setMsg({ kind: 'err', text: 'Netzwerkfehler' });
-    } finally {
-      setBusy(false);
-    }
+    } finally { setBusy(false); }
   }
 
   if (!open) {
@@ -144,7 +409,7 @@ function InviteCodeRedemption() {
       <button
         onClick={() => setOpen(true)}
         style={{
-          marginTop: 14,
+          marginTop: 8,
           background: 'none',
           border: 'none',
           color: 'var(--text-meta)',
@@ -161,7 +426,7 @@ function InviteCodeRedemption() {
   }
 
   return (
-    <div style={{ marginTop: 14, padding: 16, border: '1px solid var(--border)', borderRadius: 8, background: 'var(--surface)' }}>
+    <div style={{ marginTop: 8, padding: 16, border: '1px solid var(--rule, rgba(0,0,0,0.1))', borderRadius: 10, background: 'var(--surface)' }}>
       <div style={{ fontSize: 13, color: 'var(--text)', marginBottom: 8, fontWeight: 600 }}>Invite-Code einlösen</div>
       <div style={{ display: 'flex', gap: 8 }}>
         <input
@@ -173,8 +438,8 @@ function InviteCodeRedemption() {
           style={{
             flex: 1,
             padding: '8px 12px',
-            border: '1px solid var(--border)',
-            borderRadius: 6,
+            border: '1px solid var(--rule, rgba(0,0,0,0.15))',
+            borderRadius: 8,
             background: 'var(--bg)',
             color: 'var(--text)',
             fontSize: 14,
@@ -182,21 +447,7 @@ function InviteCodeRedemption() {
             textTransform: 'uppercase',
           }}
         />
-        <button
-          onClick={redeem}
-          disabled={busy || code.trim().length < 3}
-          style={{
-            padding: '8px 14px',
-            background: 'var(--moss)',
-            color: 'var(--ochre, #fff)',
-            border: 'none',
-            borderRadius: 6,
-            fontSize: 13,
-            fontWeight: 600,
-            cursor: busy ? 'wait' : 'pointer',
-            opacity: busy ? 0.6 : 1,
-          }}
-        >
+        <button onClick={redeem} disabled={busy || code.trim().length < 3} style={primaryBtn(busy)}>
           {busy ? '…' : 'Einlösen'}
         </button>
       </div>

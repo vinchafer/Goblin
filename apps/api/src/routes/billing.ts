@@ -61,6 +61,50 @@ billing.post('/create-portal-session', authMiddleware, async (c) => {
   return c.json({ portalUrl });
 });
 
+// GET /api/billing/status — unified billing state for the BillingPage
+billing.get('/status', authMiddleware, async (c) => {
+  const userId = c.get('userId');
+  const supabase = getSupabaseAdmin();
+
+  const { data: user } = await supabase
+    .from('users')
+    .select('plan, monthly_requests_used, monthly_limit, subscription_status, subscription_current_period_end, trial_ends_at, cloud_trial_ends_at, is_comped, comp_reason, stripe_customer_id')
+    .eq('id', userId)
+    .single();
+
+  if (!user) return c.json({ error: 'User not found' }, 404);
+
+  // Card info (best-effort, don't fail status if Stripe is down)
+  let cardLast4: string | null = null;
+  let cardBrand: string | null = null;
+  if (user.stripe_customer_id) {
+    try {
+      const stripe = getStripe();
+      const customer = await stripe.customers.retrieve(user.stripe_customer_id, {
+        expand: ['invoice_settings.default_payment_method'],
+      }) as Stripe.Customer;
+      const pm = customer.invoice_settings?.default_payment_method as Stripe.PaymentMethod | null;
+      if (pm?.card) {
+        cardLast4 = pm.card.last4;
+        cardBrand = pm.card.brand;
+      }
+    } catch { /* silent */ }
+  }
+
+  return c.json({
+    plan: user.plan,
+    status: user.subscription_status ?? null,
+    trialEndsAt: user.cloud_trial_ends_at ?? user.trial_ends_at ?? null,
+    currentPeriodEnd: user.subscription_current_period_end ?? null,
+    cardLast4,
+    cardBrand,
+    isComped: !!user.is_comped,
+    compReason: user.comp_reason ?? null,
+    monthlyUsed: user.monthly_requests_used ?? 0,
+    monthlyLimit: user.monthly_limit ?? 0,
+  });
+});
+
 // GET /api/billing/invoices — last 12 Stripe invoices
 billing.get('/invoices', authMiddleware, async (c) => {
   const userId = c.get('userId');
@@ -78,9 +122,11 @@ billing.get('/invoices', authMiddleware, async (c) => {
   }
 
   try {
+    const cursor = c.req.query('cursor') || undefined;
     const invoices = await stripe.invoices.list({
       customer: user.stripe_customer_id,
       limit: 12,
+      ...(cursor ? { starting_after: cursor } : {}),
     });
 
     const formatted = invoices.data.map(inv => ({
@@ -93,9 +139,13 @@ billing.get('/invoices', authMiddleware, async (c) => {
       hosted_url: inv.hosted_invoice_url,
     }));
 
-    return c.json({ invoices: formatted });
+    return c.json({
+      invoices: formatted,
+      has_more: invoices.has_more,
+      next_cursor: invoices.has_more && formatted.length > 0 ? formatted[formatted.length - 1].id : null,
+    });
   } catch {
-    return c.json({ invoices: [] });
+    return c.json({ invoices: [], has_more: false, next_cursor: null });
   }
 });
 
@@ -201,6 +251,22 @@ billing.post('/webhook', async (c) => {
       signature,
       process.env.STRIPE_WEBHOOK_SECRET!
     );
+
+    // Idempotency: skip if we've already processed this event id.
+    const supabase = getSupabaseAdmin();
+    const { data: existing } = await supabase
+      .from('stripe_processed_events')
+      .select('event_id')
+      .eq('event_id', event.id)
+      .maybeSingle();
+    if (existing) {
+      return c.json({ received: true, duplicate: true });
+    }
+    // Mark as processed before applying side effects. If the insert races
+    // (rare), the unique-pk constraint will reject the second attempt.
+    await supabase
+      .from('stripe_processed_events')
+      .insert({ event_id: event.id, event_type: event.type });
 
     switch (event.type) {
       case 'checkout.session.completed': {
