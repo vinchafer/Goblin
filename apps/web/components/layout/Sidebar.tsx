@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { apiGet } from '@/lib/api';
 import { Gear } from '@phosphor-icons/react';
 import { RecentChatRow } from '@/components/sidebar/RecentChatRow';
+import { SidebarUsage } from '@/components/sidebar/SidebarUsage';
 
 interface ChatSession {
   id: string;
@@ -232,15 +233,16 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
                 aria-label="New Project"
                 data-testid="sidebar-projects-plus"
                 style={{
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  padding: 4, borderRadius: 4, color: 'var(--text-faint)',
+                  background: 'var(--moss)', border: 'none', cursor: 'pointer',
+                  padding: 0, borderRadius: 6, color: '#fff',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  width: 22, height: 22, transition: 'background 0.12s, color 0.12s',
+                  width: 22, height: 22, transition: 'opacity 0.12s, transform 0.12s',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(45,74,43,0.10)'; e.currentTarget.style.color = 'var(--moss)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--text-faint)'; }}
+                onMouseEnter={e => { e.currentTarget.style.opacity = '0.88'; }}
+                onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
                   <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
                 </svg>
               </button>
@@ -309,6 +311,9 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
 
         {/* ── Recent Chats ── */}
         {!collapsed && <RecentChats pathname={pathname} navigate={navigate} />}
+
+        {/* ── Usage summary ── */}
+        {!collapsed && <SidebarUsage />}
 
         {/* ── User Pill (Settings entry-point) ── */}
         <div style={{
@@ -425,13 +430,14 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
               data-testid="sidebar-new-project"
               aria-label="New Project"
               style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                padding: 6, borderRadius: 4, color: 'var(--text-faint)',
+                background: 'var(--moss)', border: 'none', cursor: 'pointer',
+                padding: 0, borderRadius: 7, color: '#fff',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                minWidth: 32, minHeight: 32,
+                minWidth: 28, minHeight: 28,
+                boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
               }}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
                 <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
               </svg>
             </button>
@@ -475,6 +481,9 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
         <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
           <RecentChats pathname={pathname} navigate={navigate} />
         </div>
+
+        {/* Usage summary */}
+        <SidebarUsage />
 
         {/* User pill bottom-left (settings entry, not main-nav) */}
         <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
@@ -583,15 +592,16 @@ function RecentChats({ pathname, navigate }: { pathname: string; navigate: (path
           aria-label="New chat"
           data-testid="sidebar-chats-plus"
           style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            padding: 4, borderRadius: 4, color: 'var(--text-faint)',
+            background: 'var(--moss)', border: 'none', cursor: 'pointer',
+            padding: 0, borderRadius: 6, color: '#fff',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            width: 22, height: 22, transition: 'background 0.12s, color 0.12s',
+            width: 22, height: 22, transition: 'opacity 0.12s',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
           }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(45,74,43,0.10)'; e.currentTarget.style.color = 'var(--moss)'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--text-faint)'; }}
+          onMouseEnter={e => { e.currentTarget.style.opacity = '0.88'; }}
+          onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
         </button>
