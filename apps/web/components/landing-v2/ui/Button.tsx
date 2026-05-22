@@ -7,10 +7,13 @@ type Common = {
   variant?: Variant;
   size?: Size;
   children: ReactNode;
+  className?: string;
 };
 
-type AsLink = Common & AnchorHTMLAttributes<HTMLAnchorElement> & { href: string };
-type AsButton = Common & ButtonHTMLAttributes<HTMLButtonElement> & { href?: undefined };
+type AsLink = Common &
+  Omit<AnchorHTMLAttributes<HTMLAnchorElement>, 'className' | 'children'> & { href: string };
+type AsButton = Common &
+  Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'className' | 'children'> & { href?: undefined };
 
 function classes(variant: Variant, size: Size, extra?: string) {
   const c = ['btn', `btn-${variant}`];
@@ -20,18 +23,23 @@ function classes(variant: Variant, size: Size, extra?: string) {
 }
 
 export function Button(props: AsLink | AsButton) {
-  const { variant = 'primary', size = 'default', children, className, ...rest } = props as AsLink &
-    AsButton;
+  const { variant = 'primary', size = 'default', children, className } = props;
   const cls = classes(variant, size, className);
-  if ('href' in props && props.href !== undefined) {
+
+  if (props.href !== undefined) {
+    const { variant: _v, size: _s, children: _c, className: _cn, ...rest } = props;
+    void _v; void _s; void _c; void _cn;
     return (
-      <a {...(rest as AnchorHTMLAttributes<HTMLAnchorElement>)} className={cls}>
+      <a {...rest} className={cls}>
         {children}
       </a>
     );
   }
+
+  const { variant: _v, size: _s, children: _c, className: _cn, href: _h, ...rest } = props;
+  void _v; void _s; void _c; void _cn; void _h;
   return (
-    <button {...(rest as ButtonHTMLAttributes<HTMLButtonElement>)} className={cls}>
+    <button {...rest} className={cls}>
       {children}
     </button>
   );
