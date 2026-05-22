@@ -3,6 +3,7 @@ import { Hero } from '@/components/landing-v2/sections/Hero';
 import { TrustedBy } from '@/components/landing-v2/sections/TrustedBy';
 import { Problem } from '@/components/landing-v2/sections/Problem';
 import { HowItWorks } from '@/components/landing-v2/sections/HowItWorks';
+import { SendToCode } from '@/components/landing-v2/sections/SendToCode';
 
 export default function LandingV2Page() {
   return (
@@ -14,6 +15,7 @@ export default function LandingV2Page() {
         <TrustedBy />
         <Problem />
         <HowItWorks />
+        <SendToCode />
       </main>
     </>
   );
