@@ -1,4 +1,4 @@
-import { Button } from '@/components/landing-v2/ui/Button';
+import { Button } from '@/components/landing/ui/Button';
 
 export function Hero() {
   return (

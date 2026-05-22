@@ -1,6 +1,6 @@
-import { Lockup } from '@/components/landing-v2/brand/Lockup';
-import { Button } from '@/components/landing-v2/ui/Button';
-import { ThemeToggle } from '@/components/landing-v2/ui/ThemeToggle';
+import { Lockup } from '@/components/landing/brand/Lockup';
+import { Button } from '@/components/landing/ui/Button';
+import { ThemeToggle } from '@/components/landing/ui/ThemeToggle';
 
 export function Nav() {
   return (

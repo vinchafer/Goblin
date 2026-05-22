@@ -1,5 +1,5 @@
-import { Button } from '@/components/landing-v2/ui/Button';
-import { Lockup } from '@/components/landing-v2/brand/Lockup';
+import { Button } from '@/components/landing/ui/Button';
+import { Lockup } from '@/components/landing/brand/Lockup';
 
 export function Outro() {
   return (

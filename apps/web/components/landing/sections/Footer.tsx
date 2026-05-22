@@ -1,4 +1,4 @@
-import { Lockup } from '@/components/landing-v2/brand/Lockup';
+import { Lockup } from '@/components/landing/brand/Lockup';
 import type { ReactNode } from 'react';
 
 type Device = { name: string; icon: ReactNode };

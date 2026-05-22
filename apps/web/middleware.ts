@@ -38,7 +38,6 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/imprint') ||
     pathname.startsWith('/help') ||
     pathname.startsWith('/pricing') ||
-    pathname.startsWith('/landing-v2') ||
     pathname.startsWith('/models') ||
     pathname.startsWith('/cancel-deletion') ||
     pathname.startsWith('/deletion-pending') ||

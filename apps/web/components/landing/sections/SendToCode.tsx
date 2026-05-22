@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { SectionHead } from '@/components/landing-v2/ui/SectionHead';
+import { SectionHead } from '@/components/landing/ui/SectionHead';
 
 export function SendToCode() {
   const illustRef = useRef<HTMLDivElement>(null);

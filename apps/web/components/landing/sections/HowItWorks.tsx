@@ -1,4 +1,4 @@
-import { SectionHead } from '@/components/landing-v2/ui/SectionHead';
+import { SectionHead } from '@/components/landing/ui/SectionHead';
 
 const STEPS = [
   {

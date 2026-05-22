@@ -1,3 +1,6 @@
+// TODO(LP-3): Legacy LP-1 FAQ kept solely for /pricing. Replace with LP-2
+// FAQ once /pricing is restyled to the LP-2 design system. Until then this
+// file stays out of the / landing — see components/landing/sections/Faq.tsx.
 'use client';
 import { useState } from 'react';
 

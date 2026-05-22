@@ -1,29 +1,79 @@
-import { Nav } from '@/components/landing/nav';
-import { Hero } from '@/components/landing/hero';
-import { TrustedBy } from '@/components/landing/trusted-by';
-import { TheProblem } from '@/components/landing/the-problem';
-import { HowItWorks } from '@/components/landing/how-it-works';
-import { SendToCodeDemo } from '@/components/landing/send-to-code-demo';
-import { IslandFlow } from '@/components/landing/island-flow';
-import { GeoPricingSection } from '@/components/billing/geo-pricing-section';
-import { LandingFaq } from '@/components/landing/faq';
-import { LogoOutro } from '@/components/landing/logo-outro';
-import { Footer } from '@/components/landing/footer';
+import { Manrope, JetBrains_Mono, Instrument_Serif } from 'next/font/google';
+import { GoblinMarkSprite } from '@/components/landing/brand/GoblinMarkSprite';
+import { Nav } from '@/components/landing/sections/Nav';
+import { Hero } from '@/components/landing/sections/Hero';
+import { TrustedBy } from '@/components/landing/sections/TrustedBy';
+import { Problem } from '@/components/landing/sections/Problem';
+import { HowItWorks } from '@/components/landing/sections/HowItWorks';
+import { SendToCode } from '@/components/landing/sections/SendToCode';
+import { IslandFlow } from '@/components/landing/sections/IslandFlow';
+import { Pricing } from '@/components/landing/sections/Pricing';
+import { Faq } from '@/components/landing/sections/Faq';
+import { Outro } from '@/components/landing/sections/Outro';
+import { Footer } from '@/components/landing/sections/Footer';
+import '@/styles/landing.css';
+
+const manrope = Manrope({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '600', '700', '800'],
+  variable: '--lp2-font-sans',
+  display: 'swap',
+});
+const mono = JetBrains_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  variable: '--lp2-font-mono',
+  display: 'swap',
+});
+const serif = Instrument_Serif({
+  subsets: ['latin'],
+  style: ['italic', 'normal'],
+  weight: '400',
+  variable: '--lp2-font-serif',
+  display: 'swap',
+});
+
+const PRE_PAINT_SCRIPT = `(function(){
+  try {
+    var t = localStorage.getItem('goblin-theme');
+    if (t === 'dark') document.documentElement.classList.add('lp2-dark');
+    else if (t === 'light') document.documentElement.classList.add('lp2-light');
+  } catch(e) {}
+})();`;
+
+export const metadata = {
+  title: 'Goblin — The cloud workshop for builders',
+  description:
+    "Tell it what you want. It ships. The cloud workshop for builders who don't wait for a laptop. Bring your own AI keys. Push to GitHub. Deploy to Vercel.",
+};
 
 export default function Home() {
+  const rootClassName = `landing-root ${manrope.variable} ${mono.variable} ${serif.variable}`;
   return (
-    <div style={{ background: 'var(--cream)' }}>
-      <Nav />
-      <Hero />
-      <TrustedBy />
-      <TheProblem />
-      <HowItWorks />
-      <SendToCodeDemo />
-      <IslandFlow />
-      <GeoPricingSection />
-      <LandingFaq />
-      <LogoOutro />
-      <Footer />
-    </div>
+    <>
+      <script dangerouslySetInnerHTML={{ __html: PRE_PAINT_SCRIPT }} />
+      <div
+        className={rootClassName}
+        data-theme="light"
+        data-accent="restrained"
+        data-density="compact"
+      >
+        <GoblinMarkSprite />
+        <a href="#main" className="skip-link">Skip to content</a>
+        <Nav />
+        <main id="main">
+          <Hero />
+          <TrustedBy />
+          <Problem />
+          <HowItWorks />
+          <SendToCode />
+          <IslandFlow />
+          <Pricing />
+          <Faq />
+          <Outro />
+        </main>
+        <Footer />
+      </div>
+    </>
   );
 }

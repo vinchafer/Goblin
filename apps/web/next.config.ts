@@ -60,6 +60,12 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async redirects() {
+    return [
+      // LP-3: legacy /landing-v2 review URL → production / (LP-2 is now the landing)
+      { source: '/landing-v2', destination: '/', permanent: true },
+    ];
+  },
 };
 
 // Wrap with Sentry only when auth token is present (production builds with source-map upload).

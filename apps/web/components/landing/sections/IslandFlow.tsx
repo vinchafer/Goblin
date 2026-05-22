@@ -1,4 +1,4 @@
-import { SectionHead } from '@/components/landing-v2/ui/SectionHead';
+import { SectionHead } from '@/components/landing/ui/SectionHead';
 import type { ReactNode } from 'react';
 
 type Step = { num: string; title: string; body: string; icon: ReactNode };
