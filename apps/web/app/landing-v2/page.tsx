@@ -7,6 +7,7 @@ import { SendToCode } from '@/components/landing-v2/sections/SendToCode';
 import { IslandFlow } from '@/components/landing-v2/sections/IslandFlow';
 import { Pricing } from '@/components/landing-v2/sections/Pricing';
 import { Faq } from '@/components/landing-v2/sections/Faq';
+import { Outro } from '@/components/landing-v2/sections/Outro';
 
 export default function LandingV2Page() {
   return (
@@ -22,6 +23,7 @@ export default function LandingV2Page() {
         <IslandFlow />
         <Pricing />
         <Faq />
+        <Outro />
       </main>
     </>
   );
