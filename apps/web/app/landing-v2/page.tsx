@@ -4,6 +4,7 @@ import { TrustedBy } from '@/components/landing-v2/sections/TrustedBy';
 import { Problem } from '@/components/landing-v2/sections/Problem';
 import { HowItWorks } from '@/components/landing-v2/sections/HowItWorks';
 import { SendToCode } from '@/components/landing-v2/sections/SendToCode';
+import { IslandFlow } from '@/components/landing-v2/sections/IslandFlow';
 
 export default function LandingV2Page() {
   return (
@@ -16,6 +17,7 @@ export default function LandingV2Page() {
         <Problem />
         <HowItWorks />
         <SendToCode />
+        <IslandFlow />
       </main>
     </>
   );
