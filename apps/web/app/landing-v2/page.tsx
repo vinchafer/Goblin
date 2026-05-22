@@ -2,6 +2,7 @@ import { Nav } from '@/components/landing-v2/sections/Nav';
 import { Hero } from '@/components/landing-v2/sections/Hero';
 import { TrustedBy } from '@/components/landing-v2/sections/TrustedBy';
 import { Problem } from '@/components/landing-v2/sections/Problem';
+import { HowItWorks } from '@/components/landing-v2/sections/HowItWorks';
 
 export default function LandingV2Page() {
   return (
@@ -12,6 +13,7 @@ export default function LandingV2Page() {
         <Hero />
         <TrustedBy />
         <Problem />
+        <HowItWorks />
       </main>
     </>
   );
