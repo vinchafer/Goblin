@@ -1,4 +1,13 @@
-import { DeviceMobile, ChatCircle, Code, Terminal, GitBranch, TriangleDashed, BellRinging, Globe } from '@phosphor-icons/react/dist/ssr';
+import {
+  DeviceMobile,
+  ChatCircle,
+  Code,
+  Terminal,
+  GitBranch,
+  TriangleDashed,
+  BellRinging,
+  Globe,
+} from '@phosphor-icons/react/dist/ssr';
 
 const STEPS = [
   { Icon: DeviceMobile, label: 'Open Goblin', sub: 'On your phone, tablet, or laptop' },
@@ -13,67 +22,150 @@ const STEPS = [
 
 export function IslandFlow() {
   return (
-    <section id="how-it-works" style={{ background: '#0e0e0c', padding: '100px 24px' }}>
-      <div style={{ maxWidth: 820, margin: '0 auto' }}>
+    <section
+      id="island-flow"
+      style={{
+        background: '#0f2a0d',
+        padding: '120px 32px',
+        position: 'relative',
+        overflow: 'hidden',
+      }}
+    >
+      <div
+        aria-hidden="true"
+        style={{
+          position: 'absolute', inset: 0, pointerEvents: 'none',
+          background:
+            'radial-gradient(ellipse at 50% 0%, rgba(232,191,106,0.10) 0%, transparent 55%)',
+        }}
+      />
+
+      <div
+        style={{
+          maxWidth: 860,
+          margin: '0 auto',
+          position: 'relative',
+          zIndex: 1,
+        }}
+      >
         <div style={{ textAlign: 'center', marginBottom: 64 }}>
-          <div style={{ fontSize: 11, fontWeight: 500, letterSpacing: 2, textTransform: 'uppercase' as const, color: 'var(--ochre)', marginBottom: 16 }}>The island flow</div>
-          <h2 style={{
-            fontFamily: 'Fraunces, serif', fontSize: 'clamp(32px, 5vw, 48px)',
-            color: '#fff', lineHeight: 1.05, letterSpacing: '-1.5px', fontWeight: 700, marginBottom: 16,
-          }}>
-            From beach to{' '}<em style={{ fontStyle: 'italic', color: 'var(--ochre)' }}>deployed.</em>
+          <div
+            style={{
+              fontSize: 11, fontWeight: 700,
+              letterSpacing: '0.2em', textTransform: 'uppercase',
+              color: '#F0CF8A',
+              marginBottom: 18,
+              fontFamily: 'DM Sans, sans-serif',
+            }}
+          >
+            The island flow
+          </div>
+          <h2
+            style={{
+              fontFamily: 'Fraunces, serif',
+              fontSize: 'clamp(36px, 5.2vw, 60px)',
+              color: '#FFFFFF',
+              lineHeight: 1.05,
+              letterSpacing: '-0.025em',
+              fontWeight: 600,
+              margin: '0 0 18px',
+            }}
+          >
+            From beach to{' '}
+            <em style={{ fontStyle: 'italic', color: '#F0CF8A', fontWeight: 500 }}>
+              deployed.
+            </em>
           </h2>
-          <p style={{ fontSize: 16, color: 'rgba(255,255,255,0.4)', maxWidth: 480, margin: '0 auto', lineHeight: 1.6, fontWeight: 300 }}>
+          <p
+            style={{
+              fontSize: 17,
+              color: 'rgba(247,244,237,0.92)',
+              maxWidth: 540, margin: '0 auto',
+              lineHeight: 1.6, fontWeight: 500,
+              fontFamily: 'DM Sans, sans-serif',
+            }}
+          >
             Build your SaaS from Santorini. No laptop. No copy-paste. No token panic.
           </p>
         </div>
 
-        <div style={{ position: 'relative', maxWidth: 560, margin: '0 auto' }}>
-          {/* Vertical connector line */}
-          <div style={{
-            position: 'absolute',
-            left: 24, top: 30, bottom: 30,
-            width: 2,
-            background: 'linear-gradient(180deg, transparent 0%, rgba(201,147,58,0.5) 10%, rgba(201,147,58,0.5) 90%, transparent 100%)',
-          }} />
+        <div style={{ position: 'relative', maxWidth: 580, margin: '0 auto' }}>
+          {/* Vertical connector */}
+          <div
+            aria-hidden="true"
+            style={{
+              position: 'absolute',
+              left: 27, top: 30, bottom: 30,
+              width: 2,
+              background:
+                'linear-gradient(180deg, transparent 0%, rgba(232,191,106,0.65) 12%, rgba(232,191,106,0.65) 88%, transparent 100%)',
+            }}
+          />
 
           {STEPS.map((s, i) => (
-            <div key={s.label} style={{
-              display: 'flex', alignItems: 'flex-start', gap: 20,
-              marginBottom: i < STEPS.length - 1 ? 28 : 0,
-              position: 'relative', zIndex: 1,
-            }}>
-              <div style={{
-                width: 50, height: 50, flexShrink: 0,
-                background: '#1a1a18',
-                border: '1px solid rgba(201,147,58,0.35)',
-                borderRadius: '50%',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                <s.Icon size={22} weight="duotone" color="var(--ochre)" />
+            <div
+              key={s.label}
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 20,
+                marginBottom: i < STEPS.length - 1 ? 30 : 0,
+                position: 'relative',
+                zIndex: 1,
+              }}
+            >
+              <div
+                style={{
+                  width: 56, height: 56, flexShrink: 0,
+                  background: '#1a3a18',
+                  border: '1.5px solid rgba(232,191,106,0.55)',
+                  borderRadius: '50%',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow:
+                    '0 1px 0 rgba(255,255,255,0.06) inset, 0 6px 18px rgba(0,0,0,0.40)',
+                }}
+              >
+                <s.Icon size={24} weight="duotone" color="#F0CF8A" />
               </div>
-              <div style={{ paddingTop: 6 }}>
-                <h4 style={{
-                  fontFamily: 'DM Sans, sans-serif', fontSize: 17, fontWeight: 600,
-                  color: '#fff', margin: 0, marginBottom: 4, lineHeight: 1.2,
-                }}>{s.label}</h4>
-                <p style={{
-                  color: 'rgba(255,255,255,0.45)', fontSize: 14, margin: 0, lineHeight: 1.45,
-                  fontFamily: 'DM Sans, sans-serif',
-                }}>{s.sub}</p>
+              <div style={{ paddingTop: 8 }}>
+                <h4
+                  style={{
+                    fontFamily: 'Fraunces, serif',
+                    fontSize: 21, fontWeight: 700,
+                    color: '#FFFFFF',
+                    margin: 0, marginBottom: 6, lineHeight: 1.2,
+                    letterSpacing: '-0.018em',
+                  }}
+                >
+                  {s.label}
+                </h4>
+                <p
+                  style={{
+                    color: 'rgba(247,244,237,0.82)',
+                    fontSize: 14.5, margin: 0, lineHeight: 1.5,
+                    fontFamily: 'DM Sans, sans-serif',
+                    fontWeight: 500,
+                  }}
+                >
+                  {s.sub}
+                </p>
               </div>
             </div>
           ))}
         </div>
 
-        <div style={{ textAlign: 'center', marginTop: 56 }}>
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: 10, fontSize: 13,
-            color: 'rgba(255,255,255,0.3)', fontWeight: 300,
-          }}>
-            <span style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.1)' }} />
+        <div style={{ textAlign: 'center', marginTop: 64 }}>
+          <div
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 16,
+              fontSize: 13, color: 'rgba(247,244,237,0.65)',
+              fontFamily: 'DM Sans, sans-serif',
+              fontWeight: 500, letterSpacing: '0.04em',
+            }}
+          >
+            <span style={{ width: 28, height: 1, background: 'rgba(232,191,106,0.40)' }} />
             Works on any device, from anywhere
-            <span style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.1)' }} />
+            <span style={{ width: 28, height: 1, background: 'rgba(232,191,106,0.40)' }} />
           </div>
         </div>
       </div>

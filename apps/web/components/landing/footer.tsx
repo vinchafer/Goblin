@@ -1,6 +1,6 @@
 'use client';
 
-import { GoblinWordmark } from '@/components/ui/goblin-mark';
+import { GoblinLogo } from '@/components/brand/GoblinLogo';
 
 const COLS = [
   {
@@ -14,9 +14,9 @@ const COLS = [
   {
     title: 'Community',
     links: [
-      { label: 'Discord', href: '#' },
-      { label: 'Twitter / X', href: '#' },
-      { label: 'GitHub', href: '#' },
+      { label: 'Discord', href: 'https://discord.gg/goblin' },
+      { label: 'Twitter / X', href: 'https://twitter.com/justgoblin' },
+      { label: 'GitHub', href: 'https://github.com/justgoblin' },
     ],
   },
   {
@@ -29,61 +29,151 @@ const COLS = [
   },
 ];
 
+const SOCIALS = [
+  { label: 'Discord', href: 'https://discord.gg/goblin' },
+  { label: 'Twitter', href: 'https://twitter.com/justgoblin' },
+  { label: 'GitHub', href: 'https://github.com/justgoblin' },
+];
+
 export function Footer() {
+  const linkStyle: React.CSSProperties = {
+    fontSize: 13,
+    color: 'rgba(247,244,237,0.92)',
+    textDecoration: 'none',
+    transition: 'color 0.15s',
+    fontFamily: 'DM Sans, sans-serif',
+  };
+
   return (
-    <footer style={{ background: 'var(--subtle)', borderTop: '1px solid var(--div)', padding: '64px 40px 40px' }}>
-      <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 40, marginBottom: 56 }}>
-          {/* Brand */}
-          <div style={{ maxWidth: 220 }}>
-            <div style={{ marginBottom: 10 }}><GoblinWordmark size="lg" /></div>
-            <div style={{ fontSize: 13, color: 'var(--meta)', lineHeight: 1.6, fontWeight: 400 }}>
+    <footer
+      style={{
+        background: '#1f3a1d',
+        color: 'var(--cream)',
+        padding: '80px 32px 36px',
+        borderTop: '1px solid rgba(212,167,55,0.20)',
+      }}
+    >
+      <div style={{ maxWidth: 1120, margin: '0 auto' }}>
+        <div
+          className="footer-grid"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1.6fr 1fr 1fr 1fr',
+            gap: 56,
+            alignItems: 'flex-start',
+            marginBottom: 56,
+          }}
+        >
+          <div style={{ maxWidth: 320 }}>
+            <div style={{ marginBottom: 16 }}>
+              <GoblinLogo wordmark="dark" wordmarkHeight={36} loading="lazy" aria-label="Goblin" />
+            </div>
+            <div
+              style={{
+                fontSize: 13,
+                color: 'rgba(247,244,237,0.92)',
+                lineHeight: 1.6,
+                fontFamily: 'DM Sans, sans-serif',
+                marginBottom: 20,
+              }}
+            >
               The cloud workshop for builders who ship from anywhere.
             </div>
-            <div style={{ marginTop: 20, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {[
-                { label: 'Discord', href: 'https://discord.gg/goblin' },
-                { label: 'Twitter', href: 'https://twitter.com/justgoblin' },
-                { label: 'GitHub',  href: 'https://github.com/justgoblin' },
-              ].map(s => (
-                <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer" style={{
-                  padding: '6px 12px', borderRadius: 8, border: '1px solid var(--border)',
-                  display: 'inline-flex', alignItems: 'center',
-                  fontSize: 12, color: 'var(--meta)', textDecoration: 'none',
-                  background: 'var(--panel)', transition: 'all 0.15s',
-                  fontFamily: 'DM Sans, sans-serif', fontWeight: 500,
-                }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--moss)'; (e.currentTarget as HTMLElement).style.color = 'var(--moss)'; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'var(--border)'; (e.currentTarget as HTMLElement).style.color = 'var(--meta)'; }}
-                >{s.label}</a>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {SOCIALS.map((s) => (
+                <a
+                  key={s.label}
+                  href={s.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{
+                    padding: '6px 12px', borderRadius: 8,
+                    border: '1px solid rgba(212,167,55,0.28)',
+                    background: 'transparent',
+                    display: 'inline-flex', alignItems: 'center',
+                    fontSize: 12, color: 'var(--cream)',
+                    textDecoration: 'none',
+                    fontFamily: 'DM Sans, sans-serif', fontWeight: 500,
+                    transition: 'all 0.15s',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'var(--ochre)';
+                    e.currentTarget.style.borderColor = 'var(--ochre)';
+                    e.currentTarget.style.color = '#1a2018';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.borderColor = 'rgba(212,167,55,0.28)';
+                    e.currentTarget.style.color = 'var(--cream)';
+                  }}
+                >
+                  {s.label}
+                </a>
               ))}
             </div>
           </div>
 
-          {/* Nav cols */}
-          <div style={{ display: 'flex', gap: 48, flexWrap: 'wrap' }}>
-            {COLS.map(col => (
-              <div key={col.title} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <div style={{ fontSize: 11, color: 'var(--text)', letterSpacing: 1.5, textTransform: 'uppercase', fontWeight: 600, marginBottom: 4 }}>{col.title}</div>
-                {col.links.map(l => (
-                  <a key={l.label} href={l.href} style={{
-                    fontSize: 13, color: 'var(--meta)', textDecoration: 'none', transition: 'color 0.15s',
-                  }}
-                    onMouseEnter={e => (e.currentTarget.style.color = 'var(--text)')}
-                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--meta)')}
-                  >{l.label}</a>
-                ))}
+          {COLS.map((col) => (
+            <div key={col.title} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div
+                style={{
+                  fontSize: 11, color: '#F0CF8A',
+                  letterSpacing: '0.16em', textTransform: 'uppercase',
+                  fontWeight: 700, marginBottom: 4,
+                  fontFamily: 'DM Sans, sans-serif',
+                }}
+              >
+                {col.title}
               </div>
-            ))}
-          </div>
+              {col.links.map((l) => (
+                <a
+                  key={l.label}
+                  href={l.href}
+                  style={linkStyle}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--cream)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = 'rgba(247,244,237,0.92)')}
+                >
+                  {l.label}
+                </a>
+              ))}
+            </div>
+          ))}
         </div>
 
-        {/* Bottom bar */}
-        <div style={{ borderTop: '1px solid var(--div)', paddingTop: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12, fontSize: 12, color: 'var(--meta)' }}>
-          <span>© 2026 Goblin · Made in Switzerland 🇨🇭</span>
-          <span style={{ color: 'var(--meta)' }}>Build anywhere. Code anything.</span>
+        <div
+          style={{
+            borderTop: '1px solid rgba(247,244,237,0.10)',
+            paddingTop: 22,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 12,
+            fontSize: 12,
+            color: 'rgba(247,244,237,0.45)',
+            fontFamily: 'DM Sans, sans-serif',
+          }}
+        >
+          <span>© 2026 Goblin · Made in Switzerland</span>
+          <span style={{ color: 'rgba(247,244,237,0.45)', fontFamily: 'Fraunces, serif', fontStyle: 'italic' }}>
+            Build anywhere. Code anything.
+          </span>
         </div>
       </div>
+
+      <style>{`
+        @media (max-width: 960px) {
+          .footer-grid {
+            grid-template-columns: 1fr 1fr !important;
+            gap: 36px !important;
+          }
+        }
+        @media (max-width: 560px) {
+          .footer-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
     </footer>
   );
 }

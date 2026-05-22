@@ -19,12 +19,27 @@ import * as React from "react";
 
 export type GoblinLogoState = "idle" | "thinking" | "working";
 export type GoblinLogoVariant = "gold" | "white" | "black" | "moss";
+export type GoblinLogoWordmarkAsset =
+  | "horizontal"
+  | "stacked"
+  | "light"
+  | "dark"
+  | "tagline";
 
 export interface GoblinLogoProps {
-  state: GoblinLogoState;
+  state?: GoblinLogoState;
   size?: number;
   variant?: GoblinLogoVariant;
   showWordmark?: boolean;
+  /**
+   * When set, renders the official wordmark SVG from /public/brand/wordmark/
+   * instead of the icon+text composition. Use this for nav, footer, outro.
+   */
+  wordmark?: GoblinLogoWordmarkAsset;
+  /** Height in px for the rendered wordmark image. */
+  wordmarkHeight?: number;
+  /** Image loading strategy when rendering wordmark svg. */
+  loading?: "eager" | "lazy";
   className?: string;
   "aria-label"?: string;
 }
@@ -79,16 +94,42 @@ function ensureStyles() {
 }
 
 export const GoblinLogo: React.FC<GoblinLogoProps> = ({
-  state,
+  state = "idle",
   size = 24,
   variant = "gold",
   showWordmark = false,
+  wordmark,
+  wordmarkHeight = 32,
+  loading = "eager",
   className,
   "aria-label": ariaLabel = "Goblin",
 }) => {
   React.useEffect(() => {
     ensureStyles();
   }, []);
+
+  if (wordmark) {
+    const src = `/brand/wordmark/goblin-wordmark-${wordmark}.svg`;
+    return (
+      <span
+        className={["goblin-logo", className].filter(Boolean).join(" ")}
+        data-state={state}
+        role="img"
+        aria-label={ariaLabel}
+        style={{ display: "inline-flex", alignItems: "center", lineHeight: 0 }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={src}
+          alt={ariaLabel}
+          height={wordmarkHeight}
+          loading={loading}
+          decoding="async"
+          style={{ height: wordmarkHeight, width: "auto", display: "block" }}
+        />
+      </span>
+    );
+  }
 
   const color = GOBLIN_COLORS[variant];
   const wordmarkSize = Math.round(size * 0.75);

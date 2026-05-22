@@ -1,102 +1,192 @@
-﻿export function HowItWorks() {
-  const steps = [
-    {
-      num: '01',
-      title: 'Log in from any device',
-      desc: 'Your workshop is always ready. Phone, laptop, tablet — it doesn\'t matter.'
-    },
-    {
-      num: '02',
-      title: 'Tell your goblin what to build',
-      desc: 'Plain english works best. No prompt engineering required.'
-    },
-    {
-      num: '03',
-      title: 'Send to Code with one tap',
-      desc: 'AI output lands directly in your editor. No clipboard, no switching tabs.'
-    },
-    {
-      num: '04',
-      title: 'Push to GitHub and go live',
-      desc: 'One click publish. Your code, your repo, your deployment.'
-    }
-  ];
+'use client';
 
+const STEPS = [
+  {
+    num: '01',
+    title: 'Log in from any device',
+    desc: 'Your workshop is always ready. Phone, laptop, tablet — it doesn’t matter.',
+  },
+  {
+    num: '02',
+    title: 'Tell your goblin what to build',
+    desc: 'Plain English works best. No prompt engineering required.',
+  },
+  {
+    num: '03',
+    title: 'Send to Code with one tap',
+    desc: 'AI output lands directly in your editor. No clipboard, no tab juggling.',
+  },
+  {
+    num: '04',
+    title: 'Push to GitHub and go live',
+    desc: 'One click publishes. Your code, your repo, your deployment.',
+  },
+];
+
+export function HowItWorks() {
   return (
-    <section id="how-it-works" style={{ background: 'var(--cream)', padding: '100px 40px' }}>
-      <div style={{ maxWidth: 960, margin: '0 auto' }}>
-        <h2 style={{
-          fontFamily: 'Fraunces, serif', fontWeight: 700, textAlign: 'center',
-          marginBottom: 72, fontSize: 'clamp(28px, 4vw, 44px)',
-          color: 'var(--moss)', letterSpacing: '-1.5px',
-        }}>
-          Ship in <em style={{ fontStyle: 'italic', color: 'var(--ochre)' }}>four</em> steps.
-        </h2>
+    <section
+      id="how-it-works"
+      style={{
+        background: 'var(--cream)',
+        padding: '120px 32px',
+      }}
+    >
+      <div style={{ maxWidth: 1120, margin: '0 auto' }}>
+        <div style={{ textAlign: 'center', marginBottom: 72 }}>
+          <div
+            style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              background: '#1F3A1D', color: '#F0CF8A',
+              padding: '6px 14px', borderRadius: 100,
+              fontSize: 11, fontWeight: 700,
+              letterSpacing: '0.16em', textTransform: 'uppercase',
+              marginBottom: 22, fontFamily: 'DM Sans, sans-serif',
+              boxShadow: '0 4px 12px -4px rgba(31,58,29,0.40)',
+            }}
+          >
+            <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: '50%', background: '#F0CF8A' }} />
+            How it works
+          </div>
+          <h2
+            style={{
+              fontFamily: 'Fraunces, serif', fontWeight: 700,
+              fontSize: 'clamp(36px, 4.8vw, 58px)',
+              color: '#0F2A0D',
+              letterSpacing: '-0.025em',
+              margin: 0, lineHeight: 1.05,
+            }}
+          >
+            Ship in{' '}
+            <em style={{ fontStyle: 'italic', color: '#7A5A12', fontWeight: 700 }}>
+              four
+            </em>{' '}
+            steps.
+          </h2>
+        </div>
 
-        {/* Desktop: 4-column with arrows */}
-        <div className="hiw-desktop" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 0, alignItems: 'start' }}>
-          {steps.map((step, i) => (
-            <div key={step.num} style={{ textAlign: 'center', position: 'relative', padding: '0 20px' }}>
-              {/* Arrow connector between steps */}
-              {i < steps.length - 1 && (
-                <div style={{
-                  position: 'absolute', top: 24, left: '100%', width: '100%',
-                  height: 2, background: 'linear-gradient(90deg, #c9933a 0%, #e4ddd2 100%)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
-                  zIndex: 0,
-                }}>
-                  <span style={{
-                    fontSize: 18, color: 'var(--ochre-dark)', position: 'absolute', right: 8, top: -9,
-                  }}>→</span>
-                </div>
-              )}
-              
-              {/* Big number */}
-              <div style={{
-                fontFamily: 'Fraunces, serif', fontSize: 56, fontWeight: 900,
-                color: 'var(--ochre-dark)', lineHeight: 1, letterSpacing: '-3px',
-                marginBottom: 12, position: 'relative', zIndex: 1,
-              }}>
+        <div
+          className="hiw-desktop"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, 1fr)',
+            gap: 20,
+            maxWidth: 1080,
+            margin: '0 auto',
+          }}
+        >
+          {STEPS.map((step) => (
+            <div
+              key={step.num}
+              style={{
+                background: '#FFFFFF',
+                border: '1px solid rgba(45,74,43,0.16)',
+                borderRadius: 16,
+                padding: '28px 24px',
+                display: 'flex', flexDirection: 'column',
+                boxShadow:
+                  '0 1px 0 rgba(255,255,255,0.8) inset, 0 18px 40px -22px rgba(45,74,43,0.22)',
+                transition: 'transform 0.2s, box-shadow 0.2s, border-color 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'translateY(-3px)';
+                e.currentTarget.style.boxShadow =
+                  '0 1px 0 rgba(255,255,255,0.8) inset, 0 24px 50px -22px rgba(45,74,43,0.32)';
+                e.currentTarget.style.borderColor = 'rgba(212,167,55,0.50)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'translateY(0)';
+                e.currentTarget.style.boxShadow =
+                  '0 1px 0 rgba(255,255,255,0.8) inset, 0 18px 40px -22px rgba(45,74,43,0.22)';
+                e.currentTarget.style.borderColor = 'rgba(45,74,43,0.16)';
+              }}
+            >
+              <span
+                style={{
+                  fontFamily: 'JetBrains Mono, monospace',
+                  fontSize: 12, fontWeight: 700,
+                  color: '#FFFFFF',
+                  letterSpacing: '0.08em',
+                  background: '#1F3A1D',
+                  border: '1px solid #0F2A0D',
+                  borderRadius: 6, padding: '4px 10px',
+                  alignSelf: 'flex-start',
+                  marginBottom: 22,
+                  boxShadow: '0 4px 10px -3px rgba(15,42,13,0.35)',
+                }}
+              >
                 {step.num}
-              </div>
+              </span>
 
-              {/* Title */}
-              <h3 style={{
-                fontFamily: 'Fraunces, serif', fontSize: 18, fontWeight: 700,
-                color: 'var(--moss)', marginBottom: 8, lineHeight: 1.2,
-              }}>
+              <h3
+                style={{
+                  fontFamily: 'Fraunces, serif',
+                  fontSize: 22, fontWeight: 700,
+                  color: '#0F2A0D',
+                  margin: '0 0 12px',
+                  lineHeight: 1.2,
+                  letterSpacing: '-0.018em',
+                }}
+              >
                 {step.title}
               </h3>
 
-              {/* Description */}
-              <p style={{
-                fontSize: 13, color: 'var(--meta)', lineHeight: 1.6,
-                fontWeight: 300, maxWidth: 200, margin: '0 auto',
-              }}>
+              <p
+                style={{
+                  fontSize: 15,
+                  color: '#1F3A1D',
+                  lineHeight: 1.6,
+                  fontWeight: 500,
+                  margin: 0,
+                  fontFamily: 'DM Sans, sans-serif',
+                }}
+              >
                 {step.desc}
               </p>
             </div>
           ))}
         </div>
 
-        {/* Mobile: vertical stack */}
-        <div className="hiw-mobile" style={{ display: 'none', flexDirection: 'column', gap: 32 }}>
-          {steps.map(step => (
-            <div key={step.num} style={{ display: 'flex', gap: 16, alignItems: 'flex-start' }}>
-              <div style={{
-                fontFamily: 'Fraunces, serif', fontSize: 36, fontWeight: 900,
-                color: 'var(--ochre-dark)', lineHeight: 1, flexShrink: 0, minWidth: 40,
-              }}>
+        <div className="hiw-mobile" style={{ display: 'none', flexDirection: 'column', gap: 16, maxWidth: 480, margin: '0 auto' }}>
+          {STEPS.map((step) => (
+            <div
+              key={step.num}
+              style={{
+                background: '#FFFFFF',
+                border: '1px solid rgba(45,74,43,0.16)',
+                borderRadius: 14,
+                padding: '22px 22px',
+                display: 'flex', gap: 16, alignItems: 'flex-start',
+                boxShadow: '0 12px 28px -16px rgba(45,74,43,0.22)',
+              }}
+            >
+              <span
+                style={{
+                  flexShrink: 0,
+                  fontFamily: 'JetBrains Mono, monospace',
+                  fontSize: 12, fontWeight: 700,
+                  color: '#FFFFFF',
+                  letterSpacing: '0.08em',
+                  background: '#1F3A1D',
+                  borderRadius: 6, padding: '4px 10px',
+                  marginTop: 2,
+                }}
+              >
                 {step.num}
-              </div>
+              </span>
               <div>
-                <h3 style={{
-                  fontFamily: 'DM Sans, sans-serif', fontSize: 16, fontWeight: 700,
-                  color: 'var(--moss)', marginBottom: 4,
-                }}>
+                <h3
+                  style={{
+                    fontFamily: 'Fraunces, serif',
+                    fontSize: 19, fontWeight: 700,
+                    color: '#0F2A0D',
+                    margin: '0 0 6px',
+                    letterSpacing: '-0.018em',
+                  }}
+                >
                   {step.title}
                 </h3>
-                <p style={{ fontSize: 13, color: 'var(--meta)', lineHeight: 1.6, fontWeight: 300 }}>
+                <p style={{ fontSize: 14.5, color: '#2A4226', lineHeight: 1.6, margin: 0, fontFamily: 'DM Sans, sans-serif', fontWeight: 500 }}>
                   {step.desc}
                 </p>
               </div>
@@ -105,7 +195,10 @@
         </div>
 
         <style>{`
-          @media (max-width: 768px) {
+          @media (max-width: 1000px) {
+            .hiw-desktop { grid-template-columns: 1fr 1fr !important; }
+          }
+          @media (max-width: 640px) {
             .hiw-desktop { display: none !important; }
             .hiw-mobile { display: flex !important; }
           }
