@@ -5,6 +5,7 @@ import { Problem } from '@/components/landing-v2/sections/Problem';
 import { HowItWorks } from '@/components/landing-v2/sections/HowItWorks';
 import { SendToCode } from '@/components/landing-v2/sections/SendToCode';
 import { IslandFlow } from '@/components/landing-v2/sections/IslandFlow';
+import { Pricing } from '@/components/landing-v2/sections/Pricing';
 
 export default function LandingV2Page() {
   return (
@@ -18,6 +19,7 @@ export default function LandingV2Page() {
         <HowItWorks />
         <SendToCode />
         <IslandFlow />
+        <Pricing />
       </main>
     </>
   );
