@@ -47,6 +47,12 @@ export function NewProjectModal({ onClose, onProjectCreated }: NewProjectModalPr
     onClose();
   };
 
+  // TODO(BUG-010 follow-up): when the API returns trial_expired (or any
+  // quota-gated error code), this modal currently surfaces the error text but
+  // leaves the user on /dashboard with no path forward. The redirect to
+  // /dashboard/upgrade (or an inline upgrade CTA on the error state) is missing
+  // from the trial-expired mobile flow — it's a dead-end. Revisit during the
+  // Dashboard / Upgrade flow redesign. Filed 2026-05-23 from E2E green-up.
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) return;
