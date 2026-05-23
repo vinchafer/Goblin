@@ -81,7 +81,7 @@ export function Pricing() {
                   <span className="dot" aria-hidden="true" /> Recommended
                 </div>
               ) : null}
-              <div className="label">{p.label}</div>
+              <h3 className="label">{p.label}</h3>
               <div className="tagline">{p.tagline}</div>
               <div className="price-row">
                 <span className="price-amount">{p.price}</span>

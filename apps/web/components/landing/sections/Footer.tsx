@@ -82,9 +82,9 @@ export function Footer() {
           <div className="footer-brand">
             <Lockup size="md" onDeep ariaLabel="Goblin" />
             <div className="footer-socials">
-              <a href="#">Discord</a>
-              <a href="#">Twitter</a>
-              <a href="#">GitHub</a>
+              <a href="#" target="_blank" rel="noopener noreferrer">Discord</a>
+              <a href="#" target="_blank" rel="noopener noreferrer">Twitter</a>
+              <a href="#" target="_blank" rel="noopener noreferrer">GitHub</a>
             </div>
           </div>
 
@@ -109,7 +109,7 @@ export function Footer() {
         </div>
 
         <div className="footer-bottom">
-          <span>© MMXXVI · Goblin Inc. · Made in Switzerland</span>
+          <span>© 2026 · Goblin Inc. · Made in Switzerland</span>
           <span className="end">
             <span className="dot" aria-hidden="true" /> Build anywhere · Code anything
           </span>
