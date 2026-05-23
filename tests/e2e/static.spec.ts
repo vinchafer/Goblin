@@ -19,10 +19,17 @@ test.describe('/status page', { tag: '@public' }, () => {
 
   test('contains "Status" in title or heading', async ({ page }) => {
     await page.goto('/status');
+    // Wait for body to render — isVisible() does not retry, so without an
+    // explicit wait the assertion races the React hydration on slow runners.
+    await page.waitForLoadState('networkidle');
     // Either the breadcrumb span or the page title contains "Status"
     const title = await page.title();
     const hasStatusInTitle = /status/i.test(title);
-    const hasStatusInBody = await page.getByText(/Status/i).first().isVisible().catch(() => false);
+    const statusLocator = page.getByText(/Status/i).first();
+    const hasStatusInBody = await statusLocator
+      .waitFor({ state: 'visible', timeout: 5000 })
+      .then(() => true)
+      .catch(() => false);
     expect(hasStatusInTitle || hasStatusInBody).toBe(true);
   });
 });
