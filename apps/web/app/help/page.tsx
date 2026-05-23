@@ -159,6 +159,12 @@ function HelpAgentCTA() {
           <span>Schreib im Chat „Mensch", der Agent eskaliert automatisch.</span>
         )}
       </div>
+      <div style={{ marginTop: 12, fontSize: 12, opacity: 0.7, fontFamily: 'DM Sans, sans-serif' }}>
+        Oder per Mail:{' '}
+        <a href="mailto:support@justgoblin.com" style={{ color: 'rgba(255,255,255,0.92)', textDecoration: 'underline' }}>
+          support@justgoblin.com
+        </a>
+      </div>
 
       {chatOpen && (
         <div style={{
