@@ -66,7 +66,47 @@ export async function loginAsRealTestUser(page: Page): Promise<RealTestSession> 
 
   await page.waitForURL(/\/dashboard/, { timeout: 35000 });
 
+  // Ensure the test account stays comped so trial/quota walls don't block @auth
+  // tests (idempotent — no-op if already comped). The real test account is a
+  // long-lived shared fixture; without this, trial-gate flips it back to
+  // trial_expired a few days after creation and every @auth flow that hits
+  // create-project / streaming starts failing in CI.
+  await ensureTestAccountComped(page, email);
+
   return { email };
+}
+
+async function ensureTestAccountComped(page: Page, email: string): Promise<void> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!supabaseUrl || !serviceRoleKey) return;
+
+  try {
+    const lookup = await page.request.get(
+      `${supabaseUrl}/rest/v1/users?email=eq.${encodeURIComponent(email)}&select=id,is_comped`,
+      { headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}` } }
+    );
+    if (!lookup.ok()) return;
+    const rows = (await lookup.json()) as Array<{ id: string; is_comped: boolean }>;
+    const user = rows[0];
+    if (!user || user.is_comped) return;
+
+    await page.request.patch(
+      `${supabaseUrl}/rest/v1/users?id=eq.${user.id}`,
+      {
+        headers: {
+          apikey: serviceRoleKey,
+          Authorization: `Bearer ${serviceRoleKey}`,
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal',
+        },
+        data: { is_comped: true, comp_reason: 'E2E test account — permanent comp' },
+      }
+    );
+  } catch {
+    // Best-effort; if comp enforcement fails, downstream tests will surface
+    // the real error instead of failing silently here.
+  }
 }
 
 /**
