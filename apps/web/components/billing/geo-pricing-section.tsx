@@ -167,17 +167,18 @@ export function GeoPricingSection() {
                   </div>
                 )}
 
-                <div
+                <h3
                   style={{
                     fontSize: 11, fontWeight: 700,
                     letterSpacing: '0.16em', textTransform: 'uppercase',
                     color: recommended ? '#F0CF8A' : '#7A5A12',
                     marginBottom: 10,
                     fontFamily: 'DM Sans, sans-serif',
+                    margin: '0 0 10px',
                   }}
                 >
                   {meta.label}
-                </div>
+                </h3>
 
                 <div
                   style={{
