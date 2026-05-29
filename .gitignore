@@ -23,3 +23,8 @@ turbo
 *.tsbuildinfo
 playwright-report/
 test-results/
+
+# Personal testing-adjustment docs (Word/PDF/screenshots — not versioned)
+Anpassungen nach Testing/
+# Downloaded production HTML snapshot (reference only, build artifact)
+vercel_live.html
