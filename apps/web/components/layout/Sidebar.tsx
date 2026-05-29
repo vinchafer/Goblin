@@ -79,7 +79,8 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
   const { setShowNewProjectModal, setShowSettingsSheet } = useApp();
   const { fullName, email, plan } = useUser();
 
-  const [collapsed, setCollapsed] = useState(false);
+  const [userCollapsed, setUserCollapsed] = useState(false);
+  const [viewportNarrow, setViewportNarrow] = useState(false);
   const [mounted, setMounted] = useState(false);
   const initialized = useRef(false);
 
@@ -89,14 +90,28 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
       const stored = localStorage.getItem(STORAGE_KEY);
       // Default: open on desktop, collapsed on mobile
       const isMobile = window.innerWidth < 768;
-      setCollapsed(stored !== null ? stored === 'true' : isMobile);
+      setUserCollapsed(stored !== null ? stored === 'true' : isMobile);
     }
     setMounted(true);
   }, []);
 
+  // Below 960px (splitscreen / just-desktop) the 260px rail crowds the main
+  // pane, so force the collapsed strip regardless of stored preference. Drawer
+  // mode takes over below 768 (CSS). Guarantees no broken intermediate render.
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 959px)');
+    setViewportNarrow(mq.matches);
+    const on = () => setViewportNarrow(mq.matches);
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, []);
+
+  // Forced collapsed when the viewport is narrow; otherwise user-controlled.
+  const collapsed = userCollapsed || viewportNarrow;
+
   const toggle = () => {
-    const next = !collapsed;
-    setCollapsed(next);
+    const next = !userCollapsed;
+    setUserCollapsed(next);
     localStorage.setItem(STORAGE_KEY, String(next));
   };
 
@@ -144,45 +159,33 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
         }}
         className="goblin-sidebar-desktop"
       >
-        {/* ── Logo & User ── */}
+        {/* ── Header: collapse toggle only (wordmark lives in the app header,
+            not duplicated here). Expanded: right-aligned. Collapsed: centered
+            in the 48px strip. ── */}
         <div style={{
-          height: 56, display: 'flex', alignItems: 'center',
-          padding: collapsed ? '0 12px' : '0 16px',
-          borderBottom: '1px solid var(--border)', flexShrink: 0,
-          gap: 10, justifyContent: collapsed ? 'center' : 'flex-start',
+          display: 'flex', alignItems: 'center',
+          justifyContent: collapsed ? 'center' : 'flex-end',
+          padding: collapsed ? '12px 8px' : '12px 16px 8px 16px',
+          flexShrink: 0,
         }}>
           {!collapsed ? (
-            <>
-              <div
-                onClick={() => navigate('/dashboard')}
-                style={{
-                  fontFamily: 'var(--font-sans)', fontSize: 'var(--t-h4-fs)',
-                  color: 'var(--brand-green)', fontWeight: 700, letterSpacing: '-0.3px',
-                  cursor: 'pointer', userSelect: 'none', flexShrink: 0,
-                }}
-              >
-                Goblin<span style={{ opacity: 0.45 }}>.</span>
-              </div>
-              <div style={{ flex: 1 }} />
-              {/* Collapse toggle */}
-              <button
-                onClick={toggle}
-                title="Sidebar einklappen"
-                aria-label="Sidebar einklappen"
-                style={{
-                  width: 32, height: 32, borderRadius: 8,
-                  background: 'transparent',
-                  border: '1px solid var(--border)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', color: 'var(--ink-2)', flexShrink: 0,
-                  transition: 'background 0.15s, color 0.15s',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.06)'; e.currentTarget.style.color = 'var(--ink-1)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--ink-2)'; }}
-              >
-                <PanelLeftClose size={18} />
-              </button>
-            </>
+            <button
+              onClick={toggle}
+              title="Sidebar einklappen"
+              aria-label="Sidebar einklappen"
+              style={{
+                width: 32, height: 32, borderRadius: 8,
+                background: 'transparent',
+                border: '1px solid var(--border)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', color: 'var(--ink-2)', flexShrink: 0,
+                transition: 'background 0.15s, color 0.15s',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.06)'; e.currentTarget.style.color = 'var(--ink-1)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--ink-2)'; }}
+            >
+              <PanelLeftClose size={18} strokeWidth={1.5} />
+            </button>
           ) : (
             <button
               onClick={toggle}
@@ -199,12 +202,14 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(45,74,43,0.14)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'rgba(45,74,43,0.08)')}
             >
-              <PanelLeftOpen size={18} />
+              <PanelLeftOpen size={18} strokeWidth={1.5} />
             </button>
           )}
         </div>
 
-        {/* ── Projects List (content-fit, scrolls internally past ~30vh) ── */}
+        {/* ── Projects List (content-fit, scrolls internally past ~30vh).
+            Hidden entirely when collapsed — the strip shows only the toggle. ── */}
+        {!collapsed && (
         <div style={{ flexShrink: 0, maxHeight: '30vh', overflowY: 'auto', minHeight: 0, paddingTop: 8 }}>
           {!collapsed && (
             <div style={{
@@ -265,11 +270,12 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
                     onClick={() => navigate(`/dashboard/project/${p.id}`)}
                     title={collapsed ? p.name : undefined}
                     style={{
+                      // Matches RecentChatRow spec so both lists read as one
+                      // row type (6px/8px padding, radius 6, gap 8).
                       display: 'flex', alignItems: 'center',
-                      gap: collapsed ? 0 : 8,
-                      padding: collapsed ? '8px 0' : '7px 8px',
-                      justifyContent: collapsed ? 'center' : 'flex-start',
-                      borderRadius: 7, cursor: 'pointer', marginBottom: 1,
+                      gap: 8,
+                      padding: '6px 8px',
+                      borderRadius: 6, cursor: 'pointer', marginBottom: 1,
                       background: active ? 'rgba(212,169,74,0.13)' : 'transparent',
                       border: '1px solid transparent',
                       transition: 'all 0.12s',
@@ -303,6 +309,7 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
             </div>
           )}
         </div>
+        )}
 
         {/* ── Recent Chats (fills remaining height, scrolls internally) ── */}
         {!collapsed && (
@@ -314,50 +321,47 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
         {/* ── Usage summary ── */}
         {!collapsed && <SidebarUsage />}
 
-        {/* ── User Pill (Settings entry-point) ── */}
-        <div style={{
-          padding: collapsed ? '8px' : '10px 12px',
-          borderTop: '1px solid var(--border)', flexShrink: 0,
-        }}>
-          <button
-            onClick={() => { setShowSettingsSheet(true); onClose?.(); }}
-            data-testid="user-pill-desktop"
-            title={collapsed ? 'Profil & Einstellungen' : undefined}
-            aria-label="Profil & Einstellungen"
-            style={{
-              display: 'flex', alignItems: 'center', gap: collapsed ? 0 : 10,
-              width: '100%',
-              padding: collapsed ? '6px 0' : '8px 10px',
-              borderRadius: collapsed ? 10 : 24,
-              background: 'var(--panel, #fff)',
-              border: '1px solid var(--border)',
-              cursor: 'pointer', minHeight: 40,
-              fontFamily: 'var(--font-sans)',
-              justifyContent: collapsed ? 'center' : 'flex-start',
-              transition: 'background 0.12s',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'rgba(45,74,43,0.04)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'var(--panel, #fff)')}
-          >
-            <span style={{
-              width: collapsed ? 32 : 28, height: collapsed ? 32 : 28, borderRadius: '50%',
-              background: 'var(--brand-green)', color: '#fff',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontWeight: 700, fontSize: 'var(--t-small-fs)', flexShrink: 0,
-            }}>{initial}</span>
-            {!collapsed && (
+        {/* ── User Pill (Settings entry-point) — expanded only; pinned to the
+            bottom by the flex:1 chats list above so it never drifts upward.
+            Hidden in the collapsed strip (settings stay reachable via the
+            header avatar menu). ── */}
+        {!collapsed && (
+          <div style={{ padding: '10px 12px', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
+            <button
+              onClick={() => { setShowSettingsSheet(true); onClose?.(); }}
+              data-testid="user-pill-desktop"
+              aria-label="Profil & Einstellungen"
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10,
+                width: '100%',
+                padding: '8px 10px',
+                borderRadius: 24,
+                background: 'var(--panel, #fff)',
+                border: '1px solid var(--border)',
+                cursor: 'pointer', minHeight: 40,
+                fontFamily: 'var(--font-sans)',
+                justifyContent: 'flex-start',
+                transition: 'background 0.12s',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(45,74,43,0.04)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'var(--panel, #fff)')}
+            >
+              <span style={{
+                width: 28, height: 28, borderRadius: '50%',
+                background: 'var(--brand-green)', color: '#fff',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontWeight: 700, fontSize: 'var(--t-small-fs)', flexShrink: 0,
+              }}>{initial}</span>
               <span style={{
                 fontSize: 'var(--t-small-fs)', fontWeight: 500, color: 'var(--text)', flex: 1, textAlign: 'left',
                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               }}>
                 {displayName}
               </span>
-            )}
-            {!collapsed && (
               <Gear size={14} style={{ color: 'var(--text-faint)', flexShrink: 0 }} />
-            )}
-          </button>
-        </div>
+            </button>
+          </div>
+        )}
       </aside>
 
       {/* Mobile sidebar — slides from LEFT (Claude/ChatGPT pattern) */}
@@ -382,22 +386,13 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
           paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         } as React.CSSProperties}
       >
-        {/* Header row — logo + close */}
+        {/* Header row — close only. Wordmark removed: it lives in the app
+            header, and the duplicate here rendered as low-contrast,
+            unreadable text between the top edge and PROJEKTE (C2). */}
         <div style={{
-          display: 'flex', alignItems: 'center',
-          padding: '24px 20px 16px', flexShrink: 0,
+          display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
+          padding: '12px 20px 8px 20px', flexShrink: 0,
         }}>
-          <div
-            onClick={() => { navigate('/dashboard'); }}
-            style={{
-              fontFamily: 'var(--font-sans)', fontSize: 'var(--t-h1-fs)',
-              color: 'var(--brand-green)', fontWeight: 400, letterSpacing: '-0.5px',
-              cursor: 'pointer', userSelect: 'none',
-            }}
-          >
-            Goblin
-          </div>
-          <div style={{ flex: 1 }} />
           <button onClick={onClose} aria-label="Close sidebar" style={{
             background: 'rgba(0,0,0,0.04)', border: 'none', fontSize: 'var(--t-h4-fs)',
             color: '#8C857A', cursor: 'pointer',
@@ -454,13 +449,14 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
                   key={p.id}
                   onClick={() => navigate(`/dashboard/project/${p.id}`)}
                   style={{
-                    display: 'flex', alignItems: 'center', gap: 10,
-                    padding: '10px 12px', borderRadius: 8, cursor: 'pointer', marginBottom: 2,
+                    // Matches RecentChatRow / desktop project row spec so the
+                    // project and chat lists read as one row type in the drawer.
+                    display: 'flex', alignItems: 'center', gap: 8,
+                    padding: '6px 8px', borderRadius: 6, cursor: 'pointer', marginBottom: 1,
                     background: active ? 'rgba(212,169,74,0.13)' : 'transparent',
-                    minHeight: 44,
                   }}
                 >
-                  <div style={{ width: 10, height: 10, borderRadius: '50%', background: dotColor, flexShrink: 0 }} />
+                  <div style={{ width: 8, height: 8, borderRadius: '50%', background: dotColor, flexShrink: 0 }} />
                   <span style={{
                     fontSize: 'var(--t-small-fs)', fontWeight: active ? 600 : 400,
                     color: active ? 'var(--brand-green)' : 'var(--text)',

@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { GoblinLogo } from '@/components/brand/GoblinLogo';
 import { Globe, ListChecks, CalendarDays, KeyRound } from 'lucide-react';
 
@@ -22,6 +23,18 @@ const SUGGESTIONS = [
 // mark, one greeting line, four suggestion pills that prefill the composer.
 // No hero card (that is screen-03 exclusive), no eyebrow, no subtitle.
 export function EmptyChat({ onSuggestionClick }: EmptyChatProps) {
+  // Chips read oversized on ~390px phones; tighten padding/font/icon below
+  // 640px only. Desktop (built_04_v2 spec) is unchanged. matchMedia matches
+  // the responsive pattern already used across the dashboard (Sidebar etc.).
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 640px)');
+    setIsMobile(mq.matches);
+    const on = () => setIsMobile(mq.matches);
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, []);
+
   return (
     <div
       style={{
@@ -64,15 +77,15 @@ export function EmptyChat({ onSuggestionClick }: EmptyChatProps) {
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 8,
                 background: 'var(--surface-1)', border: '1px solid var(--rule)',
-                borderRadius: 9999, padding: '8px 14px',
-                fontSize: 'var(--t-small-fs)', color: 'var(--ink-1)',
+                borderRadius: 9999, padding: isMobile ? '6px 12px' : '8px 14px',
+                fontSize: isMobile ? 'var(--t-caption-fs)' : 'var(--t-small-fs)', color: 'var(--ink-1)',
                 fontFamily: 'var(--font-dash-display), Manrope, sans-serif',
                 cursor: 'pointer', transition: 'background 0.15s, border-color 0.15s',
               }}
               onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-3)'; }}
               onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface-1)'; }}
             >
-              <s.Icon size={16} />
+              <s.Icon size={isMobile ? 14 : 16} />
               <span>{s.text}</span>
             </button>
           ))}
