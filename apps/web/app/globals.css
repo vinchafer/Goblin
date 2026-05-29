@@ -731,3 +731,55 @@ button, input, textarea, select {
   from { transform: translateY(-100%); opacity: 0; }
   to   { transform: translateY(0);     opacity: 1; }
 }
+
+/* ─── Settings desktop density (container queries) ──────────────────────────
+   Pilot: Profile, Models, Billing. These rules apply ONLY inside the
+   SettingsModal right pane (the `settings-pane` query container, ~720px).
+   The mobile sheet (SettingsRoot) has no such container, so none of this
+   matches there — mobile sizing stays exactly as authored.
+
+   Section components use inline styles, so density overrides carry
+   `!important` to win over inline (non-important) declarations. Scope is
+   limited to `.settings-section` descendants, which only the 3 pilot roots
+   carry. No new tokens. ──────────────────────────────────────────────────── */
+@container settings-pane (min-width: 600px) {
+  /* Typography — tighter on desktop */
+  .settings-section h1 { font-size: var(--t-h2-fs) !important; line-height: var(--t-h2-lh) !important; }
+  .settings-section h2 { font-size: var(--t-h3-fs) !important; line-height: var(--t-h3-lh) !important; }
+  .settings-section p  { font-size: var(--t-body-fs) !important; }
+  .settings-section label { font-size: var(--t-small-fs) !important; color: var(--ink-2) !important; }
+
+  /* Form controls — desktop sizing (override inline mobile touch targets) */
+  .settings-section input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),
+  .settings-section textarea,
+  .settings-section select {
+    font-size: var(--t-small-fs) !important;
+    padding: 6px 12px !important;
+  }
+  .settings-section input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),
+  .settings-section select {
+    height: 36px !important;
+  }
+  .settings-section textarea { min-height: 56px !important; }
+
+  /* Avatar — smaller on desktop (targets AvatarUploader's img/fallback span
+     via the .avatar-large wrapper; AvatarUploader itself is untouched) */
+  .settings-section .avatar-large img,
+  .settings-section .avatar-large span {
+    width: 80px !important;
+    height: 80px !important;
+  }
+  .settings-section .avatar-large span { font-size: var(--t-h3-fs) !important; }
+  /* Avatar action buttons (Bild auswählen / Hochladen / Abbrechen) */
+  .settings-section .avatar-large button {
+    height: 36px !important;
+    padding: 0 16px !important;
+    font-size: var(--t-small-fs) !important;
+  }
+
+  /* List rows (e.g. model ranking rows) — tighter on desktop */
+  .settings-section .list-item {
+    padding: 10px 12px !important;
+    min-height: 44px !important;
+  }
+}

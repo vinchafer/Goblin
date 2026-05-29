@@ -53,7 +53,7 @@ export function DecryptLogPage() {
   }, []);
 
   return (
-    <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
+    <div className="settings-section" style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
       <p style={{ color: 'var(--meta)', fontSize: 14, margin: '4px 4px 16px' }}>
         Letzte 100 Zugriffe auf deine API-Keys. Verdächtige Aktivität? Rotiere den Key beim
         Provider und ändere dein Goblin-Passwort.
@@ -72,6 +72,7 @@ export function DecryptLogPage() {
             {entries.map((e, idx) => (
               <div
                 key={e.id}
+                className="list-item"
                 style={{
                   padding: '12px 20px',
                   borderTop: idx === 0 ? 'none' : '1px solid var(--div)',

@@ -26,7 +26,7 @@ export function HelpCenterPage() {
     : FAQS;
 
   return (
-    <div style={{ padding: '0 16px 96px', fontFamily: 'var(--font-sans)', position: 'relative' }}>
+    <div className="settings-section" style={{ padding: '0 16px 96px', fontFamily: 'var(--font-sans)', position: 'relative' }}>
       <input
         type="search"
         placeholder="Wonach suchst du?"

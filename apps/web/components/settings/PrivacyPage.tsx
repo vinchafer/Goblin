@@ -104,7 +104,7 @@ export function PrivacyPage() {
     : null;
 
   return (
-    <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
+    <div className="settings-section" style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
       <SettingsGroup label="Tracking">
         <SettingsCard>
           <SettingsRow

@@ -38,7 +38,7 @@ export function FeaturesPage() {
   };
 
   return (
-    <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
+    <div className="settings-section" style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
       <SettingsGroup label="Vorschläge">
         <SettingsCard>
           {flags.slice(0, 3).map((f) => (
@@ -72,6 +72,7 @@ export function FeaturesPage() {
 function FeatureRowWithDescription({ label, description, value, onChange, testId }: { label: string; description: string; value: boolean; onChange: (v: boolean) => void; testId: string }) {
   return (
     <div
+      className="list-item"
       onClick={() => onChange(!value)}
       style={{
         display: 'flex',

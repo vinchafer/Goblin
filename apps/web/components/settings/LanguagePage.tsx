@@ -20,11 +20,12 @@ export function LanguagePage() {
   };
 
   return (
-    <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
+    <div className="settings-section" style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
       <SettingsCard>
         {options.map((opt) => (
           <div
             key={opt}
+            className="list-item"
             onClick={() => pick(opt)}
             data-testid={`lang-${opt}`}
             style={{

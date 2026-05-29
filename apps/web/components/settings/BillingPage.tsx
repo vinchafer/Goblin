@@ -144,7 +144,7 @@ export function BillingPage() {
   const pct = isComped || limit === 0 ? 0 : Math.min(100, Math.round((used / limit) * 100));
 
   return (
-    <div style={{ padding: '0 16px 32px', fontFamily: 'var(--font-sans)' }}>
+    <div className="settings-section" style={{ padding: '0 16px 32px', fontFamily: 'var(--font-sans)' }}>
 
       {/* Current plan */}
       <Section title="Dein Plan">

@@ -95,7 +95,7 @@ export function PersonalizationPage() {
   };
 
   return (
-    <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
+    <div className="settings-section" style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
       <SettingsGroup label="Profil">
         <SettingsCard>
           <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>

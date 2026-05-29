@@ -243,7 +243,14 @@ function SettingsModalPane({
           <X size={20} />
         </button>
       </div>
-      <div style={{ flex: 1, overflowY: 'auto', padding: '24px 32px' }}>
+      <div style={{
+        flex: 1, overflowY: 'auto', padding: '24px 32px',
+        // Query container: pilot section components use @container
+        // (settings-pane) to apply desktop density. The mobile sheet has no
+        // such container, so those rules never match there.
+        containerType: 'inline-size',
+        containerName: 'settings-pane',
+      }}>
         {current.node}
       </div>
     </div>

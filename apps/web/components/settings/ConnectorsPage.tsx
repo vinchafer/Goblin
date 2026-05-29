@@ -34,7 +34,7 @@ export function ConnectorsPage() {
   if (loading) return <div style={{ padding: 24, color: 'var(--text-meta)', fontFamily: 'var(--font-sans)' }}>Lade Konnektoren...</div>;
 
   return (
-    <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
+    <div className="settings-section" style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
       <SettingsGroup label="Integrationen">
         <SettingsCard>
           <ConnectorRow
@@ -68,7 +68,7 @@ function ConnectorRow({ name, initial, connected, detail, onConnect, disabled }:
   name: string; initial: string; connected: boolean; detail: string; onConnect?: () => void; disabled?: boolean;
 }) {
   return (
-    <div style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 12, borderBottom: '1px solid var(--border-hairline)' }}>
+    <div className="list-item" style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 12, borderBottom: '1px solid var(--border-hairline)' }}>
       <span style={{
         width: 36, height: 36, borderRadius: 10, background: 'var(--subtle)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',

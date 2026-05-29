@@ -59,7 +59,7 @@ export function UsagePage() {
   const resetAt = state?.resetAt ? new Date(state.resetAt).toLocaleDateString('de-DE') : null;
 
   return (
-    <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
+    <div className="settings-section" style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
       <SettingsGroup label="Diesen Monat">
         <SettingsCard>
           <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -83,7 +83,7 @@ export function UsagePage() {
         <SettingsGroup label="Pro Provider">
           <SettingsCard>
             {state.byProvider.map((p) => (
-              <div key={p.provider} style={{ padding: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-hairline)' }}>
+              <div key={p.provider} className="list-item" style={{ padding: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-hairline)' }}>
                 <span style={{ fontSize: 15, color: 'var(--text)' }}>{p.provider}</span>
                 <span style={{ fontSize: 13, color: 'var(--text-meta)', fontFamily: 'var(--font-mono)' }}>{formatNum(p.requests)} req · {formatNum(p.tokens)} tok</span>
               </div>

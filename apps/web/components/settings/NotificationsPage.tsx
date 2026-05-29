@@ -40,7 +40,7 @@ export function NotificationsPage() {
   }
 
   return (
-    <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
+    <div className="settings-section" style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
       <SettingsGroup label="Benachrichtigungen">
         <SettingsCard>
           <SettingsRow

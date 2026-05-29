@@ -9,7 +9,7 @@ const VERSION = process.env.NEXT_PUBLIC_APP_VERSION ?? '0.9.4';
 
 export function AboutPage() {
   return (
-    <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
+    <div className="settings-section" style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '24px 0 32px' }}>
         <div style={{
           width: 64,

@@ -76,7 +76,7 @@ export function SecurityPage() {
   }
 
   return (
-    <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
+    <div className="settings-section" style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
       <SettingsGroup label="Passwort ändern">
         <SettingsCard>
           <PasswordField

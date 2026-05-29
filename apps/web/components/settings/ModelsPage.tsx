@@ -54,7 +54,7 @@ export function ModelsPage() {
   const [tab, setTab] = useState<Tab>('rankings');
 
   return (
-    <div style={{ padding: '0 0 24px', fontFamily: 'var(--font-sans)' }}>
+    <div className="settings-section" style={{ padding: '0 0 24px', fontFamily: 'var(--font-sans)' }}>
       <div style={{ padding: '4px 20px 12px' }}>
         <p style={{ fontSize: 13, color: 'var(--text-meta)', margin: 0, lineHeight: 1.5 }}>
           Rankings aus 5 öffentlichen Benchmarks. Alle 6 Stunden aktualisiert.
@@ -232,7 +232,7 @@ function RankingsTab() {
           : ACCESS_COLORS[access.type];
         const badgeLabel = keyed ? 'Mein Key' : access.label;
         return (
-          <div key={m.id} style={{
+          <div key={m.id} className="list-item" style={{
             padding: '14px 16px', marginBottom: 8,
             background: 'var(--panel)',
             border: '1px solid', borderColor: isDefault ? 'var(--brand-green)' : 'var(--border-subtle)',

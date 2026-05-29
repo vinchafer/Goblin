@@ -118,7 +118,7 @@ export function TwoFactorPage() {
   };
 
   return (
-    <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
+    <div className="settings-section" style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
       {view === 'loading' && <p style={{ color: 'var(--meta)' }}>Lade…</p>}
 
       {view === 'disabled' && (
