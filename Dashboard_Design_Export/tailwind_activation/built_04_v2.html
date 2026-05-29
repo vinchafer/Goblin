@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Goblin · Screen 04 v2 — Empty Chat</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* v1.1 tokens (inlined from styles/design-tokens.css) */
+  :root{
+    --brand-green:#1A3A2A; --ink-deep:#0F2B1E; --brand-gold:#D4A737;
+    --gold-400:#DEB75A; --gold-700:#A07726;
+    --bone:#F4ECD8; --paper:#FBF7EC;
+    --surface-0:#FFFFFF; --surface-1:#FBF7EC; --surface-2:#F4ECD8; --surface-3:#E8DEC2; --surface-4:#D8CBA8;
+    --rule-soft:#E8DEC2; --rule:#D8CBA8; --rule-strong:#B8A988;
+    --ink-1:#0F2B1E; --ink-2:#3F3A2C; --ink-3:#74694F; --ink-disabled:#B8A988;
+    --t-h1-fs:48px; --t-h2-fs:32px; --t-h2-lh:1.15; --t-h2-ls:-0.01em; --t-h4-fs:18px;
+    --t-body-fs:16px; --t-small-fs:14px; --t-caption-fs:12px; --t-eyebrow-fs:12px; --t-mono-fs:13px; --t-mono-sm-fs:11px;
+    --radius-md:14px;
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+    --sans:'Manrope',system-ui,sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;}
+  body{font-family:var(--sans);background:#d8ceb0;color:var(--ink-1);
+    -webkit-font-smoothing:antialiased;padding:24px;display:flex;flex-direction:column;align-items:center;gap:28px;}
+  .note{max-width:1280px;font-size:var(--t-mono-fs);color:#5a5444;font-family:var(--mono);letter-spacing:.04em;}
+  .vp-label{font-family:var(--mono);font-size:var(--t-eyebrow-fs);letter-spacing:.14em;text-transform:uppercase;color:#5a5444;margin-bottom:8px;}
+  .frame{position:relative;border-radius:16px;overflow:hidden;box-shadow:0 30px 80px -30px rgba(0,0,0,.5);
+    display:flex;flex-direction:column;background:var(--bone);border:1px solid rgba(0,0,0,.15);}
+  .frame.desktop{width:1280px;height:860px;}
+  .frame.mobile{width:390px;height:844px;}
+
+  /* HEADER (shell from built_03_v7) */
+  .hdr{height:60px;background:var(--brand-green);display:flex;align-items:center;padding:0 12px;gap:8px;border-bottom:1px solid rgba(247,247,236,.10);flex-shrink:0;}
+  .logo-btn{display:inline-flex;align-items:center;gap:8px;background:none;border:none;cursor:pointer;padding:6px 4px;flex-shrink:0;}
+  .gmark{width:26px;height:26px;flex-shrink:0;color:var(--brand-gold);}
+  .wordmark{font-family:var(--sans);font-weight:700;font-size:var(--t-h4-fs);letter-spacing:-.02em;color:var(--brand-gold);line-height:1;}
+  .crumb{display:flex;align-items:center;gap:8px;}
+  .crumb .sep{color:rgba(255,255,255,.3);font-size:var(--t-small-fs);}
+  .crumb .chip{font-size:var(--t-small-fs);color:rgba(244,236,216,.85);background:rgba(255,255,255,.08);padding:5px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.1);font-weight:500;}
+  .spacer{flex:1;}
+  .pills{display:flex;gap:2px;padding:3px;background:rgba(0,0,0,.18);border-radius:10px;}
+  .pill{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:7px;font-size:var(--t-caption-fs);min-height:26px;color:rgba(244,236,216,.78);font-weight:500;font-family:var(--sans);border:none;background:transparent;}
+  .pill.active{background:var(--surface-0);color:var(--brand-green);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.18);}
+  .pill.disabled{color:rgba(244,236,216,.35);}
+  .pill svg{width:14px;height:14px;}
+  .fab{width:30px;height:30px;border-radius:50%;background:transparent;color:rgba(255,255,255,.9);border:1px solid rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .avatar{width:30px;height:30px;border-radius:50%;background:var(--gold-700);color:#2a1f0f;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:var(--t-small-fs);flex-shrink:0;}
+
+  .bodyrow{display:flex;flex:1;min-height:0;}
+
+  /* SIDEBAR (shell from built_03_v7) */
+  .sb{width:260px;flex-shrink:0;background:var(--surface-2);border-right:1px solid var(--rule);display:flex;flex-direction:column;}
+  .sb-top{height:56px;display:flex;align-items:center;padding:0 16px;border-bottom:1px solid var(--rule);gap:10px;}
+  .sb-top .l{font-family:var(--sans);font-size:var(--t-h4-fs);color:var(--brand-green);font-weight:700;letter-spacing:-.3px;}
+  .sb-top .l .dot{opacity:.45;}
+  .sb-top .who{margin-left:auto;font-size:var(--t-caption-fs);color:var(--ink-3);}
+  .sb-top .cl{width:24px;height:24px;border-radius:6px;border:1px solid var(--rule);background:transparent;color:var(--ink-3);display:flex;align-items:center;justify-content:center;}
+  .sb-sec{padding:10px 12px 6px 16px;display:flex;align-items:center;justify-content:space-between;}
+  .sb-sec .h{font-size:var(--t-eyebrow-fs);font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-family:var(--sans);background:none;border:none;}
+  .plus-sq{width:22px;height:22px;border-radius:7px;background:var(--brand-green);color:var(--bone);display:flex;align-items:center;justify-content:center;box-shadow:0 1px 2px rgba(0,0,0,.08);border:none;}
+  .plus-sq svg{width:13px;height:13px;}
+  .prow{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:7px;margin:0 8px 1px;border:1px solid transparent;}
+  .prow .pdot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .prow .pname{font-size:var(--t-small-fs);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-1);}
+  .prow .pt{font-size:var(--t-eyebrow-fs);color:var(--ink-3);font-family:var(--mono);}
+  .crow{display:flex;align-items:center;gap:8px;padding:6px 8px;margin:0 8px 1px;border-radius:6px;}
+  .crow.active{background:rgba(212,169,55,.13);}
+  .crow .ct{font-size:var(--t-small-fs);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-2);}
+  .crow.active .ct{color:var(--brand-green);font-weight:600;}
+  .divider{border-top:1px solid var(--rule);margin:8px 0;}
+  .sb-fill{flex:1;}
+  .usage{margin:0 12px 8px;padding:10px 12px;border-radius:10px;background:rgba(15,43,30,.05);border:1px solid var(--rule);display:block;color:var(--ink-1);}
+  .usage .ur{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:7px;}
+  .usage .ul{font-size:var(--t-small-fs);font-weight:600;color:var(--ink-2);}
+  .usage .up{font-family:var(--mono);font-size:var(--t-mono-fs);font-weight:600;color:var(--ink-1);}
+  .usage .bar{height:4px;border-radius:2px;overflow:hidden;background:rgba(15,43,30,.10);}
+  .usage .bar > i{display:block;height:100%;background:var(--brand-green);}
+  .usage .uf{display:flex;justify-content:space-between;margin-top:7px;font-size:var(--t-eyebrow-fs);color:var(--ink-3);}
+  .sb-foot{padding:10px 12px;border-top:1px solid var(--rule);}
+  .userpill{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border-radius:24px;background:var(--surface-0);border:1px solid var(--rule);}
+  .userpill .av{width:28px;height:28px;border-radius:50%;background:var(--brand-green);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:var(--t-small-fs);}
+  .userpill .nm{font-size:var(--t-small-fs);font-weight:500;flex:1;color:var(--ink-1);}
+  .userpill .gear{color:var(--ink-3);display:flex;}
+
+  /* ── 04 CHAT BODY ── */
+  .chat{flex:1;display:flex;flex-direction:column;min-width:0;background:var(--bone);}
+  /* default: top-aligned for message lists (used by 05/06) */
+  .chat-scroll{flex:1;overflow-y:auto;display:flex;flex-direction:column;align-items:center;padding:24px;}
+  /* applied only when messages.length === 0 (the 04 empty state) */
+  .chat-scroll--empty{justify-content:flex-start;padding-top:120px;}
+  .frame.mobile .chat-scroll--empty{padding-top:64px;}
+  .empty-block{width:100%;max-width:640px;display:flex;flex-direction:column;align-items:center;}
+  .empty-mark{width:48px;height:48px;color:var(--ink-deep);display:flex;align-items:center;justify-content:center;}
+  .empty-greet{font-family:var(--sans);font-weight:600;font-size:var(--t-h2-fs);line-height:var(--t-h2-lh);letter-spacing:var(--t-h2-ls);color:var(--ink-1);text-align:center;margin:8px 0 0;}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:24px;}
+  .chip{display:inline-flex;align-items:center;gap:8px;background:var(--surface-1);border:1px solid var(--rule);border-radius:9999px;padding:8px 14px;font-size:var(--t-small-fs);color:var(--ink-1);font-family:var(--sans);cursor:pointer;}
+  .chip svg{width:16px;height:16px;}
+
+  /* composer bar — sticky bottom of the flex column (ChatInput default variant) */
+  .composer-bar{border-top:1px solid var(--rule);background:var(--bone);flex-shrink:0;}
+  .composer-pad{padding:24px;}
+  .composer{display:flex;flex-direction:column;border:1px solid var(--rule);border-radius:14px;background:var(--surface-1);}
+  .composer textarea{resize:none;border:none;background:transparent;outline:none;font-size:var(--t-small-fs);color:var(--ink-1);font-family:var(--sans);line-height:22px;padding:12px 14px 6px;width:100%;}
+  .composer textarea::placeholder{color:var(--ink-disabled);}
+  .cbar{display:flex;align-items:center;padding:4px 8px 8px;gap:6px;}
+  .cbtn{width:28px;height:28px;border-radius:50%;border:1px solid var(--rule);background:var(--surface-0);color:var(--ink-3);display:flex;align-items:center;justify-content:center;}
+  .cbtn svg{width:14px;height:14px;}
+  .mpill{display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;background:none;border:1px solid rgba(45,74,43,0.18);font-size:var(--t-caption-fs);font-weight:500;color:#5a7a58;font-family:var(--sans);}
+  .mpill svg{width:9px;height:9px;opacity:.6;}
+  .chint{flex:1;font-size:var(--t-caption-fs);color:#B8B0A8;padding-left:2px;}
+  .mic{width:32px;height:32px;border-radius:50%;border:none;background:transparent;color:var(--ink-3);display:flex;align-items:center;justify-content:center;}
+  .mic svg{width:18px;height:18px;}
+  /* send muted while empty (no gold) */
+  .send{width:32px;height:32px;border-radius:8px;background:var(--surface-3);color:var(--ink-3);border:none;display:flex;align-items:center;justify-content:center;}
+  .send svg{width:16px;height:16px;}
+
+  /* mobile */
+  .frame.mobile .composer-pad{padding:16px;}
+  .ham{width:36px;height:36px;border:none;background:none;color:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;}
+  .mtile{display:flex;align-items:center;gap:6px;min-height:36px;padding:6px 10px;border-radius:9px;background:rgba(0,0,0,.18);border:none;color:var(--bone);font-family:var(--sans);font-weight:600;font-size:var(--t-caption-fs);}
+  .mtile svg{width:15px;height:15px;}
+</style>
+</head>
+<body>
+<div class="note">STATISCHES MOCKUP — built_04_v2.html · Screen 04 Empty Chat (Review-Iteration). Shell aus v7, Body: idle g-mark (Ink Deep) + Greeting "Leg los." + 4 Pills, top-anchored. Default-Composer sticky unten. Daten = Beispiel.</div>
+
+<!-- ══════════ DESKTOP 1280×860 ══════════ -->
+<div>
+  <div class="vp-label">Desktop · 1280 × 860 · /dashboard/chat/[sessionId] (leer)</div>
+  <div class="frame desktop">
+    <div class="hdr">
+      <button class="logo-btn">
+        <svg class="gmark" viewBox="0 0 570 570" aria-hidden="true"><path fill="currentColor" d="m 301.57431,532.05611 c -8.8544,-3.15614 -14.66533,-12.15416 -14.74731,-22.83569 -0.11377,-14.82307 7.04812,-21.59298 26.62254,-25.16547 13.26537,-2.42103 25.27879,-6.68664 41,-14.55789 16.99031,-8.50665 29.67124,-17.37517 42.784,-29.92136 17.13109,-16.39089 29.90427,-33.40215 39.45839,-52.55048 28.86834,-57.85781 30.69531,-119.74167 5.12122,-173.46795 -10.21922,-21.46862 -20.29062,-35.42591 -37.61625,-52.12989 -25.33371,-24.42472 -57.26718,-40.96275 -90.81667,-47.03304 -17.40042,-3.14836 -46.15388,-3.1583 -62.93069,-0.0218 -48.18454,9.00842 -90.80638,37.26649 -117.07081,77.61737 -15.97925,24.54945 -26.61532,54.5611 -29.25032,82.53527 l -0.80065,8.5 44.06089,44.44864 c 24.23349,24.44675 45.01375,45.24501 46.17836,46.21834 2.09361,1.74975 2.51172,1.37277 37.09789,-33.44864 19.23923,-19.37009 38.33049,-38.70584 42.42503,-42.96834 4.09454,-4.2625 7.88061,-7.75 8.41348,-7.75 0.53287,0 8.25138,7.3125 17.15224,16.25 l 16.18338,16.25 -58.858,59.25 c -32.3719,32.58754 -59.23572,59.25004 -59.69739,59.25004 -0.46166,0 -32.67569,-31.83868 -71.58674,-70.75262 L 53.949546,299.01998 v -11.69617 c 0,-13.67827 2.041826,-30.65183 5.629612,-46.79859 7.497459,-33.74217 24.127362,-68.21991 45.665712,-94.67591 l 6.65618,-8.17591 -9.33375,-27.32409 C 97.433744,95.321064 90.007504,73.849874 86.064546,62.635564 c -3.942955,-11.21431 -6.96228,-20.59639 -6.70961,-20.84906 0.679366,-0.67937 31.042324,18.57843 58.762914,37.27054 l 24.2866,16.37656 3.02254,-1.99654 c 5.42484,-3.58337 22.28236,-11.83216 32.498,-15.90206 33.01269,-13.15221 70.09919,-18.40145 105.60087,-14.9468 28.06032,2.73053 54.33379,10.47712 80.99615,23.88127 l 17.07246,8.58296 11.42587,-7.5136 c 29.67315,-19.51294 70.41697,-45.85917 70.61455,-45.66159 0.19853,0.19853 -28.02423,86.999656 -30.59984,94.112026 -0.97298,2.68682 -0.76123,3.29478 2.26388,6.5 9.12015,9.66315 23.05852,30.96888 31.09838,47.53595 10.15288,20.92119 17.43571,44.44115 21.22171,68.53565 2.6957,17.15575 2.43047,51.74514 -0.53648,69.96435 -5.73312,35.20542 -17.86945,69.83696 -33.65546,96.03727 -25.56036,42.42299 -63.32314,76.10326 -106.06279,94.59642 -25.85125,11.18566 -54.71658,16.8443 -65.78998,12.8972 z m 65.36876,-237.46523 c -11.31169,-3.44086 -17.8112,-13.11165 -16.74137,-24.90992 1.1843,-13.06062 9.13567,-20.88952 22.21843,-21.87618 6.99185,-0.52731 11.5486,1.04237 17.0511,5.87363 5.4415,4.7777 7.48214,9.58267 7.45635,17.55697 -0.027,8.34224 -2.16444,13.43656 -7.75096,18.47329 -5.79381,5.22362 -14.68951,7.17701 -22.23355,4.88221 z"/></svg>
+        <span class="wordmark">Goblin</span>
+      </button>
+      <div class="crumb"><span class="sep">/</span><span class="chip">Neuer Chat</span></div>
+      <div class="spacer"></div>
+      <div class="pills">
+        <div class="pill active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Chat</div>
+        <div class="pill disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>Code</div>
+        <div class="pill disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>Preview</div>
+      </div>
+      <div class="fab"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+      <div class="avatar">V</div>
+    </div>
+
+    <div class="bodyrow">
+      <!-- SIDEBAR -->
+      <div class="sb">
+        <div class="sb-top"><span class="l">Goblin<span class="dot">.</span></span><span class="who">Vincent</span>
+          <button class="cl"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></button></div>
+        <div class="sb-sec"><span class="h">Projekte</span>
+          <button class="plus-sq"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+        </div>
+        <div class="prow"><span class="pdot" style="background:var(--brand-gold)"></span><span class="pname">Landing Relaunch</span><span class="pt">2h</span></div>
+        <div class="prow"><span class="pdot" style="background:#6db97b"></span><span class="pname">Booking App</span><span class="pt">1d</span></div>
+        <div class="prow"><span class="pdot" style="background:#7A4A8A"></span><span class="pname">Todo Tracker</span><span class="pt">3d</span></div>
+        <div class="divider"></div>
+        <div class="sb-sec"><span class="h">Chats</span>
+          <button class="plus-sq"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+        </div>
+        <div class="crow active"><span class="ct">Neuer Chat</span></div>
+        <div class="crow"><span class="ct">Stripe-Checkout einbauen</span></div>
+        <div class="crow"><span class="ct">Magic-Link Login</span></div>
+        <div class="sb-fill"></div>
+        <a class="usage">
+          <div class="ur"><span class="ul">Verbrauch</span><span class="up">71&nbsp;%</span></div>
+          <div class="bar"><i style="width:71%"></i></div>
+          <div class="uf"><span>Pro</span><span>Reset in 12 Tagen</span></div>
+        </a>
+        <div class="sb-foot">
+          <div class="userpill"><span class="av">V</span><span class="nm">Vincent</span>
+            <span class="gear"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 04 CHAT BODY (empty) — chat-scroll carries BOTH classes -->
+      <div class="chat">
+        <div class="chat-scroll chat-scroll--empty">
+          <div class="empty-block">
+            <span class="empty-mark"><svg width="48" height="48" viewBox="0 0 570 570" aria-hidden="true"><path fill="currentColor" d="m 301.57431,532.05611 c -8.8544,-3.15614 -14.66533,-12.15416 -14.74731,-22.83569 -0.11377,-14.82307 7.04812,-21.59298 26.62254,-25.16547 13.26537,-2.42103 25.27879,-6.68664 41,-14.55789 16.99031,-8.50665 29.67124,-17.37517 42.784,-29.92136 17.13109,-16.39089 29.90427,-33.40215 39.45839,-52.55048 28.86834,-57.85781 30.69531,-119.74167 5.12122,-173.46795 -10.21922,-21.46862 -20.29062,-35.42591 -37.61625,-52.12989 -25.33371,-24.42472 -57.26718,-40.96275 -90.81667,-47.03304 -17.40042,-3.14836 -46.15388,-3.1583 -62.93069,-0.0218 -48.18454,9.00842 -90.80638,37.26649 -117.07081,77.61737 -15.97925,24.54945 -26.61532,54.5611 -29.25032,82.53527 l -0.80065,8.5 44.06089,44.44864 c 24.23349,24.44675 45.01375,45.24501 46.17836,46.21834 2.09361,1.74975 2.51172,1.37277 37.09789,-33.44864 19.23923,-19.37009 38.33049,-38.70584 42.42503,-42.96834 4.09454,-4.2625 7.88061,-7.75 8.41348,-7.75 0.53287,0 8.25138,7.3125 17.15224,16.25 l 16.18338,16.25 -58.858,59.25 c -32.3719,32.58754 -59.23572,59.25004 -59.69739,59.25004 -0.46166,0 -32.67569,-31.83868 -71.58674,-70.75262 L 53.949546,299.01998 v -11.69617 c 0,-13.67827 2.041826,-30.65183 5.629612,-46.79859 7.497459,-33.74217 24.127362,-68.21991 45.665712,-94.67591 l 6.65618,-8.17591 -9.33375,-27.32409 C 97.433744,95.321064 90.007504,73.849874 86.064546,62.635564 c -3.942955,-11.21431 -6.96228,-20.59639 -6.70961,-20.84906 0.679366,-0.67937 31.042324,18.57843 58.762914,37.27054 l 24.2866,16.37656 3.02254,-1.99654 c 5.42484,-3.58337 22.28236,-11.83216 32.498,-15.90206 33.01269,-13.15221 70.09919,-18.40145 105.60087,-14.9468 28.06032,2.73053 54.33379,10.47712 80.99615,23.88127 l 17.07246,8.58296 11.42587,-7.5136 c 29.67315,-19.51294 70.41697,-45.85917 70.61455,-45.66159 0.19853,0.19853 -28.02423,86.999656 -30.59984,94.112026 -0.97298,2.68682 -0.76123,3.29478 2.26388,6.5 9.12015,9.66315 23.05852,30.96888 31.09838,47.53595 10.15288,20.92119 17.43571,44.44115 21.22171,68.53565 2.6957,17.15575 2.43047,51.74514 -0.53648,69.96435 -5.73312,35.20542 -17.86945,69.83696 -33.65546,96.03727 -25.56036,42.42299 -63.32314,76.10326 -106.06279,94.59642 -25.85125,11.18566 -54.71658,16.8443 -65.78998,12.8972 z m 65.36876,-237.46523 c -11.31169,-3.44086 -17.8112,-13.11165 -16.74137,-24.90992 1.1843,-13.06062 9.13567,-20.88952 22.21843,-21.87618 6.99185,-0.52731 11.5486,1.04237 17.0511,5.87363 5.4415,4.7777 7.48214,9.58267 7.45635,17.55697 -0.027,8.34224 -2.16444,13.43656 -7.75096,18.47329 -5.79381,5.22362 -14.68951,7.17701 -22.23355,4.88221 z"/></svg></span>
+            <h2 class="empty-greet">Leg los.</h2>
+            <div class="chips">
+              <button class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>Eine Landingpage mit Anmeldeformular</button>
+              <button class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg>Eine Aufgabenliste, die meine Einträge merkt</button>
+              <button class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/></svg>Eine Seite, auf der Leute Termine buchen können</button>
+              <button class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/></svg>Magic-Link-Login für meine Next.js-App</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- composer sticky bar (ChatInput default variant, empty → muted send) -->
+        <div class="composer-bar">
+          <div class="composer-pad">
+            <div class="composer">
+              <textarea rows="1" placeholder="Beschreib in einem Satz, was du bauen willst…"></textarea>
+              <div class="cbar">
+                <button class="cbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+                <button class="mpill">Gemini Flash <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+                <span class="chint">⇧↵ new line</span>
+                <button class="mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+                <button class="send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ MOBILE 390×844 ══════════ -->
+<div>
+  <div class="vp-label">Mobile · 390 × 844 · Mark only, Mode-Tile rechtsbündig (v7-Pattern), Composer thumb-reachable</div>
+  <div class="frame mobile">
+    <div class="hdr" style="padding:0 10px;">
+      <button class="ham"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+      <button class="logo-btn">
+        <svg class="gmark" viewBox="0 0 570 570" aria-hidden="true"><path fill="currentColor" d="m 301.57431,532.05611 c -8.8544,-3.15614 -14.66533,-12.15416 -14.74731,-22.83569 -0.11377,-14.82307 7.04812,-21.59298 26.62254,-25.16547 13.26537,-2.42103 25.27879,-6.68664 41,-14.55789 16.99031,-8.50665 29.67124,-17.37517 42.784,-29.92136 17.13109,-16.39089 29.90427,-33.40215 39.45839,-52.55048 28.86834,-57.85781 30.69531,-119.74167 5.12122,-173.46795 -10.21922,-21.46862 -20.29062,-35.42591 -37.61625,-52.12989 -25.33371,-24.42472 -57.26718,-40.96275 -90.81667,-47.03304 -17.40042,-3.14836 -46.15388,-3.1583 -62.93069,-0.0218 -48.18454,9.00842 -90.80638,37.26649 -117.07081,77.61737 -15.97925,24.54945 -26.61532,54.5611 -29.25032,82.53527 l -0.80065,8.5 44.06089,44.44864 c 24.23349,24.44675 45.01375,45.24501 46.17836,46.21834 2.09361,1.74975 2.51172,1.37277 37.09789,-33.44864 19.23923,-19.37009 38.33049,-38.70584 42.42503,-42.96834 4.09454,-4.2625 7.88061,-7.75 8.41348,-7.75 0.53287,0 8.25138,7.3125 17.15224,16.25 l 16.18338,16.25 -58.858,59.25 c -32.3719,32.58754 -59.23572,59.25004 -59.69739,59.25004 -0.46166,0 -32.67569,-31.83868 -71.58674,-70.75262 L 53.949546,299.01998 v -11.69617 c 0,-13.67827 2.041826,-30.65183 5.629612,-46.79859 7.497459,-33.74217 24.127362,-68.21991 45.665712,-94.67591 l 6.65618,-8.17591 -9.33375,-27.32409 C 97.433744,95.321064 90.007504,73.849874 86.064546,62.635564 c -3.942955,-11.21431 -6.96228,-20.59639 -6.70961,-20.84906 0.679366,-0.67937 31.042324,18.57843 58.762914,37.27054 l 24.2866,16.37656 3.02254,-1.99654 c 5.42484,-3.58337 22.28236,-11.83216 32.498,-15.90206 33.01269,-13.15221 70.09919,-18.40145 105.60087,-14.9468 28.06032,2.73053 54.33379,10.47712 80.99615,23.88127 l 17.07246,8.58296 11.42587,-7.5136 c 29.67315,-19.51294 70.41697,-45.85917 70.61455,-45.66159 0.19853,0.19853 -28.02423,86.999656 -30.59984,94.112026 -0.97298,2.68682 -0.76123,3.29478 2.26388,6.5 9.12015,9.66315 23.05852,30.96888 31.09838,47.53595 10.15288,20.92119 17.43571,44.44115 21.22171,68.53565 2.6957,17.15575 2.43047,51.74514 -0.53648,69.96435 -5.73312,35.20542 -17.86945,69.83696 -33.65546,96.03727 -25.56036,42.42299 -63.32314,76.10326 -106.06279,94.59642 -25.85125,11.18566 -54.71658,16.8443 -65.78998,12.8972 z m 65.36876,-237.46523 c -11.31169,-3.44086 -17.8112,-13.11165 -16.74137,-24.90992 1.1843,-13.06062 9.13567,-20.88952 22.21843,-21.87618 6.99185,-0.52731 11.5486,1.04237 17.0511,5.87363 5.4415,4.7777 7.48214,9.58267 7.45635,17.55697 -0.027,8.34224 -2.16444,13.43656 -7.75096,18.47329 -5.79381,5.22362 -14.68951,7.17701 -22.23355,4.88221 z"/></svg>
+      </button>
+      <div class="spacer"></div>
+      <button class="mtile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Chat<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" style="opacity:.7"><polyline points="6 9 12 15 18 9"/></svg></button>
+      <div class="fab"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+      <div class="avatar">V</div>
+    </div>
+
+    <div class="chat">
+      <div class="chat-scroll chat-scroll--empty">
+        <div class="empty-block">
+          <span class="empty-mark"><svg width="48" height="48" viewBox="0 0 570 570" aria-hidden="true"><path fill="currentColor" d="m 301.57431,532.05611 c -8.8544,-3.15614 -14.66533,-12.15416 -14.74731,-22.83569 -0.11377,-14.82307 7.04812,-21.59298 26.62254,-25.16547 13.26537,-2.42103 25.27879,-6.68664 41,-14.55789 16.99031,-8.50665 29.67124,-17.37517 42.784,-29.92136 17.13109,-16.39089 29.90427,-33.40215 39.45839,-52.55048 28.86834,-57.85781 30.69531,-119.74167 5.12122,-173.46795 -10.21922,-21.46862 -20.29062,-35.42591 -37.61625,-52.12989 -25.33371,-24.42472 -57.26718,-40.96275 -90.81667,-47.03304 -17.40042,-3.14836 -46.15388,-3.1583 -62.93069,-0.0218 -48.18454,9.00842 -90.80638,37.26649 -117.07081,77.61737 -15.97925,24.54945 -26.61532,54.5611 -29.25032,82.53527 l -0.80065,8.5 44.06089,44.44864 c 24.23349,24.44675 45.01375,45.24501 46.17836,46.21834 2.09361,1.74975 2.51172,1.37277 37.09789,-33.44864 19.23923,-19.37009 38.33049,-38.70584 42.42503,-42.96834 4.09454,-4.2625 7.88061,-7.75 8.41348,-7.75 0.53287,0 8.25138,7.3125 17.15224,16.25 l 16.18338,16.25 -58.858,59.25 c -32.3719,32.58754 -59.23572,59.25004 -59.69739,59.25004 -0.46166,0 -32.67569,-31.83868 -71.58674,-70.75262 L 53.949546,299.01998 v -11.69617 c 0,-13.67827 2.041826,-30.65183 5.629612,-46.79859 7.497459,-33.74217 24.127362,-68.21991 45.665712,-94.67591 l 6.65618,-8.17591 -9.33375,-27.32409 C 97.433744,95.321064 90.007504,73.849874 86.064546,62.635564 c -3.942955,-11.21431 -6.96228,-20.59639 -6.70961,-20.84906 0.679366,-0.67937 31.042324,18.57843 58.762914,37.27054 l 24.2866,16.37656 3.02254,-1.99654 c 5.42484,-3.58337 22.28236,-11.83216 32.498,-15.90206 33.01269,-13.15221 70.09919,-18.40145 105.60087,-14.9468 28.06032,2.73053 54.33379,10.47712 80.99615,23.88127 l 17.07246,8.58296 11.42587,-7.5136 c 29.67315,-19.51294 70.41697,-45.85917 70.61455,-45.66159 0.19853,0.19853 -28.02423,86.999656 -30.59984,94.112026 -0.97298,2.68682 -0.76123,3.29478 2.26388,6.5 9.12015,9.66315 23.05852,30.96888 31.09838,47.53595 10.15288,20.92119 17.43571,44.44115 21.22171,68.53565 2.6957,17.15575 2.43047,51.74514 -0.53648,69.96435 -5.73312,35.20542 -17.86945,69.83696 -33.65546,96.03727 -25.56036,42.42299 -63.32314,76.10326 -106.06279,94.59642 -25.85125,11.18566 -54.71658,16.8443 -65.78998,12.8972 z m 65.36876,-237.46523 c -11.31169,-3.44086 -17.8112,-13.11165 -16.74137,-24.90992 1.1843,-13.06062 9.13567,-20.88952 22.21843,-21.87618 6.99185,-0.52731 11.5486,1.04237 17.0511,5.87363 5.4415,4.7777 7.48214,9.58267 7.45635,17.55697 -0.027,8.34224 -2.16444,13.43656 -7.75096,18.47329 -5.79381,5.22362 -14.68951,7.17701 -22.23355,4.88221 z"/></svg></span>
+          <h2 class="empty-greet">Leg los.</h2>
+          <div class="chips">
+            <button class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>Eine Landingpage mit Anmeldeformular</button>
+            <button class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></svg>Eine Aufgabenliste, die meine Einträge merkt</button>
+            <button class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg>Eine Seite, auf der Leute Termine buchen können</button>
+            <button class="chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.586 17.414A2 2 0 0 0 2 18.828V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.172a2 2 0 0 0 1.414-.586l.814-.814a6.5 6.5 0 1 0-4-4z"/><circle cx="16.5" cy="7.5" r=".5" fill="currentColor"/></svg>Magic-Link-Login für meine Next.js-App</button>
+          </div>
+        </div>
+      </div>
+      <div class="composer-bar">
+        <div class="composer-pad">
+          <div class="composer">
+            <textarea rows="1" placeholder="Was möchtest du bauen?…"></textarea>
+            <div class="cbar">
+              <button class="cbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+              <button class="mpill">Gemini Flash <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+              <span class="chint"></span>
+              <button class="mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+              <button class="send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="note" style="margin-top:32px;max-width:1280px;">
+  <strong>v1 → v2 changes:</strong><br>
+  1. Composition top-anchored (padding-top 120/64, flex-start)<br>
+  2. Mobile mode-tile moved right (after spacer, matching v7)<br>
+  3. .chat-scroll--empty modifier introduced (forward for 05)<br>
+  4. Greeting text: "Was möchtest du heute bauen?" → "Leg los."<br>
+  5. Mark variant: Brand Green → Ink Deep
+</div>
+
+</body>
+</html>

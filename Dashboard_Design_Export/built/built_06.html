@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Built — Screen 06 · Chat — Active</title>
+<style>
+/* SHARED CSS — inlined into every built_XX.html via <style>. Kept here as
+   the canonical copy. Each HTML file contains a verbatim duplicate. */
+
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&family=Fraunces:wght@400;700&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: #ece3c8;
+  font-family: 'Manrope', system-ui, sans-serif;
+  color: #0F2B1E;
+  padding: 24px 16px 80px;
+}
+.exp-page { max-width: 1640px; margin: 0 auto; }
+.exp-title {
+  font-family: 'Manrope', sans-serif; font-weight: 700; font-size: 22px;
+  letter-spacing: -0.02em; margin: 0 0 4px; color: #0F2B1E;
+}
+.exp-sub {
+  font-family: 'JetBrains Mono', monospace; font-size: 11px;
+  letter-spacing: 0.16em; text-transform: uppercase; color: #5c6f64;
+  margin: 0 0 22px;
+}
+.viewports {
+  display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start;
+}
+.viewport { display: flex; flex-direction: column; gap: 8px; }
+.vp-label {
+  font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+  letter-spacing: 0.16em; text-transform: uppercase; color: #5c6f64;
+}
+.vp-frame {
+  background: #F4ECD8;
+  border: 1px solid rgba(15,43,30,.16);
+  border-radius: 12px;
+  box-shadow: 0 24px 60px -28px rgba(15,43,30,.40);
+  overflow: hidden;
+}
+.viewport-desktop .vp-frame { width: 1280px; height: 860px; }
+.viewport-mobile  .vp-frame { width: 390px;  height: 844px; }
+
+/* ─────────────── .gobl-dash tokens (verbatim from app) ─────────────── */
+.gobl-dash {
+  --green:         #0F2B1E;
+  --green-deep:    #081710;
+  --gold:          #D4A737;
+  --gold-soft:     #E8C572;
+  --gold-deep:     #7A5A12;
+  --bone:          #F4ECD8;
+  --bone-warm:     #FBF7EC;
+  --accent:        #B89535;
+  --accent-bright: #D4A737;
+  --accent-rule:   rgba(212,167,55,.34);
+  --accent-soft:   rgba(212,167,55,.10);
+  --ink-1:         #0F2B1E;
+  --ink-2:         #2c4538;
+  --ink-3:         #5c6f64;
+  --ink-4:         #7a8a80;
+  --line:          rgba(15,43,30,.10);
+  --line-strong:   rgba(15,43,30,.18);
+  --ok:            #2f6a47;
+  --ok-soft:       rgba(47,106,71,.12);
+  --warn:          #b88128;
+  --danger:        #a04230;
+  --danger-soft:   rgba(160,66,48,.10);
+  --d-surface:        #F4ECD8;
+  --d-surface-2:      #EFE6CB;
+  --d-surface-3:      #E8DEBE;
+  --d-surface-elev:   #FBF7EC;
+  --d-surface-deep:   #0F2B1E;
+  --d-surface-darkest:#091A11;
+  --radius:        10px;
+  --radius-lg:     14px;
+  --radius-sm:     6px;
+  --radius-xs:     4px;
+  --shadow-card:   0 1px 0 rgba(15,43,30,.03), 0 14px 32px -22px rgba(15,43,30,.20);
+  --moss: #2D4A2B; --ochre: #D4A949; --cream: #F4ECD8;
+  --panel: #FBF7EC; --div: rgba(15,43,30,.10); --subtle: #EFE6CB;
+  --text: #0F2B1E; --meta: #5c6f64;
+
+  background: var(--d-surface); color: var(--ink-1);
+  font-family: 'Manrope', system-ui, sans-serif;
+  height: 100%;
+}
+
+.gobl-dash .gobl-serif {
+  font-family: 'Instrument Serif', Georgia, serif;
+  font-style: italic; font-weight: 400; padding-bottom: 0.04em;
+}
+.gobl-dash .gobl-eyebrow {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px; font-weight: 500; letter-spacing: 0.16em;
+  text-transform: uppercase; color: var(--ink-3);
+  display: inline-flex; align-items: center; gap: 10px;
+}
+.gobl-dash .gobl-eyebrow .tick {
+  width: 5px; height: 5px; background: var(--accent);
+  transform: rotate(45deg); display: inline-block;
+}
+.gobl-dash .gobl-eyebrow .num { color: var(--ink-1); font-weight: 600; }
+.gobl-dash .gobl-tag {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase;
+  padding: 4px 8px; border-radius: 6px;
+  background: var(--d-surface-2); color: var(--ink-2);
+  border: 1px solid var(--line);
+}
+.gobl-dash .gobl-tag.gold   { background: var(--accent-soft); color: var(--gold-deep); border-color: var(--accent-rule); }
+.gobl-dash .gobl-tag.warn   { background: rgba(184,129,40,.14); color: var(--warn); border-color: rgba(184,129,40,.32); }
+.gobl-dash .gobl-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 13.5px;
+  letter-spacing: -0.005em; padding: 10px 16px; border-radius: 10px;
+  border: 1px solid transparent; white-space: nowrap; line-height: 1;
+  cursor: pointer; text-decoration: none;
+}
+.gobl-dash .gobl-btn.lg { font-size: 14.5px; padding: 14px 20px; }
+.gobl-dash .gobl-btn.sm { font-size: 12.5px; padding: 8px 12px; border-radius: 6px; }
+.gobl-dash .gobl-btn.primary { background: var(--green); color: var(--bone); }
+.gobl-dash .gobl-btn.secondary { background: transparent; color: var(--ink-1); border-color: var(--line-strong); }
+.gobl-dash .gobl-btn.ghost { background: transparent; color: var(--ink-2); }
+.gobl-dash .gobl-btn.gold { background: var(--accent-bright); color: var(--green); border-color: var(--gold-deep); }
+.gobl-dash .gobl-btn.danger { background: transparent; color: var(--danger); border-color: rgba(160,66,48,.30); }
+.gobl-dash .gobl-panel {
+  background: var(--d-surface-elev);
+  border: 1px solid var(--line); border-radius: 14px;
+}
+.gobl-dash .gobl-panel.deep {
+  background: var(--d-surface-darkest); color: var(--bone);
+  border-color: rgba(244,236,216,.12);
+}
+.gobl-dash .gobl-section-title {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
+  padding-bottom: 12px; margin: 40px 0 16px; border-bottom: 1px solid var(--line);
+}
+.gobl-dash .gobl-section-title h2 {
+  font-family: 'Manrope', sans-serif; font-weight: 600; font-size: 18px;
+  letter-spacing: -0.018em; color: var(--ink-1); margin: 0;
+}
+.gobl-dash .gobl-section-title .label,
+.gobl-dash .gobl-section-title a {
+  font-family: 'JetBrains Mono', monospace; font-size: 10.5px;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3);
+  text-decoration: none;
+}
+.gobl-dash .gobl-input, .gobl-dash .gobl-textarea {
+  width: 100%; background: var(--d-surface-elev);
+  border: 1px solid var(--line-strong); border-radius: 10px;
+  padding: 12px 14px; font-size: 14px; color: var(--ink-1);
+  font-family: 'Manrope', sans-serif;
+}
+.gobl-dash .gobl-textarea { resize: vertical; min-height: 96px; line-height: 1.5; }
+.gobl-dash .gobl-field-label {
+  display: block; font-family: 'JetBrains Mono', monospace;
+  font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--ink-3); margin-bottom: 8px; font-weight: 500;
+}
+
+/* ─────────────── App shell — Header (moss), Sidebar, BottomTabBar ─────────────── */
+.shell {
+  display: flex; flex-direction: column; height: 100%;
+  background: var(--cream); overflow: hidden;
+}
+.shell-header {
+  height: 56px; background: var(--moss);
+  display: flex; align-items: center; padding: 0 12px; gap: 8px;
+  flex-shrink: 0; border-bottom: 1px solid #3A5A37;
+  color: #fff;
+}
+.shell-logo {
+  font-family: 'Fraunces', serif; font-size: 20px; color: var(--ochre);
+  font-weight: 700; letter-spacing: -0.5px; padding: 6px 4px;
+}
+.shell-logo .dot { opacity: 0.6; }
+.shell-breadcrumb {
+  display: flex; align-items: center; gap: 8px; min-width: 0;
+}
+.shell-breadcrumb .slash { color: rgba(255,255,255,0.3); font-size: 14px; }
+.shell-breadcrumb .crumb {
+  font-size: 13px; color: rgba(255,255,255,0.85);
+  background: rgba(255,255,255,0.08);
+  padding: 5px 10px; border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.1);
+  font-family: 'DM Sans', sans-serif; font-weight: 500;
+}
+.shell-spacer { flex: 1; }
+.tab-pills {
+  display: flex; gap: 2px; padding: 3px;
+  background: rgba(0,0,0,0.18); border-radius: 10px;
+}
+.tab-pill {
+  display: flex; align-items: center; gap: 5px;
+  padding: 6px 10px; border-radius: 7px;
+  background: transparent; color: rgba(255,255,255,0.78);
+  font-weight: 500; font-size: 13px; font-family: 'DM Sans', sans-serif;
+  border: none; cursor: pointer; min-height: 30px;
+}
+.tab-pill.active {
+  background: #fff; color: var(--moss); font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.18);
+}
+.tab-pill.disabled { opacity: 0.5; cursor: not-allowed; position: relative; }
+.tab-pill svg { width: 14px; height: 14px; }
+.shell-plus {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: transparent; color: rgba(255,255,255,0.9);
+  border: 1px solid rgba(255,255,255,0.35);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+}
+.shell-localcloud {
+  display: flex; align-items: center; gap: 6px;
+  background: rgba(0,0,0,0.18); border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 999px; padding: 4px 4px 4px 10px;
+  font-family: 'DM Sans', sans-serif; font-size: 11px;
+  color: rgba(255,255,255,0.78);
+}
+.shell-localcloud .lc-pill {
+  background: var(--ochre); color: var(--moss);
+  border-radius: 999px; padding: 3px 8px; font-weight: 600;
+}
+.shell-avatar {
+  width: 36px; height: 36px; border-radius: 50%;
+  background: rgba(255,255,255,0.12); color: var(--ochre);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'DM Sans', sans-serif; font-weight: 700; font-size: 13px;
+  border: 1px solid rgba(255,255,255,0.18);
+}
+.hamburger {
+  width: 40px; height: 40px; border-radius: 6px;
+  background: none; border: none; color: rgba(255,255,255,0.85);
+  display: flex; align-items: center; justify-content: center; cursor: pointer;
+}
+
+.shell-body {
+  display: flex; flex: 1; overflow: hidden; position: relative; min-height: 0;
+}
+.sidebar {
+  width: 260px; background: #EFE6CB;
+  border-right: 1px solid var(--div);
+  display: flex; flex-direction: column;
+  font-family: 'DM Sans', sans-serif; flex-shrink: 0;
+  padding: 14px 10px;
+}
+.sidebar .sb-head {
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  letter-spacing: 0.14em; text-transform: uppercase; color: var(--meta);
+  padding: 8px 8px 6px;
+}
+.sidebar .sb-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px; border-radius: 7px; font-size: 13px;
+  color: var(--text); cursor: pointer; line-height: 1.3;
+}
+.sidebar .sb-row.active { background: rgba(15,43,30,.08); font-weight: 600; }
+.sidebar .sb-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.sidebar .sb-meta { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--meta); }
+.sidebar .sb-newbtn {
+  display: flex; align-items: center; gap: 8px;
+  margin: 8px 6px 12px; padding: 9px 12px; border-radius: 8px;
+  background: var(--moss); color: var(--cream);
+  font-size: 13px; font-weight: 600; border: none; cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+}
+.sidebar .sb-divider { border-bottom: 1px solid var(--div); margin: 12px 6px; }
+.sidebar .sb-foot {
+  margin-top: auto; padding: 12px 8px 4px;
+  font-family: 'JetBrains Mono', monospace; font-size: 10px;
+  color: var(--meta); letterSpacing: 0.10em;
+}
+.sidebar .sb-usage {
+  border-top: 1px solid var(--div); padding: 12px 8px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.sidebar .sb-usage .bar { height: 4px; border-radius: 2px; background: rgba(15,43,30,.10); overflow: hidden; }
+.sidebar .sb-usage .bar > span { display: block; height: 100%; background: var(--moss); }
+
+.main { flex: 1; overflow: auto; min-width: 0; }
+
+/* Bottom tab bar (mobile only) */
+.bottom-bar {
+  height: 56px; background: #fff; border-top: 1px solid var(--div);
+  display: flex; flex-shrink: 0;
+}
+.bottom-bar button {
+  flex: 1; background: none; border: none; cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px; font-size: 10px; font-weight: 600; font-family: 'DM Sans', sans-serif;
+  color: var(--meta); position: relative; min-height: 56px;
+}
+.bottom-bar button.active { color: var(--moss); }
+.bottom-bar button.active::before {
+  content: ''; position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
+  width: 20px; height: 2px; border-radius: 1px; background: var(--moss);
+}
+.bottom-bar button.disabled { opacity: 0.45; cursor: default; }
+.bottom-bar button svg { width: 20px; height: 20px; }
+
+/* Mobile-specific tweaks: hide breadcrumb/labels, show hamburger */
+.viewport-mobile .shell-breadcrumb,
+.viewport-mobile .tab-pill .label,
+.viewport-mobile .sidebar,
+.viewport-mobile .shell-localcloud { display: none; }
+.viewport-mobile .hamburger { display: flex; }
+.viewport-mobile .bottom-bar { display: flex; }
+.viewport-mobile .tab-pills { gap: 2px; }
+.viewport-mobile .tab-pill { padding: 6px 9px; }
+
+.viewport-desktop .hamburger { display: none; }
+.viewport-desktop .bottom-bar { display: none; }
+
+
+</style>
+</head>
+<body>
+<div class="exp-page">
+  <h1 class="exp-title">Built screen 06 — Chat — Active</h1>
+  <p class="exp-sub">Faithful snapshot of the live React/Next.js render · 2 viewports</p>
+  <div class="viewports">
+    <section class="viewport viewport-desktop">
+      <div class="vp-label">Desktop · 1280 × 860</div>
+      <div class="vp-frame"><div class="gobl-dash">
+<div class="shell">
+  
+<header class="shell-header">
+  <button class="hamburger" aria-label="Menu"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+  <div class="shell-logo">Goblin<span class="dot">.</span></div>
+  
+  <div class="shell-spacer"></div>
+  <div class="tab-pills" role="tablist"><button class="tab-pill active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="label">Chat</span></button><button class="tab-pill disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg><span class="label">Code</span></button><button class="tab-pill disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><span class="label">Preview</span></button></div>
+  <button class="shell-plus" aria-label="Plus"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+  <div class="shell-localcloud">
+    <span>Routing</span>
+    <span class="lc-pill">Cloud</span>
+  </div>
+  <div class="shell-avatar">VH</div>
+</header>
+
+  <div class="shell-body">
+    
+<aside class="sidebar">
+  <button class="sb-newbtn">+ Neues Projekt</button>
+  <div class="sb-head">Projekte · 4</div>
+  <div class="sb-row"><span class="sb-dot" style="background:#D4A737"></span>Newsletter-Tool<span class="sb-meta">vor 2 std</span></div><div class="sb-row"><span class="sb-dot" style="background:#6db97b"></span>Booking Page<span class="sb-meta">vor 1 tag</span></div><div class="sb-row"><span class="sb-dot" style="background:#3A6B8A"></span>Internal Dashboard<span class="sb-meta">vor 3 tagen</span></div><div class="sb-row"><span class="sb-dot" style="background:#7A4A8A"></span>Stripe Sandbox<span class="sb-meta">vor 5 tagen</span></div>
+  <div class="sb-divider"></div>
+  <div class="sb-head">Letzte Chats</div>
+  <div class="sb-row"><span style="font-size:13px;opacity:.78">💬</span>Magic-Link-Login für Next.js<span class="sb-meta">vor 12 min</span></div><div class="sb-row"><span style="font-size:13px;opacity:.78">💬</span>Stripe webhook signing<span class="sb-meta">vor 4 std</span></div><div class="sb-row"><span style="font-size:13px;opacity:.78">💬</span>Tailwind dark-mode toggle<span class="sb-meta">gestern</span></div>
+  <div class="sb-divider"></div>
+  <div class="sb-head">Hilfe</div>
+  <div class="sb-row"><span style="opacity:.6">⚙</span>Einstellungen</div>
+  <div class="sb-row"><span style="opacity:.6">?</span>Tastenkürzel</div>
+  <div class="sb-usage">
+    <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.10em;text-transform:uppercase;color:var(--meta)"><span>Build · Verbrauch</span><span>142/200</span></div>
+    <div class="bar"><span style="width:71%"></span></div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--meta);letter-spacing:.06em">RESET IN 8 TAGEN</div>
+  </div>
+</aside>
+
+    <main class="main">
+<div style="display:flex;flex-direction:column;height:100%;background:var(--cream)">
+  <div style="flex:1;overflow-y:auto;padding:20px 16px;display:flex;flex-direction:column;gap:16px">
+    
+        <div style="display:flex;gap:10px;align-items:flex-start;flex-direction:row-reverse">
+          <div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;background:#6B6B6B;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;margin-top:2px">U</div>
+          <div style="flex:1;min-width:0;max-width:82%">
+            <div style="background:var(--moss);color:#fff;border-radius:12px 4px 12px 12px;padding:10px 14px;border:none;font-size:14px;line-height:1.6;font-family:'DM Sans',sans-serif">Eine Landingpage mit Anmeldeformular, Stripe-Bezahlung und Magic-Link-Login.</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start;flex-direction:row">
+          <div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;background:var(--moss);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--ochre);margin-top:2px">G</div>
+          <div style="flex:1;min-width:0;max-width:82%">
+            <div style="background:var(--panel);color:var(--text);border-radius:4px 12px 12px 12px;padding:10px 14px;border:1px solid var(--div);font-size:14px;line-height:1.6;font-family:'DM Sans',sans-serif">Klar — ich skizziere dir eine Next.js-App-Router-Struktur mit zwei Routen (<code class="ic">/</code> und <code class="ic">/login</code>), Stripe Checkout über eine Server Action, und Magic-Link-Login per Supabase Auth.</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start;flex-direction:row-reverse">
+          <div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;background:#6B6B6B;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;margin-top:2px">U</div>
+          <div style="flex:1;min-width:0;max-width:82%">
+            <div style="background:var(--moss);color:#fff;border-radius:12px 4px 12px 12px;padding:10px 14px;border:none;font-size:14px;line-height:1.6;font-family:'DM Sans',sans-serif">Zeig mir die Server Action für Stripe Checkout.</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start;flex-direction:row">
+          <div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;background:var(--moss);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--ochre);margin-top:2px">G</div>
+          <div style="flex:1;min-width:0;max-width:82%">
+            <div style="background:var(--panel);color:var(--text);border-radius:4px 12px 12px 12px;padding:10px 14px;border:1px solid var(--div);font-size:14px;line-height:1.6;font-family:'DM Sans',sans-serif">Hier die <code class="ic">app/actions/checkout.ts</code> — minimal, mit Idempotenz-Key und Redirect:</div>
+          </div>
+        </div>
+    
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;background:var(--moss);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--ochre);margin-top:2px"></div>
+          <div style="flex:1;min-width:0;max-width:82%">
+            <div style="margin:0;border-radius:10px;overflow:hidden;border:1px solid #2a2a2a">
+              <div style="background:#1e1e1e;display:flex;align-items:center;padding:6px 12px;gap:8px">
+                <span style="font-size:11px;color:#9C9589;font-family:'JetBrains Mono',monospace;flex:1">app/actions/checkout.ts</span>
+                <button style="background:none;border:none;color:#9C9589;font-size:11px;cursor:pointer">Copy</button>
+              </div>
+              <div style="background:#111;padding:14px 16px;overflow-x:auto">
+                <pre style="margin:0;font-family:'JetBrains Mono',monospace;font-size:13px;color:#e8e8e8;line-height:1.6"><code>'use server';
+import { stripe } from '@/lib/stripe';
+import { redirect } from 'next/navigation';
+
+export async function checkout(formData: FormData) {
+  const email = String(formData.get('email'));
+  const session = await stripe.checkout.sessions.create({
+    mode: 'subscription',
+    line_items: [{ price: process.env.STRIPE_PRICE_ID!, quantity: 1 }],
+    customer_email: email,
+    success_url: '/welcome?cs={CHECKOUT_SESSION_ID}',
+    cancel_url: '/',
+  });
+  redirect(session.url!);
+}</code></pre>
+              </div>
+            </div>
+            <div style="margin-top:4px;font-size:11px;color:var(--meta);font-family:'DM Sans',sans-serif">sonnet-4-6 · byok</div>
+          </div>
+        </div>
+
+  </div>
+  <div style="border-top:1px solid var(--div);background:var(--cream);padding:14px 16px;position:relative">
+    <div style="position:absolute;right:24px;bottom:calc(100% + 6px)">
+      <button style="width:32px;height:32px;border-radius:8px;background:var(--subtle);border:1px solid var(--div);color:var(--moss);font-family:'JetBrains Mono',monospace;font-weight:600;font-size:11px">&lt;/&gt;</button>
+    </div>
+    <div style="display:flex;align-items:flex-end;gap:8px;background:#fff;border:1px solid var(--div);border-radius:14px;padding:10px 12px">
+      <button style="background:none;border:none;color:var(--meta);font-size:18px;cursor:pointer">+</button>
+      <div style="flex:1;color:var(--text);font-size:14px;padding:8px 0;font-family:'DM Sans',sans-serif">Wie wäre es mit Resend für die Magic-Link-Mail?</div>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.10em;color:var(--meta);text-transform:uppercase;background:rgba(15,43,30,.06);border-radius:999px;padding:4px 8px">🟠 Sonnet 4.6</span>
+      <button style="background:var(--moss);color:var(--ochre);border:none;border-radius:8px;width:34px;height:34px;cursor:pointer;font-weight:700">↑</button>
+    </div>
+  </div>
+</div>
+</main>
+  </div>
+  <nav class="bottom-bar"><button class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Chat</span></button><button class="disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg><span>Code</span></button><button class="disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><span>Preview</span></button></nav>
+</div>
+</div></div>
+    </section>
+    <section class="viewport viewport-mobile">
+      <div class="vp-label">Mobil · 390 × 844 — Hamburger + BottomTabBar</div>
+      <div class="vp-frame"><div class="gobl-dash">
+<div class="shell">
+  
+<header class="shell-header">
+  <button class="hamburger" aria-label="Menu"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+  <div class="shell-logo">Goblin<span class="dot">.</span></div>
+  
+  <div class="shell-spacer"></div>
+  <div class="tab-pills" role="tablist"><button class="tab-pill active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="label">Chat</span></button><button class="tab-pill disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg><span class="label">Code</span></button><button class="tab-pill disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><span class="label">Preview</span></button></div>
+  <button class="shell-plus" aria-label="Plus"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+  <div class="shell-localcloud">
+    <span>Routing</span>
+    <span class="lc-pill">Cloud</span>
+  </div>
+  <div class="shell-avatar">VH</div>
+</header>
+
+  <div class="shell-body">
+    
+<aside class="sidebar">
+  <button class="sb-newbtn">+ Neues Projekt</button>
+  <div class="sb-head">Projekte · 4</div>
+  <div class="sb-row"><span class="sb-dot" style="background:#D4A737"></span>Newsletter-Tool<span class="sb-meta">vor 2 std</span></div><div class="sb-row"><span class="sb-dot" style="background:#6db97b"></span>Booking Page<span class="sb-meta">vor 1 tag</span></div><div class="sb-row"><span class="sb-dot" style="background:#3A6B8A"></span>Internal Dashboard<span class="sb-meta">vor 3 tagen</span></div><div class="sb-row"><span class="sb-dot" style="background:#7A4A8A"></span>Stripe Sandbox<span class="sb-meta">vor 5 tagen</span></div>
+  <div class="sb-divider"></div>
+  <div class="sb-head">Letzte Chats</div>
+  <div class="sb-row"><span style="font-size:13px;opacity:.78">💬</span>Magic-Link-Login für Next.js<span class="sb-meta">vor 12 min</span></div><div class="sb-row"><span style="font-size:13px;opacity:.78">💬</span>Stripe webhook signing<span class="sb-meta">vor 4 std</span></div><div class="sb-row"><span style="font-size:13px;opacity:.78">💬</span>Tailwind dark-mode toggle<span class="sb-meta">gestern</span></div>
+  <div class="sb-divider"></div>
+  <div class="sb-head">Hilfe</div>
+  <div class="sb-row"><span style="opacity:.6">⚙</span>Einstellungen</div>
+  <div class="sb-row"><span style="opacity:.6">?</span>Tastenkürzel</div>
+  <div class="sb-usage">
+    <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.10em;text-transform:uppercase;color:var(--meta)"><span>Build · Verbrauch</span><span>142/200</span></div>
+    <div class="bar"><span style="width:71%"></span></div>
+    <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--meta);letter-spacing:.06em">RESET IN 8 TAGEN</div>
+  </div>
+</aside>
+
+    <main class="main">
+<div style="display:flex;flex-direction:column;height:100%;background:var(--cream)">
+  <div style="flex:1;overflow-y:auto;padding:20px 16px;display:flex;flex-direction:column;gap:16px">
+    
+        <div style="display:flex;gap:10px;align-items:flex-start;flex-direction:row-reverse">
+          <div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;background:#6B6B6B;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;margin-top:2px">U</div>
+          <div style="flex:1;min-width:0;max-width:82%">
+            <div style="background:var(--moss);color:#fff;border-radius:12px 4px 12px 12px;padding:10px 14px;border:none;font-size:14px;line-height:1.6;font-family:'DM Sans',sans-serif">Eine Landingpage mit Anmeldeformular, Stripe-Bezahlung und Magic-Link-Login.</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start;flex-direction:row">
+          <div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;background:var(--moss);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--ochre);margin-top:2px">G</div>
+          <div style="flex:1;min-width:0;max-width:82%">
+            <div style="background:var(--panel);color:var(--text);border-radius:4px 12px 12px 12px;padding:10px 14px;border:1px solid var(--div);font-size:14px;line-height:1.6;font-family:'DM Sans',sans-serif">Klar — ich skizziere dir eine Next.js-App-Router-Struktur mit zwei Routen (<code class="ic">/</code> und <code class="ic">/login</code>), Stripe Checkout über eine Server Action, und Magic-Link-Login per Supabase Auth.</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start;flex-direction:row-reverse">
+          <div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;background:#6B6B6B;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;margin-top:2px">U</div>
+          <div style="flex:1;min-width:0;max-width:82%">
+            <div style="background:var(--moss);color:#fff;border-radius:12px 4px 12px 12px;padding:10px 14px;border:none;font-size:14px;line-height:1.6;font-family:'DM Sans',sans-serif">Zeig mir die Server Action für Stripe Checkout.</div>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:flex-start;flex-direction:row">
+          <div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;background:var(--moss);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--ochre);margin-top:2px">G</div>
+          <div style="flex:1;min-width:0;max-width:82%">
+            <div style="background:var(--panel);color:var(--text);border-radius:4px 12px 12px 12px;padding:10px 14px;border:1px solid var(--div);font-size:14px;line-height:1.6;font-family:'DM Sans',sans-serif">Hier die <code class="ic">app/actions/checkout.ts</code> — minimal, mit Idempotenz-Key und Redirect:</div>
+          </div>
+        </div>
+    
+        <div style="display:flex;gap:10px;align-items:flex-start">
+          <div style="width:28px;height:28px;border-radius:50%;flex-shrink:0;background:var(--moss);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--ochre);margin-top:2px"></div>
+          <div style="flex:1;min-width:0;max-width:82%">
+            <div style="margin:0;border-radius:10px;overflow:hidden;border:1px solid #2a2a2a">
+              <div style="background:#1e1e1e;display:flex;align-items:center;padding:6px 12px;gap:8px">
+                <span style="font-size:11px;color:#9C9589;font-family:'JetBrains Mono',monospace;flex:1">app/actions/checkout.ts</span>
+                <button style="background:none;border:none;color:#9C9589;font-size:11px;cursor:pointer">Copy</button>
+              </div>
+              <div style="background:#111;padding:14px 16px;overflow-x:auto">
+                <pre style="margin:0;font-family:'JetBrains Mono',monospace;font-size:13px;color:#e8e8e8;line-height:1.6"><code>'use server';
+import { stripe } from '@/lib/stripe';
+import { redirect } from 'next/navigation';
+
+export async function checkout(formData: FormData) {
+  const email = String(formData.get('email'));
+  const session = await stripe.checkout.sessions.create({
+    mode: 'subscription',
+    line_items: [{ price: process.env.STRIPE_PRICE_ID!, quantity: 1 }],
+    customer_email: email,
+    success_url: '/welcome?cs={CHECKOUT_SESSION_ID}',
+    cancel_url: '/',
+  });
+  redirect(session.url!);
+}</code></pre>
+              </div>
+            </div>
+            <div style="margin-top:4px;font-size:11px;color:var(--meta);font-family:'DM Sans',sans-serif">sonnet-4-6 · byok</div>
+          </div>
+        </div>
+
+  </div>
+  <div style="border-top:1px solid var(--div);background:var(--cream);padding:14px 16px;position:relative">
+    <div style="position:absolute;right:24px;bottom:calc(100% + 6px)">
+      <button style="width:32px;height:32px;border-radius:8px;background:var(--subtle);border:1px solid var(--div);color:var(--moss);font-family:'JetBrains Mono',monospace;font-weight:600;font-size:11px">&lt;/&gt;</button>
+    </div>
+    <div style="display:flex;align-items:flex-end;gap:8px;background:#fff;border:1px solid var(--div);border-radius:14px;padding:10px 12px">
+      <button style="background:none;border:none;color:var(--meta);font-size:18px;cursor:pointer">+</button>
+      <div style="flex:1;color:var(--text);font-size:14px;padding:8px 0;font-family:'DM Sans',sans-serif">Wie wäre es mit Resend für die Magic-Link-Mail?</div>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.10em;color:var(--meta);text-transform:uppercase;background:rgba(15,43,30,.06);border-radius:999px;padding:4px 8px">🟠 Sonnet 4.6</span>
+      <button style="background:var(--moss);color:var(--ochre);border:none;border-radius:8px;width:34px;height:34px;cursor:pointer;font-weight:700">↑</button>
+    </div>
+  </div>
+</div>
+</main>
+  </div>
+  <nav class="bottom-bar"><button class="active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Chat</span></button><button class="disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg><span>Code</span></button><button class="disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg><span>Preview</span></button></nav>
+</div>
+</div></div>
+    </section>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,397 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Goblin · Screen 03 v5 — Final Cleanup Mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  /* ── v1.1 tokens (inlined from styles/design-tokens.css) ── */
+  :root{
+    --brand-green:#1A3A2A; --ink-deep:#0F2B1E; --brand-gold:#D4A737;
+    --gold-400:#DEB75A; --gold-700:#A07726;
+    --bone:#F4ECD8; --paper:#FBF7EC;
+    --surface-0:#FFFFFF; --surface-1:#FBF7EC; --surface-2:#F4ECD8; --surface-3:#E8DEC2; --surface-4:#D8CBA8;
+    --rule-soft:#E8DEC2; --rule:#D8CBA8; --rule-strong:#B8A988;
+    --ink-1:#0F2B1E; --ink-2:#3F3A2C; --ink-3:#74694F; --ink-disabled:#B8A988;
+    --ink-on-dark-1:#FBF7EC; --ink-on-dark-2:#D8CBA8; --ink-on-dark-3:#968768;
+    --success:#3D7A4F; --danger:#B0432A; --danger-soft:#F0DACF;
+    --rust:#B0432A;
+    /* type scale — desktop */
+    --t-h1-fs:48px; --t-h2-fs:32px; --t-h3-fs:22px; --t-h4-fs:18px;
+    --t-body-lg-fs:18px; --t-body-fs:16px; --t-small-fs:14px; --t-caption-fs:12px;
+    --t-button-fs:15px; --t-eyebrow-fs:12px; --t-mono-fs:13px;
+    --radius-xs:4px; --radius-sm:10px; --radius-md:14px; --radius-lg:20px;
+    --mono:'JetBrains Mono',ui-monospace,monospace;
+    --sans:'Manrope',system-ui,sans-serif;
+    --serif:'Instrument Serif',Georgia,serif;
+    --shadow-2:0 6px 16px -8px rgba(15,43,30,.18), 0 2px 4px -2px rgba(15,43,30,.12);
+    --shadow-3:0 24px 60px -20px rgba(15,43,30,.34), 0 8px 16px -8px rgba(15,43,30,.18);
+    --shadow-card:0 1px 0 rgba(15,43,30,.03), 0 14px 32px -22px rgba(15,43,30,.20);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;}
+  body{font-family:var(--sans);background:#d8ceb0;color:var(--ink-1);
+    -webkit-font-smoothing:antialiased;padding:24px;display:flex;flex-direction:column;align-items:center;gap:28px;}
+  .note{max-width:1280px;font-size:var(--t-mono-fs);color:#5a5444;font-family:var(--mono);letter-spacing:.04em;}
+  .vp-label{font-family:var(--mono);font-size:var(--t-eyebrow-fs);letter-spacing:.14em;text-transform:uppercase;color:#5a5444;margin-bottom:8px;}
+
+  .frame{position:relative;border-radius:16px;overflow:hidden;
+    box-shadow:0 30px 80px -30px rgba(0,0,0,.5);display:flex;flex-direction:column;
+    background:var(--bone);border:1px solid rgba(0,0,0,.15);}
+  .frame.desktop{width:1280px;height:860px;}
+  .frame.mobile{width:390px;height:844px;}
+
+  /* ── HEADER (§A5.2) 60px desktop / brand-green ── */
+  .hdr{height:60px;background:var(--brand-green);display:flex;align-items:center;
+    padding:0 12px;gap:8px;border-bottom:1px solid rgba(247,247,236,.10);flex-shrink:0;}
+  .gmark{width:26px;height:26px;flex-shrink:0;}
+  .crumb{display:flex;align-items:center;gap:8px;}
+  .crumb .sep{color:rgba(255,255,255,.3);font-size:var(--t-small-fs);}
+  .crumb .chip{font-size:var(--t-small-fs);color:rgba(244,236,216,.85);background:rgba(255,255,255,.08);
+    padding:5px 10px;border-radius:6px;border:1px solid rgba(255,255,255,.1);font-weight:500;}
+  .spacer{flex:1;}
+  /* Tab pills — 26px high, breathing room in the 60px header (TASK 4) */
+  .pills{display:flex;gap:2px;padding:3px;background:rgba(0,0,0,.18);border-radius:10px;}
+  .pill{display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:7px;font-size:var(--t-caption-fs);
+    min-height:26px;color:rgba(244,236,216,.78);font-weight:500;font-family:var(--sans);border:none;background:transparent;}
+  .pill.active{background:var(--surface-0);color:var(--brand-green);font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.18);}
+  .pill.disabled{color:rgba(244,236,216,.35);}
+  .pill svg{width:14px;height:14px;}
+  .fab{width:30px;height:30px;border-radius:50%;background:transparent;color:rgba(255,255,255,.9);
+    border:1px solid rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .avatar{width:30px;height:30px;border-radius:50%;background:var(--gold-700);color:#2a1f0f;
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:var(--t-small-fs);flex-shrink:0;cursor:pointer;}
+
+  .body{display:flex;flex:1;min-height:0;}
+
+  /* ── SIDEBAR ── */
+  .sb{width:260px;flex-shrink:0;background:var(--surface-2);border-right:1px solid var(--rule);display:flex;flex-direction:column;}
+  .sb-top{height:56px;display:flex;align-items:center;padding:0 16px;border-bottom:1px solid var(--rule);gap:10px;}
+  .sb-top .l{font-family:var(--sans);font-size:var(--t-h4-fs);color:var(--brand-green);font-weight:700;letter-spacing:-.3px;}
+  .sb-top .l .dot{opacity:.45;}
+  .sb-top .who{margin-left:auto;font-size:var(--t-caption-fs);color:var(--ink-3);}
+  .sb-top .cl{width:24px;height:24px;border-radius:6px;border:1px solid var(--rule);background:transparent;color:var(--ink-3);display:flex;align-items:center;justify-content:center;}
+  .sb-sec{padding:10px 12px 6px 16px;display:flex;align-items:center;justify-content:space-between;}
+  .sb-sec .h{font-size:var(--t-eyebrow-fs);font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-3);font-family:var(--sans);background:none;border:none;}
+  .plus-sq{width:22px;height:22px;border-radius:7px;background:var(--brand-green);color:var(--bone);
+    display:flex;align-items:center;justify-content:center;box-shadow:0 1px 2px rgba(0,0,0,.08);border:none;}
+  .plus-sq svg{width:13px;height:13px;}
+  .prow{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:7px;margin:0 8px 1px;border:1px solid transparent;}
+  .prow.active{background:rgba(212,169,55,.13);}
+  .prow .pdot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .prow .pname{font-size:var(--t-small-fs);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-1);}
+  .prow.active .pname{font-weight:600;color:var(--brand-green);}
+  .prow .pt{font-size:var(--t-eyebrow-fs);color:var(--ink-3);font-family:var(--mono);}
+  .crow{display:flex;align-items:center;gap:8px;padding:6px 8px;margin:0 8px 1px;border-radius:6px;}
+  .crow .ct{font-size:var(--t-small-fs);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-2);}
+  .divider{border-top:1px solid var(--rule);margin:8px 0;}
+  .sb-fill{flex:1;}
+  /* Usage block */
+  .usage{margin:0 12px 8px;padding:10px 12px;border-radius:10px;background:rgba(15,43,30,.05);
+    border:1px solid var(--rule);text-decoration:none;display:block;color:var(--ink-1);}
+  .usage .ur{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:7px;}
+  .usage .ul{font-size:var(--t-small-fs);font-weight:600;color:var(--ink-2);}
+  .usage .up{font-family:var(--mono);font-size:var(--t-mono-fs);font-weight:600;color:var(--ink-1);}
+  .usage .bar{height:4px;border-radius:2px;overflow:hidden;background:rgba(15,43,30,.10);}
+  .usage .bar > i{display:block;height:100%;background:var(--brand-green);}
+  .usage .uf{display:flex;justify-content:space-between;margin-top:7px;font-size:var(--t-eyebrow-fs);color:var(--ink-3);}
+  .sb-foot{padding:10px 12px;border-top:1px solid var(--rule);}
+  .userpill{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border-radius:24px;
+    background:var(--surface-0);border:1px solid var(--rule);}
+  .userpill .av{width:28px;height:28px;border-radius:50%;background:var(--brand-green);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:var(--t-small-fs);}
+  .userpill .nm{font-size:var(--t-small-fs);font-weight:500;flex:1;color:var(--ink-1);}
+  .userpill .gear{color:var(--ink-3);display:flex;}
+
+  /* ── MAIN ── */
+  .main{flex:1;overflow-y:auto;background:var(--bone);}
+  .wrap{max-width:1140px;margin:0 auto;padding:40px 32px 80px;}
+
+  /* HERO (§A5.6) ink-deep, bone hairline — NO gold border (TASK 3) */
+  .hero{background:var(--ink-deep);color:var(--bone);border-radius:var(--radius-md);
+    padding:28px 28px 22px;margin-bottom:36px;border:1px solid rgba(244,236,216,.12);}
+  .eyebrow{font-family:var(--mono);font-size:var(--t-eyebrow-fs);letter-spacing:.14em;text-transform:uppercase;
+    color:var(--ink-on-dark-3);display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+  .eyebrow .tick{width:5px;height:5px;background:var(--brand-gold);transform:rotate(45deg);}
+  .eyebrow b{color:var(--bone);font-weight:600;}
+  .hero h1{font-family:var(--sans);font-weight:600;font-size:var(--t-h1-fs);letter-spacing:-.02em;line-height:1.1;
+    color:var(--bone);margin:0 0 18px;}
+  .hero h1 .serif{font-family:var(--serif);font-style:italic;font-weight:400;padding-bottom:.06em;}
+  /* Composer (§A5.1) — bone hairline border in ALL states, gold ONLY on send fill */
+  .composer{border:1px solid rgba(244,236,216,.16);border-radius:14px;background:rgba(244,236,216,.05);
+    display:flex;flex-direction:column;}
+  .composer textarea{resize:none;border:none;background:transparent;outline:none;font-size:var(--t-body-fs);
+    color:var(--bone);font-family:var(--sans);line-height:24px;padding:12px 14px 6px;width:100%;}
+  .composer textarea::placeholder{color:rgba(244,236,216,.45);}
+  .cbar{display:flex;align-items:center;padding:4px 8px 8px;gap:6px;}
+  .cbtn{width:28px;height:28px;border-radius:50%;border:1px solid rgba(244,236,216,.20);background:transparent;
+    color:rgba(244,236,216,.72);display:flex;align-items:center;justify-content:center;}
+  .cbtn svg{width:14px;height:14px;}
+  .mpill{display:flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;background:none;
+    border:1px solid rgba(244,236,216,.20);font-size:var(--t-caption-fs);font-weight:500;color:rgba(244,236,216,.72);font-family:var(--sans);}
+  .mpill svg{width:9px;height:9px;opacity:.6;}
+  .chint{flex:1;font-size:var(--t-caption-fs);color:rgba(244,236,216,.5);padding-left:2px;font-family:var(--sans);}
+  .mic{width:32px;height:32px;border-radius:50%;border:none;background:transparent;
+    color:rgba(244,236,216,.6);display:flex;align-items:center;justify-content:center;}
+  .mic svg{width:18px;height:18px;}
+  /* send — gold FILL active, ink-deep icon (the only legit gold on the composer) */
+  .send{width:32px;height:32px;border-radius:8px;background:var(--brand-gold);color:var(--ink-deep);border:none;
+    display:flex;align-items:center;justify-content:center;}
+  .send svg{width:16px;height:16px;}
+  .chips{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
+  .chip2{background:transparent;color:rgba(244,236,216,.62);border:1px solid rgba(244,236,216,.14);
+    border-radius:999px;padding:6px 12px;font-size:var(--t-caption-fs);font-weight:500;font-family:var(--sans);}
+
+  /* Section title */
+  .sectit{display:flex;align-items:baseline;justify-content:space-between;gap:16px;
+    padding-bottom:12px;margin:40px 0 16px;border-bottom:1px solid var(--rule);}
+  .sectit:first-child{margin-top:0;}
+  .sectit h2{font-family:var(--sans);font-weight:600;font-size:var(--t-h2-fs);letter-spacing:-.01em;color:var(--ink-1);margin:0;}
+  .sectit .label,.sectit a{font-family:var(--mono);font-size:var(--t-eyebrow-fs);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);text-decoration:none;}
+
+  /* Project cards — compact, 3-col */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;}
+  .card{background:var(--surface-1);border:1px solid var(--rule);border-radius:var(--radius-md);
+    padding:14px;display:flex;flex-direction:column;gap:6px;min-height:92px;text-decoration:none;color:inherit;}
+  .card .top{display:flex;align-items:center;justify-content:space-between;}
+  .card .st{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:var(--t-eyebrow-fs);
+    letter-spacing:.12em;color:var(--ink-3);text-transform:uppercase;}
+  .card .st .d{width:6px;height:6px;border-radius:50%;}
+  .card .arr{color:var(--ink-3);font-size:var(--t-mono-fs);}
+  .card h3{font-family:var(--sans);font-weight:600;font-size:var(--t-h4-fs);letter-spacing:-.014em;color:var(--ink-1);margin:2px 0 0;}
+  .card p{font-size:var(--t-caption-fs);color:var(--ink-2);line-height:1.4;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .card .meta{margin-top:auto;font-family:var(--mono);font-size:var(--t-eyebrow-fs);color:var(--ink-3);letter-spacing:.06em;
+    display:flex;justify-content:space-between;padding-top:9px;border-top:1px solid var(--rule);}
+  .newtile{background:transparent;border:1px dashed var(--rule-strong);border-radius:var(--radius-md);
+    min-height:92px;display:flex;align-items:center;justify-content:center;color:var(--ink-3);
+    font-family:var(--sans);font-weight:600;font-size:var(--t-button-fs);gap:8px;}
+
+  /* What's new */
+  .panel{background:var(--surface-1);border:1px solid var(--rule);border-radius:var(--radius-md);overflow:hidden;}
+  .urow{padding:16px 18px;border-bottom:1px solid var(--rule);display:flex;align-items:flex-start;gap:14px;}
+  .urow:last-child{border-bottom:none;}
+  .tag{font-family:var(--mono);font-size:var(--t-eyebrow-fs);font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+    padding:4px 8px;border-radius:var(--radius-xs);background:var(--surface-3);color:var(--ink-2);border:1px solid var(--rule);flex-shrink:0;margin-top:2px;}
+  .tag.gold{background:rgba(212,167,55,.10);color:var(--gold-700);border-color:rgba(212,167,55,.34);}
+  .tag.warn{background:rgba(199,144,26,.14);color:#a07726;border-color:rgba(199,144,26,.32);}
+  .urow h4{font-family:var(--sans);font-weight:600;font-size:var(--t-small-fs);color:var(--ink-1);margin:0 0 3px;letter-spacing:-.012em;}
+  .urow p{font-size:var(--t-small-fs);color:var(--ink-2);line-height:1.5;margin:0;}
+  .urow .date{font-family:var(--mono);font-size:var(--t-eyebrow-fs);color:var(--ink-3);letter-spacing:.08em;flex-shrink:0;margin-top:2px;}
+
+  /* ── ACCOUNT MENU (TASK 1) — opened from avatar. Light paper sheet card. ── */
+  .menu-overlay{position:absolute;inset:0;background:rgba(15,43,30,.28);z-index:90;}
+  .menu{position:absolute;top:54px;right:14px;width:300px;z-index:91;
+    background:var(--paper);border:1px solid var(--rule);border-radius:var(--radius-lg);
+    box-shadow:var(--shadow-3);padding:8px;font-family:var(--sans);}
+  .mcard{background:var(--surface-0);border:1px solid var(--rule-soft);border-radius:14px;overflow:hidden;}
+  .mcard + .mcard{margin-top:12px;}
+  .mrow{display:flex;align-items:center;gap:12px;padding:14px 16px 14px 20px;min-height:56px;cursor:pointer;}
+  .mrow + .mrow{border-top:1px solid var(--rule-soft);margin-left:52px;padding-left:0;}
+  .mrow + .mrow .micon{margin-left:20px;}
+  .micon{width:24px;height:24px;display:flex;align-items:center;justify-content:center;color:var(--ink-1);flex-shrink:0;}
+  .micon svg{width:18px;height:18px;}
+  .mlabel{flex:1;font-size:var(--t-body-fs);color:var(--ink-1);}
+  .mrow.danger .micon{color:var(--danger);}
+  .mrow.danger .mlabel{color:var(--danger);}
+  .mchev{color:var(--ink-3);display:flex;}
+  .mchev svg{width:16px;height:16px;}
+  /* standard small toggle (IOSToggle) — ON=local, brand-green fill */
+  .toggle{position:relative;width:44px;height:26px;border-radius:999px;background:var(--brand-green);flex-shrink:0;}
+  .toggle > i{position:absolute;top:2px;left:20px;width:22px;height:22px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(0,0,0,.18);}
+
+  /* mobile tweaks */
+  .frame.mobile .wrap{padding:20px 16px 64px;}
+  .frame.mobile .hero{padding:18px 16px 16px;}
+  .frame.mobile .hero h1{font-size:30px;}
+  .frame.mobile .grid{display:none;}
+  .m-list{display:none;}
+  .frame.mobile .m-list{display:block;}
+  .frame.mobile .sectit h2{font-size:24px;}
+  .mtile{display:flex;align-items:center;gap:6px;min-height:36px;padding:6px 10px;border-radius:9px;
+    background:rgba(0,0,0,.18);border:none;color:var(--bone);font-family:var(--sans);font-weight:600;font-size:var(--t-caption-fs);}
+  .mtile svg{width:15px;height:15px;}
+  .ham{width:36px;height:36px;border:none;background:none;color:rgba(255,255,255,.85);display:flex;align-items:center;justify-content:center;}
+  .mlist-row{display:flex;align-items:center;gap:10px;padding:12px 14px;min-height:48px;border-bottom:1px solid var(--rule);text-decoration:none;color:inherit;}
+  .mlist-row:last-child{border-bottom:none;}
+  .mlist-row .pname{flex:1;font-size:var(--t-small-fs);font-weight:600;color:var(--ink-1);}
+  .mlist-row .pt{font-size:var(--t-eyebrow-fs);color:var(--ink-3);font-family:var(--mono);}
+</style>
+</head>
+<body>
+<div class="note">STATISCHES MOCKUP — built_03_v5.html · Screen 03 Final Cleanup. v1.1 Tokens inline, echte Werte. Desktop zeigt das geöffnete Konto-Menü (TASK 1). Daten sind Beispielwerte.</div>
+
+<!-- ══════════════════ DESKTOP 1280×860 — account menu OPEN ══════════════════ -->
+<div>
+  <div class="vp-label">Desktop · 1280 × 860 · Konto-Menü offen</div>
+  <div class="frame desktop">
+    <div class="hdr">
+      <!-- g-mark only, gold on green (§B1) -->
+      <svg class="gmark" viewBox="0 0 100 100" aria-label="Goblin"><circle cx="50" cy="50" r="46" fill="none" stroke="#D4A737" stroke-width="7"/><path d="M30 34 L42 22 M70 34 L58 22" stroke="#D4A737" stroke-width="7" stroke-linecap="round" fill="none"/><circle cx="40" cy="50" r="5" fill="#D4A737"/><circle cx="62" cy="50" r="5" fill="#D4A737"/><path d="M34 66 Q50 78 66 64" stroke="#D4A737" stroke-width="7" stroke-linecap="round" fill="none"/></svg>
+      <div class="crumb"><span class="sep">/</span><span class="chip">Landing Relaunch</span></div>
+      <div class="spacer"></div>
+      <div class="pills">
+        <div class="pill active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Chat</div>
+        <div class="pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>Code</div>
+        <div class="pill disabled"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>Preview</div>
+      </div>
+      <div class="fab"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+      <div class="avatar">V</div>
+    </div>
+
+    <div class="body">
+      <!-- SIDEBAR -->
+      <div class="sb">
+        <div class="sb-top"><span class="l">Goblin<span class="dot">.</span></span><span class="who">Vincent</span>
+          <button class="cl"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg></button></div>
+
+        <div class="sb-sec"><span class="h">Projekte</span>
+          <button class="plus-sq"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+        </div>
+        <div class="prow active"><span class="pdot" style="background:var(--brand-gold)"></span><span class="pname">Landing Relaunch</span><span class="pt">2h</span></div>
+        <div class="prow"><span class="pdot" style="background:#6db97b"></span><span class="pname">Booking App</span><span class="pt">1d</span></div>
+        <div class="prow"><span class="pdot" style="background:#7A4A8A"></span><span class="pname">Todo Tracker</span><span class="pt">3d</span></div>
+
+        <div class="divider"></div>
+        <div class="sb-sec"><span class="h">Chats</span>
+          <button class="plus-sq"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+        </div>
+        <div class="crow"><span class="ct">Stripe-Checkout einbauen</span></div>
+        <div class="crow"><span class="ct">Magic-Link Login</span></div>
+        <div class="crow"><span class="ct">CORS Fehler debuggen</span></div>
+
+        <div class="sb-fill"></div>
+
+        <a class="usage" href="#">
+          <div class="ur"><span class="ul">Verbrauch</span><span class="up">71&nbsp;%</span></div>
+          <div class="bar"><i style="width:71%"></i></div>
+          <div class="uf"><span>Pro</span><span>Reset in 12 Tagen</span></div>
+        </a>
+
+        <div class="sb-foot">
+          <div class="userpill"><span class="av">V</span><span class="nm">Vincent</span>
+            <span class="gear"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- MAIN -->
+      <div class="main">
+        <div class="wrap">
+          <div class="hero">
+            <div class="eyebrow"><span class="tick"></span><b>VINCENT</b>Guten Morgen</div>
+            <h1>Sag Goblin, was du <span class="serif">bauen willst.</span></h1>
+
+            <div class="composer">
+              <textarea rows="2" placeholder="Eine Landingpage mit Stripe-Bezahlung in Next.js…"></textarea>
+              <div class="cbar">
+                <button class="cbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+                <button class="mpill">Gemini Flash <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+                <span class="chint">⇧↵ neue Zeile</span>
+                <button class="mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+                <button class="send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></button>
+              </div>
+            </div>
+
+            <div class="chips">
+              <button class="chip2">Eine Landingpage mit Anmeldeformular</button>
+              <button class="chip2">Eine Aufgabenliste, die meine Einträge merkt</button>
+              <button class="chip2">Eine Seite, auf der Leute Termine buchen können</button>
+              <button class="chip2">Magic-Link-Login für meine Next.js-App</button>
+            </div>
+          </div>
+
+          <div class="sectit"><h2>Deine Projekte</h2><span class="label">3 AKTIV</span></div>
+          <div class="grid">
+            <a class="card" href="#"><div class="top"><span class="st"><span class="d" style="background:var(--brand-gold)"></span>SHIPPING</span><span class="arr">→</span></div><h3>Landing Relaunch</h3><p>Neue Startseite mit Stripe-Checkout</p><div class="meta"><span>LANDING-RELAUNCH</span><span>VOR 2 STD</span></div></a>
+            <a class="card" href="#"><div class="top"><span class="st"><span class="d" style="background:#6db97b"></span>LIVE</span><span class="arr">→</span></div><h3>Booking App</h3><p>Terminbuchung für Friseure</p><div class="meta"><span>BOOKING-APP</span><span>VOR 1 TAG</span></div></a>
+            <a class="card" href="#"><div class="top"><span class="st"><span class="d" style="background:#7A4A8A"></span>DRAFT</span><span class="arr">→</span></div><h3>Todo Tracker</h3><p>Aufgabenliste mit Sync</p><div class="meta"><span>TODO-TRACKER</span><span>VOR 3 TAGEN</span></div></a>
+            <div class="newtile">+ Neues Projekt</div>
+          </div>
+
+          <div class="sectit"><h2>Was ist neu</h2><a href="#">Alle Updates →</a></div>
+          <div class="panel">
+            <div class="urow"><span class="tag gold">NEU</span><div style="flex:1"><h4>Claude Sonnet 4.6 verfügbar</h4><p>Goblin nutzt dein eigenes Anthropic-Konto automatisch.</p></div><span class="date">MAI 22</span></div>
+            <div class="urow"><span class="tag gold">NEU</span><div style="flex:1"><h4>BYOK-Streaming stabilisiert</h4><p>Anthropic, OpenAI und Groq streamen wieder ohne Abbrüche.</p></div><span class="date">MAI 20</span></div>
+            <div class="urow"><span class="tag">UPDATE</span><div style="flex:1"><h4>Send to Code auf dem Handy</h4><p>Code aus dem Chat in den Editor schieben — auch unterwegs.</p></div><span class="date">APR 14</span></div>
+            <div class="urow"><span class="tag warn">SICHERHEIT</span><div style="flex:1"><h4>CORS und Stream-Abbrüche gehärtet</h4><p>Stabilität und Abbruch-Verhalten in allen Routen verbessert.</p></div><span class="date">APR 08</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ACCOUNT MENU OPEN (TASK 1): no user-pill header, no comment leak,
+         4 distinct icons, routing = calm row + standard toggle -->
+    <div class="menu-overlay"></div>
+    <div class="menu">
+      <div class="mcard">
+        <div class="mrow"><span class="micon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></span><span class="mlabel">Einstellungen</span><span class="mchev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span></div>
+        <div class="mrow"><span class="micon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></span><span class="mlabel">Plan upgraden</span><span class="mchev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span></div>
+        <div class="mrow"><span class="micon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span><span class="mlabel">Hilfe</span><span class="mchev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></span></div>
+      </div>
+      <div class="mcard">
+        <div class="mrow"><span class="micon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg></span><span class="mlabel">Routing</span><span class="toggle"><i></i></span></div>
+      </div>
+      <div class="mcard">
+        <div class="mrow danger"><span class="micon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></span><span class="mlabel">Abmelden</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ MOBILE 390×844 ══════════════════ -->
+<div>
+  <div class="vp-label">Mobile · 390 × 844 · Mode-Tile, kompakte Projektliste, keine Bottom-Bar</div>
+  <div class="frame mobile">
+    <div class="hdr" style="padding:0 10px;">
+      <button class="ham"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+      <svg class="gmark" viewBox="0 0 100 100" aria-label="Goblin"><circle cx="50" cy="50" r="46" fill="none" stroke="#D4A737" stroke-width="7"/><path d="M30 34 L42 22 M70 34 L58 22" stroke="#D4A737" stroke-width="7" stroke-linecap="round" fill="none"/><circle cx="40" cy="50" r="5" fill="#D4A737"/><circle cx="62" cy="50" r="5" fill="#D4A737"/><path d="M34 66 Q50 78 66 64" stroke="#D4A737" stroke-width="7" stroke-linecap="round" fill="none"/></svg>
+      <button class="mtile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Chat<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" style="opacity:.7"><polyline points="6 9 12 15 18 9"/></svg></button>
+      <div class="spacer"></div>
+      <div class="fab"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></div>
+      <div class="avatar">V</div>
+    </div>
+
+    <div class="main">
+      <div class="wrap">
+        <div class="hero">
+          <div class="eyebrow"><span class="tick"></span><b>VINCENT</b>Guten Morgen</div>
+          <h1>Sag Goblin, was du <span class="serif">bauen willst.</span></h1>
+          <div class="composer">
+            <textarea rows="2" placeholder="Was möchtest du bauen?…"></textarea>
+            <div class="cbar">
+              <button class="cbtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+              <button class="mpill">Gemini Flash <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><polyline points="6 9 12 15 18 9"/></svg></button>
+              <span class="chint"></span>
+              <button class="mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg></button>
+              <button class="send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></button>
+            </div>
+          </div>
+          <div class="chips">
+            <button class="chip2">Landingpage mit Anmeldeformular</button>
+            <button class="chip2">Aufgabenliste mit Sync</button>
+          </div>
+        </div>
+
+        <div class="sectit"><h2>Deine Projekte</h2><span class="label">3 AKTIV</span></div>
+        <div class="m-list panel">
+          <a class="mlist-row" href="#"><span class="pdot" style="width:8px;height:8px;border-radius:50%;background:var(--brand-gold)"></span><span class="pname">Landing Relaunch</span><span class="pt">2h</span></a>
+          <a class="mlist-row" href="#"><span class="pdot" style="width:8px;height:8px;border-radius:50%;background:#6db97b"></span><span class="pname">Booking App</span><span class="pt">1d</span></a>
+          <a class="mlist-row" href="#"><span class="pdot" style="width:8px;height:8px;border-radius:50%;background:#7A4A8A"></span><span class="pname">Todo Tracker</span><span class="pt">3d</span></a>
+          <a class="mlist-row" href="#"><span class="pname" style="color:var(--ink-2)">+ Neues Projekt</span></a>
+        </div>
+
+        <div class="sectit"><h2>Was ist neu</h2><a href="#">Alle →</a></div>
+        <div class="panel">
+          <div class="urow"><span class="tag gold">NEU</span><div style="flex:1"><h4>Claude Sonnet 4.6 verfügbar</h4><p>Dein eigenes Anthropic-Konto, automatisch.</p></div></div>
+          <div class="urow"><span class="tag">UPDATE</span><div style="flex:1"><h4>Send to Code auf dem Handy</h4><p>Code aus dem Chat in den Editor — auch unterwegs.</p></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
