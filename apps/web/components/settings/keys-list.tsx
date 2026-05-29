@@ -141,15 +141,15 @@ export function KeysList({ initialKeys }: KeysListProps) {
                 {/* Label + hint */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', fontFamily: 'DM Sans, sans-serif' }}>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-sans)' }}>
                       {p.label}
                     </span>
                     {activeKey && (
                       <span style={{
                         display: 'flex', alignItems: 'center', gap: 4,
-                        fontSize: 11, color: 'var(--moss)', fontWeight: 500,
+                        fontSize: 11, color: 'var(--brand-green)', fontWeight: 500,
                       }}>
-                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--moss)', display: 'inline-block' }} />
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--brand-green)', display: 'inline-block' }} />
                         Connected
                       </span>
                     )}
@@ -166,7 +166,7 @@ export function KeysList({ initialKeys }: KeysListProps) {
                           href={p.creditsUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          style={{ fontSize: 11, color: 'var(--ochre)', fontFamily: 'DM Sans, sans-serif', textDecoration: 'none', fontWeight: 500 }}
+                          style={{ fontSize: 11, color: 'var(--brand-gold)', fontFamily: 'var(--font-sans)', textDecoration: 'none', fontWeight: 500 }}
                           onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
                           onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
                         >
@@ -175,7 +175,7 @@ export function KeysList({ initialKeys }: KeysListProps) {
                       )}
                     </div>
                   ) : (
-                    <div style={{ fontSize: 12, color: 'var(--meta)', marginTop: 1, fontFamily: 'DM Sans, sans-serif' }}>
+                    <div style={{ fontSize: 12, color: 'var(--meta)', marginTop: 1, fontFamily: 'var(--font-sans)' }}>
                       {p.desc}
                     </div>
                   )}
@@ -203,7 +203,7 @@ export function KeysList({ initialKeys }: KeysListProps) {
                   <button
                     onClick={() => { setConnecting(isConnecting ? null : p.id); setSaveError(prev => ({ ...prev, [p.id]: '' })); }}
                     style={{
-                      background: isConnecting ? 'transparent' : 'var(--ochre)',
+                      background: isConnecting ? 'transparent' : 'var(--brand-gold)',
                       border: isConnecting ? '1px solid var(--border)' : 'none',
                       borderRadius: 6, padding: '7px 16px',
                       fontSize: 12, fontWeight: 600,
@@ -212,7 +212,7 @@ export function KeysList({ initialKeys }: KeysListProps) {
                       whiteSpace: 'nowrap',
                     }}
                     onMouseEnter={e => { if (!isConnecting) e.currentTarget.style.background = '#E8B05A'; }}
-                    onMouseLeave={e => { if (!isConnecting) e.currentTarget.style.background = 'var(--ochre)'; }}
+                    onMouseLeave={e => { if (!isConnecting) e.currentTarget.style.background = 'var(--brand-gold)'; }}
                   >
                     {isConnecting ? 'Cancel' : 'Add key →'}
                   </button>
@@ -227,7 +227,7 @@ export function KeysList({ initialKeys }: KeysListProps) {
                     {p.dashboard && (
                       <>
                         {' · '}
-                        <a href={p.dashboard} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--ochre)', textDecoration: 'underline' }}>
+                        <a href={p.dashboard} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--brand-gold)', textDecoration: 'underline' }}>
                           Get API key →
                         </a>
                       </>
@@ -251,7 +251,7 @@ export function KeysList({ initialKeys }: KeysListProps) {
                           outline: 'none', boxSizing: 'border-box',
                           transition: 'border-color 0.15s',
                         }}
-                        onFocus={e => { if (!errMsg) e.target.style.borderColor = 'var(--moss)'; }}
+                        onFocus={e => { if (!errMsg) e.target.style.borderColor = 'var(--brand-green)'; }}
                         onBlur={e => { e.target.style.borderColor = errMsg ? 'var(--danger)' : 'var(--border)'; }}
                       />
                       <button
@@ -272,7 +272,7 @@ export function KeysList({ initialKeys }: KeysListProps) {
                         padding: '9px 20px', borderRadius: 8, border: 'none',
                         fontSize: 13, fontWeight: 600,
                         cursor: status === 'saving' ? 'wait' : (!keyInput[p.id]?.trim() ? 'not-allowed' : 'pointer'),
-                        background: status === 'success' ? 'var(--moss)' : status === 'error' ? 'var(--danger)' : 'var(--moss)',
+                        background: status === 'success' ? 'var(--brand-green)' : status === 'error' ? 'var(--danger)' : 'var(--brand-green)',
                         color: '#fff',
                         opacity: !keyInput[p.id]?.trim() && status === 'idle' ? 0.45 : 1,
                         whiteSpace: 'nowrap',
@@ -291,7 +291,7 @@ export function KeysList({ initialKeys }: KeysListProps) {
                   </div>
 
                   {errMsg && (
-                    <p style={{ fontSize: 12, color: 'var(--danger)', marginTop: 7, fontFamily: 'DM Sans, sans-serif' }}>
+                    <p style={{ fontSize: 12, color: 'var(--danger)', marginTop: 7, fontFamily: 'var(--font-sans)' }}>
                       {errMsg}
                     </p>
                   )}
@@ -322,7 +322,7 @@ export function KeysList({ initialKeys }: KeysListProps) {
               const adv = advancedSettings[p.id] || { baseUrl: '', model: '', timeout: '' };
               return (
                 <div key={p.id} style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 12 }}>
-                  <span style={{ width: 96, color: 'var(--text)', fontWeight: 500, flexShrink: 0, fontFamily: 'DM Sans, sans-serif' }}>{p.label}</span>
+                  <span style={{ width: 96, color: 'var(--text)', fontWeight: 500, flexShrink: 0, fontFamily: 'var(--font-sans)' }}>{p.label}</span>
                   <input
                     placeholder="Custom base URL"
                     value={adv.baseUrl}

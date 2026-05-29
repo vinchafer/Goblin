@@ -5,7 +5,7 @@ export function Card({ children, style, featured }: { children: ReactNode; style
     <div style={{
       background: 'white',
       borderRadius: 12,
-      border: featured ? '2px solid var(--moss)' : '1px solid var(--div)',
+      border: featured ? '2px solid var(--brand-green)' : '1px solid var(--div)',
       padding: '20px',
       boxShadow: featured ? 'var(--shadow-lg)' : 'var(--shadow-sm)',
       ...style,

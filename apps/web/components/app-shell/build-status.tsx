@@ -9,11 +9,11 @@ export function BuildStatus() {
   return (
     <div
       className="px-3 py-3 border-t"
-      style={{ borderColor: "var(--goblin-border)" }}
+      style={{ borderColor: "var(--rule-soft)" }}
     >
       <span
         className="text-[10px] font-medium uppercase tracking-widest mb-2 block"
-        style={{ color: "var(--goblin-meta)", fontFamily: "var(--font-dm-sans)" }}
+        style={{ color: "var(--ink-3)", fontFamily: "var(--font-sans)" }}
       >
         Build
       </span>
@@ -24,22 +24,22 @@ export function BuildStatus() {
             <GoblinLogo state="working" size={16} variant="gold" />
             <span
               className="text-xs truncate"
-              style={{ color: "var(--goblin-bark)", fontFamily: "var(--font-jetbrains-mono)" }}
+              style={{ color: "var(--ink-2)", fontFamily: "var(--font-jetbrains-mono)" }}
             >
               {currentAction}
             </span>
           </div>
-          <div className="h-1 rounded-full" style={{ backgroundColor: "var(--goblin-border)" }}>
+          <div className="h-1 rounded-full" style={{ backgroundColor: "var(--rule-soft)" }}>
             <div
               className="h-full rounded-full transition-all duration-300"
-              style={{ width: `${progress}%`, backgroundColor: "var(--goblin-ochre)" }}
+              style={{ width: `${progress}%`, backgroundColor: "var(--brand-gold)" }}
             />
           </div>
         </div>
       ) : (
         <span
           className="text-xs"
-          style={{ color: "var(--goblin-meta)", fontFamily: "var(--font-dm-sans)" }}
+          style={{ color: "var(--ink-3)", fontFamily: "var(--font-sans)" }}
         >
           No active builds
         </span>

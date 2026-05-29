@@ -118,7 +118,7 @@ export function TwoFactorPage() {
   };
 
   return (
-    <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-ui)' }}>
+    <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
       {view === 'loading' && <p style={{ color: 'var(--meta)' }}>Lade…</p>}
 
       {view === 'disabled' && (
@@ -141,14 +141,14 @@ export function TwoFactorPage() {
               width: '100%',
               padding: 16,
               marginTop: 12,
-              background: submitting ? 'rgba(0,0,0,0.10)' : 'var(--moss)',
+              background: submitting ? 'rgba(0,0,0,0.10)' : 'var(--brand-green)',
               color: '#fff',
               border: 'none',
               borderRadius: 'var(--radius-lg)',
               fontSize: 17,
               fontWeight: 600,
               cursor: submitting ? 'not-allowed' : 'pointer',
-              fontFamily: 'var(--font-ui)',
+              fontFamily: 'var(--font-sans)',
             }}
           >
             {submitting ? 'Lade…' : '2FA aktivieren'}
@@ -171,7 +171,7 @@ export function TwoFactorPage() {
               Manuell eintragen:{' '}
               <code
                 style={{
-                  fontFamily: 'var(--font-code)',
+                  fontFamily: 'var(--font-mono)',
                   background: 'var(--subtle)',
                   padding: '2px 6px',
                   borderRadius: 4,
@@ -197,7 +197,7 @@ export function TwoFactorPage() {
               width: '100%',
               padding: 12,
               fontSize: 22,
-              fontFamily: 'var(--font-code)',
+              fontFamily: 'var(--font-mono)',
               textAlign: 'center',
               letterSpacing: 6,
               border: '1px solid var(--div)',
@@ -215,14 +215,14 @@ export function TwoFactorPage() {
             style={{
               width: '100%',
               padding: 14,
-              background: verifyCode.length === 6 && !submitting ? 'var(--moss)' : 'rgba(0,0,0,0.10)',
+              background: verifyCode.length === 6 && !submitting ? 'var(--brand-green)' : 'rgba(0,0,0,0.10)',
               color: '#fff',
               border: 'none',
               borderRadius: 10,
               fontSize: 16,
               fontWeight: 600,
               cursor: verifyCode.length === 6 && !submitting ? 'pointer' : 'not-allowed',
-              fontFamily: 'var(--font-ui)',
+              fontFamily: 'var(--font-sans)',
             }}
           >
             {submitting ? 'Verifiziere…' : 'Verifizieren & Aktivieren'}
@@ -232,7 +232,7 @@ export function TwoFactorPage() {
 
       {view === 'recovery' && (
         <div>
-          <h3 style={{ color: 'var(--moss)', fontFamily: 'var(--font-brand)', margin: '0 0 8px' }}>
+          <h3 style={{ color: 'var(--brand-green)', fontFamily: 'var(--font-sans)', margin: '0 0 8px' }}>
             2FA aktiv
           </h3>
           <p style={{ fontSize: 14, margin: '0 0 12px' }}>
@@ -246,7 +246,7 @@ export function TwoFactorPage() {
               borderRadius: 10,
               padding: 14,
               marginBottom: 12,
-              fontFamily: 'var(--font-code)',
+              fontFamily: 'var(--font-mono)',
               fontSize: 15,
             }}
           >
@@ -260,13 +260,13 @@ export function TwoFactorPage() {
               style={{
                 flex: 1,
                 padding: 12,
-                background: 'var(--moss)',
+                background: 'var(--brand-green)',
                 color: '#fff',
                 border: 'none',
                 borderRadius: 8,
                 cursor: 'pointer',
                 fontWeight: 600,
-                fontFamily: 'var(--font-ui)',
+                fontFamily: 'var(--font-sans)',
               }}
             >
               Als Datei speichern
@@ -281,7 +281,7 @@ export function TwoFactorPage() {
                 border: '1px solid var(--div)',
                 borderRadius: 8,
                 cursor: 'pointer',
-                fontFamily: 'var(--font-ui)',
+                fontFamily: 'var(--font-sans)',
               }}
             >
               Habe ich gespeichert
@@ -295,7 +295,7 @@ export function TwoFactorPage() {
           <SettingsGroup label="Zwei-Faktor-Authentifizierung">
             <SettingsCard>
               <div style={{ padding: '14px 20px' }}>
-                <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--moss)', margin: '0 0 4px' }}>
+                <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--brand-green)', margin: '0 0 4px' }}>
                   2FA ist aktiv
                 </p>
                 {status?.enabledAt && (
@@ -320,7 +320,7 @@ export function TwoFactorPage() {
               border: '1px solid var(--rust)',
               borderRadius: 10,
               cursor: 'pointer',
-              fontFamily: 'var(--font-ui)',
+              fontFamily: 'var(--font-sans)',
             }}
           >
             2FA deaktivieren

@@ -29,13 +29,13 @@ export function Input({ type = 'text', value, onChange, placeholder, required, d
         background: '#fff',
         color: 'var(--text)',
         fontSize: 13,
-        fontFamily: 'DM Sans, sans-serif',
+        fontFamily: 'var(--font-sans)',
         outline: 'none',
         transition: 'all 0.15s',
         ...style,
       }}
       onFocus={e => {
-        e.target.style.borderColor = 'var(--moss)';
+        e.target.style.borderColor = 'var(--brand-green)';
         e.target.style.boxShadow = '0 0 0 3px rgba(45,74,43,0.1)';
       }}
       onBlur={e => {

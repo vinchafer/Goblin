@@ -16,7 +16,7 @@ function UsageBar({ label, used, total, color }: {
   color: 'ochre' | 'green' | 'grey';
 }) {
   const pct = Math.min((used / total) * 100, 100);
-  const barColor = color === 'ochre' ? 'var(--ochre)'
+  const barColor = color === 'ochre' ? 'var(--brand-gold)'
                  : color === 'green' ? 'var(--success)'
                  : '#ccc';
   return (
@@ -41,7 +41,7 @@ function UsageBar({ label, used, total, color }: {
 function StatusRow({ label, active }: { label: string; active: boolean }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-      <span style={{ fontSize: 11, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif' }}>{label}</span>
+      <span style={{ fontSize: 11, color: 'var(--meta)', fontFamily: 'var(--font-sans)' }}>{label}</span>
       <div style={{
         width: 6, height: 6, borderRadius: '50%',
         background: active ? 'var(--success)' : 'var(--div)',

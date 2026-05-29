@@ -46,8 +46,8 @@ function CancelDeletionInner() {
         alignItems: 'center',
         justifyContent: 'center',
         padding: 24,
-        background: 'var(--cream)',
-        fontFamily: 'var(--font-ui)',
+        background: 'var(--paper)',
+        fontFamily: 'var(--font-sans)',
       }}
     >
       <div style={{ maxWidth: 480, textAlign: 'center' }}>
@@ -58,10 +58,10 @@ function CancelDeletionInner() {
           <>
             <h1
               style={{
-                fontFamily: 'var(--font-brand)',
+                fontFamily: 'var(--font-sans)',
                 fontSize: 32,
                 margin: '0 0 16px',
-                color: 'var(--moss)',
+                color: 'var(--brand-green)',
               }}
             >
               Löschung abgebrochen
@@ -73,14 +73,14 @@ function CancelDeletionInner() {
               onClick={() => router.push('/login')}
               style={{
                 padding: '12px 24px',
-                background: 'var(--moss)',
+                background: 'var(--brand-green)',
                 color: '#fff',
                 border: 'none',
                 borderRadius: 8,
                 cursor: 'pointer',
                 fontSize: 16,
                 fontWeight: 600,
-                fontFamily: 'var(--font-ui)',
+                fontFamily: 'var(--font-sans)',
               }}
             >
               Zum Login
@@ -91,7 +91,7 @@ function CancelDeletionInner() {
           <>
             <h1
               style={{
-                fontFamily: 'var(--font-brand)',
+                fontFamily: 'var(--font-sans)',
                 fontSize: 32,
                 margin: '0 0 16px',
                 color: 'var(--rust)',

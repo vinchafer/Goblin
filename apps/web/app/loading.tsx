@@ -9,9 +9,9 @@ export default function Loading() {
       alignItems: 'center',
       justifyContent: 'center',
       gap: 16,
-      background: 'var(--goblin-cream)',
+      background: 'var(--paper)',
     }}>
-      <GoblinLogo state="working" size={48} variant="moss" />
+      <GoblinLogo state="breath" size={64} variant="green" />
       <p style={{
         fontFamily: 'var(--font-mono), JetBrains Mono, ui-monospace, monospace',
         fontSize: 12.5,

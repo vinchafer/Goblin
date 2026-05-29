@@ -25,7 +25,7 @@ export function IOSToggle({ value, onChange, disabled = false, ariaLabel, testId
         width: 51,
         height: 31,
         borderRadius: 999,
-        background: value ? 'var(--moss)' : 'var(--toggle-off)',
+        background: value ? 'var(--brand-green)' : 'var(--toggle-off)',
         opacity: disabled ? 0.5 : 1,
         transition: 'background 220ms ease',
         border: 'none',

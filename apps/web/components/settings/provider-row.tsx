@@ -76,7 +76,7 @@ export function ProviderRow({ provider, isConnected, keyLastFour, onSave, onDele
   };
 
   return (
-    <div className="bg-white rounded-xl border border-light overflow-hidden">
+    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
       {/* Main row */}
       <div className="p-4">
         <div className="flex items-center justify-between">
@@ -86,7 +86,7 @@ export function ProviderRow({ provider, isConnected, keyLastFour, onSave, onDele
             </div>
             <div>
               <div className="flex items-center space-x-2">
-                <h3 className="font-semibold text-slate">{provider.name}</h3>
+                <h3 className="font-semibold text-ink-1">{provider.name}</h3>
                 <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-gray-300'}`}></div>
                 <span className={`text-sm ${isConnected ? 'text-green-600' : 'text-gray-500'}`}>
                   {isConnected ? `Connected · ···· ${keyLastFour}` : "Not connected"}
@@ -109,7 +109,7 @@ export function ProviderRow({ provider, isConnected, keyLastFour, onSave, onDele
               <button
                 onClick={handleConnect}
                 disabled={isLoading}
-                className="px-4 py-2 text-sm font-medium text-ochre border border-ochre hover:bg-ochre/5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 text-sm font-medium text-brand-gold border border-brand-gold hover:bg-brand-gold/5 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Connect
               </button>
@@ -120,9 +120,9 @@ export function ProviderRow({ provider, isConnected, keyLastFour, onSave, onDele
 
       {/* Expandable panel */}
       {isExpanded && (
-        <div className="border-t border-light p-4 bg-gray-50">
+        <div className="border-t border-gray-200 p-4 bg-gray-50">
           <div className="max-w-md">
-            <h4 className="font-medium text-slate mb-3">Paste your {provider.name} API key</h4>
+            <h4 className="font-medium text-ink-1 mb-3">Paste your {provider.name} API key</h4>
             
             <div className="mb-4">
               <div className="relative">
@@ -131,7 +131,7 @@ export function ProviderRow({ provider, isConnected, keyLastFour, onSave, onDele
                   value={key}
                   onChange={(e) => setKey(e.target.value)}
                   placeholder={provider.keyHint}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-ochre/20 focus:border-ochre pr-24"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-gold/20 focus:border-brand-gold pr-24"
                   disabled={isLoading}
                 />
                 <button
@@ -148,7 +148,7 @@ export function ProviderRow({ provider, isConnected, keyLastFour, onSave, onDele
                   href={provider.docsUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-sm text-ochre hover:text-ochre/80 flex items-center"
+                  className="text-sm text-brand-gold hover:text-brand-gold/80 flex items-center"
                 >
                   Get your key →
                 </a>
@@ -175,7 +175,7 @@ export function ProviderRow({ provider, isConnected, keyLastFour, onSave, onDele
               <button
                 onClick={handleSave}
                 disabled={isLoading || !key.trim()}
-                className="px-4 py-2 text-sm font-medium text-white bg-ochre hover:bg-ochre/90 rounded-lg transition-colors flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 text-sm font-medium text-white bg-brand-gold hover:bg-brand-gold/90 rounded-lg transition-colors flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isLoading ? "Saving..." : "Save key"}
               </button>

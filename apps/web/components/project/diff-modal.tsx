@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from "react";
 import { parsePatch } from "diff";
@@ -50,7 +50,7 @@ export function DiffModal({ filePath, currentContent, proposedContent, diff, onA
       padding: 16,
     }}>
       <div style={{
-        background: '#141a12', border: '1px solid #2d4a2b', borderRadius: 14,
+        background: '#141a12', border: '1px solid var(--brand-green)', borderRadius: 14,
         width: '100%', maxWidth: 800, maxHeight: '85vh',
         display: 'flex', flexDirection: 'column',
         boxShadow: '0 32px 80px rgba(0,0,0,0.5)',
@@ -67,7 +67,7 @@ export function DiffModal({ filePath, currentContent, proposedContent, diff, onA
             <div style={{ fontSize: 13, fontWeight: 600, color: '#c5d0c0', fontFamily: 'JetBrains Mono, monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {filePath}
             </div>
-            <div style={{ fontSize: 11, color: '#6b8a6b', fontFamily: 'DM Sans, sans-serif', marginTop: 2 }}>
+            <div style={{ fontSize: 11, color: '#6b8a6b', fontFamily: 'var(--font-sans)', marginTop: 2 }}>
               Review changes before applying
               {hasChanges && (
                 <>
@@ -87,7 +87,7 @@ export function DiffModal({ filePath, currentContent, proposedContent, diff, onA
         {/* Diff content */}
         <div style={{ flex: 1, overflow: 'auto', padding: '0' }}>
           {!hasChanges ? (
-            <div style={{ padding: '40px 20px', textAlign: 'center', color: '#6b8a6b', fontSize: 13, fontFamily: 'DM Sans, sans-serif' }}>
+            <div style={{ padding: '40px 20px', textAlign: 'center', color: '#6b8a6b', fontSize: 13, fontFamily: 'var(--font-sans)' }}>
               No changes to apply.
             </div>
           ) : (
@@ -111,7 +111,7 @@ export function DiffModal({ filePath, currentContent, proposedContent, diff, onA
                   >
                     <span style={{
                       width: 20, flexShrink: 0, textAlign: 'center', padding: '1px 0',
-                      color: line.type === 'add' ? 'var(--success)' : line.type === 'remove' ? 'var(--danger)' : 'var(--moss)',
+                      color: line.type === 'add' ? 'var(--success)' : line.type === 'remove' ? 'var(--danger)' : 'var(--brand-green)',
                       fontSize: 11, userSelect: 'none',
                     }}>
                       {line.type === 'add' ? '+' : line.type === 'remove' ? '−' : ' '}
@@ -139,10 +139,10 @@ export function DiffModal({ filePath, currentContent, proposedContent, diff, onA
           <button
             onClick={onDiscard}
             style={{
-              background: 'transparent', border: '1px solid #2d4a2b',
+              background: 'transparent', border: '1px solid var(--brand-green)',
               color: '#8aaa85', borderRadius: 8, padding: '8px 18px',
               fontSize: 13, fontWeight: 500, cursor: 'pointer',
-              fontFamily: 'DM Sans, sans-serif',
+              fontFamily: 'var(--font-sans)',
             }}
           >
             ✗ Discard
@@ -151,11 +151,11 @@ export function DiffModal({ filePath, currentContent, proposedContent, diff, onA
             onClick={onApply}
             disabled={!hasChanges}
             style={{
-              background: hasChanges ? 'var(--moss)' : 'rgba(45,74,43,0.3)',
-              border: 'none', color: hasChanges ? 'var(--ochre)' : '#4a6a4a',
+              background: hasChanges ? 'var(--brand-green)' : 'rgba(45,74,43,0.3)',
+              border: 'none', color: hasChanges ? 'var(--brand-gold)' : '#4a6a4a',
               borderRadius: 8, padding: '8px 22px',
               fontSize: 13, fontWeight: 600, cursor: hasChanges ? 'pointer' : 'not-allowed',
-              fontFamily: 'DM Sans, sans-serif',
+              fontFamily: 'var(--font-sans)',
             }}
           >
             ✓ Apply Changes

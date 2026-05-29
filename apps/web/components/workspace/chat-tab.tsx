@@ -216,7 +216,7 @@ export function ChatTab({ projectId }: ChatTabProps) {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--cream, #F7F4ED)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--paper)' }}>
       <FirstChatTip />
 
       {/* FIX C: No model configured banner */}
@@ -225,15 +225,15 @@ export function ChatTab({ projectId }: ChatTabProps) {
           background: 'rgba(184,92,60,0.06)', borderBottom: '1px solid rgba(184,92,60,0.2)',
           padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0,
         }}>
-          <div style={{ flex: 1, fontSize: 13, color: 'var(--danger)', fontFamily: 'DM Sans, sans-serif' }}>
+          <div style={{ flex: 1, fontSize: 13, color: 'var(--danger)', fontFamily: 'var(--font-sans)' }}>
             No model configured. Add an API key to start chatting.
           </div>
           <button
             onClick={() => router.push('/dashboard/settings/keys')}
             style={{
-              background: 'var(--moss)', color: '#fff', border: 'none',
+              background: 'var(--brand-green)', color: '#fff', border: 'none',
               borderRadius: 6, padding: '6px 14px', fontSize: 12, fontWeight: 500,
-              cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: 'DM Sans, sans-serif',
+              cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: 'var(--font-sans)',
             }}
           >
             Add API key →
@@ -247,15 +247,15 @@ export function ChatTab({ projectId }: ChatTabProps) {
           background: 'rgba(184,92,60,0.06)', borderBottom: '1px solid rgba(184,92,60,0.2)',
           padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0,
         }}>
-          <div style={{ flex: 1, fontSize: 13, color: 'var(--danger)', fontFamily: 'DM Sans, sans-serif' }}>
+          <div style={{ flex: 1, fontSize: 13, color: 'var(--danger)', fontFamily: 'var(--font-sans)' }}>
             {error}
           </div>
           <button
             onClick={() => router.push('/dashboard/settings/keys')}
             style={{
-              background: 'var(--moss)', color: '#fff', border: 'none',
+              background: 'var(--brand-green)', color: '#fff', border: 'none',
               borderRadius: 6, padding: '6px 14px', fontSize: 12, fontWeight: 500,
-              cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: 'DM Sans, sans-serif',
+              cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: 'var(--font-sans)',
             }}
           >
             Go to API Keys →
@@ -273,9 +273,9 @@ export function ChatTab({ projectId }: ChatTabProps) {
               background: 'none', border: '1px solid var(--div)',
               borderRadius: 20, padding: '5px 16px',
               fontSize: 12, color: 'var(--meta)', cursor: 'pointer',
-              fontFamily: 'DM Sans, sans-serif', transition: 'border-color 0.15s',
+              fontFamily: 'var(--font-sans)', transition: 'border-color 0.15s',
             }}
-            onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--moss)')}
+            onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--brand-green)')}
             onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--div)')}
           >
             {isLoadingOlder ? '…' : '↑ Ältere Nachrichten laden'}
@@ -287,10 +287,10 @@ export function ChatTab({ projectId }: ChatTabProps) {
       {messages.length === 0 && !isStreaming && !isLoadingHistory ? (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '0 24px 48px' }}>
           <div style={{ textAlign: 'center', marginBottom: 32 }}>
-            <div style={{ fontFamily: 'Fraunces, serif', fontSize: 20, color: 'var(--moss)', fontWeight: 700, marginBottom: 6 }}>
+            <div style={{ fontFamily: 'var(--font-sans)', fontSize: 20, color: 'var(--brand-green)', fontWeight: 700, marginBottom: 6 }}>
               What are we building?
             </div>
-            <div style={{ fontSize: 13, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif' }}>
+            <div style={{ fontSize: 13, color: 'var(--meta)', fontFamily: 'var(--font-sans)' }}>
               Describe your idea or pick a starting point below.
             </div>
           </div>
@@ -304,10 +304,10 @@ export function ChatTab({ projectId }: ChatTabProps) {
                   background: 'var(--panel)', border: '1px solid var(--div)',
                   borderRadius: 8, padding: '11px 16px', textAlign: 'left',
                   fontSize: 13, color: 'var(--text)', cursor: hasAvailableModel === false ? 'not-allowed' : 'pointer',
-                  fontFamily: 'DM Sans, sans-serif', transition: 'border-color 0.15s',
+                  fontFamily: 'var(--font-sans)', transition: 'border-color 0.15s',
                   opacity: hasAvailableModel === false ? 0.5 : 1,
                 }}
-                onMouseEnter={e => { if (hasAvailableModel !== false) e.currentTarget.style.borderColor = 'var(--moss)'; }}
+                onMouseEnter={e => { if (hasAvailableModel !== false) e.currentTarget.style.borderColor = 'var(--brand-green)'; }}
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--div)'; }}
               >
                 {prompt}

@@ -33,8 +33,8 @@ export default function NewChatPage() {
   }, [router]);
 
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", background: "var(--cream)" }}>
-      <div style={{ width: 28, height: 28, border: "2px solid var(--div)", borderTopColor: "var(--moss)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", background: "var(--paper)" }}>
+      <div style={{ width: 28, height: 28, border: "2px solid var(--div)", borderTopColor: "var(--brand-green)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
     </div>
   );

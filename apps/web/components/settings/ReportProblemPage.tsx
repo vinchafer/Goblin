@@ -44,7 +44,7 @@ export function ReportProblemPage() {
 
   if (sent) {
     return (
-      <div style={{ padding: 40, textAlign: 'center', fontFamily: 'var(--font-ui)' }}>
+      <div style={{ padding: 40, textAlign: 'center', fontFamily: 'var(--font-sans)' }}>
         <div style={{ fontSize: 48, marginBottom: 12 }}>✓</div>
         <h3 style={{ fontSize: 18, color: 'var(--text)', marginBottom: 6 }}>Danke!</h3>
         <p style={{ fontSize: 14, color: 'var(--text-meta)' }}>Wir melden uns innerhalb von 24h.</p>
@@ -53,7 +53,7 @@ export function ReportProblemPage() {
   }
 
   return (
-    <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-ui)' }}>
+    <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div>
           <div style={{ fontSize: 12, color: 'var(--text-meta)', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600, marginBottom: 8 }}>Kategorie</div>
@@ -61,11 +61,11 @@ export function ReportProblemPage() {
             {CATEGORIES.map((c) => (
               <button key={c.id} onClick={() => setCategory(c.id)} style={{
                 padding: '8px 14px', borderRadius: 999,
-                background: category === c.id ? 'var(--moss)' : 'transparent',
+                background: category === c.id ? 'var(--brand-green)' : 'transparent',
                 color: category === c.id ? '#fff' : 'var(--text-2)',
-                border: '1px solid', borderColor: category === c.id ? 'var(--moss)' : 'var(--border-subtle)',
+                border: '1px solid', borderColor: category === c.id ? 'var(--brand-green)' : 'var(--border-subtle)',
                 fontSize: 13, fontWeight: 500, cursor: 'pointer',
-                fontFamily: 'var(--font-ui)',
+                fontFamily: 'var(--font-sans)',
               }}>{c.label}</button>
             ))}
           </div>
@@ -81,7 +81,7 @@ export function ReportProblemPage() {
               width: '100%', minHeight: 140, padding: 14,
               background: 'var(--subtle)', border: '1px solid var(--border-subtle)',
               borderRadius: 12, color: 'var(--text)', fontSize: 15,
-              fontFamily: 'var(--font-ui)', resize: 'vertical', outline: 'none',
+              fontFamily: 'var(--font-sans)', resize: 'vertical', outline: 'none',
             }}
             maxLength={2000}
           />
@@ -90,11 +90,11 @@ export function ReportProblemPage() {
 
         <button onClick={submit} disabled={sending || description.trim().length < 5} style={{
           width: '100%', padding: 14,
-          background: 'var(--moss)', color: '#fff', border: 'none',
+          background: 'var(--brand-green)', color: '#fff', border: 'none',
           borderRadius: 'var(--radius-lg)', fontSize: 15, fontWeight: 600,
           cursor: sending ? 'wait' : 'pointer',
           opacity: description.trim().length < 5 ? 0.5 : 1,
-          fontFamily: 'var(--font-ui)',
+          fontFamily: 'var(--font-sans)',
         }}>
           {sending ? 'Sende…' : 'Absenden'}
         </button>

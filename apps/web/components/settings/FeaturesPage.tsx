@@ -38,7 +38,7 @@ export function FeaturesPage() {
   };
 
   return (
-    <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-ui)' }}>
+    <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
       <SettingsGroup label="Vorschläge">
         <SettingsCard>
           {flags.slice(0, 3).map((f) => (

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useRef, useEffect } from "react";
 import { CodeBlock } from "./CodeBlock";
@@ -69,12 +69,12 @@ export function ChatMessageItem({ msg, isStreaming, onSendToCode }: Props) {
       <div className="animate-msg-appear" style={{ display: 'flex', justifyContent: 'flex-end', maxWidth: '100%' }}>
         <div style={{
           maxWidth: '76%',
-          background: 'var(--moss)',
+          background: 'var(--brand-green)',
           color: '#fff',
           borderRadius: '16px 4px 16px 16px',
           padding: '10px 14px',
           fontSize: 14, lineHeight: 1.65,
-          fontFamily: 'DM Sans, sans-serif',
+          fontFamily: 'var(--font-sans)',
           wordBreak: 'break-word',
         }}>
           {msg.content}
@@ -89,7 +89,7 @@ export function ChatMessageItem({ msg, isStreaming, onSendToCode }: Props) {
       {/* Goblin avatar */}
       <div style={{
         width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
-        background: 'var(--moss)',
+        background: 'var(--brand-green)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         marginTop: 2,
       }}>
@@ -102,14 +102,14 @@ export function ChatMessageItem({ msg, isStreaming, onSendToCode }: Props) {
       <div style={{ flex: 1, minWidth: 0 }}>
         {isThinking ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0' }}>
-            <span style={{ fontSize: 13, color: 'var(--text-faint)', fontFamily: 'DM Sans, sans-serif' }}>
+            <span style={{ fontSize: 13, color: 'var(--text-faint)', fontFamily: 'var(--font-sans)' }}>
               {thinkingPhrase}
             </span>
             <div style={{ display: 'flex', gap: 3 }}>
               {[0, 1, 2].map(i => (
                 <div key={i} style={{
                   width: 4, height: 4, borderRadius: '50%',
-                  background: 'var(--ochre)',
+                  background: 'var(--brand-gold)',
                   animation: 'goblinPulse 1.2s ease-in-out infinite',
                   animationDelay: `${i * 0.16}s`,
                 }} />
@@ -124,8 +124,8 @@ export function ChatMessageItem({ msg, isStreaming, onSendToCode }: Props) {
               dangerouslySetInnerHTML={{ __html: html }}
               style={{
                 fontSize: 14, lineHeight: 1.7,
-                color: 'var(--text, #2A2A2A)',
-                fontFamily: 'DM Sans, sans-serif',
+                color: 'var(--text, var(--ink-1))',
+                fontFamily: 'var(--font-sans)',
                 wordBreak: 'break-word',
               }}
             />
@@ -133,7 +133,7 @@ export function ChatMessageItem({ msg, isStreaming, onSendToCode }: Props) {
             {isStreaming && msg.id === 'streaming' && msg.content.length > 0 && (
               <span style={{
                 display: 'inline-block', width: 2, height: 14,
-                background: 'var(--ochre)', marginLeft: 2, verticalAlign: 'text-bottom',
+                background: 'var(--brand-gold)', marginLeft: 2, verticalAlign: 'text-bottom',
                 animation: 'blink 0.8s step-end infinite',
               }} />
             )}
@@ -157,8 +157,8 @@ export function ChatMessageItem({ msg, isStreaming, onSendToCode }: Props) {
                       border: '1px solid rgba(212,169,74,0.35)',
                       borderRadius: 8, cursor: 'pointer',
                       fontSize: 12, fontWeight: 600,
-                      color: 'var(--ochre-dark)',
-                      fontFamily: 'DM Sans, sans-serif',
+                      color: 'var(--gold-700)',
+                      fontFamily: 'var(--font-sans)',
                       transition: 'all 0.15s',
                     }}
                     onMouseEnter={e => (e.currentTarget.style.background = 'rgba(212,169,74,0.2)')}
@@ -175,7 +175,7 @@ export function ChatMessageItem({ msg, isStreaming, onSendToCode }: Props) {
             {modelLabel && !isStreaming && (
               <div style={{
                 marginTop: 6, fontSize: 11, color: 'var(--text-faint)',
-                fontFamily: 'DM Sans, sans-serif',
+                fontFamily: 'var(--font-sans)',
               }}>
                 {modelLabel}
                 {msg.source_tier === 'free_api' && (

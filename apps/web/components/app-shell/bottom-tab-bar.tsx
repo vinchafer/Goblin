@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { useApp } from '@/contexts/app-context';
 
 function ChatIcon() {
@@ -28,13 +28,15 @@ function PreviewIcon() {
   );
 }
 
-export function BottomTabBar() {
+export function BottomTabBar({ hasProject = false }: { hasProject?: boolean }) {
   const { activeTab, setActiveTab, injectionCount, previewUrl } = useApp();
 
+  // Honest staircase mirrors layout/Header.tsx: Chat always works;
+  // Code needs a project; Preview needs a deployed app.
   const tabs = [
-    { id: 'chat' as const, label: 'Chat', Icon: ChatIcon, disabled: false },
-    { id: 'code' as const, label: 'Code', Icon: CodeIcon, disabled: false },
-    { id: 'preview' as const, label: 'Preview', Icon: PreviewIcon, disabled: !previewUrl },
+    { id: 'chat' as const, label: 'Chat', Icon: ChatIcon, disabled: false, hint: '' },
+    { id: 'code' as const, label: 'Code', Icon: CodeIcon, disabled: !hasProject, hint: 'Starte ein Projekt, um Code zu schreiben' },
+    { id: 'preview' as const, label: 'Preview', Icon: PreviewIcon, disabled: !previewUrl, hint: 'Deploye das Projekt, um eine Preview zu sehen' },
   ];
 
   return (
@@ -47,7 +49,7 @@ export function BottomTabBar() {
       paddingBottom: 'env(safe-area-inset-bottom, 0px)',
       flexShrink: 0,
     }} className="goblin-bottom-bar">
-      {tabs.map(({ id, label, Icon, disabled }) => {
+      {tabs.map(({ id, label, Icon, disabled, hint }) => {
         const active = activeTab === id;
         return (
           <button
@@ -56,24 +58,25 @@ export function BottomTabBar() {
             style={{
               flex: 1, background: 'none', border: 'none', cursor: disabled ? 'default' : 'pointer',
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-              gap: 3, fontSize: 10, fontWeight: 600, fontFamily: 'DM Sans, sans-serif',
-              color: active ? 'var(--moss)' : 'var(--meta)',
+              gap: 3, fontSize: 'var(--t-caption-fs)', fontWeight: 600, fontFamily: 'var(--font-sans)',
+              color: active ? 'var(--brand-green)' : 'var(--meta)',
               position: 'relative', minHeight: 56, padding: '6px 0',
               opacity: disabled ? 0.45 : 1,
               WebkitTapHighlightColor: 'transparent',
             }}
             disabled={disabled}
-            title={disabled ? 'Deploy first to see preview' : ''}
+            aria-disabled={disabled}
+            title={hint || undefined}
             aria-label={label}
           >
             <Icon />
-            <span style={{ fontSize: 10, lineHeight: 1 }}>{label}</span>
+            <span style={{ fontSize: 'var(--t-caption-fs)', lineHeight: 1 }}>{label}</span>
             {/* Active indicator */}
             {active && (
               <span style={{
                 position: 'absolute', top: 6, left: '50%', transform: 'translateX(-50%)',
                 width: 20, height: 2, borderRadius: 1,
-                background: 'var(--moss)',
+                background: 'var(--brand-green)',
               }} />
             )}
             {/* Injection dot on Code tab */}
@@ -81,7 +84,7 @@ export function BottomTabBar() {
               <span style={{
                 position: 'absolute', top: 8, right: '28%',
                 width: 6, height: 6, borderRadius: '50%',
-                background: 'var(--ochre)', animation: 'blink 1.5s infinite',
+                background: 'var(--brand-gold)', animation: 'blink 1.5s infinite',
               }} />
             )}
           </button>

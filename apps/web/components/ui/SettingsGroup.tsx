@@ -5,7 +5,7 @@ export function SettingsGroup({ label, children }: { label: string; children: Re
         style={{
           fontSize: 13,
           fontWeight: 500,
-          fontFamily: 'var(--font-ui)',
+          fontFamily: 'var(--font-sans)',
           color: 'var(--text-meta)',
           margin: '0 0 8px 16px',
         }}

@@ -15,7 +15,7 @@ interface SourceStatus {
 
 function statusColor(status: SourceStatus['last_status'], enabled: boolean): string {
   if (!enabled || status === 'disabled') return 'var(--text-meta)';
-  if (status === 'ok') return 'var(--moss-green)';
+  if (status === 'ok') return 'var(--brand-green)';
   return 'var(--rust)';
 }
 
@@ -43,10 +43,10 @@ export default function AdminRankingsPage() {
     );
 
   return (
-    <div style={{ padding: 32, maxWidth: 1000, margin: '0 auto', fontFamily: 'var(--font-ui)' }}>
+    <div style={{ padding: 32, maxWidth: 1000, margin: '0 auto', fontFamily: 'var(--font-sans)' }}>
       <h1
         style={{
-          fontFamily: 'var(--font-display)',
+          fontFamily: 'var(--font-sans)',
           fontSize: 28,
           fontWeight: 600,
           marginBottom: 24,

@@ -47,7 +47,7 @@ export default function TestCallbackPage() {
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}>
-      <p style={{ fontFamily: 'DM Sans, sans-serif', color: 'var(--meta)' }}>Authenticating...</p>
+      <p style={{ fontFamily: 'var(--font-sans)', color: 'var(--meta)' }}>Authenticating...</p>
     </div>
   );
 }

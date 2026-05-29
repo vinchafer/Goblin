@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { useState } from 'react';
 
 const STEPS = [
@@ -56,7 +56,7 @@ export function FirstRunTour({ onDone }: FirstRunTourProps) {
           padding: '20px 24px',
           width: 'min(360px, calc(100vw - 32px))',
           boxShadow: '0 8px 40px rgba(0,0,0,0.18)',
-          fontFamily: 'DM Sans, sans-serif',
+          fontFamily: 'var(--font-sans)',
         }}
       >
         {/* Close button — top right */}
@@ -82,7 +82,7 @@ export function FirstRunTour({ onDone }: FirstRunTourProps) {
           {STEPS.map((_, i) => (
             <div key={i} style={{
               height: 4, flex: 1, borderRadius: 2,
-              background: i <= step ? 'var(--moss)' : 'var(--div)',
+              background: i <= step ? 'var(--brand-green)' : 'var(--div)',
               transition: 'background 0.2s',
             }} />
           ))}
@@ -112,7 +112,7 @@ export function FirstRunTour({ onDone }: FirstRunTourProps) {
             onClick={() => isLast ? onDone() : setStep(s => s + 1)}
             style={{
               padding: '9px 20px',
-              background: 'var(--moss)', color: 'var(--ochre)',
+              background: 'var(--brand-green)', color: 'var(--brand-gold)',
               border: 'none', borderRadius: 8,
               fontSize: 13, fontWeight: 600,
               cursor: 'pointer',

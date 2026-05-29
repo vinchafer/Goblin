@@ -64,8 +64,8 @@ export function SecurityPage() {
 
   if (success) {
     return (
-      <div style={{ padding: '24px 16px', textAlign: 'center', fontFamily: 'var(--font-ui)' }}>
-        <h2 style={{ color: 'var(--moss)', fontFamily: 'var(--font-brand)', margin: '0 0 8px' }}>
+      <div style={{ padding: '24px 16px', textAlign: 'center', fontFamily: 'var(--font-sans)' }}>
+        <h2 style={{ color: 'var(--brand-green)', fontFamily: 'var(--font-sans)', margin: '0 0 8px' }}>
           Passwort geändert
         </h2>
         <p style={{ color: 'var(--meta)', fontSize: 14 }}>
@@ -76,7 +76,7 @@ export function SecurityPage() {
   }
 
   return (
-    <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-ui)' }}>
+    <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
       <SettingsGroup label="Passwort ändern">
         <SettingsCard>
           <PasswordField
@@ -112,13 +112,13 @@ export function SecurityPage() {
           width: '100%',
           padding: 16,
           marginTop: 12,
-          background: canSubmit ? 'var(--moss)' : 'rgba(0,0,0,0.10)',
+          background: canSubmit ? 'var(--brand-green)' : 'rgba(0,0,0,0.10)',
           color: '#fff',
           border: 'none',
           borderRadius: 'var(--radius-lg)',
           fontSize: 17,
           fontWeight: 600,
-          fontFamily: 'var(--font-ui)',
+          fontFamily: 'var(--font-sans)',
           cursor: canSubmit ? 'pointer' : 'not-allowed',
         }}
       >
@@ -159,7 +159,7 @@ function PasswordField({
           background: 'transparent',
           fontSize: 16,
           color: 'var(--text)',
-          fontFamily: 'var(--font-ui)',
+          fontFamily: 'var(--font-sans)',
           marginTop: 4,
           padding: 0,
           width: '100%',

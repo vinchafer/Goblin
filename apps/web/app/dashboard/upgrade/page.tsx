@@ -1,5 +1,7 @@
 'use client';
+
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { getAuthHeaders, API_URL } from '@/lib/api';
 
 type PlanId = 'build' | 'pro' | 'power';
@@ -9,26 +11,30 @@ interface PlanCardData {
   name: string;
   price: number;
   requests: number;
-  highlight?: boolean;
+  meta: string;
   pitch: string;
   features: string[];
+  featured?: boolean;   // visual emphasis — the top tier (Power)
 }
 
+// Plan names + prices follow code/Stripe reality (recon finding 4):
+// Build / Pro / Power, not the proposed Try / Build / Ship rename.
+// Per the design decision the design intent still applies — Power reads
+// as the user's NEXT step, NOT as a per-seat / Teams plan.
 const PLANS: PlanCardData[] = [
   {
     id: 'build',
     name: 'Build',
     price: 9,
     requests: 200,
-    pitch: 'Für Einzelbastler. Lerne, baue, ship.',
+    meta: 'FÜR DEN START',
+    pitch: 'Lern Goblin kennen. 200 Anfragen pro Monat, BYOK auf allen Providern.',
     features: [
       '200 AI-Anfragen / Monat',
-      'Alle AI-Provider (BYOK)',
-      'Chat + Code + Preview',
-      'GitHub-Push',
-      '5 GB Cloud-Storage',
+      '3 Projekte',
+      'BYOK — alle Provider',
       'Send to Code',
-      'Mobile + Desktop',
+      '5 GB Cloud-Storage',
     ],
   },
   {
@@ -36,15 +42,15 @@ const PLANS: PlanCardData[] = [
     name: 'Pro',
     price: 19,
     requests: 800,
-    highlight: true,
-    pitch: 'Für aktive Builder. 4× mehr Anfragen.',
+    meta: 'FÜR REGELMÄSSIGE BUILDER',
+    pitch: 'Vier Mal so viele Anfragen, Auto-Fallback wenn ein Key streikt.',
     features: [
       '800 AI-Anfragen / Monat',
-      'Alles aus Build',
-      'Prioritäts-Routing',
+      '50 Projekte',
+      'BYOK · Request-Cache',
       '20 GB Cloud-Storage',
-      'Web Push',
-      'Erweiterte Modell-Auswahl',
+      'GitHub + Vercel Auto-Deploy',
+      'Auto-Fallback-Routing',
     ],
   },
   {
@@ -52,22 +58,28 @@ const PLANS: PlanCardData[] = [
     name: 'Power',
     price: 39,
     requests: 3000,
-    pitch: 'Für Profis & Teams. Maximaler Durchsatz.',
+    meta: 'WENN DU MEHR ANFRAGEN BRAUCHST',
+    pitch: 'Mehr Durchsatz für Power-Builder. Priority-Routing, Unlimited Projekte.',
     features: [
       '3.000 AI-Anfragen / Monat',
-      'Alles aus Pro',
-      'Premium-Modelle ohne Limit',
+      'Unlimitierte Projekte',
+      'BYOK · Priority-Routing',
       '100 GB Cloud-Storage',
-      'Schneller Support',
-      'Early Access Features',
+      'Erweiterte Modell-Auswahl',
+      'Beta-Features 30 Tage früher',
     ],
+    featured: true,
   },
 ];
 
 export default function UpgradePage() {
+  const search = useSearchParams();
+  const reason = search?.get('reason'); // ?reason=limit-hit emphasises requests
   const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [currentPlan, setCurrentPlan] = useState<string | null>(null);
+  const [confirmPlan, setConfirmPlan] = useState<PlanId | null>(null);
+  const [matrixOpen, setMatrixOpen] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -78,11 +90,14 @@ export default function UpgradePage() {
           const data = await r.json();
           setCurrentPlan(data.plan ?? null);
         }
-      } catch { /* ignore */ }
+      } catch { /* ignore — page still works without current-plan info */ }
     })();
   }, []);
 
-  const handleCheckout = async (targetPlan: PlanId) => {
+  // Stripe Checkout. Per decision: NEVER charge directly — the button on
+  // each card opens the confirmation modal; Checkout starts only after
+  // explicit confirmation.
+  const startCheckout = async (targetPlan: PlanId) => {
     setLoadingPlan(targetPlan);
     setError(null);
     try {
@@ -105,102 +120,154 @@ export default function UpgradePage() {
     }
   };
 
+  // If the user got here because of a limit hit, emphasise requests in the
+  // headline. Otherwise neutral.
+  const reasonHeadline = reason === 'limit-hit'
+    ? 'Mehr Anfragen pro Monat — wenn du gerade an deine Grenze gestoßen bist.'
+    : 'Drei Pläne. BYOK auf jedem. Jederzeit kündbar.';
+
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--surface-2, var(--cream))', fontFamily: 'DM Sans, sans-serif' }}>
-      <main style={{ maxWidth: 1080, margin: '0 auto', padding: '48px 16px 80px' }}>
+    <div style={{ height: '100%', overflowY: 'auto', background: 'var(--d-surface)' }}>
+      <div style={{ maxWidth: 1140, margin: '0 auto', padding: '48px 32px 80px' }}>
+
         <header style={{ textAlign: 'center', marginBottom: 40 }}>
+          <div className="gobl-eyebrow" style={{ justifyContent: 'center', marginBottom: 18 }}>
+            <span className="tick" />
+            <span className="num">DEIN PLAN · {(currentPlan ?? 'BUILD').toUpperCase()}</span>
+          </div>
           <h1 style={{
-            fontFamily: 'Fraunces, serif', fontSize: 'clamp(28px, 5vw, 40px)', fontWeight: 700,
-            color: 'var(--text)', margin: '0 0 10px', letterSpacing: '-0.02em',
+            fontFamily: 'var(--font-dash-display), Manrope, sans-serif',
+            fontWeight: 600, fontSize: 'clamp(36px, 4.5vw, 56px)',
+            letterSpacing: '-0.034em', lineHeight: 1.04,
+            color: 'var(--ink-1)', margin: '0 auto 14px', maxWidth: '16ch',
           }}>
-            Wähle deinen Plan
+            Mehr bauen, <span className="gobl-serif">weniger ausgeben.</span>
           </h1>
-          <p style={{ fontSize: 16, color: 'var(--meta)', maxWidth: 520, margin: '0 auto', lineHeight: 1.5 }}>
-            Alle Pläne mit BYOK. Du zahlst Inferenz direkt bei deinem Provider — Goblin nimmt $0 extra.
+          <p style={{
+            fontSize: 16.5, color: 'var(--ink-2)', maxWidth: '56ch',
+            margin: '0 auto', lineHeight: 1.5,
+          }}>
+            {reasonHeadline}
           </p>
         </header>
 
+        {/* Three plan cards lead. Power = featured (top tier, user's next step). */}
         <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-          gap: 18,
-          alignItems: 'stretch',
+          display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+          gap: 18, marginBottom: 32,
         }}>
-          {PLANS.map((p) => {
+          {PLANS.map(p => {
             const isCurrent = currentPlan === p.id;
             const isLoading = loadingPlan === p.id;
+            const featured = !!p.featured;
             return (
-              <div key={p.id} style={{
-                background: 'var(--panel, #fff)',
-                border: p.highlight ? '2px solid var(--moss)' : '1px solid var(--border)',
-                borderRadius: 16,
-                padding: '28px 24px',
-                display: 'flex', flexDirection: 'column',
-                position: 'relative',
-                boxShadow: p.highlight ? '0 12px 36px -16px rgba(45,74,43,0.30)' : '0 1px 0 rgba(0,0,0,0.03)',
-              }}>
-                {p.highlight && (
-                  <div style={{
-                    position: 'absolute', top: -12, left: '50%', transform: 'translateX(-50%)',
-                    background: 'var(--moss)', color: '#fff',
-                    fontSize: 11, fontWeight: 600, letterSpacing: '0.12em', textTransform: 'uppercase',
-                    padding: '4px 12px', borderRadius: 999,
-                  }}>Populär</div>
+              <div
+                key={p.id}
+                style={{
+                  background: featured ? 'var(--d-surface-deep)' : 'var(--d-surface-elev)',
+                  color: featured ? 'var(--bone)' : 'var(--ink-1)',
+                  border: `1px solid ${featured ? 'var(--green)' : 'var(--line)'}`,
+                  borderRadius: 'var(--radius-lg)', padding: 28,
+                  display: 'flex', flexDirection: 'column', gap: 18, position: 'relative',
+                  boxShadow: isCurrent ? '0 0 0 2px var(--accent-rule)' : undefined,
+                }}
+              >
+                {isCurrent && (
+                  <span style={{
+                    position: 'absolute', top: -10, left: 24,
+                    fontFamily: 'JetBrains Mono, monospace', fontSize: 10,
+                    letterSpacing: '0.16em', padding: '4px 9px', borderRadius: 'var(--radius-xs)',
+                    background: 'var(--accent-bright)', color: 'var(--green)', fontWeight: 600,
+                  }}>
+                    DEIN PLAN
+                  </span>
                 )}
+                <div>
+                  <h3 style={{
+                    fontFamily: 'var(--font-dash-display), Manrope, sans-serif',
+                    fontWeight: 600, fontSize: 24, letterSpacing: '-0.024em',
+                    color: featured ? 'var(--bone)' : 'var(--ink-1)', margin: 0,
+                  }}>
+                    {p.name}
+                  </h3>
+                  <span style={{
+                    fontFamily: 'JetBrains Mono, monospace', fontSize: 10.5,
+                    letterSpacing: '0.10em', textTransform: 'uppercase',
+                    color: featured ? 'rgba(244,236,216,.62)' : 'var(--ink-3)',
+                    display: 'block', marginTop: 6,
+                  }}>
+                    {p.meta}
+                  </span>
+                </div>
 
                 <div style={{
-                  fontFamily: 'Fraunces, serif', fontSize: 22, fontWeight: 700,
-                  color: 'var(--text)', marginBottom: 4,
-                }}>{p.name}</div>
-                <p style={{ fontSize: 13, color: 'var(--meta)', margin: '0 0 18px', lineHeight: 1.5 }}>
+                  display: 'flex', alignItems: 'baseline', gap: 8, padding: '8px 0',
+                  borderTop: `1px solid ${featured ? 'rgba(244,236,216,.14)' : 'var(--line)'}`,
+                  borderBottom: `1px solid ${featured ? 'rgba(244,236,216,.14)' : 'var(--line)'}`,
+                }}>
+                  <span style={{
+                    fontFamily: 'var(--font-dash-display), Manrope, sans-serif',
+                    fontWeight: 600, fontSize: 48, letterSpacing: '-0.036em',
+                    color: featured ? 'var(--bone)' : 'var(--ink-1)', lineHeight: 1,
+                  }}>
+                    ${p.price}
+                  </span>
+                  <span style={{
+                    fontFamily: 'JetBrains Mono, monospace', fontSize: 11,
+                    letterSpacing: '0.10em', textTransform: 'uppercase',
+                    color: featured ? 'rgba(244,236,216,.62)' : 'var(--ink-3)',
+                  }}>
+                    / MONAT
+                  </span>
+                </div>
+
+                <p style={{
+                  fontSize: 13.5, lineHeight: 1.45, margin: 0,
+                  color: featured ? 'rgba(244,236,216,.78)' : 'var(--ink-2)',
+                }}>
                   {p.pitch}
                 </p>
 
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 22 }}>
-                  <span style={{ fontFamily: 'Fraunces, serif', fontSize: 36, fontWeight: 700, color: 'var(--moss)' }}>
-                    ${p.price}
-                  </span>
-                  <span style={{ fontSize: 14, color: 'var(--meta)' }}>/Monat</span>
-                </div>
-
-                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px', display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
-                  {p.features.map((f) => (
-                    <li key={f} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, fontSize: 13, color: 'var(--text)', lineHeight: 1.5 }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--moss)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginTop: 3, flexShrink: 0 }}>
-                        <polyline points="20 6 9 17 4 12"/>
-                      </svg>
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 9 }}>
+                  {p.features.map(f => (
+                    <li key={f} style={{
+                      display: 'flex', alignItems: 'flex-start', gap: 9,
+                      fontSize: 13.5, lineHeight: 1.45,
+                      color: featured ? 'var(--bone)' : 'var(--ink-1)',
+                    }}>
+                      <span style={{ color: featured ? 'var(--gold)' : 'var(--accent)', flexShrink: 0, marginTop: 2 }}>✓</span>
                       <span>{f}</span>
                     </li>
                   ))}
                 </ul>
 
-                {isCurrent ? (
-                  <button disabled style={{
-                    width: '100%', padding: '12px 0',
-                    background: 'transparent', color: 'var(--moss)',
-                    border: '1.5px solid var(--moss)', borderRadius: 10,
-                    fontSize: 14, fontWeight: 600, cursor: 'not-allowed',
-                  }}>
-                    Dein aktueller Plan
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => handleCheckout(p.id)}
-                    disabled={!!loadingPlan}
-                    style={{
-                      width: '100%', padding: '12px 0',
-                      background: p.highlight ? 'var(--moss)' : 'transparent',
-                      color: p.highlight ? '#fff' : 'var(--moss)',
-                      border: p.highlight ? 'none' : '1.5px solid var(--moss)',
-                      borderRadius: 10,
-                      fontSize: 14, fontWeight: 600,
-                      cursor: loadingPlan ? 'wait' : 'pointer',
-                      opacity: loadingPlan && !isLoading ? 0.5 : 1,
-                    }}
-                  >
-                    {isLoading ? 'Lade…' : `${p.name} wählen`}
-                  </button>
-                )}
+                <div style={{ marginTop: 'auto' }}>
+                  {isCurrent ? (
+                    <button
+                      disabled
+                      style={{
+                        width: '100%', padding: '12px 0',
+                        background: featured ? 'var(--bone)' : 'var(--green)',
+                        color: featured ? 'var(--green)' : 'var(--bone)',
+                        border: 'none', borderRadius: 'var(--radius)',
+                        fontFamily: 'var(--font-dash-display), Manrope, sans-serif',
+                        fontWeight: 600, fontSize: 14, cursor: 'not-allowed', opacity: 0.85,
+                      }}
+                    >
+                      Dein aktueller Plan
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmPlan(p.id)}
+                      disabled={!!loadingPlan}
+                      className={featured ? 'gobl-btn gold' : 'gobl-btn primary'}
+                      style={{ width: '100%', justifyContent: 'center', padding: '12px 0' }}
+                    >
+                      {isLoading ? 'Lade …' : `${p.name} wählen →`}
+                    </button>
+                  )}
+                </div>
               </div>
             );
           })}
@@ -208,15 +275,125 @@ export default function UpgradePage() {
 
         {error && (
           <div style={{
-            marginTop: 24, textAlign: 'center',
-            fontSize: 13, color: 'var(--danger, #c64a4a)',
-          }}>{error}</div>
+            background: 'var(--danger-soft)', border: '1px solid rgba(160,66,48,.30)',
+            borderRadius: 'var(--radius)', padding: 14, color: 'var(--danger)',
+            marginBottom: 24, fontSize: 13.5, textAlign: 'center',
+          }}>
+            {error}
+          </div>
         )}
 
-        <p style={{ marginTop: 32, textAlign: 'center', fontSize: 12, color: 'var(--meta)' }}>
-          Sicheres Checkout via Stripe. Kündigung jederzeit im Kundenportal.
-        </p>
-      </main>
+        {/* Comparison matrix — collapsed by default, expandable. */}
+        <div style={{ textAlign: 'center', marginBottom: 12 }}>
+          <button
+            type="button"
+            onClick={() => setMatrixOpen(o => !o)}
+            className="gobl-btn ghost sm"
+          >
+            {matrixOpen ? 'Vergleich schließen ↑' : 'Alle Features vergleichen →'}
+          </button>
+        </div>
+
+        {matrixOpen && (
+          <div className="gobl-panel" style={{ overflow: 'hidden', marginBottom: 32 }}>
+            {[
+              { label: 'AI-Anfragen / Monat', values: ['200', '800', '3.000'] },
+              { label: 'Projekte', values: ['3', '50', '∞'] },
+              { label: 'Cloud-Storage', values: ['5 GB', '20 GB', '100 GB'] },
+              { label: 'BYOK (alle Provider)', values: ['✓', '✓', '✓'] },
+              { label: 'Auto-Fallback-Routing', values: ['—', '✓', '✓'] },
+              { label: 'GitHub + Vercel Auto-Deploy', values: ['—', '✓', '✓'] },
+              { label: 'Erweiterte Modell-Auswahl', values: ['—', '—', '✓'] },
+              { label: 'Beta-Features früher', values: ['—', '—', '30 Tage'] },
+            ].map((row, i) => (
+              <div key={row.label} style={{
+                display: 'grid', gridTemplateColumns: '1.4fr repeat(3, 1fr)',
+                borderBottom: i === 7 ? 'none' : '1px solid var(--line)',
+              }}>
+                <div style={{
+                  padding: '12px 18px', borderRight: '1px solid var(--line)',
+                  fontSize: 13.5, color: 'var(--ink-2)',
+                }}>
+                  {row.label}
+                </div>
+                {row.values.map((v, j) => (
+                  <div key={j} style={{
+                    padding: '12px 18px',
+                    borderRight: j === 2 ? 'none' : '1px solid var(--line)',
+                    fontSize: 13.5, color: v === '—' ? 'var(--ink-4)' : 'var(--ink-1)',
+                    fontWeight: v === '✓' ? 600 : 500,
+                    fontFamily: v === '✓' || v === '—' ? 'inherit' : 'JetBrains Mono, monospace',
+                  }}>
+                    {v}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Confidence row — no fake urgency. Honest signals only. */}
+        <div style={{
+          display: 'flex', justifyContent: 'center', gap: 24, flexWrap: 'wrap',
+          marginTop: 24, paddingTop: 24, borderTop: '1px solid var(--line)',
+        }}>
+          {['JEDERZEIT KÜNDBAR', 'BYOK AUF JEDEM TIER', 'STRIPE · KEIN LOCK-IN'].map(s => (
+            <span key={s} style={{
+              fontFamily: 'JetBrains Mono, monospace', fontSize: 10.5,
+              letterSpacing: '0.10em', textTransform: 'uppercase', color: 'var(--ink-3)',
+              display: 'inline-flex', alignItems: 'center', gap: 7,
+            }}>
+              <span style={{ color: 'var(--accent)' }}>✓</span>
+              {s}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Confirmation modal — purchase requires explicit consent (decision). */}
+      {confirmPlan && (
+        <div role="dialog" aria-modal="true" style={{
+          position: 'fixed', inset: 0, background: 'rgba(15,43,30,0.55)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+        }} onClick={() => setConfirmPlan(null)}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: 'var(--d-surface-elev)', borderRadius: 'var(--radius-lg)',
+            padding: 28, width: 440, maxWidth: '92vw', border: '1px solid var(--line)',
+          }}>
+            {(() => {
+              const plan = PLANS.find(x => x.id === confirmPlan)!;
+              return (
+                <>
+                  <h2 style={{
+                    fontFamily: 'var(--font-dash-display), Manrope, sans-serif',
+                    fontWeight: 600, fontSize: 20, color: 'var(--ink-1)', margin: '0 0 8px',
+                  }}>
+                    Plan wechseln zu {plan.name}
+                  </h2>
+                  <p style={{ fontSize: 14, color: 'var(--ink-2)', margin: '0 0 16px', lineHeight: 1.5 }}>
+                    Du wirst zu Stripe weitergeleitet, um die Zahlung zu bestätigen.
+                    ${plan.price}/Monat. {plan.requests.toLocaleString('de-DE')} Anfragen.
+                    Jederzeit kündbar.
+                  </p>
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    <button type="button" className="gobl-btn secondary" style={{ flex: 1 }} onClick={() => setConfirmPlan(null)}>
+                      Abbrechen
+                    </button>
+                    <button
+                      type="button"
+                      className="gobl-btn primary"
+                      style={{ flex: 1 }}
+                      onClick={() => { const id = confirmPlan; setConfirmPlan(null); if (id) startCheckout(id); }}
+                    >
+                      Zu Stripe →
+                    </button>
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

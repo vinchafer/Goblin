@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState, useCallback } from 'react';
 
@@ -37,7 +37,7 @@ const CARD_STYLE = {
 };
 
 const PLAN_BADGE: Record<string, string> = {
-  build: '#92701a', pro: 'var(--moss)', power: '#1a2d5a',
+  build: '#92701a', pro: 'var(--brand-green)', power: '#1a2d5a',
 };
 
 export default function AdminUsersPage() {
@@ -93,7 +93,7 @@ export default function AdminUsersPage() {
 
   return (
     <div>
-      <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 26, color: 'var(--moss)', fontWeight: 700, letterSpacing: '-0.6px', marginBottom: 24 }}>
+      <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 26, color: 'var(--brand-green)', fontWeight: 700, letterSpacing: '-0.6px', marginBottom: 24 }}>
         Users
       </h1>
 
@@ -107,7 +107,7 @@ export default function AdminUsersPage() {
             { label: 'Est. MRR', value: `$${stats.estimated_mrr}` },
           ].map(s => (
             <div key={s.label} style={CARD_STYLE}>
-              <div style={{ fontSize: 24, fontWeight: 700, fontFamily: 'Fraunces, serif', color: 'var(--moss)' }}>{s.value}</div>
+              <div style={{ fontSize: 24, fontWeight: 700, fontFamily: 'var(--font-sans)', color: 'var(--brand-green)' }}>{s.value}</div>
               <div style={{ fontSize: 12, color: 'var(--meta)', marginTop: 2 }}>{s.label}</div>
             </div>
           ))}
@@ -125,15 +125,15 @@ export default function AdminUsersPage() {
               flex: 1, height: 38, padding: '0 12px', borderRadius: 8,
               border: '1.5px solid var(--border)', background: 'var(--surface)',
               color: 'var(--text)', fontSize: 13, outline: 'none',
-              fontFamily: 'DM Sans, sans-serif',
+              fontFamily: 'var(--font-sans)',
             }}
           />
           <button
             onClick={load}
             style={{
-              background: 'var(--moss)', color: '#fff', border: 'none',
+              background: 'var(--brand-green)', color: '#fff', border: 'none',
               borderRadius: 8, padding: '0 16px', height: 38, fontSize: 13,
-              cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
+              cursor: 'pointer', fontFamily: 'var(--font-sans)',
             }}
           >
             Refresh
@@ -144,7 +144,7 @@ export default function AdminUsersPage() {
           <div style={{ textAlign: 'center', color: 'var(--meta)', padding: '32px 0' }}>Loading…</div>
         ) : (
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, fontFamily: 'DM Sans, sans-serif' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, fontFamily: 'var(--font-sans)' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid var(--div)' }}>
                   {['Email', 'Plan', 'Requests', 'Joined', 'Status', 'Actions'].map(h => (
@@ -181,14 +181,14 @@ export default function AdminUsersPage() {
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button
                           onClick={() => setSelectedUser(u)}
-                          style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontSize: 12, cursor: 'pointer', color: 'var(--text)', fontFamily: 'DM Sans, sans-serif' }}
+                          style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontSize: 12, cursor: 'pointer', color: 'var(--text)', fontFamily: 'var(--font-sans)' }}
                         >
                           Details
                         </button>
                         <button
                           onClick={() => handleAction(u.id, 'suspend', !u.is_suspended)}
                           disabled={actionLoading === u.id + 'suspend'}
-                          style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontSize: 12, cursor: 'pointer', color: u.is_suspended ? 'var(--success)' : 'var(--warning)', fontFamily: 'DM Sans, sans-serif' }}
+                          style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontSize: 12, cursor: 'pointer', color: u.is_suspended ? 'var(--success)' : 'var(--warning)', fontFamily: 'var(--font-sans)' }}
                         >
                           {u.is_suspended ? 'Unsuspend' : 'Suspend'}
                         </button>
@@ -236,7 +236,7 @@ export default function AdminUsersPage() {
             }}
           >
             <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--div)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 17, color: 'var(--moss)', fontWeight: 700 }}>User Details</h2>
+              <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: 17, color: 'var(--brand-green)', fontWeight: 700 }}>User Details</h2>
               <button onClick={() => setSelectedUser(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--meta)', fontSize: 18 }}>✕</button>
             </div>
             <div style={{ padding: '20px 24px' }}>
@@ -260,11 +260,11 @@ export default function AdminUsersPage() {
                     onClick={() => handleAction(selectedUser.id, 'plan', p)}
                     disabled={selectedUser.plan === p || !!actionLoading}
                     style={{
-                      background: selectedUser.plan === p ? 'var(--moss)' : 'transparent',
+                      background: selectedUser.plan === p ? 'var(--brand-green)' : 'transparent',
                       color: selectedUser.plan === p ? '#fff' : 'var(--text)',
                       border: '1px solid var(--border)', borderRadius: 7,
                       padding: '6px 14px', fontSize: 12, cursor: 'pointer',
-                      fontFamily: 'DM Sans, sans-serif',
+                      fontFamily: 'var(--font-sans)',
                       opacity: selectedUser.plan === p ? 1 : 0.8,
                     }}
                   >
@@ -273,7 +273,7 @@ export default function AdminUsersPage() {
                 ))}
                 <button
                   onClick={() => { if (confirm('Delete this user permanently?')) handleAction(selectedUser.id, 'delete'); }}
-                  style={{ background: 'transparent', border: '1px solid var(--danger)', borderRadius: 7, padding: '6px 14px', fontSize: 12, cursor: 'pointer', color: 'var(--danger)', fontFamily: 'DM Sans, sans-serif', marginLeft: 'auto' }}
+                  style={{ background: 'transparent', border: '1px solid var(--danger)', borderRadius: 7, padding: '6px 14px', fontSize: 12, cursor: 'pointer', color: 'var(--danger)', fontFamily: 'var(--font-sans)', marginLeft: 'auto' }}
                 >
                   Delete
                 </button>

@@ -25,7 +25,7 @@ function PulseDots({ count = 3 }: { count?: number }) {
           key={i}
           style={{
             width: 5, height: 5, borderRadius: '50%',
-            background: 'var(--ochre)',
+            background: 'var(--brand-gold)',
             animation: 'goblin-pulse 1.2s ease-in-out infinite',
             animationDelay: `${i * 0.18}s`,
           }}
@@ -43,7 +43,7 @@ function OchreBar({ pct = 65 }: { pct?: number }) {
     }}>
       <div style={{
         height: '100%', borderRadius: 2,
-        background: 'var(--ochre)',
+        background: 'var(--brand-gold)',
         width: `${pct}%`,
         animation: 'pw 2s ease-in-out infinite alternate',
       }} />
@@ -81,8 +81,8 @@ export function GoblinLoader({
           className="goblin-wobble-loop"
         />
         <span style={{
-          fontFamily: 'Fraunces, serif', fontSize: 20,
-          color: 'var(--moss)', fontWeight: 700, letterSpacing: '-0.3px',
+          fontFamily: 'var(--font-sans)', fontSize: 20,
+          color: 'var(--brand-green)', fontWeight: 700, letterSpacing: '-0.3px',
         }}>
           Goblin
         </span>
@@ -97,7 +97,7 @@ export function GoblinLoader({
         alignItems: 'center', gap: 10, padding: 24,
       }}>
         <GoblinMark size={iconSize} className="goblin-think" />
-        <span style={{ fontSize: fontSize, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif' }}>
+        <span style={{ fontSize: fontSize, color: 'var(--meta)', fontFamily: 'var(--font-sans)' }}>
           {label}
         </span>
         <OchreBar />
@@ -111,7 +111,7 @@ export function GoblinLoader({
         <span style={{ fontSize: iconSize * 0.6, animation: 'goblin-think 2s ease-in-out infinite', display: 'inline-block' }}>
           ☁️
         </span>
-        <span style={{ fontSize: fontSize, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif' }}>
+        <span style={{ fontSize: fontSize, color: 'var(--meta)', fontFamily: 'var(--font-sans)' }}>
           {label}
         </span>
         <PulseDots count={3} />
@@ -125,7 +125,7 @@ export function GoblinLoader({
       <GoblinMark size={Math.round(iconSize * 0.75)} className="goblin-think" />
       <span style={{
         fontSize: fontSize, color: 'var(--meta)',
-        fontFamily: 'DM Sans, sans-serif',
+        fontFamily: 'var(--font-sans)',
       }}>
         {label}
       </span>

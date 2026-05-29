@@ -129,7 +129,7 @@ export function BillingPage() {
   }
 
   if (loading) {
-    return <div style={{ padding: 24, color: 'var(--text-meta)', fontFamily: 'var(--font-ui)' }}>Lade Abrechnung…</div>;
+    return <div style={{ padding: 24, color: 'var(--text-meta)', fontFamily: 'var(--font-sans)' }}>Lade Abrechnung…</div>;
   }
 
   const planKey = status?.plan ?? 'trial';
@@ -144,7 +144,7 @@ export function BillingPage() {
   const pct = isComped || limit === 0 ? 0 : Math.min(100, Math.round((used / limit) * 100));
 
   return (
-    <div style={{ padding: '0 16px 32px', fontFamily: 'var(--font-ui)' }}>
+    <div style={{ padding: '0 16px 32px', fontFamily: 'var(--font-sans)' }}>
 
       {/* Current plan */}
       <Section title="Dein Plan">
@@ -156,7 +156,7 @@ export function BillingPage() {
                   Aktuell
                 </div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
-                  <div style={{ fontSize: 26, fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-brand)', letterSpacing: '-0.3px' }}>
+                  <div style={{ fontSize: 26, fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-sans)', letterSpacing: '-0.3px' }}>
                     {isComped ? 'Vollzugriff' : planName}
                   </div>
                   <div style={{ fontSize: 14, color: 'var(--text-meta)' }}>
@@ -164,7 +164,7 @@ export function BillingPage() {
                   </div>
                 </div>
                 {!isComped && status?.trialEndsAt && (
-                  <div style={{ marginTop: 8, fontSize: 13, color: 'var(--ochre)' }}>
+                  <div style={{ marginTop: 8, fontSize: 13, color: 'var(--brand-gold)' }}>
                     Trial endet {new Date(status.trialEndsAt).toLocaleDateString('de-DE')}
                   </div>
                 )}
@@ -180,7 +180,7 @@ export function BillingPage() {
             <ul style={{ listStyle: 'none', padding: 0, margin: '12px 0 16px', display: 'flex', flexDirection: 'column', gap: 6 }}>
               {(isComped ? ['Unbegrenzte Projekte', 'Alle Provider', 'Voller Speicher', 'Alle Features'] : features).map(f => (
                 <li key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text)' }}>
-                  <Icon name="check" size={14} color="var(--moss)" />
+                  <Icon name="check" size={14} color="var(--brand-green)" />
                   {f}
                 </li>
               ))}
@@ -216,7 +216,7 @@ export function BillingPage() {
                   <div style={{ fontSize: 13, color: 'var(--text)', fontFamily: 'var(--font-mono, monospace)' }}>{used} / {limit}</div>
                 </div>
                 <div style={{ height: 8, borderRadius: 4, background: 'var(--rule, rgba(0,0,0,0.08))', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${pct}%`, background: 'var(--moss)', transition: 'width 0.3s ease' }} />
+                  <div style={{ height: '100%', width: `${pct}%`, background: 'var(--brand-green)', transition: 'width 0.3s ease' }} />
                 </div>
               </>
             )}
@@ -333,8 +333,8 @@ function Card({ children }: { children: React.ReactNode }) {
 function StatCard({ icon, label, value }: { icon: 'apiKey' | 'fast' | 'rocket'; label: string; value: number }) {
   return (
     <div style={{ background: 'var(--surface)', border: '1px solid var(--rule, rgba(0,0,0,0.08))', borderRadius: 12, padding: 14, display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <Icon name={icon} size={16} color="var(--moss)" />
-      <div style={{ fontSize: 22, fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-brand)', lineHeight: 1.1 }}>{value}</div>
+      <Icon name={icon} size={16} color="var(--brand-green)" />
+      <div style={{ fontSize: 22, fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-sans)', lineHeight: 1.1 }}>{value}</div>
       <div style={{ fontSize: 11, color: 'var(--text-meta)', textTransform: 'uppercase', letterSpacing: 0.8 }}>{label}</div>
     </div>
   );
@@ -342,15 +342,15 @@ function StatCard({ icon, label, value }: { icon: 'apiKey' | 'fast' | 'rocket'; 
 
 const primaryBtn = (busy: boolean): React.CSSProperties => ({
   padding: '8px 16px',
-  background: 'var(--moss)',
-  color: 'var(--ochre, #fff)',
+  background: 'var(--brand-green)',
+  color: 'var(--brand-gold)',
   border: 'none',
   borderRadius: 8,
   fontSize: 13,
   fontWeight: 600,
   cursor: busy ? 'wait' : 'pointer',
   opacity: busy ? 0.6 : 1,
-  fontFamily: 'var(--font-ui)',
+  fontFamily: 'var(--font-sans)',
 });
 
 const outlineBtn: React.CSSProperties = {
@@ -362,18 +362,18 @@ const outlineBtn: React.CSSProperties = {
   fontSize: 13,
   fontWeight: 500,
   cursor: 'pointer',
-  fontFamily: 'var(--font-ui)',
+  fontFamily: 'var(--font-sans)',
 };
 
 const textBtn: React.CSSProperties = {
   padding: '6px 10px',
   background: 'transparent',
-  color: 'var(--moss)',
+  color: 'var(--brand-green)',
   border: 'none',
   fontSize: 13,
   fontWeight: 500,
   cursor: 'pointer',
-  fontFamily: 'var(--font-ui)',
+  fontFamily: 'var(--font-sans)',
 };
 
 function InviteCodeRedemption() {
@@ -417,7 +417,7 @@ function InviteCodeRedemption() {
           cursor: 'pointer',
           padding: '4px 0',
           textDecoration: 'underline',
-          fontFamily: 'var(--font-ui)',
+          fontFamily: 'var(--font-sans)',
         }}
       >
         Hast du einen Invite-Code?
@@ -452,7 +452,7 @@ function InviteCodeRedemption() {
         </button>
       </div>
       {msg && (
-        <div style={{ marginTop: 8, fontSize: 12, color: msg.kind === 'ok' ? 'var(--moss)' : 'var(--danger, #c64a4a)' }}>
+        <div style={{ marginTop: 8, fontSize: 12, color: msg.kind === 'ok' ? 'var(--brand-green)' : 'var(--danger, #c64a4a)' }}>
           {msg.text}
         </div>
       )}

@@ -34,7 +34,7 @@ export function SettingsSheetInner({ current, depth, onClose }: Props) {
             textAlign: 'center',
             fontSize: 17,
             fontWeight: 600,
-            fontFamily: 'var(--font-ui)',
+            fontFamily: 'var(--font-sans)',
             color: 'var(--text)',
           }}
         >

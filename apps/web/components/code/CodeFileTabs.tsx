@@ -36,7 +36,7 @@ export function CodeFileTabs({ openFiles, activePath, injectedFiles, isDirty, on
               padding: '8px 12px',
               borderRight: '1px solid #1e2a1c',
               background: isActive ? '#141a12' : 'transparent',
-              borderBottom: isActive ? '2px solid var(--moss)' : '2px solid transparent',
+              borderBottom: isActive ? '2px solid var(--brand-green)' : '2px solid transparent',
               cursor: 'pointer',
               fontFamily: 'JetBrains Mono, monospace',
               fontSize: 12,
@@ -51,7 +51,7 @@ export function CodeFileTabs({ openFiles, activePath, injectedFiles, isDirty, on
             {(showDirty || isInjected) && (
               <span style={{
                 width: 6, height: 6, borderRadius: '50%',
-                background: 'var(--ochre)',
+                background: 'var(--brand-gold)',
                 display: 'inline-block',
               }} title={showDirty ? 'Unsaved' : 'Injected'} />
             )}

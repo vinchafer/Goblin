@@ -41,8 +41,8 @@ export default function MagicCallbackPage() {
   }, [router]);
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--cream)' }}>
-      <p style={{ fontFamily: 'DM Sans, sans-serif', color: 'var(--meta)', fontSize: 14 }}>Signing in…</p>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--paper)' }}>
+      <p style={{ fontFamily: 'var(--font-sans)', color: 'var(--meta)', fontSize: 14 }}>Signing in…</p>
     </div>
   );
 }

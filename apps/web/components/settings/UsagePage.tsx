@@ -24,7 +24,7 @@ function ProgressBar({ value, max }: { value: number; max: number }) {
   const pct = Math.min(100, max > 0 ? (value / max) * 100 : 0);
   return (
     <div style={{ height: 8, borderRadius: 4, background: 'var(--subtle)', overflow: 'hidden' }}>
-      <div style={{ width: `${pct}%`, height: '100%', background: 'var(--moss)', transition: 'width 300ms ease' }} />
+      <div style={{ width: `${pct}%`, height: '100%', background: 'var(--brand-green)', transition: 'width 300ms ease' }} />
     </div>
   );
 }
@@ -50,7 +50,7 @@ export function UsagePage() {
     })();
   }, []);
 
-  if (loading) return <div style={{ padding: 24, color: 'var(--text-meta)', fontFamily: 'var(--font-ui)' }}>Lade Nutzung...</div>;
+  if (loading) return <div style={{ padding: 24, color: 'var(--text-meta)', fontFamily: 'var(--font-sans)' }}>Lade Nutzung...</div>;
 
   const req = state?.requestsThisMonth ?? 0;
   const reqLimit = state?.requestsLimit ?? 200;
@@ -59,7 +59,7 @@ export function UsagePage() {
   const resetAt = state?.resetAt ? new Date(state.resetAt).toLocaleDateString('de-DE') : null;
 
   return (
-    <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-ui)' }}>
+    <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
       <SettingsGroup label="Diesen Monat">
         <SettingsCard>
           <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>

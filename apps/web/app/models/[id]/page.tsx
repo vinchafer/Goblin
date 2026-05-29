@@ -59,7 +59,7 @@ export default function ModelDetailPage() {
   const m = data.model;
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--surface-2)', fontFamily: 'var(--font-ui)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--surface-2)', fontFamily: 'var(--font-sans)' }}>
       <main style={{ maxWidth: 900, margin: '0 auto', padding: '32px 16px' }}>
         <Link href="/models" style={{ color: 'var(--text-meta)', textDecoration: 'none', fontSize: 14 }}>
           ← Alle Modelle
@@ -67,7 +67,7 @@ export default function ModelDetailPage() {
 
         <h1
           style={{
-            fontFamily: 'var(--font-display)',
+            fontFamily: 'var(--font-sans)',
             fontSize: 32,
             fontWeight: 600,
             color: 'var(--text-1)',
@@ -235,7 +235,7 @@ function AccessExplanation({ provider }: { provider: string }) {
       <div style={{
         display: 'flex', alignItems: 'center', gap: 8,
         fontSize: 13, fontWeight: 600, marginBottom: 6,
-        color: c.fg, fontFamily: 'DM Sans, sans-serif',
+        color: c.fg, fontFamily: 'var(--font-sans)',
         textTransform: 'uppercase', letterSpacing: '0.06em',
       }}>
         Zugang · {access.label}
@@ -248,11 +248,11 @@ function AccessExplanation({ provider }: { provider: string }) {
         style={{
           display: 'inline-flex', alignItems: 'center', gap: 6,
           padding: '8px 14px',
-          background: 'var(--moss-green, var(--moss))',
+          background: 'var(--brand-green)',
           color: '#fff', borderRadius: 8,
           fontSize: 13, fontWeight: 600,
           textDecoration: 'none',
-          fontFamily: 'DM Sans, sans-serif',
+          fontFamily: 'var(--font-sans)',
         }}
       >
         Setup starten →

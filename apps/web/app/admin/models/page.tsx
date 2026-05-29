@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState, useCallback } from 'react';
 
@@ -24,7 +24,7 @@ const BLANK: Omit<Model, 'id'> = {
 };
 
 const LAYER_COLORS: Record<string, string> = {
-  byok: 'var(--moss)', free_api: '#1a2d5a', goblin_hosted: '#7A4A8A',
+  byok: 'var(--brand-green)', free_api: '#1a2d5a', goblin_hosted: '#7A4A8A',
 };
 
 export default function AdminModelsPage() {
@@ -87,18 +87,18 @@ export default function AdminModelsPage() {
     width: '100%', height: 36, padding: '0 10px', borderRadius: 7,
     border: '1.5px solid var(--border)', background: 'var(--surface)',
     color: 'var(--text)', fontSize: 13, outline: 'none',
-    fontFamily: 'DM Sans, sans-serif', boxSizing: 'border-box' as const,
+    fontFamily: 'var(--font-sans)', boxSizing: 'border-box' as const,
   };
 
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-        <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 26, color: 'var(--moss)', fontWeight: 700, letterSpacing: '-0.6px' }}>
+        <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 26, color: 'var(--brand-green)', fontWeight: 700, letterSpacing: '-0.6px' }}>
           Models
         </h1>
         <button
           onClick={() => { setShowAdd(true); setEditId(null); setForm(BLANK); }}
-          style={{ background: 'var(--moss)', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 18px', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}
+          style={{ background: 'var(--brand-green)', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 18px', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}
         >
           + Add Model
         </button>
@@ -108,7 +108,7 @@ export default function AdminModelsPage() {
         {loading ? (
           <div style={{ padding: '32px', textAlign: 'center', color: 'var(--meta)' }}>Loading…</div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, fontFamily: 'DM Sans, sans-serif' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, fontFamily: 'var(--font-sans)' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid var(--div)' }}>
                 {['Name', 'Provider', 'Layer', 'Phase', 'Available', 'Actions'].map(h => (
@@ -137,7 +137,7 @@ export default function AdminModelsPage() {
                         background: m.available ? 'rgba(74,124,59,0.12)' : 'rgba(184,92,60,0.12)',
                         color: m.available ? 'var(--success)' : 'var(--danger)',
                         border: 'none', borderRadius: 20, padding: '3px 10px', fontSize: 12,
-                        cursor: 'pointer', fontWeight: 600, fontFamily: 'DM Sans, sans-serif',
+                        cursor: 'pointer', fontWeight: 600, fontFamily: 'var(--font-sans)',
                       }}
                     >
                       {m.available ? '✓ On' : '✗ Off'}
@@ -146,11 +146,11 @@ export default function AdminModelsPage() {
                   <td style={{ padding: '10px 14px' }}>
                     <div style={{ display: 'flex', gap: 6 }}>
                       <button onClick={() => openEdit(m)}
-                        style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontSize: 12, cursor: 'pointer', color: 'var(--text)', fontFamily: 'DM Sans, sans-serif' }}>
+                        style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontSize: 12, cursor: 'pointer', color: 'var(--text)', fontFamily: 'var(--font-sans)' }}>
                         Edit
                       </button>
                       <button onClick={() => handleDelete(m.id)}
-                        style={{ background: 'transparent', border: '1px solid var(--danger)', borderRadius: 6, padding: '4px 10px', fontSize: 12, cursor: 'pointer', color: 'var(--danger)', fontFamily: 'DM Sans, sans-serif' }}>
+                        style={{ background: 'transparent', border: '1px solid var(--danger)', borderRadius: 6, padding: '4px 10px', fontSize: 12, cursor: 'pointer', color: 'var(--danger)', fontFamily: 'var(--font-sans)' }}>
                         Delete
                       </button>
                     </div>
@@ -170,7 +170,7 @@ export default function AdminModelsPage() {
         >
           <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 480, background: 'var(--panel)', borderRadius: 14, border: '1px solid var(--border)', boxShadow: 'var(--shadow-lg)', overflow: 'hidden', animation: 'modalIn 0.15s ease-out' }}>
             <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--div)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 17, color: 'var(--moss)', fontWeight: 700 }}>{editId ? 'Edit Model' : 'Add Model'}</h2>
+              <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: 17, color: 'var(--brand-green)', fontWeight: 700 }}>{editId ? 'Edit Model' : 'Add Model'}</h2>
               <button onClick={() => setShowAdd(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--meta)', fontSize: 18 }}>✕</button>
             </div>
             <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -211,7 +211,7 @@ export default function AdminModelsPage() {
               <button
                 onClick={handleSave}
                 disabled={saving}
-                style={{ background: 'var(--moss)', color: '#fff', border: 'none', borderRadius: 8, padding: '10px', fontSize: 13, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'DM Sans, sans-serif', marginTop: 8 }}
+                style={{ background: 'var(--brand-green)', color: '#fff', border: 'none', borderRadius: 8, padding: '10px', fontSize: 13, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-sans)', marginTop: 8 }}
               >
                 {saving ? 'Saving…' : editId ? 'Save Changes' : 'Add Model'}
               </button>

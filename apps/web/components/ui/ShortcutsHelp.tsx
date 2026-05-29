@@ -83,7 +83,7 @@ export function ShortcutsHelp({ open, onClose }: Props) {
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         }}>
           <div>
-            <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 18, color: 'var(--moss)', fontWeight: 700, letterSpacing: '-0.3px' }}>
+            <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: 18, color: 'var(--brand-green)', fontWeight: 700, letterSpacing: '-0.3px' }}>
               Your goblin&apos;s secret spells 🪄
             </h2>
             <p style={{ fontSize: 12, color: 'var(--meta)', marginTop: 2 }}>Keyboard shortcuts</p>

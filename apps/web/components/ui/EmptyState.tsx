@@ -20,11 +20,11 @@ export function EmptyState({ title, description, cta, icon }: EmptyStateProps) {
         alignItems: 'center',
         gap: 12,
         color: 'var(--text)',
-        fontFamily: 'var(--font-ui)',
+        fontFamily: 'var(--font-sans)',
       }}
     >
       {icon && <div style={{ color: 'var(--meta)', opacity: 0.6 }}>{icon}</div>}
-      <h3 style={{ margin: 0, fontFamily: 'var(--font-brand)', fontSize: 20 }}>{title}</h3>
+      <h3 style={{ margin: 0, fontFamily: 'var(--font-sans)', fontSize: 20 }}>{title}</h3>
       {description && (
         <p style={{ margin: 0, color: 'var(--meta)', fontSize: 14, maxWidth: 380 }}>{description}</p>
       )}
@@ -34,13 +34,13 @@ export function EmptyState({ title, description, cta, icon }: EmptyStateProps) {
           style={{
             marginTop: 6,
             padding: '10px 18px',
-            background: 'var(--moss)',
+            background: 'var(--brand-green)',
             color: '#fff',
             border: 'none',
             borderRadius: 8,
             cursor: 'pointer',
             fontWeight: 600,
-            fontFamily: 'var(--font-ui)',
+            fontFamily: 'var(--font-sans)',
             fontSize: 14,
           }}
         >
@@ -70,7 +70,7 @@ export function ErrorState({
         alignItems: 'center',
         gap: 10,
         color: 'var(--text)',
-        fontFamily: 'var(--font-ui)',
+        fontFamily: 'var(--font-sans)',
       }}
     >
       <p style={{ margin: 0, color: 'var(--rust)', fontSize: 14 }}>{message}</p>
@@ -85,7 +85,7 @@ export function ErrorState({
             borderRadius: 8,
             cursor: 'pointer',
             fontSize: 13,
-            fontFamily: 'var(--font-ui)',
+            fontFamily: 'var(--font-sans)',
           }}
         >
           Erneut versuchen

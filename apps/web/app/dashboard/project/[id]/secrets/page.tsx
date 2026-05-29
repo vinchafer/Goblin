@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useParams } from 'next/navigation';
 
@@ -15,11 +16,30 @@ interface Secret {
 const ENVIRONMENTS = ['production', 'staging', 'development'] as const;
 type Env = typeof ENVIRONMENTS[number];
 
-const CARD = { background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: 12, padding: '20px 24px', marginBottom: 16 };
+// Per-secret "where do I get this" guidance. Plain-language pointers,
+// nothing prescriptive. Match by exact key name first, then by prefix.
+function whereDoIGetThis(name: string): string | null {
+  const n = name.toUpperCase();
+  if (n.startsWith('STRIPE_SECRET') || n === 'STRIPE_SK')         return 'Dashboard → Developers → API keys → "Secret key" (mit sk_live_ beginnt). Behalte den Test-Key in DEVELOPMENT/STAGING.';
+  if (n.startsWith('STRIPE_WEBHOOK'))                              return 'Dashboard → Developers → Webhooks → dein Endpoint → "Signing secret" (mit whsec_ beginnt).';
+  if (n.startsWith('STRIPE_'))                                     return 'Stripe-Dashboard. Test-Keys nur in DEVELOPMENT/STAGING, Live-Keys nur in PRODUCTION.';
+  if (n.startsWith('DATABASE_URL') || n.startsWith('POSTGRES_'))   return 'Bei Supabase: Projekt → Settings → Database → Connection String. Bei Neon/PlanetScale ebenfalls in den Verbindungseinstellungen.';
+  if (n.startsWith('RESEND_'))                                     return 'resend.com → API Keys → "Create API key". Domain vorher verifizieren.';
+  if (n.startsWith('OPENAI_'))                                     return 'platform.openai.com → API Keys. Eigene Org/Projekt erstellen, dann Key. Niemals in Frontend einbetten.';
+  if (n.startsWith('ANTHROPIC_'))                                  return 'console.anthropic.com → API Keys. Tip: erstelle einen Key pro Projekt.';
+  if (n.startsWith('SUPABASE_SERVICE') || n === 'SUPABASE_ANON_KEY') return 'Supabase → Settings → API. Service-Key NUR auf dem Server, anon-Key kann ins Frontend.';
+  if (n.startsWith('GOOGLE_') || n.startsWith('GCP_'))             return 'Google Cloud Console → APIs & Services → Credentials.';
+  return null;
+}
+
+const PANEL_OUT: React.CSSProperties = {
+  background: 'var(--d-surface-elev)', border: '1px solid var(--line)',
+  borderRadius: 'var(--radius-lg)', overflow: 'hidden',
+};
 
 export default function ProjectSecretsPage() {
   const params = useParams();
-  const projectId = params.id as string;
+  const projectId = params?.id as string;
 
   const [secrets, setSecrets] = useState<Secret[]>([]);
   const [env, setEnv] = useState<Env>('production');
@@ -36,6 +56,8 @@ export default function ProjectSecretsPage() {
   const [saving, setSaving] = useState(false);
   const [revealedValues, setRevealedValues] = useState<Record<string, string>>({});
   const [revealLoading, setRevealLoading] = useState<string | null>(null);
+  const [openGuide, setOpenGuide] = useState<string | null>(null);
+
   const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
 
   const fetchSecrets = useCallback(async (tok: string) => {
@@ -68,7 +90,7 @@ export default function ProjectSecretsPage() {
         password: reauthPassword,
       });
       if (error || !data.session) {
-        setReauthError('Incorrect password.');
+        setReauthError('Falsches Passwort.');
         return;
       }
       setReauthToken(data.session.access_token);
@@ -80,27 +102,20 @@ export default function ProjectSecretsPage() {
   };
 
   const handleReveal = async (secretId: string) => {
-    if (!reauthToken) {
-      setReauthModal(true);
-      return;
-    }
+    if (!reauthToken) { setReauthModal(true); return; }
     setRevealLoading(secretId);
     try {
       const res = await fetch(`${apiBase}/api/projects/${projectId}/secrets/${secretId}/reveal`, {
         headers: { Authorization: `Bearer ${token}`, 'X-Reauth-Token': reauthToken },
       });
       if (res.status === 401) {
-        setReauthToken(null);
-        setReauthModal(true);
-        return;
+        setReauthToken(null); setReauthModal(true); return;
       }
       if (res.ok) {
         const d = await res.json();
         setRevealedValues(prev => ({ ...prev, [secretId]: d.value }));
       }
-    } finally {
-      setRevealLoading(null);
-    }
+    } finally { setRevealLoading(null); }
   };
 
   const handleAdd = async () => {
@@ -113,18 +128,14 @@ export default function ProjectSecretsPage() {
         body: JSON.stringify({ name: newName.toUpperCase().replace(/\s/g, '_'), value: newValue, environment: env }),
       });
       if (res.ok) {
-        setAddModal(false);
-        setNewName('');
-        setNewValue('');
+        setAddModal(false); setNewName(''); setNewValue('');
         await fetchSecrets(token);
       }
-    } finally {
-      setSaving(false);
-    }
+    } finally { setSaving(false); }
   };
 
   const handleDelete = async (secretId: string) => {
-    if (!token || !confirm('Delete this secret?')) return;
+    if (!token || !confirm('Diesen Secret wirklich löschen?')) return;
     await fetch(`${apiBase}/api/projects/${projectId}/secrets/${secretId}`, {
       method: 'DELETE',
       headers: { Authorization: `Bearer ${token}` },
@@ -132,127 +143,328 @@ export default function ProjectSecretsPage() {
     await fetchSecrets(token);
   };
 
-  if (loading) return <div style={{ padding: 40, color: 'var(--meta)' }}>Loading secrets…</div>;
-
   return (
-    <div style={{ maxWidth: 680, margin: '0 auto', padding: '32px 24px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-        <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 22, color: 'var(--moss)', fontWeight: 700, letterSpacing: '-0.5px', margin: 0 }}>
-          Project Secrets
-        </h1>
-        <button
-          onClick={() => setAddModal(true)}
-          style={{ background: 'var(--moss)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}
-        >
-          + Add Secret
-        </button>
-      </div>
+    <div style={{ height: '100%', overflowY: 'auto', background: 'var(--d-surface)' }}>
+      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 32px 80px' }}>
+        <Link href={`/dashboard/project/${projectId}`} style={{
+          display: 'inline-flex', alignItems: 'center', gap: 6,
+          fontFamily: 'JetBrains Mono, monospace', fontSize: 10.5,
+          letterSpacing: '0.14em', textTransform: 'uppercase',
+          color: 'var(--ink-3)', marginBottom: 22, textDecoration: 'none',
+        }}>
+          ← Zurück zum Projekt
+        </Link>
 
-      <p style={{ fontSize: 13, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif', marginBottom: 24, lineHeight: 1.6 }}>
-        Secrets are encrypted with your account key and injected as environment variables during builds.
-        Values are never shown in logs or committed to Git.
-      </p>
+        <div style={{
+          display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between',
+          gap: 24, marginBottom: 12, flexWrap: 'wrap',
+        }}>
+          <div>
+            <div className="gobl-eyebrow" style={{ marginBottom: 12 }}>
+              <span className="tick" />
+              <span className="num">/SECRETS · {env.toUpperCase()}</span>
+              Verschlüsselt gespeichert
+            </div>
+            <h1 style={{
+              fontFamily: 'var(--font-dash-display), Manrope, sans-serif',
+              fontWeight: 600, fontSize: 'clamp(32px, 4vw, 48px)',
+              letterSpacing: '-0.030em', lineHeight: 1.06,
+              color: 'var(--ink-1)', margin: '0 0 12px',
+            }}>
+              Projekt-<span className="gobl-serif">Secrets.</span>
+            </h1>
+          </div>
 
-      {/* Environment tabs */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 20 }}>
-        {ENVIRONMENTS.map(e => (
-          <button key={e} onClick={() => setEnv(e)} style={{
-            padding: '6px 14px', borderRadius: 6, border: 'none', fontSize: 12, fontWeight: 600, cursor: 'pointer',
-            fontFamily: 'DM Sans, sans-serif', textTransform: 'capitalize',
-            background: env === e ? 'var(--moss)' : 'var(--subtle)',
-            color: env === e ? '#fff' : 'var(--meta)',
+          {/* Environment switcher */}
+          <div style={{
+            display: 'flex', gap: 4, background: 'var(--d-surface-elev)',
+            border: '1px solid var(--line)', borderRadius: 999, padding: 4,
           }}>
-            {e}
-          </button>
-        ))}
+            {ENVIRONMENTS.map(e => (
+              <button
+                key={e}
+                type="button"
+                onClick={() => setEnv(e)}
+                style={{
+                  fontFamily: 'JetBrains Mono, monospace', fontSize: 11,
+                  fontWeight: 600, letterSpacing: '0.12em', padding: '7px 14px',
+                  borderRadius: 999, border: 'none', cursor: 'pointer',
+                  background: env === e ? 'var(--green)' : 'transparent',
+                  color: env === e ? 'var(--bone)' : 'var(--ink-3)',
+                  textTransform: 'uppercase',
+                }}
+              >
+                {e}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Plain-language explainer — what is a secret, for non-tech users. */}
+        <p style={{
+          fontSize: 16, color: 'var(--ink-2)', maxWidth: '64ch',
+          margin: '0 0 24px', lineHeight: 1.5,
+        }}>
+          Secrets sind Passwörter, die deine App braucht, um mit anderen Diensten zu sprechen
+          (z. B. Stripe oder deine Datenbank). Goblin speichert sie verschlüsselt — sie tauchen
+          nie im Chat auf, nicht in Logs, und Goblin selbst kann sie nicht lesen.
+          <em style={{ color: 'var(--ink-3)', fontStyle: 'normal', display: 'block', marginTop: 6, fontSize: 13.5 }}>
+            Hinweis: Die automatische Einspeisung in Deploys ist noch nicht aktiv —
+            speichern, ansehen und löschen funktioniert bereits.
+          </em>
+        </p>
+
+        {/* Re-auth banner — only when we have NO reauth token yet. */}
+        {!reauthToken && (
+          <div style={{
+            background: 'var(--accent-soft)', border: '1px solid var(--accent-rule)',
+            borderRadius: 'var(--radius)', padding: '14px 18px',
+            display: 'flex', alignItems: 'center', gap: 14, marginBottom: 24,
+            flexWrap: 'wrap',
+          }}>
+            <span style={{ color: 'var(--accent)', fontSize: 20 }}>🛡</span>
+            <div style={{ flex: 1, minWidth: 200 }}>
+              <div style={{
+                fontFamily: 'var(--font-dash-display), Manrope, sans-serif',
+                fontWeight: 600, fontSize: 14, color: 'var(--ink-1)', marginBottom: 2,
+              }}>
+                Bestätige, dass du es bist
+              </div>
+              <div style={{ fontSize: 12.5, color: 'var(--ink-2)', lineHeight: 1.45 }}>
+                Werte einzusehen braucht eine frische Anmeldung — Schutz gegen geöffnete Browser-Sessions.
+              </div>
+            </div>
+            <button type="button" className="gobl-btn gold sm" onClick={() => setReauthModal(true)}>
+              Bestätigen
+            </button>
+          </div>
+        )}
+
+        {/* Secrets list. Vault model: each row is one secret. NEVER a file. */}
+        {loading ? (
+          <div style={{ ...PANEL_OUT, padding: 24, color: 'var(--ink-3)', fontSize: 14 }}>
+            Lade …
+          </div>
+        ) : (
+          <div style={PANEL_OUT}>
+            <div style={{
+              padding: '10px 20px', background: 'var(--d-surface-2)',
+              borderBottom: '1px solid var(--line)',
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            }}>
+              <span style={{
+                fontFamily: 'JetBrains Mono, monospace', fontSize: 9.5,
+                letterSpacing: '0.16em', textTransform: 'uppercase',
+                color: 'var(--ink-3)', fontWeight: 600,
+              }}>
+                {secrets.length} SECRET{secrets.length === 1 ? '' : 'S'} · {env.toUpperCase()}
+              </span>
+              <button type="button" className="gobl-btn primary sm" onClick={() => setAddModal(true)}>
+                + Hinzufügen
+              </button>
+            </div>
+
+            {secrets.length === 0 ? (
+              <div style={{ padding: '32px 20px', textAlign: 'center', color: 'var(--ink-3)', fontSize: 14 }}>
+                Noch keine Secrets für <b>{env}</b>. Goblin sagt dir im Chat, was deine App braucht.
+              </div>
+            ) : (
+              secrets.map((s, i) => {
+                const guide = whereDoIGetThis(s.name);
+                const guideOpen = openGuide === s.id;
+                const revealed = revealedValues[s.id];
+                return (
+                  <div key={s.id} style={{
+                    borderBottom: i === secrets.length - 1 ? 'none' : '1px solid var(--line)',
+                  }}>
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 2fr) 110px 80px',
+                      gap: 14, alignItems: 'center', padding: '14px 20px',
+                    }}>
+                      <span style={{
+                        fontFamily: 'JetBrains Mono, monospace', fontSize: 12.5,
+                        color: 'var(--ink-1)', fontWeight: 500, letterSpacing: '0.02em',
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                      }}>
+                        {s.name}
+                      </span>
+                      <span style={{
+                        fontFamily: 'JetBrains Mono, monospace', fontSize: 12.5,
+                        color: 'var(--ink-3)', display: 'flex', alignItems: 'center', gap: 6,
+                        minWidth: 0, overflow: 'hidden',
+                      }}>
+                        {revealed ? (
+                          <span style={{ color: 'var(--ink-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {revealed}
+                          </span>
+                        ) : (
+                          <span>•••••••••••• {s.value_hint ? `· ${s.value_hint}` : ''}</span>
+                        )}
+                      </span>
+                      <span style={{
+                        fontFamily: 'JetBrains Mono, monospace', fontSize: 10.5,
+                        color: 'var(--ink-3)', letterSpacing: '0.06em', textTransform: 'uppercase',
+                      }}>
+                        {new Date(s.updated_at).toLocaleDateString('de-DE')}
+                      </span>
+                      <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
+                        <button
+                          type="button"
+                          title={revealed ? 'Wert ausblenden' : 'Wert anzeigen'}
+                          aria-label={revealed ? 'Wert ausblenden' : 'Wert anzeigen'}
+                          onClick={() => revealed
+                            ? setRevealedValues(p => { const n = { ...p }; delete n[s.id]; return n; })
+                            : handleReveal(s.id)}
+                          disabled={revealLoading === s.id}
+                          style={{
+                            background: 'transparent', border: 'none', cursor: 'pointer',
+                            color: 'var(--ink-3)', padding: 4,
+                          }}
+                        >
+                          {revealLoading === s.id ? '…' : revealed ? '🙈' : '👁'}
+                        </button>
+                        <button
+                          type="button"
+                          title="Löschen"
+                          aria-label="Löschen"
+                          onClick={() => handleDelete(s.id)}
+                          style={{
+                            background: 'transparent', border: 'none', cursor: 'pointer',
+                            color: 'var(--ink-3)', padding: 4,
+                          }}
+                        >
+                          🗑
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Per-secret collapsible "where do I get this" — for non-technical users. */}
+                    {guide && (
+                      <div style={{ padding: '0 20px 12px' }}>
+                        <button
+                          type="button"
+                          onClick={() => setOpenGuide(guideOpen ? null : s.id)}
+                          style={{
+                            background: 'transparent', border: 'none', cursor: 'pointer',
+                            fontFamily: 'JetBrains Mono, monospace', fontSize: 10.5,
+                            letterSpacing: '0.10em', textTransform: 'uppercase',
+                            color: 'var(--ink-3)', padding: '4px 0',
+                          }}
+                        >
+                          {guideOpen ? '− ' : '+ '}Wo bekomme ich den?
+                        </button>
+                        {guideOpen && (
+                          <div style={{
+                            background: 'var(--d-surface)', border: '1px solid var(--line)',
+                            borderRadius: 'var(--radius-sm)', padding: '10px 12px',
+                            fontSize: 13, color: 'var(--ink-2)', lineHeight: 1.5, marginTop: 4,
+                          }}>
+                            {guide}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+
+        {/* Add modal */}
+        {addModal && (
+          <div role="dialog" aria-modal="true" style={{
+            position: 'fixed', inset: 0, background: 'rgba(15,43,30,0.55)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+          }} onClick={() => setAddModal(false)}>
+            <div onClick={e => e.stopPropagation()} style={{
+              background: 'var(--d-surface-elev)', borderRadius: 'var(--radius-lg)',
+              padding: 28, width: 420, maxWidth: '92vw', border: '1px solid var(--line)',
+            }}>
+              <h2 style={{
+                fontFamily: 'var(--font-dash-display), Manrope, sans-serif',
+                fontWeight: 600, fontSize: 18, color: 'var(--ink-1)', margin: '0 0 14px',
+              }}>
+                Secret hinzufügen
+              </h2>
+              <label className="gobl-field-label" htmlFor="sec-name">Name (UPPER_SNAKE_CASE)</label>
+              <input
+                id="sec-name"
+                value={newName}
+                onChange={e => setNewName(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, '_'))}
+                placeholder="DATABASE_URL"
+                className="gobl-input"
+                style={{ fontFamily: 'JetBrains Mono, monospace', marginBottom: 14 }}
+              />
+              <label className="gobl-field-label" htmlFor="sec-val">Wert (wird beim Speichern verschlüsselt)</label>
+              <input
+                id="sec-val"
+                type="password"
+                value={newValue}
+                onChange={e => setNewValue(e.target.value)}
+                placeholder="••••••••"
+                className="gobl-input"
+                style={{ fontFamily: 'JetBrains Mono, monospace', marginBottom: 20 }}
+              />
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button type="button" className="gobl-btn secondary" style={{ flex: 1 }} onClick={() => setAddModal(false)}>
+                  Abbrechen
+                </button>
+                <button type="button" className="gobl-btn primary" style={{ flex: 1 }} onClick={handleAdd} disabled={saving || !newName || !newValue}>
+                  {saving ? 'Speichere …' : 'Speichern'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Re-auth modal — gates reveal. Backed by Supabase signInWithPassword. */}
+        {reauthModal && (
+          <div role="dialog" aria-modal="true" style={{
+            position: 'fixed', inset: 0, background: 'rgba(15,43,30,0.55)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1001,
+          }}>
+            <div style={{
+              background: 'var(--d-surface-elev)', borderRadius: 'var(--radius-lg)',
+              padding: 28, width: 380, maxWidth: '92vw', border: '1px solid var(--line)',
+            }}>
+              <h2 style={{
+                fontFamily: 'var(--font-dash-display), Manrope, sans-serif',
+                fontWeight: 600, fontSize: 18, color: 'var(--ink-1)', margin: '0 0 8px',
+              }}>
+                Bestätige deine Identität
+              </h2>
+              <p style={{ fontSize: 13, color: 'var(--ink-2)', margin: '0 0 18px', lineHeight: 1.5 }}>
+                Gib dein Passwort ein, um Werte einzusehen.
+              </p>
+              <input
+                type="password"
+                value={reauthPassword}
+                onChange={e => setReauthPassword(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleReauth()}
+                placeholder="Dein Passwort"
+                className="gobl-input"
+                style={{ marginBottom: reauthError ? 6 : 18 }}
+                autoFocus
+              />
+              {reauthError && (
+                <p style={{ fontSize: 12, color: 'var(--danger)', margin: '0 0 12px' }}>
+                  {reauthError}
+                </p>
+              )}
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button type="button" className="gobl-btn secondary" style={{ flex: 1 }} onClick={() => { setReauthModal(false); setReauthPassword(''); setReauthError(null); }}>
+                  Abbrechen
+                </button>
+                <button type="button" className="gobl-btn primary" style={{ flex: 1 }} onClick={handleReauth} disabled={reauthLoading || !reauthPassword}>
+                  {reauthLoading ? 'Prüfe …' : 'Bestätigen'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
-
-      {/* Secrets list */}
-      {secrets.length === 0 ? (
-        <div style={{ ...CARD, textAlign: 'center', padding: '32px 24px' }}>
-          <div style={{ fontSize: 13, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif' }}>
-            No secrets for {env}. Click &ldquo;+ Add Secret&rdquo; to create one.
-          </div>
-        </div>
-      ) : (
-        secrets.map(secret => (
-          <div key={secret.id} style={CARD}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', fontFamily: 'DM Mono, monospace', marginBottom: 4 }}>
-                  {secret.name}
-                </div>
-                <div style={{ fontSize: 12, color: 'var(--meta)', fontFamily: 'DM Mono, monospace' }}>
-                  {revealedValues[secret.id]
-                    ? revealedValues[secret.id]
-                    : `••••••••${secret.value_hint ?? '????'}`}
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: 6 }}>
-                <button
-                  onClick={() => revealedValues[secret.id]
-                    ? setRevealedValues(prev => { const n = { ...prev }; delete n[secret.id]; return n; })
-                    : handleReveal(secret.id)}
-                  disabled={revealLoading === secret.id}
-                  style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '5px 10px', fontSize: 11, cursor: 'pointer', color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif' }}
-                >
-                  {revealLoading === secret.id ? '…' : revealedValues[secret.id] ? 'Hide' : 'Reveal'}
-                </button>
-                <button
-                  onClick={() => handleDelete(secret.id)}
-                  style={{ background: 'transparent', border: '1px solid rgba(184,92,60,0.3)', borderRadius: 6, padding: '5px 10px', fontSize: 11, cursor: 'pointer', color: 'var(--danger)', fontFamily: 'DM Sans, sans-serif' }}
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        ))
-      )}
-
-      {/* Add Secret Modal */}
-      {addModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: 'var(--bg)', borderRadius: 14, padding: 28, width: 400, maxWidth: '90vw' }}>
-            <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 18, color: 'var(--moss)', marginBottom: 20 }}>Add Secret</h2>
-            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)', fontFamily: 'DM Sans, sans-serif', display: 'block', marginBottom: 6 }}>Name (UPPER_SNAKE_CASE)</label>
-            <input value={newName} onChange={e => setNewName(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, '_'))}
-              placeholder="DATABASE_URL"
-              style={{ width: '100%', padding: '9px 12px', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, fontFamily: 'DM Mono, monospace', marginBottom: 12, background: 'var(--subtle)', color: 'var(--text)', boxSizing: 'border-box' }} />
-            <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)', fontFamily: 'DM Sans, sans-serif', display: 'block', marginBottom: 6 }}>Value</label>
-            <input type="password" value={newValue} onChange={e => setNewValue(e.target.value)}
-              placeholder="Value is encrypted before saving"
-              style={{ width: '100%', padding: '9px 12px', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, fontFamily: 'DM Mono, monospace', marginBottom: 20, background: 'var(--subtle)', color: 'var(--text)', boxSizing: 'border-box' }} />
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={() => setAddModal(false)} style={{ flex: 1, padding: '9px 0', background: 'var(--subtle)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, cursor: 'pointer', color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif' }}>Cancel</button>
-              <button onClick={handleAdd} disabled={saving || !newName || !newValue} style={{ flex: 1, padding: '9px 0', background: 'var(--moss)', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', color: '#fff', fontFamily: 'DM Sans, sans-serif', opacity: saving ? 0.6 : 1 }}>
-                {saving ? 'Saving…' : 'Save Secret'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Re-auth Modal */}
-      {reauthModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1001 }}>
-          <div style={{ background: 'var(--bg)', borderRadius: 14, padding: 28, width: 360, maxWidth: '90vw' }}>
-            <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 18, color: 'var(--moss)', marginBottom: 8 }}>Confirm your identity</h2>
-            <p style={{ fontSize: 13, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif', marginBottom: 20, lineHeight: 1.6 }}>Enter your password to reveal secret values.</p>
-            <input type="password" value={reauthPassword} onChange={e => setReauthPassword(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleReauth()}
-              placeholder="Your password"
-              style={{ width: '100%', padding: '9px 12px', border: `1px solid ${reauthError ? 'var(--danger)' : 'var(--border)'}`, borderRadius: 8, fontSize: 13, fontFamily: 'DM Sans, sans-serif', marginBottom: reauthError ? 6 : 20, background: 'var(--subtle)', color: 'var(--text)', boxSizing: 'border-box' }} />
-            {reauthError && <p style={{ fontSize: 12, color: 'var(--danger)', marginBottom: 16, fontFamily: 'DM Sans, sans-serif' }}>{reauthError}</p>}
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={() => { setReauthModal(false); setReauthPassword(''); setReauthError(null); }} style={{ flex: 1, padding: '9px 0', background: 'var(--subtle)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, cursor: 'pointer', color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif' }}>Cancel</button>
-              <button onClick={handleReauth} disabled={reauthLoading || !reauthPassword} style={{ flex: 1, padding: '9px 0', background: 'var(--moss)', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: reauthLoading ? 'not-allowed' : 'pointer', color: '#fff', fontFamily: 'DM Sans, sans-serif', opacity: reauthLoading ? 0.6 : 1 }}>
-                {reauthLoading ? 'Verifying…' : 'Confirm'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

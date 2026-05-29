@@ -64,14 +64,14 @@ function LoginTwoFAInner() {
         alignItems: 'center',
         justifyContent: 'center',
         padding: 24,
-        background: 'var(--cream)',
-        fontFamily: 'var(--font-ui)',
+        background: 'var(--paper)',
+        fontFamily: 'var(--font-sans)',
       }}
     >
       <div style={{ maxWidth: 400, width: '100%' }}>
         <h1
           style={{
-            fontFamily: 'var(--font-brand)',
+            fontFamily: 'var(--font-sans)',
             fontSize: 28,
             margin: '0 0 16px',
             textAlign: 'center',
@@ -99,7 +99,7 @@ function LoginTwoFAInner() {
             width: '100%',
             padding: 14,
             fontSize: 22,
-            fontFamily: 'var(--font-code)',
+            fontFamily: 'var(--font-mono)',
             textAlign: 'center',
             border: '1px solid var(--div)',
             borderRadius: 10,
@@ -123,7 +123,7 @@ function LoginTwoFAInner() {
           style={{
             width: '100%',
             padding: 14,
-            background: code && !submitting ? 'var(--moss)' : 'rgba(0,0,0,0.10)',
+            background: code && !submitting ? 'var(--brand-green)' : 'rgba(0,0,0,0.10)',
             color: '#fff',
             border: 'none',
             borderRadius: 10,
@@ -131,7 +131,7 @@ function LoginTwoFAInner() {
             fontWeight: 600,
             fontSize: 16,
             marginBottom: 10,
-            fontFamily: 'var(--font-ui)',
+            fontFamily: 'var(--font-sans)',
           }}
         >
           {submitting ? 'Verifiziere…' : 'Verifizieren'}
@@ -151,7 +151,7 @@ function LoginTwoFAInner() {
             border: 'none',
             cursor: 'pointer',
             fontSize: 13,
-            fontFamily: 'var(--font-ui)',
+            fontFamily: 'var(--font-sans)',
           }}
         >
           {isRecoveryCode ? 'Authenticator-Code stattdessen' : 'Recovery-Code stattdessen'}
@@ -168,7 +168,7 @@ function LoginTwoFAInner() {
             cursor: 'pointer',
             fontSize: 13,
             marginTop: 8,
-            fontFamily: 'var(--font-ui)',
+            fontFamily: 'var(--font-sans)',
           }}
         >
           Abbrechen und ausloggen

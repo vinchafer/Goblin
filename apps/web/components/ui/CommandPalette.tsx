@@ -124,7 +124,7 @@ export function CommandPalette({ open, onClose, commands }: Props) {
               flex: 1, border: 'none', outline: 'none',
               background: 'transparent',
               color: 'var(--text)', fontSize: 15,
-              fontFamily: 'DM Sans, sans-serif',
+              fontFamily: 'var(--font-sans)',
             }}
           />
           <kbd style={{
@@ -170,7 +170,7 @@ export function CommandPalette({ open, onClose, commands }: Props) {
                         padding: '9px 16px', border: 'none', cursor: 'pointer',
                         background: isSelected ? 'var(--subtle)' : 'transparent',
                         color: isSelected ? 'var(--text)' : 'var(--text-2)',
-                        fontFamily: 'DM Sans, sans-serif', fontSize: 14,
+                        fontFamily: 'var(--font-sans)', fontSize: 14,
                         textAlign: 'left', transition: 'background 0.08s',
                       }}
                     >

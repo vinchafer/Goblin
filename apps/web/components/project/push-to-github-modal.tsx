@@ -21,7 +21,7 @@ function GitHubIcon({ size = 16 }: { size?: number }) {
 const FIELD = {
   width: '100%', padding: '9px 12px', borderRadius: 8,
   border: '1.5px solid var(--border)', background: 'var(--panel)',
-  color: 'var(--text)', fontSize: 14, fontFamily: 'DM Sans, sans-serif',
+  color: 'var(--text)', fontSize: 14, fontFamily: 'var(--font-sans)',
   outline: 'none', boxSizing: 'border-box' as const, transition: 'border-color 0.15s',
 };
 
@@ -79,7 +79,7 @@ export function PushToGitHubModal({ open, onClose, projectId, defaultName }: Pus
       >
         {/* Header */}
         <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h2 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', fontFamily: 'DM Sans, sans-serif', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <h2 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', gap: 8 }}>
             <GitHubIcon size={18} /> Push to GitHub
           </h2>
           <button onClick={handleClose} style={{ background: 'none', border: 'none', color: 'var(--meta)', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: '2px 4px' }}>×</button>
@@ -96,17 +96,17 @@ export function PushToGitHubModal({ open, onClose, projectId, defaultName }: Pus
               }}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
               </div>
-              <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 6, fontFamily: 'Fraunces, serif' }}>Pushed to GitHub!</h3>
-              <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 20, fontFamily: 'DM Sans, sans-serif' }}>Your project is now on GitHub.</p>
+              <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 6, fontFamily: 'var(--font-sans)' }}>Pushed to GitHub!</h3>
+              <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 20, fontFamily: 'var(--font-sans)' }}>Your project is now on GitHub.</p>
               <a
                 href={successUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 7,
-                  padding: '10px 20px', background: 'var(--moss)', color: '#fff',
+                  padding: '10px 20px', background: 'var(--brand-green)', color: '#fff',
                   borderRadius: 9, fontSize: 13, fontWeight: 600,
-                  textDecoration: 'none', fontFamily: 'DM Sans, sans-serif',
+                  textDecoration: 'none', fontFamily: 'var(--font-sans)',
                 }}
               >
                 <GitHubIcon size={14} /> View on GitHub →
@@ -115,43 +115,43 @@ export function PushToGitHubModal({ open, onClose, projectId, defaultName }: Pus
           ) : (
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text)', marginBottom: 6, fontFamily: 'DM Sans, sans-serif' }}>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text)', marginBottom: 6, fontFamily: 'var(--font-sans)' }}>
                   Repository name
                 </label>
                 <input
                   type="text" value={name} onChange={e => setName(e.target.value)}
                   pattern="[a-zA-Z0-9-_]+" placeholder="my-awesome-project"
                   required style={FIELD}
-                  onFocus={e => (e.target.style.borderColor = 'var(--moss)')}
+                  onFocus={e => (e.target.style.borderColor = 'var(--brand-green)')}
                   onBlur={e => (e.target.style.borderColor = 'var(--border)')}
                 />
-                <p style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 4, fontFamily: 'DM Sans, sans-serif' }}>
+                <p style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 4, fontFamily: 'var(--font-sans)' }}>
                   Letters, numbers, hyphens, and underscores only.
                 </p>
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text)', marginBottom: 6, fontFamily: 'DM Sans, sans-serif' }}>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: 'var(--text)', marginBottom: 6, fontFamily: 'var(--font-sans)' }}>
                   Description <span style={{ color: 'var(--text-faint)', fontWeight: 400 }}>(optional)</span>
                 </label>
                 <input
                   type="text" value={description} onChange={e => setDescription(e.target.value)}
                   placeholder="What does this project do?" style={FIELD}
-                  onFocus={e => (e.target.style.borderColor = 'var(--moss)')}
+                  onFocus={e => (e.target.style.borderColor = 'var(--brand-green)')}
                   onBlur={e => (e.target.style.borderColor = 'var(--border)')}
                 />
               </div>
 
-              <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif', fontSize: 13, color: 'var(--text)' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: 13, color: 'var(--text)' }}>
                 <input
                   type="checkbox" checked={isPrivate} onChange={e => setIsPrivate(e.target.checked)}
-                  style={{ width: 16, height: 16, accentColor: 'var(--moss)', cursor: 'pointer' }}
+                  style={{ width: 16, height: 16, accentColor: 'var(--brand-green)', cursor: 'pointer' }}
                 />
                 Private repository
               </label>
 
               {error && (
-                <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(184,92,60,0.08)', border: '1px solid rgba(184,92,60,0.2)', color: 'var(--danger)', fontSize: 13, fontFamily: 'DM Sans, sans-serif' }}>
+                <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(184,92,60,0.08)', border: '1px solid rgba(184,92,60,0.2)', color: 'var(--danger)', fontSize: 13, fontFamily: 'var(--font-sans)' }}>
                   {error}
                 </div>
               )}
@@ -161,14 +161,14 @@ export function PushToGitHubModal({ open, onClose, projectId, defaultName }: Pus
                 disabled={loading || !name}
                 style={{
                   width: '100%', padding: '11px 0',
-                  background: loading || !name ? 'rgba(45,74,43,0.4)' : 'var(--moss)',
+                  background: loading || !name ? 'rgba(45,74,43,0.4)' : 'var(--brand-green)',
                   color: '#fff', border: 'none', borderRadius: 9,
                   fontSize: 14, fontWeight: 600, cursor: loading || !name ? 'not-allowed' : 'pointer',
-                  fontFamily: 'DM Sans, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                   transition: 'background 0.15s',
                 }}
-                onMouseEnter={e => { if (!loading && name) e.currentTarget.style.background = 'var(--moss-2)'; }}
-                onMouseLeave={e => { if (!loading && name) e.currentTarget.style.background = 'var(--moss)'; }}
+                onMouseEnter={e => { if (!loading && name) e.currentTarget.style.background = 'var(--green-600)'; }}
+                onMouseLeave={e => { if (!loading && name) e.currentTarget.style.background = 'var(--brand-green)'; }}
               >
                 <GitHubIcon size={15} />
                 {loading ? 'Pushing…' : 'Push to GitHub'}

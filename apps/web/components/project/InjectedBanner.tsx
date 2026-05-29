@@ -29,17 +29,17 @@ export function InjectedBanner({
       padding: '9px 14px',
       display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0,
     }}>
-      <span style={{ color: 'var(--ochre)', fontSize: 13, flexShrink: 0 }}>✦</span>
+      <span style={{ color: 'var(--brand-gold)', fontSize: 13, flexShrink: 0 }}>✦</span>
       <div style={{ flex: 1, minWidth: 0 }}>
         <span style={{
-          fontSize: 12, fontWeight: 600, color: 'var(--ochre)',
-          fontFamily: 'DM Sans, sans-serif',
+          fontSize: 12, fontWeight: 600, color: 'var(--brand-gold)',
+          fontFamily: 'var(--font-sans)',
         }}>
           Injected via Send to Code
         </span>
         {pendingCode.filename && (
           <span style={{
-            marginLeft: 8, fontSize: 11, color: 'var(--ochre)',
+            marginLeft: 8, fontSize: 11, color: 'var(--brand-gold)',
             fontFamily: 'JetBrains Mono, monospace',
             background: 'rgba(212,169,74,0.12)',
             padding: '1px 8px', borderRadius: 4,
@@ -52,10 +52,10 @@ export function InjectedBanner({
         <button
           onClick={onApply}
           style={{
-            background: 'rgba(212,169,74,0.15)', color: 'var(--ochre)',
+            background: 'rgba(212,169,74,0.15)', color: 'var(--brand-gold)',
             border: '1px solid rgba(212,169,74,0.4)',
             borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 600,
-            cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
+            cursor: 'pointer', fontFamily: 'var(--font-sans)',
           }}
         >
           ⟳ Review & Apply
@@ -64,11 +64,11 @@ export function InjectedBanner({
           onClick={onDeploy}
           disabled={deploying}
           style={{
-            background: deploying ? 'rgba(45,74,43,0.5)' : 'var(--moss)',
-            color: 'var(--ochre)', border: 'none',
+            background: deploying ? 'rgba(45,74,43,0.5)' : 'var(--brand-green)',
+            color: 'var(--brand-gold)', border: 'none',
             borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 600,
             cursor: deploying ? 'not-allowed' : 'pointer',
-            fontFamily: 'DM Sans, sans-serif', display: 'flex', alignItems: 'center', gap: 4,
+            fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', gap: 4,
           }}
         >
           {deploying ? '▶ Deploying…' : '▶ Build'}
@@ -79,7 +79,7 @@ export function InjectedBanner({
             background: 'transparent', color: '#8aaa85',
             border: '1px solid rgba(138,170,133,0.3)',
             borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 500,
-            cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
+            cursor: 'pointer', fontFamily: 'var(--font-sans)',
           }}
         >
           → Push GitHub
@@ -92,7 +92,7 @@ export function InjectedBanner({
               background: 'transparent', color: '#6b8a6b',
               border: '1px solid rgba(107,138,107,0.3)',
               borderRadius: 6, padding: '5px 10px', fontSize: 12,
-              cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
+              cursor: 'pointer', fontFamily: 'var(--font-sans)',
             }}
           >
             ↩ Undo

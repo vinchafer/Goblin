@@ -65,7 +65,7 @@ export function GeoPricingSection() {
     <section
       id="pricing"
       style={{
-        background: 'var(--cream)',
+        background: 'var(--paper)',
         padding: '120px 32px',
       }}
     >
@@ -78,7 +78,7 @@ export function GeoPricingSection() {
               padding: '6px 14px', borderRadius: 100,
               fontSize: 11, fontWeight: 700,
               letterSpacing: '0.16em', textTransform: 'uppercase',
-              marginBottom: 22, fontFamily: 'DM Sans, sans-serif',
+              marginBottom: 22, fontFamily: 'var(--font-sans)',
               boxShadow: '0 4px 12px -4px rgba(31,58,29,0.40)',
             }}
           >
@@ -87,7 +87,7 @@ export function GeoPricingSection() {
           </div>
           <h2
             style={{
-              fontFamily: 'Fraunces, serif',
+              fontFamily: 'var(--font-sans)',
               fontSize: 'clamp(36px, 4.8vw, 58px)',
               color: '#0F2A0D',
               letterSpacing: '-0.025em',
@@ -105,7 +105,7 @@ export function GeoPricingSection() {
             style={{
               fontSize: 17,
               color: '#1F3A1D',
-              fontFamily: 'DM Sans, sans-serif',
+              fontFamily: 'var(--font-sans)',
               lineHeight: 1.6,
               margin: 0,
               fontWeight: 500,
@@ -136,7 +136,7 @@ export function GeoPricingSection() {
                   flex: '1 1 280px',
                   minWidth: 280, maxWidth: 340,
                   background: recommended ? '#1f3a1d' : '#fff',
-                  color: recommended ? '#F7F4ED' : '#1a2e18',
+                  color: recommended ? 'var(--paper)' : '#1a2e18',
                   border: recommended
                     ? '1px solid rgba(212,167,55,0.45)'
                     : '1px solid rgba(45,74,43,0.14)',
@@ -154,12 +154,12 @@ export function GeoPricingSection() {
                   <div
                     style={{
                       position: 'absolute', top: -10, left: '50%', transform: 'translateX(-50%)',
-                      background: 'var(--ochre)',
+                      background: 'var(--brand-gold)',
                       color: '#1a2018',
                       fontSize: 10, fontWeight: 700,
                       letterSpacing: '0.14em', textTransform: 'uppercase',
                       padding: '4px 10px', borderRadius: 100,
-                      fontFamily: 'DM Sans, sans-serif',
+                      fontFamily: 'var(--font-sans)',
                       boxShadow: '0 4px 12px rgba(212,167,55,0.45)',
                     }}
                   >
@@ -173,7 +173,7 @@ export function GeoPricingSection() {
                     letterSpacing: '0.16em', textTransform: 'uppercase',
                     color: recommended ? '#F0CF8A' : '#7A5A12',
                     marginBottom: 10,
-                    fontFamily: 'DM Sans, sans-serif',
+                    fontFamily: 'var(--font-sans)',
                     margin: '0 0 10px',
                   }}
                 >
@@ -182,7 +182,7 @@ export function GeoPricingSection() {
 
                 <div
                   style={{
-                    fontFamily: 'Fraunces, serif',
+                    fontFamily: 'var(--font-sans)',
                     fontSize: 17, fontWeight: 600, fontStyle: 'italic',
                     color: recommended ? '#F5DC95' : '#1F3A1D',
                     marginBottom: 20,
@@ -195,9 +195,9 @@ export function GeoPricingSection() {
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, marginBottom: 24 }}>
                   <span
                     style={{
-                      fontFamily: 'Fraunces, serif',
+                      fontFamily: 'var(--font-sans)',
                       fontSize: 52, fontWeight: 600,
-                      color: recommended ? '#F7F4ED' : '#1a2e18',
+                      color: recommended ? 'var(--paper)' : '#1a2e18',
                       letterSpacing: '-0.03em',
                       lineHeight: 1,
                     }}
@@ -207,8 +207,8 @@ export function GeoPricingSection() {
                   <span
                     style={{
                       fontSize: 13.5,
-                      color: recommended ? '#E8BF6A' : '#1F3A1D',
-                      fontFamily: 'DM Sans, sans-serif',
+                      color: recommended ? 'var(--gold-300)' : '#1F3A1D',
+                      fontFamily: 'var(--font-sans)',
                       fontWeight: 600,
                     }}
                   >
@@ -227,7 +227,7 @@ export function GeoPricingSection() {
                       <span
                         style={{
                           width: 18, height: 18, borderRadius: '50%',
-                          background: recommended ? '#E8BF6A' : '#1f3a1d',
+                          background: recommended ? 'var(--gold-300)' : '#1f3a1d',
                           color: recommended ? '#1a2018' : '#fff',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
                           flexShrink: 0, marginTop: 1,
@@ -238,8 +238,8 @@ export function GeoPricingSection() {
                       <span
                         style={{
                           fontSize: 13.5,
-                          color: recommended ? '#F7F4ED' : '#1f3a1d',
-                          fontFamily: 'DM Sans, sans-serif',
+                          color: recommended ? 'var(--paper)' : '#1f3a1d',
+                          fontFamily: 'var(--font-sans)',
                           fontWeight: 500,
                           lineHeight: 1.55,
                         }}
@@ -257,8 +257,8 @@ export function GeoPricingSection() {
                     padding: '14px 0', borderRadius: 10,
                     textAlign: 'center', fontSize: 14, fontWeight: 700,
                     textDecoration: 'none',
-                    fontFamily: 'DM Sans, sans-serif',
-                    background: recommended ? '#E8BF6A' : '#1f3a1d',
+                    fontFamily: 'var(--font-sans)',
+                    background: recommended ? 'var(--gold-300)' : '#1f3a1d',
                     color: recommended ? '#1a2018' : '#fff',
                     boxShadow: recommended
                       ? '0 1px 0 rgba(255,255,255,0.35) inset, 0 8px 22px rgba(232,191,106,0.45)'
@@ -280,7 +280,7 @@ export function GeoPricingSection() {
             textAlign: 'center',
             fontSize: 12.5,
             color: '#4a6045',
-            fontFamily: 'DM Sans, sans-serif',
+            fontFamily: 'var(--font-sans)',
             marginTop: 32, lineHeight: 1.7,
             fontWeight: 500,
           }}

@@ -1,4 +1,4 @@
-﻿export const metadata = { title: 'Built with Goblin — Badge' };
+export const metadata = { title: 'Built with Goblin — Badge' };
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://justgoblin.com';
 
@@ -45,16 +45,16 @@ function CodeBlock({ code }: { code: string }) {
 
 export default function BadgePage() {
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--cream)', fontFamily: 'DM Sans, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--paper)', fontFamily: 'var(--font-sans)' }}>
       {/* Header */}
-      <div style={{ background: 'var(--moss)', padding: '0 24px', height: 52, display: 'flex', alignItems: 'center', gap: 10 }}>
-        <a href="/" style={{ fontFamily: 'Fraunces, serif', fontSize: 18, fontWeight: 700, color: 'var(--ochre)', textDecoration: 'none' }}>👺 Goblin</a>
+      <div style={{ background: 'var(--brand-green)', padding: '0 24px', height: 52, display: 'flex', alignItems: 'center', gap: 10 }}>
+        <a href="/" style={{ fontFamily: 'var(--font-sans)', fontSize: 18, fontWeight: 700, color: 'var(--brand-gold)', textDecoration: 'none' }}>👺 Goblin</a>
         <span style={{ color: 'rgba(255,255,255,0.4)', marginLeft: 8, fontSize: 13 }}>/ Badge</span>
       </div>
 
       <div style={{ maxWidth: 680, margin: '0 auto', padding: '56px 24px' }}>
         <div style={{ textAlign: 'center', marginBottom: 48 }}>
-          <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 36, fontWeight: 700, color: 'var(--moss)', letterSpacing: '-1px', marginBottom: 12 }}>
+          <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 36, fontWeight: 700, color: 'var(--brand-green)', letterSpacing: '-1px', marginBottom: 12 }}>
             Built with Goblin
           </h1>
           <p style={{ fontSize: 16, color: 'var(--meta)', lineHeight: 1.6 }}>
@@ -68,7 +68,7 @@ export default function BadgePage() {
             borderRadius: 14, padding: '24px 28px', marginBottom: 20,
           }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-              <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 17, fontWeight: 700, color: 'var(--moss)' }}>{badge.label}</h2>
+              <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: 17, fontWeight: 700, color: 'var(--brand-green)' }}>{badge.label}</h2>
             </div>
 
             {/* Preview */}
@@ -108,7 +108,7 @@ export default function BadgePage() {
           ].map(b => (
             <div key={b.label} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
               <span style={{ fontSize: 12, color: 'var(--meta)', width: 60, flexShrink: 0 }}>{b.label}</span>
-              <code style={{ fontSize: 12, fontFamily: 'JetBrains Mono, monospace', color: 'var(--moss)', background: 'var(--div)', padding: '2px 8px', borderRadius: 4 }}>
+              <code style={{ fontSize: 12, fontFamily: 'JetBrains Mono, monospace', color: 'var(--brand-green)', background: 'var(--div)', padding: '2px 8px', borderRadius: 4 }}>
                 {b.url}
               </code>
             </div>

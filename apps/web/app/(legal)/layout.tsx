@@ -3,12 +3,12 @@ import type { ReactNode } from 'react';
 
 export default function LegalLayout({ children }: { children: ReactNode }) {
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--cream)', color: 'var(--text)', fontFamily: 'DM Sans, sans-serif', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--paper)', color: 'var(--text)', fontFamily: 'var(--font-sans)', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
-      <header style={{ background: 'var(--moss)', padding: '0 24px', height: 52, display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+      <header style={{ background: 'var(--brand-green)', padding: '0 24px', height: 52, display: 'flex', alignItems: 'center', flexShrink: 0 }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
           <span style={{ fontSize: 20 }}>👺</span>
-          <span style={{ fontFamily: 'Fraunces, serif', fontSize: 18, fontWeight: 700, color: 'var(--ochre)', letterSpacing: '-0.4px' }}>
+          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 18, fontWeight: 700, color: 'var(--brand-gold)', letterSpacing: '-0.4px' }}>
             Goblin
           </span>
         </Link>
@@ -20,8 +20,8 @@ export default function LegalLayout({ children }: { children: ReactNode }) {
       </main>
 
       {/* Footer */}
-      <footer style={{ background: 'var(--moss)', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontFamily: 'DM Sans, sans-serif' }}>
+      <footer style={{ background: 'var(--brand-green)', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--font-sans)' }}>
           © 2026 Goblin
         </span>
         <nav style={{ display: 'flex', gap: 16 }}>
@@ -29,7 +29,7 @@ export default function LegalLayout({ children }: { children: ReactNode }) {
             <Link
               key={href}
               href={href!}
-              style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', textDecoration: 'none', fontFamily: 'DM Sans, sans-serif', transition: 'color 0.15s' }}
+              style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', textDecoration: 'none', fontFamily: 'var(--font-sans)', transition: 'color 0.15s' }}
             >
               {label}
             </Link>

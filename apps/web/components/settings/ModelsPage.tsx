@@ -54,7 +54,7 @@ export function ModelsPage() {
   const [tab, setTab] = useState<Tab>('rankings');
 
   return (
-    <div style={{ padding: '0 0 24px', fontFamily: 'var(--font-ui)' }}>
+    <div style={{ padding: '0 0 24px', fontFamily: 'var(--font-sans)' }}>
       <div style={{ padding: '4px 20px 12px' }}>
         <p style={{ fontSize: 13, color: 'var(--text-meta)', margin: 0, lineHeight: 1.5 }}>
           Rankings aus 5 öffentlichen Benchmarks. Alle 6 Stunden aktualisiert.
@@ -78,10 +78,10 @@ export function ModelsPage() {
               padding: '10px 16px',
               background: 'transparent', border: 'none',
               borderBottom: '2px solid',
-              borderColor: tab === t.id ? 'var(--moss)' : 'transparent',
+              borderColor: tab === t.id ? 'var(--brand-green)' : 'transparent',
               color: tab === t.id ? 'var(--text)' : 'var(--text-meta)',
               fontSize: 14, fontWeight: tab === t.id ? 600 : 400,
-              cursor: 'pointer', fontFamily: 'var(--font-ui)',
+              cursor: 'pointer', fontFamily: 'var(--font-sans)',
               marginBottom: -1,
             }}
           >{t.label}</button>
@@ -180,8 +180,8 @@ function RankingsTab() {
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10,
         }}>
           <span>Du hast noch keine Keys hinterlegt.</span>
-          <a href="/onboarding/choose-provider" style={{
-            color: 'var(--moss)', fontWeight: 600, textDecoration: 'none',
+          <a href="/welcome/provider" style={{
+            color: 'var(--brand-green)', fontWeight: 600, textDecoration: 'none',
             fontSize: 13, whiteSpace: 'nowrap',
           }}>Free-Tier einrichten →</a>
         </div>
@@ -195,11 +195,11 @@ function RankingsTab() {
             data-testid={`task-${t}`}
             style={{
               padding: '8px 14px', borderRadius: 999,
-              background: task === t ? 'var(--moss)' : 'transparent',
-              border: '1px solid', borderColor: task === t ? 'var(--moss)' : 'var(--border-subtle)',
+              background: task === t ? 'var(--brand-green)' : 'transparent',
+              border: '1px solid', borderColor: task === t ? 'var(--brand-green)' : 'var(--border-subtle)',
               color: task === t ? '#fff' : 'var(--text-2)',
               fontSize: 13, fontWeight: 500, cursor: 'pointer',
-              whiteSpace: 'nowrap', fontFamily: 'var(--font-ui)',
+              whiteSpace: 'nowrap', fontFamily: 'var(--font-sans)',
               flexShrink: 0,
             }}
           >{TASK_LABELS[t]}</button>
@@ -228,14 +228,14 @@ function RankingsTab() {
         const access = getModelAccess(m.provider);
         const keyed = connectedProviders.has(m.provider);
         const colors = keyed
-          ? { bg: 'rgba(45,74,43,0.10)', fg: 'var(--moss)', border: 'rgba(45,74,43,0.24)' }
+          ? { bg: 'rgba(45,74,43,0.10)', fg: 'var(--brand-green)', border: 'rgba(45,74,43,0.24)' }
           : ACCESS_COLORS[access.type];
         const badgeLabel = keyed ? 'Mein Key' : access.label;
         return (
           <div key={m.id} style={{
             padding: '14px 16px', marginBottom: 8,
             background: 'var(--panel)',
-            border: '1px solid', borderColor: isDefault ? 'var(--moss)' : 'var(--border-subtle)',
+            border: '1px solid', borderColor: isDefault ? 'var(--brand-green)' : 'var(--border-subtle)',
             borderRadius: 12,
             display: 'flex', alignItems: 'center', gap: 12,
           }}>
@@ -262,7 +262,7 @@ function RankingsTab() {
             {isDefault ? (
               <span style={{
                 padding: '4px 10px', borderRadius: 8,
-                background: 'var(--moss-green-soft)', color: 'var(--moss)',
+                background: 'color-mix(in srgb, var(--brand-green) 8%, transparent)', color: 'var(--brand-green)',
                 fontSize: 11, fontWeight: 600, flexShrink: 0,
               }}>DEFAULT</span>
             ) : (
@@ -270,7 +270,7 @@ function RankingsTab() {
                 padding: '4px 10px', borderRadius: 8,
                 background: 'transparent', border: '1px solid var(--border-subtle)',
                 color: 'var(--text-2)', fontSize: 11, fontWeight: 600,
-                cursor: 'pointer', fontFamily: 'var(--font-ui)', flexShrink: 0,
+                cursor: 'pointer', fontFamily: 'var(--font-sans)', flexShrink: 0,
               }}>Default</button>
             )}
           </div>
@@ -321,11 +321,11 @@ function KeysTab() {
               </div>
               <a href="/dashboard/settings/keys" style={{
                 padding: '6px 12px', borderRadius: 8,
-                background: k ? 'transparent' : 'var(--moss)',
+                background: k ? 'transparent' : 'var(--brand-green)',
                 color: k ? 'var(--text-2)' : '#fff',
-                border: '1px solid', borderColor: k ? 'var(--border-subtle)' : 'var(--moss)',
+                border: '1px solid', borderColor: k ? 'var(--border-subtle)' : 'var(--brand-green)',
                 fontSize: 12, fontWeight: 600, textDecoration: 'none',
-                fontFamily: 'var(--font-ui)',
+                fontFamily: 'var(--font-sans)',
               }}>{k ? 'Verwalten' : 'Hinzufügen'}</a>
             </div>
           );
@@ -376,7 +376,7 @@ function AdvancedTab() {
     width: '100%', padding: '10px 12px',
     background: 'var(--subtle)', border: '1px solid var(--border-subtle)',
     borderRadius: 8, color: 'var(--text)', fontSize: 14,
-    fontFamily: 'var(--font-ui)', outline: 'none',
+    fontFamily: 'var(--font-sans)', outline: 'none',
   };
 
   return (
@@ -418,7 +418,7 @@ function AdvancedTab() {
                   </span>
                   <input type="range" min={0} max={1} step={0.1} value={cfg.temperature}
                     onChange={(e) => update(m.id, { temperature: parseFloat(e.target.value) })}
-                    style={{ accentColor: 'var(--moss)' }}
+                    style={{ accentColor: 'var(--brand-green)' }}
                   />
                 </label>
                 <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>

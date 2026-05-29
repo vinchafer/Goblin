@@ -54,7 +54,7 @@ function ResetPasswordForm() {
     background: 'rgba(255,255,255,0.06)',
     border: '1.5px solid rgba(255,255,255,0.1)',
     borderRadius: 10, fontSize: 14, color: '#fff', outline: 'none',
-    fontFamily: 'var(--font-dm-sans), DM Sans, sans-serif',
+    fontFamily: 'var(--font-sans)',
     boxSizing: 'border-box',
   };
 
@@ -67,7 +67,7 @@ function ResetPasswordForm() {
         {error ? (
           <div style={{ textAlign: 'center' }}>
             <p style={{ color: '#ef4444', fontSize: 14, marginBottom: 16 }}>{error}</p>
-            <a href="/login" style={{ color: 'var(--moss)', fontSize: 14, textDecoration: 'none' }}>
+            <a href="/login" style={{ color: 'var(--brand-green)', fontSize: 14, textDecoration: 'none' }}>
               ← Back to sign in
             </a>
           </div>
@@ -96,11 +96,11 @@ function ResetPasswordForm() {
               disabled={loading || !password || !confirm}
               style={{
                 height: 48,
-                background: password && confirm ? 'var(--moss)' : 'rgba(255,255,255,0.06)',
+                background: password && confirm ? 'var(--brand-green)' : 'rgba(255,255,255,0.06)',
                 color: password && confirm ? '#fff' : 'rgba(255,255,255,0.2)',
                 border: 'none', borderRadius: 10,
                 fontSize: 14, fontWeight: 600,
-                fontFamily: 'var(--font-dm-sans), DM Sans, sans-serif',
+                fontFamily: 'var(--font-sans)',
                 cursor: loading ? 'not-allowed' : 'pointer',
               }}
             >

@@ -52,7 +52,7 @@ export default async function AdminCostsPage() {
       padding: 32,
       maxWidth: 900,
       margin: '0 auto',
-      fontFamily: 'var(--font-ui)',
+      fontFamily: 'var(--font-sans)',
       color: 'var(--text-1)',
     }}>
       <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 8 }}>Cost Dashboard</h1>

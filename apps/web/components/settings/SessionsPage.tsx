@@ -62,7 +62,7 @@ export function SessionsPage() {
   const others = sessions.filter((s) => !s.isCurrent);
 
   return (
-    <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-ui)' }}>
+    <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
       <p style={{ color: 'var(--meta)', fontSize: 14, margin: '4px 4px 16px' }}>
         Hier siehst du alle Geräte, auf denen du gerade eingeloggt bist. Beende Sitzungen, die
         du nicht erkennst.
@@ -83,7 +83,7 @@ export function SessionsPage() {
             borderRadius: 10,
             cursor: 'pointer',
             fontWeight: 600,
-            fontFamily: 'var(--font-ui)',
+            fontFamily: 'var(--font-sans)',
           }}
         >
           Alle anderen Sitzungen beenden
@@ -117,7 +117,7 @@ export function SessionsPage() {
                       style={{
                         marginLeft: 8,
                         fontSize: 11,
-                        background: 'var(--moss)',
+                        background: 'var(--brand-green)',
                         color: '#fff',
                         padding: '2px 8px',
                         borderRadius: 4,
@@ -147,7 +147,7 @@ export function SessionsPage() {
                     borderRadius: 6,
                     cursor: 'pointer',
                     fontSize: 13,
-                    fontFamily: 'var(--font-ui)',
+                    fontFamily: 'var(--font-sans)',
                     whiteSpace: 'nowrap',
                   }}
                 >

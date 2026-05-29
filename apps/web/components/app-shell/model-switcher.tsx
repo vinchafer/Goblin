@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useRef } from "react";
 import { useApp, type AppModel } from "@/contexts/app-context";
@@ -285,11 +285,11 @@ export function ModelSwitcher() {
         style={{
           display: 'flex', alignItems: 'center', gap: 6,
           padding: '5px 12px', borderRadius: 8,
-          border: `1px solid ${isNoModel ? 'var(--ochre)' : 'rgba(255,255,255,0.2)'}`,
+          border: `1px solid ${isNoModel ? 'var(--brand-gold)' : 'rgba(255,255,255,0.2)'}`,
           background: 'rgba(255,255,255,0.06)',
-          color: isNoModel ? 'var(--ochre)' : 'rgba(255,255,255,0.85)',
+          color: isNoModel ? 'var(--brand-gold)' : 'rgba(255,255,255,0.85)',
           fontSize: 13, fontWeight: 500, cursor: 'pointer',
-          fontFamily: 'DM Sans, sans-serif', transition: 'background 0.1s',
+          fontFamily: 'var(--font-sans)', transition: 'background 0.1s',
         }}
         onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.1)')}
         onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
@@ -313,12 +313,12 @@ export function ModelSwitcher() {
                 Noch keine API-Keys konfiguriert.
               </p>
               <a
-                href="/onboarding/choose-provider"
+                href="/welcome/provider"
                 style={{
                   display: 'inline-block',
                   padding: '8px 14px',
-                  background: 'var(--goblin-moss)',
-                  color: 'var(--goblin-cream)',
+                  background: 'var(--brand-green)',
+                  color: 'var(--paper)',
                   borderRadius: 6,
                   fontSize: 12,
                   fontWeight: 600,
@@ -357,7 +357,7 @@ export function ModelSwitcher() {
                         onMouseLeave={e => { (e.currentTarget.style.background = isActive ? 'rgba(212,169,74,0.06)' : 'none'); }}
                       >
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 13, color: 'var(--text)', fontFamily: 'DM Sans, sans-serif', display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <div style={{ fontSize: 13, color: 'var(--text)', fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', gap: 6 }}>
                             {model.name}
                             {isRecommended(model) && (
                               <span
@@ -368,8 +368,8 @@ export function ModelSwitcher() {
                                   letterSpacing: '0.5px',
                                   padding: '2px 5px',
                                   borderRadius: 3,
-                                  background: 'var(--moss-green-soft)',
-                                  color: 'var(--moss-green)',
+                                  background: 'color-mix(in srgb, var(--brand-green) 8%, transparent)',
+                                  color: 'var(--brand-green)',
                                   lineHeight: 1,
                                 }}
                               >
@@ -385,8 +385,8 @@ export function ModelSwitcher() {
                                   letterSpacing: '0.5px',
                                   padding: '2px 5px',
                                   borderRadius: 3,
-                                  background: 'var(--goblin-moss)',
-                                  color: 'var(--goblin-cream)',
+                                  background: 'var(--brand-green)',
+                                  color: 'var(--paper)',
                                   lineHeight: 1,
                                 }}
                               >
@@ -404,7 +404,7 @@ export function ModelSwitcher() {
                             )}
                           </div>
                           {badge && (
-                            <div style={{ fontSize: 10, color: badge.color, marginTop: 1, fontFamily: 'DM Sans, sans-serif' }}>
+                            <div style={{ fontSize: 10, color: badge.color, marginTop: 1, fontFamily: 'var(--font-sans)' }}>
                               {badge.text}
                             </div>
                           )}
@@ -415,7 +415,7 @@ export function ModelSwitcher() {
                           </span>
                         )}
                         {isActive && (
-                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--ochre)', flexShrink: 0 }} />
+                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--brand-gold)', flexShrink: 0 }} />
                         )}
                       </button>
                     );
@@ -424,7 +424,7 @@ export function ModelSwitcher() {
               );
             })}
             <div style={{ borderTop: '1px solid var(--div)', marginTop: 4, padding: '8px 12px', textAlign: 'center' }}>
-              <a href="/models" style={{ fontSize: 12, color: 'var(--moss)', fontWeight: 600, textDecoration: 'none' }}>
+              <a href="/models" style={{ fontSize: 12, color: 'var(--brand-green)', fontWeight: 600, textDecoration: 'none' }}>
                 Alle Modelle anzeigen →
               </a>
             </div>

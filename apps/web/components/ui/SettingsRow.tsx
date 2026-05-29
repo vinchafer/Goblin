@@ -15,6 +15,9 @@ interface SettingsRowProps {
   onClick?: () => void;
   disabled?: boolean;
   testId?: string;
+  /** Tighter row for compact surfaces (e.g. the account menu). Default keeps
+      the standard settings-page proportions, so other screens are untouched. */
+  dense?: boolean;
 }
 
 const Chevron16 = () => (
@@ -41,6 +44,7 @@ export function SettingsRow({
   onClick,
   disabled,
   testId,
+  dense = false,
 }: SettingsRowProps) {
   const handleClick = () => {
     if (disabled) return;
@@ -58,8 +62,8 @@ export function SettingsRow({
         display: 'flex',
         alignItems: 'center',
         gap: 12,
-        padding: '14px 16px 14px 20px',
-        minHeight: 56,
+        padding: dense ? '12px 16px' : '14px 16px 14px 20px',
+        minHeight: dense ? 48 : 56,
         cursor: disabled ? 'not-allowed' : onClick || rightVariant === 'toggle' ? 'pointer' : 'default',
         opacity: disabled ? 0.5 : 1,
         userSelect: 'none',
@@ -81,8 +85,8 @@ export function SettingsRow({
       <span style={{
         flex: 1,
         minWidth: 0,
-        fontSize: 17,
-        fontFamily: 'var(--font-ui)',
+        fontSize: dense ? 'var(--t-small-fs)' : 'var(--t-body-fs)',
+        fontFamily: 'var(--font-sans)',
         color: labelColor || 'var(--text)',
         overflow: 'hidden',
         textOverflow: 'ellipsis',
@@ -92,7 +96,7 @@ export function SettingsRow({
       </span>
 
       {(rightVariant === 'text' || rightVariant === 'chevron' || rightVariant === 'dropdown') && right && (
-        <span style={{ fontSize: 15, color: 'var(--text-meta)', flexShrink: 0 }}>{right}</span>
+        <span style={{ fontSize: 'var(--t-small-fs)', color: 'var(--text-meta)', flexShrink: 0 }}>{right}</span>
       )}
       {rightVariant === 'chevron' && <span style={{ color: 'var(--text-meta)', flexShrink: 0, display: 'flex' }}><Chevron16 /></span>}
       {rightVariant === 'dropdown' && <span style={{ color: 'var(--text-meta)', flexShrink: 0, display: 'flex' }}><ChevronUpDown16 /></span>}

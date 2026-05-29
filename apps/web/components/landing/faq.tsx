@@ -57,7 +57,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
           width: '100%', background: 'none', border: 'none', cursor: 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           padding: '22px 24px',
-          fontFamily: 'Fraunces, serif', fontSize: 19,
+          fontFamily: 'var(--font-sans)', fontSize: 19,
           fontWeight: 700, color: '#0F2A0D', textAlign: 'left', gap: 16,
           letterSpacing: '-0.018em',
           lineHeight: 1.3,
@@ -100,7 +100,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
               fontSize: 15.5,
               color: '#1F3A1D',
               lineHeight: 1.7, margin: '20px 0 0',
-              fontWeight: 500, fontFamily: 'DM Sans, sans-serif',
+              fontWeight: 500, fontFamily: 'var(--font-sans)',
             }}
           >
             {a}
@@ -116,7 +116,7 @@ export function LandingFaq() {
     <section
       id="faq"
       style={{
-        background: 'var(--cream)',
+        background: 'var(--paper)',
         padding: '120px 32px',
       }}
     >
@@ -129,7 +129,7 @@ export function LandingFaq() {
               padding: '6px 14px', borderRadius: 100,
               fontSize: 11, fontWeight: 700,
               letterSpacing: '0.16em', textTransform: 'uppercase',
-              marginBottom: 22, fontFamily: 'DM Sans, sans-serif',
+              marginBottom: 22, fontFamily: 'var(--font-sans)',
               boxShadow: '0 4px 12px -4px rgba(31,58,29,0.40)',
             }}
           >
@@ -138,7 +138,7 @@ export function LandingFaq() {
           </div>
           <h2
             style={{
-              fontFamily: 'Fraunces, serif',
+              fontFamily: 'var(--font-sans)',
               fontWeight: 700,
               fontSize: 'clamp(36px, 4.8vw, 58px)',
               color: '#0F2A0D',

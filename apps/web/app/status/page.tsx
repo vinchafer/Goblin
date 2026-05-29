@@ -1,4 +1,4 @@
-﻿import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -83,7 +83,7 @@ async function getIncidents(): Promise<Incident[]> {
 }
 
 function StatusDot({ status }: { status: string }) {
-  const color = status === 'ok' ? 'var(--success)' : status === 'degraded' || status === 'skip' ? 'var(--ochre)' : 'var(--danger)';
+  const color = status === 'ok' ? 'var(--success)' : status === 'degraded' || status === 'skip' ? 'var(--brand-gold)' : 'var(--danger)';
   return (
     <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', background: color, flexShrink: 0, boxShadow: `0 0 6px ${color}` }} />
   );
@@ -105,7 +105,7 @@ const SERVICE_LABELS: Record<string, string> = {
 
 const INCIDENT_STATUS_COLOR: Record<string, string> = {
   investigating: 'var(--danger)',
-  identified:    'var(--ochre)',
+  identified:    'var(--brand-gold)',
   monitoring:    '#3A6B8A',
   resolved:      'var(--success)',
 };
@@ -123,17 +123,17 @@ export default async function StatusPage() {
   const resolvedIncidents = incidents.filter(i => i.status === 'resolved');
 
   const overall = health?.status ?? 'down';
-  const overallColor = overall === 'ok' ? 'var(--success)' : overall === 'degraded' ? 'var(--ochre)' : 'var(--danger)';
+  const overallColor = overall === 'ok' ? 'var(--success)' : overall === 'degraded' ? 'var(--brand-gold)' : 'var(--danger)';
   const overallLabel = overall === 'ok'
     ? activeIncidents.length > 0 ? '⚠ Active incidents' : '✓ All systems operational'
     : overall === 'degraded' ? '⚠ Partial outage' : '✗ Major outage';
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--cream)', fontFamily: 'DM Sans, sans-serif' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--paper)', fontFamily: 'var(--font-sans)' }}>
       {/* Header */}
-      <div style={{ background: 'var(--moss)', padding: '0 24px', height: 52, display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div style={{ background: 'var(--brand-green)', padding: '0 24px', height: 52, display: 'flex', alignItems: 'center', gap: 10 }}>
         <span style={{ fontSize: 20 }}>👺</span>
-        <a href="/" style={{ fontFamily: 'Fraunces, serif', fontSize: 18, fontWeight: 700, color: 'var(--ochre)', textDecoration: 'none' }}>Goblin</a>
+        <a href="/" style={{ fontFamily: 'var(--font-sans)', fontSize: 18, fontWeight: 700, color: 'var(--brand-gold)', textDecoration: 'none' }}>Goblin</a>
         <span style={{ color: 'rgba(255,255,255,0.4)', marginLeft: 8, fontSize: 13 }}>/ Status</span>
       </div>
 
@@ -145,7 +145,7 @@ export default async function StatusPage() {
         }}>
           <StatusDot status={activeIncidents.length > 0 ? 'degraded' : overall} />
           <div>
-            <div style={{ fontFamily: 'Fraunces, serif', fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>{overallLabel}</div>
+            <div style={{ fontFamily: 'var(--font-sans)', fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>{overallLabel}</div>
             {health && (
               <div style={{ fontSize: 12, color: 'var(--meta)', marginTop: 4 }}>
                 Uptime: {formatUptime(health.uptime)} · v{health.version} · Last checked: {new Date(health.timestamp).toLocaleTimeString()}
@@ -251,7 +251,7 @@ export default async function StatusPage() {
             </div>
           ))}
           {webVersion && apiVersion && webVersion.gitCommit !== 'unknown' && apiVersion.gitCommit !== 'unknown' && (
-            <div style={{ padding: '10px 20px', fontSize: 12, color: webVersion.gitCommit === apiVersion.gitCommit ? 'var(--success)' : 'var(--ochre)', fontWeight: 600 }}>
+            <div style={{ padding: '10px 20px', fontSize: 12, color: webVersion.gitCommit === apiVersion.gitCommit ? 'var(--success)' : 'var(--brand-gold)', fontWeight: 600 }}>
               {webVersion.gitCommit === apiVersion.gitCommit ? '✓ Web and API on same commit' : '⚠ Web and API on different commits'}
             </div>
           )}
@@ -259,7 +259,7 @@ export default async function StatusPage() {
 
         <p style={{ fontSize: 12, color: 'var(--meta)', textAlign: 'center' }}>
           Auto-refreshes every 60 seconds.{' '}
-          <a href="mailto:hi@justgoblin.com" style={{ color: 'var(--ochre-dark)' }}>Report an incident →</a>
+          <a href="mailto:hi@justgoblin.com" style={{ color: 'var(--gold-700)' }}>Report an incident →</a>
         </p>
       </div>
 

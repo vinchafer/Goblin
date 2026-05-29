@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { Component, type ReactNode, type ErrorInfo } from 'react';
 
 interface Props {
@@ -35,7 +35,7 @@ export class ErrorBoundary extends Component<Props, State> {
         <div style={{
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
           padding: '32px 24px', textAlign: 'center', height: '100%', minHeight: 200,
-          fontFamily: 'DM Sans, sans-serif',
+          fontFamily: 'var(--font-sans)',
         }}>
           <div style={{ fontSize: 32, marginBottom: 12 }}>💀</div>
           <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginBottom: 6 }}>
@@ -47,9 +47,9 @@ export class ErrorBoundary extends Component<Props, State> {
           <button
             onClick={() => this.setState({ hasError: false, error: null })}
             style={{
-              padding: '8px 18px', background: 'var(--moss)', color: '#fff',
+              padding: '8px 18px', background: 'var(--brand-green)', color: '#fff',
               border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600,
-              cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
+              cursor: 'pointer', fontFamily: 'var(--font-sans)',
             }}
           >
             Reload tab

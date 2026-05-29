@@ -28,19 +28,19 @@ export function FileViewerModal({ open, onClose, path, content }: FileViewerModa
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
       <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full m-4 max-h-[80vh] flex flex-col">
-        <div className="p-4 border-b flex items-center justify-between" style={{ borderColor: 'var(--goblin-light)' }}>
-          <span className="font-medium" style={{ color: 'var(--goblin-slate)' }}>{path}</span>
+        <div className="p-4 border-b flex items-center justify-between" style={{ borderColor: 'var(--surface-3)' }}>
+          <span className="font-medium" style={{ color: 'var(--ink-1)' }}>{path}</span>
           <div className="flex items-center gap-2">
             <button
               onClick={handleCopy}
               className="p-2 rounded hover:bg-gray-100 flex items-center gap-1 text-sm"
-              style={{ color: 'var(--goblin-gray)' }}
+              style={{ color: 'var(--ink-3)' }}
             >
-              {copied ? <Check className="w-4 h-4" style={{ color: 'var(--goblin-good)' }} /> : <Copy className="w-4 h-4" />}
+              {copied ? <Check className="w-4 h-4" style={{ color: 'var(--success)' }} /> : <Copy className="w-4 h-4" />}
               {copied ? 'Copied' : 'Copy'}
             </button>
             <button onClick={onClose} className="p-2 rounded hover:bg-gray-100">
-              <X className="w-5 h-5" style={{ color: 'var(--goblin-gray)' }} />
+              <X className="w-5 h-5" style={{ color: 'var(--ink-3)' }} />
             </button>
           </div>
         </div>

@@ -31,10 +31,10 @@ export function ConnectorsPage() {
     })();
   }, []);
 
-  if (loading) return <div style={{ padding: 24, color: 'var(--text-meta)', fontFamily: 'var(--font-ui)' }}>Lade Konnektoren...</div>;
+  if (loading) return <div style={{ padding: 24, color: 'var(--text-meta)', fontFamily: 'var(--font-sans)' }}>Lade Konnektoren...</div>;
 
   return (
-    <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-ui)' }}>
+    <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
       <SettingsGroup label="Integrationen">
         <SettingsCard>
           <ConnectorRow
@@ -79,17 +79,17 @@ function ConnectorRow({ name, initial, connected, detail, onConnect, disabled }:
         <div style={{ fontSize: 13, color: 'var(--text-meta)', marginTop: 2 }}>{detail}</div>
       </div>
       {connected ? (
-        <span style={{ padding: '4px 10px', borderRadius: 12, background: 'var(--moss-green-soft)', color: 'var(--moss)', fontSize: 12, fontWeight: 600 }}>
+        <span style={{ padding: '4px 10px', borderRadius: 12, background: 'color-mix(in srgb, var(--brand-green) 8%, transparent)', color: 'var(--brand-green)', fontSize: 12, fontWeight: 600 }}>
           Verbunden
         </span>
       ) : (
         <button onClick={onConnect} disabled={disabled} style={{
           padding: '6px 12px', borderRadius: 8,
-          background: 'transparent', border: '1px solid var(--moss)',
-          color: 'var(--moss)', fontSize: 13, fontWeight: 600,
+          background: 'transparent', border: '1px solid var(--brand-green)',
+          color: 'var(--brand-green)', fontSize: 13, fontWeight: 600,
           cursor: disabled ? 'not-allowed' : 'pointer',
           opacity: disabled ? 0.5 : 1,
-          fontFamily: 'var(--font-ui)',
+          fontFamily: 'var(--font-sans)',
         }}>
           {disabled ? 'Bald' : 'Verbinden'}
         </button>

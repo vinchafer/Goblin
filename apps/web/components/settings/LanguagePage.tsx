@@ -20,7 +20,7 @@ export function LanguagePage() {
   };
 
   return (
-    <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-ui)' }}>
+    <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
       <SettingsCard>
         {options.map((opt) => (
           <div
@@ -37,7 +37,7 @@ export function LanguagePage() {
           >
             <span style={{ flex: 1, fontSize: 17, color: 'var(--text)' }}>{opt === 'DE' ? 'Deutsch' : 'English'}</span>
             {value === opt && (
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--moss)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--brand-green)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="20 6 9 17 4 12" />
               </svg>
             )}

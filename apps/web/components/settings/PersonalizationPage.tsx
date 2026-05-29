@@ -90,12 +90,12 @@ export function PersonalizationPage() {
     borderRadius: 10,
     color: 'var(--text)',
     fontSize: 15,
-    fontFamily: 'var(--font-ui)',
+    fontFamily: 'var(--font-sans)',
     outline: 'none',
   };
 
   return (
-    <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-ui)' }}>
+    <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
       <SettingsGroup label="Profil">
         <SettingsCard>
           <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -122,7 +122,7 @@ export function PersonalizationPage() {
               Wie soll Goblin mit dir arbeiten? Diese Anweisungen werden bei jedem Chat mitgegeben (zusätzlich zu projektspezifischen Anweisungen).
             </p>
             <textarea
-              style={{ ...inputStyle, minHeight: 120, resize: 'vertical', fontFamily: 'var(--font-ui)' }}
+              style={{ ...inputStyle, minHeight: 120, resize: 'vertical', fontFamily: 'var(--font-sans)' }}
               value={prefs.custom_instructions ?? ''}
               onChange={(e) => setPrefs((p) => ({ ...p, custom_instructions: e.target.value }))}
               placeholder="z.B. Antworte präzise, schreibe Code mit ausführlichen Kommentaren, bevorzuge TypeScript…"
@@ -174,10 +174,10 @@ export function PersonalizationPage() {
 
       <button onClick={save} disabled={saving} style={{
         marginTop: 16, width: '100%', padding: 14,
-        background: 'var(--moss)', color: '#fff', border: 'none',
+        background: 'var(--brand-green)', color: '#fff', border: 'none',
         borderRadius: 'var(--radius-lg)', fontSize: 15, fontWeight: 600,
         cursor: saving ? 'wait' : 'pointer',
-        fontFamily: 'var(--font-ui)',
+        fontFamily: 'var(--font-sans)',
       }}>
         {saved ? 'Gespeichert ✓' : saving ? 'Speichere…' : 'Speichern'}
       </button>

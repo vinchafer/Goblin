@@ -108,7 +108,7 @@ export function AvatarUploader({ currentUrl, fallbackInitial, onUploadComplete }
               width: 96,
               height: 96,
               borderRadius: '50%',
-              background: 'var(--moss)',
+              background: 'var(--brand-green)',
               color: '#FFFFFF',
               display: 'flex',
               alignItems: 'center',
@@ -141,7 +141,7 @@ export function AvatarUploader({ currentUrl, fallbackInitial, onUploadComplete }
             borderRadius: 8,
             cursor: 'pointer',
             fontSize: 14,
-            fontFamily: 'var(--font-ui)',
+            fontFamily: 'var(--font-sans)',
           }}
         >
           Bild auswählen
@@ -155,14 +155,14 @@ export function AvatarUploader({ currentUrl, fallbackInitial, onUploadComplete }
             disabled={uploading}
             style={{
               padding: '10px 16px',
-              background: uploading ? 'rgba(0,0,0,0.10)' : 'var(--moss)',
+              background: uploading ? 'rgba(0,0,0,0.10)' : 'var(--brand-green)',
               color: '#fff',
               border: 'none',
               borderRadius: 8,
               cursor: uploading ? 'not-allowed' : 'pointer',
               fontWeight: 600,
               fontSize: 14,
-              fontFamily: 'var(--font-ui)',
+              fontFamily: 'var(--font-sans)',
             }}
           >
             {uploading ? 'Lade hoch…' : 'Hochladen'}
@@ -181,7 +181,7 @@ export function AvatarUploader({ currentUrl, fallbackInitial, onUploadComplete }
               borderRadius: 8,
               cursor: 'pointer',
               fontSize: 14,
-              fontFamily: 'var(--font-ui)',
+              fontFamily: 'var(--font-sans)',
             }}
           >
             Abbrechen

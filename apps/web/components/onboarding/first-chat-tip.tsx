@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
@@ -52,9 +52,9 @@ export function FirstChatTip() {
       flexShrink: 0,
     }}>
       <span style={{ fontSize: 14, flexShrink: 0, marginTop: 1 }}>💡</span>
-      <p style={{ flex: 1, fontSize: 12, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif', lineHeight: 1.5, margin: 0 }}>
+      <p style={{ flex: 1, fontSize: 12, color: 'var(--meta)', fontFamily: 'var(--font-sans)', lineHeight: 1.5, margin: 0 }}>
         Describe what you want to build. Tap{' '}
-        <span style={{ fontWeight: 600, color: 'var(--ochre-dark)' }}>[Send to Code →]</span>{' '}
+        <span style={{ fontWeight: 600, color: 'var(--gold-700)' }}>[Send to Code →]</span>{' '}
         on any code block to apply it instantly.
       </p>
       <button

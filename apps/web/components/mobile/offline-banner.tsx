@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { useEffect, useState } from 'react';
 import { Icon } from '@/components/ui/icon';
 
@@ -35,7 +35,7 @@ export function OfflineBanner() {
         position: 'fixed', top: 0, left: 0, right: 0,
         background: 'var(--success)', color: '#fff',
         padding: '8px 16px', textAlign: 'center',
-        fontSize: 13, fontFamily: 'DM Sans, sans-serif', fontWeight: 500,
+        fontSize: 13, fontFamily: 'var(--font-sans)', fontWeight: 500,
         zIndex: 1000, animation: 'slideDown 0.2s ease',
       }}>
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}><Icon name="check" size={14} /> Back online</span>
@@ -49,7 +49,7 @@ export function OfflineBanner() {
       background: 'var(--danger)', color: '#fff',
       padding: '8px 16px',
       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-      fontSize: 13, fontFamily: 'DM Sans, sans-serif', fontWeight: 500,
+      fontSize: 13, fontFamily: 'var(--font-sans)', fontWeight: 500,
       zIndex: 1000,
     }}>
       <Icon name="fast" size={14} />

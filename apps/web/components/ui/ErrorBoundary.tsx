@@ -38,13 +38,13 @@ export class ErrorBoundary extends Component<Props, State> {
           alignItems: 'center',
           justifyContent: 'center',
           padding: 24,
-          fontFamily: 'var(--font-ui)',
+          fontFamily: 'var(--font-sans)',
         }}
       >
         <div style={{ textAlign: 'center', maxWidth: 420 }}>
           <h1
             style={{
-              fontFamily: 'var(--font-brand)',
+              fontFamily: 'var(--font-sans)',
               fontSize: 24,
               margin: '0 0 8px',
               color: 'var(--text)',
@@ -62,13 +62,13 @@ export class ErrorBoundary extends Component<Props, State> {
             }}
             style={{
               padding: '10px 16px',
-              background: 'var(--moss)',
+              background: 'var(--brand-green)',
               color: '#fff',
               border: 'none',
               borderRadius: 8,
               cursor: 'pointer',
               fontWeight: 600,
-              fontFamily: 'var(--font-ui)',
+              fontFamily: 'var(--font-sans)',
             }}
           >
             Seite neu laden

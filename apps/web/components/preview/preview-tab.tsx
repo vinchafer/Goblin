@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { useState } from 'react';
 import { DeviceMobile, Laptop, Monitor, ArrowClockwise, ArrowSquareOut, Globe, GithubLogo, RocketLaunch } from '@phosphor-icons/react';
 import Link from 'next/link';
@@ -32,7 +32,7 @@ export function PreviewTab({ projectId, previewUrl }: PreviewTabProps) {
       <div style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center',
         justifyContent: 'center', height: '100%', gap: 0, padding: '48px 24px',
-        textAlign: 'center', background: 'var(--cream)',
+        textAlign: 'center', background: 'var(--paper)',
       }}>
         <div style={{
           width: 64, height: 64, borderRadius: 16,
@@ -40,10 +40,10 @@ export function PreviewTab({ projectId, previewUrl }: PreviewTabProps) {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           marginBottom: 20,
         }}>
-          <Globe size={32} weight="duotone" color="var(--moss)" />
+          <Globe size={32} weight="duotone" color="var(--brand-green)" />
         </div>
         <h3 style={{
-          fontFamily: 'Fraunces, serif', fontSize: 24, color: 'var(--moss)',
+          fontFamily: 'var(--font-sans)', fontSize: 24, color: 'var(--brand-green)',
           fontWeight: 700, letterSpacing: '-0.5px', marginBottom: 8,
         }}>Nothing to preview yet</h3>
         <p style={{
@@ -70,7 +70,7 @@ export function PreviewTab({ projectId, previewUrl }: PreviewTabProps) {
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                 <span style={{
-                  fontSize: 10, fontWeight: 700, color: 'var(--ochre-dark, #C9933A)',
+                  fontSize: 10, fontWeight: 700, color: 'var(--gold-700)',
                   background: 'rgba(212,169,74,0.15)', padding: '1px 6px', borderRadius: 4,
                   letterSpacing: '0.04em',
                 }}>STEP {s.step}</span>
@@ -90,7 +90,7 @@ export function PreviewTab({ projectId, previewUrl }: PreviewTabProps) {
           <Link
             href="/dashboard/settings/keys"
             style={{
-              background: 'var(--moss)', color: '#fff', padding: '10px 20px',
+              background: 'var(--brand-green)', color: '#fff', padding: '10px 20px',
               borderRadius: 9, fontSize: 13, fontWeight: 600, textDecoration: 'none',
               display: 'inline-flex', alignItems: 'center', gap: 6,
               boxShadow: '0 1px 2px rgba(45,74,43,0.18)',
@@ -101,7 +101,7 @@ export function PreviewTab({ projectId, previewUrl }: PreviewTabProps) {
           <Link
             href="/dashboard/settings/integrations"
             style={{
-              background: 'transparent', color: 'var(--moss)', padding: '10px 20px',
+              background: 'transparent', color: 'var(--brand-green)', padding: '10px 20px',
               borderRadius: 9, fontSize: 13, fontWeight: 500, textDecoration: 'none',
               border: '1.5px solid var(--border)',
             }}
@@ -117,7 +117,7 @@ export function PreviewTab({ projectId, previewUrl }: PreviewTabProps) {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Toolbar */}
       <div style={{
-        height: 44, background: 'var(--cream2)',
+        height: 44, background: 'var(--surface-3)',
         borderBottom: '1px solid var(--border)',
         display: 'flex', alignItems: 'center',
         padding: '0 12px', gap: 6, flexShrink: 0,
@@ -133,7 +133,7 @@ export function PreviewTab({ projectId, previewUrl }: PreviewTabProps) {
                 padding: '4px 10px', borderRadius: 5,
                 border: 'none', cursor: 'pointer',
                 background: viewport === v ? 'rgba(212,169,74,0.18)' : 'transparent',
-                color: viewport === v ? 'var(--ochre-dark, #C9933A)' : 'var(--meta)',
+                color: viewport === v ? 'var(--gold-700)' : 'var(--meta)',
                 outline: viewport === v ? '1.5px solid rgba(212,169,74,0.4)' : 'none',
                 transition: 'all 0.15s', minWidth: 32,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',

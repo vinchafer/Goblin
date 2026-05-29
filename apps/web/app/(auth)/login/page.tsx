@@ -60,7 +60,7 @@ const FIELD: React.CSSProperties = {
   width: '100%', height: 46, padding: '0 14px',
   background: 'var(--panel)', color: 'var(--text)',
   border: '1.5px solid var(--border)', borderRadius: 10,
-  fontSize: 14, fontFamily: 'var(--font-dm-sans), DM Sans, sans-serif',
+  fontSize: 14, fontFamily: 'var(--font-sans)',
   outline: 'none', boxSizing: 'border-box',
   transition: 'border-color 0.15s, box-shadow 0.15s',
 };
@@ -68,10 +68,10 @@ const FIELD: React.CSSProperties = {
 const PRIMARY_BTN: React.CSSProperties = {
   display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
   width: '100%', height: 46,
-  background: 'var(--moss)', color: '#fff',
+  background: 'var(--brand-green)', color: '#fff',
   border: 'none', borderRadius: 10,
   fontSize: 14, fontWeight: 600,
-  fontFamily: 'var(--font-dm-sans), DM Sans, sans-serif',
+  fontFamily: 'var(--font-sans)',
   cursor: 'pointer', transition: 'background 0.15s, box-shadow 0.15s',
   boxShadow: '0 1px 2px rgba(45,74,43,0.18)',
 };
@@ -98,7 +98,7 @@ function OAuthButton({ provider, onClick, loading }: { provider: Provider; onCli
         color: 'var(--text)',
         border: '1.5px solid var(--border)', borderRadius: 10,
         fontSize: 14, fontWeight: 500,
-        fontFamily: 'var(--font-dm-sans), DM Sans, sans-serif',
+        fontFamily: 'var(--font-sans)',
         cursor: loading ? 'not-allowed' : 'pointer',
         opacity: loading ? 0.7 : 1,
         transition: 'background 0.15s, border-color 0.15s',
@@ -161,7 +161,7 @@ export default function LoginPage() {
     if (/[0-9]/.test(pw)) score++;
     if (/[^A-Za-z0-9]/.test(pw)) score++;
     if (score <= 1) return { score, label: 'Weak', color: 'var(--danger)' };
-    if (score <= 3) return { score, label: 'Fair', color: 'var(--ochre-dark, #C9933A)' };
+    if (score <= 3) return { score, label: 'Fair', color: 'var(--gold-700)' };
     return { score, label: 'Strong', color: 'var(--success)' };
   };
 
@@ -307,7 +307,7 @@ export default function LoginPage() {
       <p style={{ fontSize: 13, color: 'var(--text-2)', margin: 0, lineHeight: 1.5 }}>{body}</p>
       <button
         onClick={onBack}
-        style={{ marginTop: 14, background: 'none', border: 'none', color: 'var(--meta)', fontSize: 12, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}
+        style={{ marginTop: 14, background: 'none', border: 'none', color: 'var(--meta)', fontSize: 12, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}
       >
         ← Use a different email
       </button>
@@ -318,8 +318,8 @@ export default function LoginPage() {
     <div style={{
       minHeight: '100dvh', display: 'grid',
       gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
-      background: 'var(--cream)',
-      fontFamily: 'var(--font-dm-sans), DM Sans, sans-serif',
+      background: 'var(--paper)',
+      fontFamily: 'var(--font-sans)',
     }} className="auth-grid">
 
       <style>{`
@@ -328,14 +328,14 @@ export default function LoginPage() {
           .auth-brand-panel { display: none !important; }
         }
         .auth-grid input::placeholder { color: var(--disabled); }
-        .auth-grid input:focus { border-color: var(--moss) !important; box-shadow: 0 0 0 3px rgba(45,74,43,0.1) !important; }
+        .auth-grid input:focus { border-color: var(--brand-green) !important; box-shadow: 0 0 0 3px rgba(45,74,43,0.1) !important; }
       `}</style>
 
       {/* LEFT — Brand panel */}
       <div
         className="auth-brand-panel"
         style={{
-          background: 'linear-gradient(135deg, var(--moss-3, #1E3220) 0%, var(--moss) 100%)',
+          background: 'linear-gradient(135deg, var(--green-800) 0%, var(--brand-green) 100%)',
           color: '#fff',
           padding: '48px 56px',
           display: 'flex',
@@ -362,20 +362,20 @@ export default function LoginPage() {
           }}
         >
           <GoblinMark size={28} />
-          <span style={{ fontFamily: 'Fraunces, serif', fontSize: 24, fontWeight: 700, letterSpacing: '-0.5px' }}>
-            Goblin<span style={{ color: 'var(--ochre)' }}>.</span>
+          <span style={{ fontFamily: 'var(--font-sans)', fontSize: 24, fontWeight: 700, letterSpacing: '-0.5px' }}>
+            Goblin<span style={{ color: 'var(--brand-gold)' }}>.</span>
           </span>
         </Link>
 
         {/* Value props */}
         <div style={{ position: 'relative', zIndex: 1 }}>
           <h2 style={{
-            fontFamily: 'Fraunces, serif', fontSize: 32, fontWeight: 700,
+            fontFamily: 'var(--font-sans)', fontSize: 32, fontWeight: 700,
             letterSpacing: '-1px', lineHeight: 1.15, marginBottom: 32,
             maxWidth: 380,
           }}>
             The cloud workshop<br />
-            <span style={{ color: 'var(--ochre)', fontStyle: 'italic' }}>for builders.</span>
+            <span style={{ color: 'var(--brand-gold)', fontStyle: 'italic' }}>for builders.</span>
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 18, maxWidth: 380 }}>
             {VALUE_BULLETS.map(b => (
@@ -386,7 +386,7 @@ export default function LoginPage() {
                   background: 'rgba(212,169,74,0.18)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}>
-                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="var(--ochre)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="var(--brand-gold)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="20 6 9 17 4 12"/>
                   </svg>
                 </span>
@@ -430,14 +430,14 @@ export default function LoginPage() {
             }}
           >
             <GoblinMark size={24} />
-            <span style={{ fontFamily: 'Fraunces, serif', fontSize: 22, color: 'var(--moss)', fontWeight: 700 }}>
-              Goblin<span style={{ color: 'var(--ochre)' }}>.</span>
+            <span style={{ fontFamily: 'var(--font-sans)', fontSize: 22, color: 'var(--brand-green)', fontWeight: 700 }}>
+              Goblin<span style={{ color: 'var(--brand-gold)' }}>.</span>
             </span>
           </Link>
 
           {/* Header */}
           <h1 style={{
-            fontFamily: 'Fraunces, serif', fontSize: 28, color: 'var(--moss)',
+            fontFamily: 'var(--font-sans)', fontSize: 28, color: 'var(--brand-green)',
             fontWeight: 700, letterSpacing: '-0.6px', marginBottom: 6,
           }}>
             {mode === 'signup' ? 'Create your account' : 'Welcome back'}
@@ -514,7 +514,7 @@ export default function LoginPage() {
                 disabled={emailLoading || !email.trim()}
                 style={{
                   ...PRIMARY_BTN,
-                  background: email.trim() ? 'var(--moss)' : 'var(--subtle)',
+                  background: email.trim() ? 'var(--brand-green)' : 'var(--subtle)',
                   color: email.trim() ? '#fff' : 'var(--disabled)',
                   boxShadow: email.trim() ? PRIMARY_BTN.boxShadow : 'none',
                   cursor: emailLoading || !email.trim() ? 'not-allowed' : 'pointer',
@@ -590,13 +590,13 @@ export default function LoginPage() {
                     type="checkbox"
                     checked={termsAccepted}
                     onChange={e => setTermsAccepted(e.target.checked)}
-                    style={{ accentColor: 'var(--moss)', width: 14, height: 14, marginTop: 2 }}
+                    style={{ accentColor: 'var(--brand-green)', width: 14, height: 14, marginTop: 2 }}
                   />
                   <span>
                     I agree to the{' '}
-                    <a href="/terms" style={{ color: 'var(--moss)', textDecoration: 'none' }}>Terms</a>
+                    <a href="/terms" style={{ color: 'var(--brand-green)', textDecoration: 'none' }}>Terms</a>
                     {' '}and{' '}
-                    <a href="/privacy" style={{ color: 'var(--moss)', textDecoration: 'none' }}>Privacy Policy</a>
+                    <a href="/privacy" style={{ color: 'var(--brand-green)', textDecoration: 'none' }}>Privacy Policy</a>
                   </span>
                 </label>
               )}
@@ -605,7 +605,7 @@ export default function LoginPage() {
                 disabled={passwordLoading || !email.trim() || !password || (mode === 'signup' && !termsAccepted)}
                 style={{
                   ...PRIMARY_BTN,
-                  background: (email.trim() && password) ? 'var(--moss)' : 'var(--subtle)',
+                  background: (email.trim() && password) ? 'var(--brand-green)' : 'var(--subtle)',
                   color: (email.trim() && password) ? '#fff' : 'var(--disabled)',
                   boxShadow: (email.trim() && password) ? PRIMARY_BTN.boxShadow : 'none',
                   cursor: passwordLoading ? 'not-allowed' : 'pointer',
@@ -623,7 +623,7 @@ export default function LoginPage() {
                     fontSize: 12, cursor: 'pointer', fontFamily: 'inherit',
                     textAlign: 'right', padding: 0, marginTop: 2,
                   }}
-                  onMouseEnter={e => (e.currentTarget.style.color = 'var(--moss)')}
+                  onMouseEnter={e => (e.currentTarget.style.color = 'var(--brand-green)')}
                   onMouseLeave={e => (e.currentTarget.style.color = 'var(--meta)')}
                 >
                   Forgot password?
@@ -642,7 +642,7 @@ export default function LoginPage() {
               onClick={() => switchMode(mode === 'signup' ? 'login' : 'signup')}
               style={{
                 background: 'none', border: 'none', cursor: 'pointer',
-                color: 'var(--moss)', fontWeight: 600, fontSize: 13,
+                color: 'var(--brand-green)', fontWeight: 600, fontSize: 13,
                 fontFamily: 'inherit', textDecoration: 'none', padding: 0,
               }}
               onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}

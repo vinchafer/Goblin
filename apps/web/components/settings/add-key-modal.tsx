@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import { X, Eye, EyeSlash, Warning, CircleNotch, ArrowSquareOut } from "@phosphor-icons/react";
@@ -96,16 +96,16 @@ export function AddKeyModal({ open, onClose, onKeyAdded }: AddKeyModalProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="bg-white rounded-xl shadow-2xl max-w-md w-full m-4">
-        <div className="p-5 border-b flex items-center justify-between" style={{ borderColor: 'var(--goblin-light)' }}>
-          <h2 className="text-lg font-semibold" style={{ color: 'var(--goblin-slate)' }}>Connect {PROVIDERS.find(p => p.id === provider)?.label}</h2>
+        <div className="p-5 border-b flex items-center justify-between" style={{ borderColor: 'var(--surface-3)' }}>
+          <h2 className="text-lg font-semibold" style={{ color: 'var(--ink-1)' }}>Connect {PROVIDERS.find(p => p.id === provider)?.label}</h2>
           <button onClick={handleClose} className="p-1 rounded hover:bg-gray-100">
-            <X className="w-5 h-5" style={{ color: 'var(--goblin-gray)' }} />
+            <X className="w-5 h-5" style={{ color: 'var(--ink-3)' }} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--goblin-slate)' }}>Provider</label>
+            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink-1)' }}>Provider</label>
             <div className="grid grid-cols-4 gap-1.5">
               {PROVIDERS.map(p => (
                 <button
@@ -114,8 +114,8 @@ export function AddKeyModal({ open, onClose, onKeyAdded }: AddKeyModalProps) {
                   onClick={() => setProvider(p.id)}
                   className="py-1.5 px-2 rounded-lg text-xs font-medium transition-colors"
                   style={{
-                    backgroundColor: provider === p.id ? 'rgba(45, 74, 43, 0.1)' : 'var(--goblin-light)',
-                    color: provider === p.id ? 'var(--goblin-moss)' : 'var(--goblin-gray)',
+                    backgroundColor: provider === p.id ? 'rgba(45, 74, 43, 0.1)' : 'var(--surface-3)',
+                    color: provider === p.id ? 'var(--brand-green)' : 'var(--ink-3)',
                     border: provider === p.id ? '1px solid rgba(45,74,43,0.3)' : '1px solid transparent',
                   }}
                 >
@@ -126,20 +126,20 @@ export function AddKeyModal({ open, onClose, onKeyAdded }: AddKeyModalProps) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--goblin-slate)' }}>Label</label>
+            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink-1)' }}>Label</label>
             <input
               type="text"
               value={label}
               onChange={(e) => setLabel(e.target.value)}
               placeholder="e.g., My Anthropic key"
               className="w-full px-3 py-2 rounded-lg border"
-              style={{ borderColor: 'var(--goblin-light)' }}
+              style={{ borderColor: 'var(--surface-3)' }}
               required
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--goblin-slate)' }}>API Key</label>
+            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--ink-1)' }}>API Key</label>
             <div className="relative">
               <input
                 type={showKey ? 'text' : 'password'}
@@ -147,7 +147,7 @@ export function AddKeyModal({ open, onClose, onKeyAdded }: AddKeyModalProps) {
                 onChange={(e) => setKey(e.target.value)}
                 placeholder="sk-..."
                 className="w-full px-3 py-2 pr-10 rounded-lg border font-mono text-sm"
-                style={{ borderColor: 'var(--goblin-light)' }}
+                style={{ borderColor: 'var(--surface-3)' }}
                 required
               />
               <button
@@ -156,14 +156,14 @@ export function AddKeyModal({ open, onClose, onKeyAdded }: AddKeyModalProps) {
                 className="absolute right-3 top-1/2 -translate-y-1/2"
               >
                 {showKey
-                  ? <EyeSlash className="w-4 h-4" style={{ color: 'var(--goblin-gray)' }} />
-                  : <Eye className="w-4 h-4" style={{ color: 'var(--goblin-gray)' }} />
+                  ? <EyeSlash className="w-4 h-4" style={{ color: 'var(--ink-3)' }} />
+                  : <Eye className="w-4 h-4" style={{ color: 'var(--ink-3)' }} />
                 }
               </button>
             </div>
 
-            <div className="flex items-start gap-2 mt-3 text-xs" style={{ color: 'var(--goblin-gray)' }}>
-              <Warning className="w-4 h-4 shrink-0 mt-0.5" style={{ color: 'var(--goblin-warn)' }} />
+            <div className="flex items-start gap-2 mt-3 text-xs" style={{ color: 'var(--ink-3)' }}>
+              <Warning className="w-4 h-4 shrink-0 mt-0.5" style={{ color: 'var(--danger)' }} />
               <p>
                 Your key is encrypted at rest. It's used only to call {provider}'s API on your behalf.
                 Never share this key publicly.
@@ -172,13 +172,13 @@ export function AddKeyModal({ open, onClose, onKeyAdded }: AddKeyModalProps) {
 
             {PROVIDER_KEY_URLS[provider] && (
               <div className="mt-2 text-xs">
-                <span style={{ color: 'var(--goblin-gray)' }}>Don't have a key? Get one at </span>
+                <span style={{ color: 'var(--ink-3)' }}>Don't have a key? Get one at </span>
                 <a
                   href={PROVIDER_KEY_URLS[provider].url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 font-medium hover:underline"
-                  style={{ color: 'var(--goblin-moss)' }}
+                  style={{ color: 'var(--brand-green)' }}
                 >
                   {PROVIDER_KEY_URLS[provider].label} <ArrowSquareOut className="w-3 h-3" />
                 </a>
@@ -187,7 +187,7 @@ export function AddKeyModal({ open, onClose, onKeyAdded }: AddKeyModalProps) {
           </div>
 
           {error && (
-            <div className="p-3 rounded-lg text-sm" style={{ backgroundColor: 'rgba(184, 92, 60, 0.1)', color: 'var(--goblin-warn)' }}>
+            <div className="p-3 rounded-lg text-sm" style={{ backgroundColor: 'rgba(184, 92, 60, 0.1)', color: 'var(--danger)' }}>
               {error}
             </div>
           )}
@@ -198,8 +198,8 @@ export function AddKeyModal({ open, onClose, onKeyAdded }: AddKeyModalProps) {
               onClick={handleClose}
               className="flex-1 py-3 rounded-lg font-medium"
               style={{
-                border: '1px solid var(--goblin-light)',
-                color: 'var(--goblin-slate)',
+                border: '1px solid var(--surface-3)',
+                color: 'var(--ink-1)',
               }}
             >
               Cancel
@@ -209,8 +209,8 @@ export function AddKeyModal({ open, onClose, onKeyAdded }: AddKeyModalProps) {
               disabled={loading || !label || !key}
               className="flex-1 py-3 rounded-lg flex items-center justify-center gap-2 font-medium disabled:opacity-50"
               style={{
-                backgroundColor: 'var(--ochre)',
-                color: 'var(--bark)',
+                backgroundColor: 'var(--brand-gold)',
+                color: 'var(--ink-2)',
                 fontWeight: 600,
               }}
             >

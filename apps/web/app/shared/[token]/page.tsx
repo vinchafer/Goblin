@@ -27,8 +27,8 @@ export default async function SharedChatPage({ params }: SharedPageProps) {
       <main
         style={{
           minHeight: '100vh',
-          background: 'var(--cream)',
-          fontFamily: 'var(--font-ui)',
+          background: 'var(--paper)',
+          fontFamily: 'var(--font-sans)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -36,7 +36,7 @@ export default async function SharedChatPage({ params }: SharedPageProps) {
         }}
       >
         <div style={{ textAlign: 'center', maxWidth: 480 }}>
-          <h1 style={{ fontFamily: 'var(--font-brand)', fontSize: 32, margin: '0 0 12px', color: 'var(--text)' }}>
+          <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 32, margin: '0 0 12px', color: 'var(--text)' }}>
             Chat nicht gefunden
           </h1>
           <p style={{ color: 'var(--meta)' }}>
@@ -53,13 +53,13 @@ export default async function SharedChatPage({ params }: SharedPageProps) {
     <main
       style={{
         minHeight: '100vh',
-        background: 'var(--cream)',
-        fontFamily: 'var(--font-ui)',
+        background: 'var(--paper)',
+        fontFamily: 'var(--font-sans)',
         padding: '32px 16px 64px',
       }}
     >
       <div style={{ maxWidth: 720, margin: '0 auto' }}>
-        <h1 style={{ fontFamily: 'var(--font-brand)', fontSize: 28, margin: '0 0 4px', color: 'var(--text)' }}>
+        <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 28, margin: '0 0 4px', color: 'var(--text)' }}>
           {session.title ?? 'Geteilter Chat'}
         </h1>
         <p style={{ color: 'var(--meta)', fontSize: 13, margin: '0 0 24px' }}>
@@ -78,7 +78,7 @@ export default async function SharedChatPage({ params }: SharedPageProps) {
               style={{
                 margin: '0 0 16px',
                 padding: '12px 16px',
-                background: isUser ? 'var(--moss)' : 'var(--panel)',
+                background: isUser ? 'var(--brand-green)' : 'var(--panel)',
                 color: isUser ? '#fff' : 'var(--text)',
                 borderRadius: 12,
                 border: isUser ? 'none' : '1px solid var(--div)',
@@ -99,11 +99,11 @@ export default async function SharedChatPage({ params }: SharedPageProps) {
           <a
             href="https://justgoblin.com"
             style={{
-              color: 'var(--moss)',
+              color: 'var(--brand-green)',
               textDecoration: 'none',
               fontWeight: 600,
               fontSize: 15,
-              fontFamily: 'var(--font-ui)',
+              fontFamily: 'var(--font-sans)',
             }}
           >
             Baue deine eigene App mit Goblin →

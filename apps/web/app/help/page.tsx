@@ -40,25 +40,25 @@ export default function HelpPage() {
   const [openIdx, setOpenIdx] = useState<number | null>(0);
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--cream)', padding: '32px 20px 80px' }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--paper)', padding: '32px 20px 80px' }}>
       <div style={{ maxWidth: 720, margin: '0 auto' }}>
         <Link href="/dashboard" style={{
           display: 'inline-flex', alignItems: 'center', gap: 6,
           fontSize: 13, color: 'var(--meta)', textDecoration: 'none',
-          fontFamily: 'DM Sans, sans-serif', marginBottom: 24,
+          fontFamily: 'var(--font-sans)', marginBottom: 24,
         }}>
           ← Zurück
         </Link>
 
         <h1 style={{
-          fontFamily: 'Fraunces, serif', fontSize: 'clamp(28px, 5vw, 40px)',
-          color: 'var(--moss)', fontWeight: 700, letterSpacing: '-0.5px',
+          fontFamily: 'var(--font-sans)', fontSize: 'clamp(28px, 5vw, 40px)',
+          color: 'var(--brand-green)', fontWeight: 700, letterSpacing: '-0.5px',
           marginBottom: 8,
         }}>
           Hilfe & Support
         </h1>
         <p style={{
-          fontSize: 15, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif',
+          fontSize: 15, color: 'var(--meta)', fontFamily: 'var(--font-sans)',
           marginBottom: 40, lineHeight: 1.6,
         }}>
           FAQ, häufige Fragen, und wie du uns erreichst.
@@ -80,7 +80,7 @@ export default function HelpPage() {
                   style={{
                     width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     padding: '16px 20px', background: 'none', border: 'none', cursor: 'pointer',
-                    textAlign: 'left', fontFamily: 'DM Sans, sans-serif',
+                    textAlign: 'left', fontFamily: 'var(--font-sans)',
                     fontSize: 15, fontWeight: 500, color: 'var(--text)',
                     minHeight: 56,
                   }}
@@ -92,7 +92,7 @@ export default function HelpPage() {
                   <div style={{
                     padding: '0 20px 18px', fontSize: 14,
                     lineHeight: 1.65, color: 'var(--text-2, var(--meta))',
-                    fontFamily: 'DM Sans, sans-serif',
+                    fontFamily: 'var(--font-sans)',
                   }}>
                     {f.a}
                   </div>
@@ -115,19 +115,19 @@ function HelpAgentCTA() {
 
   return (
     <div style={{
-      background: 'var(--moss)', color: '#fff',
+      background: 'var(--brand-green)', color: '#fff',
       borderRadius: 16, padding: '24px 24px 28px',
       textAlign: 'center',
     }}>
       <h2 style={{
-        fontFamily: 'Fraunces, serif', fontSize: 20, fontWeight: 700,
+        fontFamily: 'var(--font-sans)', fontSize: 20, fontWeight: 700,
         margin: '0 0 8px',
       }}>
         Noch Fragen?
       </h2>
       <p style={{
         fontSize: 14, opacity: 0.85,
-        fontFamily: 'DM Sans, sans-serif', margin: '0 0 18px', lineHeight: 1.5,
+        fontFamily: 'var(--font-sans)', margin: '0 0 18px', lineHeight: 1.5,
       }}>
         Der Goblin-Hilfe-Agent kennt das Produkt und antwortet sofort.
       </p>
@@ -136,9 +136,9 @@ function HelpAgentCTA() {
         style={{
           display: 'inline-flex', alignItems: 'center', gap: 8,
           padding: '12px 24px', borderRadius: 24,
-          background: 'var(--ochre)', color: 'var(--moss)',
+          background: 'var(--brand-gold)', color: 'var(--brand-green)',
           textDecoration: 'none', fontSize: 14, fontWeight: 600,
-          fontFamily: 'DM Sans, sans-serif',
+          fontFamily: 'var(--font-sans)',
           border: 'none', cursor: 'pointer',
         }}
       >
@@ -151,7 +151,7 @@ function HelpAgentCTA() {
         {!escalateOpen ? (
           <button
             onClick={() => setEscalateOpen(true)}
-            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', cursor: 'pointer', textDecoration: 'underline', fontSize: 12, fontFamily: 'DM Sans, sans-serif' }}
+            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', cursor: 'pointer', textDecoration: 'underline', fontSize: 12, fontFamily: 'var(--font-sans)' }}
           >
             Komme nicht weiter, brauche einen Menschen
           </button>
@@ -159,7 +159,7 @@ function HelpAgentCTA() {
           <span>Schreib im Chat „Mensch", der Agent eskaliert automatisch.</span>
         )}
       </div>
-      <div style={{ marginTop: 12, fontSize: 12, opacity: 0.7, fontFamily: 'DM Sans, sans-serif' }}>
+      <div style={{ marginTop: 12, fontSize: 12, opacity: 0.7, fontFamily: 'var(--font-sans)' }}>
         Oder per Mail:{' '}
         <a href="mailto:support@justgoblin.com" style={{ color: 'rgba(255,255,255,0.92)', textDecoration: 'underline' }}>
           support@justgoblin.com

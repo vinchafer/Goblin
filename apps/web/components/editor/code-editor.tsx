@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { useEffect, useRef, useCallback } from 'react';
 import { EditorView, basicSetup } from 'codemirror';
 import { EditorState } from '@codemirror/state';
@@ -21,13 +21,13 @@ const goblinTheme = EditorView.theme({
   '.cm-lineNumbers .cm-gutterElement': { minWidth: '32px', padding: '0 8px 0 4px' },
   '.cm-activeLineGutter': { background: 'rgba(201,147,58,0.06)' },
   '.cm-activeLine': { background: 'rgba(201,147,58,0.04)' },
-  '.cm-cursor': { borderLeft: '2px solid #c9933a' },
+  '.cm-cursor': { borderLeft: '2px solid var(--gold-700)' },
   '.cm-selectionBackground': { background: 'rgba(201,147,58,0.15) !important' },
-  '.cm-tooltip': { background: '#1e2a1c', border: '1px solid #2d4a2b' },
+  '.cm-tooltip': { background: '#1e2a1c', border: '1px solid var(--brand-green)' },
   '.cm-completionLabel': { color: '#8aaa85' },
-  '.cm-completionMatchedText': { color: 'var(--ochre-dark)', textDecoration: 'none', fontWeight: 600 },
+  '.cm-completionMatchedText': { color: 'var(--gold-700)', textDecoration: 'none', fontWeight: 600 },
   '.cm-matchingBracket': { background: 'rgba(201,147,58,0.2)', outline: '1px solid rgba(201,147,58,0.4)' },
-  '.cm-tooltip-autocomplete': { background: '#1e2a1c', border: '1px solid #2d4a2b' },
+  '.cm-tooltip-autocomplete': { background: '#1e2a1c', border: '1px solid var(--brand-green)' },
   '.cm-tooltip-autocomplete ul li[aria-selected]': { background: 'rgba(201,147,58,0.15)' },
 }, { dark: true });
 

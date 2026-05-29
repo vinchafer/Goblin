@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
         name: 'Test Project',
         description: 'Created by Playwright tests',
         user_id: userId,
-        color: '#2D4A2B',
+        color: '#1A3A2A',
       }).select('id').single();
       projectId = proj?.id ?? newProjectId;
     } else {

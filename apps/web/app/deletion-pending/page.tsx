@@ -9,12 +9,12 @@ export default function DeletionPendingPage() {
         alignItems: 'center',
         justifyContent: 'center',
         padding: 24,
-        background: 'var(--cream)',
-        fontFamily: 'var(--font-ui)',
+        background: 'var(--paper)',
+        fontFamily: 'var(--font-sans)',
       }}
     >
       <div style={{ maxWidth: 480, textAlign: 'center' }}>
-        <h1 style={{ fontFamily: 'var(--font-brand)', fontSize: 32, margin: '0 0 16px', color: 'var(--text)' }}>
+        <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 32, margin: '0 0 16px', color: 'var(--text)' }}>
           Dein Konto wird gelöscht
         </h1>
         <p style={{ color: 'var(--meta)', fontSize: 16, marginBottom: 16 }}>

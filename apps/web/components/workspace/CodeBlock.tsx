@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 
@@ -21,7 +21,7 @@ export function CodeBlock({ code, language, filename, onSendToCode }: CodeBlockP
   const label = filename || language || "code";
 
   return (
-    <div style={{ margin: '10px 0', borderRadius: 10, overflow: 'hidden', border: '1px solid #2a2a2a' }}>
+    <div style={{ margin: '10px 0', borderRadius: 10, overflow: 'hidden', border: '1px solid var(--ink-1)' }}>
       {/* Header: language label + copy */}
       <div style={{
         background: '#1e1e1e',
@@ -40,7 +40,7 @@ export function CodeBlock({ code, language, filename, onSendToCode }: CodeBlockP
             background: 'none', border: 'none',
             color: copied ? 'var(--success)' : 'var(--text-faint)',
             fontSize: 11, cursor: 'pointer',
-            fontFamily: 'DM Sans, sans-serif',
+            fontFamily: 'var(--font-sans)',
             padding: '2px 8px', borderRadius: 4,
             transition: 'color 0.15s',
             display: 'flex', alignItems: 'center', gap: 4,
@@ -78,13 +78,13 @@ export function CodeBlock({ code, language, filename, onSendToCode }: CodeBlockP
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
           width: '100%', padding: '9px 14px',
-          background: 'var(--ochre)', border: 'none', cursor: 'pointer',
+          background: 'var(--brand-gold)', border: 'none', cursor: 'pointer',
           fontSize: 13, fontWeight: 600, color: '#1a1200',
-          fontFamily: 'DM Sans, sans-serif',
+          fontFamily: 'var(--font-sans)',
           transition: 'background 0.15s',
         }}
         onMouseEnter={e => (e.currentTarget.style.background = '#e8b05a')}
-        onMouseLeave={e => (e.currentTarget.style.background = 'var(--ochre)')}
+        onMouseLeave={e => (e.currentTarget.style.background = 'var(--brand-gold)')}
       >
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
           <polyline points="5 12 12 5 19 12"/><polyline points="5 19 12 12 19 19"/>

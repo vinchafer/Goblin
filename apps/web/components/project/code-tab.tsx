@@ -71,14 +71,14 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
       {tab.pendingFileSwitch && (
         <>
           <div style={{ position: 'fixed', inset: 0, zIndex: 70, background: 'rgba(0,0,0,0.5)' }} onClick={() => tab.setPendingFileSwitch(null)} />
-          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#1e2a1c', border: '1px solid #2d4a2b', borderRadius: 12, padding: '20px 24px', zIndex: 71, minWidth: 280, boxShadow: '0 16px 40px rgba(0,0,0,0.5)' }}>
-            <div style={{ fontSize: 13, color: '#c5d0c0', fontFamily: 'DM Sans, sans-serif', marginBottom: 16 }}>
-              Save changes to <span style={{ color: 'var(--ochre)', fontFamily: 'JetBrains Mono, monospace' }}>{tab.activeFile?.path.split('/').pop()}</span>?
+          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: '#1e2a1c', border: '1px solid var(--brand-green)', borderRadius: 12, padding: '20px 24px', zIndex: 71, minWidth: 280, boxShadow: '0 16px 40px rgba(0,0,0,0.5)' }}>
+            <div style={{ fontSize: 13, color: '#c5d0c0', fontFamily: 'var(--font-sans)', marginBottom: 16 }}>
+              Save changes to <span style={{ color: 'var(--brand-gold)', fontFamily: 'JetBrains Mono, monospace' }}>{tab.activeFile?.path.split('/').pop()}</span>?
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => tab.confirmSwitch(true)} style={{ background: 'var(--moss)', border: 'none', color: 'var(--ochre)', borderRadius: 7, padding: '7px 14px', fontSize: 12, cursor: 'pointer' }}>Save</button>
-              <button onClick={() => tab.confirmSwitch(false)} style={{ background: 'transparent', border: '1px solid #2d4a2b', color: '#8aaa85', borderRadius: 7, padding: '7px 14px', fontSize: 12, cursor: 'pointer' }}>Discard</button>
-              <button onClick={() => tab.setPendingFileSwitch(null)} style={{ background: 'transparent', border: '1px solid #2d4a2b', color: '#6b8a6b', borderRadius: 7, padding: '7px 14px', fontSize: 12, cursor: 'pointer' }}>Cancel</button>
+              <button onClick={() => tab.confirmSwitch(true)} style={{ background: 'var(--brand-green)', border: 'none', color: 'var(--brand-gold)', borderRadius: 7, padding: '7px 14px', fontSize: 12, cursor: 'pointer' }}>Save</button>
+              <button onClick={() => tab.confirmSwitch(false)} style={{ background: 'transparent', border: '1px solid var(--brand-green)', color: '#8aaa85', borderRadius: 7, padding: '7px 14px', fontSize: 12, cursor: 'pointer' }}>Discard</button>
+              <button onClick={() => tab.setPendingFileSwitch(null)} style={{ background: 'transparent', border: '1px solid var(--brand-green)', color: '#6b8a6b', borderRadius: 7, padding: '7px 14px', fontSize: 12, cursor: 'pointer' }}>Cancel</button>
             </div>
           </div>
         </>
@@ -89,7 +89,7 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
         className="gb-mobile-tree-toggle"
         onClick={() => tab.setMobileDrawerOpen(!tab.mobileDrawerOpen)}
         aria-label="Toggle file tree"
-        style={{ position: 'fixed', bottom: 80, left: 16, zIndex: 40, width: 44, height: 44, borderRadius: '50%', background: 'var(--moss)', border: 'none', color: 'var(--ochre)', cursor: 'pointer', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}
+        style={{ position: 'fixed', bottom: 80, left: 16, zIndex: 40, width: 44, height: 44, borderRadius: '50%', background: 'var(--brand-green)', border: 'none', color: 'var(--brand-gold)', cursor: 'pointer', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' }}
       ><Icon name="menu" size={18} /></button>
 
       {/* Mobile file tree drawer */}
@@ -160,8 +160,8 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
               <span style={{ color: '#c5d0c0', fontFamily: 'JetBrains Mono, monospace', fontSize: 12, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {tab.activeFile.path}
               </span>
-              {tab.isDirty && <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--ochre)', flexShrink: 0, display: 'inline-block' }} title="Unsaved changes" />}
-              {tab.injectedFiles.has(tab.activeFile.path) && <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--ochre)', flexShrink: 0, display: 'inline-block' }} title="Injected" />}
+              {tab.isDirty && <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--brand-gold)', flexShrink: 0, display: 'inline-block' }} title="Unsaved changes" />}
+              {tab.injectedFiles.has(tab.activeFile.path) && <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--brand-gold)', flexShrink: 0, display: 'inline-block' }} title="Injected" />}
               <SaveIndicator saving={tab.saving} isDirty={tab.isDirty} />
             </div>
           )}
@@ -184,7 +184,7 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
           {tab.pendingInjections.length > 0 && (
             <div style={{ borderTop: '1px solid rgba(212,169,74,0.25)', flexShrink: 0, background: '#141a12' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 14px', background: 'rgba(212,169,74,0.06)' }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--ochre)', fontFamily: 'DM Sans, sans-serif', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--brand-gold)', fontFamily: 'var(--font-sans)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                   <Icon name="ai" size={12} /> {tab.pendingInjections.length} pending injection{tab.pendingInjections.length !== 1 ? 's' : ''}
                 </span>
                 <button onClick={tab.clearPendingInjections} aria-label="Clear" style={{ background: 'none', border: 'none', color: '#6b8a6b', cursor: 'pointer', display: 'flex', alignItems: 'center' }}><Icon name="close" size={14} /></button>
@@ -202,7 +202,7 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
         <button onClick={tab.openPushModal} aria-label="Push to GitHub" title="Push to GitHub" style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(30,58,28,0.95)', border: '1px solid rgba(138,170,133,0.3)', color: '#8aaa85', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' } as React.CSSProperties}>
           <Icon name="github" size={18} />
         </button>
-        <button onClick={tab.handleDeploy} disabled={tab.deploying} aria-label="Deploy" title="Deploy" style={{ width: 56, height: 56, borderRadius: '50%', background: tab.deploying ? 'rgba(45,74,43,0.6)' : 'var(--moss)', border: 'none', color: 'var(--ochre)', cursor: tab.deploying ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 20px rgba(45,74,43,0.5)' } as React.CSSProperties}>
+        <button onClick={tab.handleDeploy} disabled={tab.deploying} aria-label="Deploy" title="Deploy" style={{ width: 56, height: 56, borderRadius: '50%', background: tab.deploying ? 'rgba(45,74,43,0.6)' : 'var(--brand-green)', border: 'none', color: 'var(--brand-gold)', cursor: tab.deploying ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 20px rgba(45,74,43,0.5)' } as React.CSSProperties}>
           {tab.deploying ? <GoblinMark size={22} /> : <Icon name="play" size={20} />}
         </button>
       </div>
@@ -216,7 +216,7 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
 
       {/* Deploy toast */}
       {tab.deployMessage && (
-        <div style={{ position: 'absolute', bottom: 16, left: '50%', transform: 'translateX(-50%)', background: '#1e3a1c', border: '1px solid rgba(212,169,74,0.35)', borderRadius: 8, padding: '8px 16px', fontSize: 12, color: 'var(--ochre)', fontFamily: 'DM Sans, sans-serif', zIndex: 50, whiteSpace: 'nowrap', maxWidth: 400, textAlign: 'center', boxShadow: '0 4px 20px rgba(0,0,0,0.4)' }}>
+        <div style={{ position: 'absolute', bottom: 16, left: '50%', transform: 'translateX(-50%)', background: '#1e3a1c', border: '1px solid rgba(212,169,74,0.35)', borderRadius: 8, padding: '8px 16px', fontSize: 12, color: 'var(--brand-gold)', fontFamily: 'var(--font-sans)', zIndex: 50, whiteSpace: 'nowrap', maxWidth: 400, textAlign: 'center', boxShadow: '0 4px 20px rgba(0,0,0,0.4)' }}>
           {tab.deployMessage}
         </div>
       )}
@@ -235,10 +235,10 @@ function InjectionCard({ injection }: { injection: PendingInjection }) {
   return (
     <div className="gb-injection-card" style={{ borderRadius: 8, border: '1px solid rgba(212,169,74,0.4)', overflow: 'hidden', background: '#1a2018' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', background: 'rgba(212,169,74,0.08)', borderBottom: '1px solid rgba(212,169,74,0.25)' }}>
-        <span style={{ color: 'var(--ochre)', display: 'inline-flex' }}><Icon name={iconName} size={12} /></span>
-        <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: 'var(--ochre)', fontFamily: 'JetBrains Mono, monospace' }}>[{typeLabel}]</span>
+        <span style={{ color: 'var(--brand-gold)', display: 'inline-flex' }}><Icon name={iconName} size={12} /></span>
+        <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: 'var(--brand-gold)', fontFamily: 'JetBrains Mono, monospace' }}>[{typeLabel}]</span>
         {injection.filenameHint && <span style={{ fontSize: 11, color: '#8aaa85', fontFamily: 'JetBrains Mono, monospace', marginLeft: 4 }}>{injection.filenameHint}</span>}
-        <span style={{ fontSize: 10, color: '#6b8a6b', marginLeft: 'auto', fontFamily: 'DM Sans, sans-serif' }}>{new Date(injection.createdAt).toLocaleTimeString()}</span>
+        <span style={{ fontSize: 10, color: '#6b8a6b', marginLeft: 'auto', fontFamily: 'var(--font-sans)' }}>{new Date(injection.createdAt).toLocaleTimeString()}</span>
       </div>
       <pre style={{ fontSize: 11, whiteSpace: 'pre-wrap', wordBreak: 'break-all', padding: '8px 12px', overflowX: 'auto', fontFamily: 'JetBrains Mono, monospace', color: '#8aaa85', background: '#1a2018', margin: 0 }}>{preview}</pre>
     </div>

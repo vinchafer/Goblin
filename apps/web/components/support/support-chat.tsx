@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { getAuthHeaders, API_URL } from '@/lib/api';
 
@@ -108,19 +108,19 @@ export function SupportChat({ onClose }: SupportChatProps) {
       {/* Header */}
       <div style={{
         padding: '12px 14px',
-        background: 'var(--moss)',
+        background: 'var(--brand-green)',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         flexShrink: 0,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ width: 26, height: 26, borderRadius: 7, background: 'rgba(212,169,74,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--ochre)', fontFamily: 'Fraunces, serif' }}>G</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--brand-gold)', fontFamily: 'var(--font-sans)' }}>G</span>
           </div>
-          <span style={{ color: '#fff', fontSize: 13, fontFamily: 'DM Sans, sans-serif', fontWeight: 600 }}>Support</span>
+          <span style={{ color: '#fff', fontSize: 13, fontFamily: 'var(--font-sans)', fontWeight: 600 }}>Support</span>
           <span style={{
             fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 3,
-            background: 'rgba(212,169,74,0.2)', color: 'var(--ochre)',
-            fontFamily: 'DM Sans, sans-serif', letterSpacing: '0.5px', textTransform: 'uppercase',
+            background: 'rgba(212,169,74,0.2)', color: 'var(--brand-gold)',
+            fontFamily: 'var(--font-sans)', letterSpacing: '0.5px', textTransform: 'uppercase',
           }}>Beta</span>
         </div>
         <button
@@ -139,11 +139,11 @@ export function SupportChat({ onClose }: SupportChatProps) {
               maxWidth: '85%',
               padding: '8px 12px',
               borderRadius: msg.role === 'user' ? '12px 12px 3px 12px' : '12px 12px 12px 3px',
-              background: msg.role === 'user' ? 'var(--moss)' : '#fff',
+              background: msg.role === 'user' ? 'var(--brand-green)' : '#fff',
               border: msg.role === 'assistant' ? '1px solid #E8E4DC' : 'none',
               color: msg.role === 'user' ? 'rgba(255,255,255,0.92)' : 'var(--text)',
               fontSize: 12, lineHeight: 1.6,
-              fontFamily: 'DM Sans, sans-serif',
+              fontFamily: 'var(--font-sans)',
               whiteSpace: 'pre-wrap',
             }}>
               {msg.content}
@@ -158,12 +158,12 @@ export function SupportChat({ onClose }: SupportChatProps) {
               borderRadius: '12px 12px 12px 3px',
               background: '#fff', border: '1px solid #E8E4DC',
               fontSize: 12, lineHeight: 1.6, color: 'var(--text)',
-              fontFamily: 'DM Sans, sans-serif', whiteSpace: 'pre-wrap',
+              fontFamily: 'var(--font-sans)', whiteSpace: 'pre-wrap',
             }}>
               {streamingText || (
                 <div style={{ display: 'flex', gap: 3, alignItems: 'center', height: 16 }}>
                   {[0, 1, 2].map(i => (
-                    <div key={i} style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--moss)', animation: 'bounce 1.2s ease-in-out infinite', animationDelay: `${i * 0.16}s` }} />
+                    <div key={i} style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--brand-green)', animation: 'bounce 1.2s ease-in-out infinite', animationDelay: `${i * 0.16}s` }} />
                   ))}
                 </div>
               )}
@@ -172,7 +172,7 @@ export function SupportChat({ onClose }: SupportChatProps) {
         )}
 
         {rateLimited && (
-          <div style={{ fontSize: 11, color: 'var(--danger)', textAlign: 'center', padding: '4px 0', fontFamily: 'DM Sans, sans-serif' }}>
+          <div style={{ fontSize: 11, color: 'var(--danger)', textAlign: 'center', padding: '4px 0', fontFamily: 'var(--font-sans)' }}>
             {rateLimited}
           </div>
         )}
@@ -193,7 +193,7 @@ export function SupportChat({ onClose }: SupportChatProps) {
             style={{
               flex: 1, padding: '7px 10px',
               border: '1.5px solid #E8E4DC', borderRadius: 8,
-              fontSize: 12, fontFamily: 'DM Sans, sans-serif',
+              fontSize: 12, fontFamily: 'var(--font-sans)',
               outline: 'none', background: '#fff', color: 'var(--text)',
             }}
           />
@@ -202,13 +202,13 @@ export function SupportChat({ onClose }: SupportChatProps) {
             disabled={!input.trim() || streaming}
             style={{
               width: 32, height: 32, borderRadius: 8, border: 'none',
-              background: input.trim() && !streaming ? 'var(--moss)' : 'var(--div)',
+              background: input.trim() && !streaming ? 'var(--brand-green)' : 'var(--div)',
               cursor: input.trim() && !streaming ? 'pointer' : 'not-allowed',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               flexShrink: 0,
             }}
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={input.trim() && !streaming ? 'var(--ochre)' : 'var(--disabled)'} strokeWidth="2.5" strokeLinecap="round">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke={input.trim() && !streaming ? 'var(--brand-gold)' : 'var(--disabled)'} strokeWidth="2.5" strokeLinecap="round">
               <line x1="22" y1="2" x2="11" y2="13" />
               <polygon points="22 2 15 22 11 13 2 9 22 2" />
             </svg>

@@ -60,7 +60,7 @@ export function ConnectGitHubModal({ open, onClose, onConnected }: ConnectGitHub
       >
         {/* Header */}
         <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h2 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', fontFamily: 'DM Sans, sans-serif' }}>Connect GitHub</h2>
+          <h2 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-sans)' }}>Connect GitHub</h2>
           <button onClick={handleClose} style={{ background: 'none', border: 'none', color: 'var(--meta)', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: '2px 4px' }}>×</button>
         </div>
 
@@ -71,20 +71,20 @@ export function ConnectGitHubModal({ open, onClose, onConnected }: ConnectGitHub
               width: 56, height: 56, borderRadius: '50%',
               background: 'rgba(45,74,43,0.1)', margin: '0 auto 14px',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'var(--moss)',
+              color: 'var(--brand-green)',
             }}>
               <GitHubIcon size={24} />
             </div>
-            <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', fontFamily: 'DM Sans, sans-serif', marginBottom: 8 }}>
+            <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-sans)', marginBottom: 8 }}>
               Push your project to GitHub
             </h3>
-            <p style={{ fontSize: 13, color: 'var(--meta)', lineHeight: 1.6, fontFamily: 'DM Sans, sans-serif' }}>
+            <p style={{ fontSize: 13, color: 'var(--meta)', lineHeight: 1.6, fontFamily: 'var(--font-sans)' }}>
               Connect your GitHub account once — then push any project with one click. We create a private repo and upload your files.
             </p>
           </div>
 
           {error && (
-            <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(184,92,60,0.08)', border: '1px solid rgba(184,92,60,0.2)', color: 'var(--danger)', fontSize: 13, fontFamily: 'DM Sans, sans-serif', marginBottom: 16 }}>
+            <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(184,92,60,0.08)', border: '1px solid rgba(184,92,60,0.2)', color: 'var(--danger)', fontSize: 13, fontFamily: 'var(--font-sans)', marginBottom: 16 }}>
               {error}
             </div>
           )}
@@ -95,14 +95,14 @@ export function ConnectGitHubModal({ open, onClose, onConnected }: ConnectGitHub
               disabled={loading}
               style={{
                 width: '100%', padding: '11px 0',
-                background: loading ? 'rgba(45,74,43,0.5)' : 'var(--moss)',
+                background: loading ? 'rgba(45,74,43,0.5)' : 'var(--brand-green)',
                 color: '#fff', border: 'none', borderRadius: 9,
                 fontSize: 14, fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer',
-                fontFamily: 'DM Sans, sans-serif', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 transition: 'background 0.15s',
               }}
-              onMouseEnter={e => { if (!loading) e.currentTarget.style.background = 'var(--moss-2)'; }}
-              onMouseLeave={e => { if (!loading) e.currentTarget.style.background = 'var(--moss)'; }}
+              onMouseEnter={e => { if (!loading) e.currentTarget.style.background = 'var(--green-600)'; }}
+              onMouseLeave={e => { if (!loading) e.currentTarget.style.background = 'var(--brand-green)'; }}
             >
               <GitHubIcon size={16} />
               {loading ? 'Opening GitHub…' : 'Connect GitHub'}
@@ -114,7 +114,7 @@ export function ConnectGitHubModal({ open, onClose, onConnected }: ConnectGitHub
                 background: 'transparent', border: '1px solid var(--border)',
                 color: 'var(--meta)', borderRadius: 9,
                 fontSize: 13, fontWeight: 500, cursor: 'pointer',
-                fontFamily: 'DM Sans, sans-serif',
+                fontFamily: 'var(--font-sans)',
               }}
               onMouseEnter={e => (e.currentTarget.style.background = 'var(--subtle)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
@@ -123,7 +123,7 @@ export function ConnectGitHubModal({ open, onClose, onConnected }: ConnectGitHub
             </button>
           </div>
 
-          <p style={{ fontSize: 11, color: 'var(--text-faint)', textAlign: 'center', marginTop: 14, fontFamily: 'DM Sans, sans-serif', lineHeight: 1.5 }}>
+          <p style={{ fontSize: 11, color: 'var(--text-faint)', textAlign: 'center', marginTop: 14, fontFamily: 'var(--font-sans)', lineHeight: 1.5 }}>
             You'll be redirected to GitHub to authorize Goblin.<br />
             We only request repo-creation access — nothing else.
           </p>

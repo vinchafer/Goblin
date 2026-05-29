@@ -11,8 +11,8 @@ interface ProfileCardProps {
 
 const planColors: Record<string, { bg: string; color: string }> = {
   Build: { bg: 'var(--subtle)', color: 'var(--meta)' },
-  Pro: { bg: 'var(--moss-green-soft)', color: 'var(--moss)' },
-  Power: { bg: 'var(--ochre-soft)', color: 'var(--bark)' },
+  Pro: { bg: 'color-mix(in srgb, var(--brand-green) 8%, transparent)', color: 'var(--brand-green)' },
+  Power: { bg: 'color-mix(in srgb, var(--brand-gold) 12%, transparent)', color: 'var(--ink-2)' },
 };
 
 export function ProfileCard({ avatarUrl, name, email, plan, onClick, testId }: ProfileCardProps) {
@@ -36,7 +36,7 @@ export function ProfileCard({ avatarUrl, name, email, plan, onClick, testId }: P
         marginBottom: 24,
         cursor: 'pointer',
         textAlign: 'left',
-        fontFamily: 'var(--font-ui)',
+        fontFamily: 'var(--font-sans)',
       }}
     >
       {avatarUrl ? (
@@ -47,7 +47,7 @@ export function ProfileCard({ avatarUrl, name, email, plan, onClick, testId }: P
           width: 48,
           height: 48,
           borderRadius: '50%',
-          background: 'var(--moss)',
+          background: 'var(--brand-green)',
           color: '#FFFFFF',
           display: 'flex',
           alignItems: 'center',

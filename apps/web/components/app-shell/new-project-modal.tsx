@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -7,8 +7,8 @@ import { createClient } from "@/lib/supabase/client";
 import type { Project } from "@goblin/shared/src/schemas";
 
 const COLOR_PRESETS = [
-  { hex: 'var(--ochre)', label: 'Ochre' },
-  { hex: 'var(--moss)', label: 'Moss' },
+  { hex: 'var(--brand-gold)', label: 'Ochre' },
+  { hex: 'var(--brand-green)', label: 'Moss' },
   { hex: 'var(--danger)', label: 'Rust' },
   { hex: 'var(--text)', label: 'Slate' },
   { hex: '#7A4A8A', label: 'Purple' },
@@ -112,7 +112,7 @@ export function NewProjectModal({ onClose, onProjectCreated }: NewProjectModalPr
       <form onSubmit={handleSubmit} style={{ padding: 28 }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-          <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 20, color: 'var(--moss)', fontWeight: 700, letterSpacing: '-0.4px' }}>
+          <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: 20, color: 'var(--brand-green)', fontWeight: 700, letterSpacing: '-0.4px' }}>
             New Project
           </h2>
           <button type="button" onClick={handleClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, borderRadius: 6, color: 'var(--meta)', display: 'flex' }}>
@@ -141,10 +141,10 @@ export function NewProjectModal({ onClose, onProjectCreated }: NewProjectModalPr
               style={{
                 width: '100%', padding: '10px 14px', borderRadius: 9,
                 border: '1.5px solid var(--div)', fontSize: 14,
-                fontFamily: 'DM Sans, sans-serif', color: 'var(--text)',
+                fontFamily: 'var(--font-sans)', color: 'var(--text)',
                 outline: 'none', boxSizing: 'border-box', background: '#fff',
               }}
-              onFocus={e => (e.target.style.borderColor = 'var(--moss)')}
+              onFocus={e => (e.target.style.borderColor = 'var(--brand-green)')}
               onBlur={e => (e.target.style.borderColor = 'var(--div)')}
             />
           </div>
@@ -167,11 +167,11 @@ export function NewProjectModal({ onClose, onProjectCreated }: NewProjectModalPr
               style={{
                 width: '100%', padding: '10px 14px', borderRadius: 9,
                 border: '1.5px solid var(--div)', fontSize: 13,
-                fontFamily: 'DM Sans, sans-serif', color: 'var(--text)',
+                fontFamily: 'var(--font-sans)', color: 'var(--text)',
                 outline: 'none', resize: 'none', boxSizing: 'border-box',
                 lineHeight: 1.5, background: '#fff',
               }}
-              onFocus={e => (e.target.style.borderColor = 'var(--moss)')}
+              onFocus={e => (e.target.style.borderColor = 'var(--brand-green)')}
               onBlur={e => (e.target.style.borderColor = 'var(--div)')}
             />
           </div>
@@ -219,7 +219,7 @@ export function NewProjectModal({ onClose, onProjectCreated }: NewProjectModalPr
             style={{
               padding: '9px 18px', borderRadius: 8, border: '1px solid var(--div)',
               background: 'transparent', color: 'var(--meta)', fontSize: 13,
-              fontWeight: 500, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
+              fontWeight: 500, cursor: 'pointer', fontFamily: 'var(--font-sans)',
             }}
           >
             Cancel
@@ -229,9 +229,9 @@ export function NewProjectModal({ onClose, onProjectCreated }: NewProjectModalPr
             disabled={!name.trim() || loading}
             style={{
               padding: '9px 22px', borderRadius: 8, border: 'none',
-              background: 'var(--moss)', color: '#fff', fontSize: 13,
+              background: 'var(--brand-green)', color: '#fff', fontSize: 13,
               fontWeight: 500, cursor: loading || !name.trim() ? 'not-allowed' : 'pointer',
-              fontFamily: 'DM Sans, sans-serif',
+              fontFamily: 'var(--font-sans)',
               opacity: !name.trim() ? 0.5 : 1,
               display: 'flex', alignItems: 'center', gap: 7,
             }}

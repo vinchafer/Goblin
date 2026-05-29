@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 import { useState, useEffect } from 'react';
 import { isLocalModeAvailable } from '@/lib/hardware-check';
 
@@ -55,7 +55,7 @@ export function LocalCloudSwitch() {
             border: 'none',
             fontSize: 11,
             fontWeight: 600,
-            fontFamily: 'DM Sans, sans-serif',
+            fontFamily: 'var(--font-dash-display), Manrope, sans-serif',
             letterSpacing: '0.5px',
             cursor: canLocal ? 'pointer' : 'default',
             background: mode === 'local' ? 'rgba(74,124,59,0.5)' : 'transparent',
@@ -77,11 +77,11 @@ export function LocalCloudSwitch() {
             border: 'none',
             fontSize: 11,
             fontWeight: 600,
-            fontFamily: 'DM Sans, sans-serif',
+            fontFamily: 'var(--font-dash-display), Manrope, sans-serif',
             letterSpacing: '0.5px',
             cursor: 'pointer',
             background: mode === 'cloud' ? 'rgba(212,169,74,0.2)' : 'transparent',
-            color: mode === 'cloud' ? 'var(--ochre)' : 'rgba(255,255,255,0.4)',
+            color: mode === 'cloud' ? 'var(--brand-gold)' : 'rgba(255,255,255,0.4)',
             transition: 'all 0.15s',
           }}
         >
@@ -96,23 +96,23 @@ export function LocalCloudSwitch() {
           top: 'calc(100% + 8px)',
           left: '50%',
           transform: 'translateX(-50%)',
-          background: 'var(--moss-dark)',
-          border: '1px solid var(--moss-border-dark)',
+          background: 'var(--green-900)',
+          border: '1px solid var(--green-700)',
           borderRadius: 8,
           padding: '8px 12px',
           width: 220,
           zIndex: 200,
           boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
         }}>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', fontFamily: 'DM Sans, sans-serif', lineHeight: 1.5 }}>
+          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', fontFamily: 'var(--font-dash-display), Manrope, sans-serif', lineHeight: 1.5 }}>
             Local mode requires the <strong>Goblin Desktop App</strong>. Free, no account needed.
           </div>
           <a
             href="https://justgoblin.com/download"
             style={{
               display: 'inline-block', marginTop: 6,
-              fontSize: 11, color: 'var(--ochre)',
-              fontFamily: 'DM Sans, sans-serif',
+              fontSize: 11, color: 'var(--brand-gold)',
+              fontFamily: 'var(--font-dash-display), Manrope, sans-serif',
               textDecoration: 'none',
             }}
           >
@@ -121,8 +121,8 @@ export function LocalCloudSwitch() {
           {/* Arrow */}
           <div style={{
             position: 'absolute', top: -5, left: '50%',
-            width: 10, height: 10, background: 'var(--moss-dark)',
-            border: '1px solid var(--moss-border-dark)', borderBottom: 'none', borderRight: 'none',
+            width: 10, height: 10, background: 'var(--green-900)',
+            border: '1px solid var(--green-700)', borderBottom: 'none', borderRight: 'none',
             transform: 'translateX(-50%) rotate(45deg)',
           }} />
         </div>

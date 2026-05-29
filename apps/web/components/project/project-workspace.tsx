@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import dynamic from "next/dynamic";
+import { useSearchParams } from "next/navigation";
 import { useApp } from "@/contexts/app-context";
 import { ChatTab } from "@/components/workspace/chat-tab";
 import { CodeTab } from "@/components/project/code-tab";
@@ -20,15 +21,20 @@ interface ProjectWorkspaceProps {
 
 export function ProjectWorkspace({ projectId, projectName, previewUrl }: ProjectWorkspaceProps) {
   const { activeTab, setActiveTab, pendingCodePayload, setPreviewUrl } = useApp();
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     setPreviewUrl(previewUrl ?? null);
   }, [previewUrl, setPreviewUrl]);
 
-  // Always land on chat when navigating to a project
+  // Land on the tab requested via ?tab= (set by /dashboard/project/[id]
+  // overview screen "Open chat" / "Open code" actions). Falls back to chat.
   useEffect(() => {
-    setActiveTab('chat');
-  }, [projectId, setActiveTab]);
+    const requested = searchParams?.get('tab');
+    const next: 'chat' | 'code' | 'preview' =
+      requested === 'code' || requested === 'preview' ? requested : 'chat';
+    setActiveTab(next);
+  }, [projectId, searchParams, setActiveTab]);
 
   if (activeTab === "code") {
     return (

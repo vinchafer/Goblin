@@ -89,8 +89,8 @@ export function PricingCards({ currentPlan, showUpgrade = true }: PricingCardsPr
             className="relative rounded-2xl p-6 flex flex-col"
             style={{
               border: isPopular
-                ? "2px solid var(--goblin-moss)"
-                : `1px solid var(--goblin-border)`,
+                ? "2px solid var(--brand-green)"
+                : `1px solid var(--rule-soft)`,
               backgroundColor: "#fff"
             }}
           >
@@ -99,8 +99,8 @@ export function PricingCards({ currentPlan, showUpgrade = true }: PricingCardsPr
               <div
                 className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-semibold text-white"
                 style={{
-                  backgroundColor: "var(--goblin-moss)",
-                  fontFamily: "var(--font-dm-sans)"
+                  backgroundColor: "var(--brand-green)",
+                  fontFamily: "var(--font-sans)"
                 }}
               >
                 Most popular
@@ -112,8 +112,8 @@ export function PricingCards({ currentPlan, showUpgrade = true }: PricingCardsPr
               <div
                 className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-semibold text-white"
                 style={{
-                  backgroundColor: "var(--goblin-ochre)",
-                  fontFamily: "var(--font-dm-sans)"
+                  backgroundColor: "var(--brand-gold)",
+                  fontFamily: "var(--font-sans)"
                 }}
               >
                 Current Plan
@@ -121,22 +121,22 @@ export function PricingCards({ currentPlan, showUpgrade = true }: PricingCardsPr
             )}
 
             <h3
-              className="font-fraunces font-bold text-xl mb-1"
-              style={{ color: "var(--goblin-bark)" }}
+              className="font-display font-bold text-xl mb-1"
+              style={{ color: "var(--ink-2)" }}
             >
               {plan.name}
             </h3>
 
             <div className="mb-5">
               <span
-                className="font-fraunces font-bold text-4xl"
-                style={{ color: isPopular ? "var(--goblin-moss)" : "var(--goblin-bark)" }}
+                className="font-display font-bold text-4xl"
+                style={{ color: isPopular ? "var(--brand-green)" : "var(--ink-2)" }}
               >
                 ${plan.price}
               </span>
               <span
                 className="text-sm ml-1"
-                style={{ color: "var(--goblin-meta)", fontFamily: "var(--font-dm-sans)" }}
+                style={{ color: "var(--ink-3)", fontFamily: "var(--font-sans)" }}
               >
                 /month
               </span>
@@ -147,13 +147,13 @@ export function PricingCards({ currentPlan, showUpgrade = true }: PricingCardsPr
                 <li key={i} className="flex items-start gap-2.5">
                   <span
                     className="w-4 h-4 rounded-full flex items-center justify-center shrink-0 mt-0.5"
-                    style={{ backgroundColor: "var(--goblin-moss)" }}
+                    style={{ backgroundColor: "var(--brand-green)" }}
                   >
                     <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
                   </span>
                   <span
                     className="text-sm"
-                    style={{ color: "var(--goblin-text)", fontFamily: "var(--font-dm-sans)" }}
+                    style={{ color: "var(--ink-1)", fontFamily: "var(--font-sans)" }}
                   >
                     {feature}
                   </span>
@@ -166,9 +166,9 @@ export function PricingCards({ currentPlan, showUpgrade = true }: PricingCardsPr
                 disabled
                 className="w-full py-3 rounded-xl text-sm font-medium opacity-50 border"
                 style={{
-                  borderColor: "var(--goblin-border)",
-                  color: "var(--goblin-meta)",
-                  fontFamily: "var(--font-dm-sans)"
+                  borderColor: "var(--rule-soft)",
+                  color: "var(--ink-3)",
+                  fontFamily: "var(--font-sans)"
                 }}
               >
                 Current Plan
@@ -178,19 +178,19 @@ export function PricingCards({ currentPlan, showUpgrade = true }: PricingCardsPr
                 onClick={() => handleUpgrade(planId)}
                 className="w-full py-3 rounded-xl text-sm font-medium transition-colors"
                 style={{
-                  backgroundColor: isPopular ? "var(--goblin-moss)" : "transparent",
-                  color: isPopular ? "#fff" : "var(--goblin-moss)",
-                  border: isPopular ? "none" : `1px solid var(--goblin-moss)`,
-                  fontFamily: "var(--font-dm-sans)"
+                  backgroundColor: isPopular ? "var(--brand-green)" : "transparent",
+                  color: isPopular ? "#fff" : "var(--brand-green)",
+                  border: isPopular ? "none" : `1px solid var(--brand-green)`,
+                  fontFamily: "var(--font-sans)"
                 }}
                 onMouseEnter={(e) => {
                   if (isPopular) {
-                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--goblin-moss2)";
+                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--green-600)";
                   }
                 }}
                 onMouseLeave={(e) => {
                   if (isPopular) {
-                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--goblin-moss)";
+                    (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--brand-green)";
                   }
                 }}
               >

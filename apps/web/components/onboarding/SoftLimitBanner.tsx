@@ -48,14 +48,14 @@ export default function SoftLimitBanner() {
         backgroundColor: 'rgba(212, 167, 55, 0.15)',
         borderBottom: '1px solid var(--rule)',
         fontSize: 'var(--text-small)',
-        color: 'var(--goblin-green)',
+        color: 'var(--ink-deep)',
         textAlign: 'center',
         fontFamily: 'var(--font-sans)',
       }}>
         Dein Trial endet in {status.trialDaysLeft} {status.trialDaysLeft === 1 ? 'Tag' : 'Tagen'}.{' '}
         <Link href="/onboarding/choose-provider" style={{
           textDecoration: 'underline',
-          color: 'var(--goblin-moss)',
+          color: 'var(--brand-green)',
           fontWeight: 600,
         }}>
           Hol dir einen Free-Tier-Key →
@@ -69,8 +69,8 @@ export default function SoftLimitBanner() {
     return (
       <div style={{
         padding: 'var(--space-3) var(--space-4)',
-        backgroundColor: 'var(--goblin-moss)',
-        color: 'var(--goblin-cream)',
+        backgroundColor: 'var(--brand-green)',
+        color: 'var(--paper)',
         fontSize: 'var(--text-body)',
         textAlign: 'center',
         fontFamily: 'var(--font-sans)',
@@ -78,7 +78,7 @@ export default function SoftLimitBanner() {
         Tageslimit erreicht.{' '}
         <Link href="/onboarding/choose-provider" style={{
           textDecoration: 'underline',
-          color: 'var(--goblin-gold)',
+          color: 'var(--brand-gold)',
           fontWeight: 600,
         }}>
           Trag deinen Key ein für unbegrenzte Nutzung →
@@ -95,14 +95,14 @@ export default function SoftLimitBanner() {
       backgroundColor: 'rgba(45, 74, 43, 0.08)',
       borderBottom: '1px solid var(--rule)',
       fontSize: 'var(--text-small)',
-      color: 'var(--goblin-green)',
+      color: 'var(--ink-deep)',
       textAlign: 'center',
       fontFamily: 'var(--font-sans)',
     }}>
       {remaining} Anfragen heute übrig.{' '}
       <Link href="/onboarding/choose-provider" style={{
         textDecoration: 'underline',
-        color: 'var(--goblin-moss)',
+        color: 'var(--brand-green)',
         fontWeight: 600,
       }}>
         Eigenen Key für unbegrenzt →

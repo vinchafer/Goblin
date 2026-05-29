@@ -68,8 +68,8 @@ export function ShortcutsTooltip() {
         marginBottom: 10,
       }}>
         <span style={{
-          fontSize: 11, fontWeight: 700, color: 'var(--ochre)',
-          fontFamily: 'DM Sans, sans-serif', letterSpacing: '0.08em',
+          fontSize: 11, fontWeight: 700, color: 'var(--brand-gold)',
+          fontFamily: 'var(--font-sans)', letterSpacing: '0.08em',
           textTransform: 'uppercase',
         }}>
           Keyboard Shortcuts
@@ -87,7 +87,7 @@ export function ShortcutsTooltip() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {SHORTCUTS.map(s => (
           <div key={s.keys} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', fontFamily: 'DM Sans, sans-serif' }}>
+            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--font-sans)' }}>
               {s.label}
             </span>
             <kbd style={{
@@ -102,7 +102,7 @@ export function ShortcutsTooltip() {
       </div>
       <div style={{
         marginTop: 10, fontSize: 10, color: 'rgba(255,255,255,0.2)',
-        fontFamily: 'DM Sans, sans-serif', textAlign: 'center',
+        fontFamily: 'var(--font-sans)', textAlign: 'center',
       }}>
         Drücke ? für alle Shortcuts
       </div>

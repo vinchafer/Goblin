@@ -35,11 +35,11 @@ export function ProjectsList({ projects, onProjectCreated }: ProjectsListProps) 
           onClick={() => setModalOpen(true)}
           className="w-full flex items-center justify-center gap-2 h-8 rounded-lg text-sm font-medium text-white transition-colors"
           style={{
-            backgroundColor: "var(--goblin-moss)",
-            fontFamily: "var(--font-dm-sans)"
+            backgroundColor: "var(--brand-green)",
+            fontFamily: "var(--font-sans)"
           }}
-          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--goblin-moss2)")}
-          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--goblin-moss)")}
+          onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = "var(--green-600)")}
+          onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "var(--brand-green)")}
         >
           <Plus className="w-3.5 h-3.5" />
           New Project
@@ -50,7 +50,7 @@ export function ProjectsList({ projects, onProjectCreated }: ProjectsListProps) 
       <div className="px-3 pb-1">
         <span
           className="text-[10px] font-medium uppercase tracking-widest"
-          style={{ color: "var(--goblin-meta)", fontFamily: "var(--font-dm-sans)" }}
+          style={{ color: "var(--ink-3)", fontFamily: "var(--font-sans)" }}
         >
           Projects
         </span>
@@ -60,10 +60,10 @@ export function ProjectsList({ projects, onProjectCreated }: ProjectsListProps) 
       <div className="flex-1 overflow-y-auto px-2 pb-2 space-y-0.5">
         {projects.length === 0 ? (
           <div className="px-2.5 py-4 text-center">
-            <div className="text-xs font-medium mb-1" style={{ color: 'var(--goblin-bark)' }}>
+            <div className="text-xs font-medium mb-1" style={{ color: 'var(--ink-2)' }}>
               No projects yet
             </div>
-            <div className="text-[10px]" style={{ color: 'var(--goblin-meta)' }}>
+            <div className="text-[10px]" style={{ color: 'var(--ink-3)' }}>
               Click above to create your first
             </div>
           </div>
@@ -103,15 +103,15 @@ export function ProjectsList({ projects, onProjectCreated }: ProjectsListProps) 
                   <div
                     className="text-xs font-medium truncate"
                     style={{
-                      color: isActive ? "var(--goblin-ochre)" : "var(--goblin-bark)",
-                      fontFamily: "var(--font-dm-sans)"
+                      color: isActive ? "var(--brand-gold)" : "var(--ink-2)",
+                      fontFamily: "var(--font-sans)"
                     }}
                   >
                     {project.name}
                   </div>
                   <div
                     className="text-[10px]"
-                    style={{ color: "var(--goblin-meta)", fontFamily: "var(--font-dm-sans)" }}
+                    style={{ color: "var(--ink-3)", fontFamily: "var(--font-sans)" }}
                   >
                     {formatRelativeTime(project.last_active)}
                   </div>

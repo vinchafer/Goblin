@@ -63,7 +63,7 @@ export default function AdminBuildsPage() {
 
   return (
     <div>
-      <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 26, color: 'var(--moss)', fontWeight: 700, letterSpacing: '-0.6px', marginBottom: 24 }}>
+      <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 26, color: 'var(--brand-green)', fontWeight: 700, letterSpacing: '-0.6px', marginBottom: 24 }}>
         Builds
       </h1>
 
@@ -75,16 +75,16 @@ export default function AdminBuildsPage() {
             onClick={() => { setStatusFilter(s); setPage(1); }}
             style={{
               padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 500,
-              border: statusFilter === s ? '2px solid var(--moss)' : '1.5px solid var(--border)',
+              border: statusFilter === s ? '2px solid var(--brand-green)' : '1.5px solid var(--border)',
               background: statusFilter === s ? 'rgba(45,74,43,0.08)' : 'transparent',
-              color: statusFilter === s ? 'var(--moss)' : 'var(--meta)',
-              cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
+              color: statusFilter === s ? 'var(--brand-green)' : 'var(--meta)',
+              cursor: 'pointer', fontFamily: 'var(--font-sans)',
             }}
           >
             {s || 'All'}
           </button>
         ))}
-        <button onClick={load} style={{ marginLeft: 'auto', background: 'var(--moss)', color: '#fff', border: 'none', borderRadius: 8, padding: '7px 16px', fontSize: 12, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}>
+        <button onClick={load} style={{ marginLeft: 'auto', background: 'var(--brand-green)', color: '#fff', border: 'none', borderRadius: 8, padding: '7px 16px', fontSize: 12, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
           Refresh
         </button>
       </div>
@@ -93,7 +93,7 @@ export default function AdminBuildsPage() {
         {loading ? (
           <div style={{ padding: '32px', textAlign: 'center', color: 'var(--meta)' }}>Loading…</div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, fontFamily: 'DM Sans, sans-serif' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, fontFamily: 'var(--font-sans)' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid var(--div)' }}>
                 {['Type', 'Status', 'Progress', 'Duration', 'Created', 'Actions'].map(h => (
@@ -118,7 +118,7 @@ export default function AdminBuildsPage() {
                     <td style={{ padding: '10px 14px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <div style={{ width: 60, height: 4, background: 'var(--subtle)', borderRadius: 2, overflow: 'hidden' }}>
-                          <div style={{ width: `${b.progress_pct}%`, height: '100%', background: 'var(--moss)', transition: 'width 0.3s' }} />
+                          <div style={{ width: `${b.progress_pct}%`, height: '100%', background: 'var(--brand-green)', transition: 'width 0.3s' }} />
                         </div>
                         <span style={{ color: 'var(--meta)' }}>{b.progress_pct}%</span>
                       </div>
@@ -129,7 +129,7 @@ export default function AdminBuildsPage() {
                       <div style={{ display: 'flex', gap: 6 }}>
                         {b.message && (
                           <button onClick={() => setSelectedBuild(b)}
-                            style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '3px 9px', fontSize: 11, cursor: 'pointer', color: 'var(--text)', fontFamily: 'DM Sans, sans-serif' }}>
+                            style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '3px 9px', fontSize: 11, cursor: 'pointer', color: 'var(--text)', fontFamily: 'var(--font-sans)' }}>
                             Log
                           </button>
                         )}
@@ -137,7 +137,7 @@ export default function AdminBuildsPage() {
                           <button
                             onClick={() => handleCancel(b.id)}
                             disabled={cancelling === b.id}
-                            style={{ background: 'transparent', border: '1px solid var(--danger)', borderRadius: 6, padding: '3px 9px', fontSize: 11, cursor: 'pointer', color: 'var(--danger)', fontFamily: 'DM Sans, sans-serif' }}>
+                            style={{ background: 'transparent', border: '1px solid var(--danger)', borderRadius: 6, padding: '3px 9px', fontSize: 11, cursor: 'pointer', color: 'var(--danger)', fontFamily: 'var(--font-sans)' }}>
                             {cancelling === b.id ? '…' : 'Cancel'}
                           </button>
                         )}
@@ -170,7 +170,7 @@ export default function AdminBuildsPage() {
           <div onClick={e => e.stopPropagation()}
             style={{ width: '100%', maxWidth: 560, background: 'var(--panel)', borderRadius: 14, border: '1px solid var(--border)', boxShadow: 'var(--shadow-lg)', overflow: 'hidden', animation: 'modalIn 0.15s ease-out' }}>
             <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--div)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 15, color: 'var(--moss)', fontWeight: 700 }}>Build Log — {selectedBuild.id.slice(0, 8)}</h2>
+              <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: 15, color: 'var(--brand-green)', fontWeight: 700 }}>Build Log — {selectedBuild.id.slice(0, 8)}</h2>
               <button onClick={() => setSelectedBuild(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--meta)', fontSize: 18 }}>✕</button>
             </div>
             <pre style={{ padding: '16px 20px', margin: 0, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', color: 'var(--code-fg)', background: 'var(--code-bg)', overflowX: 'auto', maxHeight: 300 }}>

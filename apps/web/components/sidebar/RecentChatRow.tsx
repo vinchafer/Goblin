@@ -143,7 +143,7 @@ export function RecentChatRow({ chat, active, onNavigate, onUpdate }: RecentChat
           cursor: 'pointer',
           marginBottom: 1,
           background: active ? 'rgba(212,169,74,0.1)' : 'transparent',
-          borderLeft: active ? '2px solid var(--ochre)' : '2px solid transparent',
+          borderLeft: active ? '2px solid var(--brand-gold)' : '2px solid transparent',
           transition: 'background 0.15s, transform 0.15s ease',
           userSelect: 'none',
           transform: pressing ? 'scale(0.97)' : 'scale(1)',
@@ -152,27 +152,27 @@ export function RecentChatRow({ chat, active, onNavigate, onUpdate }: RecentChat
       >
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 2 }}>
           <span style={{
-            fontSize: 12,
-            color: active ? 'var(--moss)' : 'var(--text)',
+            fontSize: 'var(--t-small-fs)',
+            color: active ? 'var(--brand-green)' : 'var(--text)',
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            fontFamily: 'var(--font-ui)',
+            fontFamily: 'var(--font-sans)',
             fontWeight: active ? 600 : 400,
           }}>
             {chat.title || 'Neuer Chat'}
           </span>
           {chat.project_name && (
             <span style={{
-              fontSize: 10, color: 'var(--text-faint)',
+              fontSize: 'var(--t-eyebrow-fs)', color: 'var(--text-faint)',
               background: 'rgba(0,0,0,0.05)', padding: '1px 6px',
               borderRadius: 5, alignSelf: 'flex-start',
-              fontFamily: 'var(--font-ui)', maxWidth: '100%',
+              fontFamily: 'var(--font-sans)', maxWidth: '100%',
               overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
             }}>
-              📁 {chat.project_name}
+              {chat.project_name}
             </span>
           )}
         </div>
-        <span style={{ fontSize: 10, color: 'var(--text-faint)', flexShrink: 0 }}>
+        <span style={{ fontSize: 'var(--t-eyebrow-fs)', color: 'var(--text-faint)', flexShrink: 0 }}>
           {timeAgoShort(chat.updated_at)}
         </span>
       </div>
@@ -291,10 +291,10 @@ export function RecentChatRow({ chat, active, onNavigate, onUpdate }: RecentChat
               borderRadius: 'var(--radius-lg)',
               width: '100%',
               maxWidth: 420,
-              fontFamily: 'var(--font-ui)',
+              fontFamily: 'var(--font-sans)',
             }}
           >
-            <h3 style={{ margin: '0 0 12px', fontFamily: 'var(--font-brand)', fontSize: 18 }}>
+            <h3 style={{ margin: '0 0 12px', fontFamily: 'var(--font-sans)', fontSize: 'var(--t-h3-fs)', lineHeight: 'var(--t-h3-lh)' }}>
               Chat umbenennen
             </h3>
             <input
@@ -330,12 +330,12 @@ export function RecentChatRow({ chat, active, onNavigate, onUpdate }: RecentChat
                 padding: '10px 12px',
                 border: '1px solid var(--div)',
                 borderRadius: 8,
-                fontSize: 15,
+                fontSize: 'var(--t-body-fs)',
                 background: 'var(--white)',
                 color: 'var(--text)',
                 marginBottom: 12,
                 boxSizing: 'border-box',
-                fontFamily: 'var(--font-ui)',
+                fontFamily: 'var(--font-sans)',
               }}
             />
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
@@ -348,7 +348,7 @@ export function RecentChatRow({ chat, active, onNavigate, onUpdate }: RecentChat
                   border: '1px solid var(--div)',
                   borderRadius: 8,
                   cursor: 'pointer',
-                  fontFamily: 'var(--font-ui)',
+                  fontFamily: 'var(--font-sans)',
                 }}
               >
                 Abbrechen
@@ -375,13 +375,13 @@ export function RecentChatRow({ chat, active, onNavigate, onUpdate }: RecentChat
                 disabled={!renameValue.trim()}
                 style={{
                   padding: '8px 14px',
-                  background: renameValue.trim() ? 'var(--moss)' : 'rgba(0,0,0,0.10)',
+                  background: renameValue.trim() ? 'var(--brand-green)' : 'rgba(0,0,0,0.10)',
                   color: '#fff',
                   border: 'none',
                   borderRadius: 8,
                   cursor: renameValue.trim() ? 'pointer' : 'not-allowed',
                   fontWeight: 600,
-                  fontFamily: 'var(--font-ui)',
+                  fontFamily: 'var(--font-sans)',
                 }}
               >
                 Speichern

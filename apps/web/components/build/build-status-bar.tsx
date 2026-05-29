@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useState, useEffect } from 'react';
 import type { BuildRun } from '@/hooks/useBuildStatus';
@@ -37,7 +37,7 @@ function BuildItem({ build }: { build: BuildRun }) {
 
   const isRunning = build.status === 'running' || build.status === 'pending';
   const progress = isRunning ? Math.max(5, build.progress_pct) : 100;
-  const barColor = isFailed ? 'var(--danger)' : isDone ? 'var(--success)' : 'var(--ochre)';
+  const barColor = isFailed ? 'var(--danger)' : isDone ? 'var(--success)' : 'var(--brand-gold)';
 
   return (
     <div style={{
@@ -53,7 +53,7 @@ function BuildItem({ build }: { build: BuildRun }) {
         <span style={{ fontSize: 13, color: barColor, flexShrink: 0 }}>
           {TYPE_ICON[build.type]}
         </span>
-        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', fontFamily: 'DM Sans, sans-serif', flex: 1 }}>
+        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-sans)', flex: 1 }}>
           {build.message ?? TYPE_LABEL[build.type]}
         </span>
         {isDone && (

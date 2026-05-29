@@ -90,7 +90,7 @@ export function ProfilePage() {
   };
 
   return (
-    <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-ui)' }}>
+    <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '24px 0 32px' }}>
         <AvatarUploader
           currentUrl={user.avatarUrl ?? null}
@@ -119,7 +119,7 @@ export function ProfilePage() {
               style={{
                 background: 'transparent', border: 'none', outline: 'none',
                 fontSize: 16, color: 'var(--text)', padding: 0, marginTop: 4,
-                fontFamily: 'var(--font-ui)', appearance: 'none',
+                fontFamily: 'var(--font-sans)', appearance: 'none',
               }}
             >
               <option value="de">Deutsch</option>
@@ -136,7 +136,7 @@ export function ProfilePage() {
               style={{
                 background: 'transparent', border: 'none', outline: 'none',
                 fontSize: 16, color: 'var(--text)', padding: 0, marginTop: 4,
-                fontFamily: 'var(--font-ui)', width: '100%',
+                fontFamily: 'var(--font-sans)', width: '100%',
               }}
             />
           </div>
@@ -173,13 +173,13 @@ export function ProfilePage() {
           width: '100%',
           padding: 16,
           marginTop: 8,
-          background: !isDirty || saving ? 'rgba(0,0,0,0.10)' : 'var(--moss)',
+          background: !isDirty || saving ? 'rgba(0,0,0,0.10)' : 'var(--brand-green)',
           color: '#FFFFFF',
           border: 'none',
           borderRadius: 'var(--radius-lg)',
           fontSize: 17,
           fontWeight: 600,
-          fontFamily: 'var(--font-ui)',
+          fontFamily: 'var(--font-sans)',
           cursor: !isDirty || saving ? 'not-allowed' : 'pointer',
         }}
       >
@@ -223,7 +223,7 @@ function FormInput({ label, value, onChange, testId }: { label: string; value: s
           background: 'transparent',
           fontSize: 16,
           color: 'var(--text)',
-          fontFamily: 'var(--font-ui)',
+          fontFamily: 'var(--font-sans)',
           marginTop: 4,
           padding: 0,
           width: '100%',

@@ -104,7 +104,7 @@ export function PrivacyPage() {
     : null;
 
   return (
-    <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-ui)' }}>
+    <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
       <SettingsGroup label="Tracking">
         <SettingsCard>
           <SettingsRow
@@ -167,9 +167,9 @@ export function PrivacyPage() {
             borderRadius: 'var(--radius-lg)',
             maxWidth: 480,
             width: '100%',
-            fontFamily: 'var(--font-ui)',
+            fontFamily: 'var(--font-sans)',
           }}>
-            <h3 style={{ fontFamily: 'var(--font-brand)', fontSize: 22, margin: '0 0 12px' }}>
+            <h3 style={{ fontFamily: 'var(--font-sans)', fontSize: 22, margin: '0 0 12px' }}>
               Konto wirklich löschen?
             </h3>
             <p style={{ color: 'var(--meta)', fontSize: 14, margin: '0 0 16px' }}>
@@ -194,7 +194,7 @@ export function PrivacyPage() {
                 fontSize: 16,
                 background: 'var(--white)',
                 color: 'var(--text)',
-                fontFamily: 'var(--font-ui)',
+                fontFamily: 'var(--font-sans)',
                 marginBottom: 12,
                 boxSizing: 'border-box',
               }}
@@ -213,7 +213,7 @@ export function PrivacyPage() {
                   border: '1px solid var(--div)',
                   borderRadius: 8,
                   cursor: 'pointer',
-                  fontFamily: 'var(--font-ui)',
+                  fontFamily: 'var(--font-sans)',
                 }}
               >
                 Abbrechen
@@ -229,7 +229,7 @@ export function PrivacyPage() {
                   borderRadius: 8,
                   cursor: confirmText === 'DELETE' && !submitting ? 'pointer' : 'not-allowed',
                   fontWeight: 600,
-                  fontFamily: 'var(--font-ui)',
+                  fontFamily: 'var(--font-sans)',
                 }}
               >
                 {submitting ? 'Beantrage…' : 'Löschen beantragen'}

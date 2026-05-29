@@ -1,12 +1,12 @@
-﻿'use client';
+'use client';
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
 const COLORS = [
-  { name: 'Ochre',  hex: '#D4A94A' },
-  { name: 'Moss',   hex: '#2D4A2B' },
+  { name: 'Gold',   hex: '#D4A737' },
+  { name: 'Green',  hex: '#1A3A2A' },
   { name: 'Rust',   hex: '#B85C3C' },
   { name: 'Slate',  hex: '#3A2E1F' },
   { name: 'Purple', hex: '#7A4A8A' },
@@ -50,7 +50,7 @@ export function NewProjectModal({ onClose, initialMode }: NewProjectModalProps) 
   const [mode, setMode] = useState<Mode>(initialMode === 'template' ? 'gallery' : 'blank');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [selectedColor, setSelectedColor] = useState(COLORS[0]?.hex ?? '#D4A94A');
+  const [selectedColor, setSelectedColor] = useState(COLORS[0]?.hex ?? '#D4A737');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -188,8 +188,8 @@ export function NewProjectModal({ onClose, initialMode }: NewProjectModalProps) 
                   type="text" value={name} onChange={e => setName(e.target.value.slice(0, 50))}
                   placeholder="My Awesome Project" required maxLength={50} autoFocus
                   data-testid="project-name-input"
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 14, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: 'var(--surface)', color: 'var(--text)', boxSizing: 'border-box' }}
-                  onFocus={e => (e.target.style.borderColor = 'var(--moss)')}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 14, fontFamily: 'var(--font-sans)', outline: 'none', background: 'var(--surface)', color: 'var(--text)', boxSizing: 'border-box' }}
+                  onFocus={e => (e.target.style.borderColor = 'var(--brand-green)')}
                   onBlur={e => (e.target.style.borderColor = 'var(--border)')}
                 />
                 <div style={{ fontSize: 11, color: 'var(--meta)', marginTop: 4, textAlign: 'right' }}>{name.length}/50</div>
@@ -200,8 +200,8 @@ export function NewProjectModal({ onClose, initialMode }: NewProjectModalProps) 
                 <textarea
                   value={description} onChange={e => setDescription(e.target.value.slice(0, 200))}
                   rows={3} placeholder="Optional — describe your project idea..." maxLength={200}
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 14, resize: 'none', fontFamily: 'DM Sans, sans-serif', outline: 'none', background: 'var(--surface)', color: 'var(--text)', boxSizing: 'border-box' }}
-                  onFocus={e => (e.target.style.borderColor = 'var(--moss)')}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 14, resize: 'none', fontFamily: 'var(--font-sans)', outline: 'none', background: 'var(--surface)', color: 'var(--text)', boxSizing: 'border-box' }}
+                  onFocus={e => (e.target.style.borderColor = 'var(--brand-green)')}
                   onBlur={e => (e.target.style.borderColor = 'var(--border)')}
                 />
                 <div style={{ fontSize: 11, color: 'var(--meta)', marginTop: 4, textAlign: 'right' }}>{description.length}/200</div>
@@ -212,7 +212,7 @@ export function NewProjectModal({ onClose, initialMode }: NewProjectModalProps) 
                 <div style={{ display: 'flex', gap: 10 }}>
                   {COLORS.map(c => (
                     <button key={c.hex} type="button" onClick={() => setSelectedColor(c.hex)} title={c.name}
-                      style={{ width: 32, height: 32, borderRadius: '50%', background: c.hex, border: selectedColor === c.hex ? '3px solid var(--moss)' : '3px solid transparent', cursor: 'pointer', transition: 'all 0.15s', transform: selectedColor === c.hex ? 'scale(1.15)' : 'scale(1)' }}
+                      style={{ width: 32, height: 32, borderRadius: '50%', background: c.hex, border: selectedColor === c.hex ? '3px solid var(--brand-green)' : '3px solid transparent', cursor: 'pointer', transition: 'all 0.15s', transform: selectedColor === c.hex ? 'scale(1.15)' : 'scale(1)' }}
                     />
                   ))}
                 </div>
@@ -222,7 +222,7 @@ export function NewProjectModal({ onClose, initialMode }: NewProjectModalProps) 
 
               <button type="submit" disabled={!name.trim() || loading}
                 data-testid="project-create-submit"
-                style={{ width: '100%', padding: '12px 20px', borderRadius: 10, background: 'var(--moss)', color: 'var(--ochre)', border: 'none', fontSize: 15, fontWeight: 600, cursor: loading ? 'wait' : 'pointer', fontFamily: 'DM Sans, sans-serif', opacity: !name.trim() ? 0.5 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                style={{ width: '100%', padding: '12px 20px', borderRadius: 10, background: 'var(--brand-green)', color: 'var(--brand-gold)', border: 'none', fontSize: 15, fontWeight: 600, cursor: loading ? 'wait' : 'pointer', fontFamily: 'var(--font-sans)', opacity: !name.trim() ? 0.5 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                 {loading ? <Spinner /> : 'Create project →'}
               </button>
             </form>
@@ -235,7 +235,7 @@ export function NewProjectModal({ onClose, initialMode }: NewProjectModalProps) 
               <div style={{ display: 'flex', gap: 6, marginBottom: 16, overflowX: 'auto', paddingBottom: 4 }}>
                 {CATEGORIES.map(cat => (
                   <button key={cat} onClick={() => setCategoryFilter(cat)}
-                    style={{ padding: '5px 14px', borderRadius: 20, fontSize: 12, fontWeight: 500, border: categoryFilter === cat ? '2px solid var(--moss)' : '1.5px solid var(--border)', background: categoryFilter === cat ? 'rgba(45,74,43,0.08)' : 'transparent', color: categoryFilter === cat ? 'var(--moss)' : 'var(--meta)', cursor: 'pointer', flexShrink: 0, fontFamily: 'DM Sans, sans-serif', textTransform: 'capitalize' }}>
+                    style={{ padding: '5px 14px', borderRadius: 20, fontSize: 12, fontWeight: 500, border: categoryFilter === cat ? '2px solid var(--brand-green)' : '1.5px solid var(--border)', background: categoryFilter === cat ? 'rgba(45,74,43,0.08)' : 'transparent', color: categoryFilter === cat ? 'var(--brand-green)' : 'var(--meta)', cursor: 'pointer', flexShrink: 0, fontFamily: 'var(--font-sans)', textTransform: 'capitalize' }}>
                     {cat}
                   </button>
                 ))}
@@ -270,9 +270,9 @@ export function NewProjectModal({ onClose, initialMode }: NewProjectModalProps) 
 
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 12 }}>
                 <div style={{ flex: 1 }}>
-                  <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 20, fontWeight: 700, color: 'var(--moss)', letterSpacing: '-0.3px', margin: 0, marginBottom: 4 }}>{selectedTemplate.name}</h2>
+                  <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: 20, fontWeight: 700, color: 'var(--brand-green)', letterSpacing: '-0.3px', margin: 0, marginBottom: 4 }}>{selectedTemplate.name}</h2>
                   {selectedTemplate.is_official && (
-                    <span style={{ fontSize: 11, background: 'rgba(45,74,43,0.1)', color: 'var(--moss)', padding: '2px 8px', borderRadius: 4, fontWeight: 700 }}>✓ Official</span>
+                    <span style={{ fontSize: 11, background: 'rgba(45,74,43,0.1)', color: 'var(--brand-green)', padding: '2px 8px', borderRadius: 4, fontWeight: 700 }}>✓ Official</span>
                   )}
                 </div>
                 <span style={{ fontSize: 12, color: 'var(--meta)' }}>↓ {selectedTemplate.downloads}</span>
@@ -291,7 +291,7 @@ export function NewProjectModal({ onClose, initialMode }: NewProjectModalProps) 
               {error && <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(184,92,60,0.1)', color: 'var(--danger)', fontSize: 13, marginBottom: 16 }}>{error}</div>}
 
               <button onClick={() => { setTemplateName(selectedTemplate.name); setMode('template-name'); }}
-                style={{ width: '100%', padding: '12px 20px', borderRadius: 10, background: 'var(--ochre)', color: '#fff', border: 'none', fontSize: 15, fontWeight: 600, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}>
+                style={{ width: '100%', padding: '12px 20px', borderRadius: 10, background: 'var(--brand-gold)', color: '#fff', border: 'none', fontSize: 15, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
                 Start with this template →
               </button>
             </div>
@@ -305,7 +305,7 @@ export function NewProjectModal({ onClose, initialMode }: NewProjectModalProps) 
                 ← {selectedTemplate.name}
               </button>
 
-              <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 20, fontWeight: 700, color: 'var(--moss)', marginBottom: 4 }}>Name your project</h2>
+              <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: 20, fontWeight: 700, color: 'var(--brand-green)', marginBottom: 4 }}>Name your project</h2>
               <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 20 }}>Starting from: {selectedTemplate.name}</p>
 
               <div style={{ marginBottom: 20 }}>
@@ -313,8 +313,8 @@ export function NewProjectModal({ onClose, initialMode }: NewProjectModalProps) 
                 <input
                   type="text" value={templateName} onChange={e => setTemplateName(e.target.value.slice(0, 50))}
                   placeholder={selectedTemplate.name} maxLength={50} autoFocus
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 14, fontFamily: 'DM Sans, sans-serif', outline: 'none', background: 'var(--surface)', color: 'var(--text)', boxSizing: 'border-box' }}
-                  onFocus={e => (e.target.style.borderColor = 'var(--moss)')}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 14, fontFamily: 'var(--font-sans)', outline: 'none', background: 'var(--surface)', color: 'var(--text)', boxSizing: 'border-box' }}
+                  onFocus={e => (e.target.style.borderColor = 'var(--brand-green)')}
                   onBlur={e => (e.target.style.borderColor = 'var(--border)')}
                   onKeyDown={e => { if (e.key === 'Enter' && templateName.trim()) handleTemplateCreate(); }}
                 />
@@ -323,7 +323,7 @@ export function NewProjectModal({ onClose, initialMode }: NewProjectModalProps) 
               {error && <div style={{ padding: '10px 14px', borderRadius: 8, background: 'rgba(184,92,60,0.1)', color: 'var(--danger)', fontSize: 13, marginBottom: 16 }}>{error}</div>}
 
               <button onClick={handleTemplateCreate} disabled={!templateName.trim() || loading}
-                style={{ width: '100%', padding: '12px 20px', borderRadius: 10, background: 'var(--moss)', color: 'var(--ochre)', border: 'none', fontSize: 15, fontWeight: 600, cursor: loading ? 'wait' : 'pointer', fontFamily: 'DM Sans, sans-serif', opacity: !templateName.trim() ? 0.5 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                style={{ width: '100%', padding: '12px 20px', borderRadius: 10, background: 'var(--brand-green)', color: 'var(--brand-gold)', border: 'none', fontSize: 15, fontWeight: 600, cursor: loading ? 'wait' : 'pointer', fontFamily: 'var(--font-sans)', opacity: !templateName.trim() ? 0.5 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                 {loading ? <Spinner /> : 'Create project →'}
               </button>
             </div>
@@ -337,7 +337,7 @@ export function NewProjectModal({ onClose, initialMode }: NewProjectModalProps) 
 function ModeTab({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
   return (
     <button onClick={onClick}
-      style={{ padding: '6px 14px', borderRadius: 6, fontSize: 13, fontWeight: 500, border: 'none', cursor: 'pointer', background: active ? 'var(--panel)' : 'transparent', color: active ? 'var(--moss)' : 'var(--meta)', fontFamily: 'DM Sans, sans-serif', boxShadow: active ? 'var(--shadow-sm)' : 'none', transition: 'all 0.1s' }}>
+      style={{ padding: '6px 14px', borderRadius: 6, fontSize: 13, fontWeight: 500, border: 'none', cursor: 'pointer', background: active ? 'var(--panel)' : 'transparent', color: active ? 'var(--brand-green)' : 'var(--meta)', fontFamily: 'var(--font-sans)', boxShadow: active ? 'var(--shadow-sm)' : 'none', transition: 'all 0.1s' }}>
       {label}
     </button>
   );
@@ -355,11 +355,11 @@ function TemplateCard({ template, onSelect }: { template: Template; onSelect: ()
       <div style={{ height: 80, background: templateGradient(template.category), display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
         <span style={{ fontSize: 32 }}>{categoryIcon(template.category)}</span>
         {template.is_official && (
-          <span style={{ position: 'absolute', top: 6, right: 6, fontSize: 10, fontWeight: 700, background: 'var(--moss)', color: '#fff', padding: '2px 6px', borderRadius: 4 }}>Official</span>
+          <span style={{ position: 'absolute', top: 6, right: 6, fontSize: 10, fontWeight: 700, background: 'var(--brand-green)', color: '#fff', padding: '2px 6px', borderRadius: 4 }}>Official</span>
         )}
         {hovered && (
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'fadeIn 0.1s ease' }}>
-            <span style={{ color: '#fff', fontSize: 13, fontWeight: 600, fontFamily: 'DM Sans, sans-serif' }}>Use Template →</span>
+            <span style={{ color: '#fff', fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-sans)' }}>Use Template →</span>
           </div>
         )}
       </div>
@@ -385,8 +385,8 @@ function Spinner() {
 
 function templateGradient(category: string): string {
   const gradients: Record<string, string> = {
-    saas:      'linear-gradient(135deg, #2D4A2B 0%, #4A7C3B 100%)',
-    landing:   'linear-gradient(135deg, #D4A94A 0%, #e8bf6a 100%)',
+    saas:      'linear-gradient(135deg, #1A3A2A 0%, #3D7A4F 100%)',
+    landing:   'linear-gradient(135deg, #D4A737 0%, #E8C97F 100%)',
     api:       'linear-gradient(135deg, #1a2d5a 0%, #3A6B8A 100%)',
     tool:      'linear-gradient(135deg, #7A4A8A 0%, #9A6AAA 100%)',
     blog:      'linear-gradient(135deg, #B85C3C 0%, #D4794A 100%)',

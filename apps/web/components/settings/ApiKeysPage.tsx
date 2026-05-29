@@ -78,11 +78,11 @@ export function ApiKeysPage() {
   }
 
   if (loading) {
-    return <div style={{ padding: 24, color: 'var(--text-meta)', fontFamily: 'var(--font-ui)' }}>Lade Schlüssel...</div>;
+    return <div style={{ padding: 24, color: 'var(--text-meta)', fontFamily: 'var(--font-sans)' }}>Lade Schlüssel...</div>;
   }
 
   return (
-    <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-ui)' }}>
+    <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
       <p style={{ fontSize: 14, color: 'var(--text-meta)', padding: '0 4px 12px', lineHeight: 1.5 }}>
         Verbinde deine eigenen API-Schlüssel. Goblin nutzt sie direkt, ohne sie weiterzuverkaufen.
       </p>
@@ -102,8 +102,8 @@ export function ApiKeysPage() {
             display: 'block',
             textAlign: 'center',
             padding: 14,
-            background: 'var(--moss-green-soft)',
-            color: 'var(--moss)',
+            background: 'color-mix(in srgb, var(--brand-green) 8%, transparent)',
+            color: 'var(--brand-green)',
             borderRadius: 'var(--radius-lg)',
             fontSize: 15,
             fontWeight: 600,
@@ -132,7 +132,7 @@ function ProviderRow({ provider }: { provider: ProviderInfo }) {
           fontSize: 13,
           fontWeight: 700,
           color: 'var(--meta)',
-          fontFamily: 'var(--font-code)',
+          fontFamily: 'var(--font-mono)',
           flexShrink: 0,
         }}>{provider.name[0]}</span>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -144,8 +144,8 @@ function ProviderRow({ provider }: { provider: ProviderInfo }) {
         <span style={{
           padding: '4px 10px',
           borderRadius: 12,
-          background: provider.hasKey ? 'var(--moss-green-soft)' : 'var(--subtle)',
-          color: provider.hasKey ? 'var(--moss)' : 'var(--meta)',
+          background: provider.hasKey ? 'color-mix(in srgb, var(--brand-green) 8%, transparent)' : 'var(--subtle)',
+          color: provider.hasKey ? 'var(--brand-green)' : 'var(--meta)',
           fontSize: 12,
           fontWeight: 600,
           flexShrink: 0,
@@ -177,7 +177,7 @@ function ProgressBar({ value, max, testId }: { value: number; max: number; testI
       <div style={{
         width: `${pct}%`,
         height: '100%',
-        background: 'var(--moss)',
+        background: 'var(--brand-green)',
         transition: 'width 300ms ease',
       }} />
     </div>

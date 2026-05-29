@@ -1,4 +1,4 @@
-﻿import { createClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
@@ -78,10 +78,10 @@ async function getTrialStats(supabase: Awaited<ReturnType<typeof createClient>>)
 }
 
 const ROW = { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 0', borderBottom: '1px solid var(--div)' } as const;
-const LABEL = { fontSize: 13, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif' } as const;
-const VALUE = { fontSize: 13, fontWeight: 500, color: 'var(--text)', fontFamily: 'DM Sans, sans-serif' } as const;
+const LABEL = { fontSize: 13, color: 'var(--meta)', fontFamily: 'var(--font-sans)' } as const;
+const VALUE = { fontSize: 13, fontWeight: 500, color: 'var(--text)', fontFamily: 'var(--font-sans)' } as const;
 const CARD = { background: 'var(--panel)', border: '1px solid var(--div)', borderRadius: 10, padding: '20px 24px', marginBottom: 20 } as const;
-const H2 = { fontFamily: 'Fraunces, serif', fontSize: 16, fontWeight: 700, color: 'var(--moss)', marginBottom: 14, letterSpacing: '-0.3px' } as const;
+const H2 = { fontFamily: 'var(--font-sans)', fontSize: 16, fontWeight: 700, color: 'var(--brand-green)', marginBottom: 14, letterSpacing: '-0.3px' } as const;
 
 function Dot({ ok }: { ok: boolean }) {
   return <span style={{ width: 8, height: 8, borderRadius: '50%', background: ok ? 'var(--success)' : 'var(--danger)', display: 'inline-block', marginRight: 6 }} />;
@@ -102,7 +102,7 @@ export default async function AdminHealthPage() {
 
   return (
     <div style={{ maxWidth: 800 }}>
-      <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 26, color: 'var(--moss)', fontWeight: 700, letterSpacing: '-0.6px', marginBottom: 24 }}>
+      <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 26, color: 'var(--brand-green)', fontWeight: 700, letterSpacing: '-0.6px', marginBottom: 24 }}>
         Health &amp; Status
       </h1>
 
@@ -124,7 +124,7 @@ export default async function AdminHealthPage() {
           </span>
         </div>
         {apiHealth?.gitCommit && webCommit !== 'local' && (
-          <div style={{ marginTop: 10, fontSize: 12, color: apiHealth.gitCommit.slice(0, 7) === webCommit.slice(0, 7) ? 'var(--success)' : 'var(--danger)', fontFamily: 'DM Sans, sans-serif' }}>
+          <div style={{ marginTop: 10, fontSize: 12, color: apiHealth.gitCommit.slice(0, 7) === webCommit.slice(0, 7) ? 'var(--success)' : 'var(--danger)', fontFamily: 'var(--font-sans)' }}>
             {apiHealth.gitCommit.slice(0, 7) === webCommit.slice(0, 7)
               ? 'Commits in sync'
               : `Commits differ — API: ${apiHealth.gitCommit.slice(0, 7)}, Web: ${webCommit.slice(0, 7)}`}
@@ -148,7 +148,7 @@ export default async function AdminHealthPage() {
         <h2 style={H2}>Trial Funnel</h2>
         <div style={ROW}>
           <span style={LABEL}>Active trials</span>
-          <span style={{ ...VALUE, color: 'var(--moss)' }}>{trialStats.active.toLocaleString()}</span>
+          <span style={{ ...VALUE, color: 'var(--brand-green)' }}>{trialStats.active.toLocaleString()}</span>
         </div>
         <div style={ROW}>
           <span style={LABEL}>Expired (not converted)</span>
@@ -159,7 +159,7 @@ export default async function AdminHealthPage() {
           <span style={{ ...VALUE, color: 'var(--success)' }}>{trialStats.converted.toLocaleString()}</span>
         </div>
         {(trialStats.expired + trialStats.converted) > 0 && (
-          <div style={{ marginTop: 10, fontSize: 12, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif' }}>
+          <div style={{ marginTop: 10, fontSize: 12, color: 'var(--meta)', fontFamily: 'var(--font-sans)' }}>
             Conversion rate: {Math.round(trialStats.converted / (trialStats.expired + trialStats.converted) * 100)}%
           </div>
         )}
@@ -173,7 +173,7 @@ export default async function AdminHealthPage() {
           return (
             <div key={v} style={ROW}>
               <span style={{ ...LABEL, fontFamily: 'JetBrains Mono, monospace', fontSize: 12 }}>{v}</span>
-              <span style={{ fontSize: 12, fontWeight: 600, color: set ? 'var(--success)' : 'var(--danger)', fontFamily: 'DM Sans, sans-serif' }}>
+              <span style={{ fontSize: 12, fontWeight: 600, color: set ? 'var(--success)' : 'var(--danger)', fontFamily: 'var(--font-sans)' }}>
                 <Dot ok={set} />{set ? 'Set' : 'Missing'}
               </span>
             </div>
@@ -190,8 +190,8 @@ export default async function AdminHealthPage() {
           recentErrors.map((r: { id: string; status: string; error_message?: string | null; created_at: string }) => (
             <div key={r.id} style={{ ...ROW, flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: 10, fontWeight: 700, background: 'rgba(184,92,60,0.1)', color: 'var(--danger)', padding: '1px 6px', borderRadius: 3, fontFamily: 'DM Sans, sans-serif' }}>FAILED</span>
-                <span style={{ fontSize: 11, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif' }}>{new Date(r.created_at).toLocaleString()}</span>
+                <span style={{ fontSize: 10, fontWeight: 700, background: 'rgba(184,92,60,0.1)', color: 'var(--danger)', padding: '1px 6px', borderRadius: 3, fontFamily: 'var(--font-sans)' }}>FAILED</span>
+                <span style={{ fontSize: 11, color: 'var(--meta)', fontFamily: 'var(--font-sans)' }}>{new Date(r.created_at).toLocaleString()}</span>
               </div>
               {r.error_message && (
                 <div style={{ fontSize: 12, color: 'var(--text)', fontFamily: 'JetBrains Mono, monospace', background: 'var(--subtle)', borderRadius: 4, padding: '4px 8px', width: '100%' }}>

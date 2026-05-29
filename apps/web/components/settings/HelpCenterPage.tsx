@@ -26,7 +26,7 @@ export function HelpCenterPage() {
     : FAQS;
 
   return (
-    <div style={{ padding: '0 16px 96px', fontFamily: 'var(--font-ui)', position: 'relative' }}>
+    <div style={{ padding: '0 16px 96px', fontFamily: 'var(--font-sans)', position: 'relative' }}>
       <input
         type="search"
         placeholder="Wonach suchst du?"
@@ -36,7 +36,7 @@ export function HelpCenterPage() {
           width: '100%', padding: '12px 16px',
           background: 'var(--subtle)', border: '1px solid var(--border-subtle)',
           borderRadius: 12, color: 'var(--text)', fontSize: 15,
-          fontFamily: 'var(--font-ui)', outline: 'none', marginBottom: 16,
+          fontFamily: 'var(--font-sans)', outline: 'none', marginBottom: 16,
         }}
       />
 
@@ -52,7 +52,7 @@ export function HelpCenterPage() {
               <button onClick={() => setOpenIdx(open ? null : i)} style={{
                 width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 padding: '14px 16px', background: 'none', border: 'none', cursor: 'pointer',
-                textAlign: 'left', fontFamily: 'var(--font-ui)',
+                textAlign: 'left', fontFamily: 'var(--font-sans)',
                 fontSize: 15, fontWeight: 500, color: 'var(--text)',
               }}>
                 <span>{f.q}</span>
@@ -81,12 +81,12 @@ export function HelpCenterPage() {
           data-testid="open-support-chat"
           style={{
             width: '100%', padding: '14px 20px',
-            background: 'var(--moss)', color: '#fff', border: 'none',
+            background: 'var(--brand-green)', color: '#fff', border: 'none',
             borderRadius: 'var(--radius-lg)',
             fontSize: 15, fontWeight: 600,
             display: 'flex', alignItems: 'center', gap: 10,
             justifyContent: 'center', cursor: 'pointer',
-            fontFamily: 'var(--font-ui)',
+            fontFamily: 'var(--font-sans)',
             boxShadow: 'var(--shadow-popover)',
           }}
         >

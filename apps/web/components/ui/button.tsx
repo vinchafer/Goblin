@@ -18,7 +18,7 @@ interface ButtonProps {
 
 const variants: Record<ButtonVariant, CSSProperties> = {
   primary: { 
-    background: 'var(--moss)', 
+    background: 'var(--brand-green)', 
     color: '#fff', 
     border: 'none',
   },
@@ -28,10 +28,10 @@ const variants: Record<ButtonVariant, CSSProperties> = {
     border: '1px solid var(--border)',
   },
   ochre: { 
-    background: 'var(--ochre)', 
-    color: 'var(--bark)', 
+    background: 'var(--brand-gold)', 
+    color: 'var(--ink-2)', 
     border: 'none',
-    boxShadow: 'var(--shadow-ochre)',
+    boxShadow: 'var(--shadow-gold)',
   },
   ghost: { 
     background: 'transparent', 
@@ -61,7 +61,7 @@ export function Button({ children, variant = 'primary', size = 'md', onClick, di
         ...variants[variant],
         ...sizes[size],
         width: fullWidth ? '100%' : undefined,
-        fontFamily: 'DM Sans, sans-serif',
+        fontFamily: 'var(--font-sans)',
         fontWeight: 500,
         cursor: disabled ? 'not-allowed' : 'pointer',
         opacity: disabled ? 0.6 : 1,
@@ -77,9 +77,9 @@ export function Button({ children, variant = 'primary', size = 'md', onClick, di
       onMouseEnter={e => {
         if (disabled) return;
         const el = e.currentTarget;
-        if (variant === 'primary') el.style.background = 'var(--moss-2)';
+        if (variant === 'primary') el.style.background = 'var(--green-600)';
         if (variant === 'secondary') el.style.background = 'var(--subtle)';
-        if (variant === 'ochre') el.style.background = 'var(--ochre-2)';
+        if (variant === 'ochre') el.style.background = 'var(--gold-300)';
         if (variant === 'ghost') el.style.background = 'var(--subtle)';
         if (variant === 'danger') el.style.background = '#a04c30';
         el.style.transform = 'translateY(-1px)';
@@ -87,9 +87,9 @@ export function Button({ children, variant = 'primary', size = 'md', onClick, di
       onMouseLeave={e => {
         if (disabled) return;
         const el = e.currentTarget;
-        if (variant === 'primary') el.style.background = 'var(--moss)';
+        if (variant === 'primary') el.style.background = 'var(--brand-green)';
         if (variant === 'secondary') el.style.background = 'var(--panel)';
-        if (variant === 'ochre') el.style.background = 'var(--ochre)';
+        if (variant === 'ochre') el.style.background = 'var(--brand-gold)';
         if (variant === 'ghost') el.style.background = 'transparent';
         if (variant === 'danger') el.style.background = 'var(--error)';
         el.style.transform = '';

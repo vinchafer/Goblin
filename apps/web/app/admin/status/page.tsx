@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState, useCallback } from 'react';
 
@@ -21,14 +21,14 @@ const SEVERITY_OPTIONS = ['minor', 'major', 'critical'];
 
 const STATUS_COLOR: Record<string, string> = {
   investigating: 'var(--danger)',
-  identified:    'var(--ochre)',
+  identified:    'var(--brand-gold)',
   monitoring:    '#3A6B8A',
   resolved:      'var(--success)',
 };
 
 const SEVERITY_COLOR: Record<string, string> = {
   minor:    '#8aaa85',
-  major:    'var(--ochre)',
+  major:    'var(--brand-gold)',
   critical: 'var(--danger)',
 };
 
@@ -85,7 +85,7 @@ export default function AdminStatusPage() {
     width: '100%', height: 36, padding: '0 10px', borderRadius: 7,
     border: '1.5px solid var(--border)', background: 'var(--surface)',
     color: 'var(--text)', fontSize: 13, outline: 'none',
-    fontFamily: 'DM Sans, sans-serif', boxSizing: 'border-box' as const,
+    fontFamily: 'var(--font-sans)', boxSizing: 'border-box' as const,
   };
 
   const activeIncidents = incidents.filter(i => i.status !== 'resolved');
@@ -94,12 +94,12 @@ export default function AdminStatusPage() {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-        <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 26, color: 'var(--moss)', fontWeight: 700, letterSpacing: '-0.6px' }}>
+        <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 26, color: 'var(--brand-green)', fontWeight: 700, letterSpacing: '-0.6px' }}>
           Status Incidents
         </h1>
         <button
           onClick={() => { setShowNew(true); setEditId(null); setForm(BLANK); }}
-          style={{ background: 'var(--moss)', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 18px', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}
+          style={{ background: 'var(--brand-green)', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 18px', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}
         >
           + New Incident
         </button>
@@ -135,7 +135,7 @@ export default function AdminStatusPage() {
           <div onClick={e => e.stopPropagation()}
             style={{ width: '100%', maxWidth: 480, background: 'var(--panel)', borderRadius: 14, border: '1px solid var(--border)', boxShadow: 'var(--shadow-lg)', overflow: 'hidden', animation: 'modalIn 0.15s ease-out' }}>
             <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--div)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 17, color: 'var(--moss)', fontWeight: 700 }}>{editId ? 'Edit Incident' : 'New Incident'}</h2>
+              <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: 17, color: 'var(--brand-green)', fontWeight: 700 }}>{editId ? 'Edit Incident' : 'New Incident'}</h2>
               <button onClick={() => setShowNew(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--meta)', fontSize: 18 }}>✕</button>
             </div>
             <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -168,7 +168,7 @@ export default function AdminStatusPage() {
                 />
               </div>
               <button onClick={handleSave} disabled={saving || !form.title.trim()}
-                style={{ background: 'var(--moss)', color: '#fff', border: 'none', borderRadius: 8, padding: '10px', fontSize: 13, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'DM Sans, sans-serif', opacity: saving || !form.title.trim() ? 0.6 : 1 }}>
+                style={{ background: 'var(--brand-green)', color: '#fff', border: 'none', borderRadius: 8, padding: '10px', fontSize: 13, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-sans)', opacity: saving || !form.title.trim() ? 0.6 : 1 }}>
                 {saving ? 'Saving…' : editId ? 'Update Incident' : 'Create Incident'}
               </button>
             </div>
@@ -192,7 +192,7 @@ function IncidentCard({ inc, onEdit, onDelete }: { inc: Incident; onEdit: (i: In
               {inc.severity}
             </span>
           </div>
-          <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', fontFamily: 'DM Sans, sans-serif', marginBottom: inc.description ? 6 : 0 }}>
+          <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-sans)', marginBottom: inc.description ? 6 : 0 }}>
             {inc.title}
           </div>
           {inc.description && (
@@ -205,11 +205,11 @@ function IncidentCard({ inc, onEdit, onDelete }: { inc: Incident; onEdit: (i: In
         </div>
         <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
           <button onClick={() => onEdit(inc)}
-            style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontSize: 12, cursor: 'pointer', color: 'var(--text)', fontFamily: 'DM Sans, sans-serif' }}>
+            style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontSize: 12, cursor: 'pointer', color: 'var(--text)', fontFamily: 'var(--font-sans)' }}>
             Edit
           </button>
           <button onClick={() => onDelete(inc.id)}
-            style={{ background: 'transparent', border: '1px solid var(--danger)', borderRadius: 6, padding: '4px 10px', fontSize: 12, cursor: 'pointer', color: 'var(--danger)', fontFamily: 'DM Sans, sans-serif' }}>
+            style={{ background: 'transparent', border: '1px solid var(--danger)', borderRadius: 6, padding: '4px 10px', fontSize: 12, cursor: 'pointer', color: 'var(--danger)', fontFamily: 'var(--font-sans)' }}>
             Delete
           </button>
         </div>

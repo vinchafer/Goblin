@@ -1,4 +1,4 @@
-﻿import Link from "next/link";
+import Link from "next/link";
 import { GoblinMark } from "@/components/ui/goblin-mark";
 
 export default function NotFound() {
@@ -6,30 +6,30 @@ export default function NotFound() {
     <div style={{
       minHeight: '100dvh', display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
-      background: 'var(--cream)', padding: '24px', textAlign: 'center',
+      background: 'var(--paper)', padding: '24px', textAlign: 'center',
     }}>
       <div style={{ marginBottom: 24 }}><GoblinMark size={80} /></div>
       <h1 style={{
-        fontFamily: 'Fraunces, serif', fontSize: 'clamp(32px, 6vw, 56px)',
-        color: 'var(--moss)', fontWeight: 900, letterSpacing: '-2px',
+        fontFamily: 'var(--font-sans)', fontSize: 'clamp(32px, 6vw, 56px)',
+        color: 'var(--brand-green)', fontWeight: 900, letterSpacing: '-2px',
         marginBottom: 12,
       }}>
         404
       </h1>
       <p style={{
         fontSize: 18, color: 'var(--meta)', marginBottom: 8,
-        fontFamily: 'DM Sans, sans-serif',
+        fontFamily: 'var(--font-sans)',
       }}>
         This page ran away. Your goblin can&apos;t find it.
       </p>
-      <p style={{ fontSize: 14, color: 'var(--text-faint)', marginBottom: 36, fontFamily: 'DM Sans, sans-serif' }}>
+      <p style={{ fontSize: 14, color: 'var(--text-faint)', marginBottom: 36, fontFamily: 'var(--font-sans)' }}>
         Maybe it got deployed somewhere else.
       </p>
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
         <Link
           href="/dashboard"
           style={{
-            background: 'var(--moss)', color: '#fff', padding: '12px 24px',
+            background: 'var(--brand-green)', color: '#fff', padding: '12px 24px',
             borderRadius: 10, fontSize: 14, fontWeight: 500, textDecoration: 'none',
           }}
         >

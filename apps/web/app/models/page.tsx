@@ -50,11 +50,11 @@ export default function ModelsPage() {
   }, [task]);
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--surface-2)', fontFamily: 'var(--font-ui)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--surface-2)', fontFamily: 'var(--font-sans)' }}>
       <main style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 16px' }}>
         <h1
           style={{
-            fontFamily: 'var(--font-display)',
+            fontFamily: 'var(--font-sans)',
             fontSize: 'clamp(28px, 5vw, 40px)',
             fontWeight: 600,
             color: 'var(--text-1)',
@@ -87,7 +87,7 @@ export default function ModelsPage() {
                 padding: '10px 16px',
                 borderRadius: 'var(--radius-xl)',
                 border: '1px solid var(--border-subtle)',
-                background: task === t.id ? 'var(--moss-green)' : 'var(--surface-1)',
+                background: task === t.id ? 'var(--brand-green)' : 'var(--surface-1)',
                 color: task === t.id ? '#FFFFFF' : 'var(--text-1)',
                 fontSize: 14,
                 fontWeight: 500,
@@ -145,7 +145,7 @@ export default function ModelsPage() {
                       width: 32,
                       fontSize: 14,
                       fontWeight: 600,
-                      color: r.rank <= 3 ? 'var(--moss-green)' : 'var(--text-meta)',
+                      color: r.rank <= 3 ? 'var(--brand-green)' : 'var(--text-meta)',
                       fontFamily: 'var(--font-mono)',
                     }}
                   >
@@ -164,7 +164,7 @@ export default function ModelsPage() {
                         background: accessColor.bg,
                         color: accessColor.fg,
                         border: `1px solid ${accessColor.border}`,
-                        fontFamily: 'DM Sans, sans-serif',
+                        fontFamily: 'var(--font-sans)',
                         letterSpacing: '0.02em',
                       }}>
                         {access.label}
@@ -216,13 +216,13 @@ export default function ModelsPage() {
 }
 
 function scoreBg(score: number): string {
-  if (score >= 0.75) return 'var(--moss-green-soft)';
-  if (score >= 0.5) return 'var(--ochre-soft)';
+  if (score >= 0.75) return 'color-mix(in srgb, var(--brand-green) 8%, transparent)';
+  if (score >= 0.5) return 'color-mix(in srgb, var(--brand-gold) 12%, transparent)';
   return 'var(--surface-2)';
 }
 
 function scoreFg(score: number): string {
-  if (score >= 0.75) return 'var(--moss-green)';
-  if (score >= 0.5) return 'var(--ochre-dark)';
+  if (score >= 0.75) return 'var(--brand-green)';
+  if (score >= 0.5) return 'var(--gold-700)';
   return 'var(--text-2)';
 }

@@ -1,11 +1,11 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 const PLAN_INFO: Record<string, { label: string; price: number; requests: number; color: string }> = {
   build: { label: 'Build', price: 9,  requests: 200,  color: '#8B6914' },
-  pro:   { label: 'Pro',   price: 19, requests: 800,  color: 'var(--moss)' },
+  pro:   { label: 'Pro',   price: 19, requests: 800,  color: 'var(--brand-green)' },
   power: { label: 'Power', price: 39, requests: 3000, color: '#1a2d5a' },
 };
 
@@ -139,7 +139,7 @@ export default function BillingDashboardPage() {
 
   return (
     <div style={{ maxWidth: 720, margin: '0 auto', padding: '40px 24px' }}>
-      <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 26, color: 'var(--moss)', fontWeight: 700, letterSpacing: '-0.6px', marginBottom: 28 }}>
+      <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 26, color: 'var(--brand-green)', fontWeight: 700, letterSpacing: '-0.6px', marginBottom: 28 }}>
         Billing & Plan
       </h1>
 
@@ -152,11 +152,11 @@ export default function BillingDashboardPage() {
                 fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em',
                 background: planInfo.color, color: '#fff', padding: '2px 8px', borderRadius: 4,
               }}>{planInfo.label}</span>
-              <span style={{ fontSize: 13, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif' }}>
+              <span style={{ fontSize: 13, color: 'var(--meta)', fontFamily: 'var(--font-sans)' }}>
                 ${planInfo.price}/month
               </span>
             </div>
-            <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 18, color: 'var(--moss)', fontWeight: 700, letterSpacing: '-0.3px' }}>
+            <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: 18, color: 'var(--brand-green)', fontWeight: 700, letterSpacing: '-0.3px' }}>
               Current Plan
             </h2>
             {usage?.reset_date && (
@@ -170,11 +170,11 @@ export default function BillingDashboardPage() {
               onClick={handlePortal}
               disabled={portalLoading}
               style={{
-                background: 'transparent', color: 'var(--moss)',
-                border: '1.5px solid var(--moss)', borderRadius: 8,
+                background: 'transparent', color: 'var(--brand-green)',
+                border: '1.5px solid var(--brand-green)', borderRadius: 8,
                 padding: '9px 18px', fontSize: 13, fontWeight: 500,
                 cursor: portalLoading ? 'not-allowed' : 'pointer',
-                fontFamily: 'DM Sans, sans-serif', opacity: portalLoading ? 0.6 : 1,
+                fontFamily: 'var(--font-sans)', opacity: portalLoading ? 0.6 : 1,
               }}
             >
               {portalLoading ? 'Loading…' : 'Manage Subscription'}
@@ -185,10 +185,10 @@ export default function BillingDashboardPage() {
                 onClick={() => handleUpgrade(key)}
                 disabled={!!upgradeLoading}
                 style={{
-                  background: 'var(--ochre)', color: '#fff', border: 'none',
+                  background: 'var(--brand-gold)', color: '#fff', border: 'none',
                   borderRadius: 8, padding: '9px 18px', fontSize: 13, fontWeight: 600,
                   cursor: upgradeLoading ? 'not-allowed' : 'pointer',
-                  fontFamily: 'DM Sans, sans-serif', opacity: upgradeLoading === key ? 0.6 : 1,
+                  fontFamily: 'var(--font-sans)', opacity: upgradeLoading === key ? 0.6 : 1,
                 }}
               >
                 {upgradeLoading === key ? 'Loading…' : `Upgrade to ${info.label}`}
@@ -200,7 +200,7 @@ export default function BillingDashboardPage() {
 
       {/* Usage */}
       <div style={CARD_STYLE}>
-        <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 18, color: 'var(--moss)', fontWeight: 700, marginBottom: 4, letterSpacing: '-0.3px' }}>
+        <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: 18, color: 'var(--brand-green)', fontWeight: 700, marginBottom: 4, letterSpacing: '-0.3px' }}>
           Usage This Month
         </h2>
         <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 20 }}>
@@ -212,11 +212,11 @@ export default function BillingDashboardPage() {
           <div style={{
             background: 'rgba(212,169,74,0.12)', border: '1px solid rgba(212,169,74,0.4)',
             borderRadius: 8, padding: '10px 14px', marginBottom: 16,
-            fontSize: 13, color: '#8B6914', fontFamily: 'DM Sans, sans-serif',
+            fontSize: 13, color: '#8B6914', fontFamily: 'var(--font-sans)',
           }}>
             ⚠️ You&apos;ve used {usedPct}% of your monthly limit.{' '}
             <button onClick={() => handleUpgrade(plan === 'build' ? 'pro' : 'power')}
-              style={{ background: 'none', border: 'none', color: 'var(--ochre)', fontWeight: 600, cursor: 'pointer', padding: 0, fontSize: 13 }}>
+              style={{ background: 'none', border: 'none', color: 'var(--brand-gold)', fontWeight: 600, cursor: 'pointer', padding: 0, fontSize: 13 }}>
               Upgrade plan →
             </button>
           </div>
@@ -226,7 +226,7 @@ export default function BillingDashboardPage() {
         <div style={{ background: 'var(--subtle)', borderRadius: 4, height: 8, overflow: 'hidden', marginBottom: 20 }}>
           <div style={{
             width: `${usedPct}%`, height: '100%', borderRadius: 4,
-            background: isNearLimit ? 'var(--ochre)' : 'var(--moss)',
+            background: isNearLimit ? 'var(--brand-gold)' : 'var(--brand-green)',
             transition: 'width 0.5s ease',
           }} />
         </div>
@@ -242,7 +242,7 @@ export default function BillingDashboardPage() {
               <div key={item.label} style={{
                 background: 'var(--subtle)', borderRadius: 10, padding: '12px 14px',
               }}>
-                <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', fontFamily: 'Fraunces, serif' }}>
+                <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', fontFamily: 'var(--font-sans)' }}>
                   {item.value}
                 </div>
                 <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)', marginTop: 2 }}>{item.label}</div>
@@ -257,11 +257,11 @@ export default function BillingDashboardPage() {
       <div style={CARD_STYLE}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 18, color: 'var(--moss)', fontWeight: 700, letterSpacing: '-0.3px', marginBottom: 4 }}>
+            <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: 18, color: 'var(--brand-green)', fontWeight: 700, letterSpacing: '-0.3px', marginBottom: 4 }}>
               Payment Method
             </h2>
             {paymentMethod ? (
-              <p style={{ fontSize: 13, color: 'var(--text-2)', fontFamily: 'DM Sans, sans-serif' }}>
+              <p style={{ fontSize: 13, color: 'var(--text-2)', fontFamily: 'var(--font-sans)' }}>
                 {capitalize(paymentMethod.brand)} ···· {paymentMethod.last4} &nbsp;·&nbsp; Expires {paymentMethod.exp_month}/{paymentMethod.exp_year}
               </p>
             ) : (
@@ -275,7 +275,7 @@ export default function BillingDashboardPage() {
               background: 'transparent', color: 'var(--meta)',
               border: '1px solid var(--border)', borderRadius: 8,
               padding: '8px 16px', fontSize: 13, fontWeight: 500,
-              cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
+              cursor: 'pointer', fontFamily: 'var(--font-sans)',
             }}
           >
             Update Payment Method
@@ -285,7 +285,7 @@ export default function BillingDashboardPage() {
 
       {/* Invoice History */}
       <div style={CARD_STYLE}>
-        <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 18, color: 'var(--moss)', fontWeight: 700, marginBottom: 4, letterSpacing: '-0.3px' }}>
+        <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: 18, color: 'var(--brand-green)', fontWeight: 700, marginBottom: 4, letterSpacing: '-0.3px' }}>
           Billing History
         </h2>
         <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 20 }}>Last 12 invoices</p>
@@ -301,7 +301,7 @@ export default function BillingDashboardPage() {
                 borderBottom: i < invoices.length - 1 ? '1px solid var(--div)' : 'none',
               }}>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, color: 'var(--text)', fontFamily: 'DM Sans, sans-serif' }}>
+                  <div style={{ fontSize: 13, color: 'var(--text)', fontFamily: 'var(--font-sans)' }}>
                     {formatDate(inv.date)}
                   </div>
                 </div>
@@ -321,7 +321,7 @@ export default function BillingDashboardPage() {
                     href={inv.pdf_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{ fontSize: 12, color: 'var(--moss)', textDecoration: 'none', fontWeight: 500 }}
+                    style={{ fontSize: 12, color: 'var(--brand-green)', textDecoration: 'none', fontWeight: 500 }}
                   >
                     PDF ↗
                   </a>

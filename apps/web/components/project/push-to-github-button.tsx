@@ -19,7 +19,7 @@ export function PushToGitHubButton({ projectId, projectName, isGitHubConnected }
         onClick={() => setModalOpen(true)}
         disabled={!isGitHubConnected}
         className="px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 disabled:opacity-50"
-        style={{ backgroundColor: 'var(--goblin-slate)', color: 'white' }}
+        style={{ backgroundColor: 'var(--ink-1)', color: 'white' }}
       >
         <GithubLogo className="w-4 h-4" />
         {isGitHubConnected ? 'Push to GitHub' : 'Connect GitHub first'}

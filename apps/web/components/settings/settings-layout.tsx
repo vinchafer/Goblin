@@ -66,11 +66,11 @@ function NavItem({ href, label, Icon, active }: { href: string; label: string; I
       style={{
         display: 'flex', alignItems: 'center', gap: 9,
         padding: '8px 14px',
-        borderLeft: active ? '2px solid var(--ochre)' : '2px solid transparent',
+        borderLeft: active ? '2px solid var(--brand-gold)' : '2px solid transparent',
         background: active ? 'rgba(212,169,74,0.07)' : 'transparent',
-        color: active ? 'var(--moss)' : 'var(--text-2)',
+        color: active ? 'var(--brand-green)' : 'var(--text-2)',
         fontWeight: active ? 600 : 400,
-        fontSize: 13, fontFamily: 'DM Sans, sans-serif',
+        fontSize: 13, fontFamily: 'var(--font-sans)',
         textDecoration: 'none',
         transition: 'background 0.12s, color 0.12s',
       }}
@@ -103,7 +103,7 @@ export function SettingsLayout({ children }: { children: ReactNode }) {
           borderBottom: '1px solid var(--div)',
           fontSize: 11, color: 'var(--text)', fontWeight: 700,
           letterSpacing: '0.06em', textTransform: 'uppercase',
-          fontFamily: 'DM Sans, sans-serif',
+          fontFamily: 'var(--font-sans)',
         }}>
           Settings
         </div>
@@ -119,7 +119,7 @@ export function SettingsLayout({ children }: { children: ReactNode }) {
                   padding: '8px 16px 3px',
                   fontSize: 10, color: 'var(--disabled)', fontWeight: 700,
                   letterSpacing: '0.12em', textTransform: 'uppercase',
-                  fontFamily: 'DM Sans, sans-serif',
+                  fontFamily: 'var(--font-sans)',
                 }}>
                   {group.label}
                 </div>

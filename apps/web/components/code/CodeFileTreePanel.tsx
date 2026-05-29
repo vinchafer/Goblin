@@ -40,7 +40,7 @@ export function CodeFileTreePanel({
         } as React.CSSProperties}
       >
         {open
-          ? <span style={{ fontSize: 12, fontWeight: 600, color: '#8aaa85', fontFamily: 'DM Sans, sans-serif' }}>Files</span>
+          ? <span style={{ fontSize: 12, fontWeight: 600, color: '#8aaa85', fontFamily: 'var(--font-sans)' }}>Files</span>
           : <Icon name="menu" size={14} color="#8aaa85" />}
       </button>
       {open && (
