@@ -1,8 +1,9 @@
 import { Hono } from 'hono';
+import { z } from 'zod';
 import { authMiddleware } from '../middleware/auth';
 import { getSupabaseAdmin } from '../lib/supabase';
-import { createKey, listKeys, revokeKey } from '../services/byok-service';
-import { CreateByokKeySchema, UpdateByokKeySchema } from '@goblin/shared/src/schemas';
+import { createKey, listKeys, revokeKey, testKey } from '../services/byok-service';
+import { ByokProviderSchema, CreateByokKeySchema, UpdateByokKeySchema } from '@goblin/shared/src/schemas';
 import { invalidateModelCache } from './models';
 
 type Variables = { userId: string }
@@ -35,6 +36,33 @@ byokKeys.get('/has-any', async (c) => {
   }
 });
 
+// POST /api/byok-keys/test — dry-run validation, no persistence.
+// Backs the onboarding step-2 "Test connection" button.
+// baseURL is required when provider === 'custom'.
+const TestKeySchema = z.object({
+  provider: ByokProviderSchema,
+  key: z.string().min(1),
+  baseURL: z.string().url().optional(),
+}).refine(
+  (v) => v.provider !== 'custom' || (typeof v.baseURL === 'string' && v.baseURL.length > 0),
+  { message: "baseURL is required when provider is 'custom'", path: ['baseURL'] },
+);
+
+byokKeys.post('/test', async (c) => {
+  try {
+    const body = await c.req.json();
+    const parsed = TestKeySchema.safeParse(body);
+    if (!parsed.success) {
+      return c.json({ valid: false, error: 'Invalid request' }, 400);
+    }
+    const result = await testKey(parsed.data.provider, parsed.data.key, parsed.data.baseURL);
+    return c.json(result);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Test failed';
+    return c.json({ valid: false, error: msg }, 200);
+  }
+});
+
 byokKeys.post('/', async (c) => {
   try {
     const userId = c.get('userId');
@@ -43,7 +71,7 @@ byokKeys.post('/', async (c) => {
     if (!result.success) {
       return c.json({ error: 'Invalid request', details: result.error.flatten() }, 400);
     }
-    const key = await createKey(userId, result.data.provider, result.data.label, result.data.key);
+    const key = await createKey(userId, result.data.provider, result.data.label, result.data.key, result.data.baseURL);
     invalidateModelCache(userId);
 
     // 14-5: end trial when the user adds their first key. Only acts if no

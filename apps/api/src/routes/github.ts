@@ -32,15 +32,47 @@ github.get('/status', async (c) => {
   }
 });
 
+// Validate a relative same-origin redirect target. Rejects:
+//  - absolute URLs (http://, https://, javascript:, data:, etc.)
+//  - protocol-relative paths (//evil.com)
+//  - anything not starting with a single '/'
+//  - backslash injection
+function isSafeReturnPath(value: unknown): value is string {
+  if (typeof value !== 'string') return false;
+  if (value.length === 0 || value.length > 200) return false;
+  if (!value.startsWith('/')) return false;
+  if (value.startsWith('//')) return false;
+  if (value.startsWith('/\\')) return false;
+  if (/[\r\n\t]/.test(value)) return false;
+  // No colon before the first slash (catches `javascript:`, `data:`, etc.)
+  // Already enforced by the startsWith('/') guard, but defence in depth.
+  if (/^\/?[a-z][a-z0-9+.-]*:/i.test(value.slice(1))) return false;
+  return true;
+}
+
 github.post('/connect', async (c) => {
   const userId = c.get('userId');
   const state = randomUUID();
 
+  // Optional returnTo — where to land after OAuth completes.
+  let returnTo: string | null = null;
+  try {
+    const body = await c.req.json().catch(() => null) as { returnTo?: unknown } | null;
+    if (body && isSafeReturnPath(body.returnTo)) {
+      returnTo = body.returnTo as string;
+    }
+  } catch {
+    /* no body / invalid JSON — ignore, fall back to /dashboard */
+  }
+
   const supabase = getSupabaseAdmin();
+
+  const insertRow: Record<string, unknown> = { state, user_id: userId };
+  if (returnTo) insertRow.return_to = returnTo;
 
   await supabase
     .from('oauth_states')
-    .insert({ state, user_id: userId });
+    .insert(insertRow);
 
   const authUrl = getAuthUrl(state);
   return c.json({ url: authUrl, state });
@@ -60,7 +92,7 @@ github.get('/callback', async (c) => {
   // Validate state
   const { data: oauthState, error } = await supabase
     .from('oauth_states')
-    .select('user_id')
+    .select('user_id, return_to')
     .eq('state', state)
     .gt('expires_at', new Date().toISOString())
     .single();
@@ -75,23 +107,30 @@ github.get('/callback', async (c) => {
     .delete()
     .eq('state', state);
 
+  // Re-validate return_to at read time (defence in depth — never trust DB).
+  const safeReturnTo = isSafeReturnPath(oauthState.return_to)
+    ? (oauthState.return_to as string)
+    : '/dashboard';
+
   try {
     const accessToken = await exchangeCodeForToken(code);
     const username = await getUsername(accessToken);
-    
+
     await saveGitHubConnection(oauthState.user_id, accessToken, username);
-    
+
     // Send notification for success toast
     await sendToUser(oauthState.user_id, {
       title: 'GitHub',
       body: '✅ GitHub connected successfully',
-      url: '/dashboard',
+      url: safeReturnTo,
       tag: 'github-connected',
     }).catch((err: unknown) => logger.warn({ err: err instanceof Error ? err.message : String(err) }, 'github_notification_failed'));
-    
-    return c.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard?github=connected`);
+
+    const sep = safeReturnTo.includes('?') ? '&' : '?';
+    return c.redirect(`${process.env.NEXT_PUBLIC_APP_URL}${safeReturnTo}${sep}github=connected`);
   } catch {
-    return c.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard?error=github_failed`);
+    const sep = safeReturnTo.includes('?') ? '&' : '?';
+    return c.redirect(`${process.env.NEXT_PUBLIC_APP_URL}${safeReturnTo}${sep}error=github_failed`);
   }
 });
 

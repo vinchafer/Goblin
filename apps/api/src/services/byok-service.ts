@@ -22,7 +22,11 @@ async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: nu
   }
 }
 
-export async function validateKey(provider: ByokProvider, rawKey: string): Promise<ValidationResult> {
+export async function validateKey(
+  provider: ByokProvider,
+  rawKey: string,
+  baseURL?: string,
+): Promise<ValidationResult> {
   try {
     switch (provider) {
       case 'anthropic': {
@@ -157,6 +161,26 @@ export async function validateKey(provider: ByokProvider, rawKey: string): Promi
         return 'error';
       }
 
+      case 'custom': {
+        // OpenAI-compatible endpoint supplied by the user. Probe /models.
+        if (!baseURL) return 'invalid';
+        const base = baseURL.replace(/\/$/, '');
+        const url = `${base}/models`;
+        const response = await fetchWithTimeout(
+          url,
+          {
+            method: 'GET',
+            headers: {
+              'Authorization': `Bearer ${rawKey}`,
+            },
+          },
+          VALIDATION_TIMEOUT_MS
+        );
+        if (response.ok) return 'valid';
+        if (response.status === 401 || response.status === 403) return 'invalid';
+        return 'error';
+      }
+
       default:
         return 'unsupported';
     }
@@ -168,9 +192,17 @@ export async function validateKey(provider: ByokProvider, rawKey: string): Promi
   }
 }
 
-// Keep testKey for backwards compatibility with existing callers
-async function testKey(provider: ByokProvider, rawKey: string): Promise<{ valid: boolean; error?: string }> {
-  const result = await validateKey(provider, rawKey);
+// Keep testKey for backwards compatibility with existing callers.
+// baseURL is required when provider === 'custom'; ignored otherwise.
+async function testKey(
+  provider: ByokProvider,
+  rawKey: string,
+  baseURL?: string,
+): Promise<{ valid: boolean; error?: string }> {
+  if (provider === 'custom' && !baseURL) {
+    return { valid: false, error: 'Base URL required for a custom provider' };
+  }
+  const result = await validateKey(provider, rawKey, baseURL);
   switch (result) {
     case 'valid':
       return { valid: true };
@@ -212,7 +244,8 @@ export async function createKey(
   userId: string,
   provider: ByokProvider,
   label: string | undefined,
-  rawKey: string
+  rawKey: string,
+  baseURL?: string,
 ): Promise<ByokKey> {
   const supabase = getSupabaseAdmin();
 
@@ -229,7 +262,7 @@ export async function createKey(
   }
 
   // Validate key before storing
-  const testResult = await testKey(provider, rawKey);
+  const testResult = await testKey(provider, rawKey, baseURL);
   if (!testResult.valid) {
     throw new Error(testResult.error || 'Invalid key');
   }
@@ -262,6 +295,9 @@ export async function createKey(
     encryption_version: encryptionVersion,
     vault_secret_id: vaultSecretId,
   };
+  if (provider === 'custom' && baseURL) {
+    insertData.base_url = baseURL;
+  }
 
   const { data } = await supabase
     .from('byok_keys')

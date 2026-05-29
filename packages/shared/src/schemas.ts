@@ -29,13 +29,20 @@ export const ByokProviderSchema = z.enum([
   "deepseek",
   "xai",
   "together",
+  "custom",
 ]);
 
+// `baseURL` is optional for the 8 first-party providers and required when
+// `provider === 'custom'` (an OpenAI-compatible endpoint the user brings).
 export const CreateByokKeySchema = z.object({
   provider: ByokProviderSchema,
   label: z.string().min(1).max(50).optional(),
-  key: z.string().min(1)
-});
+  key: z.string().min(1),
+  baseURL: z.string().url().optional(),
+}).refine(
+  (v) => v.provider !== "custom" || (typeof v.baseURL === "string" && v.baseURL.length > 0),
+  { message: "baseURL is required when provider is 'custom'", path: ["baseURL"] },
+);
 
 export const UpdateByokKeySchema = z.object({
   label: z.string().min(1).max(50).optional()
