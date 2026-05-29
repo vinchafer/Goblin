@@ -1,0 +1,82 @@
+/* ──────────────────────────────────────────────────────────────────────
+   Onboarding tokens — SCOPED to .gobl-onb wrapper.
+   PROMPT A / STAGE 3: dissolved into the global v1.1 system. The brand
+   ANCHORS below now alias the global tokens in design-tokens.css (one
+   source of truth). The remaining values are onboarding-specific derived
+   shades with no exact global equivalent — kept literal so the /welcome
+   flow is pixel-stable. The .gobl-onb wrapper class is retained because
+   the component utilities below (and 23 screen files) reference it.
+   ────────────────────────────────────────────────────────────────────── */
+
+.gobl-onb {
+  /* — anchors → global v1.1 tokens — */
+  --green:         var(--ink-deep);     /* #0F2B1E */
+  --gold:          var(--brand-gold);   /* #D4A737 */
+  --accent-bright: var(--brand-gold);   /* #D4A737 */
+  --bone:          var(--bone);         /* #F4ECD8 */
+  --bone-warm:     var(--paper);        /* #FBF7EC */
+  --ink-1:         var(--ink-1);        /* #0F2B1E */
+  --surface:       var(--bone);         /* #F4ECD8 */
+  --surface-elev:  var(--paper);        /* #FBF7EC */
+  --surface-deep:  var(--ink-deep);     /* #0F2B1E */
+  --radius:        var(--radius-sm);    /* 10px */
+  --radius-lg:     var(--radius-md);    /* 14px */
+  --radius-xs:     var(--radius-xs);    /* 4px */
+
+  /* — onboarding-specific derived shades (no exact global match) — */
+  --gold-deep:     #7A5A12;
+  --accent:        #B89535;
+  --accent-rule:   rgba(212,167,55,.34);
+  --accent-soft:   rgba(212,167,55,.10);
+  --ink-2:         #2c4538;
+  --ink-3:         #5c6f64;
+  --line:          rgba(15,43,30,.10);
+  --line-strong:   rgba(15,43,30,.18);
+  --ok:            #2f6a47;
+  --ok-soft:       rgba(47,106,71,.12);
+  --surface-2:     #EFE6CB;
+  --shadow-card:   0 1px 0 rgba(15,43,30,.03), 0 14px 32px -22px rgba(15,43,30,.20);
+  --shadow-pop:    0 1px 0 rgba(15,43,30,.04), 0 24px 60px -28px rgba(15,43,30,.40);
+
+  background: var(--surface);
+  color: var(--ink-1);
+  font-family: var(--font-onb-display), 'Manrope', system-ui, sans-serif;
+  min-height: 100vh;
+}
+
+/* Heading + serif accents within onboarding */
+.gobl-onb .gobl-serif {
+  font-family: var(--font-onb-serif), 'Instrument Serif', Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  /* Headline serif descender protection — see UI brief */
+  padding-bottom: 0.04em;
+}
+
+/* Mono labels — JetBrains Mono is already loaded globally */
+.gobl-onb .gobl-mono {
+  font-family: var(--font-mono), 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* Focus ring + reduced-motion — additive, scoped */
+.gobl-onb :where(a, button, input, textarea, select, [tabindex], summary,
+                 .gobl-path-card, .gobl-prov-card, .gobl-preset,
+                 .gobl-team-row .change):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: var(--radius-xs);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gobl-onb *,
+  .gobl-onb *::before,
+  .gobl-onb *::after {
+    animation-duration: .001ms !important;
+    transition-duration: .001ms !important;
+  }
+}

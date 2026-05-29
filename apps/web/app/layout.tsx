@@ -1,5 +1,5 @@
-﻿import type { Metadata, Viewport } from 'next'
-import { Fraunces, DM_Sans, JetBrains_Mono } from 'next/font/google'
+import type { Metadata, Viewport } from 'next'
+import { Manrope, Instrument_Serif, JetBrains_Mono } from 'next/font/google'
 import { Toaster } from 'sonner'
 import { ThemeProvider } from '@/lib/theme'
 import { PostHogInit } from '@/components/analytics/PostHogInit'
@@ -7,8 +7,10 @@ import { OfflineBanner } from '@/components/mobile/offline-banner'
 import './globals.css'
 import '../styles/design-tokens.css'
 
-const fraunces = Fraunces({ subsets: ['latin'], variable: '--font-fraunces', display: 'swap' })
-const dmSans = DM_Sans({ subsets: ['latin'], variable: '--font-dm-sans', display: 'swap' })
+// v1.1 brand fonts. --font-sans resolves to Manrope, --font-serif to
+// Instrument Serif (italic accent), --font-mono to JetBrains Mono.
+const manrope = Manrope({ subsets: ['latin'], variable: '--font-manrope', display: 'swap', weight: ['400', '500', '600', '700', '800'] })
+const instrumentSerif = Instrument_Serif({ subsets: ['latin'], variable: '--font-instrument-serif', display: 'swap', weight: '400', style: ['normal', 'italic'] })
 const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono', display: 'swap' })
 
 export const viewport: Viewport = {
@@ -17,7 +19,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: 'cover',
-  themeColor: '#2D4A2B',
+  themeColor: '#1A3A2A',
 }
 
 export const metadata: Metadata = {
@@ -34,7 +36,7 @@ export const metadata: Metadata = {
     'apple-mobile-web-app-capable': 'yes',
     'apple-mobile-web-app-status-bar-style': 'black-translucent',
     'apple-mobile-web-app-title': 'Goblin',
-    'msapplication-TileColor': '#2D4A2B',
+    'msapplication-TileColor': '#1A3A2A',
     'format-detection': 'telephone=no',
   },
   icons: {
@@ -88,11 +90,11 @@ export function reportWebVitals(metric: { name: string; value: number; rating: s
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${fraunces.variable} ${dmSans.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning data-scroll-behavior="smooth">
+    <html lang="en" className={`${manrope.variable} ${instrumentSerif.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning data-scroll-behavior="smooth">
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="mask-icon" href="/icons/icon-512.png" color="#2D4A2B" />
+        <link rel="mask-icon" href="/icons/icon-512.png" color="#1A3A2A" />
         {/* no-flash theme init — must run before first paint */}
         <script dangerouslySetInnerHTML={{ __html: `
           (function(){
@@ -117,9 +119,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           toastOptions={{
             style: {
               background: '#1a1a18',
-              border: '1px solid #2D4A2B',
-              color: 'var(--cream)',
-              fontFamily: 'DM Sans, sans-serif',
+              border: '1px solid #1A3A2A',
+              color: 'var(--paper)',
+              fontFamily: 'var(--font-sans)',
               fontSize: 13,
             },
             classNames: {
