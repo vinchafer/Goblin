@@ -169,8 +169,8 @@ export function FileTree({ projectId, files, onFileClick, onFilesChanged }: File
               onBlur={() => { setInlineInput(null); setInputValue(''); }}
               placeholder="filename.tsx"
               style={{
-                background: 'rgba(201,147,58,0.1)', border: '1px solid var(--gold-700)',
-                borderRadius: 3, color: '#c5d0c0', fontSize: 12,
+                background: 'rgba(212,167,55,0.1)', border: '1px solid var(--gold-700)',
+                borderRadius: 3, color: 'var(--ink-on-dark-1)', fontSize: 12,
                 fontFamily: 'JetBrains Mono, monospace', padding: '2px 6px',
                 outline: 'none', width: '100%',
               }}
@@ -184,7 +184,7 @@ export function FileTree({ projectId, files, onFileClick, onFilesChanged }: File
         <div
           style={{
             position: 'fixed', top: contextMenu.y, left: contextMenu.x,
-            background: '#1e2a1c', border: '1px solid var(--brand-green)', borderRadius: 8,
+            background: 'var(--rule-strong)', border: '1px solid var(--brand-green)', borderRadius: 8,
             boxShadow: '0 8px 24px rgba(0,0,0,0.4)', zIndex: 1000,
             minWidth: 160, padding: '4px 0', fontSize: 12,
             fontFamily: 'var(--font-sans)',
@@ -240,11 +240,11 @@ export function FileTree({ projectId, files, onFileClick, onFilesChanged }: File
           <div style={{ position: 'fixed', inset: 0, zIndex: 999 }} onClick={() => setDeleteTarget(null)} />
           <div style={{
             position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-            background: '#1e2a1c', border: '1px solid var(--brand-green)', borderRadius: 10,
+            background: 'var(--rule-strong)', border: '1px solid var(--brand-green)', borderRadius: 10,
             boxShadow: '0 16px 40px rgba(0,0,0,0.5)', zIndex: 1000,
             padding: '16px 20px', minWidth: 240,
           }}>
-            <div style={{ fontSize: 13, color: '#c5d0c0', fontFamily: 'var(--font-sans)', marginBottom: 12 }}>
+            <div style={{ fontSize: 13, color: 'var(--ink-on-dark-1)', fontFamily: 'var(--font-sans)', marginBottom: 12 }}>
               Delete <span style={{ color: 'var(--gold-700)', fontFamily: 'JetBrains Mono, monospace' }}>{deleteTarget.name}</span>?
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
@@ -262,7 +262,7 @@ export function FileTree({ projectId, files, onFileClick, onFilesChanged }: File
                 onClick={() => setDeleteTarget(null)}
                 style={{
                   background: 'transparent', border: '1px solid var(--brand-green)',
-                  color: '#8aaa85', borderRadius: 6, padding: '6px 14px',
+                  color: 'var(--ink-on-dark-2)', borderRadius: 6, padding: '6px 14px',
                   fontSize: 12, cursor: 'pointer', fontFamily: 'var(--font-sans)',
                 }}
               >
@@ -283,10 +283,10 @@ function ContextItem({ icon, label, onClick, danger }: { icon: React.ReactNode; 
       style={{
         display: 'flex', alignItems: 'center', gap: 8,
         width: '100%', padding: '6px 14px', background: 'none', border: 'none',
-        color: danger ? '#e87a5a' : '#c5d0c0', fontSize: 12, cursor: 'pointer',
+        color: danger ? '#e87a5a' : 'var(--ink-on-dark-1)', fontSize: 12, cursor: 'pointer',
         fontFamily: 'var(--font-sans)', textAlign: 'left',
       }}
-      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(201,147,58,0.1)')}
+      onMouseEnter={e => (e.currentTarget.style.background = 'rgba(212,167,55,0.1)')}
       onMouseLeave={e => (e.currentTarget.style.background = 'none')}
     >
       <span style={{ display: 'inline-flex', alignItems: 'center' }}>{icon}</span> {label}
@@ -348,14 +348,14 @@ function renderTreeNode(
               display: 'flex', alignItems: 'center', gap: 4,
               padding: '2px 8px 2px 0', paddingLeft: `${8 + depth * 12}px`,
               cursor: 'pointer', borderRadius: 4, userSelect: 'none',
-              color: '#8aaa85',
+              color: 'var(--ink-on-dark-2)',
             }}
             onClick={() => isFolder ? onToggle(fullPath) : onFileClick(fullPath)}
             onContextMenu={e => onContextMenu(e, fullPath, isFolder)}
             onMouseEnter={e => (e.currentTarget.style.background = 'rgba(138,170,133,0.08)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
           >
-            <span style={{ width: 12, flexShrink: 0, fontSize: 9, color: '#6b8a6b', display: 'inline-flex', alignItems: 'center' }}>
+            <span style={{ width: 12, flexShrink: 0, fontSize: 9, color: 'var(--ink-on-dark-3)', display: 'inline-flex', alignItems: 'center' }}>
               {isFolder ? (expanded.has(fullPath) ? '▾' : '▸') : ''}
             </span>
 
@@ -367,8 +367,8 @@ function renderTreeNode(
                 onKeyDown={onInputKeyDown}
                 onBlur={() => {}}
                 style={{
-                  background: 'rgba(201,147,58,0.1)', border: '1px solid var(--gold-700)',
-                  borderRadius: 3, color: '#c5d0c0', fontSize: 12,
+                  background: 'rgba(212,167,55,0.1)', border: '1px solid var(--gold-700)',
+                  borderRadius: 3, color: 'var(--ink-on-dark-1)', fontSize: 12,
                   fontFamily: 'JetBrains Mono, monospace', padding: '1px 4px',
                   outline: 'none', flex: 1,
                 }}
@@ -377,7 +377,7 @@ function renderTreeNode(
             ) : (
               <span style={{
                 fontSize: 12, fontFamily: 'JetBrains Mono, monospace',
-                color: '#c5d0c0', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                color: 'var(--ink-on-dark-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               }}>
                 {name}
               </span>
@@ -396,8 +396,8 @@ function renderTreeNode(
                 onBlur={() => {}}
                 placeholder="filename.tsx"
                 style={{
-                  background: 'rgba(201,147,58,0.1)', border: '1px solid var(--gold-700)',
-                  borderRadius: 3, color: '#c5d0c0', fontSize: 12,
+                  background: 'rgba(212,167,55,0.1)', border: '1px solid var(--gold-700)',
+                  borderRadius: 3, color: 'var(--ink-on-dark-1)', fontSize: 12,
                   fontFamily: 'JetBrains Mono, monospace', padding: '1px 4px',
                   outline: 'none', flex: 1,
                 }}

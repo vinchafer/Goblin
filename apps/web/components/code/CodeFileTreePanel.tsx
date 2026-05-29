@@ -21,8 +21,8 @@ export function CodeFileTreePanel({
       className="gb-filetree-panel"
       style={{
         flexDirection: 'column',
-        borderRight: '1px solid #1e2a1c',
-        background: '#0f1410',
+        borderRight: '1px solid var(--rule-strong)',
+        background: 'var(--green-950)',
         width: open ? 256 : 44,
         minWidth: open ? 256 : 44,
         transition: 'width 0.2s ease, min-width 0.2s ease',
@@ -34,27 +34,27 @@ export function CodeFileTreePanel({
         aria-label={open ? 'Collapse file tree' : 'Expand file tree'}
         style={{
           padding: '10px 12px', display: 'flex', alignItems: 'center', gap: 8,
-          borderBottom: '1px solid #1e2a1c', flexShrink: 0,
+          borderBottom: '1px solid var(--rule-strong)', flexShrink: 0,
           background: 'none', border: 'none', cursor: 'pointer',
           width: '100%', textAlign: 'left',
         } as React.CSSProperties}
       >
         {open
-          ? <span style={{ fontSize: 12, fontWeight: 600, color: '#8aaa85', fontFamily: 'var(--font-sans)' }}>Files</span>
-          : <Icon name="menu" size={14} color="#8aaa85" />}
+          ? <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-on-dark-2)', fontFamily: 'var(--font-sans)' }}>Files</span>
+          : <Icon name="menu" size={14} color="var(--ink-on-dark-2)" />}
       </button>
       {open && (
         <div style={{ flex: 1, overflowY: 'auto' }}>
           {loading ? (
             <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
               {[1, 2, 3].map(i => (
-                <div key={i} style={{ height: 14, borderRadius: 4, background: '#1e2a1c', animation: 'pulse 1.5s ease infinite' }} />
+                <div key={i} style={{ height: 14, borderRadius: 4, background: 'var(--rule-strong)', animation: 'pulse 1.5s ease infinite' }} />
               ))}
             </div>
           ) : files.length === 0 ? (
             <div style={{ padding: 16, textAlign: 'center' }}>
-              <p style={{ fontSize: 12, color: '#6b8a6b', marginBottom: 4 }}>No files yet</p>
-              <p style={{ fontSize: 11, color: '#4a6a4a' }}>Start chatting to generate code.</p>
+              <p style={{ fontSize: 12, color: 'var(--ink-on-dark-3)', marginBottom: 4 }}>No files yet</p>
+              <p style={{ fontSize: 11, color: 'var(--ink-on-dark-3)' }}>Start chatting to generate code.</p>
             </div>
           ) : (
             <FileTree projectId={projectId} files={files} onFileClick={onFileClick} onFilesChanged={onFilesChanged} />

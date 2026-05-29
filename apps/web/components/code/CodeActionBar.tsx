@@ -13,13 +13,13 @@ export function CodeActionBar({ deploying, onDeploy, onPush }: CodeActionBarProp
   return (
     <div style={{
       display: 'flex', gap: 6, alignItems: 'center',
-      padding: '6px 12px', borderBottom: '1px solid #1e2a1c',
-      background: '#0f1410', flexShrink: 0, justifyContent: 'flex-end',
+      padding: '6px 12px', borderBottom: '1px solid var(--rule-strong)',
+      background: 'var(--green-950)', flexShrink: 0, justifyContent: 'flex-end',
     }}>
       <button
         onClick={onPush}
         style={{
-          background: 'transparent', color: '#8aaa85',
+          background: 'transparent', color: 'var(--ink-on-dark-2)',
           border: '1px solid rgba(138,170,133,0.25)',
           borderRadius: 6, padding: '5px 12px',
           fontSize: 12, fontWeight: 500,

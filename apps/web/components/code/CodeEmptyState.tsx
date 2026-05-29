@@ -11,26 +11,26 @@ export function CodeEmptyState({ hasFiles }: CodeEmptyStateProps) {
   return (
     <div style={{
       display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      height: '100%', textAlign: 'center', padding: 32, background: '#141a12',
+      height: '100%', textAlign: 'center', padding: 32, background: 'var(--surface-ink-2)',
     }}>
       <div style={{ marginBottom: 20 }}>
         <GoblinMark size={56} />
       </div>
       {hasFiles ? (
         <>
-          <h3 style={{ fontFamily: 'var(--font-sans)', fontSize: 22, color: '#e8eee5', fontWeight: 600, marginBottom: 8, letterSpacing: '-0.3px' }}>
+          <h3 style={{ fontFamily: 'var(--font-sans)', fontSize: 22, color: 'var(--ink-on-dark-1)', fontWeight: 600, marginBottom: 8, letterSpacing: '-0.3px' }}>
             Wähle eine Datei
           </h3>
-          <p style={{ fontSize: 14, color: '#8aaa85', fontFamily: 'var(--font-sans)', maxWidth: 320, lineHeight: 1.55 }}>
+          <p style={{ fontSize: 14, color: 'var(--ink-on-dark-2)', fontFamily: 'var(--font-sans)', maxWidth: 320, lineHeight: 1.55 }}>
             Tipp links auf eine Datei aus dem Baum, um sie zu bearbeiten.
           </p>
         </>
       ) : (
         <>
-          <h3 style={{ fontFamily: 'var(--font-sans)', fontSize: 24, color: '#e8eee5', fontWeight: 600, marginBottom: 8, letterSpacing: '-0.3px' }}>
+          <h3 style={{ fontFamily: 'var(--font-sans)', fontSize: 24, color: 'var(--ink-on-dark-1)', fontWeight: 600, marginBottom: 8, letterSpacing: '-0.3px' }}>
             Noch kein Code
           </h3>
-          <p style={{ fontSize: 14, color: '#8aaa85', fontFamily: 'var(--font-sans)', maxWidth: 340, lineHeight: 1.6, marginBottom: 22 }}>
+          <p style={{ fontSize: 14, color: 'var(--ink-on-dark-2)', fontFamily: 'var(--font-sans)', maxWidth: 340, lineHeight: 1.6, marginBottom: 22 }}>
             Geh in den Chat und sag Goblin was du bauen willst. Mit „An Code senden" landet generierter Code direkt hier.
           </p>
           <button

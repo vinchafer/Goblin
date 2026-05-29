@@ -79,8 +79,8 @@ export function ProjectsList({ projects, onProjectCreated }: ProjectsListProps) 
                 }}
                 className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-left transition-all duration-150"
                 style={{
-                  backgroundColor: isActive ? "rgba(201,147,58,0.1)" : "transparent",
-                  border: isActive ? "1px solid rgba(201,147,58,0.2)" : "1px solid transparent"
+                  backgroundColor: isActive ? "rgba(212,167,55,0.1)" : "transparent",
+                  border: isActive ? "1px solid rgba(212,167,55,0.2)" : "1px solid transparent"
                 }}
                 onMouseEnter={(e) => {
                   if (!isActive) {

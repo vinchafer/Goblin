@@ -38,7 +38,7 @@ export function SaveIndicator({ saving, isDirty }: SaveIndicatorProps) {
   const config: Record<SaveState, { dot: string; label: string; color: string }> = {
     idle:    { dot: 'transparent', label: '',                color: 'transparent' },
     unsaved: { dot: 'var(--brand-gold)',     label: 'Unsaved changes', color: 'var(--brand-gold)' },
-    saving:  { dot: '#8aaa85',     label: 'Saving…',         color: '#8aaa85' },
+    saving:  { dot: 'var(--ink-on-dark-2)',     label: 'Saving…',         color: 'var(--ink-on-dark-2)' },
     saved:   { dot: 'var(--success)',     label: 'Saved ✓',         color: 'var(--success)' },
   };
 

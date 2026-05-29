@@ -3,7 +3,7 @@ import type { CSSProperties, ReactNode } from 'react';
 type BadgeVariant = 'ochre' | 'moss' | 'success' | 'meta' | 'danger';
 
 const styles: Record<BadgeVariant, CSSProperties> = {
-  ochre:   { background: 'rgba(201,147,58,0.12)', color: 'var(--brand-gold)',   border: '1px solid rgba(201,147,58,0.3)' },
+  ochre:   { background: 'rgba(212,167,55,0.12)', color: 'var(--brand-gold)',   border: '1px solid rgba(212,167,55,0.3)' },
   moss:    { background: 'rgba(30,58,28,0.08)',   color: 'var(--brand-green)',    border: '1px solid rgba(30,58,28,0.15)' },
   success: { background: 'rgba(74,124,59,0.1)',   color: 'var(--success)', border: '1px solid rgba(74,124,59,0.25)' },
   meta:    { background: 'rgba(0,0,0,0.05)',      color: 'var(--meta)',    border: '1px solid var(--border)' },

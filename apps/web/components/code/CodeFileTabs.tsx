@@ -16,8 +16,8 @@ export function CodeFileTabs({ openFiles, activePath, injectedFiles, isDirty, on
   return (
     <div style={{
       display: 'flex',
-      borderBottom: '1px solid #1e2a1c',
-      background: '#0f1410',
+      borderBottom: '1px solid var(--rule-strong)',
+      background: 'var(--green-950)',
       flexShrink: 0,
       overflowX: 'auto',
       scrollbarWidth: 'thin',
@@ -34,13 +34,13 @@ export function CodeFileTabs({ openFiles, activePath, injectedFiles, isDirty, on
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
               padding: '8px 12px',
-              borderRight: '1px solid #1e2a1c',
-              background: isActive ? '#141a12' : 'transparent',
+              borderRight: '1px solid var(--rule-strong)',
+              background: isActive ? 'var(--surface-ink-2)' : 'transparent',
               borderBottom: isActive ? '2px solid var(--brand-green)' : '2px solid transparent',
               cursor: 'pointer',
               fontFamily: 'JetBrains Mono, monospace',
               fontSize: 12,
-              color: isActive ? '#c5d0c0' : '#8aaa85',
+              color: isActive ? 'var(--ink-on-dark-1)' : 'var(--ink-on-dark-2)',
               whiteSpace: 'nowrap',
               flexShrink: 0,
               transition: 'background 0.12s, border-color 0.12s',
@@ -59,7 +59,7 @@ export function CodeFileTabs({ openFiles, activePath, injectedFiles, isDirty, on
               onClick={e => { e.stopPropagation(); onClose(path); }}
               aria-label={`Close ${fname}`}
               style={{
-                background: 'none', border: 'none', color: '#6b8a6b',
+                background: 'none', border: 'none', color: 'var(--ink-on-dark-3)',
                 cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center',
                 opacity: 0.6, transition: 'opacity 0.12s',
               }}

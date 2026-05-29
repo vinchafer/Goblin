@@ -76,7 +76,7 @@ export function InjectedBanner({
         <button
           onClick={onPush}
           style={{
-            background: 'transparent', color: '#8aaa85',
+            background: 'transparent', color: 'var(--ink-on-dark-2)',
             border: '1px solid rgba(138,170,133,0.3)',
             borderRadius: 6, padding: '5px 12px', fontSize: 12, fontWeight: 500,
             cursor: 'pointer', fontFamily: 'var(--font-sans)',
@@ -89,7 +89,7 @@ export function InjectedBanner({
             onClick={onUndo}
             title="Undo last injection"
             style={{
-              background: 'transparent', color: '#6b8a6b',
+              background: 'transparent', color: 'var(--ink-on-dark-3)',
               border: '1px solid rgba(107,138,107,0.3)',
               borderRadius: 6, padding: '5px 10px', fontSize: 12,
               cursor: 'pointer', fontFamily: 'var(--font-sans)',
@@ -101,7 +101,7 @@ export function InjectedBanner({
         <button
           onClick={onDismiss}
           style={{
-            background: 'none', border: 'none', color: '#6b8a6b',
+            background: 'none', border: 'none', color: 'var(--ink-on-dark-3)',
             cursor: 'pointer', fontSize: 16, padding: '4px 6px', lineHeight: 1,
           }}
         >

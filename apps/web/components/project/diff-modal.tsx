@@ -50,7 +50,7 @@ export function DiffModal({ filePath, currentContent, proposedContent, diff, onA
       padding: 16,
     }}>
       <div style={{
-        background: '#141a12', border: '1px solid var(--brand-green)', borderRadius: 14,
+        background: 'var(--surface-ink-2)', border: '1px solid var(--brand-green)', borderRadius: 14,
         width: '100%', maxWidth: 800, maxHeight: '85vh',
         display: 'flex', flexDirection: 'column',
         boxShadow: '0 32px 80px rgba(0,0,0,0.5)',
@@ -60,14 +60,14 @@ export function DiffModal({ filePath, currentContent, proposedContent, diff, onA
         <div style={{
           padding: '14px 20px', borderBottom: '1px solid #1e3a1c',
           display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0,
-          background: '#0f1410',
+          background: 'var(--green-950)',
         }}>
           <span style={{ fontSize: 16 }}>📝</span>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#c5d0c0', fontFamily: 'JetBrains Mono, monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink-on-dark-1)', fontFamily: 'JetBrains Mono, monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {filePath}
             </div>
-            <div style={{ fontSize: 11, color: '#6b8a6b', fontFamily: 'var(--font-sans)', marginTop: 2 }}>
+            <div style={{ fontSize: 11, color: 'var(--ink-on-dark-3)', fontFamily: 'var(--font-sans)', marginTop: 2 }}>
               Review changes before applying
               {hasChanges && (
                 <>
@@ -79,7 +79,7 @@ export function DiffModal({ filePath, currentContent, proposedContent, diff, onA
               )}
             </div>
           </div>
-          <button onClick={onDiscard} style={{ background: 'none', border: 'none', color: '#6b8a6b', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: '2px 4px' }}>
+          <button onClick={onDiscard} style={{ background: 'none', border: 'none', color: 'var(--ink-on-dark-3)', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: '2px 4px' }}>
             ×
           </button>
         </div>
@@ -87,7 +87,7 @@ export function DiffModal({ filePath, currentContent, proposedContent, diff, onA
         {/* Diff content */}
         <div style={{ flex: 1, overflow: 'auto', padding: '0' }}>
           {!hasChanges ? (
-            <div style={{ padding: '40px 20px', textAlign: 'center', color: '#6b8a6b', fontSize: 13, fontFamily: 'var(--font-sans)' }}>
+            <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--ink-on-dark-3)', fontSize: 13, fontFamily: 'var(--font-sans)' }}>
               No changes to apply.
             </div>
           ) : (
@@ -95,7 +95,7 @@ export function DiffModal({ filePath, currentContent, proposedContent, diff, onA
               {lines.map((line, i) => {
                 if (line.type === 'header') {
                   return (
-                    <div key={i} style={{ padding: '2px 16px', background: '#1e2a1c', color: '#4a6a4a', borderBottom: '1px solid #1e3a1c' }}>
+                    <div key={i} style={{ padding: '2px 16px', background: 'var(--rule-strong)', color: 'var(--ink-on-dark-3)', borderBottom: '1px solid #1e3a1c' }}>
                       {line.content}
                     </div>
                   );
@@ -118,7 +118,7 @@ export function DiffModal({ filePath, currentContent, proposedContent, diff, onA
                     </span>
                     <pre style={{
                       flex: 1, margin: 0, padding: '1px 12px 1px 4px',
-                      color: line.type === 'add' ? '#8adc8a' : line.type === 'remove' ? '#e87a5a' : '#8aaa85',
+                      color: line.type === 'add' ? '#8adc8a' : line.type === 'remove' ? '#e87a5a' : 'var(--ink-on-dark-2)',
                       whiteSpace: 'pre-wrap', wordBreak: 'break-all',
                     }}>
                       {line.content || ' '}
@@ -134,13 +134,13 @@ export function DiffModal({ filePath, currentContent, proposedContent, diff, onA
         <div style={{
           padding: '14px 20px', borderTop: '1px solid #1e3a1c',
           display: 'flex', gap: 10, justifyContent: 'flex-end', flexShrink: 0,
-          background: '#0f1410',
+          background: 'var(--green-950)',
         }}>
           <button
             onClick={onDiscard}
             style={{
               background: 'transparent', border: '1px solid var(--brand-green)',
-              color: '#8aaa85', borderRadius: 8, padding: '8px 18px',
+              color: 'var(--ink-on-dark-2)', borderRadius: 8, padding: '8px 18px',
               fontSize: 13, fontWeight: 500, cursor: 'pointer',
               fontFamily: 'var(--font-sans)',
             }}
@@ -152,7 +152,7 @@ export function DiffModal({ filePath, currentContent, proposedContent, diff, onA
             disabled={!hasChanges}
             style={{
               background: hasChanges ? 'var(--brand-green)' : 'rgba(45,74,43,0.3)',
-              border: 'none', color: hasChanges ? 'var(--brand-gold)' : '#4a6a4a',
+              border: 'none', color: hasChanges ? 'var(--brand-gold)' : 'var(--ink-on-dark-3)',
               borderRadius: 8, padding: '8px 22px',
               fontSize: 13, fontWeight: 600, cursor: hasChanges ? 'pointer' : 'not-allowed',
               fontFamily: 'var(--font-sans)',

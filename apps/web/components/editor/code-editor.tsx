@@ -13,22 +13,36 @@ import {
   moveLineUp, moveLineDown, copyLineDown,
 } from '@codemirror/commands';
 
+// Editor theme constants — resolved from design-tokens.css (v1.1). CodeMirror's
+// EditorView.theme is kept on resolved values for predictable syntax rendering;
+// if these tokens change, update both here and design-tokens.css. The editor is
+// the one sanctioned dark surface in the light app (§A2.4 founder decision).
+const EDITOR_BG        = '#28251D';                // --surface-ink-2 (editor surface)
+const EDITOR_BG_DEEP   = '#08170F';                // --green-950 (gutters, panels)
+const EDITOR_FG        = '#FBF7EC';                // --ink-on-dark-1
+const EDITOR_FG_MUTED  = '#D8CBA8';                // --ink-on-dark-2
+const EDITOR_FG_FAINT  = '#968768';                // --ink-on-dark-3
+const EDITOR_ACCENT    = '#D4A737';                // --brand-gold
+const EDITOR_SELECTION = 'rgba(212,167,55,0.18)';  // gold @ 18%
+const EDITOR_LINE      = 'rgba(212,167,55,0.05)';  // active line/gutter tint
+const EDITOR_BORDER    = 'rgba(247,247,236,0.14)'; // --rule-strong on dark
+
 const goblinTheme = EditorView.theme({
-  '&': { background: '#141a12', color: '#8aaa85', height: '100%', fontSize: '13px' },
-  '.cm-content': { fontFamily: 'JetBrains Mono, monospace', padding: '12px 0' },
+  '&': { background: EDITOR_BG, color: EDITOR_FG, height: '100%', fontSize: '13px' },
+  '.cm-content': { fontFamily: 'JetBrains Mono, monospace', padding: '12px 0', caretColor: EDITOR_ACCENT },
   '.cm-line': { padding: '0 14px' },
-  '.cm-gutters': { background: '#0f1410', border: 'none', color: '#4a6a4a' },
+  '.cm-gutters': { background: EDITOR_BG_DEEP, border: 'none', color: EDITOR_FG_FAINT },
   '.cm-lineNumbers .cm-gutterElement': { minWidth: '32px', padding: '0 8px 0 4px' },
-  '.cm-activeLineGutter': { background: 'rgba(201,147,58,0.06)' },
-  '.cm-activeLine': { background: 'rgba(201,147,58,0.04)' },
-  '.cm-cursor': { borderLeft: '2px solid var(--gold-700)' },
-  '.cm-selectionBackground': { background: 'rgba(201,147,58,0.15) !important' },
-  '.cm-tooltip': { background: '#1e2a1c', border: '1px solid var(--brand-green)' },
-  '.cm-completionLabel': { color: '#8aaa85' },
-  '.cm-completionMatchedText': { color: 'var(--gold-700)', textDecoration: 'none', fontWeight: 600 },
-  '.cm-matchingBracket': { background: 'rgba(201,147,58,0.2)', outline: '1px solid rgba(201,147,58,0.4)' },
-  '.cm-tooltip-autocomplete': { background: '#1e2a1c', border: '1px solid var(--brand-green)' },
-  '.cm-tooltip-autocomplete ul li[aria-selected]': { background: 'rgba(201,147,58,0.15)' },
+  '.cm-activeLineGutter': { background: EDITOR_LINE, color: EDITOR_FG_MUTED },
+  '.cm-activeLine': { background: EDITOR_LINE },
+  '.cm-cursor': { borderLeft: `2px solid ${EDITOR_ACCENT}` },
+  '.cm-selectionBackground': { background: `${EDITOR_SELECTION} !important` },
+  '.cm-tooltip': { background: EDITOR_BG_DEEP, border: `1px solid ${EDITOR_BORDER}` },
+  '.cm-completionLabel': { color: EDITOR_FG_MUTED },
+  '.cm-completionMatchedText': { color: EDITOR_ACCENT, textDecoration: 'none', fontWeight: 600 },
+  '.cm-matchingBracket': { background: EDITOR_SELECTION, outline: `1px solid ${EDITOR_ACCENT}` },
+  '.cm-tooltip-autocomplete': { background: EDITOR_BG_DEEP, border: `1px solid ${EDITOR_BORDER}` },
+  '.cm-tooltip-autocomplete ul li[aria-selected]': { background: EDITOR_SELECTION },
 }, { dark: true });
 
 function getLanguage(filename: string) {
