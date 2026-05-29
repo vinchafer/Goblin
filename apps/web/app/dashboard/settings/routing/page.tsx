@@ -1,4 +1,8 @@
-﻿'use client';
+'use client';
+// LEGACY — superseded by SettingsRoot + SettingsModal. Direct-URL
+// access only. Do not extend; future settings additions belong in
+// SettingsRoot (apps/web/components/settings/SettingsRoot.tsx)
+// and components/settings/sections.ts.
 import { useEffect, useState, useCallback } from 'react';
 import {
   DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors,
@@ -66,7 +70,7 @@ function SortableStep({ step, onRemove }: { step: ChainStep; onRemove: (id: stri
         <span style={{
           fontSize: 13, fontWeight: 600,
           color: step.type === 'block' ? 'var(--danger)' : 'var(--text)',
-          fontFamily: 'DM Sans, sans-serif',
+          fontFamily: 'var(--font-sans)',
         }}>
           {step.label}
         </span>
@@ -75,8 +79,8 @@ function SortableStep({ step, onRemove }: { step: ChainStep; onRemove: (id: stri
             marginLeft: 8, fontSize: 10, fontWeight: 600,
             padding: '1px 6px', borderRadius: 4,
             background: step.tier === 'byok' ? 'rgba(45,74,43,0.1)' : 'rgba(212,169,74,0.15)',
-            color: step.tier === 'byok' ? 'var(--moss)' : '#b88a20',
-            fontFamily: 'DM Sans, sans-serif', textTransform: 'uppercase', letterSpacing: '0.3px',
+            color: step.tier === 'byok' ? 'var(--brand-green)' : '#b88a20',
+            fontFamily: 'var(--font-sans)', textTransform: 'uppercase', letterSpacing: '0.3px',
           }}>
             {step.tier === 'byok' ? 'BYOK' : step.tier === 'free_api' ? 'Free' : 'Hosted'}
           </span>
@@ -199,15 +203,15 @@ export default function RoutingSettingsPage() {
   return (
     <SettingsLayout>
       <div style={{ maxWidth: 540 }}>
-        <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 22, fontWeight: 700, color: 'var(--moss)', marginBottom: 6, letterSpacing: '-0.3px' }}>
+        <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 22, fontWeight: 700, color: 'var(--brand-green)', marginBottom: 6, letterSpacing: '-0.3px' }}>
           Auto-Fallback Routing
         </h1>
-        <p style={{ fontSize: 13, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif', marginBottom: 24, lineHeight: 1.6 }}>
+        <p style={{ fontSize: 13, color: 'var(--meta)', fontFamily: 'var(--font-sans)', marginBottom: 24, lineHeight: 1.6 }}>
           Drag to reorder. When a provider hits a rate limit, Goblin automatically tries the next one. The <strong>Block</strong> step stops routing and shows an error.
         </p>
 
         {loading ? (
-          <div style={{ height: 200, background: 'var(--cream)', borderRadius: 12, animation: 'pulse 1.5s ease-in-out infinite' }} />
+          <div style={{ height: 200, background: 'var(--paper)', borderRadius: 12, animation: 'pulse 1.5s ease-in-out infinite' }} />
         ) : (
           <>
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -220,7 +224,7 @@ export default function RoutingSettingsPage() {
                     <div style={{
                       border: '2px dashed #E8E4DC', borderRadius: 9,
                       padding: '20px', textAlign: 'center',
-                      fontSize: 13, color: 'var(--disabled)', fontFamily: 'DM Sans, sans-serif',
+                      fontSize: 13, color: 'var(--disabled)', fontFamily: 'var(--font-sans)',
                     }}>
                       Add at least one provider to your fallback chain.
                     </div>
@@ -238,8 +242,8 @@ export default function RoutingSettingsPage() {
                     padding: '7px 14px',
                     background: '#fff', border: '1px solid #E8E4DC',
                     borderRadius: 8, fontSize: 12, fontWeight: 600,
-                    color: 'var(--moss)', cursor: 'pointer',
-                    fontFamily: 'DM Sans, sans-serif',
+                    color: 'var(--brand-green)', cursor: 'pointer',
+                    fontFamily: 'var(--font-sans)',
                   }}
                 >
                   + Add Provider
@@ -262,9 +266,9 @@ export default function RoutingSettingsPage() {
                             display: 'block', width: '100%', padding: '8px 14px',
                             background: 'none', border: 'none', textAlign: 'left',
                             fontSize: 13, color: 'var(--text)', cursor: 'pointer',
-                            fontFamily: 'DM Sans, sans-serif',
+                            fontFamily: 'var(--font-sans)',
                           }}
-                          onMouseEnter={e => (e.currentTarget.style.background = 'var(--cream)')}
+                          onMouseEnter={e => (e.currentTarget.style.background = 'var(--paper)')}
                           onMouseLeave={e => (e.currentTarget.style.background = 'none')}
                         >
                           {opt.label}
@@ -283,7 +287,7 @@ export default function RoutingSettingsPage() {
                     background: '#fff', border: '1px solid rgba(184,92,60,0.3)',
                     borderRadius: 8, fontSize: 12, fontWeight: 600,
                     color: 'var(--danger)', cursor: 'pointer',
-                    fontFamily: 'DM Sans, sans-serif',
+                    fontFamily: 'var(--font-sans)',
                   }}
                 >
                   + Add Block
@@ -297,18 +301,18 @@ export default function RoutingSettingsPage() {
                 disabled={saving}
                 style={{
                   padding: '9px 22px',
-                  background: 'var(--moss)', color: '#fff',
+                  background: 'var(--brand-green)', color: '#fff',
                   border: 'none', borderRadius: 8,
                   fontSize: 13, fontWeight: 600,
                   cursor: saving ? 'not-allowed' : 'pointer',
-                  fontFamily: 'DM Sans, sans-serif',
+                  fontFamily: 'var(--font-sans)',
                   opacity: saving ? 0.7 : 1,
                 }}
               >
                 {saving ? 'Saving...' : 'Save chain'}
               </button>
               {saved && (
-                <span style={{ fontSize: 13, color: 'var(--success)', fontFamily: 'DM Sans, sans-serif', fontWeight: 500 }}>
+                <span style={{ fontSize: 13, color: 'var(--success)', fontFamily: 'var(--font-sans)', fontWeight: 500 }}>
                   ✓ Saved
                 </span>
               )}

@@ -30,24 +30,49 @@ export function BottomSheet({
 }: BottomSheetProps) {
   const sheetRef = useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = useState(false);
+  const [reduceMotion, setReduceMotion] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
   const startYRef = useRef(0);
 
   useEffect(() => {
     setMounted(true);
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setReduceMotion(mq.matches);
+    const onMq = () => setReduceMotion(mq.matches);
+    mq.addEventListener('change', onMq);
+    return () => mq.removeEventListener('change', onMq);
   }, []);
 
+  // Open: lock scroll, manage focus (initial → first row, trap Tab, return to
+  // opener on close), close on Escape. TASK 4 interaction polish.
   useEffect(() => {
     if (!open) return;
     const original = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    const prevFocused = document.activeElement as HTMLElement | null;
+    const FOCUSABLE = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+
+    const t = window.setTimeout(() => {
+      sheetRef.current?.querySelector<HTMLElement>(FOCUSABLE)?.focus();
+    }, 0);
+
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape') { onClose(); return; }
+      if (e.key === 'Tab' && sheetRef.current) {
+        const f = Array.from(sheetRef.current.querySelectorAll<HTMLElement>(FOCUSABLE));
+        if (f.length === 0) return;
+        const first = f[0]!;
+        const last = f[f.length - 1]!;
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => {
       document.body.style.overflow = original;
       window.removeEventListener('keydown', onKey);
+      window.clearTimeout(t);
+      prevFocused?.focus?.();
     };
   }, [open, onClose]);
 
@@ -94,7 +119,7 @@ export function BottomSheet({
           inset: 0,
           background: 'var(--surface-overlay)',
           backdropFilter: 'blur(2px)',
-          animation: 'gobFadeIn 200ms ease',
+          animation: reduceMotion ? 'none' : 'gobFadeIn 200ms ease',
         }}
       />
       <div
@@ -104,14 +129,14 @@ export function BottomSheet({
           width: '100%',
           maxWidth: 720,
           height: heightMap[size],
-          background: 'var(--cream)',
+          background: 'var(--paper)',
           borderTopLeftRadius: 'var(--radius-sheet)',
           borderTopRightRadius: 'var(--radius-sheet)',
           boxShadow: 'var(--shadow-sheet)',
           display: 'flex',
           flexDirection: 'column',
           transform: `translateY(${dragOffset}px)`,
-          animation: dragOffset === 0 ? 'gobSlideUp 280ms cubic-bezier(0.2, 0.9, 0.3, 1)' : 'none',
+          animation: (dragOffset === 0 && !reduceMotion) ? 'gobSlideUp 280ms cubic-bezier(0.2, 0.9, 0.3, 1)' : 'none',
           paddingBottom: 'env(safe-area-inset-bottom)',
           touchAction: 'pan-y',
         }}
@@ -142,8 +167,8 @@ export function BottomSheet({
           }}>
             <span style={{ minWidth: 40, display: 'flex' }}>{leftAction}</span>
             <span style={{
-              fontFamily: 'var(--font-ui)',
-              fontSize: 17,
+              fontFamily: 'var(--font-sans)',
+              fontSize: 'var(--t-h4-fs)',
               fontWeight: 600,
               color: 'var(--text)',
               textAlign: 'center',

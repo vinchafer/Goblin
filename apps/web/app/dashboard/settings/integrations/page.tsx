@@ -1,3 +1,7 @@
+// LEGACY — superseded by SettingsRoot + SettingsModal. Direct-URL
+// access only. Do not extend; future settings additions belong in
+// SettingsRoot (apps/web/components/settings/SettingsRoot.tsx)
+// and components/settings/sections.ts.
 import { createClient } from "@/lib/supabase/server";
 import { GitHubConnectButton } from "./github-connect-button";
 import { SettingsLayout } from "@/components/settings/settings-layout";
@@ -31,7 +35,7 @@ function IntegrationRow({ name, description, connected, comingSoon, children }: 
     }}>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', fontFamily: 'DM Sans, sans-serif' }}>
+          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-sans)' }}>
             {name}
           </span>
           {connected && (
@@ -45,7 +49,7 @@ function IntegrationRow({ name, description, connected, comingSoon, children }: 
             </span>
           )}
         </div>
-        <p style={{ fontSize: 12, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif', margin: 0 }}>
+        <p style={{ fontSize: 12, color: 'var(--meta)', fontFamily: 'var(--font-sans)', margin: 0 }}>
           {description}
         </p>
       </div>
@@ -57,7 +61,7 @@ function IntegrationRow({ name, description, connected, comingSoon, children }: 
 function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div style={{ background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: 14, padding: '20px 24px', marginBottom: 20 }}>
-      <h2 style={{ fontFamily: 'DM Sans, sans-serif', fontSize: 11, fontWeight: 700, color: 'var(--meta)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>
+      <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: 11, fontWeight: 700, color: 'var(--meta)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 4 }}>
         {title}
       </h2>
       {children}
@@ -83,15 +87,15 @@ export default async function IntegrationsPage({ searchParams }: { searchParams:
   return (
     <SettingsLayout>
       <div style={{ maxWidth: 800 }}>
-        <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 22, fontWeight: 700, color: 'var(--moss)', marginBottom: 6, letterSpacing: '-0.3px' }}>
+        <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 22, fontWeight: 700, color: 'var(--brand-green)', marginBottom: 6, letterSpacing: '-0.3px' }}>
           Integrations
         </h1>
-        <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 28, fontFamily: 'DM Sans, sans-serif' }}>
+        <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 28, fontFamily: 'var(--font-sans)' }}>
           Connect external services to push code, deploy, and automate your workflow.
         </p>
 
         {success && (
-          <div style={{ marginBottom: 24, padding: '12px 16px', borderRadius: 10, background: 'rgba(74,124,59,0.1)', color: 'var(--good)', fontSize: 13, fontFamily: 'DM Sans, sans-serif', fontWeight: 500 }}>
+          <div style={{ marginBottom: 24, padding: '12px 16px', borderRadius: 10, background: 'rgba(74,124,59,0.1)', color: 'var(--good)', fontSize: 13, fontFamily: 'var(--font-sans)', fontWeight: 500 }}>
             ✓ GitHub connected successfully!
           </div>
         )}

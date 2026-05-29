@@ -64,14 +64,14 @@ export function GitHubConnectButton({ connected, username }: GitHubConnectButton
   if (connected) {
     return (
       <div className="flex items-center gap-3">
-        <span className="text-sm" style={{ color: 'var(--goblin-moss)' }}>
+        <span className="text-sm" style={{ color: 'var(--brand-green)' }}>
           ✓ Connected as @{username}
         </span>
         <button
           onClick={handleDisconnect}
           disabled={loading}
           className="px-4 py-2 rounded-lg text-sm font-medium"
-          style={{ backgroundColor: 'var(--goblin-light)', color: 'var(--goblin-warn)' }}
+          style={{ backgroundColor: 'var(--surface-3)', color: 'var(--danger)' }}
         >
           {loading ? 'Disconnecting...' : 'Disconnect'}
         </button>
@@ -84,7 +84,7 @@ export function GitHubConnectButton({ connected, username }: GitHubConnectButton
       onClick={handleConnect}
       disabled={loading}
       className="px-4 py-2 rounded-lg text-sm font-medium text-white"
-      style={{ backgroundColor: 'var(--goblin-slate)' }}
+      style={{ backgroundColor: 'var(--ink-1)' }}
     >
       {loading ? 'Connecting...' : 'Connect GitHub'}
     </button>

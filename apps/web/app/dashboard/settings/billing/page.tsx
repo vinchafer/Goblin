@@ -1,3 +1,7 @@
+// LEGACY — superseded by SettingsRoot + SettingsModal. Direct-URL
+// access only. Do not extend; future settings additions belong in
+// SettingsRoot (apps/web/components/settings/SettingsRoot.tsx)
+// and components/settings/sections.ts.
 import { createClient } from "@/lib/supabase/server";
 import { SettingsLayout } from "@/components/settings/settings-layout";
 import { UsageDisplay } from "@/components/billing/usage-display";
@@ -43,22 +47,22 @@ export default async function BillingSettingsPage() {
   return (
     <SettingsLayout>
       <div className="max-w-4xl">
-        <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 22, fontWeight: 700, color: 'var(--moss)', marginBottom: 6, letterSpacing: '-0.3px' }}>
+        <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 22, fontWeight: 700, color: 'var(--brand-green)', marginBottom: 6, letterSpacing: '-0.3px' }}>
           Billing & Plan
         </h1>
-        <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 28, fontFamily: 'DM Sans, sans-serif' }}>
+        <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 28, fontFamily: 'var(--font-sans)' }}>
           Manage your subscription, usage, and payment methods.
         </p>
 
         <UsageDisplay used={used} limit={limit} resetDate={resetDate} />
 
         {hasSubscription && (
-          <div className="mb-8 p-4 rounded-lg flex items-center justify-between" style={{ backgroundColor: 'var(--goblin-light)' }}>
-            <div style={{ color: 'var(--goblin-slate)' }}>
+          <div className="mb-8 p-4 rounded-lg flex items-center justify-between" style={{ backgroundColor: 'var(--surface-3)' }}>
+            <div style={{ color: 'var(--ink-1)' }}>
               <span className="font-medium">Subscribed</span> to {currentPlan.charAt(0).toUpperCase() + currentPlan.slice(1)} plan
             </div>
             <form action={`${process.env.NEXT_PUBLIC_API_URL}/api/billing/create-portal-session`} method="POST">
-              <button className="px-4 py-2 rounded-lg text-sm font-medium" style={{ backgroundColor: 'var(--goblin-slate)', color: 'white' }}>
+              <button className="px-4 py-2 rounded-lg text-sm font-medium" style={{ backgroundColor: 'var(--ink-1)', color: 'white' }}>
                 Manage Subscription
               </button>
             </form>

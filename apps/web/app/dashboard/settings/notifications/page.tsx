@@ -1,4 +1,8 @@
 'use client';
+// LEGACY — superseded by SettingsRoot + SettingsModal. Direct-URL
+// access only. Do not extend; future settings additions belong in
+// SettingsRoot (apps/web/components/settings/SettingsRoot.tsx)
+// and components/settings/sections.ts.
 
 import { useState } from 'react';
 import { SettingsLayout } from '@/components/settings/settings-layout';
@@ -33,7 +37,7 @@ function ToggleRow({ Icon, title, description, enabled, onToggle, disabled, badg
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         flexShrink: 0,
       }}>
-        <Icon size={18} weight="duotone" color={enabled ? 'var(--moss)' : 'var(--meta)'} />
+        <Icon size={18} weight="duotone" color={enabled ? 'var(--brand-green)' : 'var(--meta)'} />
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
@@ -60,7 +64,7 @@ function ToggleRow({ Icon, title, description, enabled, onToggle, disabled, badg
       >
         <div style={{
           position: 'absolute', inset: 0, borderRadius: 11,
-          background: enabled ? 'var(--moss)' : 'var(--border)',
+          background: enabled ? 'var(--brand-green)' : 'var(--border)',
           transition: 'background 0.2s',
           opacity: disabled ? 0.5 : 1,
         }} />
@@ -104,17 +108,17 @@ export default function NotificationsPage() {
   return (
     <SettingsLayout>
       <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 22, fontWeight: 700, color: 'var(--moss)', marginBottom: 6, letterSpacing: '-0.3px' }}>
+        <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 22, fontWeight: 700, color: 'var(--brand-green)', marginBottom: 6, letterSpacing: '-0.3px' }}>
           Notifications
         </h1>
-        <p style={{ fontSize: 13, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif' }}>
+        <p style={{ fontSize: 13, color: 'var(--meta)', fontFamily: 'var(--font-sans)' }}>
           Choose how Goblin lets you know about builds, deploys, and updates.
         </p>
       </div>
 
       {/* Push */}
       <div style={CARD_STYLE}>
-        <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 17, color: 'var(--moss)', fontWeight: 700, marginBottom: 4, letterSpacing: '-0.3px' }}>
+        <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: 17, color: 'var(--brand-green)', fontWeight: 700, marginBottom: 4, letterSpacing: '-0.3px' }}>
           Browser & Push
         </h2>
         <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 14 }}>
@@ -141,11 +145,11 @@ export default function NotificationsPage() {
                   onClick={handleSendTest}
                   disabled={sendingTest}
                   style={{
-                    background: 'transparent', color: 'var(--moss)',
+                    background: 'transparent', color: 'var(--brand-green)',
                     border: '1.5px solid var(--border)', borderRadius: 8,
                     padding: '8px 14px', fontSize: 12, fontWeight: 500,
                     cursor: sendingTest ? 'not-allowed' : 'pointer',
-                    fontFamily: 'DM Sans, sans-serif',
+                    fontFamily: 'var(--font-sans)',
                   }}
                 >
                   {sendingTest ? 'Sending…' : 'Send test notification'}
@@ -163,7 +167,7 @@ export default function NotificationsPage() {
 
       {/* Email */}
       <div style={CARD_STYLE}>
-        <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 17, color: 'var(--moss)', fontWeight: 700, marginBottom: 4, letterSpacing: '-0.3px' }}>
+        <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: 17, color: 'var(--brand-green)', fontWeight: 700, marginBottom: 4, letterSpacing: '-0.3px' }}>
           Email
         </h2>
         <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 8 }}>

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
@@ -6,8 +6,10 @@ import { useApp } from '@/contexts/app-context';
 import { createClient } from '@/lib/supabase/client';
 import { apiGet } from '@/lib/api';
 import { Gear } from '@phosphor-icons/react';
+import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { RecentChatRow } from '@/components/sidebar/RecentChatRow';
 import { SidebarUsage } from '@/components/sidebar/SidebarUsage';
+import { useUser } from '@/lib/hooks/useUser';
 
 interface ChatSession {
   id: string;
@@ -29,15 +31,13 @@ interface Project {
 interface SidebarProps {
   projects?: Project[];
   activeProjectId?: string;
-  userEmail?: string;
-  userName?: string;
   isOpen?: boolean;          // mobile overlay open
   onClose?: () => void;      // mobile close
 }
 
 const PROJECT_COLORS = [
-  'var(--ochre)', 'var(--success)', '#7A4A8A',
-  '#3A6B8A', 'var(--danger)', '#4A7A7A', 'var(--moss)',
+  'var(--brand-gold)', 'var(--success)', '#7A4A8A',
+  '#3A6B8A', 'var(--danger)', '#4A7A7A', 'var(--brand-green)',
 ];
 
 function timeAgo(dateStr?: string): string {
@@ -73,10 +73,11 @@ function ChevronRight({ small }: { small?: boolean }) {
 
 const STORAGE_KEY = 'goblin:sidebar:collapsed';
 
-export function Sidebar({ projects = [], activeProjectId, userEmail, userName, isOpen = false, onClose }: SidebarProps) {
+export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClose }: SidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { setShowNewProjectModal, setShowSettingsSheet } = useApp();
+  const { fullName, email, plan } = useUser();
 
   const [collapsed, setCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -99,7 +100,7 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
     localStorage.setItem(STORAGE_KEY, String(next));
   };
 
-  const displayName = userName || userEmail?.split('@')[0] || 'Builder';
+  const displayName = fullName || email?.split('@')[0] || 'Builder';
   const initial = displayName.charAt(0).toUpperCase();
 
   const navigate = (path: string) => {
@@ -107,7 +108,7 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
     onClose?.();
   };
 
-  const sidebarWidth = collapsed ? 56 : 260;
+  const sidebarWidth = collapsed ? 48 : 260;
 
   if (!mounted) return null;
 
@@ -155,62 +156,56 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
               <div
                 onClick={() => navigate('/dashboard')}
                 style={{
-                  fontFamily: 'Fraunces, serif', fontSize: 17,
-                  color: 'var(--moss)', fontWeight: 700, letterSpacing: '-0.3px',
+                  fontFamily: 'var(--font-sans)', fontSize: 'var(--t-h4-fs)',
+                  color: 'var(--brand-green)', fontWeight: 700, letterSpacing: '-0.3px',
                   cursor: 'pointer', userSelect: 'none', flexShrink: 0,
                 }}
               >
                 Goblin<span style={{ opacity: 0.45 }}>.</span>
               </div>
               <div style={{ flex: 1 }} />
-              <div style={{
-                fontSize: 11, color: '#8C857A',
-                fontFamily: 'DM Sans, sans-serif',
-                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                maxWidth: 100,
-              }}>
-                {displayName}
-              </div>
               {/* Collapse toggle */}
               <button
                 onClick={toggle}
-                title="Collapse sidebar"
+                title="Sidebar einklappen"
+                aria-label="Sidebar einklappen"
                 style={{
-                  width: 24, height: 24, borderRadius: 6,
+                  width: 32, height: 32, borderRadius: 8,
                   background: 'transparent',
                   border: '1px solid var(--border)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  cursor: 'pointer', color: '#8C857A', flexShrink: 0,
-                  transition: 'background 0.15s',
+                  cursor: 'pointer', color: 'var(--ink-2)', flexShrink: 0,
+                  transition: 'background 0.15s, color 0.15s',
                 }}
-                onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.06)')}
-                onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.06)'; e.currentTarget.style.color = 'var(--ink-1)'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--ink-2)'; }}
               >
-                <ChevronLeft small />
+                <PanelLeftClose size={18} />
               </button>
             </>
           ) : (
             <button
               onClick={toggle}
-              title="Expand sidebar"
+              title="Sidebar ausklappen"
+              aria-label="Sidebar ausklappen"
               style={{
                 width: 32, height: 32, borderRadius: 8,
                 background: 'rgba(45,74,43,0.08)',
                 border: 'none',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', color: 'var(--moss)', flexShrink: 0,
+                cursor: 'pointer', color: 'var(--brand-green)', flexShrink: 0,
                 transition: 'background 0.15s',
               }}
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(45,74,43,0.14)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'rgba(45,74,43,0.08)')}
             >
-              <ChevronRight small />
+              <PanelLeftOpen size={18} />
             </button>
           )}
         </div>
 
-        {/* ── Projects List ── */}
-        <div style={{ flex: 1, overflowY: 'auto', minHeight: 0, paddingTop: 8 }}>
+        {/* ── Projects List (content-fit, scrolls internally past ~30vh) ── */}
+        <div style={{ flexShrink: 0, maxHeight: '30vh', overflowY: 'auto', minHeight: 0, paddingTop: 8 }}>
           {!collapsed && (
             <div style={{
               padding: '4px 12px 6px 16px',
@@ -220,21 +215,21 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
                 onClick={() => navigate('/dashboard')}
                 style={{
                   background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                  fontSize: 10, fontWeight: 600, letterSpacing: '1.2px',
+                  fontSize: 'var(--t-eyebrow-fs)', fontWeight: 600, letterSpacing: '1.2px',
                   textTransform: 'uppercase', color: 'var(--text-faint)',
-                  fontFamily: 'DM Sans, sans-serif',
+                  fontFamily: 'var(--font-dash-display), Manrope, sans-serif',
                 }}
               >
-                Projects
+                Projekte
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); setShowNewProjectModal(true); onClose?.(); }}
-                title="New Project"
-                aria-label="New Project"
+                title="Neues Projekt"
+                aria-label="Neues Projekt"
                 data-testid="sidebar-projects-plus"
                 style={{
-                  background: 'var(--moss)', border: 'none', cursor: 'pointer',
-                  padding: 0, borderRadius: 6, color: '#fff',
+                  background: 'var(--brand-header)', border: 'none', cursor: 'pointer',
+                  padding: 0, borderRadius: 7, color: 'var(--bone, #F4ECD8)',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   width: 22, height: 22, transition: 'opacity 0.12s, transform 0.12s',
                   boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
@@ -252,9 +247,9 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
           {projects.length === 0 ? (
             !collapsed && (
               <div style={{
-                padding: '8px 16px', fontSize: 12,
+                padding: '8px 16px', fontSize: 'var(--t-small-fs)',
                 color: 'var(--text-faint)', fontStyle: 'italic',
-                fontFamily: 'DM Sans, sans-serif',
+                fontFamily: 'var(--font-sans)',
               }}>
                 No projects yet
               </div>
@@ -276,7 +271,7 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
                       justifyContent: collapsed ? 'center' : 'flex-start',
                       borderRadius: 7, cursor: 'pointer', marginBottom: 1,
                       background: active ? 'rgba(212,169,74,0.13)' : 'transparent',
-                      border: active ? '1px solid rgba(212,169,74,0.25)' : '1px solid transparent',
+                      border: '1px solid transparent',
                       transition: 'all 0.12s',
                     }}
                     onMouseEnter={e => { if (!active) (e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0.05)'; }}
@@ -289,15 +284,15 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
                     {!collapsed && (
                       <>
                         <span style={{
-                          fontSize: 13, fontWeight: active ? 600 : 400,
-                          color: active ? 'var(--moss)' : 'var(--text)',
+                          fontSize: 'var(--t-small-fs)', fontWeight: active ? 600 : 400,
+                          color: active ? 'var(--brand-green)' : 'var(--text)',
                           flex: 1, overflow: 'hidden', textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
-                          fontFamily: 'DM Sans, sans-serif',
+                          fontFamily: 'var(--font-sans)',
                         }}>
                           {p.name}
                         </span>
-                        <span style={{ fontSize: 10, color: 'var(--text-faint)', flexShrink: 0 }}>
+                        <span style={{ fontSize: 'var(--t-eyebrow-fs)', color: 'var(--text-faint)', flexShrink: 0 }}>
                           {timeAgo(p.updated_at ?? p.last_active)}
                         </span>
                       </>
@@ -309,8 +304,12 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
           )}
         </div>
 
-        {/* ── Recent Chats ── */}
-        {!collapsed && <RecentChats pathname={pathname} navigate={navigate} />}
+        {/* ── Recent Chats (fills remaining height, scrolls internally) ── */}
+        {!collapsed && (
+          <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+            <RecentChats pathname={pathname} navigate={navigate} />
+          </div>
+        )}
 
         {/* ── Usage summary ── */}
         {!collapsed && <SidebarUsage />}
@@ -333,7 +332,7 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
               background: 'var(--panel, #fff)',
               border: '1px solid var(--border)',
               cursor: 'pointer', minHeight: 40,
-              fontFamily: 'DM Sans, sans-serif',
+              fontFamily: 'var(--font-sans)',
               justifyContent: collapsed ? 'center' : 'flex-start',
               transition: 'background 0.12s',
             }}
@@ -342,13 +341,13 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
           >
             <span style={{
               width: collapsed ? 32 : 28, height: collapsed ? 32 : 28, borderRadius: '50%',
-              background: 'var(--moss)', color: '#fff',
+              background: 'var(--brand-green)', color: '#fff',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontWeight: 700, fontSize: 13, flexShrink: 0,
+              fontWeight: 700, fontSize: 'var(--t-small-fs)', flexShrink: 0,
             }}>{initial}</span>
             {!collapsed && (
               <span style={{
-                fontSize: 13, fontWeight: 500, color: 'var(--text)', flex: 1, textAlign: 'left',
+                fontSize: 'var(--t-small-fs)', fontWeight: 500, color: 'var(--text)', flex: 1, textAlign: 'left',
                 overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               }}>
                 {displayName}
@@ -391,8 +390,8 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
           <div
             onClick={() => { navigate('/dashboard'); }}
             style={{
-              fontFamily: 'Fraunces, serif', fontSize: 28,
-              color: 'var(--moss)', fontWeight: 400, letterSpacing: '-0.5px',
+              fontFamily: 'var(--font-sans)', fontSize: 'var(--t-h1-fs)',
+              color: 'var(--brand-green)', fontWeight: 400, letterSpacing: '-0.5px',
               cursor: 'pointer', userSelect: 'none',
             }}
           >
@@ -400,7 +399,7 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
           </div>
           <div style={{ flex: 1 }} />
           <button onClick={onClose} aria-label="Close sidebar" style={{
-            background: 'rgba(0,0,0,0.04)', border: 'none', fontSize: 18,
+            background: 'rgba(0,0,0,0.04)', border: 'none', fontSize: 'var(--t-h4-fs)',
             color: '#8C857A', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             width: 36, height: 36, borderRadius: 18,
@@ -418,20 +417,20 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
               onClick={() => navigate('/dashboard')}
               style={{
                 background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-                fontSize: 11, fontWeight: 600, letterSpacing: '1.2px',
+                fontSize: 'var(--t-eyebrow-fs)', fontWeight: 600, letterSpacing: '1.2px',
                 textTransform: 'uppercase', color: 'var(--text-faint)',
-                fontFamily: 'DM Sans, sans-serif',
+                fontFamily: 'var(--font-dash-display), Manrope, sans-serif',
               }}
             >
-              Projects
+              Projekte
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); setShowNewProjectModal(true); onClose?.(); }}
               data-testid="sidebar-new-project"
-              aria-label="New Project"
+              aria-label="Neues Projekt"
               style={{
-                background: 'var(--moss)', border: 'none', cursor: 'pointer',
-                padding: 0, borderRadius: 7, color: '#fff',
+                background: 'var(--brand-header)', border: 'none', cursor: 'pointer',
+                padding: 0, borderRadius: 7, color: 'var(--bone, #F4ECD8)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 minWidth: 28, minHeight: 28,
                 boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
@@ -444,7 +443,7 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
           </div>
           <div style={{ padding: '0 12px 8px' }}>
             {projects.length === 0 ? (
-              <div style={{ padding: '8px 12px', fontSize: 13, color: 'var(--text-faint)', fontStyle: 'italic', fontFamily: 'DM Sans, sans-serif' }}>
+              <div style={{ padding: '8px 12px', fontSize: 'var(--t-small-fs)', color: 'var(--text-faint)', fontStyle: 'italic', fontFamily: 'var(--font-sans)' }}>
                 No projects yet
               </div>
             ) : projects.map((p, i) => {
@@ -463,12 +462,12 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
                 >
                   <div style={{ width: 10, height: 10, borderRadius: '50%', background: dotColor, flexShrink: 0 }} />
                   <span style={{
-                    fontSize: 15, fontWeight: active ? 600 : 400,
-                    color: active ? 'var(--moss)' : 'var(--text)',
+                    fontSize: 'var(--t-small-fs)', fontWeight: active ? 600 : 400,
+                    color: active ? 'var(--brand-green)' : 'var(--text)',
                     flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                    fontFamily: 'DM Sans, sans-serif',
+                    fontFamily: 'var(--font-sans)',
                   }}>{p.name}</span>
-                  <span style={{ fontSize: 11, color: 'var(--text-faint)', flexShrink: 0 }}>
+                  <span style={{ fontSize: 'var(--t-eyebrow-fs)', color: 'var(--text-faint)', flexShrink: 0 }}>
                     {timeAgo(p.updated_at ?? p.last_active)}
                   </span>
                 </div>
@@ -498,18 +497,23 @@ export function Sidebar({ projects = [], activeProjectId, userEmail, userName, i
               background: 'var(--panel, #fff)',
               border: '1px solid var(--border)',
               cursor: 'pointer', minHeight: 44,
-              fontFamily: 'DM Sans, sans-serif',
+              fontFamily: 'var(--font-sans)',
             }}
           >
             <span style={{
               width: 32, height: 32, borderRadius: '50%',
-              background: 'var(--moss)', color: '#fff',
+              background: 'var(--brand-green)', color: '#fff',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              fontWeight: 700, fontSize: 14, flexShrink: 0,
+              fontWeight: 700, fontSize: 'var(--t-small-fs)', flexShrink: 0,
             }}>{initial}</span>
-            <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--text)', flex: 1, textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <span style={{ fontSize: 'var(--t-small-fs)', fontWeight: 500, color: 'var(--text)', flex: 1, textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {displayName}
             </span>
+            <span style={{
+              fontSize: 'var(--t-caption-fs)', fontWeight: 600, color: 'var(--green-700)',
+              background: 'var(--accent-soft)', borderRadius: 'var(--radius-xs)',
+              padding: '1px 6px', flexShrink: 0,
+            }}>{plan.name}</span>
             <Gear size={16} style={{ color: 'var(--text-faint)', flexShrink: 0 }} />
           </button>
         </div>
@@ -579,21 +583,21 @@ function RecentChats({ pathname, navigate }: { pathname: string; navigate: (path
           onClick={() => navigate('/dashboard/chat')}
           style={{
             background: 'none', border: 'none', cursor: 'pointer', padding: 0,
-            fontSize: 10, fontWeight: 600, letterSpacing: '1.2px',
+            fontSize: 'var(--t-eyebrow-fs)', fontWeight: 600, letterSpacing: '1.2px',
             textTransform: 'uppercase', color: 'var(--text-faint)',
-            fontFamily: 'DM Sans, sans-serif',
+            fontFamily: 'var(--font-dash-display), Manrope, sans-serif',
           }}
         >
-          Recent Chats
+          Chats
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); handleNewChat(); }}
-          title="New chat"
-          aria-label="New chat"
+          title="Neuer Chat"
+          aria-label="Neuer Chat"
           data-testid="sidebar-chats-plus"
           style={{
-            background: 'var(--moss)', border: 'none', cursor: 'pointer',
-            padding: 0, borderRadius: 6, color: '#fff',
+            background: 'var(--brand-header)', border: 'none', cursor: 'pointer',
+            padding: 0, borderRadius: 7, color: 'var(--bone, #F4ECD8)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             width: 22, height: 22, transition: 'opacity 0.12s',
             boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
@@ -613,7 +617,7 @@ function RecentChats({ pathname, navigate }: { pathname: string; navigate: (path
             <div key={i} style={{ height: 28, borderRadius: 6, background: 'var(--div)', marginBottom: 2, animation: 'pulse 1.5s ease infinite' }} />
           ))
         ) : sessions.length === 0 ? (
-          <div style={{ padding: '4px 8px', fontSize: 12, color: 'var(--text-faint)', fontStyle: 'italic', fontFamily: 'DM Sans, sans-serif' }}>
+          <div style={{ padding: '4px 8px', fontSize: 'var(--t-small-fs)', color: 'var(--text-faint)', fontStyle: 'italic', fontFamily: 'var(--font-sans)' }}>
             No chats yet
           </div>
         ) : (
@@ -630,8 +634,8 @@ function RecentChats({ pathname, navigate }: { pathname: string; navigate: (path
             {sessions.length === 5 && (
               <button
                 onClick={() => navigate('/dashboard/chat')}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: 'var(--text-faint)', padding: '4px 8px', fontFamily: 'DM Sans, sans-serif', width: '100%', textAlign: 'left' }}
-                onMouseEnter={e => (e.currentTarget.style.color = 'var(--moss)')}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 'var(--t-caption-fs)', color: 'var(--text-faint)', padding: '4px 8px', fontFamily: 'var(--font-sans)', width: '100%', textAlign: 'left' }}
+                onMouseEnter={e => (e.currentTarget.style.color = 'var(--brand-green)')}
                 onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}
               >
                 See all chats →

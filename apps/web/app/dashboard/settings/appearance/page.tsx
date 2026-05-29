@@ -1,4 +1,8 @@
 'use client';
+// LEGACY — superseded by SettingsRoot + SettingsModal. Direct-URL
+// access only. Do not extend; future settings additions belong in
+// SettingsRoot (apps/web/components/settings/SettingsRoot.tsx)
+// and components/settings/sections.ts.
 
 import { SettingsLayout } from '@/components/settings/settings-layout';
 import { useTheme, type Theme } from '@/lib/theme';
@@ -24,16 +28,16 @@ export default function AppearancePage() {
   return (
     <SettingsLayout>
       <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 22, fontWeight: 700, color: 'var(--moss)', marginBottom: 6, letterSpacing: '-0.3px' }}>
+        <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 22, fontWeight: 700, color: 'var(--brand-green)', marginBottom: 6, letterSpacing: '-0.3px' }}>
           Appearance
         </h1>
-        <p style={{ fontSize: 13, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif' }}>
+        <p style={{ fontSize: 13, color: 'var(--meta)', fontFamily: 'var(--font-sans)' }}>
           Choose how Goblin looks. Persists across devices.
         </p>
       </div>
 
       <div style={CARD_STYLE}>
-        <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 18, color: 'var(--moss)', fontWeight: 700, marginBottom: 4, letterSpacing: '-0.3px' }}>
+        <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: 18, color: 'var(--brand-green)', fontWeight: 700, marginBottom: 4, letterSpacing: '-0.3px' }}>
           Theme
         </h2>
         <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 20 }}>
@@ -51,25 +55,25 @@ export default function AppearancePage() {
                   textAlign: 'left',
                   padding: '16px 18px',
                   borderRadius: 12,
-                  border: active ? '2px solid var(--moss)' : '1.5px solid var(--border)',
+                  border: active ? '2px solid var(--brand-green)' : '1.5px solid var(--border)',
                   background: active ? 'rgba(45,74,43,0.06)' : 'var(--panel)',
                   cursor: 'pointer',
-                  fontFamily: 'DM Sans, sans-serif',
+                  fontFamily: 'var(--font-sans)',
                   transition: 'all 0.15s',
                   position: 'relative',
                 }}
-                onMouseEnter={e => { if (!active) e.currentTarget.style.borderColor = 'var(--moss)'; }}
+                onMouseEnter={e => { if (!active) e.currentTarget.style.borderColor = 'var(--brand-green)'; }}
                 onMouseLeave={e => { if (!active) e.currentTarget.style.borderColor = 'var(--border)'; }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-                  <opt.Icon size={20} weight={active ? 'fill' : 'duotone'} color={active ? 'var(--moss)' : 'var(--meta)'} />
-                  <span style={{ fontSize: 14, fontWeight: 600, color: active ? 'var(--moss)' : 'var(--text)' }}>
+                  <opt.Icon size={20} weight={active ? 'fill' : 'duotone'} color={active ? 'var(--brand-green)' : 'var(--meta)'} />
+                  <span style={{ fontSize: 14, fontWeight: 600, color: active ? 'var(--brand-green)' : 'var(--text)' }}>
                     {opt.label}
                   </span>
                   {active && (
                     <span style={{
                       marginLeft: 'auto', fontSize: 10, fontWeight: 700,
-                      color: 'var(--moss)', background: 'rgba(45,74,43,0.12)',
+                      color: 'var(--brand-green)', background: 'rgba(45,74,43,0.12)',
                       padding: '2px 7px', borderRadius: 4, letterSpacing: '0.05em',
                     }}>ACTIVE</span>
                   )}
@@ -84,7 +88,7 @@ export default function AppearancePage() {
       </div>
 
       <div style={CARD_STYLE}>
-        <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 18, color: 'var(--moss)', fontWeight: 700, marginBottom: 4, letterSpacing: '-0.3px' }}>
+        <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: 18, color: 'var(--brand-green)', fontWeight: 700, marginBottom: 4, letterSpacing: '-0.3px' }}>
           Density
         </h2>
         <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 12 }}>
@@ -96,7 +100,7 @@ export default function AppearancePage() {
               padding: '7px 16px', borderRadius: 8, border: 'none',
               background: i === 1 ? 'var(--panel)' : 'transparent',
               fontSize: 13, color: i === 1 ? 'var(--text)' : 'var(--meta)',
-              fontFamily: 'DM Sans, sans-serif', cursor: 'pointer',
+              fontFamily: 'var(--font-sans)', cursor: 'pointer',
             }}>{d}</button>
           ))}
         </div>

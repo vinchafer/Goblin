@@ -71,7 +71,7 @@ export function SettingsRoot() {
   };
 
   return (
-    <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-ui)' }}>
+    <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
       <ProfileCard
         avatarUrl={user.avatarUrl}
         name={user.fullName || 'Vincent'}
@@ -215,7 +215,7 @@ export function SettingsRoot() {
           borderRadius: 'var(--radius-lg)',
           color: 'var(--rust)',
           fontSize: 17,
-          fontFamily: 'var(--font-ui)',
+          fontFamily: 'var(--font-sans)',
           fontWeight: 500,
           cursor: 'pointer',
           display: 'flex',

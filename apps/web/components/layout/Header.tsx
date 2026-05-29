@@ -5,12 +5,16 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useApp } from '@/contexts/app-context';
 import { AvatarMenu } from '@/components/header/AvatarMenu';
+import { GoblinLogo } from '@/components/brand/GoblinLogo';
 
 interface HeaderProps {
   projectName?: string;
   activeTab?: 'chat' | 'code' | 'preview';
   onTabChange?: (tab: 'chat' | 'code' | 'preview') => void;
   showTabs?: boolean;
+  /** Whether the user is inside a project context. Code tab is inactive
+      without a project (chat works everywhere; code needs a place to live). */
+  hasProject?: boolean;
   injectionCount?: number;
   onMenuToggle?: () => void;
   previewUrl?: string | null;
@@ -50,6 +54,7 @@ export function Header({
   activeTab = 'chat',
   onTabChange,
   showTabs = false,
+  hasProject = false,
   injectionCount = 0,
   onMenuToggle,
   previewUrl,
@@ -58,6 +63,8 @@ export function Header({
   const { setShowNewProjectModal } = useApp();
   const [plusOpen, setPlusOpen] = useState(false);
   const plusRef = useRef<HTMLDivElement | null>(null);
+  const [modeOpen, setModeOpen] = useState(false);
+  const activeTabDef = TAB_DEFS.find(t => t.id === activeTab) ?? TAB_DEFS[0]!;
 
   const handleNewChat = async () => {
     setPlusOpen(false);
@@ -80,11 +87,11 @@ export function Header({
   };
 
   return (
-    <header style={{
-      height: 56, background: 'var(--moss)',
+    <header className="goblin-header" style={{
+      background: 'var(--brand-header)',
       display: 'flex', alignItems: 'center',
       padding: '0 12px', gap: 8, flexShrink: 0,
-      borderBottom: '1px solid #3A5A37',
+      borderBottom: '1px solid rgba(247,247,236,0.10)',
       position: 'relative', zIndex: 50,
     }}>
       {/* Hamburger — mobile only */}
@@ -95,7 +102,7 @@ export function Header({
         data-testid="mobile-hamburger"
         style={{
           background: 'none', border: 'none',
-          color: 'rgba(255,255,255,0.85)',
+          color: 'var(--ink-on-dark-1)',
           cursor: 'pointer', padding: 0,
           borderRadius: 6, width: 40, height: 40,
           display: 'none', alignItems: 'center', justifyContent: 'center',
@@ -107,18 +114,25 @@ export function Header({
         </svg>
       </button>
 
-      {/* Logo — wordmark */}
+      {/* Logo — real brand g-mark (GoblinLogo → _symbols.svg geometry, §B1).
+          Desktop: mark + "Goblin" wordmark. Mobile: mark only (.goblin-wordmark
+          hidden ≤768px). Wordmark is Manrope 700, -0.02em, gold per §B1.1. */}
       <button
         onClick={() => router.push('/dashboard')}
         aria-label="Goblin home"
         style={{
-          fontFamily: 'Fraunces, serif', fontSize: 20,
-          color: 'var(--ochre)', fontWeight: 700, letterSpacing: '-0.5px',
           background: 'none', border: 'none', cursor: 'pointer',
-          padding: '6px 4px', userSelect: 'none', flexShrink: 0,
+          padding: '6px 4px', flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 8,
         }}
       >
-        Goblin<span style={{ opacity: 0.6 }}>.</span>
+        <GoblinLogo state="idle" size={26} variant="gold" />
+        <span className="goblin-wordmark" style={{
+          fontFamily: 'var(--font-dash-display), Manrope, sans-serif',
+          fontWeight: 700, fontSize: 'var(--t-h4-fs)', letterSpacing: '-0.02em',
+          color: 'var(--brand-gold)', lineHeight: 1,
+        }}>
+          Goblin
+        </span>
       </button>
 
       {/* Breadcrumb — project name only on desktop or where space allows */}
@@ -126,15 +140,15 @@ export function Header({
         <div className="goblin-breadcrumb" style={{
           display: 'flex', alignItems: 'center', gap: 8, flexShrink: 1, minWidth: 0,
         }}>
-          <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 14 }}>/</span>
+          <span style={{ color: 'var(--ink-on-dark-3)', fontSize: 'var(--t-small-fs)' }}>/</span>
           <div style={{
-            fontSize: 13, color: 'rgba(255,255,255,0.85)',
+            fontSize: 'var(--t-small-fs)', color: 'var(--ink-on-dark-2)',
             background: 'rgba(255,255,255,0.08)',
             padding: '5px 10px', borderRadius: 6,
             border: '1px solid rgba(255,255,255,0.1)',
             maxWidth: 180,
             overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-            fontFamily: 'DM Sans, sans-serif', fontWeight: 500,
+            fontFamily: 'var(--font-dash-display), Manrope, sans-serif', fontWeight: 500,
           }}>
             {projectName}
           </div>
@@ -142,6 +156,74 @@ export function Header({
       )}
 
       <div style={{ flex: 1, minWidth: 8 }} />
+
+      {/* Mobile mode tile — current mode + switcher (§TASK 5). Mobile only;
+          desktop keeps the tab-pill switcher. Honours the staircase rule.
+          Sits after the spacer so it right-aligns before the plus (v7/v2). */}
+      {showTabs && (
+        <div className="goblin-mode-tile" style={{ position: 'relative', flexShrink: 0, display: 'none' }}>
+          <button
+            onClick={() => setModeOpen(o => !o)}
+            aria-haspopup="menu"
+            aria-expanded={modeOpen}
+            aria-label={`Modus: ${activeTabDef.label}`}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6, minHeight: 36,
+              padding: '6px 10px', borderRadius: 9,
+              background: 'rgba(0,0,0,0.18)', border: 'none', cursor: 'pointer',
+              color: 'var(--ink-on-dark-1)', fontFamily: 'var(--font-dash-display), Manrope, sans-serif',
+              fontWeight: 600, fontSize: 'var(--t-caption-fs)',
+            }}
+          >
+            <activeTabDef.Icon size={15} />
+            <span>{activeTabDef.label}</span>
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" style={{ opacity: 0.7 }}>
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+          </button>
+          {modeOpen && (
+            <>
+              <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setModeOpen(false)} />
+              <div role="menu" style={{
+                position: 'absolute', left: 0, top: 'calc(100% + 8px)',
+                background: 'var(--panel)', border: '1px solid var(--border-subtle)',
+                borderRadius: 10, padding: 4, minWidth: 200, zIndex: 100,
+                boxShadow: 'var(--shadow-popover)',
+              }}>
+                {TAB_DEFS.map(({ id, label, Icon }) => {
+                  const disabled = (id === 'code' && !hasProject) || (id === 'preview' && !previewUrl);
+                  const active = activeTab === id;
+                  const hint = id === 'code' && !hasProject ? 'Wird verfügbar, sobald Goblin ein Projekt startet'
+                    : id === 'preview' && !previewUrl ? 'Wird verfügbar nach dem ersten Build' : undefined;
+                  return (
+                    <button
+                      key={id}
+                      role="menuitem"
+                      disabled={disabled}
+                      title={hint}
+                      onClick={() => { if (!disabled) { onTabChange?.(id); setModeOpen(false); } }}
+                      style={{
+                        width: '100%', display: 'flex', alignItems: 'center', gap: 10,
+                        padding: '10px 12px', minHeight: 44, borderRadius: 7,
+                        background: active ? 'rgba(45,74,43,0.08)' : 'none', border: 'none',
+                        cursor: disabled ? 'not-allowed' : 'pointer', textAlign: 'left',
+                        color: disabled ? 'var(--ink-disabled)' : active ? 'var(--brand-green)' : 'var(--text)',
+                        fontFamily: 'var(--font-dash-display), Manrope, sans-serif',
+                        fontWeight: active ? 600 : 500, fontSize: 'var(--t-small-fs)',
+                        opacity: disabled ? 0.6 : 1,
+                      }}
+                    >
+                      <Icon size={16} />
+                      <span style={{ flex: 1 }}>{label}</span>
+                      {active && <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--brand-gold)' }} />}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {/* Tab-Switcher Pills — visible when in workspace */}
       {showTabs && (
@@ -156,26 +238,38 @@ export function Header({
         >
           {TAB_DEFS.map(({ id, label, Icon }) => {
             const active = activeTab === id;
-            const disabled = id === 'preview' && !previewUrl;
+            // Honest staircase: Chat always works; Code needs a project;
+            // Preview needs a deployed app.
+            const disabled =
+              (id === 'code' && !hasProject) ||
+              (id === 'preview' && !previewUrl);
+            const hint =
+              id === 'code' && !hasProject
+                ? 'Starte ein Projekt, um Code zu schreiben'
+                : id === 'preview' && !previewUrl
+                ? 'Deploye das Projekt, um eine Preview zu sehen'
+                : undefined;
             return (
               <button
                 key={id}
                 role="tab"
                 aria-selected={active}
                 aria-label={label}
+                aria-disabled={disabled}
+                title={hint}
                 disabled={disabled}
                 onClick={() => !disabled && onTabChange?.(id)}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 5,
-                  padding: '6px 10px', borderRadius: 7,
+                  padding: '4px 10px', borderRadius: 7,
                   background: active ? 'var(--surface-1, #fff)' : 'transparent',
-                  color: active ? 'var(--moss)' : 'rgba(255,255,255,0.78)',
+                  color: active ? 'var(--brand-header)' : 'var(--ink-on-dark-2)',
                   fontWeight: active ? 600 : 500,
-                  fontSize: 13, fontFamily: 'DM Sans, sans-serif',
+                  fontSize: 'var(--t-caption-fs)', fontFamily: 'var(--font-dash-display), Manrope, sans-serif',
                   border: 'none', cursor: disabled ? 'not-allowed' : 'pointer',
                   boxShadow: active ? '0 1px 2px rgba(0,0,0,0.18)' : 'none',
                   transition: 'all 0.15s', opacity: disabled ? 0.5 : 1,
-                  position: 'relative', minHeight: 30,
+                  position: 'relative', minHeight: 26,
                 }}
               >
                 <Icon size={14} />
@@ -184,7 +278,7 @@ export function Header({
                   <span style={{
                     position: 'absolute', top: 2, right: 2,
                     width: 6, height: 6, borderRadius: '50%',
-                    background: 'var(--ochre)',
+                    background: 'var(--gold)',
                   }} />
                 )}
               </button>
@@ -200,7 +294,7 @@ export function Header({
           data-testid="header-plus"
           aria-label="Create new"
           style={{
-            width: 36, height: 36, borderRadius: '50%',
+            width: 30, height: 30, borderRadius: '50%',
             background: 'transparent', color: 'rgba(255,255,255,0.9)',
             border: '1px solid rgba(255,255,255,0.35)', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -236,13 +330,13 @@ export function Header({
                     width: '100%', padding: '10px 12px', borderRadius: 7,
                     background: 'none', border: 'none', cursor: 'pointer',
                     textAlign: 'left', display: 'flex', flexDirection: 'column',
-                    gap: 2, fontFamily: 'DM Sans, sans-serif',
+                    gap: 2, fontFamily: 'var(--font-dash-display), Manrope, sans-serif',
                   }}
                   onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.04)')}
                   onMouseLeave={e => (e.currentTarget.style.background = 'none')}
                 >
-                  <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{item.label}</span>
-                  <span style={{ fontSize: 11, color: 'var(--meta)' }}>{item.sub}</span>
+                  <span style={{ fontSize: 'var(--t-small-fs)', fontWeight: 600, color: 'var(--text)' }}>{item.label}</span>
+                  <span style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--meta)' }}>{item.sub}</span>
                 </button>
               ))}
             </div>
@@ -250,14 +344,25 @@ export function Header({
         )}
       </div>
 
-      {/* Avatar — opens BottomSheet menu (mobile + desktop) */}
+      {/* Local/Cloud routing toggle relocated into the account menu (AvatarMenu)
+          per SCREEN_03_REBUILD §TASK 2 — header is logo · tabs · account.
+          Behaviour unchanged; only its location moved. */}
+
+      {/* Avatar — opens BottomSheet menu (mobile + desktop); now also hosts the
+          Local/Cloud switch. */}
       <AvatarMenu />
 
       <style>{`
+        .goblin-header { height: 56px; }
+        @media (min-width: 769px) { .goblin-header { height: 60px; } }
         @media (max-width: 768px) {
           .goblin-hamburger { display: flex !important; }
           .goblin-breadcrumb { display: none !important; }
-          .goblin-tab-label { display: none !important; }
+          .goblin-wordmark { display: none !important; }
+          /* On mobile the desktop tab-pill switcher is replaced by the compact
+             mode-tile (§TASK 5) — no bottom bar. */
+          .goblin-tab-pills { display: none !important; }
+          .goblin-mode-tile { display: block !important; }
         }
       `}</style>
     </header>

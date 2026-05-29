@@ -1,4 +1,7 @@
 'use client';
+// LEGACY — superseded by SettingsRoot + SettingsModal. Direct-URL access only.
+// Do not extend; future settings additions belong in SettingsRoot
+// (apps/web/components/settings/SettingsRoot.tsx).
 import { useState, useEffect } from 'react';
 import { SettingsLayout } from '@/components/settings/settings-layout';
 import { getAuthHeaders, API_URL } from '@/lib/api';
@@ -14,7 +17,7 @@ const FIELD_STYLE = {
   background: 'var(--panel)',
   color: 'var(--text)',
   fontSize: 16,
-  fontFamily: 'DM Sans, sans-serif',
+  fontFamily: 'var(--font-sans)',
   outline: 'none',
   transition: 'border-color 0.15s',
   boxSizing: 'border-box' as const,
@@ -64,7 +67,7 @@ function AdvancedModeSection() {
     <div style={CARD_STYLE}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
         <div>
-          <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 18, color: 'var(--moss)', fontWeight: 700, marginBottom: 4, letterSpacing: '-0.3px' }}>
+          <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: 18, color: 'var(--brand-green)', fontWeight: 700, marginBottom: 4, letterSpacing: '-0.3px' }}>
             Advanced Mode
           </h2>
           <p style={{ fontSize: 13, color: 'var(--meta)', lineHeight: 1.6 }}>
@@ -84,7 +87,7 @@ function AdvancedModeSection() {
         >
           <div style={{
             position: 'absolute', inset: 0, borderRadius: 12,
-            background: enabled ? 'var(--moss)' : 'var(--border)',
+            background: enabled ? 'var(--brand-green)' : 'var(--border)',
             transition: 'background 0.2s',
           }} />
           <div style={{
@@ -144,7 +147,7 @@ function GeneralTab() {
     <>
       {/* Profile card */}
       <div style={CARD_STYLE}>
-        <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 18, color: 'var(--moss)', fontWeight: 700, marginBottom: 4, letterSpacing: '-0.3px' }}>
+        <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: 18, color: 'var(--brand-green)', fontWeight: 700, marginBottom: 4, letterSpacing: '-0.3px' }}>
           Profile
         </h2>
         <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 24 }}>Your account information</p>
@@ -152,9 +155,9 @@ function GeneralTab() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
           <div style={{
             width: 52, height: 52, borderRadius: '50%',
-            background: 'var(--moss)', color: '#fff',
+            background: 'var(--brand-green)', color: '#fff',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontFamily: 'Fraunces, serif', fontSize: 20, fontWeight: 700,
+            fontFamily: 'var(--font-sans)', fontSize: 20, fontWeight: 700,
             flexShrink: 0,
           }}>{avatarInitial}</div>
           <div>
@@ -173,7 +176,7 @@ function GeneralTab() {
               value={displayName}
               onChange={e => { setDisplayName(e.target.value); setProfileDirty(true); }}
               style={FIELD_STYLE}
-              onFocus={e => (e.target.style.borderColor = 'var(--moss)')}
+              onFocus={e => (e.target.style.borderColor = 'var(--brand-green)')}
               onBlur={e => (e.target.style.borderColor = 'var(--border)')}
             />
           </div>
@@ -196,16 +199,16 @@ function GeneralTab() {
               onClick={saveProfile}
               disabled={savingProfile || !profileDirty}
               style={{
-                background: profileDirty ? 'var(--moss)' : 'var(--subtle)',
+                background: profileDirty ? 'var(--brand-green)' : 'var(--subtle)',
                 color: profileDirty ? '#fff' : 'var(--meta)',
                 border: 'none', borderRadius: 8,
                 padding: '10px 22px', fontSize: 13, fontWeight: 500,
                 cursor: savingProfile || !profileDirty ? 'not-allowed' : 'pointer',
-                fontFamily: 'DM Sans, sans-serif', minHeight: 40,
+                fontFamily: 'var(--font-sans)', minHeight: 40,
                 transition: 'background 0.15s',
               }}
-              onMouseEnter={e => { if (profileDirty) e.currentTarget.style.background = 'var(--moss2)'; }}
-              onMouseLeave={e => { if (profileDirty) e.currentTarget.style.background = 'var(--moss)'; }}
+              onMouseEnter={e => { if (profileDirty) e.currentTarget.style.background = 'var(--green-600)'; }}
+              onMouseLeave={e => { if (profileDirty) e.currentTarget.style.background = 'var(--brand-green)'; }}
             >
               {savingProfile ? 'Saving…' : 'Save changes'}
             </button>
@@ -218,7 +221,7 @@ function GeneralTab() {
 
       {/* Danger zone */}
       <div style={{ ...CARD_STYLE, border: '1px solid rgba(184,92,60,0.25)' }}>
-        <h3 style={{ fontFamily: 'Fraunces, serif', fontSize: 16, color: 'var(--danger)', fontWeight: 700, marginBottom: 6 }}>
+        <h3 style={{ fontFamily: 'var(--font-sans)', fontSize: 16, color: 'var(--danger)', fontWeight: 700, marginBottom: 6 }}>
           Danger Zone
         </h3>
         <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 16, fontWeight: 300 }}>
@@ -239,12 +242,12 @@ function GeneralTab() {
             <div style={{ display: 'flex', gap: 8 }}>
               <button
                 onClick={() => setShowDeleteConfirm(false)}
-                style={{ padding: '9px 18px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text)', fontSize: 13, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}
+                style={{ padding: '9px 18px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text)', fontSize: 13, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}
               >
                 Cancel
               </button>
               <button
-                style={{ padding: '9px 18px', borderRadius: 8, border: 'none', background: 'var(--danger)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'DM Sans, sans-serif' }}
+                style={{ padding: '9px 18px', borderRadius: 8, border: 'none', background: 'var(--danger)', color: '#fff', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}
               >
                 Delete Account
               </button>
@@ -258,7 +261,7 @@ function GeneralTab() {
               border: '1.5px solid rgba(184,92,60,0.4)',
               borderRadius: 8, padding: '9px 18px',
               fontSize: 13, fontWeight: 500, cursor: 'pointer',
-              fontFamily: 'DM Sans, sans-serif', minHeight: 40,
+              fontFamily: 'var(--font-sans)', minHeight: 40,
             }}
             onMouseEnter={e => { e.currentTarget.style.background = 'rgba(184,92,60,0.06)'; e.currentTarget.style.borderColor = 'var(--danger)'; }}
             onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.borderColor = 'rgba(184,92,60,0.4)'; }}
@@ -309,7 +312,7 @@ function DefaultModelDropdown({
         onChange={e => onChange(e.target.value)}
         disabled={saving}
         style={{ ...FIELD_STYLE, cursor: 'pointer', height: 44 }}
-        onFocus={e => (e.target.style.borderColor = 'var(--moss)')}
+        onFocus={e => (e.target.style.borderColor = 'var(--brand-green)')}
         onBlur={e => (e.target.style.borderColor = 'var(--border)')}
       >
         <option value="">— Auto (use connected key) —</option>
@@ -359,7 +362,7 @@ function DeveloperTab() {
     <>
       {/* Default Models */}
       <div style={CARD_STYLE}>
-        <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 18, color: 'var(--moss)', fontWeight: 700, marginBottom: 4, letterSpacing: '-0.3px' }}>
+        <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: 18, color: 'var(--brand-green)', fontWeight: 700, marginBottom: 4, letterSpacing: '-0.3px' }}>
           Default Models
         </h2>
         <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 20 }}>Per-use-case defaults. Only models with a connected key will work.</p>
@@ -384,23 +387,23 @@ function DeveloperTab() {
             onClick={saveModels}
             disabled={saving}
             style={{
-              background: 'var(--moss)', color: '#fff', border: 'none', borderRadius: 8,
+              background: 'var(--brand-green)', color: '#fff', border: 'none', borderRadius: 8,
               padding: '10px 22px', fontSize: 13, fontWeight: 500,
               cursor: saving ? 'not-allowed' : 'pointer',
-              fontFamily: 'DM Sans, sans-serif', minHeight: 40, opacity: saving ? 0.7 : 1,
+              fontFamily: 'var(--font-sans)', minHeight: 40, opacity: saving ? 0.7 : 1,
             }}
-            onMouseEnter={e => { if (!saving) (e.currentTarget.style.background = 'var(--moss2)'); }}
-            onMouseLeave={e => (e.currentTarget.style.background = 'var(--moss)')}
+            onMouseEnter={e => { if (!saving) (e.currentTarget.style.background = 'var(--green-600)'); }}
+            onMouseLeave={e => (e.currentTarget.style.background = 'var(--brand-green)')}
           >
             {saving ? 'Saving...' : 'Save'}
           </button>
-          {saved && <span style={{ fontSize: 13, color: 'var(--good)', fontFamily: 'DM Sans, sans-serif', fontWeight: 500 }}>✓ Saved</span>}
+          {saved && <span style={{ fontSize: 13, color: 'var(--good)', fontFamily: 'var(--font-sans)', fontWeight: 500 }}>✓ Saved</span>}
         </div>
       </div>
 
       {/* Request Timeout */}
       <div style={CARD_STYLE}>
-        <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 18, color: 'var(--moss)', fontWeight: 700, marginBottom: 4, letterSpacing: '-0.3px' }}>
+        <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: 18, color: 'var(--brand-green)', fontWeight: 700, marginBottom: 4, letterSpacing: '-0.3px' }}>
           Request Timeout
         </h2>
         <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 20 }}>Max wait time per AI request</p>
@@ -411,10 +414,10 @@ function DeveloperTab() {
               onClick={() => setTimeoutSetting(t)}
               style={{
                 padding: '8px 16px', borderRadius: 8, fontSize: 13, fontWeight: 500,
-                border: timeoutSetting === t ? '2px solid var(--moss)' : '1.5px solid var(--border)',
+                border: timeoutSetting === t ? '2px solid var(--brand-green)' : '1.5px solid var(--border)',
                 background: timeoutSetting === t ? 'rgba(45,74,43,0.08)' : 'transparent',
-                color: timeoutSetting === t ? 'var(--moss)' : 'var(--meta)',
-                cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
+                color: timeoutSetting === t ? 'var(--brand-green)' : 'var(--meta)',
+                cursor: 'pointer', fontFamily: 'var(--font-sans)',
               }}
             >
               {t}s
@@ -425,7 +428,7 @@ function DeveloperTab() {
 
       {/* System Prompt Override */}
       <div style={CARD_STYLE}>
-        <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 18, color: 'var(--moss)', fontWeight: 700, marginBottom: 4, letterSpacing: '-0.3px' }}>
+        <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: 18, color: 'var(--brand-green)', fontWeight: 700, marginBottom: 4, letterSpacing: '-0.3px' }}>
           System Prompt Override
         </h2>
         <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 20 }}>
@@ -443,18 +446,18 @@ function DeveloperTab() {
             outline: 'none', resize: 'vertical', boxSizing: 'border-box',
             lineHeight: 1.6,
           }}
-          onFocus={e => (e.target.style.borderColor = 'var(--moss)')}
+          onFocus={e => (e.target.style.borderColor = 'var(--brand-green)')}
           onBlur={e => (e.target.style.borderColor = 'var(--border)')}
         />
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 12 }}>
           <button
             style={{
-              background: 'var(--moss)', color: '#fff', border: 'none', borderRadius: 8,
+              background: 'var(--brand-green)', color: '#fff', border: 'none', borderRadius: 8,
               padding: '10px 22px', fontSize: 13, fontWeight: 500, cursor: 'pointer',
-              fontFamily: 'DM Sans, sans-serif', minHeight: 40,
+              fontFamily: 'var(--font-sans)', minHeight: 40,
             }}
-            onMouseEnter={e => (e.currentTarget.style.background = 'var(--moss2)')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'var(--moss)')}
+            onMouseEnter={e => (e.currentTarget.style.background = 'var(--green-600)')}
+            onMouseLeave={e => (e.currentTarget.style.background = 'var(--brand-green)')}
           >
             Save
           </button>
@@ -463,17 +466,17 @@ function DeveloperTab() {
 
       {/* Export Data */}
       <div style={CARD_STYLE}>
-        <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 18, color: 'var(--moss)', fontWeight: 700, marginBottom: 4, letterSpacing: '-0.3px' }}>
+        <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: 18, color: 'var(--brand-green)', fontWeight: 700, marginBottom: 4, letterSpacing: '-0.3px' }}>
           Export Data
         </h2>
         <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 20 }}>Download all your projects, chats, and settings as JSON</p>
         <button
           style={{
-            background: 'transparent', color: 'var(--moss)',
-            border: '1.5px solid var(--moss)',
+            background: 'transparent', color: 'var(--brand-green)',
+            border: '1.5px solid var(--brand-green)',
             borderRadius: 8, padding: '9px 18px',
             fontSize: 13, fontWeight: 500, cursor: 'pointer',
-            fontFamily: 'DM Sans, sans-serif', minHeight: 40,
+            fontFamily: 'var(--font-sans)', minHeight: 40,
           }}
           onMouseEnter={e => (e.currentTarget.style.background = 'rgba(45,74,43,0.06)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
@@ -485,7 +488,7 @@ function DeveloperTab() {
       {/* Coming soon: API Access + Webhook */}
       <div style={{ ...CARD_STYLE, opacity: 0.5, pointerEvents: 'none' }}>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}>
-          <h2 style={{ fontFamily: 'Fraunces, serif', fontSize: 18, color: 'var(--moss)', fontWeight: 700, letterSpacing: '-0.3px' }}>
+          <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: 18, color: 'var(--brand-green)', fontWeight: 700, letterSpacing: '-0.3px' }}>
             API Access & Webhooks
           </h2>
           <span style={{ fontSize: 11, background: 'var(--border)', color: 'var(--meta)', padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>
@@ -510,19 +513,19 @@ export default function SettingsPage() {
   const tabStyle = (active: boolean) => ({
     padding: '8px 18px', borderRadius: 8, fontSize: 13, fontWeight: 500 as const,
     border: 'none', cursor: 'pointer' as const,
-    background: active ? 'var(--moss)' : 'transparent',
+    background: active ? 'var(--brand-green)' : 'transparent',
     color: active ? '#fff' : 'var(--meta)',
-    fontFamily: 'DM Sans, sans-serif',
+    fontFamily: 'var(--font-sans)',
     transition: 'all 0.15s',
   });
 
   return (
     <SettingsLayout>
       <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontFamily: 'Fraunces, serif', fontSize: 22, fontWeight: 700, color: 'var(--moss)', marginBottom: 6, letterSpacing: '-0.3px' }}>
+        <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 22, fontWeight: 700, color: 'var(--brand-green)', marginBottom: 6, letterSpacing: '-0.3px' }}>
           {tab === 'developer' ? 'Developer Tools' : 'Profile & Account'}
         </h1>
-        <p style={{ fontSize: 13, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif' }}>
+        <p style={{ fontSize: 13, color: 'var(--meta)', fontFamily: 'var(--font-sans)' }}>
           {tab === 'developer'
             ? 'Advanced model settings, system prompt, and developer preferences.'
             : 'Manage your profile, appearance, and notifications.'}

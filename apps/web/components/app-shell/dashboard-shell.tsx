@@ -5,10 +5,15 @@ import { usePathname, useRouter } from "next/navigation";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { TrialBanner } from "@/components/app-shell/trial-banner";
+// NOTE (SCREEN_03_V3 §TASK 4): BottomTabBar intentionally NOT rendered.
+// A bottom bar collides with the phone typing zone / swipe-up gesture area;
+// mobile mode-switching lives in the top header mode-tile instead. File kept
+// in repo, just not wired.
 import { CommandPalette, useCommandPalette } from "@/components/ui/CommandPalette";
 import { ShortcutsHelp } from "@/components/ui/ShortcutsHelp";
 import { ShortcutsTooltip } from "@/components/ui/ShortcutsTooltip";
 import { SettingsSheet } from "@/components/settings/settings-sheet";
+import { SettingsModal } from "@/components/settings/SettingsModal";
 import dynamic from "next/dynamic";
 const FirstRunTour = dynamic(() => import("@/components/onboarding/first-run-tour").then(m => m.FirstRunTour), { ssr: false });
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -29,9 +34,23 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
   const [showTour, setShowTour] = useState(false);
   const [cmdPaletteOpen, setCmdPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
-  const { activeTab, setActiveTab, injectionCount, setShowNewProjectModal, previewUrl: contextPreviewUrl, setShowSettingsSheet } = useApp();
+  const { activeTab, setActiveTab, injectionCount, setShowNewProjectModal, previewUrl: contextPreviewUrl, setShowSettingsSheet, showSettingsSheet, settingsInitialItem, setSettingsInitialItem } = useApp();
   const pathname = usePathname();
   const router = useRouter();
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 768px)');
+    setIsDesktop(mq.matches);
+    const on = () => setIsDesktop(mq.matches);
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, []);
+
+  const closeSettings = useCallback(() => {
+    setShowSettingsSheet(false);
+    setSettingsInitialItem(null);
+  }, [setShowSettingsSheet, setSettingsInitialItem]);
 
   const handleLogout = useCallback(async () => {
     const supabase = createClient();
@@ -82,7 +101,9 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
     return match ? match[1] : undefined;
   })();
 
-  const isWorkspace = !!activeProjectId;
+  // We are "in a project context" if any /project/[id]/* route. Tabs become
+  // navigation when the user is on the overview, real tab-state when on /work.
+  const isInWorkspaceRoute = !!activeProjectId && /\/project\/[^/]+\/work/.test(pathname);
 
   const closeMobile = useCallback(() => setMobileOpen(false), []);
 
@@ -97,13 +118,25 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
   const activeProjectName = projects.find(p => p.id === activeProjectId)?.name;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--cream)', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--paper)', overflow: 'hidden' }}>
       <Header
         activeTab={activeTab as 'chat' | 'code' | 'preview'}
-        onTabChange={tab => setActiveTab(tab)}
+        onTabChange={tab => {
+          // Inside /work, switch tabs in place. On the project overview,
+          // tab clicks navigate into the workspace with the right tab.
+          if (isInWorkspaceRoute) {
+            setActiveTab(tab);
+          } else if (activeProjectId) {
+            router.push(`/dashboard/project/${activeProjectId}/work?tab=${tab}`);
+          } else {
+            // Outside any project — Chat tab on dashboard root creates a session.
+            if (tab === 'chat') router.push('/dashboard/chat');
+          }
+        }}
         onMenuToggle={() => setMobileOpen(s => !s)}
         projectName={activeProjectName}
-        showTabs={isWorkspace}
+        showTabs
+        hasProject={!!activeProjectId}
         injectionCount={injectionCount}
         previewUrl={contextPreviewUrl ?? undefined}
       />
@@ -140,6 +173,11 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
       <ShortcutsTooltip />
 
       <SettingsSheet />
+      <SettingsModal
+        open={showSettingsSheet && isDesktop}
+        onClose={closeSettings}
+        initialSectionId={settingsInitialItem ?? undefined}
+      />
     </div>
   );
 }
