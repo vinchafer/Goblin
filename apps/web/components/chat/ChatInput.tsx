@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useRef, useEffect, useState, useCallback } from 'react';
 import { toast } from 'sonner';
@@ -6,6 +6,7 @@ import { apiGet } from '@/lib/api';
 import { createClient } from '@/lib/supabase/client';
 import { ComposerPlusPopover, type PlusAction } from './ComposerPlusPopover';
 import { Icon } from '@/components/ui/icon';
+import { GoblinLogo } from '@/components/brand/GoblinLogo';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -41,25 +42,44 @@ interface ChatInputProps {
   disabled?: boolean;
   selectedModel: SelectedModel;
   onModelChange: (model: SelectedModel) => void;
+  /** "hero" sits the same shared composer on the dark 03 hero card.
+      Same component, dark-surface styling — NOT a fork. */
+  variant?: 'default' | 'hero';
+  /** Optional placeholder override (hero uses a build-focused prompt). */
+  placeholder?: string;
+  /** Push text into the composer from outside (e.g. 03 quick-prompt chips).
+      Changing this value sets the input; clearing it ('') is ignored. */
+  prefill?: string;
+  /** True while an assistant reply streams — swaps Send for Stop. */
+  isStreaming?: boolean;
+  /** Abort the in-flight stream (Stop button). */
+  onStop?: () => void;
 }
 
 // ─── Provider Icons ───────────────────────────────────────────────────────────
 
-const PROVIDER_ICON: Record<string, string> = {
-  anthropic: '🟠',
-  openai: '⚫',
-  google: '🔵',
-  groq: '🟢',
-  mistral: '🔶',
-  deepseek: '🐳',
-  xai: '𝕏',
-  together: '🤝',
-  fireworks: '🎆',
-  goblin: '👺',
-};
-
-function getProviderIcon(provider: string): string {
-  return PROVIDER_ICON[provider.toLowerCase()] ?? '🤖';
+// §A6: no emoji in product UI. Providers render as a clean, consistent
+// monochrome lettermark badge (currentColor) — goblin-hosted uses the brand
+// mark. No toy glyphs.
+function ProviderIcon({ provider, size = 20 }: { provider: string; size?: number }) {
+  if (provider.toLowerCase() === 'goblin') {
+    return <GoblinLogo size={size} variant="green" aria-label="Goblin" />;
+  }
+  const letter = (provider.trim()[0] ?? '?').toUpperCase();
+  return (
+    <span
+      aria-hidden="true"
+      style={{
+        width: size, height: size, flexShrink: 0, borderRadius: 6,
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+        border: '1.5px solid currentColor', opacity: 0.85,
+        fontFamily: 'var(--font-sans)', fontWeight: 700,
+        fontSize: 'var(--t-eyebrow-fs)', lineHeight: 1,
+      }}
+    >
+      {letter}
+    </span>
+  );
 }
 
 function shortModelName(name: string): string {
@@ -126,17 +146,17 @@ function ModelHub({
         onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'rgba(0,0,0,0.04)'; }}
         onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'none'; }}
       >
-        <span style={{ fontSize: 18, flexShrink: 0, lineHeight: 1.2 }}>{getProviderIcon(m.provider)}</span>
+        <span style={{ display: 'inline-flex', flexShrink: 0, color: 'var(--ink-2)' }}><ProviderIcon provider={m.provider} size={20} /></span>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: 13, fontWeight: active ? 600 : 500, color: 'var(--text)', fontFamily: 'DM Sans, sans-serif' }}>
+            <span style={{ fontSize: 'var(--t-small-fs)', fontWeight: active ? 600 : 500, color: 'var(--text)', fontFamily: 'var(--font-sans)' }}>
               {m.name}
             </span>
             {badge}
-            {active && <span style={{ fontSize: 10, background: 'var(--moss)', color: '#fff', padding: '1px 5px', borderRadius: 3, fontWeight: 600, fontFamily: 'DM Sans, sans-serif' }}>✓ ACTIVE</span>}
+            {active && <span style={{ fontSize: 'var(--t-eyebrow-fs)', background: 'var(--brand-green)', color: '#fff', padding: '1px 6px', borderRadius: 3, fontWeight: 600, fontFamily: 'var(--font-sans)', letterSpacing: '0.04em' }}>ACTIVE</span>}
           </div>
           {m.description && (
-            <div style={{ fontSize: 11, color: 'var(--meta)', marginTop: 2, fontFamily: 'DM Sans, sans-serif', lineHeight: 1.4 }}>
+            <div style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--meta)', marginTop: 2, fontFamily: 'var(--font-sans)', lineHeight: 1.4 }}>
               {m.description}
             </div>
           )}
@@ -151,9 +171,9 @@ function ModelHub({
       <div>
         <div style={{
           padding: '6px 14px 4px',
-          fontSize: 10, fontWeight: 700, letterSpacing: '1.2px',
+          fontSize: 'var(--t-eyebrow-fs)', fontWeight: 700, letterSpacing: '1.2px',
           textTransform: 'uppercase', color: 'var(--text-faint)',
-          fontFamily: 'DM Sans, sans-serif',
+          fontFamily: 'var(--font-sans)',
         }}>{title}</div>
         {children}
       </div>
@@ -178,9 +198,9 @@ function ModelHub({
           onChange={e => setQuery(e.target.value)}
           placeholder="Search models…"
           style={{
-            width: '100%', border: '1px solid #EDE8DC', borderRadius: 8,
-            padding: '7px 12px', fontSize: 13, outline: 'none',
-            fontFamily: 'DM Sans, sans-serif', background: 'var(--cream)',
+            width: '100%', border: '1px solid var(--rule-soft)', borderRadius: 8,
+            padding: '7px 12px', fontSize: 'var(--t-small-fs)', outline: 'none',
+            fontFamily: 'var(--font-sans)', background: 'var(--paper)',
             color: 'var(--text)',
           }}
         />
@@ -194,12 +214,12 @@ function ModelHub({
               key={tag}
               onClick={() => setActiveTag(activeTag === tag ? null : tag)}
               style={{
-                padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 500,
+                padding: '3px 10px', borderRadius: 20, fontSize: 'var(--t-caption-fs)', fontWeight: 500,
                 border: '1px solid',
-                borderColor: activeTag === tag ? 'var(--moss)' : 'var(--border)',
-                background: activeTag === tag ? 'var(--moss)' : 'transparent',
+                borderColor: activeTag === tag ? 'var(--brand-green)' : 'var(--border)',
+                background: activeTag === tag ? 'var(--brand-green)' : 'transparent',
                 color: activeTag === tag ? '#fff' : 'var(--meta)',
-                cursor: 'pointer', fontFamily: 'DM Sans, sans-serif',
+                cursor: 'pointer', fontFamily: 'var(--font-sans)',
                 transition: 'all 0.1s',
               }}
             >
@@ -216,7 +236,7 @@ function ModelHub({
             <ModelRow
               key={m.slug}
               m={m}
-              badge={<span style={{ fontSize: 10, background: 'var(--success)', color: '#fff', padding: '1px 6px', borderRadius: 3, fontWeight: 600, fontFamily: 'DM Sans, sans-serif' }}>KEY ✓</span>}
+              badge={<span style={{ fontSize: 'var(--t-eyebrow-fs)', background: 'var(--success)', color: '#fff', padding: '1px 6px', borderRadius: 3, fontWeight: 600, fontFamily: 'var(--font-sans)', letterSpacing: '0.04em' }}>KEY</span>}
             />
           ))}
         </Section>
@@ -226,7 +246,7 @@ function ModelHub({
             <ModelRow
               key={m.slug}
               m={m}
-              badge={<span style={{ fontSize: 10, background: '#4A7A7A', color: '#fff', padding: '1px 6px', borderRadius: 3, fontWeight: 600, fontFamily: 'DM Sans, sans-serif' }}>FREE</span>}
+              badge={<span style={{ fontSize: 'var(--t-eyebrow-fs)', background: '#4A7A7A', color: '#fff', padding: '1px 6px', borderRadius: 3, fontWeight: 600, fontFamily: 'var(--font-sans)' }}>FREE</span>}
             />
           ))}
         </Section>
@@ -234,19 +254,19 @@ function ModelHub({
         <Section title="Goblin Hosted" count={hostedModels.length}>
           {hostedModels.map(m => (
             <div key={m.slug} style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10, opacity: 0.5 }}>
-              <span style={{ fontSize: 18 }}>👺</span>
+              <span style={{ display: 'inline-flex', flexShrink: 0 }}><GoblinLogo size={20} variant="green" /></span>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)', fontFamily: 'DM Sans, sans-serif' }}>{m.name}</div>
-                {m.description && <div style={{ fontSize: 11, color: 'var(--meta)', fontFamily: 'DM Sans, sans-serif' }}>{m.description}</div>}
+                <div style={{ fontSize: 'var(--t-small-fs)', fontWeight: 500, color: 'var(--text)', fontFamily: 'var(--font-sans)' }}>{m.name}</div>
+                {m.description && <div style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--meta)', fontFamily: 'var(--font-sans)' }}>{m.description}</div>}
               </div>
-              <span style={{ fontSize: 10, background: 'var(--text-faint)', color: '#fff', padding: '2px 7px', borderRadius: 4, fontWeight: 600, fontFamily: 'DM Sans, sans-serif', flexShrink: 0 }}>SOON</span>
+              <span style={{ fontSize: 'var(--t-eyebrow-fs)', background: 'var(--text-faint)', color: '#fff', padding: '2px 7px', borderRadius: 4, fontWeight: 600, fontFamily: 'var(--font-sans)', flexShrink: 0 }}>SOON</span>
             </div>
           ))}
         </Section>
 
         {byokModels.length === 0 && freeModels.length === 0 && (
-          <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-faint)', fontFamily: 'DM Sans, sans-serif', fontSize: 13 }}>
-            <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'center', color: 'var(--moss)' }}>
+          <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-faint)', fontFamily: 'var(--font-sans)', fontSize: 'var(--t-small-fs)' }}>
+            <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'center', color: 'var(--brand-green)' }}>
               <Icon name="apiKey" size={28} strokeWidth={1.5} />
             </div>
             Add an API key in Settings → API Keys to unlock models.
@@ -294,8 +314,8 @@ function VoiceButton({ onTranscript, disabled }: { onTranscript: (t: string) => 
     <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
       {label && (
         <span style={{
-          fontSize: 11, color: recording ? 'var(--danger)' : 'var(--meta)',
-          fontFamily: 'DM Sans, sans-serif',
+          fontSize: 'var(--t-caption-fs)', color: recording ? 'var(--danger)' : 'var(--meta)',
+          fontFamily: 'var(--font-sans)',
           animation: 'goblin-pulse 1.2s ease-in-out infinite',
         }}>
           {label}
@@ -387,9 +407,18 @@ export function useChatModel() {
   return { selectedModel, changeModel, setSelectedModel };
 }
 
-export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelChange }: ChatInputProps) {
+export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelChange, variant = 'default', placeholder, prefill, isStreaming = false, onStop }: ChatInputProps) {
+  const hero = variant === 'hero';
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [input, setInput] = useState('');
+
+  // Outside-driven prefill (03 quick-prompt chips). Focus after filling.
+  useEffect(() => {
+    if (prefill && prefill.length > 0) {
+      setInput(prefill);
+      textareaRef.current?.focus();
+    }
+  }, [prefill]);
   const [hubOpen, setHubOpen] = useState(false);
   const [models, setModels] = useState<ApiModel[]>([]);
   const [connectedKeys, setConnectedKeys] = useState<ConnectedKey[]>([]);
@@ -470,7 +499,7 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
 
   const submit = () => {
     const trimmed = input.trim();
-    if (!trimmed || disabled) return;
+    if (!trimmed || disabled || isStreaming) return;
     onSubmit(trimmed, selectedModel);
     setInput('');
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
@@ -511,6 +540,24 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
       toast.info('GitHub-Connect → Einstellungen → Konnektoren');
       return;
     }
+    if (action === 'paste-chat') {
+      // Open native paste prompt — user pastes a past conversation (from
+      // Goblin / ChatGPT / Claude / notes). It is appended to the input
+      // as plain text inside a fenced block so the model can see it as
+      // prior context. There is no real "session import" backend.
+      const pasted = window.prompt(
+        'Vergangene Konversation oder Notiz einfügen (Strg+V):',
+        '',
+      );
+      if (pasted && pasted.trim()) {
+        setInput(prev => {
+          const block = `\n\n--- Vorheriger Chat / Notiz ---\n${pasted.trim()}\n--- Ende ---\n\n`;
+          return prev ? prev + block : block.trimStart();
+        });
+        toast.success('Eingefügt als Kontext');
+      }
+      return;
+    }
   };
 
   const handleFilesPicked = (files: FileList | null) => {
@@ -520,14 +567,16 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
     // scope for this row — backend supports image+pdf attachments already).
     const names = Array.from(files).map(f => f.name).join(', ');
     setInput(prev => {
-      const tag = `\n\n[📎 Anhang: ${names}]`;
+      const tag = `\n\n[Anhang: ${names}]`;
       return prev.endsWith(tag) ? prev : prev + tag;
     });
     toast.success(`${files.length} Datei(en) angehängt`);
   };
 
   return (
-    <div style={{ padding: '10px 16px 12px', background: 'var(--panel)', borderTop: '1px solid var(--border-subtle)', flexShrink: 0 }}>
+    <div style={hero
+      ? { padding: 0, background: 'transparent', flexShrink: 0 }
+      : { padding: '10px 16px 12px', background: 'var(--panel)', borderTop: '1px solid var(--border-subtle)', flexShrink: 0 }}>
       <div ref={hubRef} style={{ position: 'relative' }}>
         {hubOpen && (
           <ModelHub
@@ -546,12 +595,13 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
         <div
           style={{
             display: 'flex', flexDirection: 'column',
-            border: '1.5px solid var(--border-subtle)', borderRadius: 14,
-            background: 'var(--subtle)',
+            border: hero ? '1px solid rgba(244,236,216,.16)' : '1.5px solid var(--border-subtle)',
+            borderRadius: 14,
+            background: hero ? 'rgba(244,236,216,.05)' : 'var(--subtle)',
             transition: 'border-color 0.15s',
           }}
-          onFocusCapture={e => (e.currentTarget.style.borderColor = 'var(--moss)')}
-          onBlurCapture={e => (e.currentTarget.style.borderColor = 'var(--border-subtle)')}
+          onFocusCapture={e => (e.currentTarget.style.borderColor = hero ? 'rgba(244,236,216,.34)' : 'var(--brand-green)')}
+          onBlurCapture={e => (e.currentTarget.style.borderColor = hero ? 'rgba(244,236,216,.16)' : 'var(--border-subtle)')}
         >
           {/* Textarea */}
           <textarea
@@ -559,13 +609,17 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Describe what you want to build, or ask anything…"
+            placeholder={placeholder ?? 'Describe what you want to build, or ask anything…'}
             disabled={disabled}
-            rows={1}
+            rows={hero ? 2 : 1}
+            data-chat-input
+            className={hero ? 'gobl-hero-textarea' : undefined}
             style={{
               resize: 'none', border: 'none', background: 'transparent',
-              outline: 'none', fontSize: 14, color: 'var(--text)',
-              fontFamily: 'DM Sans, sans-serif', lineHeight: '22px',
+              outline: 'none', fontSize: hero ? 'var(--t-body-fs)' : 'var(--t-small-fs)',
+              color: hero ? 'var(--bone)' : 'var(--text)',
+              fontFamily: hero ? 'var(--font-dash-display), Manrope, sans-serif' : 'var(--font-sans)',
+              lineHeight: hero ? '24px' : '22px',
               maxHeight: `${6 * 22 + 20}px`, overflowY: 'auto',
               padding: '12px 14px 6px',
               width: '100%', boxSizing: 'border-box',
@@ -585,11 +639,11 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
               aria-label="Anhang hinzufügen"
               style={{
                 width: 28, height: 28, borderRadius: '50%',
-                border: '1px solid var(--border-subtle)',
-                background: 'var(--panel)',
+                border: hero ? '1px solid rgba(244,236,216,.20)' : '1px solid var(--border-subtle)',
+                background: hero ? 'transparent' : 'var(--panel)',
                 cursor: 'pointer', display: 'flex',
                 alignItems: 'center', justifyContent: 'center',
-                color: 'var(--meta)', flexShrink: 0,
+                color: hero ? 'rgba(244,236,216,.72)' : 'var(--meta)', flexShrink: 0,
               }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -621,14 +675,15 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
                 display: 'flex', alignItems: 'center', gap: 4,
                 padding: '3px 8px', borderRadius: 6,
                 background: 'none',
-                border: '1px solid rgba(45,74,43,0.18)',
-                cursor: 'pointer', fontSize: 11, fontWeight: 500,
-                color: '#5a7a58', fontFamily: 'DM Sans, sans-serif',
+                border: hero ? '1px solid rgba(244,236,216,.20)' : '1px solid rgba(45,74,43,0.18)',
+                cursor: 'pointer', fontSize: 'var(--t-caption-fs)', fontWeight: 500,
+                color: hero ? 'rgba(244,236,216,.72)' : '#5a7a58',
+                fontFamily: hero ? 'var(--font-dash-display), Manrope, sans-serif' : 'var(--font-sans)',
                 transition: 'all 0.12s', flexShrink: 0,
                 maxWidth: 160, overflow: 'hidden',
               }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(45,74,43,0.07)'; e.currentTarget.style.borderColor = 'rgba(45,74,43,0.35)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = 'rgba(45,74,43,0.18)'; }}
+              onMouseEnter={e => { e.currentTarget.style.background = hero ? 'rgba(244,236,216,.08)' : 'rgba(45,74,43,0.07)'; e.currentTarget.style.borderColor = hero ? 'rgba(244,236,216,.34)' : 'rgba(45,74,43,0.35)'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = hero ? 'rgba(244,236,216,.20)' : 'rgba(45,74,43,0.18)'; }}
             >
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {selectedModel.displayName}
@@ -640,8 +695,8 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
 
             {/* Spacer + hint */}
             <span style={{
-              flex: 1, fontSize: 11, color: '#B8B0A8',
-              fontFamily: 'DM Sans, sans-serif',
+              flex: 1, fontSize: 'var(--t-caption-fs)', color: hero ? 'rgba(244,236,216,.5)' : '#B8B0A8',
+              fontFamily: hero ? 'var(--font-dash-display), Manrope, sans-serif' : 'var(--font-sans)',
               paddingLeft: 2,
             }}>
               {disabled ? '' : '⇧↵ new line'}
@@ -650,36 +705,53 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
             {/* Voice input button */}
             <VoiceButton onTranscript={t => setInput(prev => prev + t)} disabled={disabled} />
 
-            {/* Send button — right */}
-            <button
-              onClick={submit}
-              disabled={!hasInput || disabled}
-              style={{
-                width: 32, height: 32, borderRadius: 8,
-                background: hasInput && !disabled ? 'var(--moss)' : 'var(--border)',
-                border: 'none', cursor: hasInput && !disabled ? 'pointer' : 'not-allowed',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                transition: 'all 0.15s', flexShrink: 0,
-                color: hasInput && !disabled ? '#fff' : 'var(--text-faint)',
-              }}
-              onMouseEnter={e => { if (hasInput && !disabled) e.currentTarget.style.background = '#3A5A37'; }}
-              onMouseLeave={e => { if (hasInput && !disabled) e.currentTarget.style.background = 'var(--moss)'; }}
-            >
-              {disabled ? (
-                <svg style={{ animation: 'inputSpin 0.8s linear infinite' }} width="14" height="14" viewBox="0 0 24 24" fill="none">
-                  <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2.5" strokeDasharray="28" strokeDashoffset="8" opacity="0.4" />
-                  <path d="M12 3a9 9 0 0 1 9 9" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+            {/* Send / Stop button — right. Streaming → Stop (abrupt abort). */}
+            {isStreaming ? (
+              <button
+                onClick={onStop}
+                aria-label="Stopp"
+                title="Stopp"
+                style={{
+                  width: 32, height: 32, borderRadius: 8,
+                  background: 'var(--rule-strong)', border: 'none', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 0.15s', flexShrink: 0, color: 'var(--ink-deep)',
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                  <rect x="6" y="6" width="12" height="12" rx="2" />
                 </svg>
-              ) : (
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-                  <path d="M22 2L11 13"/>
-                  <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+              </button>
+            ) : (
+              <button
+                onClick={submit}
+                disabled={!hasInput}
+                aria-label="Senden"
+                style={{
+                  width: 32, height: 32, borderRadius: 8,
+                  background: hasInput
+                    ? 'var(--brand-gold)'
+                    : (hero ? 'rgba(244,236,216,.16)' : 'var(--surface-3)'),
+                  border: 'none', cursor: hasInput ? 'pointer' : 'not-allowed',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all 0.15s', flexShrink: 0,
+                  color: hasInput
+                    ? 'var(--ink-deep)'
+                    : (hero ? 'rgba(244,236,216,.45)' : 'var(--ink-3)'),
+                }}
+                onMouseEnter={e => { if (hasInput) e.currentTarget.style.background = 'var(--gold-400)'; }}
+                onMouseLeave={e => { if (hasInput) e.currentTarget.style.background = 'var(--brand-gold)'; }}
+              >
+                {/* Icon-only up-arrow — no text label. Shared across 03/05/06. */}
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="19" x2="12" y2="5"/>
+                  <polyline points="5 12 12 5 19 12"/>
                 </svg>
-              )}
-            </button>
+              </button>
+            )}
           </div>
         </div>
-        <style>{`@keyframes inputSpin{to{transform:rotate(360deg)}}`}</style>
+        <style>{`@keyframes inputSpin{to{transform:rotate(360deg)}}.gobl-hero-textarea::placeholder{color:rgba(244,236,216,.45)}`}</style>
       </div>
     </div>
   );

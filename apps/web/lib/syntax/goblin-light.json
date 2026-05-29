@@ -1,0 +1,42 @@
+{
+  "name": "goblin-light",
+  "type": "light",
+  "colors": {
+    "editor.background": "#FBF7EC",
+    "editor.foreground": "#3F3A2C"
+  },
+  "tokenColors": [
+    {
+      "scope": ["keyword", "keyword.control", "keyword.operator.new", "storage.type", "storage.modifier"],
+      "settings": { "foreground": "#1A3A2A" }
+    },
+    {
+      "scope": ["constant.language", "constant.numeric"],
+      "settings": { "foreground": "#A07726" }
+    },
+    {
+      "scope": ["string", "string.quoted", "string.template", "punctuation.definition.string"],
+      "settings": { "foreground": "#8B4A3A" }
+    },
+    {
+      "scope": ["entity.name.function", "support.function", "meta.function-call entity.name.function"],
+      "settings": { "foreground": "#133224" }
+    },
+    {
+      "scope": ["entity.name.type", "support.type", "entity.name.class", "support.class"],
+      "settings": { "foreground": "#A07726" }
+    },
+    {
+      "scope": ["variable", "variable.parameter", "variable.other", "meta.definition.variable"],
+      "settings": { "foreground": "#3F3A2C" }
+    },
+    {
+      "scope": ["comment", "punctuation.definition.comment"],
+      "settings": { "foreground": "#74694F", "fontStyle": "italic" }
+    },
+    {
+      "scope": ["punctuation", "meta.brace", "meta.bracket", "punctuation.separator", "punctuation.terminator"],
+      "settings": { "foreground": "#B8A988" }
+    }
+  ]
+}

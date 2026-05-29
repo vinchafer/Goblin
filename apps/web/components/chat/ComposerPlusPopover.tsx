@@ -7,9 +7,10 @@ const Camera16 = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="non
 const GitHub16 = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3a3 3 0 0 0-1-2.3c3-.3 6-1.5 6-7a5.5 5.5 0 0 0-1.5-3.8 5 5 0 0 0-.1-3.8s-1.2-.3-4 1.5a14 14 0 0 0-7 0c-2.8-1.8-4-1.5-4-1.5a5 5 0 0 0-.1 3.8A5.5 5.5 0 0 0 2 10c0 5.5 3 6.7 6 7a3 3 0 0 0-1 2.3V22"/></svg>;
 const Search16 = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>;
 const Globe16 = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>;
+const Quote16 = () => <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 21V8a2 2 0 0 1 2-2h11l5 5v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M16 3v5h5"/><path d="M8 13h8M8 17h5"/></svg>;
 const Check14 = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>;
 
-export type PlusAction = 'upload-file' | 'screenshot' | 'github' | 'research' | 'websearch';
+export type PlusAction = 'upload-file' | 'screenshot' | 'github' | 'research' | 'websearch' | 'paste-chat';
 
 interface ComposerPlusPopoverProps {
   open: boolean;
@@ -61,11 +62,12 @@ export function ComposerPlusPopover({ open, onClose, anchorRef, onAction, websea
         minWidth: 240,
         zIndex: 100,
         animation: 'gobPopoverIn 180ms ease',
-        fontFamily: 'var(--font-ui)',
+        fontFamily: 'var(--font-sans)',
       }}
     >
       <PopoverItem icon={<Paper16 />} onClick={() => { onAction('upload-file'); onClose(); }}>Datei oder Foto</PopoverItem>
       <PopoverItem icon={<Camera16 />} onClick={() => { onAction('screenshot'); onClose(); }}>Screenshot</PopoverItem>
+      <PopoverItem icon={<Quote16 />} onClick={() => { onAction('paste-chat'); onClose(); }}>Notiz oder Chat einfügen</PopoverItem>
       <PopoverItem icon={<GitHub16 />} onClick={() => { onAction('github'); onClose(); }}>Aus GitHub</PopoverItem>
       <Divider />
       <PopoverItem icon={<Search16 />} onClick={() => { onAction('research'); onClose(); }}>Recherche</PopoverItem>
@@ -92,9 +94,9 @@ function PopoverItem({ icon, children, onClick, checked }: { icon: React.ReactNo
         width: '100%',
         padding: '8px 16px',
         minHeight: 36,
-        background: checked ? 'var(--moss-green-soft)' : 'transparent',
+        background: checked ? 'color-mix(in srgb, var(--brand-green) 8%, transparent)' : 'transparent',
         border: 'none',
-        fontSize: 14,
+        fontSize: 'var(--t-small-fs)',
         color: 'var(--text)',
         cursor: 'pointer',
         textAlign: 'left',
@@ -102,7 +104,7 @@ function PopoverItem({ icon, children, onClick, checked }: { icon: React.ReactNo
     >
       <span style={{ color: 'var(--meta)', display: 'flex' }}>{icon}</span>
       <span style={{ flex: 1 }}>{children}</span>
-      {checked && <span style={{ color: 'var(--moss)' }}><Check14 /></span>}
+      {checked && <span style={{ color: 'var(--brand-green)' }}><Check14 /></span>}
     </button>
   );
 }
