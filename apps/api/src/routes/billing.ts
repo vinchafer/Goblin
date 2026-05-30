@@ -142,7 +142,7 @@ billing.get('/invoices', authMiddleware, async (c) => {
     return c.json({
       invoices: formatted,
       has_more: invoices.has_more,
-      next_cursor: invoices.has_more && formatted.length > 0 ? formatted[formatted.length - 1].id : null,
+      next_cursor: invoices.has_more && formatted.length > 0 ? (formatted.at(-1)?.id ?? null) : null,
     });
   } catch {
     return c.json({ invoices: [], has_more: false, next_cursor: null });

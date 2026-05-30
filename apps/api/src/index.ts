@@ -1,9 +1,7 @@
-import { config } from 'dotenv';
-import { join } from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = fileURLToPath(new URL('.', import.meta.url));
-config({ path: join(__dirname, '../../../.env') });
+// Must be first: loads .env / .env.local before any env-reading module is evaluated.
+import './load-env.js';
+import { validateDevShield, assertStripeKeyMode, IS_DEV_MODE, TEST_USER_EMAIL } from './lib/env.js';
+import { resolveTestUserId } from './lib/supabase.js';
 
 // Startup validation — fail fast with clear error messages
 const REQUIRED_ENV = [
@@ -31,6 +29,23 @@ if (missing.length > 0) {
 }
 
 console.log('✅ Environment validation passed')
+
+// Dev-safety shield (B3): block prod mutations from a local dev process.
+validateDevShield()
+assertStripeKeyMode()
+if (IS_DEV_MODE) {
+  console.warn('🛡️  DEV-GUARD ACTIVE (GOBLIN_DEV_MODE=true)')
+  console.warn(`   Supabase writes restricted to test user: ${TEST_USER_EMAIL}`)
+  console.warn('   Vercel deploys restricted to synapse-platform / test-* projects')
+  console.warn('   Disable with GOBLIN_DEV_MODE=false for explicit prod testing.')
+  // Best-effort: resolve test user id so the guard can allow writes scoped by user_id.
+  try {
+    const id = await resolveTestUserId()
+    console.warn(id ? `   Test user id resolved: ${id}` : '   ⚠️  Test user id NOT resolved — guard will allow only email-scoped + fail closed')
+  } catch {
+    console.warn('   ⚠️  Test user id resolution failed — guard fails closed')
+  }
+}
 
 if (!process.env.ADMIN_API_KEY) {
   console.warn('⚠️  ADMIN_API_KEY not set — admin routes are disabled (all requests will return 401)')

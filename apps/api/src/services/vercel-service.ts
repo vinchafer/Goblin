@@ -6,6 +6,7 @@
 import { getSupabaseAdmin } from '../lib/supabase';
 import { decryptData } from './encryption';
 import { listFiles, downloadFile } from './file-storage';
+import { guardVercelCall } from '../lib/vercel-guard';
 
 const _vercelTokenCache = new Map<string, string>();
 
@@ -75,6 +76,10 @@ export async function deployToVercel(
   }
 
   onProgress?.('Creating deployment…');
+  const deployName = projectName.toLowerCase().replace(/[^a-z0-9-]/g, '-').slice(0, 52);
+  // Dev-safety shield: refuse to create/touch any Vercel project except synapse-platform
+  // or test-* throwaways while GOBLIN_DEV_MODE=true. No-op in prod.
+  guardVercelCall(deployName, 'deploy');
   const res = await fetch('https://api.vercel.com/v13/deployments', {
     method: 'POST',
     headers: {
@@ -82,7 +87,7 @@ export async function deployToVercel(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      name: projectName.toLowerCase().replace(/[^a-z0-9-]/g, '-').slice(0, 52),
+      name: deployName,
       files: vercelFiles,
       projectSettings: { framework: null },
       target: 'production',
