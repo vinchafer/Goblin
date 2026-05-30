@@ -131,7 +131,7 @@ export function PrivacyPage() {
               <div style={{ color: 'var(--rust)', fontWeight: 600, marginBottom: 4 }}>
                 Löschung beantragt
               </div>
-              <div style={{ color: 'var(--meta)' }}>
+              <div className="helper-text" style={{ color: 'var(--meta)' }}>
                 Konto wird am {scheduled} unwiderruflich gelöscht. Check deine Email für den Abbruch-Link.
               </div>
             </div>

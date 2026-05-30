@@ -1,5 +1,5 @@
 'use client';
-import { GoblinMark } from './goblin-mark';
+import { GoblinLogo } from '@/components/brand/GoblinLogo';
 
 export type GoblinLoaderVariant =
   | 'thinking'
@@ -76,10 +76,7 @@ export function GoblinLoader({
         alignItems: 'center', justifyContent: 'center',
         gap: 12, padding: 40,
       }}>
-        <GoblinMark
-          size={iconSize}
-          className="goblin-wobble-loop"
-        />
+        <GoblinLogo state="breath" size={iconSize} variant="green" />
         <span style={{
           fontFamily: 'var(--font-sans)', fontSize: 20,
           color: 'var(--brand-green)', fontWeight: 700, letterSpacing: '-0.3px',
@@ -96,7 +93,7 @@ export function GoblinLoader({
         display: 'flex', flexDirection: 'column',
         alignItems: 'center', gap: 10, padding: 24,
       }}>
-        <GoblinMark size={iconSize} className="goblin-think" />
+        <GoblinLogo state="working" size={iconSize} variant="gold" />
         <span style={{ fontSize: fontSize, color: 'var(--meta)', fontFamily: 'var(--font-sans)' }}>
           {label}
         </span>
@@ -108,9 +105,7 @@ export function GoblinLoader({
   if (variant === 'deploy') {
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <span style={{ fontSize: iconSize * 0.6, animation: 'goblin-think 2s ease-in-out infinite', display: 'inline-block' }}>
-          ☁️
-        </span>
+        <GoblinLogo state="working" size={Math.round(iconSize * 0.6)} variant="gold" />
         <span style={{ fontSize: fontSize, color: 'var(--meta)', fontFamily: 'var(--font-sans)' }}>
           {label}
         </span>
@@ -122,7 +117,7 @@ export function GoblinLoader({
   // thinking / files (default inline layout)
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-      <GoblinMark size={Math.round(iconSize * 0.75)} className="goblin-think" />
+      <GoblinLogo state="thinking" size={Math.round(iconSize * 0.75)} variant="gold" />
       <span style={{
         fontSize: fontSize, color: 'var(--meta)',
         fontFamily: 'var(--font-sans)',

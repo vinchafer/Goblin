@@ -123,7 +123,7 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
     onClose?.();
   };
 
-  const sidebarWidth = collapsed ? 48 : 260;
+  const sidebarWidth = collapsed ? 48 : 280;
 
   if (!mounted) return null;
 
@@ -159,34 +159,14 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
         }}
         className="goblin-sidebar-desktop"
       >
-        {/* ── Header: collapse toggle only (wordmark lives in the app header,
-            not duplicated here). Expanded: right-aligned. Collapsed: centered
-            in the 48px strip. ── */}
-        <div style={{
-          display: 'flex', alignItems: 'center',
-          justifyContent: collapsed ? 'center' : 'flex-end',
-          padding: collapsed ? '12px 8px' : '12px 16px 8px 16px',
-          flexShrink: 0,
-        }}>
-          {!collapsed ? (
-            <button
-              onClick={toggle}
-              title="Sidebar einklappen"
-              aria-label="Sidebar einklappen"
-              style={{
-                width: 32, height: 32, borderRadius: 8,
-                background: 'transparent',
-                border: '1px solid var(--border)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', color: 'var(--ink-2)', flexShrink: 0,
-                transition: 'background 0.15s, color 0.15s',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.06)'; e.currentTarget.style.color = 'var(--ink-1)'; }}
-              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--ink-2)'; }}
-            >
-              <PanelLeftClose size={18} strokeWidth={1.5} />
-            </button>
-          ) : (
+        {/* ── Collapsed strip: toggle alone, 12px top padding. When expanded the
+            toggle lives in the PROJEKTE header row below, so there is no
+            standalone toggle row — PROJEKTE starts at the very top. ── */}
+        {collapsed && (
+          <div style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            padding: '12px 8px', flexShrink: 0,
+          }}>
             <button
               onClick={toggle}
               title="Sidebar ausklappen"
@@ -202,18 +182,19 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(45,74,43,0.14)')}
               onMouseLeave={e => (e.currentTarget.style.background = 'rgba(45,74,43,0.08)')}
             >
-              <PanelLeftOpen size={18} strokeWidth={1.5} />
+              <PanelLeftOpen size={18} strokeWidth={1} />
             </button>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* ── Projects List (content-fit, scrolls internally past ~30vh).
-            Hidden entirely when collapsed — the strip shows only the toggle. ── */}
+            Header row carries the PROJEKTE eyebrow plus the "+" and collapse
+            toggle, so PROJEKTE sits at the top with only 12px of breathing
+            room. Hidden entirely when collapsed. ── */}
         {!collapsed && (
-        <div style={{ flexShrink: 0, maxHeight: '30vh', overflowY: 'auto', minHeight: 0, paddingTop: 8 }}>
-          {!collapsed && (
+        <div style={{ flexShrink: 0, maxHeight: '30vh', overflowY: 'auto', minHeight: 0, paddingTop: 0 }}>
             <div style={{
-              padding: '4px 12px 6px 16px',
+              padding: '12px 12px 6px 16px',
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             }}>
               <button
@@ -221,33 +202,51 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
                 style={{
                   background: 'none', border: 'none', cursor: 'pointer', padding: 0,
                   fontSize: 'var(--t-eyebrow-fs)', fontWeight: 600, letterSpacing: '1.2px',
-                  textTransform: 'uppercase', color: 'var(--text-faint)',
+                  textTransform: 'uppercase', color: 'var(--ink-3)',
                   fontFamily: 'var(--font-dash-display), Manrope, sans-serif',
                 }}
               >
                 Projekte
               </button>
-              <button
-                onClick={(e) => { e.stopPropagation(); setShowNewProjectModal(true); onClose?.(); }}
-                title="Neues Projekt"
-                aria-label="Neues Projekt"
-                data-testid="sidebar-projects-plus"
-                style={{
-                  background: 'var(--brand-header)', border: 'none', cursor: 'pointer',
-                  padding: 0, borderRadius: 7, color: 'var(--bone, #F4ECD8)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  width: 22, height: 22, transition: 'opacity 0.12s, transform 0.12s',
-                  boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.opacity = '0.88'; }}
-                onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
-                  <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-                </svg>
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <button
+                  onClick={(e) => { e.stopPropagation(); setShowNewProjectModal(true); onClose?.(); }}
+                  title="Neues Projekt"
+                  aria-label="Neues Projekt"
+                  data-testid="sidebar-projects-plus"
+                  style={{
+                    background: 'var(--brand-header)', border: 'none', cursor: 'pointer',
+                    padding: 0, borderRadius: 7, color: 'var(--bone, #F4ECD8)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    width: 22, height: 22, transition: 'opacity 0.12s, transform 0.12s',
+                    boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.opacity = '0.88'; }}
+                  onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                  </svg>
+                </button>
+                <button
+                  onClick={toggle}
+                  title="Sidebar einklappen"
+                  aria-label="Sidebar einklappen"
+                  style={{
+                    width: 22, height: 22, borderRadius: 6,
+                    background: 'transparent',
+                    border: '1px solid var(--border)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: 'pointer', color: 'var(--ink-3)', flexShrink: 0,
+                    transition: 'background 0.15s, color 0.15s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.06)'; e.currentTarget.style.color = 'var(--ink-1)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--ink-3)'; }}
+                >
+                  <PanelLeftClose size={15} strokeWidth={1} />
+                </button>
+              </div>
             </div>
-          )}
 
           {projects.length === 0 ? (
             !collapsed && (
@@ -298,7 +297,7 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
                         }}>
                           {p.name}
                         </span>
-                        <span style={{ fontSize: 'var(--t-eyebrow-fs)', color: 'var(--text-faint)', flexShrink: 0 }}>
+                        <span style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--ink-3)', flexShrink: 0 }}>
                           {timeAgo(p.updated_at ?? p.last_active)}
                         </span>
                       </>
@@ -413,7 +412,7 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
               style={{
                 background: 'none', border: 'none', cursor: 'pointer', padding: 0,
                 fontSize: 'var(--t-eyebrow-fs)', fontWeight: 600, letterSpacing: '1.2px',
-                textTransform: 'uppercase', color: 'var(--text-faint)',
+                textTransform: 'uppercase', color: 'var(--ink-3)',
                 fontFamily: 'var(--font-dash-display), Manrope, sans-serif',
               }}
             >
@@ -463,7 +462,7 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
                     flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                     fontFamily: 'var(--font-sans)',
                   }}>{p.name}</span>
-                  <span style={{ fontSize: 'var(--t-eyebrow-fs)', color: 'var(--text-faint)', flexShrink: 0 }}>
+                  <span style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--ink-3)', flexShrink: 0 }}>
                     {timeAgo(p.updated_at ?? p.last_active)}
                   </span>
                 </div>
@@ -630,9 +629,9 @@ function RecentChats({ pathname, navigate }: { pathname: string; navigate: (path
             {sessions.length === 5 && (
               <button
                 onClick={() => navigate('/dashboard/chat')}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 'var(--t-caption-fs)', color: 'var(--text-faint)', padding: '4px 8px', fontFamily: 'var(--font-sans)', width: '100%', textAlign: 'left' }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 'var(--t-caption-fs)', color: 'var(--ink-3)', padding: '4px 8px', fontFamily: 'var(--font-sans)', width: '100%', textAlign: 'left' }}
                 onMouseEnter={e => (e.currentTarget.style.color = 'var(--brand-green)')}
-                onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-faint)')}
+                onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-3)')}
               >
                 See all chats →
               </button>

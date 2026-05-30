@@ -116,7 +116,10 @@
 .gobl-dash .gobl-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 .gobl-dash .gobl-btn.lg { font-size: var(--t-button-fs); padding: 14px 20px; }
 .gobl-dash .gobl-btn.sm { font-size: var(--t-small-fs); padding: 8px 12px; border-radius: var(--radius-sm); }
-.gobl-dash .gobl-btn.primary { background: var(--green); color: var(--bone); }
+/* Primary uses --brand-green (#1A3A2A), the brand primary surface — NOT
+   --green (--ink-deep #0F2B1E), which read as a near-black "completely dark"
+   button next to the outlined secondary/ghost CTAs (§A5.4). */
+.gobl-dash .gobl-btn.primary { background: var(--brand-green); color: var(--bone); }
 .gobl-dash .gobl-btn.primary:hover { background: var(--green-deep); }
 .gobl-dash .gobl-btn.secondary { background: transparent; color: var(--ink-1); border-color: var(--line-strong); }
 .gobl-dash .gobl-btn.secondary:hover { border-color: var(--ink-1); }

@@ -1,7 +1,7 @@
 'use client';
 
 import { Icon } from '@/components/ui/icon';
-import { GoblinMark } from '@/components/ui/goblin-mark';
+import { GoblinLogo } from '@/components/brand/GoblinLogo';
 
 interface CodeEmptyStateProps {
   hasFiles: boolean;
@@ -14,7 +14,7 @@ export function CodeEmptyState({ hasFiles }: CodeEmptyStateProps) {
       height: '100%', textAlign: 'center', padding: 32, background: 'var(--surface-ink-2)',
     }}>
       <div style={{ marginBottom: 20 }}>
-        <GoblinMark size={56} />
+        <GoblinLogo state="idle" size={56} variant="gold" />
       </div>
       {hasFiles ? (
         <>

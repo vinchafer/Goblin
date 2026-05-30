@@ -262,7 +262,9 @@ export function Header({
                 style={{
                   display: 'flex', alignItems: 'center', gap: 5,
                   padding: '4px 10px', borderRadius: 7,
-                  background: active ? 'var(--surface-1, #fff)' : 'transparent',
+                  // --paper (LOCKED #FBF7EC) never flips in dark mode; --surface-1
+                  // did → active pill went dark-green-on-dark-green, unreadable.
+                  background: active ? 'var(--paper)' : 'transparent',
                   color: active ? 'var(--brand-header)' : 'var(--ink-on-dark-2)',
                   fontWeight: active ? 600 : 500,
                   fontSize: 'var(--t-caption-fs)', fontFamily: 'var(--font-dash-display), Manrope, sans-serif',

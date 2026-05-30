@@ -304,7 +304,7 @@ export function BillingPage() {
 
       {!isComped && <InviteCodeRedemption />}
 
-      <p style={{ fontSize: 12, color: 'var(--text-meta)', marginTop: 20, padding: '0 4px', lineHeight: 1.6 }}>
+      <p className="helper-text" style={{ fontSize: 12, color: 'var(--text-meta)', marginTop: 20, padding: '0 4px', lineHeight: 1.6 }}>
         Sicheres Checkout & Rechnungen über Stripe. Kündigung jederzeit im Kundenportal.
       </p>
     </div>

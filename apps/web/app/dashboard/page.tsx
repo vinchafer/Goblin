@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
@@ -63,9 +63,22 @@ function statusLabel(s?: string | null): { label: string; color: string } {
   }
 }
 
-function timeOfDayGreeting(): string {
+// Casual variants sprinkled in ~30% of loads so the greeting never reads like
+// a robotic elevator announcement. Time-of-day picks the default base.
+const GREETING_CASUAL = ['Hi', 'Servus', 'Schön dich zu sehen', 'Bereit zum Bauen', 'Aloha'];
+
+function buildGreeting(firstName: string): string {
   const h = new Date().getHours();
-  return h < 5 ? 'Hallo' : h < 11 ? 'Guten Morgen' : h < 18 ? 'Hallo' : 'Guten Abend';
+  const base =
+    h < 5  ? 'Hallo' :
+    h < 11 ? 'Guten Morgen' :
+    h < 17 ? 'Hallo' :
+    h < 23 ? 'Guten Abend' : 'Hallo';
+  const word = Math.random() < 0.3
+    ? GREETING_CASUAL[Math.floor(Math.random() * GREETING_CASUAL.length)]!
+    : base;
+  const suffix = word === 'Bereit zum Bauen' ? '?' : '';
+  return `${word}, ${firstName}${suffix}`;
 }
 
 export default function DashboardPage() {
@@ -141,6 +154,12 @@ export default function DashboardPage() {
 
   const activeCount = projects.filter(p => (p.status ?? 'idle') !== 'archived').length;
 
+  // First name only, comma, name last — "Guten Morgen, Vincent" (not the old
+  // "Vincent Hafner Guten Morgen"). Computed once per name resolution so it
+  // stays stable across re-renders within a session.
+  const firstName = (displayName ?? 'Du').split(' ')[0]!;
+  const greeting = useMemo(() => buildGreeting(firstName), [firstName]);
+
   return (
     <div style={{ height: '100%', overflowY: 'auto', background: 'var(--d-surface)' }}>
       {showNewProjectModal && (
@@ -169,8 +188,7 @@ export default function DashboardPage() {
         }}>
           <div className="gobl-eyebrow" style={{ color: 'rgba(244,236,216,.62)', marginBottom: 14 }}>
             <span className="tick" />
-            <span style={{ color: 'var(--bone)', fontWeight: 600 }}>{(displayName ?? 'Du').toUpperCase()}</span>
-            {timeOfDayGreeting()}
+            <span style={{ color: 'var(--bone)', fontWeight: 600 }}>{greeting}</span>
           </div>
           <h1 className="gobl-hero-title" style={{
             fontFamily: 'var(--font-dash-display), Manrope, sans-serif',

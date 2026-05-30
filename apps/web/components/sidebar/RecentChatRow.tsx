@@ -172,7 +172,7 @@ export function RecentChatRow({ chat, active, onNavigate, onUpdate }: RecentChat
             </span>
           )}
         </div>
-        <span style={{ fontSize: 'var(--t-eyebrow-fs)', color: 'var(--text-faint)', flexShrink: 0 }}>
+        <span style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--ink-3)', flexShrink: 0 }}>
           {timeAgoShort(chat.updated_at)}
         </span>
       </div>

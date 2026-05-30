@@ -747,6 +747,15 @@ button, input, textarea, select {
   .settings-section h1 { font-size: var(--t-h2-fs) !important; line-height: var(--t-h2-lh) !important; }
   .settings-section h2 { font-size: var(--t-h3-fs) !important; line-height: var(--t-h3-lh) !important; }
   .settings-section p  { font-size: var(--t-body-fs) !important; }
+  /* Helper / footnote / disclaimer paragraphs opt OUT of the body-size rule
+     above — they are intentionally smaller (14px) and quieter than body copy.
+     Apply className="helper-text" to Stripe notes, policy lines, version/
+     copyright, and similar non-body <p>/<div>. Not for semantic warnings
+     (those keep their colour). */
+  .settings-section .helper-text {
+    font-size: var(--t-small-fs) !important;  /* 14px */
+    color: var(--ink-2) !important;
+  }
   .settings-section label { font-size: var(--t-small-fs) !important; color: var(--ink-2) !important; }
 
   /* Form controls — desktop sizing (override inline mobile touch targets) */

@@ -1,5 +1,6 @@
 'use client';
 
+import { MapPin } from 'lucide-react';
 import { SettingsCard } from '../ui/SettingsCard';
 import { SettingsRow } from '../ui/SettingsRow';
 import { SettingsGroup } from '../ui/SettingsGroup';
@@ -25,11 +26,13 @@ export function AboutPage() {
           fontWeight: 700,
         }}>G</div>
         <div style={{ marginTop: 12, fontSize: 20, fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-sans)' }}>Goblin</div>
-        <div style={{ marginTop: 4, fontSize: 13, color: 'var(--text-meta)' }}>Version {VERSION} · {COMMIT.slice(0, 7)}</div>
-        <div style={{ marginTop: 10, fontSize: 13, color: 'var(--text-meta)', textAlign: 'center', maxWidth: 280 }}>
+        <div className="helper-text" style={{ marginTop: 4, fontSize: 13, color: 'var(--text-meta)' }}>Version {VERSION} · {COMMIT.slice(0, 7)}</div>
+        <div className="helper-text" style={{ marginTop: 10, fontSize: 13, color: 'var(--text-meta)', textAlign: 'center', maxWidth: 280 }}>
           The cloud workshop for builders who ship from anywhere.
         </div>
-        <div style={{ marginTop: 12, fontSize: 12, color: 'var(--text-meta)' }}>Made in Switzerland 🇨🇭</div>
+        <div className="helper-text" style={{ marginTop: 12, fontSize: 12, color: 'var(--text-meta)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+          <MapPin size={12} strokeWidth={1.75} aria-hidden /> Made in Switzerland
+        </div>
       </div>
 
       <SettingsGroup label="Rechtliches">
