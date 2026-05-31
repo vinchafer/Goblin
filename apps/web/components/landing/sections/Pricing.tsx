@@ -99,7 +99,7 @@ export function Pricing() {
                   </li>
                 ))}
               </ul>
-              <a href="#" className="price-cta">Start free trial</a>
+              <a href="/register" className="price-cta">Start free trial</a>
             </article>
           ))}
         </div>

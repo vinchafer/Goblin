@@ -11,7 +11,7 @@ export function Outro() {
           <br />
           <span className="serif-italic">Code anything.</span>
         </p>
-        <Button href="#" variant="primary" size="large">
+        <Button href="/register" variant="primary" size="large">
           Start building free <span className="arrow" aria-hidden="true">→</span>
         </Button>
         <div className="outro-foot">Public launch · 29 May MMXXVI</div>

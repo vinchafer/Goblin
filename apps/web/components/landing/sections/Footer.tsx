@@ -102,9 +102,9 @@ export function Footer() {
           </div>
           <div className="footer-col">
             <div className="header">Legal</div>
-            <a href="#">Terms</a>
-            <a href="#">Privacy</a>
-            <a href="#">Imprint</a>
+            <a href="/terms">Terms</a>
+            <a href="/privacy">Privacy</a>
+            <a href="/imprint">Imprint</a>
           </div>
         </div>
 

@@ -30,7 +30,7 @@ export function Hero() {
         </p>
 
         <div className="hero-cta">
-          <Button href="#" variant="primary" size="large">
+          <Button href="/register" variant="primary" size="large">
             Start building free <span className="arrow" aria-hidden="true">→</span>
           </Button>
           <Button href="#how" variant="secondary" size="large">
