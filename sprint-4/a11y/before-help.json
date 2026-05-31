@@ -1,0 +1,81 @@
+{
+  "route": "/help",
+  "finalUrl": "http://localhost:3000/help",
+  "violations": [
+    {
+      "id": "landmark-one-main",
+      "impact": "moderate",
+      "help": "Document should have one main landmark",
+      "nodes": [
+        {
+          "target": [
+            "html"
+          ],
+          "html": "<html lang=\"en\" class=\"manrope_ea45758b-module__bSspnq__variable instrument_serif_6ad33ff6-module__93JkUW__variable jetbrains_mono_f0e1cf5b-module__w1ICmG__vari"
+        }
+      ]
+    },
+    {
+      "id": "meta-viewport",
+      "impact": "moderate",
+      "help": "Zooming and scaling must not be disabled",
+      "nodes": [
+        {
+          "target": [
+            "meta[name=\"viewport\"]"
+          ],
+          "html": "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover\">"
+        }
+      ]
+    },
+    {
+      "id": "region",
+      "impact": "moderate",
+      "help": "All page content should be contained by landmarks",
+      "nodes": [
+        {
+          "target": [
+            "a[href$=\"dashboard\"]"
+          ],
+          "html": "<a style=\"display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--meta);text-decoration:none;font-family:var(--font-sans);margin-bottom:24px\" "
+        },
+        {
+          "target": [
+            "h1"
+          ],
+          "html": "<h1 style=\"font-family:var(--font-sans);font-size:clamp(28px, 5vw, 40px);color:var(--brand-green);font-weight:700;letter-spacing:-0.5px;margin-bottom:8px\">Hilfe"
+        },
+        {
+          "target": [
+            "div:nth-child(2) > div > p"
+          ],
+          "html": "<p style=\"font-size:15px;color:var(--meta);font-family:var(--font-sans);margin-bottom:40px;line-height:1.6\">FAQ, häufige Fragen, und wie du uns erreichst.</p>"
+        },
+        {
+          "target": [
+            "div:nth-child(4) > div:nth-child(1) > div"
+          ],
+          "html": "<div style=\"padding:0 20px 18px;font-size:14px;line-height:1.65;color:var(--text-2, var(--meta));font-family:var(--font-sans)\">Goblin ist ein mobiler Vibe-Codin"
+        },
+        {
+          "target": [
+            "h2"
+          ],
+          "html": "<h2 style=\"font-family:var(--font-sans);font-size:20px;font-weight:700;margin:0 0 8px\">Noch Fragen?</h2>"
+        },
+        {
+          "target": [
+            "div:nth-child(5) > p"
+          ],
+          "html": "<p style=\"font-size:14px;opacity:0.85;font-family:var(--font-sans);margin:0 0 18px;line-height:1.5\">Der Goblin-Hilfe-Agent kennt das Produkt und antwortet sofor"
+        },
+        {
+          "target": [
+            "div:nth-child(5) > div:nth-child(5)"
+          ],
+          "html": "<div style=\"margin-top:12px;font-size:12px;opacity:0.7;font-family:var(--font-sans)\">Oder per Mail:<!-- --> <a href=\"mailto:support@justgoblin.com\" style=\"color"
+        }
+      ]
+    }
+  ]
+}

@@ -40,7 +40,7 @@ export default function ImprintPage() {
         <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--ink-1)' }}>Dispute Resolution</h2>
         <p className="mb-3" style={{ color: 'var(--ink-3)' }}>
           The EU Commission provides a platform for online dispute resolution (ODR):{' '}
-          <a href="https://ec.europa.eu/consumers/odr/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--brand-green)' }}>
+          <a href="https://ec.europa.eu/consumers/odr/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--brand-green)', textDecoration: 'underline' }}>
             https://ec.europa.eu/consumers/odr/
           </a>. We are neither obliged nor willing to participate in dispute resolution
           proceedings before a consumer arbitration board.

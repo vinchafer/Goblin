@@ -1,0 +1,62 @@
+{
+  "route": "/",
+  "finalUrl": "http://localhost:3000/",
+  "violations": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "help": "Elements must meet minimum color contrast ratio thresholds",
+      "nodes": [
+        {
+          "target": [
+            ".trusted-label"
+          ],
+          "html": "<div class=\"trusted-label\"><span class=\"rule\" aria-hidden=\"true\"></span>Bring your own keys from<span class=\"rule\" aria-hidden=\"true\"></span></div>"
+        },
+        {
+          "target": [
+            ".stc > .container > .section-head.centered > .meta-row > span:nth-child(2)"
+          ],
+          "html": "<span><span class=\"num\">03</span> / <!-- -->05<!-- --> · <!-- -->Core feature</span>"
+        },
+        {
+          "target": [
+            ".comment"
+          ],
+          "html": "<div class=\"comment\">// injected via Send to Code</div>"
+        },
+        {
+          "target": [
+            ".stc-editor-body > div:nth-child(2)"
+          ],
+          "html": "<div><span class=\"kw\">import</span> { useState } <span class=\"kw\">from</span> <span class=\"str\">'react'</span></div>"
+        },
+        {
+          "target": [
+            ".footer-bottom > span:nth-child(1)"
+          ],
+          "html": "<span>© 2026 · Goblin Inc. · Made in Switzerland</span>"
+        },
+        {
+          "target": [
+            ".end"
+          ],
+          "html": "<span class=\"end\"><span class=\"dot\" aria-hidden=\"true\"></span> Build anywhere · Code anything</span>"
+        }
+      ]
+    },
+    {
+      "id": "heading-order",
+      "impact": "moderate",
+      "help": "Heading levels should only increase by one",
+      "nodes": [
+        {
+          "target": [
+            ".island-step:nth-child(1) > div:nth-child(3) > h4"
+          ],
+          "html": "<h4>Open Goblin</h4>"
+        }
+      ]
+    }
+  ]
+}

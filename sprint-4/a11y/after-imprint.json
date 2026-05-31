@@ -1,0 +1,51 @@
+{
+  "route": "/imprint",
+  "finalUrl": "http://localhost:3000/imprint",
+  "violations": [
+    {
+      "id": "landmark-main-is-top-level",
+      "impact": "moderate",
+      "help": "Main landmark should not be contained in another landmark",
+      "nodes": [
+        {
+          "target": [
+            ".max-w-3xl"
+          ],
+          "html": "<main class=\"max-w-3xl mx-auto py-16 px-4\">"
+        }
+      ]
+    },
+    {
+      "id": "landmark-no-duplicate-main",
+      "impact": "moderate",
+      "help": "Document should not have more than one main landmark",
+      "nodes": [
+        {
+          "target": [
+            "div:nth-child(2) > main"
+          ],
+          "html": "<main style=\"flex:1\">"
+        }
+      ]
+    },
+    {
+      "id": "landmark-unique",
+      "impact": "moderate",
+      "help": "Landmarks should have a unique role or role/label/title (i.e. accessible name) combination",
+      "nodes": [
+        {
+          "target": [
+            "div:nth-child(2) > main"
+          ],
+          "html": "<main style=\"flex:1\">"
+        },
+        {
+          "target": [
+            ".max-w-3xl > nav"
+          ],
+          "html": "<nav class=\"mb-8\"><a class=\"text-sm\" style=\"color:var(--brand-green)\" href=\"/\">← Back</a></nav>"
+        }
+      ]
+    }
+  ]
+}

@@ -21,7 +21,7 @@ export default function LegalLayout({ children }: { children: ReactNode }) {
 
       {/* Footer */}
       <footer style={{ background: 'var(--brand-green)', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', fontFamily: 'var(--font-sans)' }}>
+        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.72)', fontFamily: 'var(--font-sans)' }}>
           © 2026 Goblin
         </span>
         <nav style={{ display: 'flex', gap: 16 }}>
@@ -29,7 +29,7 @@ export default function LegalLayout({ children }: { children: ReactNode }) {
             <Link
               key={href}
               href={href!}
-              style={{ fontSize: 12, color: 'rgba(255,255,255,0.5)', textDecoration: 'none', fontFamily: 'var(--font-sans)', transition: 'color 0.15s' }}
+              style={{ fontSize: 12, color: 'rgba(255,255,255,0.72)', textDecoration: 'none', fontFamily: 'var(--font-sans)', transition: 'color 0.15s' }}
             >
               {label}
             </Link>

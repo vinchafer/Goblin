@@ -1,0 +1,108 @@
+{
+  "route": "/imprint",
+  "finalUrl": "http://localhost:3000/imprint",
+  "violations": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "help": "Elements must meet minimum color contrast ratio thresholds",
+      "nodes": [
+        {
+          "target": [
+            "footer > span"
+          ],
+          "html": "<span style=\"font-size:12px;color:rgba(255,255,255,0.5);font-family:var(--font-sans)\">© 2026 Goblin</span>"
+        },
+        {
+          "target": [
+            "a[href$=\"terms\"]"
+          ],
+          "html": "<a style=\"font-size:12px;color:rgba(255,255,255,0.5);text-decoration:none;font-family:var(--font-sans);transition:color 0.15s\" href=\"/terms\">Terms</a>"
+        },
+        {
+          "target": [
+            "a[href$=\"privacy\"]"
+          ],
+          "html": "<a style=\"font-size:12px;color:rgba(255,255,255,0.5);text-decoration:none;font-family:var(--font-sans);transition:color 0.15s\" href=\"/privacy\">Privacy</a>"
+        },
+        {
+          "target": [
+            "a[href$=\"imprint\"]"
+          ],
+          "html": "<a style=\"font-size:12px;color:rgba(255,255,255,0.5);text-decoration:none;font-family:var(--font-sans);transition:color 0.15s\" href=\"/imprint\">Imprint</a>"
+        }
+      ]
+    },
+    {
+      "id": "landmark-main-is-top-level",
+      "impact": "moderate",
+      "help": "Main landmark should not be contained in another landmark",
+      "nodes": [
+        {
+          "target": [
+            ".max-w-3xl"
+          ],
+          "html": "<main class=\"max-w-3xl mx-auto py-16 px-4\">"
+        }
+      ]
+    },
+    {
+      "id": "landmark-no-duplicate-main",
+      "impact": "moderate",
+      "help": "Document should not have more than one main landmark",
+      "nodes": [
+        {
+          "target": [
+            "div:nth-child(2) > main"
+          ],
+          "html": "<main style=\"flex:1\">"
+        }
+      ]
+    },
+    {
+      "id": "landmark-unique",
+      "impact": "moderate",
+      "help": "Landmarks should have a unique role or role/label/title (i.e. accessible name) combination",
+      "nodes": [
+        {
+          "target": [
+            "div:nth-child(2) > main"
+          ],
+          "html": "<main style=\"flex:1\">"
+        },
+        {
+          "target": [
+            ".max-w-3xl > nav"
+          ],
+          "html": "<nav class=\"mb-8\"><a class=\"text-sm\" style=\"color:var(--brand-green)\" href=\"/\">← Back</a></nav>"
+        }
+      ]
+    },
+    {
+      "id": "link-in-text-block",
+      "impact": "serious",
+      "help": "Links must be distinguishable without relying on color",
+      "nodes": [
+        {
+          "target": [
+            "a[target=\"_blank\"]"
+          ],
+          "html": "<a href=\"https://ec.europa.eu/consumers/odr/\" target=\"_blank\" rel=\"noopener noreferrer\" style=\"color:var(--brand-green)\">https://ec.europa.eu/consumers/odr/</a>"
+        }
+      ]
+    },
+    {
+      "id": "meta-viewport",
+      "impact": "moderate",
+      "help": "Zooming and scaling must not be disabled",
+      "nodes": [
+        {
+          "target": [
+            "meta[name=\"viewport\"]"
+          ],
+          "html": "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover\">"
+        }
+      ]
+    }
+  ]
+}

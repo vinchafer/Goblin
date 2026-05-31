@@ -20,8 +20,8 @@ const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mon
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  // Allow pinch-zoom (WCAG 1.4.4): omit maximumScale / userScalable:false,
+  // which blocked zoom and tripped axe meta-viewport on every route.
   viewportFit: 'cover',
   themeColor: '#1A3A2A',
 }

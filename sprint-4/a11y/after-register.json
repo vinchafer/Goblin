@@ -1,0 +1,58 @@
+{
+  "route": "/register",
+  "finalUrl": "http://localhost:3000/dashboard",
+  "violations": [
+    {
+      "id": "color-contrast",
+      "impact": "serious",
+      "help": "Elements must meet minimum color contrast ratio thresholds",
+      "nodes": [
+        {
+          "target": [
+            "p"
+          ],
+          "html": "<p style=\"font-family:var(--font-mono), JetBrains Mono, ui-monospace, monospace;font-size:12.5px;text-transform:uppercase;letter-spacing:0.18em;color:var(--ink-"
+        }
+      ]
+    },
+    {
+      "id": "landmark-one-main",
+      "impact": "moderate",
+      "help": "Document should have one main landmark",
+      "nodes": [
+        {
+          "target": [
+            "html"
+          ],
+          "html": "<html lang=\"en\" class=\"manrope_ea45758b-module__bSspnq__variable instrument_serif_6ad33ff6-module__93JkUW__variable jetbrains_mono_f0e1cf5b-module__w1ICmG__vari"
+        }
+      ]
+    },
+    {
+      "id": "page-has-heading-one",
+      "impact": "moderate",
+      "help": "Page should contain a level-one heading",
+      "nodes": [
+        {
+          "target": [
+            "html"
+          ],
+          "html": "<html lang=\"en\" class=\"manrope_ea45758b-module__bSspnq__variable instrument_serif_6ad33ff6-module__93JkUW__variable jetbrains_mono_f0e1cf5b-module__w1ICmG__vari"
+        }
+      ]
+    },
+    {
+      "id": "region",
+      "impact": "moderate",
+      "help": "All page content should be contained by landmarks",
+      "nodes": [
+        {
+          "target": [
+            ":root"
+          ],
+          "html": "<div style=\"min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:var(--paper)\">"
+        }
+      ]
+    }
+  ]
+}
