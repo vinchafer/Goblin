@@ -103,10 +103,10 @@ function RankingsTab() {
   const [loading, setLoading] = useState(true);
   const [defaultId, setDefaultId] = useState<string | null>(null);
   const [connectedProviders, setConnectedProviders] = useState<Set<string>>(new Set());
-  const [onlyUsable, setOnlyUsable] = useState(false);
+  // Default ON: a fresh session shows what the user can actually run first.
+  const [onlyUsable, setOnlyUsable] = useState(true);
 
   useEffect(() => {
-    setDefaultId(localStorage.getItem(DEFAULT_KEY));
     (async () => {
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
@@ -125,6 +125,8 @@ function RankingsTab() {
 
   useEffect(() => {
     setLoading(true);
+    // Per-category default ("Standard"): exactly one per task tab.
+    setDefaultId(localStorage.getItem(`${DEFAULT_KEY}-${task}`));
     const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
     fetch(`${apiBase}/api/rankings?task=${task}&limit=30`)
       .then(r => r.ok ? r.json() : { rankings: [] })
@@ -135,7 +137,7 @@ function RankingsTab() {
 
   function setDefault(modelId: string) {
     setDefaultId(modelId);
-    localStorage.setItem(DEFAULT_KEY, modelId);
+    localStorage.setItem(`${DEFAULT_KEY}-${task}`, modelId);
   }
 
   // Smart-sort: usable models first (keyed > free > free-then-byok > byok), then by rank.
@@ -150,15 +152,12 @@ function RankingsTab() {
     return usabilityRank(provider) < 3;
   }
 
+  // Logical order = category rank ascending (#1 best). Usability is a FILTER (the
+  // "Nur nutzbare" toggle) + a badge — not a sort key. Previously usability-first
+  // sorting scrambled the rank column (#4, #8, #25, then #1), which read as broken.
   const sortedRows = useMemo(() => {
-    return [...rows].sort((a, b) => {
-      const ua = usabilityRank(a.ranked_models.provider);
-      const ub = usabilityRank(b.ranked_models.provider);
-      if (ua !== ub) return ua - ub;
-      return a.rank - b.rank;
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [rows, connectedProviders]);
+    return [...rows].sort((a, b) => a.rank - b.rank);
+  }, [rows]);
 
   const filteredRows = useMemo(
     () => onlyUsable ? sortedRows.filter(r => isUsable(r.ranked_models.provider)) : sortedRows,
@@ -234,7 +233,8 @@ function RankingsTab() {
         return (
           <div key={m.id} className="list-item" style={{
             padding: '14px 16px', marginBottom: 8,
-            background: 'var(--panel)',
+            // Top-3 of each category get a subtle tint to surface the best picks.
+            background: r.rank <= 3 ? 'color-mix(in srgb, var(--brand-green) 5%, var(--panel))' : 'var(--panel)',
             border: '1px solid', borderColor: isDefault ? 'var(--brand-green)' : 'var(--border-subtle)',
             borderRadius: 12,
             display: 'flex', alignItems: 'center', gap: 12,
@@ -264,14 +264,14 @@ function RankingsTab() {
                 padding: '4px 10px', borderRadius: 8,
                 background: 'color-mix(in srgb, var(--brand-green) 8%, transparent)', color: 'var(--brand-green)',
                 fontSize: 11, fontWeight: 600, flexShrink: 0,
-              }}>DEFAULT</span>
+              }}>Standard</span>
             ) : (
               <button onClick={() => setDefault(m.id)} style={{
                 padding: '4px 10px', borderRadius: 8,
                 background: 'transparent', border: '1px solid var(--border-subtle)',
                 color: 'var(--text-2)', fontSize: 11, fontWeight: 600,
                 cursor: 'pointer', fontFamily: 'var(--font-sans)', flexShrink: 0,
-              }}>Default</button>
+              }}>Standard setzen</button>
             )}
           </div>
         );
