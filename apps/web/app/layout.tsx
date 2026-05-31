@@ -9,9 +9,13 @@ import '../styles/design-tokens.css'
 
 // v1.1 brand fonts. --font-sans resolves to Manrope, --font-serif to
 // Instrument Serif (italic accent), --font-mono to JetBrains Mono.
-const manrope = Manrope({ subsets: ['latin'], variable: '--font-manrope', display: 'swap', weight: ['400', '500', '600', '700', '800'] })
+// Weights pared to those actually used in CSS/components (400/500/600/700);
+// 800 was declared but unused — dropping it removes one preloaded font file.
+const manrope = Manrope({ subsets: ['latin'], variable: '--font-manrope', display: 'swap', weight: ['400', '500', '600', '700'] })
 const instrumentSerif = Instrument_Serif({ subsets: ['latin'], variable: '--font-instrument-serif', display: 'swap', weight: '400', style: ['normal', 'italic'] })
-const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono', display: 'swap' })
+// Mono is only used on code surfaces (editor/preview), never above the fold on
+// marketing/auth — skip preload so it doesn't compete for bandwidth on first paint.
+const jetbrainsMono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono', display: 'swap', preload: false })
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -92,8 +96,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${manrope.variable} ${instrumentSerif.variable} ${jetbrainsMono.variable}`} suppressHydrationWarning data-scroll-behavior="smooth">
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* No Google Fonts preconnect: next/font self-hosts fonts under /_next/static/media,
+            so connections to fonts.googleapis.com / fonts.gstatic.com are never made at runtime. */}
         <link rel="mask-icon" href="/icons/icon-512.png" color="#1A3A2A" />
         {/* no-flash theme init — must run before first paint */}
         <script dangerouslySetInnerHTML={{ __html: `
