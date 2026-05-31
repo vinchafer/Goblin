@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { detectFilename } from "@/lib/detect-filename";
 
 interface CodeBlockProps {
   code: string;
@@ -18,6 +19,9 @@ export function CodeBlock({ code, language, filename, onSendToCode }: CodeBlockP
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // R1 fix: derive a real, deployable filename (index.html for HTML docs, etc.)
+  // instead of the old extensionless "<lang>-snippet" that Build/Deploy rejected.
+  const targetFilename = filename || detectFilename(code, language);
   const label = filename || language || "code";
 
   return (
@@ -36,6 +40,8 @@ export function CodeBlock({ code, language, filename, onSendToCode }: CodeBlockP
         </span>
         <button
           onClick={copy}
+          title={copied ? 'Kopiert' : 'In Zwischenablage kopieren'}
+          aria-label="In Zwischenablage kopieren"
           style={{
             background: 'none', border: 'none',
             color: copied ? 'var(--success)' : 'var(--text-faint)',
@@ -47,14 +53,19 @@ export function CodeBlock({ code, language, filename, onSendToCode }: CodeBlockP
           }}
         >
           {copied ? (
-            <><span>✓</span> Copied</>
+            <>
+              {/* lucide check */}
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              Kopiert
+            </>
           ) : (
             <>
+              {/* lucide copy */}
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
                 <rect x="9" y="9" width="13" height="13" rx="2"/>
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
               </svg>
-              Copy
+              Kopieren
             </>
           )}
         </button>
@@ -74,7 +85,9 @@ export function CodeBlock({ code, language, filename, onSendToCode }: CodeBlockP
 
       {/* Send to Code */}
       <button
-        onClick={() => onSendToCode(code, filename || `${language || 'code'}-snippet`)}
+        onClick={() => onSendToCode(code, targetFilename)}
+        title={`An Code-Tab senden (${targetFilename})`}
+        aria-label={`An Code-Tab senden als ${targetFilename}`}
         style={{
           display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
           width: '100%', padding: '9px 14px',
@@ -86,10 +99,11 @@ export function CodeBlock({ code, language, filename, onSendToCode }: CodeBlockP
         onMouseEnter={e => (e.currentTarget.style.background = '#e8b05a')}
         onMouseLeave={e => (e.currentTarget.style.background = 'var(--brand-gold)')}
       >
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-          <polyline points="5 12 12 5 19 12"/><polyline points="5 19 12 12 19 19"/>
+        {/* lucide code */}
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>
         </svg>
-        Send to Code →
+        An Code senden
       </button>
     </div>
   );

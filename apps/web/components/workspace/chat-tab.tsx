@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { apiStream, apiGet } from "@/lib/api";
+import { detectFilename } from "@/lib/detect-filename";
 import { ChatInput, useChatModel } from "@/components/chat/ChatInput";
 import { ChatMessages, type TokenInfo } from "./ChatMessages";
 import { GoblinLoader } from "@/components/ui/GoblinLoader";
@@ -110,10 +111,12 @@ export function ChatTab({ projectId }: ChatTabProps) {
   const loadOlder = () => loadHistory(offset);
 
   const sendToCode = (code: string, filename?: string) => {
+    // R1 fix: never fall back to an extensionless/non-deployable name — detect from content.
+    const target = filename || detectFilename(code);
     window.dispatchEvent(new CustomEvent('goblin:sendToCode', {
-      detail: { code, filename: filename || 'generated-code.js' }
+      detail: { code, filename: target }
     }));
-    toast.success('Sent to Code tab ✓', { duration: 1500 });
+    toast.success(`An Code-Tab gesendet (${target})`, { duration: 1500 });
   };
 
   const handleSubmit = async (text: string, model: SelectedModel) => {
