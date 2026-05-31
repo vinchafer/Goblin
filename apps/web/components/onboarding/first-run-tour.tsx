@@ -9,8 +9,8 @@ const STEPS = [
     position: 'sidebar',
   },
   {
-    title: 'Chat → Code in one tap',
-    body: 'Ask Goblin to build anything. When it outputs code, hit [Send to Code] to apply it instantly.',
+    title: 'Vom Chat in den Code',
+    body: 'Bitte Goblin, etwas zu bauen. Gibt es Code aus, bringt [An Code senden] ihn als Entwurf in den Code-Tab — du sicherst und veröffentlichst, wenn du bereit bist.',
     icon: '✦',
     position: 'chat',
   },

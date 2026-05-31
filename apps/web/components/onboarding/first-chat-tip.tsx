@@ -53,9 +53,9 @@ export function FirstChatTip() {
     }}>
       <span style={{ fontSize: 'var(--t-small-fs)', flexShrink: 0, marginTop: 1 }}>💡</span>
       <p style={{ flex: 1, fontSize: 'var(--t-caption-fs)', color: 'var(--meta)', fontFamily: 'var(--font-sans)', lineHeight: 1.5, margin: 0 }}>
-        Describe what you want to build. Tap{' '}
-        <span style={{ fontWeight: 600, color: 'var(--gold-700)' }}>[Send to Code →]</span>{' '}
-        on any code block to apply it instantly.
+        Beschreib, was du bauen willst. Tipp{' '}
+        <span style={{ fontWeight: 600, color: 'var(--gold-700)' }}>[An Code senden →]</span>{' '}
+        bei einem Code-Block — er landet als Entwurf im Code-Tab, den du in Ruhe ansehen und sichern kannst.
       </p>
       <button
         onClick={dismiss}
