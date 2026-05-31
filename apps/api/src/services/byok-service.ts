@@ -343,6 +343,15 @@ export async function revokeKey(userId: string, keyId: string): Promise<void> {
 }
 
 export async function getActiveKey(userId: string, provider: ByokProvider): Promise<string | null> {
+  return getActiveKeyByProvider(userId, provider);
+}
+
+/**
+ * Like getActiveKey but accepts any provider string (incl. connection providers such as
+ * 'vercel' that are not LLM ByokProviders). Shares the canonical v1/v2 decryption so tokens
+ * stored via the BYOK encryption flow are decryptable everywhere.
+ */
+export async function getActiveKeyByProvider(userId: string, provider: string): Promise<string | null> {
   const supabase = getSupabaseAdmin();
 
   const [keyResult, userResult] = await Promise.all([
@@ -388,6 +397,95 @@ export async function getActiveKey(userId: string, provider: ByokProvider): Prom
   } catch {
     throw new Error('API key needs to be re-entered. Please go to Settings → API Keys.');
   }
+}
+
+// ── Vercel connection (deploy token) ──────────────────────────────────────────
+// 'vercel' is a CONNECTION provider, deliberately kept out of the LLM ByokProviderSchema so
+// it never pollutes model lists. Stored in byok_keys (provider='vercel') with the same
+// canonical v1/v2 encryption, so vercel-service can decrypt it via getActiveKeyByProvider.
+
+export interface VercelAccount { username: string; email?: string }
+
+export async function validateVercelToken(
+  token: string,
+): Promise<{ valid: boolean; account?: VercelAccount; error?: string }> {
+  try {
+    const res = await fetchWithTimeout(
+      'https://api.vercel.com/v2/user',
+      { method: 'GET', headers: { Authorization: `Bearer ${token}` } },
+      VALIDATION_TIMEOUT_MS,
+    );
+    if (res.ok) {
+      const j = (await res.json()) as { user?: { username?: string; email?: string }; username?: string; email?: string };
+      const u = j.user ?? j;
+      return { valid: true, account: { username: u.username ?? 'unknown', email: u.email } };
+    }
+    if (res.status === 401 || res.status === 403) return { valid: false, error: 'Invalid token' };
+    return { valid: false, error: `Vercel API error ${res.status}` };
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') return { valid: false, error: 'Validation timed out' };
+    return { valid: false, error: 'Validation failed' };
+  }
+}
+
+export async function storeVercelToken(userId: string, token: string): Promise<{ account: VercelAccount }> {
+  const v = await validateVercelToken(token);
+  if (!v.valid) throw new Error(v.error || 'Invalid Vercel token');
+
+  const supabase = getSupabaseAdmin();
+  // Single active connection: revoke any existing active vercel key first.
+  await supabase
+    .from('byok_keys')
+    .update({ status: 'revoked' })
+    .eq('user_id', userId)
+    .eq('provider', 'vercel')
+    .eq('status', 'active');
+
+  let encryptedBlob: string;
+  let vaultSecretId: string | null = null;
+  let encryptionVersion = 1;
+  try {
+    const v2 = await encryptApiKeyV2(userId, token);
+    encryptedBlob = v2.ciphertextB64;
+    vaultSecretId = v2.vaultSecretId;
+    encryptionVersion = v2.version;
+  } catch {
+    const userSalt = await getOrCreateUserSalt(userId);
+    encryptedBlob = encryptUserData(token, userSalt);
+  }
+
+  await supabase
+    .from('byok_keys')
+    .insert({
+      user_id: userId,
+      provider: 'vercel',
+      key_encrypted: encryptedBlob,
+      key_hint: token.slice(-4),
+      validated_at: new Date().toISOString(),
+      encryption_version: encryptionVersion,
+      vault_secret_id: vaultSecretId,
+    })
+    .throwOnError();
+
+  return { account: v.account! };
+}
+
+export async function getVercelConnection(userId: string): Promise<{ connected: boolean; account?: VercelAccount }> {
+  const token = await getActiveKeyByProvider(userId, 'vercel');
+  if (!token) return { connected: false };
+  const v = await validateVercelToken(token);
+  return v.valid ? { connected: true, account: v.account } : { connected: false };
+}
+
+export async function disconnectVercel(userId: string): Promise<void> {
+  const supabase = getSupabaseAdmin();
+  await supabase
+    .from('byok_keys')
+    .update({ status: 'revoked' })
+    .eq('user_id', userId)
+    .eq('provider', 'vercel')
+    .eq('status', 'active')
+    .throwOnError();
 }
 
 export { testKey };

@@ -3,10 +3,9 @@
 // 2. content! null assertion → crash when a file fails to download from S3
 // 3. >100 file truncation was silent → users received incomplete deploys without warning
 // 4. getDeployStatus didn't check res.ok → returned UNKNOWN instead of proper error
-import { getSupabaseAdmin } from '../lib/supabase';
-import { decryptData } from './encryption';
 import { listFiles, downloadFile } from './file-storage';
 import { guardVercelCall } from '../lib/vercel-guard';
+import { getActiveKeyByProvider } from './byok-service';
 
 const _vercelTokenCache = new Map<string, string>();
 
@@ -16,16 +15,10 @@ function clearTokenCache(userId: string): void {
 
 async function getUserVercelToken(userId: string): Promise<string | null> {
   if (_vercelTokenCache.has(userId)) return _vercelTokenCache.get(userId)!;
-  const supabase = getSupabaseAdmin();
-  const { data } = await supabase
-    .from('byok_keys')
-    .select('key_encrypted')
-    .eq('user_id', userId)
-    .eq('provider', 'vercel')
-    .eq('status', 'active')
-    .single();
-  if (!data) return null;
-  const token = decryptData(data.key_encrypted);
+  // Decrypt via the canonical v1/v2 path (was previously decryptData(), which never matched
+  // how byok-service stores keys → tokens were undecryptable. Fixed Sprint 2 B1).
+  const token = await getActiveKeyByProvider(userId, 'vercel');
+  if (!token) return null;
   _vercelTokenCache.set(userId, token);
   return token;
 }

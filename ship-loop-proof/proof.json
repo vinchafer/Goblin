@@ -1,0 +1,10 @@
+{
+  "ok": true,
+  "name": "test-b1-loop-1780193216506",
+  "projectId": "eef62e00-bbe1-4e9e-a19b-2a9f82798fa1",
+  "deploymentId": "dpl_DLtgwUwDa8yQmPktNxUEiNL9sHYB",
+  "url": "https://test-b1-loop-1780193216506-5agmkpl8g-vincent-2-s-projects.vercel.app",
+  "httpStatus": 200,
+  "bodyHasHero": true,
+  "elapsedSeconds": 14
+}
