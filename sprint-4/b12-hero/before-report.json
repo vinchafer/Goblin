@@ -1,0 +1,127 @@
+{
+  "320": {
+    "horizScroll": false,
+    "docW": 316,
+    "winW": 320,
+    "h1": {
+      "fontSize": "52px",
+      "letterSpacing": "-2.08px",
+      "lineHeight": "60.32px",
+      "wordSpacing": "0px",
+      "textWrap": "wrap",
+      "width": 252,
+      "right": 284,
+      "text": "Tell it what you want.⏎It ships."
+    },
+    "lead": {
+      "fontSize": "17px",
+      "letterSpacing": "normal",
+      "wordSpacing": "0px",
+      "textWrap": "pretty",
+      "width": 252,
+      "right": 284,
+      "overflowRight": false,
+      "text": "The cloud workshop for builders who don't wait for a laptop. Bring your own AI keys. Push to GitHub. Deploy to Vercel."
+    }
+  },
+  "360": {
+    "horizScroll": false,
+    "docW": 356,
+    "winW": 360,
+    "h1": {
+      "fontSize": "52px",
+      "letterSpacing": "-2.08px",
+      "lineHeight": "60.32px",
+      "wordSpacing": "0px",
+      "textWrap": "wrap",
+      "width": 292,
+      "right": 324,
+      "text": "Tell it what you want.⏎It ships."
+    },
+    "lead": {
+      "fontSize": "17px",
+      "letterSpacing": "normal",
+      "wordSpacing": "0px",
+      "textWrap": "pretty",
+      "width": 292,
+      "right": 324,
+      "overflowRight": false,
+      "text": "The cloud workshop for builders who don't wait for a laptop. Bring your own AI keys. Push to GitHub. Deploy to Vercel."
+    }
+  },
+  "375": {
+    "horizScroll": false,
+    "docW": 371,
+    "winW": 375,
+    "h1": {
+      "fontSize": "52px",
+      "letterSpacing": "-2.08px",
+      "lineHeight": "60.32px",
+      "wordSpacing": "0px",
+      "textWrap": "wrap",
+      "width": 307,
+      "right": 339,
+      "text": "Tell it what you want.⏎It ships."
+    },
+    "lead": {
+      "fontSize": "17px",
+      "letterSpacing": "normal",
+      "wordSpacing": "0px",
+      "textWrap": "pretty",
+      "width": 307,
+      "right": 339,
+      "overflowRight": false,
+      "text": "The cloud workshop for builders who don't wait for a laptop. Bring your own AI keys. Push to GitHub. Deploy to Vercel."
+    }
+  },
+  "390": {
+    "horizScroll": false,
+    "docW": 386,
+    "winW": 390,
+    "h1": {
+      "fontSize": "52px",
+      "letterSpacing": "-2.08px",
+      "lineHeight": "60.32px",
+      "wordSpacing": "0px",
+      "textWrap": "wrap",
+      "width": 322,
+      "right": 354,
+      "text": "Tell it what you want.⏎It ships."
+    },
+    "lead": {
+      "fontSize": "17px",
+      "letterSpacing": "normal",
+      "wordSpacing": "0px",
+      "textWrap": "pretty",
+      "width": 322,
+      "right": 354,
+      "overflowRight": false,
+      "text": "The cloud workshop for builders who don't wait for a laptop. Bring your own AI keys. Push to GitHub. Deploy to Vercel."
+    }
+  },
+  "414": {
+    "horizScroll": false,
+    "docW": 410,
+    "winW": 414,
+    "h1": {
+      "fontSize": "52px",
+      "letterSpacing": "-2.08px",
+      "lineHeight": "60.32px",
+      "wordSpacing": "0px",
+      "textWrap": "wrap",
+      "width": 346,
+      "right": 378,
+      "text": "Tell it what you want.⏎It ships."
+    },
+    "lead": {
+      "fontSize": "17px",
+      "letterSpacing": "normal",
+      "wordSpacing": "0px",
+      "textWrap": "pretty",
+      "width": 346,
+      "right": 378,
+      "overflowRight": false,
+      "text": "The cloud workshop for builders who don't wait for a laptop. Bring your own AI keys. Push to GitHub. Deploy to Vercel."
+    }
+  }
+}
