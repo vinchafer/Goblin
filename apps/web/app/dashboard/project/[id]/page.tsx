@@ -85,10 +85,12 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
               </div>
               <h1 style={{
                 fontFamily: 'var(--font-dash-display), Manrope, sans-serif',
-                fontWeight: 600, fontSize: 'clamp(32px, 4vw, 52px)',
-                letterSpacing: '-0.032em', lineHeight: 1.06,
+                fontWeight: 600, fontSize: 'clamp(28px, 3.4vw, 44px)',
+                letterSpacing: '-0.032em', lineHeight: 1.08,
                 color: 'var(--ink-1)', margin: '0 0 10px',
-              }}>
+                display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+                overflow: 'hidden', overflowWrap: 'anywhere', maxWidth: '18ch',
+              } as React.CSSProperties} title={project.name}>
                 {project.name}
               </h1>
               {project.description && (

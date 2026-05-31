@@ -128,7 +128,9 @@ export function Header({
         <GoblinLogo state="idle" size={26} variant="gold" />
         <span className="goblin-wordmark" style={{
           fontFamily: 'var(--font-dash-display), Manrope, sans-serif',
-          fontWeight: 700, fontSize: 'var(--t-h4-fs)', letterSpacing: '-0.02em',
+          // 18.66px = WCAG large-text threshold for bold; clears the gold-on-green
+          // wordmark to the 3:1 large-text contrast bar (TOKEN_CONTRAST 2026-05-31).
+          fontWeight: 700, fontSize: '18.66px', letterSpacing: '-0.02em',
           color: 'var(--brand-gold)', lineHeight: 1,
         }}>
           Goblin
