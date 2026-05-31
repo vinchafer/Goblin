@@ -41,7 +41,7 @@ export function ConnectorsPage() {
 
   return (
     <div className="settings-section" style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
-      <SettingsGroup label="Integrationen">
+      <SettingsGroup label="Versionskontrolle">
         <SettingsCard>
           <ConnectorRow
             name="GitHub"
@@ -50,16 +50,73 @@ export function ConnectorsPage() {
             detail={github.connected ? `@${github.username}` : 'Repos pushen, deployen'}
             onConnect={() => { window.location.href = '/dashboard/settings/integrations?service=github'; }}
           />
-          <VercelConnectorRow />
-          <ConnectorRow
-            name="Stripe"
-            initial="S"
-            connected={false}
-            detail="Für Dev-Mode — bald"
-            disabled
-          />
+          <ComingSoonRow name="GitLab" initial="GL" detail="Repos & CI/CD" />
+          <ComingSoonRow name="Bitbucket" initial="BB" detail="Repos & Pipelines" last />
         </SettingsCard>
       </SettingsGroup>
+
+      <SettingsGroup label="Deploy-Plattformen">
+        <SettingsCard>
+          <VercelConnectorRow />
+          <ComingSoonRow name="Netlify" initial="N" detail="Statisches Hosting & Functions" />
+          <ComingSoonRow name="Railway" initial="RW" detail="Container & Datenbanken" />
+          <ComingSoonRow name="Fly.io" initial="FLY" detail="Edge-Deployment" />
+          <ComingSoonRow name="Cloudflare" initial="CF" detail="Pages & Workers" last />
+        </SettingsCard>
+      </SettingsGroup>
+
+      <SettingsGroup label="Datenbanken & Backend">
+        <SettingsCard>
+          <ComingSoonRow name="Supabase" initial="SB" detail="Postgres, Auth & Storage" />
+          <ComingSoonRow name="Firebase" initial="FB" detail="Realtime-DB & Hosting" />
+          <ComingSoonRow name="PlanetScale" initial="PS" detail="Serverless MySQL" />
+          <ComingSoonRow name="Neon" initial="NE" detail="Serverless Postgres" last />
+        </SettingsCard>
+      </SettingsGroup>
+
+      <SettingsGroup label="Kommunikation">
+        <SettingsCard>
+          <ComingSoonRow name="Slack" initial="SL" detail="Build- & Deploy-Hinweise" />
+          <ComingSoonRow name="Discord" initial="DC" detail="Community & Webhooks" />
+          <ComingSoonRow name="Telegram" initial="TG" detail="Push-Benachrichtigungen" last />
+        </SettingsCard>
+      </SettingsGroup>
+
+      <SettingsGroup label="Produktivität">
+        <SettingsCard>
+          <ComingSoonRow name="Notion" initial="NO" detail="Docs & Datenbanken" />
+          <ComingSoonRow name="Linear" initial="LI" detail="Issues & Sprints" />
+          <ComingSoonRow name="Figma" initial="FI" detail="Design-Import" last />
+        </SettingsCard>
+      </SettingsGroup>
+
+      <SettingsGroup label="Analytics">
+        <SettingsCard>
+          <ComingSoonRow name="PostHog" initial="PH" detail="Product-Analytics" />
+          <ComingSoonRow name="Plausible" initial="PL" detail="Datenschutzfreundliche Analytics" />
+          <ComingSoonRow name="Google Analytics" initial="GA" detail="Web-Analytics" last />
+        </SettingsCard>
+      </SettingsGroup>
+    </div>
+  );
+}
+
+// Muted, non-interactive "Bald verfügbar" row.
+function ComingSoonRow({ name, initial, detail, last }: { name: string; initial: string; detail: string; last?: boolean }) {
+  return (
+    <div className="list-item" style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 12, borderBottom: last ? 'none' : '1px solid var(--border-hairline)', opacity: 0.62 }}>
+      <span style={{
+        width: 36, height: 36, borderRadius: 10, background: 'var(--subtle)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 'var(--t-caption-fs)', fontWeight: 700, color: 'var(--meta)', fontFamily: 'var(--font-mono)',
+      }}>{initial}</span>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{name}</div>
+        <div style={{ fontSize: 13, color: 'var(--text-meta)', marginTop: 2 }}>{detail}</div>
+      </div>
+      <span style={{ padding: '4px 10px', borderRadius: 12, background: 'var(--subtle)', color: 'var(--text-meta)', fontSize: 'var(--t-caption-fs)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+        Bald verfügbar
+      </span>
     </div>
   );
 }
