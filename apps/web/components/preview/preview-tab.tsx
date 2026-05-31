@@ -172,6 +172,26 @@ export function PreviewTab({ projectId, previewUrl }: PreviewTabProps) {
         ><ExternalLink size={14} /></a>
       </div>
 
+      {/* R3: new Vercel teams gate deployment URLs behind SSO by default → anonymous
+          visitors see 401. One-line, dismissible-by-ignoring hint. (--t-small + --ink-3
+          confirmed tokens in this file; --t-caption not in SSOT so not invented.) */}
+      <div style={{
+        padding: '6px 12px',
+        borderBottom: '1px solid var(--rule)',
+        fontSize: 'var(--t-small-fs)',
+        color: 'var(--ink-3)',
+        lineHeight: 1.45,
+      }}>
+        Deine Vercel-URL ist möglicherweise SSO-geschützt. Falls Besucher 401 sehen: im{' '}
+        <a
+          href="https://vercel.com/dashboard"
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ color: 'var(--brand-green)', textDecoration: 'none' }}
+        >Vercel-Dashboard</a>{' '}
+        unter Project → Settings → Deployment Protection deaktivieren.
+      </div>
+
       {/* Iframe area */}
       <div style={{
         flex: 1, display: 'flex', alignItems: 'flex-start',
