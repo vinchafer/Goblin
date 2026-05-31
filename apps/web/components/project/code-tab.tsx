@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import dynamic from "next/dynamic";
 import { useApp, type PendingInjection } from "@/contexts/app-context";
 import { SaveIndicator } from "@/components/editor/save-indicator";
@@ -39,6 +40,7 @@ interface CodeTabProps {
 export function CodeTab({ projectId, projectName = 'project', pendingCode }: CodeTabProps) {
   const tab = useCodeTab(projectId, pendingCode);
   const [editorTheme, , toggleEditorTheme] = useEditorTheme();
+  const [deployConfirm, setDeployConfirm] = useState(false);
 
   return (
     <div className="gb-codetab" data-editor-theme={editorTheme} style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--ed-canvas)' }}>
@@ -104,22 +106,38 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
         onFilesChanged={tab.fetchFiles}
       />
 
-      {/* Injection Banner */}
+      {/* Injection Banner — code arrives as a DRAFT, no adjacent deploy */}
       {pendingCode && (
         <InjectedBanner
           pendingCode={pendingCode}
-          deploying={tab.deploying}
           undoPayload={tab.undoPayload}
-          onDeploy={tab.handleDeploy}
           onApply={tab.handleSendToCodeApply}
-          onPush={tab.openPushModal}
           onUndo={tab.handleUndoInjection}
           onDismiss={() => tab.setPendingCodePayload(null)}
         />
       )}
 
+      {/* Deploy confirmation — Veröffentlichen is a deliberate, separate step */}
+      {deployConfirm && (
+        <>
+          <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--surface-overlay)' }} onClick={() => setDeployConfirm(false)} />
+          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: 'var(--ed-chrome-2)', border: '1px solid var(--ed-rule)', borderRadius: 14, padding: '22px 24px', zIndex: 81, minWidth: 320, maxWidth: 380, boxShadow: '0 16px 40px rgba(15,43,30,0.28)' }}>
+            <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--ed-fg-1)', fontFamily: 'var(--font-sans)', marginBottom: 8 }}>
+              Veröffentlichen?
+            </div>
+            <div style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--ed-fg-3)', fontFamily: 'var(--font-sans)', marginBottom: 18 }}>
+              Das baut dein Projekt und stellt es unter einer öffentlichen URL bereit. Du kannst vorher in Ruhe sichern und ansehen.
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button onClick={() => setDeployConfirm(false)} style={{ background: 'transparent', border: '1px solid var(--ed-rule)', color: 'var(--ed-fg-2)', borderRadius: 9, padding: '9px 16px', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>Abbrechen</button>
+              <button onClick={() => { setDeployConfirm(false); tab.handleDeploy(); }} style={{ background: 'var(--ed-primary)', border: 'none', color: 'var(--ed-on-primary)', borderRadius: 9, padding: '9px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', gap: 7 }}><Icon name="play" size={14} /> Veröffentlichen</button>
+            </div>
+          </div>
+        </>
+      )}
+
       {/* Action Bar */}
-      <CodeActionBar deploying={tab.deploying} onDeploy={tab.handleDeploy} onPush={tab.openPushModal} editorTheme={editorTheme} onToggleTheme={toggleEditorTheme} />
+      <CodeActionBar deploying={tab.deploying} onDeploy={() => setDeployConfirm(true)} onPush={tab.openPushModal} editorTheme={editorTheme} onToggleTheme={toggleEditorTheme} />
 
       {/* Open-file tabs */}
       <CodeFileTabs
@@ -205,7 +223,7 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
         <button onClick={tab.openPushModal} aria-label="Push to GitHub" title="Push to GitHub" style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(30,58,28,0.95)', border: '1px solid rgba(138,170,133,0.3)', color: 'var(--ed-fg-2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' } as React.CSSProperties}>
           <Icon name="github" size={18} />
         </button>
-        <button onClick={tab.handleDeploy} disabled={tab.deploying} aria-label="Deploy" title="Deploy" style={{ width: 56, height: 56, borderRadius: '50%', background: tab.deploying ? 'rgba(45,74,43,0.6)' : 'var(--brand-green)', border: 'none', color: 'var(--brand-gold)', cursor: tab.deploying ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 20px rgba(45,74,43,0.5)' } as React.CSSProperties}>
+        <button onClick={() => setDeployConfirm(true)} disabled={tab.deploying} aria-label="Veröffentlichen" title="Veröffentlichen" style={{ width: 56, height: 56, borderRadius: '50%', background: tab.deploying ? 'rgba(45,74,43,0.6)' : 'var(--brand-green)', border: 'none', color: 'var(--brand-gold)', cursor: tab.deploying ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 20px rgba(45,74,43,0.5)' } as React.CSSProperties}>
           {tab.deploying ? <GoblinMark size={22} /> : <Icon name="play" size={20} />}
         </button>
       </div>
