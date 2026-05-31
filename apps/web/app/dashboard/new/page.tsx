@@ -316,6 +316,14 @@ export default function NewProjectPage() {
             </button>
           </div>
         </form>
+
+        {/* B5 reassurance (R2): trial is free, no card — sits calmly below the CTA */}
+        <p style={{
+          marginTop: 16, textAlign: 'center',
+          fontSize: 13, lineHeight: 1.5, color: 'var(--ink-2)',
+        }}>
+          Dein erster Build ist kostenlos – 3 Tage Goblin Cloud gratis, keine Karte nötig.
+        </p>
       </div>
     </div>
   );
