@@ -191,7 +191,7 @@ export function ChatTab({ projectId }: ChatTabProps) {
             }
             setIsStreaming(false);
           } else if (d.type === 'error') {
-            setError(d.message || 'Something went wrong — try again. Your message was not sent.');
+            setError(d.message || 'Etwas ist schiefgelaufen — bitte erneut versuchen. Deine Nachricht wurde nicht gesendet.');
             setIsStreaming(false);
             setMessages(baseMessagesRef.current);
             streamingMessageRef.current = null;
@@ -200,7 +200,7 @@ export function ChatTab({ projectId }: ChatTabProps) {
         abortControllerRef.current.signal
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not reach the server — check your connection and try again.');
+      setError(err instanceof Error ? err.message : 'Server nicht erreichbar — prüfe deine Verbindung und versuche es erneut.');
       setIsStreaming(false);
       setMessages(baseMessagesRef.current);
       streamingMessageRef.current = null;
