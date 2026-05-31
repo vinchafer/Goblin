@@ -335,3 +335,45 @@
   --surface-overlay: rgba(0, 0, 0, 0.60);
 }
 /* ════════════════ END SEMANTIC ALIAS LAYER ════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   CODE-TAB EDITOR SURFACE — Sprint 6 (PROPOSED for v1.2)
+   ───────────────────────────────────────────────────────────────────
+   Scoped editor-surface tokens. The Code Tab root carries
+   data-editor-theme="light|dark"; every Code-Tab chrome component reads
+   these --ed-* vars so the whole surface flips from ONE place. LIGHT is
+   the new default (founder: the old #28251D/#08170F dark was unusable).
+   Dark is a retuned WARM-dark (surface-ink-1 #3F3A2C), not the black hole.
+   ═══════════════════════════════════════════════════════════════════ */
+.gb-codetab[data-editor-theme="light"] {
+  --ed-canvas:    #FBF7EC;  /* editor area / main surface (paper) */
+  --ed-chrome:    #F4ECD8;  /* bars, gutters, panels (bone) */
+  --ed-chrome-2:  #FBF7EC;  /* secondary panel */
+  --ed-fg-1:      #0F2B1E;  /* primary text */
+  --ed-fg-2:      #3F3A2C;  /* secondary text */
+  --ed-fg-3:      #5F5640;  /* faint text */
+  --ed-rule:      #D8CBA8;  /* hairlines */
+  --ed-rule-soft: #E8DEC2;
+  --ed-accent:    #D4A737;  /* gold — single accent */
+  --ed-primary:   #1A3A2A;  /* green — primary action fill */
+  --ed-on-primary:#FBF7EC;  /* text on green */
+  --ed-hover:     rgba(26,58,42,0.05);
+  --ed-draft:     #BC8E2E;  /* Entwurf */
+  --ed-saved:     #3D7A4F;  /* Gesichert */
+}
+.gb-codetab[data-editor-theme="dark"] {
+  --ed-canvas:    #3F3A2C;
+  --ed-chrome:    #28251D;
+  --ed-chrome-2:  #34301F;
+  --ed-fg-1:      #FBF7EC;
+  --ed-fg-2:      #D8CBA8;
+  --ed-fg-3:      #968768;
+  --ed-rule:      rgba(247,247,236,0.14);
+  --ed-rule-soft: rgba(247,247,236,0.08);
+  --ed-accent:    #D4A737;
+  --ed-primary:   #D4A737;
+  --ed-on-primary:#28251D;
+  --ed-hover:     rgba(212,167,55,0.08);
+  --ed-draft:     #E8C97F;
+  --ed-saved:     #87C098;
+}

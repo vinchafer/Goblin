@@ -1,0 +1,54 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=390">
+<title>Code Tab — Mobile · Empty</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--brand-green:#1A3A2A;--brand-gold:#D4A737;--paper:#FBF7EC;--surface-0:#FFFFFF;--surface-1:#FBF7EC;--surface-2:#F4ECD8;--surface-3:#E8DEC2;--ink-1:#0F2B1E;--ink-2:#3F3A2C;--ink-3:#5F5640;--rule:#D8CBA8;--rule-strong:#B8A988;--font-sans:'Manrope',sans-serif;--font-mono:'JetBrains Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans);background:#cdbf9d;display:flex;align-items:center;justify-content:center;min-height:100vh;-webkit-font-smoothing:antialiased}
+.frame{width:390px;height:844px;background:var(--surface-1);box-shadow:0 24px 60px -20px rgba(15,43,30,.4);overflow:hidden;display:flex;flex-direction:column;position:relative}
+.tick{display:inline-block;width:6px;height:6px;background:var(--brand-gold);transform:rotate(45deg)}
+.topbar{height:52px;background:var(--brand-green);display:flex;align-items:center;justify-content:center;color:#FBF7EC;flex:none;position:relative}
+.sesschip{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;background:rgba(255,255,255,.1);border-radius:999px;padding:7px 16px}
+.theme{position:absolute;right:14px;font-size:12px;color:rgba(251,247,236,.8);border:1px solid rgba(255,255,255,.2);border-radius:999px;padding:4px 10px}
+.body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:28px}
+.mark{width:56px;height:56px;border-radius:16px;background:var(--surface-2);border:1px solid var(--rule);display:flex;align-items:center;justify-content:center;margin-bottom:22px}
+.mark .tick{width:20px;height:20px}
+h1{font-size:23px;font-weight:600;letter-spacing:-.3px;color:var(--ink-1);margin-bottom:11px}
+.lead{font-size:15px;line-height:1.6;color:var(--ink-3);max-width:300px}
+.hints{display:flex;gap:8px;margin-top:24px}
+.hint{font-size:12.5px;color:var(--ink-3);border:1px solid var(--rule);border-radius:999px;padding:7px 13px;background:var(--surface-1)}
+/* composer above keyboard */
+.composer{padding:12px 14px;background:var(--surface-1);border-top:1px solid var(--rule);flex:none}
+.cbox{border:1px solid var(--rule-strong);border-radius:16px;background:var(--surface-0);padding:12px 14px}
+.cbox textarea{width:100%;border:none;outline:none;resize:none;font-family:var(--font-sans);font-size:15px;color:var(--ink-2);background:transparent;height:40px}
+.cbox textarea::placeholder{color:#9c9176}
+.crow{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
+.mchip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--rule);border-radius:999px;padding:5px 12px;font-size:12.5px;color:var(--ink-2);font-weight:500}
+.send{width:40px;height:40px;border-radius:12px;background:var(--brand-green);color:var(--paper);border:none;display:flex;align-items:center;justify-content:center}
+.keyboard{height:230px;background:#cfc4ad;border-top:1px solid var(--rule-strong);flex:none;display:flex;align-items:center;justify-content:center;color:#8a8167;font-size:12px;letter-spacing:.05em}
+svg{flex:none}
+</style></head>
+<body>
+<div class="frame">
+  <div class="topbar">
+    <div class="sesschip"><span class="tick"></span> Neue Session ▾</div>
+    <span class="theme">☀</span>
+  </div>
+  <div class="body">
+    <div class="mark"><span class="tick"></span></div>
+    <h1>Noch nichts hier.</h1>
+    <p class="lead">Stell unten eine Aufgabe — Goblin baut den Code direkt hier.</p>
+    <div class="hints"><span class="hint">＋ Datei</span><span class="hint">↧ Aus Chat</span></div>
+  </div>
+  <div class="composer">
+    <div class="cbox">
+      <textarea placeholder="Sag Goblin was zu bauen ist …"></textarea>
+      <div class="crow">
+        <span class="mchip">⚡ gemini-flash ▾</span>
+        <button class="send"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FBF7EC" stroke-width="2.5"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></button>
+      </div>
+    </div>
+  </div>
+  <div class="keyboard">⌨  Tastatur</div>
+</div>
+</body></html>

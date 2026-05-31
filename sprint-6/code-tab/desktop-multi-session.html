@@ -1,0 +1,122 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8">
+<title>Code Tab — Desktop · Multi-Session (Veröffentlicht)</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--brand-green:#1A3A2A;--brand-gold:#D4A737;--paper:#FBF7EC;--surface-0:#FFFFFF;--surface-1:#FBF7EC;--surface-2:#F4ECD8;--surface-3:#E8DEC2;--ink-1:#0F2B1E;--ink-2:#3F3A2C;--ink-3:#5F5640;--rule:#D8CBA8;--rule-soft:#E8DEC2;--rule-strong:#B8A988;--success:#3D7A4F;--state-saved:#3D7A4F;--state-deployed:#D4A737;--font-sans:'Manrope',sans-serif;--font-mono:'JetBrains Mono',monospace;--syn-keyword:#2A523E;--syn-string:#9A6B1E;--syn-punct:#5F5640;--syn-comment:#8A8268}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans);background:#cdbf9d;display:flex;align-items:center;justify-content:center;min-height:100vh;-webkit-font-smoothing:antialiased}
+.frame{width:1280px;height:860px;background:var(--surface-1);box-shadow:0 24px 60px -20px rgba(15,43,30,.4);overflow:hidden;display:flex;flex-direction:column}
+.tick{display:inline-block;width:7px;height:7px;background:var(--brand-gold);transform:rotate(45deg);flex:none}
+.tabbar{height:44px;background:var(--brand-green);display:flex;align-items:stretch;color:#FBF7EC;flex:none}
+.stab{display:flex;align-items:center;gap:8px;padding:0 18px;font-size:13px;font-weight:500;color:rgba(251,247,236,.6);border-right:1px solid rgba(255,255,255,.08)}
+.stab.active{background:var(--surface-1);color:var(--ink-1);font-weight:600}
+.newsess{display:flex;align-items:center;gap:6px;padding:0 16px;font-size:13px;color:rgba(251,247,236,.75)}
+.tbright{margin-left:auto;display:flex;align-items:center;gap:14px;padding:0 18px;font-size:12px}
+.themepill{display:flex;align-items:center;gap:6px;border:1px solid rgba(255,255,255,.2);border-radius:999px;padding:4px 11px;color:rgba(251,247,236,.85)}
+.split{flex:1;display:flex;min-height:0}
+.thread{width:468px;border-right:1px solid var(--rule);display:flex;flex-direction:column;background:var(--surface-1)}
+.thscroll{flex:1;overflow:auto;padding:22px}
+.turn{margin-bottom:22px}
+.who{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--ink-3);margin-bottom:7px}
+.who .av{width:20px;height:20px;border-radius:6px;background:var(--brand-green);display:flex;align-items:center;justify-content:center}
+.who .avg{width:20px;height:20px;border-radius:6px;background:var(--surface-3);display:flex;align-items:center;justify-content:center}
+.model{font-family:var(--font-mono);font-size:11px;color:var(--ink-3);font-weight:500}
+.bubble{font-size:14.5px;line-height:1.55;color:var(--ink-1)}
+.result{border:1px solid var(--rule);border-radius:12px;overflow:hidden;margin-top:6px;background:var(--surface-0)}
+.result .rh{display:flex;align-items:center;gap:8px;padding:9px 13px;background:var(--surface-2);border-bottom:1px solid var(--rule);font-size:12.5px;color:var(--ink-2);font-weight:500}
+.result .rb{padding:11px 14px;font-size:13px;color:var(--ink-2);line-height:1.5}
+.livechip{display:inline-flex;align-items:center;gap:8px;margin-top:10px;background:rgba(61,122,79,.1);border:1px solid rgba(61,122,79,.35);border-radius:9px;padding:9px 13px;font-family:var(--font-mono);font-size:12.5px;color:var(--success);font-weight:500}
+.copy{margin-left:6px;color:var(--ink-3);cursor:pointer}
+.composer{border-top:1px solid var(--rule);padding:14px 18px;background:var(--surface-1)}
+.cbox{border:1px solid var(--rule-strong);border-radius:14px;background:var(--surface-0);padding:12px 14px}
+.cbox textarea{width:100%;border:none;outline:none;resize:none;font-family:var(--font-sans);font-size:14px;color:var(--ink-2);background:transparent;height:38px}
+.cbox textarea::placeholder{color:#9c9176}
+.crow{display:flex;align-items:center;justify-content:space-between;margin-top:8px}
+.mchip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--rule);border-radius:999px;padding:4px 11px;font-size:12px;color:var(--ink-2);font-weight:500}
+.send{display:inline-flex;align-items:center;gap:7px;background:var(--brand-green);color:var(--paper);border:none;border-radius:10px;padding:8px 16px;font-size:13px;font-weight:600}
+.work{flex:1;display:flex;flex-direction:column;min-width:0;background:var(--surface-1)}
+.wtop{display:flex;align-items:center;gap:10px;padding:11px 18px;border-bottom:1px solid var(--rule);background:var(--surface-2);flex:none}
+.fname{font-family:var(--font-mono);font-size:13px;color:var(--ink-1);font-weight:500}
+.statebadge{display:inline-flex;align-items:center;gap:7px;margin-left:auto;font-size:12.5px;font-weight:600;color:var(--state-saved)}
+.check{width:16px;height:16px;border-radius:50%;background:var(--state-saved);display:flex;align-items:center;justify-content:center}
+.editor{flex:1;overflow:auto;background:var(--surface-1);display:flex;font-family:var(--font-mono);font-size:13px;line-height:1.62}
+.gutter{padding:14px 0;background:var(--surface-2);color:#A99B78;text-align:right;flex:none;border-right:1px solid var(--rule-soft)}
+.gutter div{padding:0 12px 0 16px}
+.code{padding:14px 18px;white-space:pre;flex:1;color:#0F2B1E}
+.k{color:var(--syn-keyword)}.s{color:var(--syn-string)}.p{color:var(--syn-punct)}.c{color:var(--syn-comment)}
+.actzone{border-top:1px solid var(--rule);padding:14px 18px;background:var(--surface-1);flex:none}
+.actrow{display:flex;align-items:center;gap:12px}
+.btn-ghost{display:inline-flex;align-items:center;gap:8px;background:transparent;color:var(--ink-2);border:1px solid var(--rule-strong);border-radius:10px;padding:10px 18px;font-size:14px;font-weight:500}
+.saved-note{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--state-saved);font-weight:600}
+.gate{display:flex;align-items:center;gap:10px;margin-top:13px;padding-top:13px;border-top:1px dashed var(--rule)}
+.gatenote{font-size:12.5px;color:var(--ink-3)}
+.btn-deploy{display:inline-flex;align-items:center;gap:8px;background:var(--brand-green);color:var(--paper);border:none;border-radius:10px;padding:10px 22px;font-size:14px;font-weight:600;margin-left:auto;cursor:pointer}
+svg{flex:none}
+</style></head>
+<body>
+<div class="frame">
+  <div class="tabbar">
+    <div class="stab"><span class="tick" style="background:rgba(212,167,55,.4)"></span> Landing page</div>
+    <div class="stab active"><span class="tick"></span> Pricing fix</div>
+    <div class="newsess">＋ Neue Session</div>
+    <div class="tbright"><span class="themepill">☀ Hell</span></div>
+  </div>
+  <div class="split">
+    <div class="thread">
+      <div class="thscroll">
+        <div class="turn">
+          <div class="who"><span class="av"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#FBF7EC" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg></span> Du</div>
+          <div class="bubble">Die Preisliste soll drei Stufen haben statt zwei.</div>
+        </div>
+        <div class="turn">
+          <div class="who"><span class="avg"><span class="tick"></span></span> Goblin <span class="model">· claude-sonnet</span></div>
+          <div class="bubble" style="margin-bottom:10px">Erledigt — dritte Stufe „Team" ergänzt und gesichert.</div>
+          <div class="result">
+            <div class="rh"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3F3A2C" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> pricing.html · geändert</div>
+            <div class="rb">+18 Zeilen · dritte Preis-Karte
+              <div class="livechip"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3D7A4F" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12l3 3 5-6"/></svg> live · project-kiy64.vercel.app <span class="copy">⧉ kopieren</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="composer">
+        <div class="cbox">
+          <textarea placeholder="Sag Goblin was zu tun ist …"></textarea>
+          <div class="crow"><span class="mchip">◆ claude-sonnet ▾</span><button class="send">Senden ↑</button></div>
+        </div>
+      </div>
+    </div>
+    <div class="work">
+      <div class="wtop">
+        <span class="fname">pricing.html</span>
+        <span class="statebadge"><span class="check"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#FBF7EC" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span> Gesichert · 14:31</span>
+      </div>
+      <div class="editor">
+        <div class="gutter mono"><div>22</div><div>23</div><div>24</div><div>25</div><div>26</div><div>27</div><div>28</div><div>29</div><div>30</div><div>31</div><div>32</div><div>33</div></div>
+        <div class="code">  <span class="p">&lt;</span><span class="k">div</span> <span class="k">class</span><span class="p">=</span><span class="s">"tier team"</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="k">h3</span><span class="p">&gt;</span>Team<span class="p">&lt;/</span><span class="k">h3</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="k">p</span> <span class="k">class</span><span class="p">=</span><span class="s">"price"</span><span class="p">&gt;</span>CHF 49<span class="p">&lt;/</span><span class="k">p</span><span class="p">&gt;</span>
+    <span class="c">&lt;!-- bis 10 Sitze --&gt;</span>
+    <span class="p">&lt;</span><span class="k">ul</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="k">li</span><span class="p">&gt;</span>Alles aus Pro<span class="p">&lt;/</span><span class="k">li</span><span class="p">&gt;</span>
+      <span class="p">&lt;</span><span class="k">li</span><span class="p">&gt;</span>Geteilte Projekte<span class="p">&lt;/</span><span class="k">li</span><span class="p">&gt;</span>
+    <span class="p">&lt;/</span><span class="k">ul</span><span class="p">&gt;</span>
+    <span class="p">&lt;</span><span class="k">button</span><span class="p">&gt;</span>Team wählen<span class="p">&lt;/</span><span class="k">button</span><span class="p">&gt;</span>
+  <span class="p">&lt;/</span><span class="k">div</span><span class="p">&gt;</span>
+<span class="p">&lt;/</span><span class="k">section</span><span class="p">&gt;</span>
+<span class="p">&lt;/</span><span class="k">body</span><span class="p">&gt;</span></div>
+      </div>
+      <div class="actzone">
+        <div class="actrow">
+          <span class="saved-note"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3D7A4F" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Alles gesichert</span>
+          <button class="btn-ghost" style="margin-left:auto">Vorschau</button>
+        </div>
+        <div class="gate">
+          <span class="gatenote">Gesichert um 14:31 — bereit zum Veröffentlichen.</span>
+          <button class="btn-deploy">Veröffentlichen →</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body></html>

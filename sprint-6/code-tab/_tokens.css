@@ -1,0 +1,24 @@
+/* Goblin v1.1 tokens (subset) + proposed Code-Tab tokens — for mockups */
+:root{
+  --brand-green:#1A3A2A; --ink-deep:#0F2B1E; --brand-gold:#D4A737;
+  --bone:#F4ECD8; --paper:#FBF7EC;
+  --green-300:#87A998; --green-600:#2A523E; --green-950:#08170F;
+  --gold-300:#E8C97F; --gold-600:#BC8E2E; --gold-900:#5E4514;
+  --surface-0:#FFFFFF; --surface-1:#FBF7EC; --surface-2:#F4ECD8; --surface-3:#E8DEC2; --surface-4:#D8CBA8;
+  --surface-ink-1:#3F3A2C; --surface-ink-2:#28251D;
+  --ink-1:#0F2B1E; --ink-2:#3F3A2C; --ink-3:#5F5640; --ink-disabled:#B8A988;
+  --ink-on-dark-1:#FBF7EC; --ink-on-dark-2:#D8CBA8; --ink-on-dark-3:#968768;
+  --rule-soft:#E8DEC2; --rule:#D8CBA8; --rule-strong:#B8A988;
+  --success:#3D7A4F; --danger:#B0432A; --info:#355B7A;
+  --state-draft:#BC8E2E; --state-saved:#3D7A4F; --state-deployed:#D4A737;
+  --font-sans:'Manrope',system-ui,-apple-system,sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,monospace;
+  /* syntax light */
+  --syn-keyword:#2A523E; --syn-string:#9A6B1E; --syn-number:#355B7A;
+  --syn-comment:#8A8268; --syn-function:#355B7A; --syn-variable:#0F2B1E;
+  --syn-punct:#5F5640; --syn-tag:#5E4514;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans);-webkit-font-smoothing:antialiased;color:var(--ink-1)}
+.mono{font-family:var(--font-mono)}
+.tick{display:inline-block;width:7px;height:7px;background:var(--brand-gold);transform:rotate(45deg);flex:none}

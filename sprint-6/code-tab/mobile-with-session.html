@@ -1,0 +1,80 @@
+<!doctype html><html lang="de"><head><meta charset="utf-8"><meta name="viewport" content="width=390">
+<title>Code Tab — Mobile · Thread + Send-to-Code draft</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--brand-green:#1A3A2A;--brand-gold:#D4A737;--paper:#FBF7EC;--surface-0:#FFFFFF;--surface-1:#FBF7EC;--surface-2:#F4ECD8;--surface-3:#E8DEC2;--ink-1:#0F2B1E;--ink-2:#3F3A2C;--ink-3:#5F5640;--rule:#D8CBA8;--rule-strong:#B8A988;--state-draft:#BC8E2E;--font-sans:'Manrope',sans-serif;--font-mono:'JetBrains Mono',monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans);background:#cdbf9d;display:flex;align-items:center;justify-content:center;min-height:100vh;-webkit-font-smoothing:antialiased}
+.frame{width:390px;height:844px;background:var(--surface-1);box-shadow:0 24px 60px -20px rgba(15,43,30,.4);overflow:hidden;display:flex;flex-direction:column}
+.tick{display:inline-block;width:6px;height:6px;background:var(--brand-gold);transform:rotate(45deg);flex:none}
+.topbar{height:52px;background:var(--brand-green);display:flex;align-items:center;justify-content:center;color:#FBF7EC;flex:none;position:relative}
+.sesschip{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;background:rgba(255,255,255,.1);border-radius:999px;padding:7px 16px}
+.theme{position:absolute;right:14px;font-size:12px;color:rgba(251,247,236,.8);border:1px solid rgba(255,255,255,.2);border-radius:999px;padding:4px 10px}
+.thscroll{flex:1;overflow:auto;padding:18px 16px}
+.turn{margin-bottom:20px}
+.who{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:600;color:var(--ink-3);margin-bottom:7px}
+.who .av{width:20px;height:20px;border-radius:6px;background:var(--brand-green);display:flex;align-items:center;justify-content:center}
+.who .avg{width:20px;height:20px;border-radius:6px;background:var(--surface-3);display:flex;align-items:center;justify-content:center}
+.bubble{font-size:14.5px;line-height:1.55;color:var(--ink-1)}
+/* send-to-code draft turn */
+.draft{border:1px solid rgba(212,167,55,.5);border-radius:13px;overflow:hidden;background:var(--surface-0);margin-top:4px}
+.draft .dh{display:flex;align-items:center;gap:8px;padding:10px 13px;background:rgba(212,167,55,.1);border-bottom:1px solid rgba(212,167,55,.3);font-size:12.5px;color:#5E4514;font-weight:600}
+.draft .db{padding:12px 14px}
+.fnrow{display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:12.5px;color:var(--ink-2);margin-bottom:6px}
+.statebadge{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;color:var(--state-draft)}
+.dot-hollow{width:8px;height:8px;border-radius:50%;border:2px solid var(--state-draft);box-sizing:border-box}
+.preview{font-family:var(--font-mono);font-size:11.5px;color:var(--ink-3);background:var(--surface-1);border:1px solid var(--rule-soft,#E8DEC2);border-radius:8px;padding:9px 11px;line-height:1.5;white-space:pre;overflow:hidden;margin-bottom:12px}
+.dactions{display:flex;gap:8px}
+.b-primary{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;background:var(--brand-green);color:var(--paper);border:none;border-radius:11px;padding:11px;font-size:14px;font-weight:600}
+.b-ghost{display:flex;align-items:center;justify-content:center;gap:6px;background:transparent;color:var(--ink-2);border:1px solid var(--rule-strong);border-radius:11px;padding:11px 16px;font-size:13.5px;font-weight:500}
+.more{width:46px;display:flex;align-items:center;justify-content:center;border:1px solid var(--rule);border-radius:11px;color:var(--ink-3);font-size:18px}
+/* composer */
+.composer{padding:11px 14px;background:var(--surface-1);border-top:1px solid var(--rule);flex:none}
+.cbox{border:1px solid var(--rule-strong);border-radius:15px;background:var(--surface-0);padding:11px 13px}
+.cbox textarea{width:100%;border:none;outline:none;resize:none;font-family:var(--font-sans);font-size:15px;color:var(--ink-2);background:transparent;height:24px}
+.cbox textarea::placeholder{color:#9c9176}
+.crow{display:flex;align-items:center;justify-content:space-between;margin-top:7px}
+.mchip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--rule);border-radius:999px;padding:5px 11px;font-size:12px;color:var(--ink-2);font-weight:500}
+.send{width:38px;height:38px;border-radius:11px;background:var(--brand-green);color:var(--paper);border:none;display:flex;align-items:center;justify-content:center}
+svg{flex:none}
+</style></head>
+<body>
+<div class="frame">
+  <div class="topbar">
+    <div class="sesschip"><span class="tick"></span> Landing page ▾</div>
+    <span class="theme">☀</span>
+  </div>
+  <div class="thscroll">
+    <div class="turn">
+      <div class="who"><span class="av"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#FBF7EC" stroke-width="2.5"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg></span> Du</div>
+      <div class="bubble">Bau eine schlichte Hero-Sektion.</div>
+    </div>
+    <div class="turn">
+      <div class="who"><span class="avg"><span class="tick"></span></span> Goblin</div>
+      <div class="bubble" style="margin-bottom:10px">Aus dem Chat übernommen — als Entwurf bereit.</div>
+      <div class="draft">
+        <div class="dh"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5E4514" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg> Aus dem Chat übernommen</div>
+        <div class="db">
+          <div class="fnrow"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#3F3A2C" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg> index.html <span class="statebadge" style="margin-left:auto"><span class="dot-hollow"></span> Entwurf</span></div>
+          <div class="preview">&lt;section class="hero"&gt;
+  &lt;h1&gt;Bau etwas Gutes&lt;/h1&gt;
+  &lt;p&gt;Ein Satz dazu.&lt;/p&gt;
+  &lt;button&gt;Los&lt;/button&gt;
+&lt;/section&gt;</div>
+          <div class="dactions">
+            <button class="b-primary"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FBF7EC" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg> Ansehen</button>
+            <button class="b-ghost">Sichern</button>
+            <button class="more">⋯</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="composer">
+    <div class="cbox">
+      <textarea placeholder="Sag Goblin was zu tun ist …"></textarea>
+      <div class="crow"><span class="mchip">⚡ gemini-flash ▾</span><button class="send"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FBF7EC" stroke-width="2.5"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg></button></div>
+    </div>
+  </div>
+</div>
+</body></html>

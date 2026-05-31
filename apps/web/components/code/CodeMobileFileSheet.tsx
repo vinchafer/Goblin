@@ -22,17 +22,17 @@ export function CodeMobileFileSheet({
         onClick={e => e.stopPropagation()}
         style={{
           position: 'absolute', left: 0, top: 0, bottom: 0, width: 280,
-          background: 'var(--green-950)', overflowY: 'auto',
-          boxShadow: '4px 0 20px rgba(0,0,0,0.5)',
+          background: 'var(--ed-chrome)', borderRight: '1px solid var(--ed-rule)', overflowY: 'auto',
+          boxShadow: '4px 0 20px rgba(15,43,30,0.18)',
         }}
       >
         <div style={{ padding: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-            <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--ink-on-dark-2)' }}>Files</span>
+            <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--ed-fg-2)' }}>Dateien</span>
             <button
               onClick={onClose}
               aria-label="Close"
-              style={{ background: 'none', border: 'none', color: 'var(--ink-on-dark-3)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              style={{ background: 'none', border: 'none', color: 'var(--ed-fg-3)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
               <Icon name="close" size={16} />
             </button>

@@ -153,6 +153,9 @@ importers:
       '@codemirror/lang-json':
         specifier: ^6.0.2
         version: 6.0.2
+      '@codemirror/language':
+        specifier: ^6.12.3
+        version: 6.12.3
       '@codemirror/state':
         specifier: ^6.6.0
         version: 6.6.0
@@ -171,6 +174,9 @@ importers:
       '@goblin/shared':
         specifier: workspace:*
         version: link:../../packages/shared
+      '@lezer/highlight':
+        specifier: ^1.2.3
+        version: 1.2.3
       '@phosphor-icons/react':
         specifier: ^2.1.10
         version: 2.1.10(react-dom@19.0.0(react@19.0.0))(react@19.0.0)

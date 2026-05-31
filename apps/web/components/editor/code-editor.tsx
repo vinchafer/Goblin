@@ -3,6 +3,8 @@ import { useEffect, useRef, useCallback } from 'react';
 import { EditorView, basicSetup } from 'codemirror';
 import { EditorState } from '@codemirror/state';
 import { keymap } from '@codemirror/view';
+import { HighlightStyle, syntaxHighlighting } from '@codemirror/language';
+import { tags as t } from '@lezer/highlight';
 import { javascript } from '@codemirror/lang-javascript';
 import { css } from '@codemirror/lang-css';
 import { html } from '@codemirror/lang-html';
@@ -13,37 +15,95 @@ import {
   moveLineUp, moveLineDown, copyLineDown,
 } from '@codemirror/commands';
 
-// Editor theme constants — resolved from design-tokens.css (v1.1). CodeMirror's
-// EditorView.theme is kept on resolved values for predictable syntax rendering;
-// if these tokens change, update both here and design-tokens.css. The editor is
-// the one sanctioned dark surface in the light app (§A2.4 founder decision).
-const EDITOR_BG        = '#28251D';                // --surface-ink-2 (editor surface)
-const EDITOR_BG_DEEP   = '#08170F';                // --green-950 (gutters, panels)
-const EDITOR_FG        = '#FBF7EC';                // --ink-on-dark-1
-const EDITOR_FG_MUTED  = '#D8CBA8';                // --ink-on-dark-2
-const EDITOR_FG_FAINT  = '#968768';                // --ink-on-dark-3
-const EDITOR_ACCENT    = '#D4A737';                // --brand-gold
-const EDITOR_SELECTION = 'rgba(212,167,55,0.18)';  // gold @ 18%
-const EDITOR_LINE      = 'rgba(212,167,55,0.05)';  // active line/gutter tint
-const EDITOR_BORDER    = 'rgba(247,247,236,0.14)'; // --rule-strong on dark
+// ── Goblin editor themes — resolved from design-tokens.css v1.1 + the PROPOSED
+// Code-Tab token set (CODETAB_PROPOSED_TOKENS_2026-06-01.md). Light is the new
+// default surface (Sprint 6): a calm paper canvas the founder can actually read.
+// Dark is a retuned WARM-dark (surface-ink-1 #3F3A2C), NOT the old #28251D/#08170F
+// "black hole". Theme is chosen by the `theme` prop, persisted per user.
+type EditorTheme = 'light' | 'dark';
 
-const goblinTheme = EditorView.theme({
-  '&': { background: EDITOR_BG, color: EDITOR_FG, height: '100%', fontSize: '13px' },
-  '.cm-content': { fontFamily: 'JetBrains Mono, monospace', padding: '12px 0', caretColor: EDITOR_ACCENT },
-  '.cm-line': { padding: '0 14px' },
-  '.cm-gutters': { background: EDITOR_BG_DEEP, border: 'none', color: EDITOR_FG_FAINT },
-  '.cm-lineNumbers .cm-gutterElement': { minWidth: '32px', padding: '0 8px 0 4px' },
-  '.cm-activeLineGutter': { background: EDITOR_LINE, color: EDITOR_FG_MUTED },
-  '.cm-activeLine': { background: EDITOR_LINE },
-  '.cm-cursor': { borderLeft: `2px solid ${EDITOR_ACCENT}` },
-  '.cm-selectionBackground': { background: `${EDITOR_SELECTION} !important` },
-  '.cm-tooltip': { background: EDITOR_BG_DEEP, border: `1px solid ${EDITOR_BORDER}` },
-  '.cm-completionLabel': { color: EDITOR_FG_MUTED },
-  '.cm-completionMatchedText': { color: EDITOR_ACCENT, textDecoration: 'none', fontWeight: 600 },
-  '.cm-matchingBracket': { background: EDITOR_SELECTION, outline: `1px solid ${EDITOR_ACCENT}` },
-  '.cm-tooltip-autocomplete': { background: EDITOR_BG_DEEP, border: `1px solid ${EDITOR_BORDER}` },
-  '.cm-tooltip-autocomplete ul li[aria-selected]': { background: EDITOR_SELECTION },
-}, { dark: true });
+interface Palette {
+  canvas: string; chrome: string; fg: string; fgMuted: string; fgFaint: string;
+  gutterFg: string; accent: string; selection: string; activeLine: string; border: string;
+  syn: {
+    keyword: string; string: string; number: string; comment: string;
+    func: string; variable: string; punct: string; tag: string; type: string; invalid: string;
+  };
+}
+
+const LIGHT: Palette = {
+  canvas: '#FBF7EC',          // --surface-1 (paper)
+  chrome: '#F4ECD8',          // --surface-2 (bone) — gutters/panels
+  fg: '#0F2B1E',              // --ink-deep
+  fgMuted: '#3F3A2C',         // --ink-2
+  fgFaint: '#5F5640',         // --ink-3
+  gutterFg: '#A99B78',
+  accent: '#D4A737',          // --brand-gold
+  selection: 'rgba(212,167,55,0.20)',
+  activeLine: 'rgba(26,58,42,0.04)',
+  border: '#D8CBA8',          // --rule
+  syn: {
+    keyword: '#2A523E', string: '#9A6B1E', number: '#355B7A', comment: '#8A8268',
+    func: '#355B7A', variable: '#0F2B1E', punct: '#5F5640', tag: '#5E4514',
+    type: '#2A523E', invalid: '#B0432A',
+  },
+};
+
+const DARK: Palette = {
+  canvas: '#3F3A2C',          // --surface-ink-1 (warm-dark, retuned)
+  chrome: '#28251D',          // --surface-ink-2 (gutters/panels)
+  fg: '#FBF7EC',              // --ink-on-dark-1
+  fgMuted: '#D8CBA8',         // --ink-on-dark-2
+  fgFaint: '#968768',         // --ink-on-dark-3
+  gutterFg: '#6F664F',
+  accent: '#D4A737',
+  selection: 'rgba(212,167,55,0.18)',
+  activeLine: 'rgba(212,167,55,0.06)',
+  border: 'rgba(247,247,236,0.14)',
+  syn: {
+    keyword: '#87A998', string: '#E8C97F', number: '#B5CCC0', comment: '#968768',
+    func: '#B5CCC0', variable: '#FBF7EC', punct: '#D8CBA8', tag: '#C9B27E',
+    type: '#87A998', invalid: '#E0866F',
+  },
+};
+
+function buildViewTheme(p: Palette, dark: boolean) {
+  return EditorView.theme({
+    '&': { background: p.canvas, color: p.fg, height: '100%', fontSize: '13px' },
+    '.cm-content': { fontFamily: 'JetBrains Mono, monospace', padding: '14px 0', caretColor: p.accent },
+    '.cm-line': { padding: '0 18px' },
+    '.cm-gutters': { background: p.chrome, border: 'none', borderRight: `1px solid ${p.border}`, color: p.gutterFg },
+    '.cm-lineNumbers .cm-gutterElement': { minWidth: '32px', padding: '0 8px 0 12px' },
+    '.cm-activeLineGutter': { background: p.activeLine, color: p.fgMuted },
+    '.cm-activeLine': { background: p.activeLine },
+    '.cm-cursor': { borderLeft: `2px solid ${p.accent}` },
+    '.cm-selectionBackground, ::selection': { background: `${p.selection} !important` },
+    '.cm-tooltip': { background: p.chrome, border: `1px solid ${p.border}`, color: p.fg },
+    '.cm-completionLabel': { color: p.fgMuted },
+    '.cm-completionMatchedText': { color: p.accent, textDecoration: 'none', fontWeight: '600' },
+    '.cm-matchingBracket': { background: p.selection, outline: `1px solid ${p.accent}` },
+    '.cm-tooltip-autocomplete': { background: p.chrome, border: `1px solid ${p.border}` },
+    '.cm-tooltip-autocomplete ul li[aria-selected]': { background: p.selection },
+  }, { dark });
+}
+
+function buildHighlight(p: Palette) {
+  const s = p.syn;
+  return syntaxHighlighting(HighlightStyle.define([
+    { tag: [t.keyword, t.controlKeyword, t.definitionKeyword, t.moduleKeyword, t.operatorKeyword], color: s.keyword, fontWeight: '500' },
+    { tag: [t.string, t.special(t.string), t.regexp], color: s.string },
+    { tag: [t.number, t.bool, t.null, t.atom], color: s.number },
+    { tag: [t.comment, t.lineComment, t.blockComment, t.docComment], color: s.comment, fontStyle: 'italic' },
+    { tag: [t.function(t.variableName), t.function(t.propertyName), t.definition(t.function(t.variableName))], color: s.func },
+    { tag: [t.variableName, t.propertyName, t.attributeValue], color: s.variable },
+    { tag: [t.punctuation, t.separator, t.operator, t.derefOperator, t.bracket, t.squareBracket, t.brace, t.paren], color: s.punct },
+    { tag: [t.tagName, t.angleBracket, t.attributeName], color: s.tag },
+    { tag: [t.typeName, t.className, t.namespace], color: s.type },
+    { tag: t.invalid, color: s.invalid },
+    { tag: [t.heading, t.strong], color: s.keyword, fontWeight: '600' },
+    { tag: [t.link, t.url], color: s.func, textDecoration: 'underline' },
+  ]));
+}
 
 function getLanguage(filename: string) {
   const ext = filename.split('.').pop()?.toLowerCase();
@@ -64,9 +124,11 @@ interface CodeEditorProps {
   onSave?: (content: string) => void;
   onEditorReady?: (view: EditorView) => void;
   readOnly?: boolean;
+  /** Editor surface theme. Light is the Sprint-6 default. */
+  theme?: EditorTheme;
 }
 
-export function CodeEditor({ content, filename, onChange, onSave, onEditorReady, readOnly = false }: CodeEditorProps) {
+export function CodeEditor({ content, filename, onChange, onSave, onEditorReady, readOnly = false, theme = 'light' }: CodeEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
 
@@ -78,12 +140,15 @@ export function CodeEditor({ content, filename, onChange, onSave, onEditorReady,
   useEffect(() => {
     if (!containerRef.current) return;
 
+    const palette = theme === 'dark' ? DARK : LIGHT;
+
     const state = EditorState.create({
       doc: content,
       extensions: [
         basicSetup,
         getLanguage(filename),
-        goblinTheme,
+        buildViewTheme(palette, theme === 'dark'),
+        buildHighlight(palette),
         history(),
         keymap.of([
           ...defaultKeymap,
@@ -107,7 +172,7 @@ export function CodeEditor({ content, filename, onChange, onSave, onEditorReady,
     onEditorReady?.(view);
 
     return () => { view.destroy(); viewRef.current = null; };
-  }, [filename]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [filename, theme]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Update content from outside (injection)
   useEffect(() => {

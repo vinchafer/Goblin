@@ -14,6 +14,7 @@ import { CodeFileTreePanel } from "@/components/code/CodeFileTreePanel";
 import { CodeMobileFileSheet } from "@/components/code/CodeMobileFileSheet";
 import { CodeEmptyState } from "@/components/code/CodeEmptyState";
 import { useCodeTab } from "@/hooks/useCodeTab";
+import { useEditorTheme } from "@/hooks/code/useEditorTheme";
 import { Icon } from "@/components/ui/icon";
 import { GoblinMark } from "@/components/ui/goblin-mark";
 
@@ -22,8 +23,8 @@ const CodeEditor = dynamic(
   {
     ssr: false,
     loading: () => (
-      <div style={{ flex: 1, background: 'var(--surface-ink-2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--ink-on-dark-3)', fontFamily: 'JetBrains Mono, monospace', fontSize: 13 }}>
-        Loading editor…
+      <div style={{ flex: 1, background: 'var(--ed-canvas)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--ed-fg-3)', fontFamily: 'JetBrains Mono, monospace', fontSize: 13 }}>
+        Editor lädt…
       </div>
     ),
   }
@@ -37,9 +38,10 @@ interface CodeTabProps {
 
 export function CodeTab({ projectId, projectName = 'project', pendingCode }: CodeTabProps) {
   const tab = useCodeTab(projectId, pendingCode);
+  const [editorTheme, , toggleEditorTheme] = useEditorTheme();
 
   return (
-    <div style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column' }}>
+    <div className="gb-codetab" data-editor-theme={editorTheme} style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--ed-canvas)' }}>
       <style>{`
         @keyframes slideIn { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
         .gb-injection-card { animation: slideIn 0.2s ease-out; }
@@ -71,14 +73,14 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
       {tab.pendingFileSwitch && (
         <>
           <div style={{ position: 'fixed', inset: 0, zIndex: 70, background: 'rgba(0,0,0,0.5)' }} onClick={() => tab.setPendingFileSwitch(null)} />
-          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: 'var(--rule-strong)', border: '1px solid var(--brand-green)', borderRadius: 12, padding: '20px 24px', zIndex: 71, minWidth: 280, boxShadow: '0 16px 40px rgba(0,0,0,0.5)' }}>
-            <div style={{ fontSize: 13, color: 'var(--ink-on-dark-1)', fontFamily: 'var(--font-sans)', marginBottom: 16 }}>
-              Save changes to <span style={{ color: 'var(--brand-gold)', fontFamily: 'JetBrains Mono, monospace' }}>{tab.activeFile?.path.split('/').pop()}</span>?
+          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: 'var(--ed-chrome-2)', border: '1px solid var(--ed-rule)', borderRadius: 12, padding: '20px 24px', zIndex: 71, minWidth: 280, boxShadow: '0 16px 40px rgba(15,43,30,0.28)' }}>
+            <div style={{ fontSize: 13, color: 'var(--ed-fg-1)', fontFamily: 'var(--font-sans)', marginBottom: 16 }}>
+              Änderungen an <span style={{ color: 'var(--ed-accent)', fontFamily: 'JetBrains Mono, monospace' }}>{tab.activeFile?.path.split('/').pop()}</span> sichern?
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => tab.confirmSwitch(true)} style={{ background: 'var(--brand-green)', border: 'none', color: 'var(--brand-gold)', borderRadius: 7, padding: '7px 14px', fontSize: 'var(--t-caption-fs)', cursor: 'pointer' }}>Save</button>
-              <button onClick={() => tab.confirmSwitch(false)} style={{ background: 'transparent', border: '1px solid var(--brand-green)', color: 'var(--ink-on-dark-2)', borderRadius: 7, padding: '7px 14px', fontSize: 'var(--t-caption-fs)', cursor: 'pointer' }}>Discard</button>
-              <button onClick={() => tab.setPendingFileSwitch(null)} style={{ background: 'transparent', border: '1px solid var(--brand-green)', color: 'var(--ink-on-dark-3)', borderRadius: 7, padding: '7px 14px', fontSize: 'var(--t-caption-fs)', cursor: 'pointer' }}>Cancel</button>
+              <button onClick={() => tab.confirmSwitch(true)} style={{ background: 'var(--ed-primary)', border: 'none', color: 'var(--ed-on-primary)', borderRadius: 8, padding: '7px 14px', fontSize: 'var(--t-caption-fs)', cursor: 'pointer' }}>Sichern</button>
+              <button onClick={() => tab.confirmSwitch(false)} style={{ background: 'transparent', border: '1px solid var(--ed-rule)', color: 'var(--ed-fg-2)', borderRadius: 8, padding: '7px 14px', fontSize: 'var(--t-caption-fs)', cursor: 'pointer' }}>Verwerfen</button>
+              <button onClick={() => tab.setPendingFileSwitch(null)} style={{ background: 'transparent', border: '1px solid var(--ed-rule)', color: 'var(--ed-fg-3)', borderRadius: 8, padding: '7px 14px', fontSize: 'var(--t-caption-fs)', cursor: 'pointer' }}>Abbrechen</button>
             </div>
           </div>
         </>
@@ -117,7 +119,7 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
       )}
 
       {/* Action Bar */}
-      <CodeActionBar deploying={tab.deploying} onDeploy={tab.handleDeploy} onPush={tab.openPushModal} />
+      <CodeActionBar deploying={tab.deploying} onDeploy={tab.handleDeploy} onPush={tab.openPushModal} editorTheme={editorTheme} onToggleTheme={toggleEditorTheme} />
 
       {/* Open-file tabs */}
       <CodeFileTabs
@@ -130,14 +132,14 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
       />
 
       {/* Mobile file picker (fallback for very small screens) */}
-      <div className="gb-mobile-picker" style={{ borderBottom: '1px solid var(--rule-strong)', background: 'var(--green-950)', flexShrink: 0 }}>
+      <div className="gb-mobile-picker" style={{ borderBottom: '1px solid var(--ed-rule)', background: 'var(--ed-chrome)', flexShrink: 0 }}>
         <select
           value={tab.activeFile?.path ?? ''}
           onChange={e => e.target.value && tab.openFile(e.target.value)}
-          style={{ width: '100%', padding: '10px 14px', background: 'transparent', color: 'var(--ink-on-dark-2)', border: 'none', outline: 'none', fontFamily: 'JetBrains Mono, monospace', fontSize: 'var(--t-caption-fs)', cursor: 'pointer', appearance: 'none' } as React.CSSProperties}
+          style={{ width: '100%', padding: '10px 14px', background: 'transparent', color: 'var(--ed-fg-2)', border: 'none', outline: 'none', fontFamily: 'JetBrains Mono, monospace', fontSize: 'var(--t-caption-fs)', cursor: 'pointer', appearance: 'none' } as React.CSSProperties}
         >
           {!tab.activeFile && <option value="">— select a file —</option>}
-          {tab.files.map(f => <option key={f} value={f} style={{ background: 'var(--surface-ink-2)', color: 'var(--ink-on-dark-1)' }}>{f}</option>)}
+          {tab.files.map(f => <option key={f} value={f} style={{ background: 'var(--ed-canvas)', color: 'var(--ed-fg-1)' }}>{f}</option>)}
         </select>
       </div>
 
@@ -154,10 +156,10 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
         />
 
         {/* Editor area */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, background: 'var(--surface-ink-2)' }}>
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, background: 'var(--ed-canvas)' }}>
           {tab.activeFile && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderBottom: '1px solid var(--rule-strong)', background: 'var(--green-950)', flexShrink: 0 }}>
-              <span style={{ color: 'var(--ink-on-dark-1)', fontFamily: 'JetBrains Mono, monospace', fontSize: 'var(--t-caption-fs)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderBottom: '1px solid var(--ed-rule)', background: 'var(--ed-chrome)', flexShrink: 0 }}>
+              <span style={{ color: 'var(--ed-fg-1)', fontFamily: 'JetBrains Mono, monospace', fontSize: 'var(--t-caption-fs)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {tab.activeFile.path}
               </span>
               {tab.isDirty && <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--brand-gold)', flexShrink: 0, display: 'inline-block' }} title="Unsaved changes" />}
@@ -172,6 +174,7 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
                 key={tab.activeFile.path}
                 content={tab.editorContent}
                 filename={tab.activeFile.path}
+                theme={editorTheme}
                 onChange={tab.handleEditorChange}
                 onSave={(content) => tab.saveFile(content)}
               />
@@ -182,12 +185,12 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
 
           {/* Pending injections panel */}
           {tab.pendingInjections.length > 0 && (
-            <div style={{ borderTop: '1px solid rgba(212,169,74,0.25)', flexShrink: 0, background: 'var(--surface-ink-2)' }}>
+            <div style={{ borderTop: '1px solid rgba(212,169,74,0.25)', flexShrink: 0, background: 'var(--ed-canvas)' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 14px', background: 'rgba(212,169,74,0.06)' }}>
                 <span style={{ fontSize: 'var(--t-caption-fs)', fontWeight: 600, color: 'var(--brand-gold)', fontFamily: 'var(--font-sans)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                   <Icon name="ai" size={12} /> {tab.pendingInjections.length} pending injection{tab.pendingInjections.length !== 1 ? 's' : ''}
                 </span>
-                <button onClick={tab.clearPendingInjections} aria-label="Clear" style={{ background: 'none', border: 'none', color: 'var(--ink-on-dark-3)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}><Icon name="close" size={14} /></button>
+                <button onClick={tab.clearPendingInjections} aria-label="Clear" style={{ background: 'none', border: 'none', color: 'var(--ed-fg-3)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}><Icon name="close" size={14} /></button>
               </div>
               <div style={{ maxHeight: 160, overflowY: 'auto', padding: '6px 8px', display: 'flex', flexDirection: 'column', gap: 6 }}>
                 {tab.pendingInjections.map(injection => <InjectionCard key={injection.id} injection={injection} />)}
@@ -199,7 +202,7 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
 
       {/* Mobile FABs — quick deploy + push (mobile-only equivalent of CodeActionBar) */}
       <div className="gb-mobile-fab" style={{ position: 'fixed', bottom: 80, right: 16, flexDirection: 'column', gap: 8, zIndex: 40 }}>
-        <button onClick={tab.openPushModal} aria-label="Push to GitHub" title="Push to GitHub" style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(30,58,28,0.95)', border: '1px solid rgba(138,170,133,0.3)', color: 'var(--ink-on-dark-2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' } as React.CSSProperties}>
+        <button onClick={tab.openPushModal} aria-label="Push to GitHub" title="Push to GitHub" style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(30,58,28,0.95)', border: '1px solid rgba(138,170,133,0.3)', color: 'var(--ed-fg-2)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 16px rgba(0,0,0,0.4)' } as React.CSSProperties}>
           <Icon name="github" size={18} />
         </button>
         <button onClick={tab.handleDeploy} disabled={tab.deploying} aria-label="Deploy" title="Deploy" style={{ width: 56, height: 56, borderRadius: '50%', background: tab.deploying ? 'rgba(45,74,43,0.6)' : 'var(--brand-green)', border: 'none', color: 'var(--brand-gold)', cursor: tab.deploying ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 20px rgba(45,74,43,0.5)' } as React.CSSProperties}>
@@ -233,14 +236,14 @@ function InjectionCard({ injection }: { injection: PendingInjection }) {
   const typeLabel = injection.payloadType === 'code' ? 'CODE' : injection.payloadType === 'prompt' ? 'PROMPT' : 'MIXED';
   const preview = injection.payload.length > 80 ? injection.payload.slice(0, 80) + '…' : injection.payload;
   return (
-    <div className="gb-injection-card" style={{ borderRadius: 8, border: '1px solid rgba(212,169,74,0.4)', overflow: 'hidden', background: 'var(--surface-ink-2)' }}>
+    <div className="gb-injection-card" style={{ borderRadius: 8, border: '1px solid rgba(212,169,74,0.4)', overflow: 'hidden', background: 'var(--ed-canvas)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 12px', background: 'rgba(212,169,74,0.08)', borderBottom: '1px solid rgba(212,169,74,0.25)' }}>
         <span style={{ color: 'var(--brand-gold)', display: 'inline-flex' }}><Icon name={iconName} size={12} /></span>
         <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', color: 'var(--brand-gold)', fontFamily: 'JetBrains Mono, monospace' }}>[{typeLabel}]</span>
-        {injection.filenameHint && <span style={{ fontSize: 11, color: 'var(--ink-on-dark-2)', fontFamily: 'JetBrains Mono, monospace', marginLeft: 4 }}>{injection.filenameHint}</span>}
-        <span style={{ fontSize: 10, color: 'var(--ink-on-dark-3)', marginLeft: 'auto', fontFamily: 'var(--font-sans)' }}>{new Date(injection.createdAt).toLocaleTimeString()}</span>
+        {injection.filenameHint && <span style={{ fontSize: 11, color: 'var(--ed-fg-2)', fontFamily: 'JetBrains Mono, monospace', marginLeft: 4 }}>{injection.filenameHint}</span>}
+        <span style={{ fontSize: 10, color: 'var(--ed-fg-3)', marginLeft: 'auto', fontFamily: 'var(--font-sans)' }}>{new Date(injection.createdAt).toLocaleTimeString()}</span>
       </div>
-      <pre style={{ fontSize: 11, whiteSpace: 'pre-wrap', wordBreak: 'break-all', padding: '8px 12px', overflowX: 'auto', fontFamily: 'JetBrains Mono, monospace', color: 'var(--ink-on-dark-2)', background: 'var(--surface-ink-2)', margin: 0 }}>{preview}</pre>
+      <pre style={{ fontSize: 11, whiteSpace: 'pre-wrap', wordBreak: 'break-all', padding: '8px 12px', overflowX: 'auto', fontFamily: 'JetBrains Mono, monospace', color: 'var(--ed-fg-2)', background: 'var(--ed-canvas)', margin: 0 }}>{preview}</pre>
     </div>
   );
 }

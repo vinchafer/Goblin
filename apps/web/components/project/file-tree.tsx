@@ -170,7 +170,7 @@ export function FileTree({ projectId, files, onFileClick, onFilesChanged }: File
               placeholder="filename.tsx"
               style={{
                 background: 'rgba(212,167,55,0.1)', border: '1px solid var(--gold-700)',
-                borderRadius: 3, color: 'var(--ink-on-dark-1)', fontSize: 'var(--t-caption-fs)',
+                borderRadius: 3, color: 'var(--ed-fg-1)', fontSize: 'var(--t-caption-fs)',
                 fontFamily: 'JetBrains Mono, monospace', padding: '2px 6px',
                 outline: 'none', width: '100%',
               }}
@@ -184,7 +184,7 @@ export function FileTree({ projectId, files, onFileClick, onFilesChanged }: File
         <div
           style={{
             position: 'fixed', top: contextMenu.y, left: contextMenu.x,
-            background: 'var(--rule-strong)', border: '1px solid var(--brand-green)', borderRadius: 8,
+            background: 'var(--ed-chrome-2)', border: '1px solid var(--ed-rule)', borderRadius: 8,
             boxShadow: '0 8px 24px rgba(0,0,0,0.4)', zIndex: 1000,
             minWidth: 160, padding: '4px 0', fontSize: 'var(--t-caption-fs)',
             fontFamily: 'var(--font-sans)',
@@ -240,11 +240,11 @@ export function FileTree({ projectId, files, onFileClick, onFilesChanged }: File
           <div style={{ position: 'fixed', inset: 0, zIndex: 999 }} onClick={() => setDeleteTarget(null)} />
           <div style={{
             position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-            background: 'var(--rule-strong)', border: '1px solid var(--brand-green)', borderRadius: 10,
+            background: 'var(--ed-chrome-2)', border: '1px solid var(--ed-rule)', borderRadius: 10,
             boxShadow: '0 16px 40px rgba(0,0,0,0.5)', zIndex: 1000,
             padding: '16px 20px', minWidth: 240,
           }}>
-            <div style={{ fontSize: 13, color: 'var(--ink-on-dark-1)', fontFamily: 'var(--font-sans)', marginBottom: 12 }}>
+            <div style={{ fontSize: 13, color: 'var(--ed-fg-1)', fontFamily: 'var(--font-sans)', marginBottom: 12 }}>
               Delete <span style={{ color: 'var(--gold-700)', fontFamily: 'JetBrains Mono, monospace' }}>{deleteTarget.name}</span>?
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
@@ -262,7 +262,7 @@ export function FileTree({ projectId, files, onFileClick, onFilesChanged }: File
                 onClick={() => setDeleteTarget(null)}
                 style={{
                   background: 'transparent', border: '1px solid var(--brand-green)',
-                  color: 'var(--ink-on-dark-2)', borderRadius: 6, padding: '6px 14px',
+                  color: 'var(--ed-fg-2)', borderRadius: 6, padding: '6px 14px',
                   fontSize: 'var(--t-caption-fs)', cursor: 'pointer', fontFamily: 'var(--font-sans)',
                 }}
               >
@@ -283,7 +283,7 @@ function ContextItem({ icon, label, onClick, danger }: { icon: React.ReactNode; 
       style={{
         display: 'flex', alignItems: 'center', gap: 8,
         width: '100%', padding: '6px 14px', background: 'none', border: 'none',
-        color: danger ? '#e87a5a' : 'var(--ink-on-dark-1)', fontSize: 'var(--t-caption-fs)', cursor: 'pointer',
+        color: danger ? '#e87a5a' : 'var(--ed-fg-1)', fontSize: 'var(--t-caption-fs)', cursor: 'pointer',
         fontFamily: 'var(--font-sans)', textAlign: 'left',
       }}
       onMouseEnter={e => (e.currentTarget.style.background = 'rgba(212,167,55,0.1)')}
@@ -348,14 +348,14 @@ function renderTreeNode(
               display: 'flex', alignItems: 'center', gap: 4,
               padding: '2px 8px 2px 0', paddingLeft: `${8 + depth * 12}px`,
               cursor: 'pointer', borderRadius: 4, userSelect: 'none',
-              color: 'var(--ink-on-dark-2)',
+              color: 'var(--ed-fg-2)',
             }}
             onClick={() => isFolder ? onToggle(fullPath) : onFileClick(fullPath)}
             onContextMenu={e => onContextMenu(e, fullPath, isFolder)}
             onMouseEnter={e => (e.currentTarget.style.background = 'rgba(138,170,133,0.08)')}
             onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
           >
-            <span style={{ width: 12, flexShrink: 0, fontSize: 9, color: 'var(--ink-on-dark-3)', display: 'inline-flex', alignItems: 'center' }}>
+            <span style={{ width: 12, flexShrink: 0, fontSize: 9, color: 'var(--ed-fg-3)', display: 'inline-flex', alignItems: 'center' }}>
               {isFolder ? (expanded.has(fullPath) ? '▾' : '▸') : ''}
             </span>
 
@@ -368,7 +368,7 @@ function renderTreeNode(
                 onBlur={() => {}}
                 style={{
                   background: 'rgba(212,167,55,0.1)', border: '1px solid var(--gold-700)',
-                  borderRadius: 3, color: 'var(--ink-on-dark-1)', fontSize: 'var(--t-caption-fs)',
+                  borderRadius: 3, color: 'var(--ed-fg-1)', fontSize: 'var(--t-caption-fs)',
                   fontFamily: 'JetBrains Mono, monospace', padding: '1px 4px',
                   outline: 'none', flex: 1,
                 }}
@@ -377,7 +377,7 @@ function renderTreeNode(
             ) : (
               <span style={{
                 fontSize: 'var(--t-caption-fs)', fontFamily: 'JetBrains Mono, monospace',
-                color: 'var(--ink-on-dark-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                color: 'var(--ed-fg-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               }}>
                 {name}
               </span>
@@ -397,7 +397,7 @@ function renderTreeNode(
                 placeholder="filename.tsx"
                 style={{
                   background: 'rgba(212,167,55,0.1)', border: '1px solid var(--gold-700)',
-                  borderRadius: 3, color: 'var(--ink-on-dark-1)', fontSize: 'var(--t-caption-fs)',
+                  borderRadius: 3, color: 'var(--ed-fg-1)', fontSize: 'var(--t-caption-fs)',
                   fontFamily: 'JetBrains Mono, monospace', padding: '1px 4px',
                   outline: 'none', flex: 1,
                 }}

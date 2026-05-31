@@ -7,28 +7,50 @@ interface CodeActionBarProps {
   deploying: boolean;
   onDeploy: () => void;
   onPush: () => void;
+  editorTheme?: 'light' | 'dark';
+  onToggleTheme?: () => void;
 }
 
-export function CodeActionBar({ deploying, onDeploy, onPush }: CodeActionBarProps) {
+export function CodeActionBar({ deploying, onDeploy, onPush, editorTheme = 'light', onToggleTheme }: CodeActionBarProps) {
   return (
     <div style={{
       display: 'flex', gap: 6, alignItems: 'center',
-      padding: '6px 12px', borderBottom: '1px solid var(--rule-strong)',
-      background: 'var(--green-950)', flexShrink: 0, justifyContent: 'flex-end',
+      padding: '7px 14px', borderBottom: '1px solid var(--ed-rule)',
+      background: 'var(--ed-chrome)', flexShrink: 0, justifyContent: 'flex-end',
     }}>
+      {onToggleTheme && (
+        <button
+          onClick={onToggleTheme}
+          title={editorTheme === 'light' ? 'Dunkler Editor' : 'Heller Editor'}
+          aria-label="Editor-Theme umschalten"
+          style={{
+            marginRight: 'auto', background: 'transparent', color: 'var(--ed-fg-3)',
+            border: '1px solid var(--ed-rule)', borderRadius: 8, padding: '6px 11px',
+            fontSize: 'var(--t-caption-fs)', fontWeight: 500, cursor: 'pointer',
+            fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', gap: 6,
+            transition: 'background 0.15s',
+          }}
+          onMouseEnter={e => (e.currentTarget.style.background = 'var(--ed-hover)')}
+          onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+        >
+          {editorTheme === 'light'
+            ? <><Icon name="moon" size={13} /> Dunkel</>
+            : <><Icon name="sun" size={13} /> Hell</>}
+        </button>
+      )}
       <button
         onClick={onPush}
         style={{
-          background: 'transparent', color: 'var(--ink-on-dark-2)',
-          border: '1px solid rgba(138,170,133,0.25)',
-          borderRadius: 6, padding: '5px 12px',
+          background: 'transparent', color: 'var(--ed-fg-2)',
+          border: '1px solid var(--ed-rule)',
+          borderRadius: 8, padding: '6px 13px',
           fontSize: 'var(--t-caption-fs)', fontWeight: 500,
           cursor: 'pointer', fontFamily: 'var(--font-sans)',
           display: 'flex', alignItems: 'center', gap: 6,
-          transition: 'border-color 0.15s',
+          transition: 'border-color 0.15s, background 0.15s',
         }}
-        onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(138,170,133,0.5)')}
-        onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(138,170,133,0.25)')}
+        onMouseEnter={e => (e.currentTarget.style.background = 'var(--ed-hover)')}
+        onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
       >
         <Icon name="github" size={13} /> Push GitHub
       </button>
@@ -36,20 +58,20 @@ export function CodeActionBar({ deploying, onDeploy, onPush }: CodeActionBarProp
         onClick={onDeploy}
         disabled={deploying}
         style={{
-          background: deploying ? 'rgba(45,74,43,0.5)' : 'var(--brand-green)',
-          color: 'var(--brand-gold)', border: 'none',
-          borderRadius: 6, padding: '5px 14px',
+          background: deploying ? 'var(--ed-hover)' : 'var(--ed-primary)',
+          color: deploying ? 'var(--ed-fg-3)' : 'var(--ed-on-primary)', border: 'none',
+          borderRadius: 8, padding: '6px 15px',
           fontSize: 'var(--t-caption-fs)', fontWeight: 600,
           cursor: deploying ? 'not-allowed' : 'pointer',
           fontFamily: 'var(--font-sans)',
           display: 'flex', alignItems: 'center', gap: 6,
-          transition: 'background 0.15s',
+          transition: 'background 0.15s, opacity 0.15s',
         }}
-        onMouseEnter={e => { if (!deploying) (e.currentTarget as HTMLElement).style.background = 'var(--green-600)'; }}
-        onMouseLeave={e => { if (!deploying) (e.currentTarget as HTMLElement).style.background = 'var(--brand-green)'; }}
+        onMouseEnter={e => { if (!deploying) (e.currentTarget as HTMLElement).style.opacity = '0.9'; }}
+        onMouseLeave={e => { if (!deploying) (e.currentTarget as HTMLElement).style.opacity = '1'; }}
       >
         {deploying
-          ? <><GoblinMark size={14} /> Deploying…</>
+          ? <><GoblinMark size={14} /> Wird gebaut…</>
           : <><Icon name="play" size={13} /> Build</>}
       </button>
     </div>
