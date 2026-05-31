@@ -56,7 +56,7 @@ export function AddKeyModal({ open, onClose, onKeyAdded }: AddKeyModalProps) {
       const accessToken = session.data.session?.access_token;
 
       if (!accessToken) {
-        throw new Error('Not authenticated');
+        throw new Error('Nicht angemeldet');
       }
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/byok-keys`, {
@@ -70,14 +70,14 @@ export function AddKeyModal({ open, onClose, onKeyAdded }: AddKeyModalProps) {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || 'Failed to add key');
+        throw new Error(data.error || 'Key konnte nicht hinzugefügt werden');
       }
 
       const newKey = await response.json();
       onKeyAdded(newKey);
       handleClose();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Something went wrong');
+      setError(err instanceof Error ? err.message : 'Etwas ist schiefgelaufen');
     } finally {
       setLoading(false);
     }
@@ -97,7 +97,7 @@ export function AddKeyModal({ open, onClose, onKeyAdded }: AddKeyModalProps) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
       <div className="bg-white rounded-xl shadow-2xl max-w-md w-full m-4">
         <div className="p-5 border-b flex items-center justify-between" style={{ borderColor: 'var(--surface-3)' }}>
-          <h2 className="text-lg font-semibold" style={{ color: 'var(--ink-1)' }}>Connect {PROVIDERS.find(p => p.id === provider)?.label}</h2>
+          <h2 className="text-lg font-semibold" style={{ color: 'var(--ink-1)' }}>{PROVIDERS.find(p => p.id === provider)?.label} verbinden</h2>
           <button onClick={handleClose} className="p-1 rounded hover:bg-gray-100">
             <X className="w-5 h-5" style={{ color: 'var(--ink-3)' }} />
           </button>
@@ -131,7 +131,7 @@ export function AddKeyModal({ open, onClose, onKeyAdded }: AddKeyModalProps) {
               type="text"
               value={label}
               onChange={(e) => setLabel(e.target.value)}
-              placeholder="e.g., My Anthropic key"
+              placeholder="z. B. Mein Anthropic-Key"
               className="w-full px-3 py-2 rounded-lg border"
               style={{ borderColor: 'var(--surface-3)' }}
               required
@@ -165,14 +165,14 @@ export function AddKeyModal({ open, onClose, onKeyAdded }: AddKeyModalProps) {
             <div className="flex items-start gap-2 mt-3 text-xs" style={{ color: 'var(--ink-3)' }}>
               <Warning className="w-4 h-4 shrink-0 mt-0.5" style={{ color: 'var(--danger)' }} />
               <p>
-                Your key is encrypted at rest. It's used only to call {provider}'s API on your behalf.
-                Never share this key publicly.
+                Dein Key wird verschlüsselt gespeichert und nur verwendet, um die API von {provider} in deinem Auftrag aufzurufen.
+                Teile diesen Key niemals öffentlich.
               </p>
             </div>
 
             {PROVIDER_KEY_URLS[provider] && (
               <div className="mt-2 text-xs">
-                <span style={{ color: 'var(--ink-3)' }}>Don't have a key? Get one at </span>
+                <span style={{ color: 'var(--ink-3)' }}>Noch keinen Key? Hol dir einen bei </span>
                 <a
                   href={PROVIDER_KEY_URLS[provider].url}
                   target="_blank"
@@ -202,7 +202,7 @@ export function AddKeyModal({ open, onClose, onKeyAdded }: AddKeyModalProps) {
                 color: 'var(--ink-1)',
               }}
             >
-              Cancel
+              Abbrechen
             </button>
             <button
               type="submit"
@@ -214,7 +214,7 @@ export function AddKeyModal({ open, onClose, onKeyAdded }: AddKeyModalProps) {
                 fontWeight: 600,
               }}
             >
-              {loading ? <CircleNotch className="w-4 h-4 animate-spin" /> : 'Connect →'}
+              {loading ? <CircleNotch className="w-4 h-4 animate-spin" /> : 'Verbinden →'}
             </button>
           </div>
         </form>
