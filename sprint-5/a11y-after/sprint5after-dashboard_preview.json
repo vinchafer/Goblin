@@ -1,0 +1,50 @@
+{
+  "route": "/dashboard/preview",
+  "finalUrl": "http://localhost:3000/dashboard/preview",
+  "violations": [
+    {
+      "id": "landmark-one-main",
+      "impact": "moderate",
+      "help": "Document should have one main landmark",
+      "nodes": [
+        {
+          "target": [
+            "html"
+          ],
+          "html": "<html lang=\"en\" class=\"manrope_ea45758b-module__bSspnq__variable instrument_serif_6ad33ff6-module__93JkUW__variable jetbrains_mono_f0e1cf5b-module__w1ICmG__vari"
+        }
+      ]
+    },
+    {
+      "id": "region",
+      "impact": "moderate",
+      "help": "All page content should be contained by landmarks",
+      "nodes": [
+        {
+          "target": [
+            "h1"
+          ],
+          "html": "<h1 style=\"font-family:var(--font-sans);font-size:clamp(32px, 6vw, 56px);color:var(--brand-green);font-weight:900;letter-spacing:-2px;margin-bottom:12px\">404</h"
+        },
+        {
+          "target": [
+            "p:nth-child(3)"
+          ],
+          "html": "<p style=\"font-size:18px;color:var(--meta);margin-bottom:8px;font-family:var(--font-sans)\">This page ran away. Your goblin can't find it.</p>"
+        },
+        {
+          "target": [
+            "p:nth-child(4)"
+          ],
+          "html": "<p style=\"font-size:var(--t-small-fs);color:var(--text-faint);margin-bottom:36px;font-family:var(--font-sans)\">Maybe it got deployed somewhere else.</p>"
+        },
+        {
+          "target": [
+            "div:nth-child(5)"
+          ],
+          "html": "<div style=\"display:flex;gap:12px;flex-wrap:wrap;justify-content:center\">"
+        }
+      ]
+    }
+  ]
+}

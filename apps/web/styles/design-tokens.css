@@ -59,7 +59,7 @@
   /* ─── Text inks ────────────────────────────────────────────────── */
   --ink-1:        #0F2B1E;
   --ink-2:        #3F3A2C;
-  --ink-3:        #74694F;
+  --ink-3:        #5F5640;   /* B11: darkened from #74694F (4.04:1) → 5.4:1 on sand, clears WCAG AA */
   --ink-disabled: #B8A988;
 
   --ink-on-dark-1:        #FBF7EC;
@@ -235,7 +235,7 @@
   --text-2:     var(--ink-2);
   --meta:       var(--ink-3);
   --text-meta:  var(--ink-3);
-  --text-faint: var(--ink-disabled);
+  --text-faint: #665C42;   /* B11: decoupled from --ink-disabled so empty-state copy clears AA (5.6:1 on bone, 6.6:1 on white); --ink-disabled stays light for genuinely-disabled UI */
   --disabled:   var(--ink-disabled);
   --sidebar-meta: var(--ink-3);
 
