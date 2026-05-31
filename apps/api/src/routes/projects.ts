@@ -250,7 +250,7 @@ projects.get('/:id/files', async (c) => {
 projects.get('/:id/files/*', async (c) => {
   const userId = c.get('userId');
   const projectId = c.req.param('id');
-  const filePath = c.req.param('*');
+  const filePath = wildcardPath(c);
 
   if (!filePath) {
     return c.json({ error: 'File path required' }, 400);
@@ -387,10 +387,13 @@ projects.patch('/:id/pending-injections/acknowledge', async (c) => {
 projects.put('/:id/files/*', async (c) => {
   const userId = c.get('userId');
   const projectId = c.req.param('id');
-  const filePath = c.req.param('*');
+  const filePath = wildcardPath(c);
 
   if (!filePath) {
     return c.json({ error: 'File path required' }, 400);
+  }
+  if (!isSafePath(filePath)) {
+    return c.json({ error: 'Invalid file path' }, 400);
   }
 
   const { content } = await c.req.json();
@@ -415,6 +418,21 @@ projects.put('/:id/files/*', async (c) => {
   await uploadFile(projectId, filePath, content);
   return c.json({ success: true, path: filePath });
 });
+
+// ── Wildcard path extraction ───────────────────────────────────────────────────
+// Hono 4.x does NOT populate c.req.param('*') for a `/files/*` wildcard route, so
+// GET/PUT/DELETE on file paths were all 400'ing ("File path required") — which is
+// why Send-to-Code Apply never persisted a file and Build reported "no files to
+// deploy" (R1, Sprint 4). Derive the path after `/files/` from the request URL,
+// URL-decoding the (client-encodeURIComponent'd) segment. (Sprint 5 Phase 3 fix.)
+function wildcardPath(c: { req: { param: (k: string) => string | undefined; path: string } }): string {
+  const fromParam = c.req.param('*');
+  if (fromParam) return fromParam;
+  const m = c.req.path.match(/\/files\/(.+)$/);
+  const raw = m?.[1];
+  if (!raw) return '';
+  try { return decodeURIComponent(raw); } catch { return raw; }
+}
 
 // ── Path traversal guard ──────────────────────────────────────────────────────
 function isSafePath(filePath: string): boolean {
@@ -460,7 +478,7 @@ projects.post('/:id/files', async (c) => {
 projects.delete('/:id/files/*', async (c) => {
   const userId = c.get('userId');
   const projectId = c.req.param('id');
-  const filePath = c.req.param('*');
+  const filePath = wildcardPath(c);
 
   if (!filePath || !isSafePath(filePath)) return c.json({ error: 'Invalid file path' }, 400);
 
