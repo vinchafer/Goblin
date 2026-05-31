@@ -1,30 +1,36 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { SettingsCard } from '../ui/SettingsCard';
 import { SettingsGroup } from '../ui/SettingsGroup';
 
-interface ConnState {
-  github?: { connected: boolean; username?: string };
-  vercel?: { connected: boolean; team?: string };
+const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
+
+async function authHeaders(): Promise<Record<string, string> | null> {
+  const supabase = createClient();
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session) return null;
+  return { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' };
 }
 
+interface GithubState { connected: boolean; username?: string }
+interface VercelState { connected: boolean; account?: { username: string; email?: string } }
+
 export function ConnectorsPage() {
-  const [conn, setConn] = useState<ConnState>({});
+  const [github, setGithub] = useState<GithubState>({ connected: false });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
       try {
-        const supabase = createClient();
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) { setLoading(false); return; }
-        const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
-        const r = await fetch(`${apiBase}/api/connectors/status`, {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        });
-        if (r.ok) setConn(await r.json());
+        const headers = await authHeaders();
+        if (!headers) return;
+        const r = await fetch(`${apiBase}/api/connectors/status`, { headers });
+        if (r.ok) {
+          const data = await r.json();
+          if (data.github) setGithub(data.github);
+        }
       } finally {
         setLoading(false);
       }
@@ -40,17 +46,11 @@ export function ConnectorsPage() {
           <ConnectorRow
             name="GitHub"
             initial="GH"
-            connected={!!conn.github?.connected}
-            detail={conn.github?.connected ? `@${conn.github.username}` : 'Repos pushen, deployen'}
+            connected={github.connected}
+            detail={github.connected ? `@${github.username}` : 'Repos pushen, deployen'}
             onConnect={() => { window.location.href = '/dashboard/settings/integrations?service=github'; }}
           />
-          <ConnectorRow
-            name="Vercel"
-            initial="V"
-            connected={!!conn.vercel?.connected}
-            detail={conn.vercel?.connected ? (conn.vercel.team ?? 'verbunden') : 'Automatisches Deploy'}
-            onConnect={() => { window.location.href = '/dashboard/settings/integrations?service=vercel'; }}
-          />
+          <VercelConnectorRow />
           <ConnectorRow
             name="Stripe"
             initial="S"
@@ -62,6 +62,133 @@ export function ConnectorsPage() {
       </SettingsGroup>
     </div>
   );
+}
+
+function VercelConnectorRow() {
+  const [state, setState] = useState<VercelState>({ connected: false });
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [token, setToken] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const refresh = useCallback(async () => {
+    const headers = await authHeaders();
+    if (!headers) { setLoading(false); return; }
+    try {
+      const r = await fetch(`${apiBase}/api/integrations/vercel`, { headers });
+      if (r.ok) setState(await r.json());
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { void refresh(); }, [refresh]);
+
+  const connect = useCallback(async () => {
+    setError(null);
+    if (!token.trim()) { setError('Bitte Token einfügen'); return; }
+    setBusy(true);
+    try {
+      const headers = await authHeaders();
+      if (!headers) { setError('Nicht angemeldet'); return; }
+      const r = await fetch(`${apiBase}/api/integrations/vercel`, {
+        method: 'POST', headers, body: JSON.stringify({ token: token.trim() }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) { setError(data.error ?? 'Verbindung fehlgeschlagen'); return; }
+      setState({ connected: true, account: data.account });
+      setShowForm(false); setToken('');
+    } catch {
+      setError('Verbindung fehlgeschlagen');
+    } finally {
+      setBusy(false);
+    }
+  }, [token]);
+
+  const disconnect = useCallback(async () => {
+    setBusy(true);
+    try {
+      const headers = await authHeaders();
+      if (!headers) return;
+      await fetch(`${apiBase}/api/integrations/vercel`, { method: 'DELETE', headers });
+      setState({ connected: false });
+    } finally {
+      setBusy(false);
+    }
+  }, []);
+
+  const detail = loading
+    ? 'Lade…'
+    : state.connected
+      ? (state.account?.username ?? 'verbunden')
+      : 'Automatisches Deploy mit deinem Vercel-Token';
+
+  return (
+    <div style={{ borderBottom: '1px solid var(--border-hairline)' }}>
+      <div className="list-item" style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
+        <span style={{
+          width: 36, height: 36, borderRadius: 10, background: 'var(--subtle)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 13, fontWeight: 700, color: 'var(--meta)', fontFamily: 'var(--font-mono)',
+        }}>V</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Vercel</div>
+          <div style={{ fontSize: 13, color: 'var(--text-meta)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{detail}</div>
+        </div>
+        {state.connected ? (
+          <button onClick={disconnect} disabled={busy} style={ghostBtn('var(--text-meta)')}>
+            {busy ? '…' : 'Trennen'}
+          </button>
+        ) : (
+          <button onClick={() => { setShowForm((s) => !s); setError(null); }} disabled={loading} style={ghostBtn('var(--brand-green)')}>
+            {showForm ? 'Abbrechen' : 'Token einfügen'}
+          </button>
+        )}
+      </div>
+
+      {showForm && !state.connected && (
+        <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <input
+            type="password"
+            value={token}
+            onChange={(e) => setToken(e.target.value)}
+            placeholder="Vercel-Token (vercel.com → Settings → Tokens)"
+            autoComplete="off"
+            spellCheck={false}
+            style={{
+              width: '100%', padding: '9px 12px', borderRadius: 8,
+              border: '1px solid var(--border)', background: 'var(--surface)',
+              color: 'var(--text)', fontSize: 13, fontFamily: 'var(--font-mono)',
+            }}
+          />
+          {error && <div style={{ fontSize: 12, color: 'var(--danger)' }}>{error}</div>}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={connect} disabled={busy} style={{
+              padding: '8px 16px', borderRadius: 8, border: 'none',
+              background: 'var(--brand-green)', color: 'var(--on-brand, #fff)',
+              fontSize: 13, fontWeight: 600, cursor: busy ? 'wait' : 'pointer',
+              fontFamily: 'var(--font-sans)', opacity: busy ? 0.7 : 1,
+            }}>
+              {busy ? 'Prüfe…' : 'Verbinden'}
+            </button>
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-meta)' }}>
+            Wird gegen die Vercel-API geprüft und verschlüsselt gespeichert. Nur Account-Ebene.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ghostBtn(color: string): React.CSSProperties {
+  return {
+    padding: '6px 12px', borderRadius: 8,
+    background: 'transparent', border: `1px solid ${color}`,
+    color, fontSize: 13, fontWeight: 600, cursor: 'pointer',
+    fontFamily: 'var(--font-sans)',
+  };
 }
 
 function ConnectorRow({ name, initial, connected, detail, onConnect, disabled }: {
