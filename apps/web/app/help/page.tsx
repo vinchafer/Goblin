@@ -11,28 +11,28 @@ interface Faq {
 
 const FAQS: Faq[] = [
   {
-    q: 'Was ist Goblin?',
-    a: 'Goblin ist ein mobiler Vibe-Coding-Workspace: chatte mit AI, sieh den Code live, deploye in einem Schritt — vom Smartphone wie vom Laptop.',
+    q: 'What is Goblin?',
+    a: 'Goblin is a mobile vibe-coding workspace: chat with AI, watch the code live, and deploy in one step — from your phone or your laptop.',
   },
   {
-    q: 'Was bedeutet BYOK?',
-    a: 'Bring Your Own Key. Du verbindest deinen eigenen API-Key (Anthropic, OpenAI, Google, Groq usw.). Goblin routet Requests zu deinem Provider — du zahlst Inferenz direkt, Goblin verlangt $0 extra dafür.',
+    q: 'What does BYOK mean?',
+    a: 'Bring Your Own Key. You connect your own API key (Anthropic, OpenAI, Google, Groq, and so on). Goblin routes requests to your provider — you pay for inference directly, and Goblin charges $0 extra for it.',
   },
   {
-    q: 'Welche AI-Provider werden unterstützt?',
-    a: 'Anthropic (Claude), OpenAI (GPT), Google (Gemini), Groq, OpenRouter, Mistral und weitere. Du kannst pro Projekt Modelle wählen.',
+    q: 'Which AI providers are supported?',
+    a: 'Anthropic (Claude), OpenAI (GPT), Google (Gemini), Groq, OpenRouter, Mistral, and more. You can choose models per project.',
   },
   {
-    q: 'Kann ich jederzeit kündigen?',
-    a: 'Ja. In den Billing-Einstellungen → Stripe-Customer-Portal. Sub läuft bis zum Periodenende, dann beendet — kein Auto-Renew danach.',
+    q: 'Can I cancel anytime?',
+    a: 'Yes. Go to Billing settings → Stripe customer portal. Your subscription runs until the end of the period, then ends — no auto-renew after that.',
   },
   {
-    q: 'Wo werden meine Daten gespeichert?',
-    a: 'Supabase (EU-Region). Code-Files in Supabase Storage, Chat-Verläufe in Postgres. BYOK-Keys werden client-side encrypted gespeichert; Server sieht nur den verschlüsselten Wert.',
+    q: 'Where is my data stored?',
+    a: 'Supabase (EU region). Code files in Supabase Storage, chat history in Postgres. BYOK keys are stored client-side encrypted; the server only ever sees the encrypted value.',
   },
   {
-    q: 'Was passiert, wenn ich offline bin?',
-    a: 'Mobile-App cached deine letzten Projekte. Editor funktioniert offline; AI-Calls und Sync brauchen Internet. Änderungen sync\'en automatisch beim Reconnect.',
+    q: 'What happens when I\'m offline?',
+    a: 'The mobile app caches your recent projects. The editor works offline; AI calls and sync need a connection. Your changes sync automatically when you reconnect.',
   },
 ];
 
@@ -47,7 +47,7 @@ export default function HelpPage() {
           fontSize: 13, color: 'var(--meta)', textDecoration: 'none',
           fontFamily: 'var(--font-sans)', marginBottom: 24,
         }}>
-          ← Zurück
+          ← Back
         </Link>
 
         <h1 style={{
@@ -55,13 +55,13 @@ export default function HelpPage() {
           color: 'var(--brand-green)', fontWeight: 700, letterSpacing: '-0.5px',
           marginBottom: 8,
         }}>
-          Hilfe & Support
+          Help & Support
         </h1>
         <p style={{
           fontSize: 15, color: 'var(--meta)', fontFamily: 'var(--font-sans)',
           marginBottom: 40, lineHeight: 1.6,
         }}>
-          FAQ, häufige Fragen, und wie du uns erreichst.
+          FAQs and how to reach us.
         </p>
 
         {/* FAQ Accordion */}
@@ -123,13 +123,13 @@ function HelpAgentCTA() {
         fontFamily: 'var(--font-sans)', fontSize: 20, fontWeight: 700,
         margin: '0 0 8px',
       }}>
-        Noch Fragen?
+        Still have questions?
       </h2>
       <p style={{
         fontSize: 14, opacity: 0.85,
         fontFamily: 'var(--font-sans)', margin: '0 0 18px', lineHeight: 1.5,
       }}>
-        Der Goblin-Hilfe-Agent kennt das Produkt und antwortet sofort.
+        The Goblin help agent knows the product and answers instantly.
       </p>
       <button
         onClick={() => setChatOpen(true)}
@@ -145,7 +145,7 @@ function HelpAgentCTA() {
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
           <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
         </svg>
-        Mit Goblin-Hilfe chatten
+        Chat with Goblin help
       </button>
       <div style={{ marginTop: 14, fontSize: 12, opacity: 0.7 }}>
         {!escalateOpen ? (
@@ -153,14 +153,14 @@ function HelpAgentCTA() {
             onClick={() => setEscalateOpen(true)}
             style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', cursor: 'pointer', textDecoration: 'underline', fontSize: 12, fontFamily: 'var(--font-sans)' }}
           >
-            Komme nicht weiter, brauche einen Menschen
+            I'm stuck — I need a human
           </button>
         ) : (
-          <span>Schreib im Chat „Mensch", der Agent eskaliert automatisch.</span>
+          <span>Type &ldquo;human&rdquo; in the chat and the agent escalates automatically.</span>
         )}
       </div>
       <div style={{ marginTop: 12, fontSize: 12, opacity: 0.7, fontFamily: 'var(--font-sans)' }}>
-        Oder per Mail:{' '}
+        Or by email:{' '}
         <a href="mailto:support@justgoblin.com" style={{ color: 'rgba(255,255,255,0.92)', textDecoration: 'underline' }}>
           support@justgoblin.com
         </a>
