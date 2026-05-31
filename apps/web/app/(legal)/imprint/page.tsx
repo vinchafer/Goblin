@@ -23,8 +23,28 @@ export default function ImprintPage() {
       </section>
 
       <section className="mb-8">
-        <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--ink-1)' }}>VAT Number</h2>
-        <p style={{ color: 'var(--ink-3)' }}>{vat}</p>
+        <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--ink-1)' }}>Responsible for Content</h2>
+        <p className="mb-2" style={{ color: 'var(--ink-3)' }}>{name}</p>
+        <p style={{ color: 'var(--ink-3)' }}>{address}, Switzerland</p>
+      </section>
+
+      <section className="mb-8">
+        <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--ink-1)' }}>VAT</h2>
+        <p className="mb-2" style={{ color: 'var(--ink-3)' }}>{vat}</p>
+        <p style={{ color: 'var(--ink-3)' }}>
+          Subject to Swiss VAT from CHF 100,000 annual turnover (threshold not currently reached).
+        </p>
+      </section>
+
+      <section className="mb-8">
+        <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--ink-1)' }}>Dispute Resolution</h2>
+        <p className="mb-3" style={{ color: 'var(--ink-3)' }}>
+          The EU Commission provides a platform for online dispute resolution (ODR):{' '}
+          <a href="https://ec.europa.eu/consumers/odr/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--brand-green)' }}>
+            https://ec.europa.eu/consumers/odr/
+          </a>. We are neither obliged nor willing to participate in dispute resolution
+          proceedings before a consumer arbitration board.
+        </p>
       </section>
 
       <section className="mb-8">
