@@ -159,7 +159,7 @@ export function BillingPage() {
                   <div style={{ fontSize: 26, fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-sans)', letterSpacing: '-0.3px' }}>
                     {isComped ? 'Vollzugriff' : planName}
                   </div>
-                  <div style={{ fontSize: 14, color: 'var(--text-meta)' }}>
+                  <div style={{ fontSize: 'var(--t-small-fs)', color: 'var(--text-meta)' }}>
                     {isComped ? (status?.compReason?.startsWith('invite') ? 'Invite-Code' : 'Founder') : planPrice}
                   </div>
                 </div>
@@ -206,7 +206,7 @@ export function BillingPage() {
           <div style={{ padding: 20 }}>
             {isComped ? (
               <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
-                <div style={{ fontSize: 14, color: 'var(--text)' }}>Unbegrenzt</div>
+                <div style={{ fontSize: 'var(--t-small-fs)', color: 'var(--text)' }}>Unbegrenzt</div>
                 <div style={{ fontSize: 13, color: 'var(--text-meta)', fontFamily: 'var(--font-mono, monospace)' }}>{used} Requests</div>
               </div>
             ) : (
@@ -236,13 +236,13 @@ export function BillingPage() {
         <Card>
           <div style={{ padding: 20 }}>
             {isComped ? (
-              <div style={{ fontSize: 14, color: 'var(--text-meta)' }}>Nicht erforderlich</div>
+              <div style={{ fontSize: 'var(--t-small-fs)', color: 'var(--text-meta)' }}>Nicht erforderlich</div>
             ) : status?.cardLast4 ? (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <Icon name="billing" size={18} color="var(--text-meta)" />
                   <div>
-                    <div style={{ fontSize: 14, color: 'var(--text)', fontFamily: 'var(--font-mono, monospace)' }}>
+                    <div style={{ fontSize: 'var(--t-small-fs)', color: 'var(--text)', fontFamily: 'var(--font-mono, monospace)' }}>
                       {(status.cardBrand ?? '').toUpperCase()} •••• {status.cardLast4}
                     </div>
                   </div>
@@ -251,7 +251,7 @@ export function BillingPage() {
               </div>
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                <div style={{ fontSize: 14, color: 'var(--text-meta)' }}>Keine Zahlungsmethode</div>
+                <div style={{ fontSize: 'var(--t-small-fs)', color: 'var(--text-meta)' }}>Keine Zahlungsmethode</div>
                 <button onClick={openPortal} disabled={busy} style={outlineBtn}>Hinzufügen</button>
               </div>
             )}
@@ -263,22 +263,22 @@ export function BillingPage() {
       <Section title="Rechnungs-Historie">
         <Card>
           {invoices.length === 0 ? (
-            <div style={{ padding: 20, fontSize: 14, color: 'var(--text-meta)' }}>Noch keine Rechnungen</div>
+            <div style={{ padding: 20, fontSize: 'var(--t-small-fs)', color: 'var(--text-meta)' }}>Noch keine Rechnungen</div>
           ) : (
             <>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                 {invoices.map(inv => (
                   <li key={inv.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderBottom: '1px solid var(--rule, rgba(0,0,0,0.06))', gap: 12 }}>
                     <div>
-                      <div style={{ fontSize: 14, color: 'var(--text)' }}>
+                      <div style={{ fontSize: 'var(--t-small-fs)', color: 'var(--text)' }}>
                         {new Date(inv.date).toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </div>
-                      <div style={{ fontSize: 12, color: 'var(--text-meta)', marginTop: 2 }}>
+                      <div style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--text-meta)', marginTop: 2 }}>
                         {inv.status === 'paid' ? 'Bezahlt' : inv.status ?? '—'}
                       </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <div style={{ fontSize: 14, color: 'var(--text)', fontFamily: 'var(--font-mono, monospace)' }}>
+                      <div style={{ fontSize: 'var(--t-small-fs)', color: 'var(--text)', fontFamily: 'var(--font-mono, monospace)' }}>
                         {inv.amount.toFixed(2)} {inv.currency.toUpperCase()}
                       </div>
                       {inv.pdf_url && (
@@ -304,7 +304,7 @@ export function BillingPage() {
 
       {!isComped && <InviteCodeRedemption />}
 
-      <p className="helper-text" style={{ fontSize: 12, color: 'var(--text-meta)', marginTop: 20, padding: '0 4px', lineHeight: 1.6 }}>
+      <p className="helper-text" style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--text-meta)', marginTop: 20, padding: '0 4px', lineHeight: 1.6 }}>
         Sicheres Checkout & Rechnungen über Stripe. Kündigung jederzeit im Kundenportal.
       </p>
     </div>
@@ -314,7 +314,7 @@ export function BillingPage() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section style={{ marginBottom: 24 }}>
-      <h3 style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-meta)', textTransform: 'uppercase', letterSpacing: 1.2, margin: '0 0 10px', padding: '0 4px' }}>
+      <h3 style={{ fontSize: 'var(--t-caption-fs)', fontWeight: 600, color: 'var(--text-meta)', textTransform: 'uppercase', letterSpacing: 1.2, margin: '0 0 10px', padding: '0 4px' }}>
         {title}
       </h3>
       {children}
@@ -442,7 +442,7 @@ function InviteCodeRedemption() {
             borderRadius: 8,
             background: 'var(--bg)',
             color: 'var(--text)',
-            fontSize: 14,
+            fontSize: 'var(--t-small-fs)',
             fontFamily: 'var(--font-mono, monospace)',
             textTransform: 'uppercase',
           }}
@@ -452,7 +452,7 @@ function InviteCodeRedemption() {
         </button>
       </div>
       {msg && (
-        <div style={{ marginTop: 8, fontSize: 12, color: msg.kind === 'ok' ? 'var(--brand-green)' : 'var(--danger, #c64a4a)' }}>
+        <div style={{ marginTop: 8, fontSize: 'var(--t-caption-fs)', color: msg.kind === 'ok' ? 'var(--brand-green)' : 'var(--danger, #c64a4a)' }}>
           {msg.text}
         </div>
       )}

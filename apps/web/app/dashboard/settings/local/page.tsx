@@ -120,14 +120,14 @@ export default function LocalSettingsPage() {
             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-sans)', marginBottom: 4 }}>
               Desktop App required
             </div>
-            <div style={{ fontSize: 12, color: 'var(--meta)', fontFamily: 'var(--font-sans)', lineHeight: 1.5 }}>
+            <div style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--meta)', fontFamily: 'var(--font-sans)', lineHeight: 1.5 }}>
               Local mode only works in the Goblin Desktop App (Tauri). Your browser can&apos;t connect to localhost Ollama for security reasons.
             </div>
             <a
               href="https://justgoblin.com/download"
               style={{
                 display: 'inline-block', marginTop: 8,
-                fontSize: 12, color: 'var(--brand-green)', fontWeight: 600,
+                fontSize: 'var(--t-caption-fs)', color: 'var(--brand-green)', fontWeight: 600,
                 fontFamily: 'var(--font-sans)', textDecoration: 'none',
               }}
             >
@@ -146,7 +146,7 @@ export default function LocalSettingsPage() {
         <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-sans)', marginBottom: 4 }}>
           Hardware Check
         </h2>
-        <p style={{ fontSize: 12, color: 'var(--meta)', fontFamily: 'var(--font-sans)', marginBottom: 16 }}>
+        <p style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--meta)', fontFamily: 'var(--font-sans)', marginBottom: 16 }}>
           Detects your RAM and GPU to recommend which models will run smoothly.
         </p>
 
@@ -201,7 +201,7 @@ export default function LocalSettingsPage() {
           <h2 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-sans)', marginBottom: 4 }}>
             Recommended Models
           </h2>
-          <p style={{ fontSize: 12, color: 'var(--meta)', fontFamily: 'var(--font-sans)', marginBottom: 14 }}>
+          <p style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--meta)', fontFamily: 'var(--font-sans)', marginBottom: 14 }}>
             Click Copy to get the Ollama install command. Run it in your terminal.
           </p>
 
@@ -230,7 +230,7 @@ export default function LocalSettingsPage() {
               position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
               background: 'var(--brand-green)', color: '#fff',
               padding: '8px 16px', borderRadius: 8,
-              fontSize: 12, fontFamily: 'var(--font-sans)',
+              fontSize: 'var(--t-caption-fs)', fontFamily: 'var(--font-sans)',
               boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
               zIndex: 9999,
             }}>
@@ -249,7 +249,7 @@ export default function LocalSettingsPage() {
         <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-sans)', marginBottom: 6 }}>
           Don&apos;t have Ollama?
         </div>
-        <div style={{ fontSize: 12, color: 'var(--meta)', fontFamily: 'var(--font-sans)', marginBottom: 10, lineHeight: 1.5 }}>
+        <div style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--meta)', fontFamily: 'var(--font-sans)', marginBottom: 10, lineHeight: 1.5 }}>
           Ollama runs large language models locally on your computer. Free, open source.
         </div>
         <a
@@ -260,7 +260,7 @@ export default function LocalSettingsPage() {
             display: 'inline-block',
             padding: '7px 14px',
             background: 'var(--brand-green)', color: '#fff',
-            borderRadius: 7, fontSize: 12, fontWeight: 600,
+            borderRadius: 7, fontSize: 'var(--t-caption-fs)', fontWeight: 600,
             fontFamily: 'var(--font-sans)', textDecoration: 'none',
           }}
         >

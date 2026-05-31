@@ -61,7 +61,7 @@ export default function ModelDetailPage() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--surface-2)', fontFamily: 'var(--font-sans)' }}>
       <main style={{ maxWidth: 900, margin: '0 auto', padding: '32px 16px' }}>
-        <Link href="/models" style={{ color: 'var(--text-meta)', textDecoration: 'none', fontSize: 14 }}>
+        <Link href="/models" style={{ color: 'var(--text-meta)', textDecoration: 'none', fontSize: 'var(--t-small-fs)' }}>
           ← Alle Modelle
         </Link>
 
@@ -145,7 +145,7 @@ export default function ModelDetailPage() {
               <span style={{ fontSize: 13, color: 'var(--text-meta)', marginRight: 16 }}>
                 #{c.rank} · {c.source_count} Quellen
               </span>
-              <span style={{ fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
+              <span style={{ fontSize: 'var(--t-small-fs)', fontWeight: 600, fontFamily: 'var(--font-mono)' }}>
                 {(c.composite_score * 100).toFixed(0)}
               </span>
             </div>
@@ -198,7 +198,7 @@ function Stat({ label, value }: { label: string; value: string }) {
       }}
     >
       <div style={{ fontSize: 11, color: 'var(--text-meta)' }}>{label}</div>
-      <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-1)', marginTop: 2 }}>
+      <div style={{ fontSize: 'var(--t-body-fs)', fontWeight: 600, color: 'var(--text-1)', marginTop: 2 }}>
         {value}
       </div>
     </div>
@@ -240,7 +240,7 @@ function AccessExplanation({ provider }: { provider: string }) {
       }}>
         Zugang · {access.label}
       </div>
-      <p style={{ fontSize: 14, color: 'var(--text-1)', margin: '0 0 12px', lineHeight: 1.55 }}>
+      <p style={{ fontSize: 'var(--t-small-fs)', color: 'var(--text-1)', margin: '0 0 12px', lineHeight: 1.55 }}>
         {access.description}
       </p>
       <Link

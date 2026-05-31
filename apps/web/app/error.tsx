@@ -23,10 +23,10 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
         </p>
       )}
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
-        <button onClick={() => reset()} style={{ background: 'var(--brand-green)', color: '#fff', border: 'none', padding: '12px 24px', borderRadius: 10, fontSize: 14, fontWeight: 500, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+        <button onClick={() => reset()} style={{ background: 'var(--brand-green)', color: '#fff', border: 'none', padding: '12px 24px', borderRadius: 10, fontSize: 'var(--t-small-fs)', fontWeight: 500, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
           Try again
         </button>
-        <a href="/dashboard" style={{ background: 'transparent', color: 'var(--meta)', padding: '12px 24px', borderRadius: 10, fontSize: 14, textDecoration: 'none', border: '1px solid rgba(0,0,0,0.12)', fontFamily: 'var(--font-sans)' }}>
+        <a href="/dashboard" style={{ background: 'transparent', color: 'var(--meta)', padding: '12px 24px', borderRadius: 10, fontSize: 'var(--t-small-fs)', textDecoration: 'none', border: '1px solid rgba(0,0,0,0.12)', fontFamily: 'var(--font-sans)' }}>
           Back to workshop
         </a>
       </div>

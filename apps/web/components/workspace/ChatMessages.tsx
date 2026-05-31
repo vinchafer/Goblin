@@ -83,7 +83,7 @@ function EmptyState({ onSuggestion }: { onSuggestion: (s: string) => void }) {
               onMouseEnter={e => (e.currentTarget.style.color = 'var(--brand-green)')}
               onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-2)')}
             >
-              <span style={{ color: 'var(--brand-gold)', flexShrink: 0, fontSize: 12, marginTop: 2 }}>•</span>
+              <span style={{ color: 'var(--brand-gold)', flexShrink: 0, fontSize: 'var(--t-caption-fs)', marginTop: 2 }}>•</span>
               <span>&ldquo;{s.label}&rdquo;</span>
             </button>
           </li>
@@ -99,7 +99,7 @@ function EmptyState({ onSuggestion }: { onSuggestion: (s: string) => void }) {
               padding: '7px 14px', borderRadius: 20,
               border: '1px solid #DDD7CC',
               background: '#fff', color: 'var(--text)',
-              fontSize: 12, fontFamily: 'var(--font-sans)',
+              fontSize: 'var(--t-caption-fs)', fontFamily: 'var(--font-sans)',
               cursor: 'pointer', transition: 'all 0.15s',
             }}
             onMouseEnter={e => { e.currentTarget.style.background = 'var(--brand-green)'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'var(--brand-green)'; }}
@@ -189,7 +189,7 @@ export function ChatMessages({
             </span>
             <button
               onClick={onDismissError}
-              style={{ fontSize: 16, background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', lineHeight: 1, padding: '0 2px', flexShrink: 0 }}
+              style={{ fontSize: 'var(--t-body-fs)', background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', lineHeight: 1, padding: '0 2px', flexShrink: 0 }}
               aria-label="Dismiss"
             >×</button>
           </div>

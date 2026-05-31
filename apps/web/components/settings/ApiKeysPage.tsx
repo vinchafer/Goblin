@@ -83,7 +83,7 @@ export function ApiKeysPage() {
 
   return (
     <div style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
-      <p style={{ fontSize: 14, color: 'var(--text-meta)', padding: '0 4px 12px', lineHeight: 1.5 }}>
+      <p style={{ fontSize: 'var(--t-small-fs)', color: 'var(--text-meta)', padding: '0 4px 12px', lineHeight: 1.5 }}>
         Verbinde deine eigenen API-Schlüssel. Goblin nutzt sie direkt, ohne sie weiterzuverkaufen.
       </p>
 
@@ -146,7 +146,7 @@ function ProviderRow({ provider }: { provider: ProviderInfo }) {
           borderRadius: 12,
           background: provider.hasKey ? 'color-mix(in srgb, var(--brand-green) 8%, transparent)' : 'var(--subtle)',
           color: provider.hasKey ? 'var(--brand-green)' : 'var(--meta)',
-          fontSize: 12,
+          fontSize: 'var(--t-caption-fs)',
           fontWeight: 600,
           flexShrink: 0,
         }}>{provider.hasKey ? 'Aktiv' : 'Aus'}</span>
@@ -155,7 +155,7 @@ function ProviderRow({ provider }: { provider: ProviderInfo }) {
       {provider.hasKey && provider.usage && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <ProgressBar value={provider.usage.tokens_total} max={1_000_000} testId={`usage-bar-${provider.key}`} />
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-meta)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--t-caption-fs)', color: 'var(--text-meta)' }}>
             <span>{formatNumber(provider.usage.tokens_total)} Tokens diesen Monat</span>
             <span>{provider.usage.requests} Anfragen</span>
           </div>

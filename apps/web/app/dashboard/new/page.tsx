@@ -189,7 +189,7 @@ export default function NewProjectPage() {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{
                   fontFamily: 'var(--font-dash-display), Manrope, sans-serif',
-                  fontWeight: 600, fontSize: 14, color: 'var(--ink-1)', marginBottom: 2,
+                  fontWeight: 600, fontSize: 'var(--t-small-fs)', color: 'var(--ink-1)', marginBottom: 2,
                 }}>
                   Empfehlung: {recommended.name}
                 </div>

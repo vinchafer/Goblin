@@ -59,7 +59,7 @@ export function ProfileCard({ avatarUrl, name, email, plan, onClick, testId }: P
       )}
       <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
         <span style={{
-          fontSize: 16,
+          fontSize: 'var(--t-body-fs)',
           fontWeight: 600,
           color: 'var(--text)',
           overflow: 'hidden',
@@ -80,7 +80,7 @@ export function ProfileCard({ avatarUrl, name, email, plan, onClick, testId }: P
         borderRadius: 12,
         background: planColor.bg,
         color: planColor.color,
-        fontSize: 12,
+        fontSize: 'var(--t-caption-fs)',
         fontWeight: 600,
         flexShrink: 0,
       }}>{plan}</span>

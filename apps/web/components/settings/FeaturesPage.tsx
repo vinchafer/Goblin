@@ -85,7 +85,7 @@ function FeatureRowWithDescription({ label, description, value, onChange, testId
     >
       <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column' }}>
         <span style={{ fontSize: 17, color: 'var(--text)' }}>{label}</span>
-        <span style={{ fontSize: 14, color: 'var(--text-meta)', marginTop: 2, lineHeight: 1.4 }}>{description}</span>
+        <span style={{ fontSize: 'var(--t-small-fs)', color: 'var(--text-meta)', marginTop: 2, lineHeight: 1.4 }}>{description}</span>
       </span>
       <IOSToggle value={value} onChange={onChange} testId={testId} ariaLabel={label} />
     </div>

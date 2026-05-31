@@ -41,7 +41,7 @@ function ToggleRow({ Icon, title, description, enabled, onToggle, disabled, badg
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{title}</span>
+          <span style={{ fontSize: 'var(--t-small-fs)', fontWeight: 600, color: 'var(--text)' }}>{title}</span>
           {badge && (
             <span style={{
               fontSize: 10, fontWeight: 600, color: 'var(--meta)',
@@ -50,7 +50,7 @@ function ToggleRow({ Icon, title, description, enabled, onToggle, disabled, badg
             }}>{badge}</span>
           )}
         </div>
-        <p style={{ fontSize: 12, color: 'var(--meta)', lineHeight: 1.5, margin: 0 }}>{description}</p>
+        <p style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--meta)', lineHeight: 1.5, margin: 0 }}>{description}</p>
       </div>
       <button
         onClick={onToggle}
@@ -126,7 +126,7 @@ export default function NotificationsPage() {
         </p>
 
         {!isSupported && !loading ? (
-          <div style={{ padding: '10px 14px', background: 'var(--subtle)', borderRadius: 8, fontSize: 12, color: 'var(--meta)' }}>
+          <div style={{ padding: '10px 14px', background: 'var(--subtle)', borderRadius: 8, fontSize: 'var(--t-caption-fs)', color: 'var(--meta)' }}>
             Push notifications are not supported in this browser.
           </div>
         ) : (
@@ -147,7 +147,7 @@ export default function NotificationsPage() {
                   style={{
                     background: 'transparent', color: 'var(--brand-green)',
                     border: '1.5px solid var(--border)', borderRadius: 8,
-                    padding: '8px 14px', fontSize: 12, fontWeight: 500,
+                    padding: '8px 14px', fontSize: 'var(--t-caption-fs)', fontWeight: 500,
                     cursor: sendingTest ? 'not-allowed' : 'pointer',
                     fontFamily: 'var(--font-sans)',
                   }}
@@ -155,7 +155,7 @@ export default function NotificationsPage() {
                   {sendingTest ? 'Sending…' : 'Send test notification'}
                 </button>
                 {testResult && (
-                  <span style={{ fontSize: 12, color: testResult.startsWith('✓') ? 'var(--good)' : 'var(--danger)' }}>
+                  <span style={{ fontSize: 'var(--t-caption-fs)', color: testResult.startsWith('✓') ? 'var(--good)' : 'var(--danger)' }}>
                     {testResult}
                   </span>
                 )}

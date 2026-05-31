@@ -140,25 +140,25 @@ export default function AdminStatusPage() {
             </div>
             <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
               <div>
-                <label style={{ fontSize: 12, color: 'var(--meta)', display: 'block', marginBottom: 4 }}>Title</label>
+                <label style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--meta)', display: 'block', marginBottom: 4 }}>Title</label>
                 <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} style={FIELD_STYLE} placeholder="e.g. API latency elevated" />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
-                  <label style={{ fontSize: 12, color: 'var(--meta)', display: 'block', marginBottom: 4 }}>Status</label>
+                  <label style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--meta)', display: 'block', marginBottom: 4 }}>Status</label>
                   <select value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))} style={{ ...FIELD_STYLE, cursor: 'pointer' }}>
                     {STATUS_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label style={{ fontSize: 12, color: 'var(--meta)', display: 'block', marginBottom: 4 }}>Severity</label>
+                  <label style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--meta)', display: 'block', marginBottom: 4 }}>Severity</label>
                   <select value={form.severity} onChange={e => setForm(f => ({ ...f, severity: e.target.value }))} style={{ ...FIELD_STYLE, cursor: 'pointer' }}>
                     {SEVERITY_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
                 </div>
               </div>
               <div>
-                <label style={{ fontSize: 12, color: 'var(--meta)', display: 'block', marginBottom: 4 }}>Description</label>
+                <label style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--meta)', display: 'block', marginBottom: 4 }}>Description</label>
                 <textarea
                   value={form.description}
                   onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
@@ -205,11 +205,11 @@ function IncidentCard({ inc, onEdit, onDelete }: { inc: Incident; onEdit: (i: In
         </div>
         <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
           <button onClick={() => onEdit(inc)}
-            style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontSize: 12, cursor: 'pointer', color: 'var(--text)', fontFamily: 'var(--font-sans)' }}>
+            style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontSize: 'var(--t-caption-fs)', cursor: 'pointer', color: 'var(--text)', fontFamily: 'var(--font-sans)' }}>
             Edit
           </button>
           <button onClick={() => onDelete(inc.id)}
-            style={{ background: 'transparent', border: '1px solid var(--danger)', borderRadius: 6, padding: '4px 10px', fontSize: 12, cursor: 'pointer', color: 'var(--danger)', fontFamily: 'var(--font-sans)' }}>
+            style={{ background: 'transparent', border: '1px solid var(--danger)', borderRadius: 6, padding: '4px 10px', fontSize: 'var(--t-caption-fs)', cursor: 'pointer', color: 'var(--danger)', fontFamily: 'var(--font-sans)' }}>
             Delete
           </button>
         </div>

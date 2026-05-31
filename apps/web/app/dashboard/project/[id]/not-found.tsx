@@ -16,13 +16,13 @@ export default function ProjectNotFound() {
       <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
         Projekt nicht gefunden
       </h1>
-      <p style={{ fontSize: 14, color: 'var(--text-meta)', maxWidth: 380, margin: 0 }}>
+      <p style={{ fontSize: 'var(--t-small-fs)', color: 'var(--text-meta)', maxWidth: 380, margin: 0 }}>
         Dieses Projekt existiert nicht oder gehört nicht zu deinem Konto.
       </p>
       <Link href="/dashboard" style={{
         marginTop: 6, padding: '9px 18px', borderRadius: 9,
         background: 'var(--brand-green)', color: 'var(--on-brand, #fff)',
-        fontSize: 14, fontWeight: 600, textDecoration: 'none',
+        fontSize: 'var(--t-small-fs)', fontWeight: 600, textDecoration: 'none',
       }}>
         Zurück zum Dashboard
       </Link>

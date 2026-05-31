@@ -90,7 +90,7 @@ export default function HelpPage() {
                 </button>
                 {open && (
                   <div style={{
-                    padding: '0 20px 18px', fontSize: 14,
+                    padding: '0 20px 18px', fontSize: 'var(--t-small-fs)',
                     lineHeight: 1.65, color: 'var(--text-2, var(--meta))',
                     fontFamily: 'var(--font-sans)',
                   }}>
@@ -126,7 +126,7 @@ function HelpAgentCTA() {
         Still have questions?
       </h2>
       <p style={{
-        fontSize: 14, opacity: 0.85,
+        fontSize: 'var(--t-small-fs)', opacity: 0.85,
         fontFamily: 'var(--font-sans)', margin: '0 0 18px', lineHeight: 1.5,
       }}>
         The Goblin help agent knows the product and answers instantly.
@@ -137,7 +137,7 @@ function HelpAgentCTA() {
           display: 'inline-flex', alignItems: 'center', gap: 8,
           padding: '12px 24px', borderRadius: 24,
           background: 'var(--brand-gold)', color: 'var(--brand-green)',
-          textDecoration: 'none', fontSize: 14, fontWeight: 600,
+          textDecoration: 'none', fontSize: 'var(--t-small-fs)', fontWeight: 600,
           fontFamily: 'var(--font-sans)',
           border: 'none', cursor: 'pointer',
         }}
@@ -147,11 +147,11 @@ function HelpAgentCTA() {
         </svg>
         Chat with Goblin help
       </button>
-      <div style={{ marginTop: 14, fontSize: 12, opacity: 0.7 }}>
+      <div style={{ marginTop: 14, fontSize: 'var(--t-caption-fs)', opacity: 0.7 }}>
         {!escalateOpen ? (
           <button
             onClick={() => setEscalateOpen(true)}
-            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', cursor: 'pointer', textDecoration: 'underline', fontSize: 12, fontFamily: 'var(--font-sans)' }}
+            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', cursor: 'pointer', textDecoration: 'underline', fontSize: 'var(--t-caption-fs)', fontFamily: 'var(--font-sans)' }}
           >
             I'm stuck — I need a human
           </button>
@@ -159,7 +159,7 @@ function HelpAgentCTA() {
           <span>Type &ldquo;human&rdquo; in the chat and the agent escalates automatically.</span>
         )}
       </div>
-      <div style={{ marginTop: 12, fontSize: 12, opacity: 0.7, fontFamily: 'var(--font-sans)' }}>
+      <div style={{ marginTop: 12, fontSize: 'var(--t-caption-fs)', opacity: 0.7, fontFamily: 'var(--font-sans)' }}>
         Or by email:{' '}
         <a href="mailto:support@justgoblin.com" style={{ color: 'rgba(255,255,255,0.92)', textDecoration: 'underline' }}>
           support@justgoblin.com

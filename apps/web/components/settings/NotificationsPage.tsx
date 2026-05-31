@@ -66,7 +66,7 @@ export function NotificationsPage() {
       </SettingsGroup>
 
       {pushPermission === 'denied' && (
-        <p style={{ fontSize: 12, color: 'var(--rust)', marginTop: 12, padding: '0 4px' }}>
+        <p style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--rust)', marginTop: 12, padding: '0 4px' }}>
           Push wurde im Browser blockiert. Aktiviere es in den Browser-Einstellungen.
         </p>
       )}

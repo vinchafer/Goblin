@@ -22,7 +22,7 @@ export default function NotFound() {
       }}>
         This page ran away. Your goblin can&apos;t find it.
       </p>
-      <p style={{ fontSize: 14, color: 'var(--text-faint)', marginBottom: 36, fontFamily: 'var(--font-sans)' }}>
+      <p style={{ fontSize: 'var(--t-small-fs)', color: 'var(--text-faint)', marginBottom: 36, fontFamily: 'var(--font-sans)' }}>
         Maybe it got deployed somewhere else.
       </p>
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: 'center' }}>
@@ -30,7 +30,7 @@ export default function NotFound() {
           href="/dashboard"
           style={{
             background: 'var(--brand-green)', color: '#fff', padding: '12px 24px',
-            borderRadius: 10, fontSize: 14, fontWeight: 500, textDecoration: 'none',
+            borderRadius: 10, fontSize: 'var(--t-small-fs)', fontWeight: 500, textDecoration: 'none',
           }}
         >
           Back to workshop →
@@ -39,7 +39,7 @@ export default function NotFound() {
           href="/"
           style={{
             background: 'transparent', color: 'var(--meta)', padding: '12px 24px',
-            borderRadius: 10, fontSize: 14, fontWeight: 400, textDecoration: 'none',
+            borderRadius: 10, fontSize: 'var(--t-small-fs)', fontWeight: 400, textDecoration: 'none',
             border: '1px solid rgba(0,0,0,0.12)',
           }}
         >

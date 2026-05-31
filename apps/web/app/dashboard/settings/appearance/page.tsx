@@ -67,7 +67,7 @@ export default function AppearancePage() {
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                   <opt.Icon size={20} weight={active ? 'fill' : 'duotone'} color={active ? 'var(--brand-green)' : 'var(--meta)'} />
-                  <span style={{ fontSize: 14, fontWeight: 600, color: active ? 'var(--brand-green)' : 'var(--text)' }}>
+                  <span style={{ fontSize: 'var(--t-small-fs)', fontWeight: 600, color: active ? 'var(--brand-green)' : 'var(--text)' }}>
                     {opt.label}
                   </span>
                   {active && (
@@ -78,7 +78,7 @@ export default function AppearancePage() {
                     }}>ACTIVE</span>
                   )}
                 </div>
-                <p style={{ fontSize: 12, color: 'var(--meta)', lineHeight: 1.5 }}>
+                <p style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--meta)', lineHeight: 1.5 }}>
                   {opt.description}
                 </p>
               </button>

@@ -118,7 +118,7 @@ export function ProfilePage() {
               disabled={!loadedPrefs}
               style={{
                 background: 'transparent', border: 'none', outline: 'none',
-                fontSize: 16, color: 'var(--text)', padding: 0, marginTop: 4,
+                fontSize: 'var(--t-body-fs)', color: 'var(--text)', padding: 0, marginTop: 4,
                 fontFamily: 'var(--font-sans)', appearance: 'none',
               }}
             >
@@ -135,7 +135,7 @@ export function ProfilePage() {
               disabled={!loadedPrefs}
               style={{
                 background: 'transparent', border: 'none', outline: 'none',
-                fontSize: 16, color: 'var(--text)', padding: 0, marginTop: 4,
+                fontSize: 'var(--t-body-fs)', color: 'var(--text)', padding: 0, marginTop: 4,
                 fontFamily: 'var(--font-sans)', width: '100%',
               }}
             />
@@ -205,7 +205,7 @@ function FormReadOnly({ label, value, testId }: { label: string; value: string; 
   return (
     <div data-testid={testId} style={{ padding: '12px 20px', minHeight: 64, display: 'flex', flexDirection: 'column' }}>
       <span style={{ fontSize: 13, color: 'var(--text-meta)' }}>{label}</span>
-      <span style={{ fontSize: 16, color: 'var(--text)', marginTop: 4 }}>{value || '—'}</span>
+      <span style={{ fontSize: 'var(--t-body-fs)', color: 'var(--text)', marginTop: 4 }}>{value || '—'}</span>
     </div>
   );
 }
@@ -221,7 +221,7 @@ function FormInput({ label, value, onChange, testId }: { label: string; value: s
           border: 'none',
           outline: 'none',
           background: 'transparent',
-          fontSize: 16,
+          fontSize: 'var(--t-body-fs)',
           color: 'var(--text)',
           fontFamily: 'var(--font-sans)',
           marginTop: 4,

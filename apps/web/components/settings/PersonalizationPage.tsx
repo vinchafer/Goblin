@@ -144,7 +144,7 @@ export function PersonalizationPage() {
             onChange={(v) => setPrefs((p) => ({ ...p, memory_enabled: v }))}
           />
         </SettingsCard>
-        <p style={{ fontSize: 12, color: 'var(--text-meta)', marginTop: 8, padding: '0 4px', lineHeight: 1.5 }}>
+        <p style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--text-meta)', marginTop: 8, padding: '0 4px', lineHeight: 1.5 }}>
           Memory-Verwaltung (was gemerkt wurde, einzelne Einträge löschen) folgt in einem kommenden Update.
         </p>
       </SettingsGroup>
@@ -188,7 +188,7 @@ export function PersonalizationPage() {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <label style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-      <span style={{ fontSize: 12, color: 'var(--text-meta)', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600 }}>{label}</span>
+      <span style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--text-meta)', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600 }}>{label}</span>
       {children}
     </label>
   );

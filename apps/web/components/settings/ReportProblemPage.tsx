@@ -47,7 +47,7 @@ export function ReportProblemPage() {
       <div style={{ padding: 40, textAlign: 'center', fontFamily: 'var(--font-sans)' }}>
         <div style={{ fontSize: 48, marginBottom: 12 }}>✓</div>
         <h3 style={{ fontSize: 18, color: 'var(--text)', marginBottom: 6 }}>Danke!</h3>
-        <p style={{ fontSize: 14, color: 'var(--text-meta)' }}>Wir melden uns innerhalb von 24h.</p>
+        <p style={{ fontSize: 'var(--t-small-fs)', color: 'var(--text-meta)' }}>Wir melden uns innerhalb von 24h.</p>
       </div>
     );
   }
@@ -56,7 +56,7 @@ export function ReportProblemPage() {
     <div className="settings-section" style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div>
-          <div style={{ fontSize: 12, color: 'var(--text-meta)', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600, marginBottom: 8 }}>Kategorie</div>
+          <div style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--text-meta)', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600, marginBottom: 8 }}>Kategorie</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {CATEGORIES.map((c) => (
               <button key={c.id} onClick={() => setCategory(c.id)} style={{
@@ -72,7 +72,7 @@ export function ReportProblemPage() {
         </div>
 
         <div>
-          <div style={{ fontSize: 12, color: 'var(--text-meta)', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600, marginBottom: 8 }}>Beschreibung</div>
+          <div style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--text-meta)', textTransform: 'uppercase', letterSpacing: 1, fontWeight: 600, marginBottom: 8 }}>Beschreibung</div>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -85,7 +85,7 @@ export function ReportProblemPage() {
             }}
             maxLength={2000}
           />
-          <div style={{ fontSize: 12, color: 'var(--text-meta)', textAlign: 'right', marginTop: 4 }}>{description.length} / 2000</div>
+          <div style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--text-meta)', textAlign: 'right', marginTop: 4 }}>{description.length} / 2000</div>
         </div>
 
         <button onClick={submit} disabled={sending || description.trim().length < 5} style={{

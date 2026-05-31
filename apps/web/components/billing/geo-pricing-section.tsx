@@ -255,7 +255,7 @@ export function GeoPricingSection() {
                   style={{
                     display: 'block', width: '100%',
                     padding: '14px 0', borderRadius: 10,
-                    textAlign: 'center', fontSize: 14, fontWeight: 700,
+                    textAlign: 'center', fontSize: 'var(--t-small-fs)', fontWeight: 700,
                     textDecoration: 'none',
                     fontFamily: 'var(--font-sans)',
                     background: recommended ? 'var(--gold-300)' : '#1f3a1d',

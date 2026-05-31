@@ -64,7 +64,7 @@ export default function ModelsPage() {
         >
           Modelle, geordnet nach echten Benchmarks.
         </h1>
-        <p style={{ fontSize: 16, color: 'var(--text-2)', marginBottom: 32, maxWidth: 720 }}>
+        <p style={{ fontSize: 'var(--t-body-fs)', color: 'var(--text-2)', marginBottom: 32, maxWidth: 720 }}>
           Goblin aggregiert alle 6 Stunden Daten aus 5 öffentlichen Quellen (OpenRouter, Aider,
           LiveBench, HuggingFace, SWE-Bench) und zeigt dir, welches LLM heute am besten für deinen
           Task ist.
@@ -89,7 +89,7 @@ export default function ModelsPage() {
                 border: '1px solid var(--border-subtle)',
                 background: task === t.id ? 'var(--brand-green)' : 'var(--surface-1)',
                 color: task === t.id ? '#FFFFFF' : 'var(--text-1)',
-                fontSize: 14,
+                fontSize: 'var(--t-small-fs)',
                 fontWeight: 500,
                 cursor: 'pointer',
                 whiteSpace: 'nowrap',
@@ -102,7 +102,7 @@ export default function ModelsPage() {
           ))}
         </div>
 
-        <p style={{ color: 'var(--text-meta)', fontSize: 14, marginBottom: 24 }}>
+        <p style={{ color: 'var(--text-meta)', fontSize: 'var(--t-small-fs)', marginBottom: 24 }}>
           {TASKS.find((t) => t.id === task)?.description}
         </p>
 
@@ -143,7 +143,7 @@ export default function ModelsPage() {
                   <span
                     style={{
                       width: 32,
-                      fontSize: 14,
+                      fontSize: 'var(--t-small-fs)',
                       fontWeight: 600,
                       color: r.rank <= 3 ? 'var(--brand-green)' : 'var(--text-meta)',
                       fontFamily: 'var(--font-mono)',
@@ -152,7 +152,7 @@ export default function ModelsPage() {
                     #{r.rank}
                   </span>
                   <span style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-1)' }}>
+                    <div style={{ fontSize: 'var(--t-body-fs)', fontWeight: 600, color: 'var(--text-1)' }}>
                       {r.ranked_models.display_name}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
@@ -205,7 +205,7 @@ export default function ModelsPage() {
           </div>
         )}
 
-        <p style={{ color: 'var(--text-meta)', fontSize: 12, marginTop: 24, textAlign: 'center' }}>
+        <p style={{ color: 'var(--text-meta)', fontSize: 'var(--t-caption-fs)', marginTop: 24, textAlign: 'center' }}>
           {rankings.length > 0 && rankings[0]?.computed_at
             ? `Letztes Update: ${new Date(rankings[0].computed_at).toLocaleString('de-CH')}`
             : ''}

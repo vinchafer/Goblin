@@ -104,7 +104,7 @@ function StatCard({ label, value }: { label: string; value: string }) {
       border: '1px solid var(--border-subtle)',
       borderRadius: 'var(--radius-lg)',
     }}>
-      <div style={{ fontSize: 12, color: 'var(--text-meta)', marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--text-meta)', marginBottom: 4 }}>{label}</div>
       <div style={{ fontSize: 24, fontWeight: 600 }}>{value}</div>
     </div>
   );
@@ -114,7 +114,7 @@ function cellStyle(header: boolean): React.CSSProperties {
   return {
     padding: '12px 8px',
     textAlign: 'left',
-    fontSize: 14,
+    fontSize: 'var(--t-small-fs)',
     fontWeight: header ? 600 : 400,
     color: header ? 'var(--text-meta)' : 'var(--text-1)',
   };

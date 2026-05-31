@@ -93,7 +93,7 @@ export function UsagePage() {
       )}
 
       {resetAt && (
-        <p style={{ fontSize: 12, color: 'var(--text-meta)', marginTop: 16, padding: '0 4px' }}>
+        <p style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--text-meta)', marginTop: 16, padding: '0 4px' }}>
           Zähler werden am {resetAt} zurückgesetzt.
         </p>
       )}

@@ -140,7 +140,7 @@ export function AvatarUploader({ currentUrl, fallbackInitial, onUploadComplete }
             border: '1px solid var(--div)',
             borderRadius: 8,
             cursor: 'pointer',
-            fontSize: 14,
+            fontSize: 'var(--t-small-fs)',
             fontFamily: 'var(--font-sans)',
           }}
         >
@@ -161,7 +161,7 @@ export function AvatarUploader({ currentUrl, fallbackInitial, onUploadComplete }
               borderRadius: 8,
               cursor: uploading ? 'not-allowed' : 'pointer',
               fontWeight: 600,
-              fontSize: 14,
+              fontSize: 'var(--t-small-fs)',
               fontFamily: 'var(--font-sans)',
             }}
           >
@@ -180,7 +180,7 @@ export function AvatarUploader({ currentUrl, fallbackInitial, onUploadComplete }
               border: '1px solid var(--div)',
               borderRadius: 8,
               cursor: 'pointer',
-              fontSize: 14,
+              fontSize: 'var(--t-small-fs)',
               fontFamily: 'var(--font-sans)',
             }}
           >

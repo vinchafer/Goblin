@@ -73,7 +73,7 @@ export function ChatMessageItem({ msg, isStreaming, onSendToCode }: Props) {
           color: '#fff',
           borderRadius: '16px 4px 16px 16px',
           padding: '10px 14px',
-          fontSize: 14, lineHeight: 1.65,
+          fontSize: 'var(--t-small-fs)', lineHeight: 1.65,
           fontFamily: 'var(--font-sans)',
           wordBreak: 'break-word',
         }}>
@@ -123,7 +123,7 @@ export function ChatMessageItem({ msg, isStreaming, onSendToCode }: Props) {
               className="goblin-ai-text"
               dangerouslySetInnerHTML={{ __html: html }}
               style={{
-                fontSize: 14, lineHeight: 1.7,
+                fontSize: 'var(--t-small-fs)', lineHeight: 1.7,
                 color: 'var(--text, var(--ink-1))',
                 fontFamily: 'var(--font-sans)',
                 wordBreak: 'break-word',
@@ -156,7 +156,7 @@ export function ChatMessageItem({ msg, isStreaming, onSendToCode }: Props) {
                       background: 'rgba(212,169,74,0.12)',
                       border: '1px solid rgba(212,169,74,0.35)',
                       borderRadius: 8, cursor: 'pointer',
-                      fontSize: 12, fontWeight: 600,
+                      fontSize: 'var(--t-caption-fs)', fontWeight: 600,
                       color: 'var(--gold-700)',
                       fontFamily: 'var(--font-sans)',
                       transition: 'all 0.15s',

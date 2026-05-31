@@ -74,7 +74,7 @@ export default function AdminBuildsPage() {
             key={s || 'all'}
             onClick={() => { setStatusFilter(s); setPage(1); }}
             style={{
-              padding: '6px 14px', borderRadius: 8, fontSize: 12, fontWeight: 500,
+              padding: '6px 14px', borderRadius: 8, fontSize: 'var(--t-caption-fs)', fontWeight: 500,
               border: statusFilter === s ? '2px solid var(--brand-green)' : '1.5px solid var(--border)',
               background: statusFilter === s ? 'rgba(45,74,43,0.08)' : 'transparent',
               color: statusFilter === s ? 'var(--brand-green)' : 'var(--meta)',
@@ -84,7 +84,7 @@ export default function AdminBuildsPage() {
             {s || 'All'}
           </button>
         ))}
-        <button onClick={load} style={{ marginLeft: 'auto', background: 'var(--brand-green)', color: '#fff', border: 'none', borderRadius: 8, padding: '7px 16px', fontSize: 12, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+        <button onClick={load} style={{ marginLeft: 'auto', background: 'var(--brand-green)', color: '#fff', border: 'none', borderRadius: 8, padding: '7px 16px', fontSize: 'var(--t-caption-fs)', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
           Refresh
         </button>
       </div>
@@ -93,7 +93,7 @@ export default function AdminBuildsPage() {
         {loading ? (
           <div style={{ padding: '32px', textAlign: 'center', color: 'var(--meta)' }}>Loading…</div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, fontFamily: 'var(--font-sans)' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--t-caption-fs)', fontFamily: 'var(--font-sans)' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid var(--div)' }}>
                 {['Type', 'Status', 'Progress', 'Duration', 'Created', 'Actions'].map(h => (
@@ -153,12 +153,12 @@ export default function AdminBuildsPage() {
 
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 12, alignItems: 'center' }}>
         <button disabled={page <= 1} onClick={() => setPage(p => p - 1)}
-          style={{ background: 'var(--subtle)', border: '1px solid var(--border)', borderRadius: 6, padding: '5px 12px', fontSize: 12, cursor: page > 1 ? 'pointer' : 'not-allowed', color: 'var(--text)', opacity: page <= 1 ? 0.4 : 1 }}>
+          style={{ background: 'var(--subtle)', border: '1px solid var(--border)', borderRadius: 6, padding: '5px 12px', fontSize: 'var(--t-caption-fs)', cursor: page > 1 ? 'pointer' : 'not-allowed', color: 'var(--text)', opacity: page <= 1 ? 0.4 : 1 }}>
           ← Prev
         </button>
-        <span style={{ fontSize: 12, color: 'var(--meta)' }}>Page {page}</span>
+        <span style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--meta)' }}>Page {page}</span>
         <button disabled={builds.length < 25} onClick={() => setPage(p => p + 1)}
-          style={{ background: 'var(--subtle)', border: '1px solid var(--border)', borderRadius: 6, padding: '5px 12px', fontSize: 12, cursor: builds.length >= 25 ? 'pointer' : 'not-allowed', color: 'var(--text)', opacity: builds.length < 25 ? 0.4 : 1 }}>
+          style={{ background: 'var(--subtle)', border: '1px solid var(--border)', borderRadius: 6, padding: '5px 12px', fontSize: 'var(--t-caption-fs)', cursor: builds.length >= 25 ? 'pointer' : 'not-allowed', color: 'var(--text)', opacity: builds.length < 25 ? 0.4 : 1 }}>
           Next →
         </button>
       </div>
@@ -173,7 +173,7 @@ export default function AdminBuildsPage() {
               <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: 15, color: 'var(--brand-green)', fontWeight: 700 }}>Build Log — {selectedBuild.id.slice(0, 8)}</h2>
               <button onClick={() => setSelectedBuild(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--meta)', fontSize: 18 }}>✕</button>
             </div>
-            <pre style={{ padding: '16px 20px', margin: 0, fontSize: 12, fontFamily: 'JetBrains Mono, monospace', color: 'var(--code-fg)', background: 'var(--code-bg)', overflowX: 'auto', maxHeight: 300 }}>
+            <pre style={{ padding: '16px 20px', margin: 0, fontSize: 'var(--t-caption-fs)', fontFamily: 'JetBrains Mono, monospace', color: 'var(--code-fg)', background: 'var(--code-bg)', overflowX: 'auto', maxHeight: 300 }}>
               {selectedBuild.message || '(no log)'}
             </pre>
           </div>

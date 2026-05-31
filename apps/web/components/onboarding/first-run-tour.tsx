@@ -68,7 +68,7 @@ export function FirstRunTour({ onDone }: FirstRunTourProps) {
             width: 28, height: 28, borderRadius: '50%',
             background: 'var(--div)', border: 'none',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            cursor: 'pointer', fontSize: 16, color: 'var(--meta)',
+            cursor: 'pointer', fontSize: 'var(--t-body-fs)', color: 'var(--meta)',
             lineHeight: 1, transition: 'background 0.15s',
           }}
           onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0,0,0,0.12)')}
@@ -89,7 +89,7 @@ export function FirstRunTour({ onDone }: FirstRunTourProps) {
         </div>
 
         <div style={{ fontSize: 28, marginBottom: 10 }}>{current.icon}</div>
-        <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', margin: '0 0 8px', letterSpacing: '-0.3px' }}>
+        <h3 style={{ fontSize: 'var(--t-body-fs)', fontWeight: 700, color: 'var(--text)', margin: '0 0 8px', letterSpacing: '-0.3px' }}>
           {current.title}
         </h3>
         <p style={{ fontSize: 13, color: 'var(--meta)', lineHeight: 1.6, margin: '0 0 20px' }}>
@@ -101,7 +101,7 @@ export function FirstRunTour({ onDone }: FirstRunTourProps) {
             onClick={onDone}
             style={{
               background: 'none', border: 'none',
-              color: 'var(--disabled)', fontSize: 12, cursor: 'pointer',
+              color: 'var(--disabled)', fontSize: 'var(--t-caption-fs)', cursor: 'pointer',
               textDecoration: 'underline', textDecorationColor: 'rgba(0,0,0,0.15)',
             }}
           >

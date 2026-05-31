@@ -108,7 +108,7 @@ export default function AdminUsersPage() {
           ].map(s => (
             <div key={s.label} style={CARD_STYLE}>
               <div style={{ fontSize: 24, fontWeight: 700, fontFamily: 'var(--font-sans)', color: 'var(--brand-green)' }}>{s.value}</div>
-              <div style={{ fontSize: 12, color: 'var(--meta)', marginTop: 2 }}>{s.label}</div>
+              <div style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--meta)', marginTop: 2 }}>{s.label}</div>
             </div>
           ))}
         </div>
@@ -181,14 +181,14 @@ export default function AdminUsersPage() {
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button
                           onClick={() => setSelectedUser(u)}
-                          style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontSize: 12, cursor: 'pointer', color: 'var(--text)', fontFamily: 'var(--font-sans)' }}
+                          style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontSize: 'var(--t-caption-fs)', cursor: 'pointer', color: 'var(--text)', fontFamily: 'var(--font-sans)' }}
                         >
                           Details
                         </button>
                         <button
                           onClick={() => handleAction(u.id, 'suspend', !u.is_suspended)}
                           disabled={actionLoading === u.id + 'suspend'}
-                          style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontSize: 12, cursor: 'pointer', color: u.is_suspended ? 'var(--success)' : 'var(--warning)', fontFamily: 'var(--font-sans)' }}
+                          style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontSize: 'var(--t-caption-fs)', cursor: 'pointer', color: u.is_suspended ? 'var(--success)' : 'var(--warning)', fontFamily: 'var(--font-sans)' }}
                         >
                           {u.is_suspended ? 'Unsuspend' : 'Suspend'}
                         </button>
@@ -204,12 +204,12 @@ export default function AdminUsersPage() {
         {/* Pagination */}
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16, alignItems: 'center' }}>
           <button disabled={page <= 1} onClick={() => setPage(p => p - 1)}
-            style={{ background: 'var(--subtle)', border: '1px solid var(--border)', borderRadius: 6, padding: '5px 12px', fontSize: 12, cursor: page > 1 ? 'pointer' : 'not-allowed', color: 'var(--text)', opacity: page <= 1 ? 0.4 : 1 }}>
+            style={{ background: 'var(--subtle)', border: '1px solid var(--border)', borderRadius: 6, padding: '5px 12px', fontSize: 'var(--t-caption-fs)', cursor: page > 1 ? 'pointer' : 'not-allowed', color: 'var(--text)', opacity: page <= 1 ? 0.4 : 1 }}>
             ← Prev
           </button>
-          <span style={{ fontSize: 12, color: 'var(--meta)' }}>Page {page}</span>
+          <span style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--meta)' }}>Page {page}</span>
           <button disabled={filteredUsers.length < 20} onClick={() => setPage(p => p + 1)}
-            style={{ background: 'var(--subtle)', border: '1px solid var(--border)', borderRadius: 6, padding: '5px 12px', fontSize: 12, cursor: filteredUsers.length >= 20 ? 'pointer' : 'not-allowed', color: 'var(--text)', opacity: filteredUsers.length < 20 ? 0.4 : 1 }}>
+            style={{ background: 'var(--subtle)', border: '1px solid var(--border)', borderRadius: 6, padding: '5px 12px', fontSize: 'var(--t-caption-fs)', cursor: filteredUsers.length >= 20 ? 'pointer' : 'not-allowed', color: 'var(--text)', opacity: filteredUsers.length < 20 ? 0.4 : 1 }}>
             Next →
           </button>
         </div>
@@ -250,7 +250,7 @@ export default function AdminUsersPage() {
               ].map(f => (
                 <div key={f.label} style={{ display: 'flex', padding: '8px 0', borderBottom: '1px solid var(--div)', fontSize: 13 }}>
                   <span style={{ width: 80, color: 'var(--meta)', fontWeight: 500, flexShrink: 0 }}>{f.label}</span>
-                  <span style={{ color: 'var(--text)', wordBreak: 'break-all', fontFamily: 'JetBrains Mono, monospace', fontSize: 12 }}>{f.value}</span>
+                  <span style={{ color: 'var(--text)', wordBreak: 'break-all', fontFamily: 'JetBrains Mono, monospace', fontSize: 'var(--t-caption-fs)' }}>{f.value}</span>
                 </div>
               ))}
               <div style={{ marginTop: 20, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -263,7 +263,7 @@ export default function AdminUsersPage() {
                       background: selectedUser.plan === p ? 'var(--brand-green)' : 'transparent',
                       color: selectedUser.plan === p ? '#fff' : 'var(--text)',
                       border: '1px solid var(--border)', borderRadius: 7,
-                      padding: '6px 14px', fontSize: 12, cursor: 'pointer',
+                      padding: '6px 14px', fontSize: 'var(--t-caption-fs)', cursor: 'pointer',
                       fontFamily: 'var(--font-sans)',
                       opacity: selectedUser.plan === p ? 1 : 0.8,
                     }}
@@ -273,7 +273,7 @@ export default function AdminUsersPage() {
                 ))}
                 <button
                   onClick={() => { if (confirm('Delete this user permanently?')) handleAction(selectedUser.id, 'delete'); }}
-                  style={{ background: 'transparent', border: '1px solid var(--danger)', borderRadius: 7, padding: '6px 14px', fontSize: 12, cursor: 'pointer', color: 'var(--danger)', fontFamily: 'var(--font-sans)', marginLeft: 'auto' }}
+                  style={{ background: 'transparent', border: '1px solid var(--danger)', borderRadius: 7, padding: '6px 14px', fontSize: 'var(--t-caption-fs)', cursor: 'pointer', color: 'var(--danger)', fontFamily: 'var(--font-sans)', marginLeft: 'auto' }}
                 >
                   Delete
                 </button>

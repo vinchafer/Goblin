@@ -60,7 +60,7 @@ export function ConnectGitHubModal({ open, onClose, onConnected }: ConnectGitHub
       >
         {/* Header */}
         <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h2 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-sans)' }}>Connect GitHub</h2>
+          <h2 style={{ fontSize: 'var(--t-body-fs)', fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-sans)' }}>Connect GitHub</h2>
           <button onClick={handleClose} style={{ background: 'none', border: 'none', color: 'var(--meta)', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: '2px 4px' }}>×</button>
         </div>
 
@@ -97,7 +97,7 @@ export function ConnectGitHubModal({ open, onClose, onConnected }: ConnectGitHub
                 width: '100%', padding: '11px 0',
                 background: loading ? 'rgba(45,74,43,0.5)' : 'var(--brand-green)',
                 color: '#fff', border: 'none', borderRadius: 9,
-                fontSize: 14, fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer',
+                fontSize: 'var(--t-small-fs)', fontWeight: 600, cursor: loading ? 'not-allowed' : 'pointer',
                 fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 transition: 'background 0.15s',
               }}

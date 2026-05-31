@@ -78,7 +78,7 @@ export function ShortcutsTooltip() {
           onClick={dismiss}
           style={{
             background: 'none', border: 'none', color: 'rgba(255,255,255,0.3)',
-            cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: '0 2px',
+            cursor: 'pointer', fontSize: 'var(--t-body-fs)', lineHeight: 1, padding: '0 2px',
           }}
         >
           ×
@@ -87,7 +87,7 @@ export function ShortcutsTooltip() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         {SHORTCUTS.map(s => (
           <div key={s.keys} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-            <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--font-sans)' }}>
+            <span style={{ fontSize: 'var(--t-caption-fs)', color: 'rgba(255,255,255,0.55)', fontFamily: 'var(--font-sans)' }}>
               {s.label}
             </span>
             <kbd style={{

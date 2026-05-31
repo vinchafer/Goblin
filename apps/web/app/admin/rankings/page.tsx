@@ -98,7 +98,7 @@ export default function AdminRankingsPage() {
         </tbody>
       </table>
 
-      <p style={{ marginTop: 24, fontSize: 12, color: 'var(--text-meta)' }}>
+      <p style={{ marginTop: 24, fontSize: 'var(--t-caption-fs)', color: 'var(--text-meta)' }}>
         Manual trigger:{' '}
         <code style={{ fontFamily: 'var(--font-mono)' }}>
           curl -X POST -H "x-admin-key: $ADMIN_API_KEY"

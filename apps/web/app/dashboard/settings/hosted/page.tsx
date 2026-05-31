@@ -22,7 +22,7 @@ export default function GoblinHostedSettingsPage() {
         </span>
       </div>
 
-      <p style={{ fontSize: 14, color: 'var(--meta)', fontFamily: 'var(--font-sans)', lineHeight: 1.7, marginBottom: 32 }}>
+      <p style={{ fontSize: 'var(--t-small-fs)', color: 'var(--meta)', fontFamily: 'var(--font-sans)', lineHeight: 1.7, marginBottom: 32 }}>
         Open-source AI models hosted directly by Goblin — no API key needed.
         Just use your plan&apos;s monthly call allowance.
       </p>
@@ -45,7 +45,7 @@ export default function GoblinHostedSettingsPage() {
       </div>
 
       {/* Planned models */}
-      <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: 16, color: 'var(--text)', fontWeight: 700, marginBottom: 12 }}>
+      <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: 'var(--t-body-fs)', color: 'var(--text)', fontWeight: 700, marginBottom: 12 }}>
         Planned Models
       </h2>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 32 }}>
@@ -60,7 +60,7 @@ export default function GoblinHostedSettingsPage() {
               <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-sans)', marginBottom: 2 }}>
                 {model.name}
               </div>
-              <div style={{ fontSize: 12, color: 'var(--meta)', fontFamily: 'var(--font-sans)' }}>
+              <div style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--meta)', fontFamily: 'var(--font-sans)' }}>
                 {model.description}
               </div>
             </div>

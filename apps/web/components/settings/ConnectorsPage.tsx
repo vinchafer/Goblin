@@ -162,7 +162,7 @@ function VercelConnectorRow() {
               color: 'var(--text)', fontSize: 13, fontFamily: 'var(--font-mono)',
             }}
           />
-          {error && <div style={{ fontSize: 12, color: 'var(--danger)' }}>{error}</div>}
+          {error && <div style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--danger)' }}>{error}</div>}
           <div style={{ display: 'flex', gap: 8 }}>
             <button onClick={connect} disabled={busy} style={{
               padding: '8px 16px', borderRadius: 8, border: 'none',
@@ -206,7 +206,7 @@ function ConnectorRow({ name, initial, connected, detail, onConnect, disabled }:
         <div style={{ fontSize: 13, color: 'var(--text-meta)', marginTop: 2 }}>{detail}</div>
       </div>
       {connected ? (
-        <span style={{ padding: '4px 10px', borderRadius: 12, background: 'color-mix(in srgb, var(--brand-green) 8%, transparent)', color: 'var(--brand-green)', fontSize: 12, fontWeight: 600 }}>
+        <span style={{ padding: '4px 10px', borderRadius: 12, background: 'color-mix(in srgb, var(--brand-green) 8%, transparent)', color: 'var(--brand-green)', fontSize: 'var(--t-caption-fs)', fontWeight: 600 }}>
           Verbunden
         </span>
       ) : (

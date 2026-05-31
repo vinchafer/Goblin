@@ -343,7 +343,7 @@ export function StandaloneChat({ sessionId, initialMessages = [] }: StandaloneCh
             display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
           }}>
             <span>{error}</span>
-            <button onClick={() => setError(null)} style={{ fontSize: 16, background: "none", border: "none", cursor: "pointer", color: "var(--meta)", padding: "0 2px" }}>×</button>
+            <button onClick={() => setError(null)} style={{ fontSize: 'var(--t-body-fs)', background: "none", border: "none", cursor: "pointer", color: "var(--meta)", padding: "0 2px" }}>×</button>
           </div>
         )}
 

@@ -202,7 +202,7 @@ export default function ProjectSecretsPage() {
 
         {/* Plain-language explainer — what is a secret, for non-tech users. */}
         <p style={{
-          fontSize: 16, color: 'var(--ink-2)', maxWidth: '64ch',
+          fontSize: 'var(--t-body-fs)', color: 'var(--ink-2)', maxWidth: '64ch',
           margin: '0 0 24px', lineHeight: 1.5,
         }}>
           Secrets sind Passwörter, die deine App braucht, um mit anderen Diensten zu sprechen
@@ -226,7 +226,7 @@ export default function ProjectSecretsPage() {
             <div style={{ flex: 1, minWidth: 200 }}>
               <div style={{
                 fontFamily: 'var(--font-dash-display), Manrope, sans-serif',
-                fontWeight: 600, fontSize: 14, color: 'var(--ink-1)', marginBottom: 2,
+                fontWeight: 600, fontSize: 'var(--t-small-fs)', color: 'var(--ink-1)', marginBottom: 2,
               }}>
                 Bestätige, dass du es bist
               </div>
@@ -242,7 +242,7 @@ export default function ProjectSecretsPage() {
 
         {/* Secrets list. Vault model: each row is one secret. NEVER a file. */}
         {loading ? (
-          <div style={{ ...PANEL_OUT, padding: 24, color: 'var(--ink-3)', fontSize: 14 }}>
+          <div style={{ ...PANEL_OUT, padding: 24, color: 'var(--ink-3)', fontSize: 'var(--t-small-fs)' }}>
             Lade …
           </div>
         ) : (
@@ -265,7 +265,7 @@ export default function ProjectSecretsPage() {
             </div>
 
             {secrets.length === 0 ? (
-              <div style={{ padding: '32px 20px', textAlign: 'center', color: 'var(--ink-3)', fontSize: 14 }}>
+              <div style={{ padding: '32px 20px', textAlign: 'center', color: 'var(--ink-3)', fontSize: 'var(--t-small-fs)' }}>
                 Noch keine Secrets für <b>{env}</b>. Goblin sagt dir im Chat, was deine App braucht.
               </div>
             ) : (
@@ -449,7 +449,7 @@ export default function ProjectSecretsPage() {
                 autoFocus
               />
               {reauthError && (
-                <p style={{ fontSize: 12, color: 'var(--danger)', margin: '0 0 12px' }}>
+                <p style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--danger)', margin: '0 0 12px' }}>
                   {reauthError}
                 </p>
               )}

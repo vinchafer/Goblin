@@ -93,7 +93,7 @@ function SortableStep({ step, onRemove }: { step: ChainStep; onRemove: (id: stri
           flexShrink: 0, width: 22, height: 22,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           background: 'none', border: 'none', borderRadius: 5,
-          color: '#C0BAB0', cursor: 'pointer', fontSize: 14,
+          color: '#C0BAB0', cursor: 'pointer', fontSize: 'var(--t-small-fs)',
         }}
         onMouseEnter={e => (e.currentTarget.style.color = 'var(--danger)')}
         onMouseLeave={e => (e.currentTarget.style.color = '#C0BAB0')}
@@ -241,7 +241,7 @@ export default function RoutingSettingsPage() {
                   style={{
                     padding: '7px 14px',
                     background: '#fff', border: '1px solid #E8E4DC',
-                    borderRadius: 8, fontSize: 12, fontWeight: 600,
+                    borderRadius: 8, fontSize: 'var(--t-caption-fs)', fontWeight: 600,
                     color: 'var(--brand-green)', cursor: 'pointer',
                     fontFamily: 'var(--font-sans)',
                   }}
@@ -285,7 +285,7 @@ export default function RoutingSettingsPage() {
                   style={{
                     padding: '7px 14px',
                     background: '#fff', border: '1px solid rgba(184,92,60,0.3)',
-                    borderRadius: 8, fontSize: 12, fontWeight: 600,
+                    borderRadius: 8, fontSize: 'var(--t-caption-fs)', fontWeight: 600,
                     color: 'var(--danger)', cursor: 'pointer',
                     fontFamily: 'var(--font-sans)',
                   }}

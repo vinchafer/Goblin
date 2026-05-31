@@ -60,7 +60,7 @@ const FIELD: React.CSSProperties = {
   width: '100%', height: 46, padding: '0 14px',
   background: 'var(--panel)', color: 'var(--text)',
   border: '1.5px solid var(--border)', borderRadius: 10,
-  fontSize: 14, fontFamily: 'var(--font-sans)',
+  fontSize: 'var(--t-small-fs)', fontFamily: 'var(--font-sans)',
   outline: 'none', boxSizing: 'border-box',
   transition: 'border-color 0.15s, box-shadow 0.15s',
 };
@@ -70,7 +70,7 @@ const PRIMARY_BTN: React.CSSProperties = {
   width: '100%', height: 46,
   background: 'var(--brand-green)', color: '#fff',
   border: 'none', borderRadius: 10,
-  fontSize: 14, fontWeight: 600,
+  fontSize: 'var(--t-small-fs)', fontWeight: 600,
   fontFamily: 'var(--font-sans)',
   cursor: 'pointer', transition: 'background 0.15s, box-shadow 0.15s',
   boxShadow: '0 1px 2px rgba(45,74,43,0.18)',
@@ -97,7 +97,7 @@ function OAuthButton({ provider, onClick, loading }: { provider: Provider; onCli
         background: hovered ? 'var(--subtle)' : 'var(--panel)',
         color: 'var(--text)',
         border: '1.5px solid var(--border)', borderRadius: 10,
-        fontSize: 14, fontWeight: 500,
+        fontSize: 'var(--t-small-fs)', fontWeight: 500,
         fontFamily: 'var(--font-sans)',
         cursor: loading ? 'not-allowed' : 'pointer',
         opacity: loading ? 0.7 : 1,
@@ -303,11 +303,11 @@ export default function LoginPage() {
       borderRadius: 12,
     }}>
       <div style={{ fontSize: 32, marginBottom: 10 }}>{icon}</div>
-      <p style={{ fontSize: 14, color: 'var(--success)', fontWeight: 600, margin: '0 0 4px' }}>{title}</p>
+      <p style={{ fontSize: 'var(--t-small-fs)', color: 'var(--success)', fontWeight: 600, margin: '0 0 4px' }}>{title}</p>
       <p style={{ fontSize: 13, color: 'var(--text-2)', margin: 0, lineHeight: 1.5 }}>{body}</p>
       <button
         onClick={onBack}
-        style={{ marginTop: 14, background: 'none', border: 'none', color: 'var(--meta)', fontSize: 12, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}
+        style={{ marginTop: 14, background: 'none', border: 'none', color: 'var(--meta)', fontSize: 'var(--t-caption-fs)', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}
       >
         ← Use a different email
       </button>
@@ -391,7 +391,7 @@ export default function LoginPage() {
                   </svg>
                 </span>
                 <div>
-                  <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 2 }}>{b.title}</div>
+                  <div style={{ fontSize: 'var(--t-small-fs)', fontWeight: 600, marginBottom: 2 }}>{b.title}</div>
                   <div style={{ fontSize: 13, color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>{b.body}</div>
                 </div>
               </div>
@@ -402,7 +402,7 @@ export default function LoginPage() {
         {/* Bottom — security badge */}
         <div style={{
           display: 'inline-flex', alignItems: 'center', gap: 8,
-          fontSize: 12, color: 'rgba(255,255,255,0.55)',
+          fontSize: 'var(--t-caption-fs)', color: 'rgba(255,255,255,0.55)',
           position: 'relative', zIndex: 1, width: 'fit-content',
         }}>
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -442,7 +442,7 @@ export default function LoginPage() {
           }}>
             {mode === 'signup' ? 'Create your account' : 'Welcome back'}
           </h1>
-          <p style={{ fontSize: 14, color: 'var(--meta)', marginBottom: 28, lineHeight: 1.5 }}>
+          <p style={{ fontSize: 'var(--t-small-fs)', color: 'var(--meta)', marginBottom: 28, lineHeight: 1.5 }}>
             {mode === 'signup'
               ? <>Free during beta · No credit card</>
               : <>Sign in to continue building.</>}
@@ -585,7 +585,7 @@ export default function LoginPage() {
                 <PasswordStrengthBar strength={passwordStrength(password)} />
               )}
               {mode === 'signup' && (
-                <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', fontSize: 12, color: 'var(--meta)', lineHeight: 1.5 }}>
+                <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', fontSize: 'var(--t-caption-fs)', color: 'var(--meta)', lineHeight: 1.5 }}>
                   <input
                     type="checkbox"
                     checked={termsAccepted}
@@ -620,7 +620,7 @@ export default function LoginPage() {
                   onClick={sendPasswordReset}
                   style={{
                     background: 'none', border: 'none', color: 'var(--meta)',
-                    fontSize: 12, cursor: 'pointer', fontFamily: 'inherit',
+                    fontSize: 'var(--t-caption-fs)', cursor: 'pointer', fontFamily: 'inherit',
                     textAlign: 'right', padding: 0, marginTop: 2,
                   }}
                   onMouseEnter={e => (e.currentTarget.style.color = 'var(--brand-green)')}

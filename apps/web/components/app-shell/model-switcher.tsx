@@ -320,7 +320,7 @@ export function ModelSwitcher() {
                   background: 'var(--brand-green)',
                   color: 'var(--paper)',
                   borderRadius: 6,
-                  fontSize: 12,
+                  fontSize: 'var(--t-caption-fs)',
                   fontWeight: 600,
                   textDecoration: 'none',
                 }}
@@ -424,7 +424,7 @@ export function ModelSwitcher() {
               );
             })}
             <div style={{ borderTop: '1px solid var(--div)', marginTop: 4, padding: '8px 12px', textAlign: 'center' }}>
-              <a href="/models" style={{ fontSize: 12, color: 'var(--brand-green)', fontWeight: 600, textDecoration: 'none' }}>
+              <a href="/models" style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--brand-green)', fontWeight: 600, textDecoration: 'none' }}>
                 Alle Modelle anzeigen →
               </a>
             </div>

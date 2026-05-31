@@ -21,7 +21,7 @@ function GitHubIcon({ size = 16 }: { size?: number }) {
 const FIELD = {
   width: '100%', padding: '9px 12px', borderRadius: 8,
   border: '1.5px solid var(--border)', background: 'var(--panel)',
-  color: 'var(--text)', fontSize: 14, fontFamily: 'var(--font-sans)',
+  color: 'var(--text)', fontSize: 'var(--t-small-fs)', fontFamily: 'var(--font-sans)',
   outline: 'none', boxSizing: 'border-box' as const, transition: 'border-color 0.15s',
 };
 
@@ -79,7 +79,7 @@ export function PushToGitHubModal({ open, onClose, projectId, defaultName }: Pus
       >
         {/* Header */}
         <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h2 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <h2 style={{ fontSize: 'var(--t-body-fs)', fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', gap: 8 }}>
             <GitHubIcon size={18} /> Push to GitHub
           </h2>
           <button onClick={handleClose} style={{ background: 'none', border: 'none', color: 'var(--meta)', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: '2px 4px' }}>×</button>
@@ -96,7 +96,7 @@ export function PushToGitHubModal({ open, onClose, projectId, defaultName }: Pus
               }}>
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
               </div>
-              <h3 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginBottom: 6, fontFamily: 'var(--font-sans)' }}>Pushed to GitHub!</h3>
+              <h3 style={{ fontSize: 'var(--t-body-fs)', fontWeight: 700, color: 'var(--text)', marginBottom: 6, fontFamily: 'var(--font-sans)' }}>Pushed to GitHub!</h3>
               <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 20, fontFamily: 'var(--font-sans)' }}>Your project is now on GitHub.</p>
               <a
                 href={successUrl}
@@ -163,7 +163,7 @@ export function PushToGitHubModal({ open, onClose, projectId, defaultName }: Pus
                   width: '100%', padding: '11px 0',
                   background: loading || !name ? 'rgba(45,74,43,0.4)' : 'var(--brand-green)',
                   color: '#fff', border: 'none', borderRadius: 9,
-                  fontSize: 14, fontWeight: 600, cursor: loading || !name ? 'not-allowed' : 'pointer',
+                  fontSize: 'var(--t-small-fs)', fontWeight: 600, cursor: loading || !name ? 'not-allowed' : 'pointer',
                   fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                   transition: 'background 0.15s',
                 }}

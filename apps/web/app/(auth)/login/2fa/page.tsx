@@ -112,7 +112,7 @@ function LoginTwoFAInner() {
         />
 
         {error && (
-          <p style={{ color: 'var(--rust)', marginBottom: 12, textAlign: 'center', fontSize: 14 }}>
+          <p style={{ color: 'var(--rust)', marginBottom: 12, textAlign: 'center', fontSize: 'var(--t-small-fs)' }}>
             {error}
           </p>
         )}
@@ -129,7 +129,7 @@ function LoginTwoFAInner() {
             borderRadius: 10,
             cursor: code && !submitting ? 'pointer' : 'not-allowed',
             fontWeight: 600,
-            fontSize: 16,
+            fontSize: 'var(--t-body-fs)',
             marginBottom: 10,
             fontFamily: 'var(--font-sans)',
           }}

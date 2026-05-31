@@ -35,7 +35,7 @@ function IntegrationRow({ name, description, connected, comingSoon, children }: 
     }}>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
-          <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-sans)' }}>
+          <span style={{ fontSize: 'var(--t-small-fs)', fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-sans)' }}>
             {name}
           </span>
           {connected && (
@@ -49,7 +49,7 @@ function IntegrationRow({ name, description, connected, comingSoon, children }: 
             </span>
           )}
         </div>
-        <p style={{ fontSize: 12, color: 'var(--meta)', fontFamily: 'var(--font-sans)', margin: 0 }}>
+        <p style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--meta)', fontFamily: 'var(--font-sans)', margin: 0 }}>
           {description}
         </p>
       </div>

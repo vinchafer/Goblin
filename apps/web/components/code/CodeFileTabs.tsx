@@ -39,7 +39,7 @@ export function CodeFileTabs({ openFiles, activePath, injectedFiles, isDirty, on
               borderBottom: isActive ? '2px solid var(--brand-green)' : '2px solid transparent',
               cursor: 'pointer',
               fontFamily: 'JetBrains Mono, monospace',
-              fontSize: 12,
+              fontSize: 'var(--t-caption-fs)',
               color: isActive ? 'var(--ink-on-dark-1)' : 'var(--ink-on-dark-2)',
               whiteSpace: 'nowrap',
               flexShrink: 0,

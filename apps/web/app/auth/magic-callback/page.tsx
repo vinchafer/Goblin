@@ -42,7 +42,7 @@ export default function MagicCallbackPage() {
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--paper)' }}>
-      <p style={{ fontFamily: 'var(--font-sans)', color: 'var(--meta)', fontSize: 14 }}>Signing in…</p>
+      <p style={{ fontFamily: 'var(--font-sans)', color: 'var(--meta)', fontSize: 'var(--t-small-fs)' }}>Signing in…</p>
     </div>
   );
 }

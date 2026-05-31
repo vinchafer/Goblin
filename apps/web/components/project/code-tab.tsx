@@ -76,9 +76,9 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
               Save changes to <span style={{ color: 'var(--brand-gold)', fontFamily: 'JetBrains Mono, monospace' }}>{tab.activeFile?.path.split('/').pop()}</span>?
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => tab.confirmSwitch(true)} style={{ background: 'var(--brand-green)', border: 'none', color: 'var(--brand-gold)', borderRadius: 7, padding: '7px 14px', fontSize: 12, cursor: 'pointer' }}>Save</button>
-              <button onClick={() => tab.confirmSwitch(false)} style={{ background: 'transparent', border: '1px solid var(--brand-green)', color: 'var(--ink-on-dark-2)', borderRadius: 7, padding: '7px 14px', fontSize: 12, cursor: 'pointer' }}>Discard</button>
-              <button onClick={() => tab.setPendingFileSwitch(null)} style={{ background: 'transparent', border: '1px solid var(--brand-green)', color: 'var(--ink-on-dark-3)', borderRadius: 7, padding: '7px 14px', fontSize: 12, cursor: 'pointer' }}>Cancel</button>
+              <button onClick={() => tab.confirmSwitch(true)} style={{ background: 'var(--brand-green)', border: 'none', color: 'var(--brand-gold)', borderRadius: 7, padding: '7px 14px', fontSize: 'var(--t-caption-fs)', cursor: 'pointer' }}>Save</button>
+              <button onClick={() => tab.confirmSwitch(false)} style={{ background: 'transparent', border: '1px solid var(--brand-green)', color: 'var(--ink-on-dark-2)', borderRadius: 7, padding: '7px 14px', fontSize: 'var(--t-caption-fs)', cursor: 'pointer' }}>Discard</button>
+              <button onClick={() => tab.setPendingFileSwitch(null)} style={{ background: 'transparent', border: '1px solid var(--brand-green)', color: 'var(--ink-on-dark-3)', borderRadius: 7, padding: '7px 14px', fontSize: 'var(--t-caption-fs)', cursor: 'pointer' }}>Cancel</button>
             </div>
           </div>
         </>
@@ -134,7 +134,7 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
         <select
           value={tab.activeFile?.path ?? ''}
           onChange={e => e.target.value && tab.openFile(e.target.value)}
-          style={{ width: '100%', padding: '10px 14px', background: 'transparent', color: 'var(--ink-on-dark-2)', border: 'none', outline: 'none', fontFamily: 'JetBrains Mono, monospace', fontSize: 12, cursor: 'pointer', appearance: 'none' } as React.CSSProperties}
+          style={{ width: '100%', padding: '10px 14px', background: 'transparent', color: 'var(--ink-on-dark-2)', border: 'none', outline: 'none', fontFamily: 'JetBrains Mono, monospace', fontSize: 'var(--t-caption-fs)', cursor: 'pointer', appearance: 'none' } as React.CSSProperties}
         >
           {!tab.activeFile && <option value="">— select a file —</option>}
           {tab.files.map(f => <option key={f} value={f} style={{ background: 'var(--surface-ink-2)', color: 'var(--ink-on-dark-1)' }}>{f}</option>)}
@@ -157,7 +157,7 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0, background: 'var(--surface-ink-2)' }}>
           {tab.activeFile && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderBottom: '1px solid var(--rule-strong)', background: 'var(--green-950)', flexShrink: 0 }}>
-              <span style={{ color: 'var(--ink-on-dark-1)', fontFamily: 'JetBrains Mono, monospace', fontSize: 12, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <span style={{ color: 'var(--ink-on-dark-1)', fontFamily: 'JetBrains Mono, monospace', fontSize: 'var(--t-caption-fs)', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {tab.activeFile.path}
               </span>
               {tab.isDirty && <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--brand-gold)', flexShrink: 0, display: 'inline-block' }} title="Unsaved changes" />}
@@ -184,7 +184,7 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
           {tab.pendingInjections.length > 0 && (
             <div style={{ borderTop: '1px solid rgba(212,169,74,0.25)', flexShrink: 0, background: 'var(--surface-ink-2)' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 14px', background: 'rgba(212,169,74,0.06)' }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--brand-gold)', fontFamily: 'var(--font-sans)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                <span style={{ fontSize: 'var(--t-caption-fs)', fontWeight: 600, color: 'var(--brand-gold)', fontFamily: 'var(--font-sans)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                   <Icon name="ai" size={12} /> {tab.pendingInjections.length} pending injection{tab.pendingInjections.length !== 1 ? 's' : ''}
                 </span>
                 <button onClick={tab.clearPendingInjections} aria-label="Clear" style={{ background: 'none', border: 'none', color: 'var(--ink-on-dark-3)', cursor: 'pointer', display: 'flex', alignItems: 'center' }}><Icon name="close" size={14} /></button>
@@ -216,7 +216,7 @@ export function CodeTab({ projectId, projectName = 'project', pendingCode }: Cod
 
       {/* Deploy toast */}
       {tab.deployMessage && (
-        <div style={{ position: 'absolute', bottom: 16, left: '50%', transform: 'translateX(-50%)', background: '#1e3a1c', border: '1px solid rgba(212,169,74,0.35)', borderRadius: 8, padding: '8px 16px', fontSize: 12, color: 'var(--brand-gold)', fontFamily: 'var(--font-sans)', zIndex: 50, whiteSpace: 'nowrap', maxWidth: 400, textAlign: 'center', boxShadow: '0 4px 20px rgba(0,0,0,0.4)' }}>
+        <div style={{ position: 'absolute', bottom: 16, left: '50%', transform: 'translateX(-50%)', background: '#1e3a1c', border: '1px solid rgba(212,169,74,0.35)', borderRadius: 8, padding: '8px 16px', fontSize: 'var(--t-caption-fs)', color: 'var(--brand-gold)', fontFamily: 'var(--font-sans)', zIndex: 50, whiteSpace: 'nowrap', maxWidth: 400, textAlign: 'center', boxShadow: '0 4px 20px rgba(0,0,0,0.4)' }}>
           {tab.deployMessage}
         </div>
       )}

@@ -80,7 +80,7 @@ export function ModelsPage() {
               borderBottom: '2px solid',
               borderColor: tab === t.id ? 'var(--brand-green)' : 'transparent',
               color: tab === t.id ? 'var(--text)' : 'var(--text-meta)',
-              fontSize: 14, fontWeight: tab === t.id ? 600 : 400,
+              fontSize: 'var(--t-small-fs)', fontWeight: tab === t.id ? 600 : 400,
               cursor: 'pointer', fontFamily: 'var(--font-sans)',
               marginBottom: -1,
             }}
@@ -216,7 +216,7 @@ function RankingsTab() {
 
       {loading && <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-meta)' }}>Lade Rankings…</div>}
       {!loading && filteredRows.length === 0 && (
-        <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-meta)', fontSize: 14 }}>
+        <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-meta)', fontSize: 'var(--t-small-fs)' }}>
           {onlyUsable
             ? 'Keine nutzbaren Modelle für diesen Task. Toggle „Nur nutzbare" ausschalten oder Free-Tier einrichten.'
             : 'Noch keine Daten für diesen Task. Refresh läuft alle 6h.'}
@@ -254,7 +254,7 @@ function RankingsTab() {
                   textTransform: 'uppercase', flexShrink: 0,
                 }}>{badgeLabel}</span>
               </div>
-              <div style={{ color: 'var(--text-meta)', fontSize: 12, marginTop: 2 }}>
+              <div style={{ color: 'var(--text-meta)', fontSize: 'var(--t-caption-fs)', marginTop: 2 }}>
                 {m.provider} · Score {(r.composite_score * 100).toFixed(0)} · {r.source_count} Quellen
                 {m.context_tokens ? ` · ${(m.context_tokens / 1000).toFixed(0)}k Context` : ''}
               </div>
@@ -324,7 +324,7 @@ function KeysTab() {
                 background: k ? 'transparent' : 'var(--brand-green)',
                 color: k ? 'var(--text-2)' : '#fff',
                 border: '1px solid', borderColor: k ? 'var(--border-subtle)' : 'var(--brand-green)',
-                fontSize: 12, fontWeight: 600, textDecoration: 'none',
+                fontSize: 'var(--t-caption-fs)', fontWeight: 600, textDecoration: 'none',
                 fontFamily: 'var(--font-sans)',
               }}>{k ? 'Verwalten' : 'Hinzufügen'}</a>
             </div>
@@ -375,7 +375,7 @@ function AdvancedTab() {
   const inputStyle: React.CSSProperties = {
     width: '100%', padding: '10px 12px',
     background: 'var(--subtle)', border: '1px solid var(--border-subtle)',
-    borderRadius: 8, color: 'var(--text)', fontSize: 14,
+    borderRadius: 8, color: 'var(--text)', fontSize: 'var(--t-small-fs)',
     fontFamily: 'var(--font-sans)', outline: 'none',
   };
 
@@ -385,7 +385,7 @@ function AdvancedTab() {
         Standardwerte pro Modell. Gilt für neue Chats.
       </p>
       {models.length === 0 && (
-        <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-meta)', fontSize: 14 }}>
+        <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-meta)', fontSize: 'var(--t-small-fs)' }}>
           Lade Modelle…
         </div>
       )}
@@ -404,16 +404,16 @@ function AdvancedTab() {
             }}>
               <div>
                 <div style={{ fontWeight: 600, color: 'var(--text)', fontSize: 15 }}>{m.display_name}</div>
-                <div style={{ fontSize: 12, color: 'var(--text-meta)', marginTop: 2 }}>
+                <div style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--text-meta)', marginTop: 2 }}>
                   {m.provider} · temp {cfg.temperature.toFixed(1)} · {cfg.maxTokens} tok
                 </div>
               </div>
-              <span style={{ color: 'var(--text-meta)', fontSize: 16, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>⌄</span>
+              <span style={{ color: 'var(--text-meta)', fontSize: 'var(--t-body-fs)', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>⌄</span>
             </button>
             {open && (
               <div style={{ padding: '0 14px 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <span style={{ fontSize: 12, color: 'var(--text-meta)', display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--text-meta)', display: 'flex', justifyContent: 'space-between' }}>
                     <span>Temperature</span><span>{cfg.temperature.toFixed(1)}</span>
                   </span>
                   <input type="range" min={0} max={1} step={0.1} value={cfg.temperature}
@@ -422,14 +422,14 @@ function AdvancedTab() {
                   />
                 </label>
                 <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <span style={{ fontSize: 12, color: 'var(--text-meta)' }}>Max Tokens</span>
+                  <span style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--text-meta)' }}>Max Tokens</span>
                   <input type="number" min={100} max={32000} step={100} value={cfg.maxTokens}
                     onChange={(e) => update(m.id, { maxTokens: parseInt(e.target.value, 10) || 4096 })}
                     style={inputStyle}
                   />
                 </label>
                 <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <span style={{ fontSize: 12, color: 'var(--text-meta)' }}>System Prompt (optional)</span>
+                  <span style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--text-meta)' }}>System Prompt (optional)</span>
                   <textarea value={cfg.systemPrompt}
                     onChange={(e) => update(m.id, { systemPrompt: e.target.value })}
                     placeholder="z.B. Antworte immer auf Deutsch…"

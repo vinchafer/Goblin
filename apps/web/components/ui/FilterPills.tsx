@@ -40,7 +40,7 @@ export function FilterPills({ pills, active, onSelect, testId }: FilterPillsProp
               border: '1px solid var(--border-subtle)',
               background: isActive ? 'var(--brand-green)' : 'var(--panel)',
               color: isActive ? '#FFFFFF' : 'var(--text)',
-              fontSize: 14,
+              fontSize: 'var(--t-small-fs)',
               fontFamily: 'var(--font-sans)',
               fontWeight: 500,
               flexShrink: 0,
@@ -55,7 +55,7 @@ export function FilterPills({ pills, active, onSelect, testId }: FilterPillsProp
             {pill.label}
             {pill.count !== undefined && (
               <span style={{
-                fontSize: 12,
+                fontSize: 'var(--t-caption-fs)',
                 color: isActive ? 'rgba(255,255,255,0.7)' : 'var(--text-meta)',
               }}>{pill.count}</span>
             )}

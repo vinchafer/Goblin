@@ -114,7 +114,7 @@ export function SupportChat({ onClose }: SupportChatProps) {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <div style={{ width: 26, height: 26, borderRadius: 7, background: 'rgba(212,169,74,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--brand-gold)', fontFamily: 'var(--font-sans)' }}>G</span>
+            <span style={{ fontSize: 'var(--t-caption-fs)', fontWeight: 700, color: 'var(--brand-gold)', fontFamily: 'var(--font-sans)' }}>G</span>
           </div>
           <span style={{ color: '#fff', fontSize: 13, fontFamily: 'var(--font-sans)', fontWeight: 600 }}>Support</span>
           <span style={{
@@ -142,7 +142,7 @@ export function SupportChat({ onClose }: SupportChatProps) {
               background: msg.role === 'user' ? 'var(--brand-green)' : '#fff',
               border: msg.role === 'assistant' ? '1px solid #E8E4DC' : 'none',
               color: msg.role === 'user' ? 'rgba(255,255,255,0.92)' : 'var(--text)',
-              fontSize: 12, lineHeight: 1.6,
+              fontSize: 'var(--t-caption-fs)', lineHeight: 1.6,
               fontFamily: 'var(--font-sans)',
               whiteSpace: 'pre-wrap',
             }}>
@@ -157,7 +157,7 @@ export function SupportChat({ onClose }: SupportChatProps) {
               maxWidth: '85%', padding: '8px 12px',
               borderRadius: '12px 12px 12px 3px',
               background: '#fff', border: '1px solid #E8E4DC',
-              fontSize: 12, lineHeight: 1.6, color: 'var(--text)',
+              fontSize: 'var(--t-caption-fs)', lineHeight: 1.6, color: 'var(--text)',
               fontFamily: 'var(--font-sans)', whiteSpace: 'pre-wrap',
             }}>
               {streamingText || (
@@ -193,7 +193,7 @@ export function SupportChat({ onClose }: SupportChatProps) {
             style={{
               flex: 1, padding: '7px 10px',
               border: '1.5px solid #E8E4DC', borderRadius: 8,
-              fontSize: 12, fontFamily: 'var(--font-sans)',
+              fontSize: 'var(--t-caption-fs)', fontFamily: 'var(--font-sans)',
               outline: 'none', background: '#fff', color: 'var(--text)',
             }}
           />

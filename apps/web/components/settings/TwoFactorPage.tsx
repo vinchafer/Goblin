@@ -126,7 +126,7 @@ export function TwoFactorPage() {
           <SettingsGroup label="Zwei-Faktor-Authentifizierung">
             <SettingsCard>
               <div style={{ padding: '14px 20px' }}>
-                <p style={{ fontSize: 14, color: 'var(--text)', margin: '0 0 8px' }}>
+                <p style={{ fontSize: 'var(--t-small-fs)', color: 'var(--text)', margin: '0 0 8px' }}>
                   Schütze dein Konto zusätzlich mit einem Code aus deiner Authenticator-App.
                   Besonders empfohlen wenn du BYOK-Keys hinterlegt hast.
                 </p>
@@ -158,7 +158,7 @@ export function TwoFactorPage() {
 
       {view === 'qr' && (
         <div>
-          <p style={{ fontSize: 14, color: 'var(--text)', margin: '0 0 12px' }}>
+          <p style={{ fontSize: 'var(--t-small-fs)', color: 'var(--text)', margin: '0 0 12px' }}>
             <strong>1.</strong> Scanne den QR-Code mit Google Authenticator, Authy oder einer
             anderen TOTP-App.
           </p>
@@ -183,7 +183,7 @@ export function TwoFactorPage() {
             </p>
           </details>
 
-          <p style={{ fontSize: 14, color: 'var(--text)', margin: '0 0 8px' }}>
+          <p style={{ fontSize: 'var(--t-small-fs)', color: 'var(--text)', margin: '0 0 8px' }}>
             <strong>2.</strong> Gib den 6-stelligen Code aus deiner App ein:
           </p>
           <input
@@ -219,7 +219,7 @@ export function TwoFactorPage() {
               color: '#fff',
               border: 'none',
               borderRadius: 10,
-              fontSize: 16,
+              fontSize: 'var(--t-body-fs)',
               fontWeight: 600,
               cursor: verifyCode.length === 6 && !submitting ? 'pointer' : 'not-allowed',
               fontFamily: 'var(--font-sans)',
@@ -235,7 +235,7 @@ export function TwoFactorPage() {
           <h3 style={{ color: 'var(--brand-green)', fontFamily: 'var(--font-sans)', margin: '0 0 8px' }}>
             2FA aktiv
           </h3>
-          <p style={{ fontSize: 14, margin: '0 0 12px' }}>
+          <p style={{ fontSize: 'var(--t-small-fs)', margin: '0 0 12px' }}>
             <strong>Speichere diese Recovery-Codes jetzt.</strong> Sie werden nur einmal angezeigt.
             Mit ihnen kommst du in dein Konto, wenn du deinen Authenticator verlierst.
           </p>
@@ -295,7 +295,7 @@ export function TwoFactorPage() {
           <SettingsGroup label="Zwei-Faktor-Authentifizierung">
             <SettingsCard>
               <div style={{ padding: '14px 20px' }}>
-                <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--brand-green)', margin: '0 0 4px' }}>
+                <p style={{ fontSize: 'var(--t-small-fs)', fontWeight: 600, color: 'var(--brand-green)', margin: '0 0 4px' }}>
                   2FA ist aktiv
                 </p>
                 {status?.enabledAt && (

@@ -141,7 +141,7 @@ export function KeysList({ initialKeys }: KeysListProps) {
                 {/* Label + hint */}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-sans)' }}>
+                    <span style={{ fontSize: 'var(--t-small-fs)', fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-sans)' }}>
                       {p.label}
                     </span>
                     {activeKey && (
@@ -175,7 +175,7 @@ export function KeysList({ initialKeys }: KeysListProps) {
                       )}
                     </div>
                   ) : (
-                    <div style={{ fontSize: 12, color: 'var(--meta)', marginTop: 1, fontFamily: 'var(--font-sans)' }}>
+                    <div style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--meta)', marginTop: 1, fontFamily: 'var(--font-sans)' }}>
                       {p.desc}
                     </div>
                   )}
@@ -189,7 +189,7 @@ export function KeysList({ initialKeys }: KeysListProps) {
                     style={{
                       background: 'none', border: '1px solid var(--border)',
                       borderRadius: 6, padding: '6px 14px',
-                      fontSize: 12, fontWeight: 600, color: 'var(--danger)',
+                      fontSize: 'var(--t-caption-fs)', fontWeight: 600, color: 'var(--danger)',
                       cursor: revokingId === activeKey.id ? 'not-allowed' : 'pointer',
                       opacity: revokingId === activeKey.id ? 0.5 : 1,
                       transition: 'all 0.15s', whiteSpace: 'nowrap',
@@ -206,7 +206,7 @@ export function KeysList({ initialKeys }: KeysListProps) {
                       background: isConnecting ? 'transparent' : 'var(--brand-gold)',
                       border: isConnecting ? '1px solid var(--border)' : 'none',
                       borderRadius: 6, padding: '7px 16px',
-                      fontSize: 12, fontWeight: 600,
+                      fontSize: 'var(--t-caption-fs)', fontWeight: 600,
                       color: isConnecting ? 'var(--meta)' : '#2A1F0F',
                       cursor: 'pointer', transition: 'background 0.15s',
                       whiteSpace: 'nowrap',
@@ -222,7 +222,7 @@ export function KeysList({ initialKeys }: KeysListProps) {
               {/* ── Inline input panel ── */}
               {isConnecting && (
                 <div className="keys-input-panel">
-                  <p style={{ fontSize: 12, color: 'var(--meta)', marginBottom: 10, lineHeight: 1.5 }}>
+                  <p style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--meta)', marginBottom: 10, lineHeight: 1.5 }}>
                     {p.desc} — model: <strong style={{ color: 'var(--text)' }}>{p.model}</strong>
                     {p.dashboard && (
                       <>
@@ -291,7 +291,7 @@ export function KeysList({ initialKeys }: KeysListProps) {
                   </div>
 
                   {errMsg && (
-                    <p style={{ fontSize: 12, color: 'var(--danger)', marginTop: 7, fontFamily: 'var(--font-sans)' }}>
+                    <p style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--danger)', marginTop: 7, fontFamily: 'var(--font-sans)' }}>
                       {errMsg}
                     </p>
                   )}
@@ -306,7 +306,7 @@ export function KeysList({ initialKeys }: KeysListProps) {
       <div style={{ marginTop: 20, textAlign: 'center' }}>
         <button
           onClick={() => setAdvancedOpen(!advancedOpen)}
-          style={{ background: 'none', border: 'none', color: 'var(--meta)', fontSize: 12, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+          style={{ background: 'none', border: 'none', color: 'var(--meta)', fontSize: 'var(--t-caption-fs)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 4 }}
         >
           {advancedOpen ? '▲ Hide Advanced' : '▼ Advanced (custom endpoints)'}
         </button>
@@ -314,26 +314,26 @@ export function KeysList({ initialKeys }: KeysListProps) {
 
       {advancedOpen && (
         <div className="keys-advanced-panel">
-          <p style={{ fontSize: 12, color: 'var(--meta)', marginBottom: 12 }}>
+          <p style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--meta)', marginBottom: 12 }}>
             Override base URLs for self-hosted or OpenAI-compatible providers.
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {PROVIDERS.filter(p => p.id !== 'custom').map(p => {
               const adv = advancedSettings[p.id] || { baseUrl: '', model: '', timeout: '' };
               return (
-                <div key={p.id} style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 12 }}>
+                <div key={p.id} style={{ display: 'flex', gap: 8, alignItems: 'center', fontSize: 'var(--t-caption-fs)' }}>
                   <span style={{ width: 96, color: 'var(--text)', fontWeight: 500, flexShrink: 0, fontFamily: 'var(--font-sans)' }}>{p.label}</span>
                   <input
                     placeholder="Custom base URL"
                     value={adv.baseUrl}
                     onChange={e => setAdvancedSettings(prev => ({ ...prev, [p.id]: { ...adv, baseUrl: e.target.value } }))}
-                    style={{ flex: 2, padding: '6px 8px', borderRadius: 6, border: '1px solid var(--border)', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', background: 'var(--panel)', color: 'var(--text)' }}
+                    style={{ flex: 2, padding: '6px 8px', borderRadius: 6, border: '1px solid var(--border)', fontSize: 'var(--t-caption-fs)', fontFamily: 'JetBrains Mono, monospace', background: 'var(--panel)', color: 'var(--text)' }}
                   />
                   <input
                     placeholder="Model override"
                     value={adv.model}
                     onChange={e => setAdvancedSettings(prev => ({ ...prev, [p.id]: { ...adv, model: e.target.value } }))}
-                    style={{ flex: 1, padding: '6px 8px', borderRadius: 6, border: '1px solid var(--border)', fontSize: 12, fontFamily: 'JetBrains Mono, monospace', background: 'var(--panel)', color: 'var(--text)' }}
+                    style={{ flex: 1, padding: '6px 8px', borderRadius: 6, border: '1px solid var(--border)', fontSize: 'var(--t-caption-fs)', fontFamily: 'JetBrains Mono, monospace', background: 'var(--panel)', color: 'var(--text)' }}
                   />
                 </div>
               );

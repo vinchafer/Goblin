@@ -41,7 +41,7 @@ export function ThemeSwitcher() {
             boxShadow: theme === opt.value ? 'var(--shadow-sm)' : 'none',
           }}
         >
-          <span style={{ fontSize: 12 }}>{opt.icon}</span>
+          <span style={{ fontSize: 'var(--t-caption-fs)' }}>{opt.icon}</span>
           {opt.label}
         </button>
       ))}

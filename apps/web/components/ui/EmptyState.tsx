@@ -26,7 +26,7 @@ export function EmptyState({ title, description, cta, icon }: EmptyStateProps) {
       {icon && <div style={{ color: 'var(--meta)', opacity: 0.6 }}>{icon}</div>}
       <h3 style={{ margin: 0, fontFamily: 'var(--font-sans)', fontSize: 20 }}>{title}</h3>
       {description && (
-        <p style={{ margin: 0, color: 'var(--meta)', fontSize: 14, maxWidth: 380 }}>{description}</p>
+        <p style={{ margin: 0, color: 'var(--meta)', fontSize: 'var(--t-small-fs)', maxWidth: 380 }}>{description}</p>
       )}
       {cta && (
         <button
@@ -41,7 +41,7 @@ export function EmptyState({ title, description, cta, icon }: EmptyStateProps) {
             cursor: 'pointer',
             fontWeight: 600,
             fontFamily: 'var(--font-sans)',
-            fontSize: 14,
+            fontSize: 'var(--t-small-fs)',
           }}
         >
           {cta.label}
@@ -73,7 +73,7 @@ export function ErrorState({
         fontFamily: 'var(--font-sans)',
       }}
     >
-      <p style={{ margin: 0, color: 'var(--rust)', fontSize: 14 }}>{message}</p>
+      <p style={{ margin: 0, color: 'var(--rust)', fontSize: 'var(--t-small-fs)' }}>{message}</p>
       {onRetry && (
         <button
           onClick={onRetry}

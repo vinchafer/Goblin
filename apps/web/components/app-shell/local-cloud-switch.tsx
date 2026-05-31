@@ -104,7 +104,7 @@ export function LocalCloudSwitch() {
           zIndex: 200,
           boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
         }}>
-          <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', fontFamily: 'var(--font-dash-display), Manrope, sans-serif', lineHeight: 1.5 }}>
+          <div style={{ fontSize: 'var(--t-caption-fs)', color: 'rgba(255,255,255,0.85)', fontFamily: 'var(--font-dash-display), Manrope, sans-serif', lineHeight: 1.5 }}>
             Local mode requires the <strong>Goblin Desktop App</strong>. Free, no account needed.
           </div>
           <a

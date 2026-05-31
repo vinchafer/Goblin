@@ -62,7 +62,7 @@ export function DiffModal({ filePath, currentContent, proposedContent, diff, onA
           display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0,
           background: 'var(--green-950)',
         }}>
-          <span style={{ fontSize: 16 }}>📝</span>
+          <span style={{ fontSize: 'var(--t-body-fs)' }}>📝</span>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--ink-on-dark-1)', fontFamily: 'JetBrains Mono, monospace', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {filePath}
@@ -91,7 +91,7 @@ export function DiffModal({ filePath, currentContent, proposedContent, diff, onA
               No changes to apply.
             </div>
           ) : (
-            <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 12, lineHeight: 1.6 }}>
+            <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 'var(--t-caption-fs)', lineHeight: 1.6 }}>
               {lines.map((line, i) => {
                 if (line.type === 'header') {
                   return (

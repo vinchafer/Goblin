@@ -34,7 +34,7 @@ function CodeBlock({ code }: { code: string }) {
     <div style={{
       background: 'var(--code-bg)', borderRadius: 8,
       padding: '12px 16px', fontFamily: 'JetBrains Mono, monospace',
-      fontSize: 12, color: 'var(--code-fg)',
+      fontSize: 'var(--t-caption-fs)', color: 'var(--code-fg)',
       overflowX: 'auto', marginTop: 8,
       border: '1px solid rgba(255,255,255,0.06)',
     }}>
@@ -57,7 +57,7 @@ export default function BadgePage() {
           <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 36, fontWeight: 700, color: 'var(--brand-green)', letterSpacing: '-1px', marginBottom: 12 }}>
             Built with Goblin
           </h1>
-          <p style={{ fontSize: 16, color: 'var(--meta)', lineHeight: 1.6 }}>
+          <p style={{ fontSize: 'var(--t-body-fs)', color: 'var(--meta)', lineHeight: 1.6 }}>
             Built something with Goblin? Show it off. Drop a badge in your README or footer.
           </p>
         </div>
@@ -83,13 +83,13 @@ export default function BadgePage() {
 
             {/* HTML embed */}
             <div style={{ marginBottom: 16 }}>
-              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--meta)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>HTML</div>
+              <div style={{ fontSize: 'var(--t-caption-fs)', fontWeight: 600, color: 'var(--meta)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>HTML</div>
               <CodeBlock code={badge.html} />
             </div>
 
             {/* Markdown embed */}
             <div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--meta)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Markdown</div>
+              <div style={{ fontSize: 'var(--t-caption-fs)', fontWeight: 600, color: 'var(--meta)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Markdown</div>
               <CodeBlock code={badge.md} />
             </div>
           </div>
@@ -107,8 +107,8 @@ export default function BadgePage() {
             { label: 'Minimal', url: `${APP_URL}/badge-minimal.svg` },
           ].map(b => (
             <div key={b.label} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-              <span style={{ fontSize: 12, color: 'var(--meta)', width: 60, flexShrink: 0 }}>{b.label}</span>
-              <code style={{ fontSize: 12, fontFamily: 'JetBrains Mono, monospace', color: 'var(--brand-green)', background: 'var(--div)', padding: '2px 8px', borderRadius: 4 }}>
+              <span style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--meta)', width: 60, flexShrink: 0 }}>{b.label}</span>
+              <code style={{ fontSize: 'var(--t-caption-fs)', fontFamily: 'JetBrains Mono, monospace', color: 'var(--brand-green)', background: 'var(--div)', padding: '2px 8px', borderRadius: 4 }}>
                 {b.url}
               </code>
             </div>

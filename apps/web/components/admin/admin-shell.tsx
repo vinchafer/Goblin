@@ -41,14 +41,14 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
                 style={{
                   display: 'flex', alignItems: 'center', gap: 10,
                   padding: '9px 12px', borderRadius: 8, marginBottom: 2,
-                  fontSize: 14, fontFamily: 'var(--font-sans)',
+                  fontSize: 'var(--t-small-fs)', fontFamily: 'var(--font-sans)',
                   color: active ? '#fff' : 'rgba(255,255,255,0.65)',
                   background: active ? 'rgba(255,255,255,0.12)' : 'transparent',
                   textDecoration: 'none', fontWeight: active ? 600 : 400,
                   transition: 'all 0.1s',
                 }}
               >
-                <span style={{ fontSize: 16 }}>{item.icon}</span>
+                <span style={{ fontSize: 'var(--t-body-fs)' }}>{item.icon}</span>
                 {item.label}
               </Link>
             );

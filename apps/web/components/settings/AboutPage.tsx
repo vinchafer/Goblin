@@ -30,7 +30,7 @@ export function AboutPage() {
         <div className="helper-text" style={{ marginTop: 10, fontSize: 13, color: 'var(--text-meta)', textAlign: 'center', maxWidth: 280 }}>
           The cloud workshop for builders who ship from anywhere.
         </div>
-        <div className="helper-text" style={{ marginTop: 12, fontSize: 12, color: 'var(--text-meta)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+        <div className="helper-text" style={{ marginTop: 12, fontSize: 'var(--t-caption-fs)', color: 'var(--text-meta)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
           <MapPin size={12} strokeWidth={1.75} aria-hidden /> Made in Switzerland
         </div>
       </div>

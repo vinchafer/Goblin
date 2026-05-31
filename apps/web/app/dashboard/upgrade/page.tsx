@@ -251,7 +251,7 @@ export default function UpgradePage() {
                         color: featured ? 'var(--green)' : 'var(--bone)',
                         border: 'none', borderRadius: 'var(--radius)',
                         fontFamily: 'var(--font-dash-display), Manrope, sans-serif',
-                        fontWeight: 600, fontSize: 14, cursor: 'not-allowed', opacity: 0.85,
+                        fontWeight: 600, fontSize: 'var(--t-small-fs)', cursor: 'not-allowed', opacity: 0.85,
                       }}
                     >
                       Dein aktueller Plan
@@ -370,7 +370,7 @@ export default function UpgradePage() {
                   }}>
                     Plan wechseln zu {plan.name}
                   </h2>
-                  <p style={{ fontSize: 14, color: 'var(--ink-2)', margin: '0 0 16px', lineHeight: 1.5 }}>
+                  <p style={{ fontSize: 'var(--t-small-fs)', color: 'var(--ink-2)', margin: '0 0 16px', lineHeight: 1.5 }}>
                     Du wirst zu Stripe weitergeleitet, um die Zahlung zu bestätigen.
                     ${plan.price}/Monat. {plan.requests.toLocaleString('de-DE')} Anfragen.
                     Jederzeit kündbar.

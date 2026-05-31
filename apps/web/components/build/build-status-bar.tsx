@@ -53,7 +53,7 @@ function BuildItem({ build }: { build: BuildRun }) {
         <span style={{ fontSize: 13, color: barColor, flexShrink: 0 }}>
           {TYPE_ICON[build.type]}
         </span>
-        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-sans)', flex: 1 }}>
+        <span style={{ fontSize: 'var(--t-caption-fs)', fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-sans)', flex: 1 }}>
           {build.message ?? TYPE_LABEL[build.type]}
         </span>
         {isDone && (

@@ -63,7 +63,7 @@ export function SessionsPage() {
 
   return (
     <div className="settings-section" style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
-      <p style={{ color: 'var(--meta)', fontSize: 14, margin: '4px 4px 16px' }}>
+      <p style={{ color: 'var(--meta)', fontSize: 'var(--t-small-fs)', margin: '4px 4px 16px' }}>
         Hier siehst du alle Geräte, auf denen du gerade eingeloggt bist. Beende Sitzungen, die
         du nicht erkennst.
       </p>
@@ -93,7 +93,7 @@ export function SessionsPage() {
       <SettingsGroup label="Aktive Sitzungen">
         <SettingsCard>
           {sessions.length === 0 && !loading && (
-            <div style={{ padding: '14px 20px', color: 'var(--meta)', fontSize: 14 }}>
+            <div style={{ padding: '14px 20px', color: 'var(--meta)', fontSize: 'var(--t-small-fs)' }}>
               Keine aktiven Sitzungen.
             </div>
           )}
@@ -129,11 +129,11 @@ export function SessionsPage() {
                     </span>
                   )}
                 </div>
-                <div style={{ fontSize: 12, color: 'var(--meta)', marginTop: 4 }}>
+                <div style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--meta)', marginTop: 4 }}>
                   {s.ip_address ? `${s.ip_address} · ` : ''}
                   Aktiv: {new Date(s.last_active_at).toLocaleString('de-DE')}
                 </div>
-                <div style={{ fontSize: 12, color: 'var(--meta)' }}>
+                <div style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--meta)' }}>
                   Angemeldet seit {new Date(s.created_at).toLocaleDateString('de-DE')}
                 </div>
               </div>

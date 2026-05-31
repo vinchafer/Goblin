@@ -77,7 +77,7 @@ export function PreviewTab({ projectId, previewUrl }: PreviewTabProps) {
                 }}>SCHRITT {s.step}</span>
                 <s.icon size={14} color="var(--ink-3)" />
               </div>
-              <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-1)', marginBottom: 2 }}>
+              <div style={{ fontSize: 'var(--t-caption-fs)', fontWeight: 600, color: 'var(--ink-1)', marginBottom: 2 }}>
                 {s.label}
               </div>
               <div style={{ fontSize: 11, color: 'var(--ink-3)', lineHeight: 1.4 }}>

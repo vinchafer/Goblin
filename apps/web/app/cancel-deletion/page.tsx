@@ -78,7 +78,7 @@ function CancelDeletionInner() {
                 border: 'none',
                 borderRadius: 8,
                 cursor: 'pointer',
-                fontSize: 16,
+                fontSize: 'var(--t-body-fs)',
                 fontWeight: 600,
                 fontFamily: 'var(--font-sans)',
               }}

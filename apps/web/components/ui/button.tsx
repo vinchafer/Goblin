@@ -48,7 +48,7 @@ const variants: Record<ButtonVariant, CSSProperties> = {
 const sizes: Record<ButtonSize, CSSProperties> = {
   sm: { height: 32, padding: '0 12px', fontSize: 13, borderRadius: 8 },
   md: { height: 36, padding: '0 16px', fontSize: 13, borderRadius: 8 },
-  lg: { height: 40, padding: '0 20px', fontSize: 14, borderRadius: 8 },
+  lg: { height: 40, padding: '0 20px', fontSize: 'var(--t-small-fs)', borderRadius: 8 },
 };
 
 export function Button({ children, variant = 'primary', size = 'md', onClick, disabled, fullWidth, type = 'button', style }: ButtonProps) {

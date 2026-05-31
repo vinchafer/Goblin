@@ -36,7 +36,7 @@ export default async function KeysSettingsPage() {
 
         {/* Free Tier Recommendations */}
         <div style={{ background: 'rgba(74,124,59,0.06)', border: '1px solid rgba(74,124,59,0.2)', borderRadius: 12, padding: '18px 20px', marginBottom: 28 }}>
-          <h2 style={{ fontSize: 14, fontWeight: 700, color: 'var(--brand-green)', fontFamily: 'var(--font-sans)', marginBottom: 14, margin: '0 0 14px' }}>
+          <h2 style={{ fontSize: 'var(--t-small-fs)', fontWeight: 700, color: 'var(--brand-green)', fontFamily: 'var(--font-sans)', marginBottom: 14, margin: '0 0 14px' }}>
             Get a free API key to start
           </h2>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 10 }}>

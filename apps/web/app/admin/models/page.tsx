@@ -136,7 +136,7 @@ export default function AdminModelsPage() {
                       style={{
                         background: m.available ? 'rgba(74,124,59,0.12)' : 'rgba(184,92,60,0.12)',
                         color: m.available ? 'var(--success)' : 'var(--danger)',
-                        border: 'none', borderRadius: 20, padding: '3px 10px', fontSize: 12,
+                        border: 'none', borderRadius: 20, padding: '3px 10px', fontSize: 'var(--t-caption-fs)',
                         cursor: 'pointer', fontWeight: 600, fontFamily: 'var(--font-sans)',
                       }}
                     >
@@ -146,11 +146,11 @@ export default function AdminModelsPage() {
                   <td style={{ padding: '10px 14px' }}>
                     <div style={{ display: 'flex', gap: 6 }}>
                       <button onClick={() => openEdit(m)}
-                        style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontSize: 12, cursor: 'pointer', color: 'var(--text)', fontFamily: 'var(--font-sans)' }}>
+                        style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontSize: 'var(--t-caption-fs)', cursor: 'pointer', color: 'var(--text)', fontFamily: 'var(--font-sans)' }}>
                         Edit
                       </button>
                       <button onClick={() => handleDelete(m.id)}
-                        style={{ background: 'transparent', border: '1px solid var(--danger)', borderRadius: 6, padding: '4px 10px', fontSize: 12, cursor: 'pointer', color: 'var(--danger)', fontFamily: 'var(--font-sans)' }}>
+                        style={{ background: 'transparent', border: '1px solid var(--danger)', borderRadius: 6, padding: '4px 10px', fontSize: 'var(--t-caption-fs)', cursor: 'pointer', color: 'var(--danger)', fontFamily: 'var(--font-sans)' }}>
                         Delete
                       </button>
                     </div>
@@ -181,19 +181,19 @@ export default function AdminModelsPage() {
                 { key: 'description', label: 'Description' },
               ].map(({ key, label }) => (
                 <div key={key}>
-                  <label style={{ fontSize: 12, color: 'var(--meta)', display: 'block', marginBottom: 4 }}>{label}</label>
+                  <label style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--meta)', display: 'block', marginBottom: 4 }}>{label}</label>
                   <input value={(form as Record<string, unknown>)[key] as string || ''} onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))} style={FIELD_STYLE} />
                 </div>
               ))}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
-                  <label style={{ fontSize: 12, color: 'var(--meta)', display: 'block', marginBottom: 4 }}>Layer</label>
+                  <label style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--meta)', display: 'block', marginBottom: 4 }}>Layer</label>
                   <select value={form.layer} onChange={e => setForm(f => ({ ...f, layer: e.target.value }))} style={{ ...FIELD_STYLE, cursor: 'pointer' }}>
                     {['byok', 'free_api', 'goblin_hosted'].map(l => <option key={l} value={l}>{l}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label style={{ fontSize: 12, color: 'var(--meta)', display: 'block', marginBottom: 4 }}>Phase</label>
+                  <label style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--meta)', display: 'block', marginBottom: 4 }}>Phase</label>
                   <input type="number" value={form.phase} onChange={e => setForm(f => ({ ...f, phase: Number(e.target.value) }))} style={FIELD_STYLE} />
                 </div>
               </div>

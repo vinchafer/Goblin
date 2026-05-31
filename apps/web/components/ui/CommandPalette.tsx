@@ -114,7 +114,7 @@ export function CommandPalette({ open, onClose, commands }: Props) {
           padding: '14px 16px',
           borderBottom: '1px solid var(--div)',
         }}>
-          <span style={{ fontSize: 16, opacity: 0.5 }}>⌘</span>
+          <span style={{ fontSize: 'var(--t-body-fs)', opacity: 0.5 }}>⌘</span>
           <input
             ref={inputRef}
             value={query}
@@ -170,7 +170,7 @@ export function CommandPalette({ open, onClose, commands }: Props) {
                         padding: '9px 16px', border: 'none', cursor: 'pointer',
                         background: isSelected ? 'var(--subtle)' : 'transparent',
                         color: isSelected ? 'var(--text)' : 'var(--text-2)',
-                        fontFamily: 'var(--font-sans)', fontSize: 14,
+                        fontFamily: 'var(--font-sans)', fontSize: 'var(--t-small-fs)',
                         textAlign: 'left', transition: 'background 0.08s',
                       }}
                     >

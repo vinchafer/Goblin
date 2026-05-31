@@ -40,7 +40,7 @@ export function CodeFileTreePanel({
         } as React.CSSProperties}
       >
         {open
-          ? <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--ink-on-dark-2)', fontFamily: 'var(--font-sans)' }}>Files</span>
+          ? <span style={{ fontSize: 'var(--t-caption-fs)', fontWeight: 600, color: 'var(--ink-on-dark-2)', fontFamily: 'var(--font-sans)' }}>Files</span>
           : <Icon name="menu" size={14} color="var(--ink-on-dark-2)" />}
       </button>
       {open && (
@@ -53,7 +53,7 @@ export function CodeFileTreePanel({
             </div>
           ) : files.length === 0 ? (
             <div style={{ padding: 16, textAlign: 'center' }}>
-              <p style={{ fontSize: 12, color: 'var(--ink-on-dark-3)', marginBottom: 4 }}>No files yet</p>
+              <p style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--ink-on-dark-3)', marginBottom: 4 }}>No files yet</p>
               <p style={{ fontSize: 11, color: 'var(--ink-on-dark-3)' }}>Start chatting to generate code.</p>
             </div>
           ) : (

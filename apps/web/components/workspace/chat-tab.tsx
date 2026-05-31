@@ -232,7 +232,7 @@ export function ChatTab({ projectId }: ChatTabProps) {
             onClick={() => router.push('/dashboard/settings/keys')}
             style={{
               background: 'var(--brand-green)', color: '#fff', border: 'none',
-              borderRadius: 6, padding: '6px 14px', fontSize: 12, fontWeight: 500,
+              borderRadius: 6, padding: '6px 14px', fontSize: 'var(--t-caption-fs)', fontWeight: 500,
               cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: 'var(--font-sans)',
             }}
           >
@@ -254,7 +254,7 @@ export function ChatTab({ projectId }: ChatTabProps) {
             onClick={() => router.push('/dashboard/settings/keys')}
             style={{
               background: 'var(--brand-green)', color: '#fff', border: 'none',
-              borderRadius: 6, padding: '6px 14px', fontSize: 12, fontWeight: 500,
+              borderRadius: 6, padding: '6px 14px', fontSize: 'var(--t-caption-fs)', fontWeight: 500,
               cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: 'var(--font-sans)',
             }}
           >
@@ -272,7 +272,7 @@ export function ChatTab({ projectId }: ChatTabProps) {
             style={{
               background: 'none', border: '1px solid var(--div)',
               borderRadius: 20, padding: '5px 16px',
-              fontSize: 12, color: 'var(--meta)', cursor: 'pointer',
+              fontSize: 'var(--t-caption-fs)', color: 'var(--meta)', cursor: 'pointer',
               fontFamily: 'var(--font-sans)', transition: 'border-color 0.15s',
             }}
             onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--brand-green)')}

@@ -140,7 +140,7 @@ export function NewProjectModal({ onClose, onProjectCreated }: NewProjectModalPr
               placeholder="My Awesome Project"
               style={{
                 width: '100%', padding: '10px 14px', borderRadius: 9,
-                border: '1.5px solid var(--div)', fontSize: 14,
+                border: '1.5px solid var(--div)', fontSize: 'var(--t-small-fs)',
                 fontFamily: 'var(--font-sans)', color: 'var(--text)',
                 outline: 'none', boxSizing: 'border-box', background: '#fff',
               }}

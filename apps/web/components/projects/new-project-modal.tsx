@@ -188,7 +188,7 @@ export function NewProjectModal({ onClose, initialMode }: NewProjectModalProps) 
                   type="text" value={name} onChange={e => setName(e.target.value.slice(0, 50))}
                   placeholder="My Awesome Project" required maxLength={50} autoFocus
                   data-testid="project-name-input"
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 14, fontFamily: 'var(--font-sans)', outline: 'none', background: 'var(--surface)', color: 'var(--text)', boxSizing: 'border-box' }}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 'var(--t-small-fs)', fontFamily: 'var(--font-sans)', outline: 'none', background: 'var(--surface)', color: 'var(--text)', boxSizing: 'border-box' }}
                   onFocus={e => (e.target.style.borderColor = 'var(--brand-green)')}
                   onBlur={e => (e.target.style.borderColor = 'var(--border)')}
                 />
@@ -200,7 +200,7 @@ export function NewProjectModal({ onClose, initialMode }: NewProjectModalProps) 
                 <textarea
                   value={description} onChange={e => setDescription(e.target.value.slice(0, 200))}
                   rows={3} placeholder="Optional — describe your project idea..." maxLength={200}
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 14, resize: 'none', fontFamily: 'var(--font-sans)', outline: 'none', background: 'var(--surface)', color: 'var(--text)', boxSizing: 'border-box' }}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 'var(--t-small-fs)', resize: 'none', fontFamily: 'var(--font-sans)', outline: 'none', background: 'var(--surface)', color: 'var(--text)', boxSizing: 'border-box' }}
                   onFocus={e => (e.target.style.borderColor = 'var(--brand-green)')}
                   onBlur={e => (e.target.style.borderColor = 'var(--border)')}
                 />
@@ -235,7 +235,7 @@ export function NewProjectModal({ onClose, initialMode }: NewProjectModalProps) 
               <div style={{ display: 'flex', gap: 6, marginBottom: 16, overflowX: 'auto', paddingBottom: 4 }}>
                 {CATEGORIES.map(cat => (
                   <button key={cat} onClick={() => setCategoryFilter(cat)}
-                    style={{ padding: '5px 14px', borderRadius: 20, fontSize: 12, fontWeight: 500, border: categoryFilter === cat ? '2px solid var(--brand-green)' : '1.5px solid var(--border)', background: categoryFilter === cat ? 'rgba(45,74,43,0.08)' : 'transparent', color: categoryFilter === cat ? 'var(--brand-green)' : 'var(--meta)', cursor: 'pointer', flexShrink: 0, fontFamily: 'var(--font-sans)', textTransform: 'capitalize' }}>
+                    style={{ padding: '5px 14px', borderRadius: 20, fontSize: 'var(--t-caption-fs)', fontWeight: 500, border: categoryFilter === cat ? '2px solid var(--brand-green)' : '1.5px solid var(--border)', background: categoryFilter === cat ? 'rgba(45,74,43,0.08)' : 'transparent', color: categoryFilter === cat ? 'var(--brand-green)' : 'var(--meta)', cursor: 'pointer', flexShrink: 0, fontFamily: 'var(--font-sans)', textTransform: 'capitalize' }}>
                     {cat}
                   </button>
                 ))}
@@ -275,11 +275,11 @@ export function NewProjectModal({ onClose, initialMode }: NewProjectModalProps) 
                     <span style={{ fontSize: 11, background: 'rgba(45,74,43,0.1)', color: 'var(--brand-green)', padding: '2px 8px', borderRadius: 4, fontWeight: 700 }}>✓ Official</span>
                   )}
                 </div>
-                <span style={{ fontSize: 12, color: 'var(--meta)' }}>↓ {selectedTemplate.downloads}</span>
+                <span style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--meta)' }}>↓ {selectedTemplate.downloads}</span>
               </div>
 
               {selectedTemplate.description && (
-                <p style={{ fontSize: 14, color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 16 }}>{selectedTemplate.description}</p>
+                <p style={{ fontSize: 'var(--t-small-fs)', color: 'var(--text-2)', lineHeight: 1.6, marginBottom: 16 }}>{selectedTemplate.description}</p>
               )}
 
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 20 }}>
@@ -313,7 +313,7 @@ export function NewProjectModal({ onClose, initialMode }: NewProjectModalProps) 
                 <input
                   type="text" value={templateName} onChange={e => setTemplateName(e.target.value.slice(0, 50))}
                   placeholder={selectedTemplate.name} maxLength={50} autoFocus
-                  style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 14, fontFamily: 'var(--font-sans)', outline: 'none', background: 'var(--surface)', color: 'var(--text)', boxSizing: 'border-box' }}
+                  style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 'var(--t-small-fs)', fontFamily: 'var(--font-sans)', outline: 'none', background: 'var(--surface)', color: 'var(--text)', boxSizing: 'border-box' }}
                   onFocus={e => (e.target.style.borderColor = 'var(--brand-green)')}
                   onBlur={e => (e.target.style.borderColor = 'var(--border)')}
                   onKeyDown={e => { if (e.key === 'Enter' && templateName.trim()) handleTemplateCreate(); }}

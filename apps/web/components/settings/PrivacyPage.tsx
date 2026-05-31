@@ -127,7 +127,7 @@ export function PrivacyPage() {
       <SettingsGroup label="Konto">
         <SettingsCard>
           {deletionStatus?.deletionRequested && scheduled ? (
-            <div style={{ padding: '14px 20px', fontSize: 14, color: 'var(--text)' }}>
+            <div style={{ padding: '14px 20px', fontSize: 'var(--t-small-fs)', color: 'var(--text)' }}>
               <div style={{ color: 'var(--rust)', fontWeight: 600, marginBottom: 4 }}>
                 Löschung beantragt
               </div>
@@ -172,12 +172,12 @@ export function PrivacyPage() {
             <h3 style={{ fontFamily: 'var(--font-sans)', fontSize: 22, margin: '0 0 12px' }}>
               Konto wirklich löschen?
             </h3>
-            <p style={{ color: 'var(--meta)', fontSize: 14, margin: '0 0 16px' }}>
+            <p style={{ color: 'var(--meta)', fontSize: 'var(--t-small-fs)', margin: '0 0 16px' }}>
               Diese Aktion startet eine 30-Tage-Wartezeit. Während dieser Zeit kannst du dich nicht
               einloggen. Nach 30 Tagen werden alle deine Daten unwiderruflich gelöscht. Du erhältst
               eine Email mit einem Link zum Abbruch.
             </p>
-            <p style={{ fontSize: 14, fontWeight: 600, margin: '0 0 8px' }}>
+            <p style={{ fontSize: 'var(--t-small-fs)', fontWeight: 600, margin: '0 0 8px' }}>
               Tippe <code>DELETE</code> zum Bestätigen:
             </p>
             <input
@@ -191,7 +191,7 @@ export function PrivacyPage() {
                 padding: '10px 12px',
                 border: '1px solid var(--div)',
                 borderRadius: 8,
-                fontSize: 16,
+                fontSize: 'var(--t-body-fs)',
                 background: 'var(--white)',
                 color: 'var(--text)',
                 fontFamily: 'var(--font-sans)',

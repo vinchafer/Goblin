@@ -56,10 +56,10 @@ export function HelpCenterPage() {
                 fontSize: 15, fontWeight: 500, color: 'var(--text)',
               }}>
                 <span>{f.q}</span>
-                <span style={{ color: 'var(--text-meta)', fontSize: 16, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>⌄</span>
+                <span style={{ color: 'var(--text-meta)', fontSize: 'var(--t-body-fs)', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>⌄</span>
               </button>
               {open && (
-                <div style={{ padding: '0 16px 14px', fontSize: 14, lineHeight: 1.6, color: 'var(--text-2)' }}>
+                <div style={{ padding: '0 16px 14px', fontSize: 'var(--t-small-fs)', lineHeight: 1.6, color: 'var(--text-2)' }}>
                   {f.a}
                 </div>
               )}
@@ -67,7 +67,7 @@ export function HelpCenterPage() {
           );
         })}
         {filtered.length === 0 && (
-          <p style={{ textAlign: 'center', padding: 32, color: 'var(--text-meta)', fontSize: 14 }}>
+          <p style={{ textAlign: 'center', padding: 32, color: 'var(--text-meta)', fontSize: 'var(--t-small-fs)' }}>
             Keine Treffer. Frag direkt unten den Goblin-Assistenten.
           </p>
         )}

@@ -68,7 +68,7 @@ export function SecurityPage() {
         <h2 style={{ color: 'var(--brand-green)', fontFamily: 'var(--font-sans)', margin: '0 0 8px' }}>
           Passwort geändert
         </h2>
-        <p style={{ color: 'var(--meta)', fontSize: 14 }}>
+        <p style={{ color: 'var(--meta)', fontSize: 'var(--t-small-fs)' }}>
           Du wirst zum Login weitergeleitet…
         </p>
       </div>
@@ -102,7 +102,7 @@ export function SecurityPage() {
       </SettingsGroup>
 
       {errorMsg && (
-        <p style={{ color: 'var(--rust)', fontSize: 14, margin: '12px 4px' }}>{errorMsg}</p>
+        <p style={{ color: 'var(--rust)', fontSize: 'var(--t-small-fs)', margin: '12px 4px' }}>{errorMsg}</p>
       )}
 
       <button
@@ -125,7 +125,7 @@ export function SecurityPage() {
         {submitting ? 'Ändere…' : 'Passwort ändern'}
       </button>
 
-      <p style={{ color: 'var(--meta)', fontSize: 12, marginTop: 16, padding: '0 4px' }}>
+      <p style={{ color: 'var(--meta)', fontSize: 'var(--t-caption-fs)', marginTop: 16, padding: '0 4px' }}>
         Nach der Änderung wirst du auf allen Geräten abgemeldet und musst dich neu einloggen.
       </p>
     </div>
@@ -157,7 +157,7 @@ function PasswordField({
           border: 'none',
           outline: 'none',
           background: 'transparent',
-          fontSize: 16,
+          fontSize: 'var(--t-body-fs)',
           color: 'var(--text)',
           fontFamily: 'var(--font-sans)',
           marginTop: 4,
@@ -166,7 +166,7 @@ function PasswordField({
         }}
       />
       {hint && (
-        <span style={{ fontSize: 12, color: 'var(--meta)', marginTop: 4 }}>{hint}</span>
+        <span style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--meta)', marginTop: 4 }}>{hint}</span>
       )}
     </div>
   );

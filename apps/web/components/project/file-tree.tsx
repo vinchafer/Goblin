@@ -170,7 +170,7 @@ export function FileTree({ projectId, files, onFileClick, onFilesChanged }: File
               placeholder="filename.tsx"
               style={{
                 background: 'rgba(212,167,55,0.1)', border: '1px solid var(--gold-700)',
-                borderRadius: 3, color: 'var(--ink-on-dark-1)', fontSize: 12,
+                borderRadius: 3, color: 'var(--ink-on-dark-1)', fontSize: 'var(--t-caption-fs)',
                 fontFamily: 'JetBrains Mono, monospace', padding: '2px 6px',
                 outline: 'none', width: '100%',
               }}
@@ -186,7 +186,7 @@ export function FileTree({ projectId, files, onFileClick, onFilesChanged }: File
             position: 'fixed', top: contextMenu.y, left: contextMenu.x,
             background: 'var(--rule-strong)', border: '1px solid var(--brand-green)', borderRadius: 8,
             boxShadow: '0 8px 24px rgba(0,0,0,0.4)', zIndex: 1000,
-            minWidth: 160, padding: '4px 0', fontSize: 12,
+            minWidth: 160, padding: '4px 0', fontSize: 'var(--t-caption-fs)',
             fontFamily: 'var(--font-sans)',
           }}
           onMouseDown={e => e.stopPropagation()}
@@ -253,7 +253,7 @@ export function FileTree({ projectId, files, onFileClick, onFilesChanged }: File
                 style={{
                   background: 'rgba(184,92,60,0.2)', border: '1px solid rgba(184,92,60,0.4)',
                   color: '#e87a5a', borderRadius: 6, padding: '6px 14px',
-                  fontSize: 12, cursor: 'pointer', fontFamily: 'var(--font-sans)',
+                  fontSize: 'var(--t-caption-fs)', cursor: 'pointer', fontFamily: 'var(--font-sans)',
                 }}
               >
                 Delete
@@ -263,7 +263,7 @@ export function FileTree({ projectId, files, onFileClick, onFilesChanged }: File
                 style={{
                   background: 'transparent', border: '1px solid var(--brand-green)',
                   color: 'var(--ink-on-dark-2)', borderRadius: 6, padding: '6px 14px',
-                  fontSize: 12, cursor: 'pointer', fontFamily: 'var(--font-sans)',
+                  fontSize: 'var(--t-caption-fs)', cursor: 'pointer', fontFamily: 'var(--font-sans)',
                 }}
               >
                 Cancel
@@ -283,7 +283,7 @@ function ContextItem({ icon, label, onClick, danger }: { icon: React.ReactNode; 
       style={{
         display: 'flex', alignItems: 'center', gap: 8,
         width: '100%', padding: '6px 14px', background: 'none', border: 'none',
-        color: danger ? '#e87a5a' : 'var(--ink-on-dark-1)', fontSize: 12, cursor: 'pointer',
+        color: danger ? '#e87a5a' : 'var(--ink-on-dark-1)', fontSize: 'var(--t-caption-fs)', cursor: 'pointer',
         fontFamily: 'var(--font-sans)', textAlign: 'left',
       }}
       onMouseEnter={e => (e.currentTarget.style.background = 'rgba(212,167,55,0.1)')}
@@ -368,7 +368,7 @@ function renderTreeNode(
                 onBlur={() => {}}
                 style={{
                   background: 'rgba(212,167,55,0.1)', border: '1px solid var(--gold-700)',
-                  borderRadius: 3, color: 'var(--ink-on-dark-1)', fontSize: 12,
+                  borderRadius: 3, color: 'var(--ink-on-dark-1)', fontSize: 'var(--t-caption-fs)',
                   fontFamily: 'JetBrains Mono, monospace', padding: '1px 4px',
                   outline: 'none', flex: 1,
                 }}
@@ -376,7 +376,7 @@ function renderTreeNode(
               />
             ) : (
               <span style={{
-                fontSize: 12, fontFamily: 'JetBrains Mono, monospace',
+                fontSize: 'var(--t-caption-fs)', fontFamily: 'JetBrains Mono, monospace',
                 color: 'var(--ink-on-dark-1)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
               }}>
                 {name}
@@ -397,7 +397,7 @@ function renderTreeNode(
                 placeholder="filename.tsx"
                 style={{
                   background: 'rgba(212,167,55,0.1)', border: '1px solid var(--gold-700)',
-                  borderRadius: 3, color: 'var(--ink-on-dark-1)', fontSize: 12,
+                  borderRadius: 3, color: 'var(--ink-on-dark-1)', fontSize: 'var(--t-caption-fs)',
                   fontFamily: 'JetBrains Mono, monospace', padding: '1px 4px',
                   outline: 'none', flex: 1,
                 }}

@@ -81,7 +81,7 @@ const ROW = { display: 'flex', alignItems: 'center', justifyContent: 'space-betw
 const LABEL = { fontSize: 13, color: 'var(--meta)', fontFamily: 'var(--font-sans)' } as const;
 const VALUE = { fontSize: 13, fontWeight: 500, color: 'var(--text)', fontFamily: 'var(--font-sans)' } as const;
 const CARD = { background: 'var(--panel)', border: '1px solid var(--div)', borderRadius: 10, padding: '20px 24px', marginBottom: 20 } as const;
-const H2 = { fontFamily: 'var(--font-sans)', fontSize: 16, fontWeight: 700, color: 'var(--brand-green)', marginBottom: 14, letterSpacing: '-0.3px' } as const;
+const H2 = { fontFamily: 'var(--font-sans)', fontSize: 'var(--t-body-fs)', fontWeight: 700, color: 'var(--brand-green)', marginBottom: 14, letterSpacing: '-0.3px' } as const;
 
 function Dot({ ok }: { ok: boolean }) {
   return <span style={{ width: 8, height: 8, borderRadius: '50%', background: ok ? 'var(--success)' : 'var(--danger)', display: 'inline-block', marginRight: 6 }} />;
@@ -124,7 +124,7 @@ export default async function AdminHealthPage() {
           </span>
         </div>
         {apiHealth?.gitCommit && webCommit !== 'local' && (
-          <div style={{ marginTop: 10, fontSize: 12, color: apiHealth.gitCommit.slice(0, 7) === webCommit.slice(0, 7) ? 'var(--success)' : 'var(--danger)', fontFamily: 'var(--font-sans)' }}>
+          <div style={{ marginTop: 10, fontSize: 'var(--t-caption-fs)', color: apiHealth.gitCommit.slice(0, 7) === webCommit.slice(0, 7) ? 'var(--success)' : 'var(--danger)', fontFamily: 'var(--font-sans)' }}>
             {apiHealth.gitCommit.slice(0, 7) === webCommit.slice(0, 7)
               ? 'Commits in sync'
               : `Commits differ — API: ${apiHealth.gitCommit.slice(0, 7)}, Web: ${webCommit.slice(0, 7)}`}
@@ -159,7 +159,7 @@ export default async function AdminHealthPage() {
           <span style={{ ...VALUE, color: 'var(--success)' }}>{trialStats.converted.toLocaleString()}</span>
         </div>
         {(trialStats.expired + trialStats.converted) > 0 && (
-          <div style={{ marginTop: 10, fontSize: 12, color: 'var(--meta)', fontFamily: 'var(--font-sans)' }}>
+          <div style={{ marginTop: 10, fontSize: 'var(--t-caption-fs)', color: 'var(--meta)', fontFamily: 'var(--font-sans)' }}>
             Conversion rate: {Math.round(trialStats.converted / (trialStats.expired + trialStats.converted) * 100)}%
           </div>
         )}
@@ -172,8 +172,8 @@ export default async function AdminHealthPage() {
           const set = !!process.env[v];
           return (
             <div key={v} style={ROW}>
-              <span style={{ ...LABEL, fontFamily: 'JetBrains Mono, monospace', fontSize: 12 }}>{v}</span>
-              <span style={{ fontSize: 12, fontWeight: 600, color: set ? 'var(--success)' : 'var(--danger)', fontFamily: 'var(--font-sans)' }}>
+              <span style={{ ...LABEL, fontFamily: 'JetBrains Mono, monospace', fontSize: 'var(--t-caption-fs)' }}>{v}</span>
+              <span style={{ fontSize: 'var(--t-caption-fs)', fontWeight: 600, color: set ? 'var(--success)' : 'var(--danger)', fontFamily: 'var(--font-sans)' }}>
                 <Dot ok={set} />{set ? 'Set' : 'Missing'}
               </span>
             </div>
@@ -194,7 +194,7 @@ export default async function AdminHealthPage() {
                 <span style={{ fontSize: 11, color: 'var(--meta)', fontFamily: 'var(--font-sans)' }}>{new Date(r.created_at).toLocaleString()}</span>
               </div>
               {r.error_message && (
-                <div style={{ fontSize: 12, color: 'var(--text)', fontFamily: 'JetBrains Mono, monospace', background: 'var(--subtle)', borderRadius: 4, padding: '4px 8px', width: '100%' }}>
+                <div style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--text)', fontFamily: 'JetBrains Mono, monospace', background: 'var(--subtle)', borderRadius: 4, padding: '4px 8px', width: '100%' }}>
                   {r.error_message.slice(0, 200)}
                 </div>
               )}

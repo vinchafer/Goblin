@@ -149,7 +149,7 @@ export default function BillingDashboardPage() {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
               <span style={{
-                fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em',
+                fontSize: 'var(--t-caption-fs)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em',
                 background: planInfo.color, color: '#fff', padding: '2px 8px', borderRadius: 4,
               }}>{planInfo.label}</span>
               <span style={{ fontSize: 13, color: 'var(--meta)', fontFamily: 'var(--font-sans)' }}>
@@ -245,7 +245,7 @@ export default function BillingDashboardPage() {
                 <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', fontFamily: 'var(--font-sans)' }}>
                   {item.value}
                 </div>
-                <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-2)', marginTop: 2 }}>{item.label}</div>
+                <div style={{ fontSize: 'var(--t-caption-fs)', fontWeight: 600, color: 'var(--text-2)', marginTop: 2 }}>{item.label}</div>
                 <div style={{ fontSize: 11, color: 'var(--meta)', marginTop: 1 }}>{item.desc}</div>
               </div>
             ))}
@@ -321,7 +321,7 @@ export default function BillingDashboardPage() {
                     href={inv.pdf_url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    style={{ fontSize: 12, color: 'var(--brand-green)', textDecoration: 'none', fontWeight: 500 }}
+                    style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--brand-green)', textDecoration: 'none', fontWeight: 500 }}
                   >
                     PDF ↗
                   </a>

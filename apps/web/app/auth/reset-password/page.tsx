@@ -53,7 +53,7 @@ function ResetPasswordForm() {
     width: '100%', height: 48, padding: '0 14px',
     background: 'rgba(255,255,255,0.06)',
     border: '1.5px solid rgba(255,255,255,0.1)',
-    borderRadius: 10, fontSize: 14, color: '#fff', outline: 'none',
+    borderRadius: 10, fontSize: 'var(--t-small-fs)', color: '#fff', outline: 'none',
     fontFamily: 'var(--font-sans)',
     boxSizing: 'border-box',
   };
@@ -66,8 +66,8 @@ function ResetPasswordForm() {
         <p className="auth-card-subtitle">Choose a strong password for your account.</p>
         {error ? (
           <div style={{ textAlign: 'center' }}>
-            <p style={{ color: '#ef4444', fontSize: 14, marginBottom: 16 }}>{error}</p>
-            <a href="/login" style={{ color: 'var(--brand-green)', fontSize: 14, textDecoration: 'none' }}>
+            <p style={{ color: '#ef4444', fontSize: 'var(--t-small-fs)', marginBottom: 16 }}>{error}</p>
+            <a href="/login" style={{ color: 'var(--brand-green)', fontSize: 'var(--t-small-fs)', textDecoration: 'none' }}>
               ← Back to sign in
             </a>
           </div>
@@ -99,7 +99,7 @@ function ResetPasswordForm() {
                 background: password && confirm ? 'var(--brand-green)' : 'rgba(255,255,255,0.06)',
                 color: password && confirm ? '#fff' : 'rgba(255,255,255,0.2)',
                 border: 'none', borderRadius: 10,
-                fontSize: 14, fontWeight: 600,
+                fontSize: 'var(--t-small-fs)', fontWeight: 600,
                 fontFamily: 'var(--font-sans)',
                 cursor: loading ? 'not-allowed' : 'pointer',
               }}
@@ -108,7 +108,7 @@ function ResetPasswordForm() {
             </button>
           </form>
         ) : (
-          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 14, textAlign: 'center' }}>
+          <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: 'var(--t-small-fs)', textAlign: 'center' }}>
             Verifying reset link…
           </p>
         )}

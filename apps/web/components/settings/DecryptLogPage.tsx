@@ -54,13 +54,13 @@ export function DecryptLogPage() {
 
   return (
     <div className="settings-section" style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
-      <p style={{ color: 'var(--meta)', fontSize: 14, margin: '4px 4px 16px' }}>
+      <p style={{ color: 'var(--meta)', fontSize: 'var(--t-small-fs)', margin: '4px 4px 16px' }}>
         Letzte 100 Zugriffe auf deine API-Keys. Verdächtige Aktivität? Rotiere den Key beim
         Provider und ändere dein Goblin-Passwort.
       </p>
 
       {loading && <p style={{ color: 'var(--meta)' }}>Lade…</p>}
-      {error && <p style={{ color: 'var(--rust)', fontSize: 14 }}>{error}</p>}
+      {error && <p style={{ color: 'var(--rust)', fontSize: 'var(--t-small-fs)' }}>{error}</p>}
 
       {!loading && !error && entries.length === 0 && (
         <p style={{ color: 'var(--meta)' }}>Keine Aktivität in den letzten 90 Tagen.</p>
@@ -79,18 +79,18 @@ export function DecryptLogPage() {
                 }}
               >
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <span style={{ fontWeight: 600, fontSize: 14 }}>{e.provider}</span>
+                  <span style={{ fontWeight: 600, fontSize: 'var(--t-small-fs)' }}>{e.provider}</span>
                   <span
                     style={{
                       color: colorFor(e.operation),
                       fontFamily: 'var(--font-mono)',
-                      fontSize: 12,
+                      fontSize: 'var(--t-caption-fs)',
                     }}
                   >
                     {e.operation}
                   </span>
                 </div>
-                <div style={{ fontSize: 12, color: 'var(--meta)' }}>
+                <div style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--meta)' }}>
                   {new Date(e.created_at).toLocaleString('de-DE')}
                   {e.ip_address ? ` · ${e.ip_address}` : ''}
                 </div>

@@ -147,7 +147,7 @@ export default async function StatusPage() {
           <div>
             <div style={{ fontFamily: 'var(--font-sans)', fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>{overallLabel}</div>
             {health && (
-              <div style={{ fontSize: 12, color: 'var(--meta)', marginTop: 4 }}>
+              <div style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--meta)', marginTop: 4 }}>
                 Uptime: {formatUptime(health.uptime)} · v{health.version} · Last checked: {new Date(health.timestamp).toLocaleTimeString()}
               </div>
             )}
@@ -157,7 +157,7 @@ export default async function StatusPage() {
         {/* Active incidents */}
         {activeIncidents.length > 0 && (
           <div style={{ marginBottom: 28 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--danger)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
+            <div style={{ fontSize: 'var(--t-caption-fs)', fontWeight: 700, color: 'var(--danger)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
               Active Incidents
             </div>
             {activeIncidents.map(inc => (
@@ -168,7 +168,7 @@ export default async function StatusPage() {
               }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                   <span>{SEVERITY_ICON[inc.severity] || '🟡'}</span>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{inc.title}</span>
+                  <span style={{ fontSize: 'var(--t-small-fs)', fontWeight: 600, color: 'var(--text)' }}>{inc.title}</span>
                   <span style={{ marginLeft: 'auto', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: INCIDENT_STATUS_COLOR[inc.status] || 'var(--meta)' }}>
                     {inc.status}
                   </span>
@@ -186,15 +186,15 @@ export default async function StatusPage() {
 
         {/* Service checks */}
         <div style={{ background: 'var(--panel)', border: '1px solid var(--div)', borderRadius: 12, overflow: 'hidden', marginBottom: 28 }}>
-          <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--div)', fontSize: 12, fontWeight: 600, color: 'var(--meta)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+          <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--div)', fontSize: 'var(--t-caption-fs)', fontWeight: 600, color: 'var(--meta)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
             Services
           </div>
           {health ? (
             Object.entries(health.checks).map(([key, check]) => (
               <div key={key} style={{ display: 'flex', alignItems: 'center', padding: '14px 20px', borderBottom: '1px solid var(--div)', gap: 12 }}>
                 <StatusDot status={check.status} />
-                <span style={{ flex: 1, fontSize: 14, color: 'var(--text)' }}>{SERVICE_LABELS[key] ?? key}</span>
-                <span style={{ fontSize: 12, color: 'var(--meta)' }}>
+                <span style={{ flex: 1, fontSize: 'var(--t-small-fs)', color: 'var(--text)' }}>{SERVICE_LABELS[key] ?? key}</span>
+                <span style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--meta)' }}>
                   {check.status === 'skip' ? 'Not configured' : check.status === 'ok' ? 'Operational' : check.status === 'fail' ? 'Unavailable' : 'Degraded'}
                   {check.latencyMs != null && check.status === 'ok' && ` · ${check.latencyMs}ms`}
                 </span>
@@ -208,12 +208,12 @@ export default async function StatusPage() {
         {/* Incident history */}
         {resolvedIncidents.length > 0 && (
           <div style={{ background: 'var(--panel)', border: '1px solid var(--div)', borderRadius: 12, overflow: 'hidden', marginBottom: 28 }}>
-            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--div)', fontSize: 12, fontWeight: 600, color: 'var(--meta)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--div)', fontSize: 'var(--t-caption-fs)', fontWeight: 600, color: 'var(--meta)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
               Past Incidents
             </div>
             {resolvedIncidents.map(inc => (
               <div key={inc.id} style={{ padding: '12px 20px', borderBottom: '1px solid var(--div)', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                <span style={{ fontSize: 12, marginTop: 2 }}>{SEVERITY_ICON[inc.severity] || '🟡'}</span>
+                <span style={{ fontSize: 'var(--t-caption-fs)', marginTop: 2 }}>{SEVERITY_ICON[inc.severity] || '🟡'}</span>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--text)' }}>{inc.title}</div>
                   <div style={{ fontSize: 11, color: 'var(--meta)', marginTop: 2 }}>{new Date(inc.created_at).toLocaleDateString()}</div>
@@ -228,7 +228,7 @@ export default async function StatusPage() {
 
         {/* Deployment versions */}
         <div style={{ background: 'var(--panel)', border: '1px solid var(--div)', borderRadius: 12, overflow: 'hidden', marginBottom: 28 }}>
-          <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--div)', fontSize: 12, fontWeight: 600, color: 'var(--meta)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+          <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--div)', fontSize: 'var(--t-caption-fs)', fontWeight: 600, color: 'var(--meta)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
             Deployment
           </div>
           {[
@@ -238,8 +238,8 @@ export default async function StatusPage() {
             <div key={label} style={{ padding: '14px 20px', borderBottom: '1px solid var(--div)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
                 <StatusDot status={data ? 'ok' : 'fail'} />
-                <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{label}</span>
-                <span style={{ marginLeft: 'auto', fontSize: 12, fontFamily: 'monospace', color: 'var(--meta)' }}>
+                <span style={{ fontSize: 'var(--t-small-fs)', fontWeight: 600, color: 'var(--text)' }}>{label}</span>
+                <span style={{ marginLeft: 'auto', fontSize: 'var(--t-caption-fs)', fontFamily: 'monospace', color: 'var(--meta)' }}>
                   {data ? `v${data.version}` : 'unreachable'}
                 </span>
               </div>
@@ -251,13 +251,13 @@ export default async function StatusPage() {
             </div>
           ))}
           {webVersion && apiVersion && webVersion.gitCommit !== 'unknown' && apiVersion.gitCommit !== 'unknown' && (
-            <div style={{ padding: '10px 20px', fontSize: 12, color: webVersion.gitCommit === apiVersion.gitCommit ? 'var(--success)' : 'var(--brand-gold)', fontWeight: 600 }}>
+            <div style={{ padding: '10px 20px', fontSize: 'var(--t-caption-fs)', color: webVersion.gitCommit === apiVersion.gitCommit ? 'var(--success)' : 'var(--brand-gold)', fontWeight: 600 }}>
               {webVersion.gitCommit === apiVersion.gitCommit ? '✓ Web and API on same commit' : '⚠ Web and API on different commits'}
             </div>
           )}
         </div>
 
-        <p style={{ fontSize: 12, color: 'var(--meta)', textAlign: 'center' }}>
+        <p style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--meta)', textAlign: 'center' }}>
           Auto-refreshes every 60 seconds.{' '}
           <a href="mailto:hi@justgoblin.com" style={{ color: 'var(--gold-700)' }}>Report an incident →</a>
         </p>

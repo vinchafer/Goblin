@@ -86,7 +86,7 @@ export function ShortcutsHelp({ open, onClose }: Props) {
             <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: 18, color: 'var(--brand-green)', fontWeight: 700, letterSpacing: '-0.3px' }}>
               Your goblin&apos;s secret spells 🪄
             </h2>
-            <p style={{ fontSize: 12, color: 'var(--meta)', marginTop: 2 }}>Keyboard shortcuts</p>
+            <p style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--meta)', marginTop: 2 }}>Keyboard shortcuts</p>
           </div>
           <button
             onClick={onClose}
