@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Goblin — Screen 07 · Mobile Code Review (Pflicht-Mockup)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --brand-green:#1A3A2A; --ink-deep:#0F2B1E; --brand-gold:#D4A737; --bone:#F4ECD8; --paper:#FBF7EC;
+    --green-950:#08170F; --surface-ink-2:#28251D;
+    --ink-1:#0F2B1E; --ink-2:#3F3A2C; --ink-3:#5F5640; --rule:#D8CBA8; --rule-soft:#E8DEC2;
+    --ok:#3D7A4F; --danger:#B0432A; --info:#355B7A;
+    --ink-on-dark-1:#FBF7EC; --ink-on-dark-2:#D8CBA8; --ink-on-dark-3:#968768;
+    --t-h2:24px; --t-h3:20px; --t-body:16px; --t-small:14px; --t-caption:12px; --t-eyebrow:11px;
+    --font-sans:'Manrope',system-ui,sans-serif; --font-serif:'Instrument Serif',Georgia,serif; --font-mono:'JetBrains Mono',monospace;
+    --radius-sm:10px; --radius-md:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bone);font-family:var(--font-sans);color:var(--ink-1);padding:32px;display:flex;gap:48px;flex-wrap:wrap;justify-content:center;align-items:flex-start}
+  .frame-label{font-family:var(--font-mono);font-size:var(--t-eyebrow);letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+  .frame-label .tick{width:5px;height:5px;background:var(--brand-gold);transform:rotate(45deg)}
+
+  /* phone frame */
+  .phone{width:390px;height:844px;background:var(--bone);border:1px solid var(--rule);border-radius:28px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 60px -28px rgba(15,43,30,.4)}
+
+  /* header §A5.2 — 56px brand-green */
+  .hdr{height:56px;background:var(--brand-green);display:flex;align-items:center;gap:12px;padding:0 16px;flex-shrink:0}
+  .hdr .mark{width:26px;height:26px}
+  .hdr .title{color:var(--ink-on-dark-1);font-weight:600;font-size:var(--t-body);flex:1}
+  .hdr .meta{color:var(--ink-on-dark-3);font-family:var(--font-mono);font-size:var(--t-eyebrow);letter-spacing:.08em}
+
+  /* hero block — ink-deep, 1px rule, NO gold border */
+  .hero{background:var(--ink-deep);border-bottom:1px solid var(--rule-soft);padding:16px;color:var(--ink-on-dark-1);flex-shrink:0}
+  .hero .eyebrow{font-family:var(--font-mono);font-size:var(--t-eyebrow);letter-spacing:.14em;text-transform:uppercase;color:var(--brand-gold);display:flex;align-items:center;gap:8px;margin-bottom:8px}
+  .hero .eyebrow .tick{width:5px;height:5px;background:var(--brand-gold);transform:rotate(45deg)}
+  .hero h1{font-size:var(--t-h3);font-weight:600;letter-spacing:-.01em}
+  .hero .sub{color:var(--ink-on-dark-3);font-size:var(--t-small);margin-top:4px}
+  .hero .progress{margin-top:12px;height:4px;background:rgba(244,236,216,.14);border-radius:99px;overflow:hidden}
+  .hero .progress .bar{height:100%;width:40%;background:var(--brand-gold);border-radius:99px}
+
+  /* swipe deck */
+  .deck{flex:1;position:relative;overflow:hidden;padding:18px 16px;display:flex;flex-direction:column;gap:12px}
+  .card{background:var(--paper);border:1px solid var(--rule);border-radius:var(--radius-md);overflow:hidden;box-shadow:0 14px 32px -22px rgba(15,43,30,.3)}
+  .card .ctop{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--rule-soft);background:var(--bone)}
+  .card .ctop .path{font-family:var(--font-mono);font-size:var(--t-caption);color:var(--ink-2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .card .ctop .lines{font-family:var(--font-mono);font-size:var(--t-eyebrow);color:var(--ink-3)}
+  .diff{font-family:var(--font-mono);font-size:var(--t-caption);line-height:1.7;padding:12px 14px;background:var(--green-950);color:var(--ink-on-dark-2);max-height:340px;overflow:auto}
+  .diff .add{color:#9ed6a8;background:rgba(61,122,79,.18);display:block;margin:0 -14px;padding:0 14px}
+  .diff .del{color:#e3a08f;background:rgba(176,67,42,.16);display:block;margin:0 -14px;padding:0 14px}
+  .diff .ctx{color:var(--ink-on-dark-3);display:block}
+
+  /* action row — Approve / Discuss / Reject (NOT in bottom swipe zone) */
+  .actions{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--rule-soft);background:var(--bone);flex-shrink:0}
+  .btn{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;height:44px;border-radius:var(--radius-sm);font-family:var(--font-sans);font-weight:600;font-size:var(--t-small);border:1px solid transparent;cursor:pointer}
+  .btn svg{width:16px;height:16px}
+  .btn.approve{background:var(--brand-green);color:var(--bone)}
+  .btn.discuss{background:transparent;color:var(--ink-1);border-color:var(--rule)}
+  .btn.reject{background:transparent;color:var(--danger);border-color:rgba(176,67,42,.3)}
+
+  /* swipe hint dots */
+  .dots{display:flex;gap:6px;justify-content:center;padding:8px 0 4px}
+  .dots i{width:6px;height:6px;border-radius:50%;background:var(--rule);display:block}
+  .dots i.on{background:var(--brand-gold);width:18px;border-radius:99px}
+
+  /* end-of-stack variant */
+  .endcard{margin:auto;text-align:center;padding:32px 20px}
+  .endcard .glyph{width:56px;height:56px;margin:0 auto 16px;color:var(--brand-gold);opacity:.85}
+  .endcard h2{font-size:var(--t-h2);font-weight:600;margin-bottom:6px}
+  .endcard .serif{font-family:var(--font-serif);font-style:italic}
+  .endcard p{color:var(--ink-3);font-size:var(--t-small);margin-bottom:20px}
+  .endcard .build{display:inline-flex;align-items:center;gap:8px;height:48px;padding:0 24px;border-radius:var(--radius-sm);background:var(--brand-gold);color:var(--ink-deep);font-weight:600;font-size:var(--t-body);border:none;cursor:pointer}
+
+  /* mobile mode-tile (NOT bottom tab bar) — a single contextual tile */
+  .modetile{margin:0 16px 16px;display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--surface-ink-2);border-radius:var(--radius-sm);color:var(--ink-on-dark-2);flex-shrink:0}
+  .modetile .dot{width:8px;height:8px;border-radius:50%;background:var(--brand-gold)}
+  .modetile .lbl{font-family:var(--font-mono);font-size:var(--t-eyebrow);letter-spacing:.1em;text-transform:uppercase;flex:1}
+  .modetile .cnt{font-size:var(--t-small);font-weight:600;color:var(--ink-on-dark-1)}
+</style>
+</head>
+<body>
+  <!-- ============ MOBILE 390 — review in progress ============ -->
+  <div>
+    <div class="frame-label"><span class="tick"></span> 07 · Mobile Code Review — 390×844</div>
+    <div class="phone">
+      <div class="hdr">
+        <svg class="mark" viewBox="0 0 24 24" fill="none" stroke="#D4A737" stroke-width="1.6"><path d="M5 4c-1 3-1 6 1 8M19 4c1 3 1 6-1 8M5 12a7 7 0 0 0 14 0"/><circle cx="9" cy="10" r="1" fill="#D4A737"/><circle cx="15" cy="10" r="1" fill="#D4A737"/></svg>
+        <span class="title">Code Review</span>
+        <span class="meta">2 / 5</span>
+      </div>
+      <div class="hero">
+        <div class="eyebrow"><span class="tick"></span> Review · landing-page</div>
+        <h1>3 Änderungen offen</h1>
+        <div class="sub">Wische durch jede Änderung — freigeben, ablehnen oder besprechen.</div>
+        <div class="progress"><div class="bar"></div></div>
+      </div>
+      <div class="modetile"><span class="dot"></span><span class="lbl">Goblin prüft Diff</span><span class="cnt">working</span></div>
+      <div class="deck">
+        <div class="card">
+          <div class="ctop"><span class="path">src/components/Hero.tsx</span><span class="lines">+6 −2</span></div>
+          <div class="diff">
+<span class="ctx">  export function Hero() {</span>
+<span class="del">-   return &lt;h1&gt;Welcome&lt;/h1&gt;</span>
+<span class="add">+   return (</span>
+<span class="add">+     &lt;section className="hero"&gt;</span>
+<span class="add">+       &lt;h1&gt;Bau es. Heute.&lt;/h1&gt;</span>
+<span class="add">+       &lt;a className="cta"&gt;Loslegen&lt;/a&gt;</span>
+<span class="add">+     &lt;/section&gt;</span>
+<span class="add">+   )</span>
+<span class="ctx">  }</span>
+          </div>
+        </div>
+        <div class="dots"><i></i><i class="on"></i><i></i><i></i><i></i></div>
+      </div>
+      <div class="actions">
+        <button class="btn reject"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>Ablehnen</button>
+        <button class="btn discuss"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Besprechen</button>
+        <button class="btn approve"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Freigeben</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MOBILE 390 — end of stack ============ -->
+  <div>
+    <div class="frame-label"><span class="tick"></span> 07 · End-of-stack — „Alles geprüft"</div>
+    <div class="phone">
+      <div class="hdr">
+        <svg class="mark" viewBox="0 0 24 24" fill="none" stroke="#D4A737" stroke-width="1.6"><path d="M5 4c-1 3-1 6 1 8M19 4c1 3 1 6-1 8M5 12a7 7 0 0 0 14 0"/><circle cx="9" cy="10" r="1" fill="#D4A737"/><circle cx="15" cy="10" r="1" fill="#D4A737"/></svg>
+        <span class="title">Code Review</span>
+        <span class="meta">5 / 5</span>
+      </div>
+      <div class="hero">
+        <div class="eyebrow"><span class="tick"></span> Review · landing-page</div>
+        <h1>Alles geprüft</h1>
+        <div class="sub">4 freigegeben · 1 abgelehnt. Bereit zum Bauen.</div>
+        <div class="progress"><div class="bar" style="width:100%"></div></div>
+      </div>
+      <div class="deck">
+        <div class="endcard">
+          <svg class="glyph" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="M22 4 12 14.01l-3-3"/></svg>
+          <h2>Alles <span class="serif">geprüft.</span></h2>
+          <p>Die freigegebenen Änderungen sind gespeichert. Jetzt deployen?</p>
+          <button class="build"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>Jetzt bauen</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
