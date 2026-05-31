@@ -6,6 +6,30 @@ import { wrapWithDevGuard } from './supabase-guard.js';
 let _supabaseRaw: SupabaseClient | null = null;
 let _supabaseGuarded: SupabaseClient | null = null;
 let _testUserId: string | null = null;
+const _ownerCache = new Map<string, boolean>();
+
+/**
+ * Resolve whether a project-scoped row (filtered by id/project_id) belongs to the test user.
+ * Used by the dev-guard to permit deploy/build UPDATEs that filter by project id rather than
+ * user_id. Cached per (table,column,value) for the process lifetime (dev only). Fails closed.
+ */
+async function resolveOwnerIsTestUser(table: string, idColumn: string, idValue: string): Promise<boolean> {
+  const tid = _testUserId;
+  if (!tid) return false;
+  const cacheKey = `${table}:${idColumn}:${idValue}`;
+  if (_ownerCache.has(cacheKey)) return _ownerCache.get(cacheKey)!;
+  let result = false;
+  try {
+    const raw = getSupabaseAdminRaw();
+    const targetTable = idColumn === 'project_id' ? 'projects' : table;
+    const { data } = await raw.from(targetTable).select('user_id').eq('id', idValue).single();
+    result = !!data && (data as { user_id?: string }).user_id === tid;
+  } catch {
+    result = false; // fail closed
+  }
+  _ownerCache.set(cacheKey, result);
+  return result;
+}
 
 function createRawClient(): SupabaseClient {
   return createClient(
@@ -43,6 +67,7 @@ export function getSupabaseAdmin(): SupabaseClient {
       isDevMode: true,
       testUserId: () => _testUserId,
       testUserEmail: TEST_USER_EMAIL,
+      resolveOwnerIsTestUser,
     });
   }
   return _supabaseGuarded;

@@ -6,14 +6,17 @@ const supabase = createBrowserClient(
 )
 
 function getApiUrl(): string {
+  // Explicit setting always wins. Set NEXT_PUBLIC_API_URL=http://localhost:3001 in .env.local
+  // to route dev through the LOCAL guarded API so the B3 dev-safety shield intercepts writes
+  // (see docs/DEV_SAFETY.md). Leave it on the Railway URL to hit prod directly.
   const url = process.env.NEXT_PUBLIC_API_URL
-  if (!url) {
-    if (process.env.NODE_ENV === 'production') {
-      console.error('NEXT_PUBLIC_API_URL is not set in production!')
-    }
-    return 'https://goblinapi-production.up.railway.app'
+  if (url) return url.replace(/\/$/, '')
+  // No explicit URL: in dev default to the local guarded API; in prod fall back to Railway.
+  if (process.env.NODE_ENV !== 'production') {
+    return 'http://localhost:3001'
   }
-  return url.replace(/\/$/, '')
+  console.error('NEXT_PUBLIC_API_URL is not set in production!')
+  return 'https://goblinapi-production.up.railway.app'
 }
 
 export const API_URL = getApiUrl()

@@ -112,6 +112,48 @@ describe('supabase dev-guard', () => {
   });
 });
 
+describe('supabase dev-guard — project→owner resolution (deploy/build UPDATEs)', () => {
+  it('allows UPDATE by project_id when owner resolves to test user', async () => {
+    let calls = 0;
+    const guarded = wrapWithDevGuard(makeFakeClient(), {
+      ...cfg,
+      resolveOwnerIsTestUser: async (table, col, val) => { calls++; return col === 'project_id' && val === 'P1'; },
+    });
+    await expect(guarded.from('build_runs').update({ status: 'done' }).eq('project_id', 'P1'))
+      .resolves.toBeDefined();
+    expect(calls).toBe(1);
+  });
+
+  it('allows UPDATE by id on projects when owner resolves to test user', async () => {
+    const guarded = wrapWithDevGuard(makeFakeClient(), { ...cfg, resolveOwnerIsTestUser: async () => true });
+    await expect(guarded.from('projects').update({ preview_url: 'https://x' }).eq('id', 'P1'))
+      .resolves.toBeDefined();
+  });
+
+  it('blocks UPDATE by id when owner is NOT the test user', async () => {
+    const guarded = wrapWithDevGuard(makeFakeClient(), { ...cfg, resolveOwnerIsTestUser: async () => false });
+    await expect(guarded.from('projects').update({ preview_url: 'https://x' }).eq('id', 'P1'))
+      .rejects.toThrow(/DEV-GUARD/);
+  });
+
+  it('fails closed (blocks) when no resolver is provided and filter is not user-scoped', async () => {
+    const guarded = wrapWithDevGuard(makeFakeClient(), cfg); // cfg has no resolveOwnerIsTestUser
+    await expect(guarded.from('projects').update({ preview_url: 'https://x' }).eq('id', 'P1'))
+      .rejects.toThrow(/DEV-GUARD/);
+  });
+
+  it('user_id filter still short-circuits without calling the resolver', async () => {
+    let calls = 0;
+    const guarded = wrapWithDevGuard(makeFakeClient(), {
+      ...cfg,
+      resolveOwnerIsTestUser: async () => { calls++; return false; },
+    });
+    await expect(guarded.from('projects').update({ name: 'x' }).eq('user_id', TEST_ID))
+      .resolves.toBeDefined();
+    expect(calls).toBe(0);
+  });
+});
+
 // ── env.ts + vercel-guard (env-driven; use resetModules for clean re-eval) ───────
 
 async function loadFreshEnv(devMode: boolean, extra: Record<string, string | undefined> = {}) {
@@ -162,10 +204,10 @@ describe('vercel-guard', () => {
     expect(() => guardVercelCall('other-project', 'deploy')).toThrow(/VERCEL-GUARD/);
   });
 
-  it('allows synapse-platform in dev-mode', async () => {
+  it('allows the designated placeholder project in dev-mode', async () => {
     await loadFreshEnv(true, { TEST_ACCOUNT_EMAIL: TEST_EMAIL });
     const { guardVercelCall } = await import('../lib/vercel-guard.js');
-    expect(() => guardVercelCall('synapse-platform', 'deploy')).not.toThrow();
+    expect(() => guardVercelCall('project-kiy64', 'deploy')).not.toThrow();
   });
 
   it('allows test-prefixed projects in dev-mode', async () => {

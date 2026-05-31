@@ -18,8 +18,13 @@ export const TEST_USER_EMAIL = process.env.TEST_ACCOUNT_EMAIL;
 /**
  * Vercel project the dev shield permits deploys to touch. Any deploy whose name is this
  * value OR starts with `test-` is allowed; everything else is blocked in dev.
+ *
+ * Sprint 2: founder rotated VERCEL_TOKEN_SCOPE to a dedicated test account
+ * (vinc.hafner2@gmail.com, team vincent-2-s-projects). Its sole pre-existing project is the
+ * placeholder `project-kiy64` (left untouched per non-negotiable). Real test deploys use
+ * `test-*` names; the placeholder is allowlisted but never targeted by us.
  */
-export const VERCEL_ALLOWED_PROJECT = 'synapse-platform';
+export const VERCEL_ALLOWED_PROJECT = 'project-kiy64';
 
 /**
  * Tables safe to mutate from dev regardless of owner — schema / internal bookkeeping that

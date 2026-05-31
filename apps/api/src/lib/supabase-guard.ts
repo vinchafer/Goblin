@@ -29,6 +29,13 @@ export interface GuardConfig {
   testUserEmail: string | undefined;
   /** Tables exempt from the guard. */
   safeTables?: ReadonlySet<string>;
+  /**
+   * Async owner resolver for project-scoped UPDATE/DELETE that filter by `id`/`project_id`
+   * rather than `user_id` (e.g. deploy.ts `projects.update().eq('id', projectId)` and
+   * builds.ts `build_runs.update().eq('id', jobId)`). Returns true iff the targeted row's
+   * owner is the test user. Optional; if absent, such writes fail closed.
+   */
+  resolveOwnerIsTestUser?: (table: string, idColumn: string, idValue: string) => Promise<boolean>;
 }
 
 const OWNER_ID_COLUMNS = ['user_id', 'owner_id', 'created_by', 'id'] as const;
@@ -88,6 +95,21 @@ function filtersTargetTestUser(filters: RecordedFilter[], cfg: GuardConfig): boo
 }
 
 /**
+ * Find a project-scoped id lookup in the filter chain, preferring `project_id` over `id`.
+ * Used to resolve row ownership for UPDATE/DELETE that don't filter by user_id directly.
+ */
+function findOwnerLookup(filters: RecordedFilter[]): { idColumn: string; idValue: string } | null {
+  let byId: { idColumn: string; idValue: string } | null = null;
+  for (const [method, args] of filters) {
+    if (method !== 'eq') continue;
+    const [col, val] = args as [string, unknown];
+    if (col === 'project_id' && typeof val === 'string') return { idColumn: 'project_id', idValue: val };
+    if (col === 'id' && typeof val === 'string') byId = { idColumn: 'id', idValue: val };
+  }
+  return byId;
+}
+
+/**
  * Wrap a Postgrest filter builder (returned by .update()/.delete()) so the filter chain is
  * recorded and validated when the query is awaited.
  */
@@ -99,10 +121,22 @@ function guardFilterBuilder(realBuilder: any, op: string, table: string, cfg: Gu
     get(target, prop, receiver) {
       if (prop === 'then') {
         return (onFulfilled?: any, onRejected?: any) => {
-          if (!safeTables.has(table) && !filtersTargetTestUser(filters, cfg)) {
-            return Promise.reject(new Error(blockMessage(op, table))).then(onFulfilled, onRejected);
+          if (safeTables.has(table) || filtersTargetTestUser(filters, cfg)) {
+            return (target as PromiseLike<unknown>).then(onFulfilled, onRejected);
           }
-          return (target as PromiseLike<unknown>).then(onFulfilled, onRejected);
+          // Filter isn't user-scoped. Try async project→owner resolution before blocking.
+          const lookup = findOwnerLookup(filters);
+          if (lookup && cfg.resolveOwnerIsTestUser) {
+            return cfg
+              .resolveOwnerIsTestUser(table, lookup.idColumn, lookup.idValue)
+              .then((ownerIsTest) =>
+                ownerIsTest
+                  ? (target as PromiseLike<unknown>)
+                  : Promise.reject(new Error(blockMessage(op, table))),
+              )
+              .then(onFulfilled, onRejected);
+          }
+          return Promise.reject(new Error(blockMessage(op, table))).then(onFulfilled, onRejected);
         };
       }
       const value = Reflect.get(target, prop, receiver);
