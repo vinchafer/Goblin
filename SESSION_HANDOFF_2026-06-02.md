@@ -1,35 +1,37 @@
-# Session Handoff — 2026-06-02 (Sprint 8 close)
+# Session Handoff — 2026-06-02 (Sprint 9 close)
 
 ## State
-Sprint 8 **COMPLETE**. 6 atomic commits on `master` (local, **not pushed**): `15dfaec` → `6480ffd`. Production build passes (exit 0). Branch `master`, prior pushed HEAD was `624da96`.
+Sprint 9 **COMPLETE**. 5 atomic commits on `master` (local, **not pushed**). Prior pushed HEAD was `1c0781d`. Web typecheck clean + production build exit 0.
 
-## What shipped (Sprint 8)
-1. **Logo sweep** (`15dfaec`) — deleted old `GoblinMark`, all 12 callers → animated `GoblinLogo` states. Old logo gone everywhere (save/deploy/build/stream/load/404).
-2. **Persistent Vercel link** (`a60dfd8`) — in-session Live-URL card (survives reopen) + hub URL list w/ copy+timestamp. Backend: `deployUrl` on session detail, `GET /:id/deployments`, deploy logs to `deployments` table.
-3. **Daily dashboard** (`2cbf9b6`) — hub now Letzte Deploys/Chats/Code-Sessions + Aktivität/Dateien/URLs, responsive, server-queried.
-4. **File Explorer** (`924b525`) — `/dashboard/project/[id]/files`: tree/preview/upload/download/delete, mobile. New file-storage + API endpoints.
-5. **Undo/Redo** (`0ecbdc8`) — visible buttons, manual + AI (editor stays mounted across AI boundary).
-6. **Live diff** (`6480ffd`) — jsdiff + CM decorations in streaming overlay for edits; guarded fallback.
+## The one thing that matters (🔴 P0, carried + sharpened)
+**The model is still broken on the default path.** Vincent's "Groq + Gemini both working" is half true:
+- ✅ **Groq Llama 3.3 70B** works end-to-end.
+- 🔴 **Gemini 2.5 Pro** (BYOK, marked ACTIVE, **onboarding-recommended**) → `400 LLM Provider NOT provided … model=google/gemini-2.5-pro` (wrong prefix; should be `gemini/`).
+- 🔴 **Gemini 2.0 Flash** (free, **dashboard default**) → "Model not found in LiteLLM" (unregistered in proxy).
 
-Verified live: 5.1–5.4 fully; 5.5 manual fully; 5.5-AI + 5.6 by logic (see blocker).
+So a fresh user on the default/recommended path hits the exact Sprint-8 failure. Root cause = prod model catalog (DB rows added manually, not in repo seed) + LiteLLM proxy config. **Fix from prod DB/proxy or change new-user default to Groq — cannot fix from repo (B3 shield).** Everything else is secondary to this.
 
-## 🔴 BLOCKER carried into Sprint 9
-**Test account has no working model** → "Model not found in LiteLLM" on any generation. Blocks live AI verification (5.5 AI-undo, 5.6 diff) AND is the #1 finding across all three persona audits — the core promise fails for a fresh trial user.
+## What shipped (Sprint 9)
+- **Phase 1:** Max fresh-signup account `vinc.hafner4@gmail.com` (no keys) + script `apps/api/src/scripts/create-max-test-user.ts`.
+- **Phase 2:** three v2 persona audits + synthesis (run on prod, working Groq) — `DARIO/MAX/SOFIA_AUDIT_2026-06-02_v2.md`, `THREE_PERSONA_AUDIT_SYNTHESIS_2026-06-02_v2.md`.
+- **Phase 3:** `CONVERGENCE_ARCHITECTURE_2026-06-02.md` (A–G) + 5 mockups in `sprint-9/convergence/`. Principle: **One Canvas, Progressive Reach** (intent sets foreground, gesture reveals depth, no mode).
+- **Phase 4 (5 commits):** shortcuts overlay (?-toggle/touch-hidden/no auto-pop), `?session=` deep-link, hide `[E2E-TEST]` (filter on read), plain-German `friendlyError` mapper + DE app copy, dashboard E2E filter.
+
+## Key facts for next session
+- **CORS:** localhost:3000 cannot reach the prod Railway API → audits + live verification must run on **goblin-web.vercel.app**. For local code verification, run a dev API on :3001 and repoint `apps/web/.env.local`.
+- Browser harness: clean typing into React inputs requires the **native value-setter** trick (`fill_input`/`type_text` double characters). Screenshot pixel coords are DPR-scaled (×0.8) vs viewport — prefer JS `.click()` by text.
+- Multi-session Code Tab + File Explorer + deploy history are **live on prod** (migrations 0055 + 0056 applied).
+- Test accounts: `vinc.hafner3@gmail.com` / `X45kLiM56D` (has Groq + broken Gemini keys); `vinc.hafner4@gmail.com` / `MaxBerlin#2026` (Max, no keys).
 
 ## Founder action list (ordered)
-1. **Provision a model for trials** (default model or blocking BYOK onboarding) — P0, unblocks the product.
-2. **Apply `supabase/migrations/0056_deployments.sql`** + **redeploy Railway API** → File Explorer + deploy-history go live in prod (currently latent; frontend degrades gracefully).
-3. Env already reverted: `apps/web/.env.local` → prod Railway URL (I temporarily repointed to localhost:3001 for verification; restored).
-4. Re-run 5.5-AI + 5.6 once a model is available.
-5. Triage Sprint-9 backlog in `THREE_PERSONA_AUDIT_SYNTHESIS_2026-06-02.md`.
+1. **🔴 Fix the model** (prefix fix or default-to-Groq) — unblocks the product.
+2. Read + approve `CONVERGENCE_ARCHITECTURE_2026-06-02.md` (answer Section F).
+3. Push the Sprint 9 commits.
+4. Pick Sprint 10 slice order (rec: 1→5→2→4→3→6, defer repo-import).
+5. Optionally delete Max test user `6642e2d4-…`.
+
+## Beta-readiness
+**~70% default path / ~90% working path** — split by one model bug. Fix the default model and the same product is ~90% beta-ready the same afternoon.
 
 ## Deliverables (repo root)
-`SPRINT_8_WIP_2026-06-02.md`, `SPRINT_8_SELF_REVIEW.md`, `SPRINT_8_COMPLETE_2026-06-02.md`, `DARIO_AUDIT_2026-06-02.md`, `MAX_AUDIT_2026-06-02.md`, `SOFIA_AUDIT_2026-06-02.md`, `THREE_PERSONA_AUDIT_SYNTHESIS_2026-06-02.md`. Screenshots in `sprint-8/` (gitignored).
-
-## Top Sprint-9 priorities (from audits)
-P0 model fix · P0 migration+redeploy · P1 dismiss/repair shortcuts overlay + hide on touch · P1 unify EN/DE language · P1 scrub [E2E-TEST] data · P2 explorer rename/move · P2 plain-language microcopy · P3 git surface, deep-link, IDE-claim alignment.
-
-## Env notes
-- Chrome :9222 + dev server were down at start; I launched both (debug Chrome with repo `.chrome-debug-profile`, `pnpm dev`). 
-- Next 16.2.6 turbopack dev shows intermittent ChunkLoadError/hydration warnings (dev only; prod build clean).
-- A dedicated dev API runs on :3001 with prod Supabase + Vercel creds (via root load-env) — useful for verifying backend without Railway redeploy (repoint `apps/web/.env.local`).
+`SPRINT_9_WIP_2026-06-02.md`, `SPRINT_9_COMPLETE_2026-06-02.md`, `DARIO/MAX/SOFIA_AUDIT_2026-06-02_v2.md`, `THREE_PERSONA_AUDIT_SYNTHESIS_2026-06-02_v2.md`, `CONVERGENCE_ARCHITECTURE_2026-06-02.md`. Evidence + mockups in `sprint-9/` (max-signup/, audit-screenshots/, convergence/).
