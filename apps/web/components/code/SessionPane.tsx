@@ -129,6 +129,21 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange 
           <span style={{ color: "var(--ed-fg-1)", fontFamily: "JetBrains Mono, monospace", fontSize: 12.5, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {editorFilename}
           </span>
+          {/* Review actions for a draft file (the editor is the review surface). */}
+          {!liveBlock && detail.activeFile?.change_state === "draft" && (
+            <>
+              <button
+                onClick={() => { navigator.clipboard?.writeText(detail.activeFile?.content ?? ""); setToast("Kopiert"); setTimeout(() => setToast(null), 1800); }}
+                title="Kopieren"
+                style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "transparent", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-2)", borderRadius: 8, padding: "5px 9px", fontSize: 12, cursor: "pointer", fontFamily: "var(--font-sans)" }}
+              ><Icon name="copy" size={12} /> Kopieren</button>
+              <button
+                onClick={() => detail.activeFile && detail.discardDraft(detail.activeFile.path)}
+                title="Entwurf verwerfen"
+                style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "transparent", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-3)", borderRadius: 8, padding: "5px 9px", fontSize: 12, cursor: "pointer", fontFamily: "var(--font-sans)" }}
+              ><Icon name="close" size={12} /> Verwerfen</button>
+            </>
+          )}
           <StateBadge state={liveBlock ? "draft" : state} />
         </div>
 
