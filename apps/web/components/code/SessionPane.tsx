@@ -7,6 +7,7 @@ import type { EditorView } from "@codemirror/view";
 import { Undo2, Redo2 } from "lucide-react";
 import { Icon } from "@/components/ui/icon";
 import { GoblinLogo } from "@/components/brand/GoblinLogo";
+import { StreamingDiffView } from "./StreamingDiffView";
 import { SessionThread } from "./SessionThread";
 import { SessionPromptInput } from "./SessionPromptInput";
 import { useCodeSessionDetail } from "@/hooks/code/useCodeSessionDetail";
@@ -219,17 +220,20 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange 
             </div>
           ) : null}
 
-          {liveBlock && (
-            <div style={{ position: "absolute", inset: 0, background: "var(--ed-canvas)", display: "flex", flexDirection: "column" }}>
-              <CodeEditor
-                key={liveBlock.path + ":live"}
-                content={liveBlock.content}
-                filename={liveBlock.path}
-                theme={theme}
-                readOnly
-              />
-            </div>
-          )}
+          {liveBlock && (() => {
+            // If the streamed file already exists in this session, show a live
+            // diff (added/removed lines). New files stream as plain content.
+            const existing = detail.files.find((f) => f.path === liveBlock.path);
+            return (
+              <div style={{ position: "absolute", inset: 0, background: "var(--ed-canvas)", display: "flex", flexDirection: "column" }}>
+                {existing ? (
+                  <StreamingDiffView original={existing.content} modified={liveBlock.content} filename={liveBlock.path} />
+                ) : (
+                  <CodeEditor key={liveBlock.path + ":live"} content={liveBlock.content} filename={liveBlock.path} theme={theme} readOnly />
+                )}
+              </div>
+            );
+          })()}
         </div>
 
         {/* Persistent live URL — stays put after deploy (replaces the old toast
