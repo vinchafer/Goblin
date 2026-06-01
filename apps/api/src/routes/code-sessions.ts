@@ -125,14 +125,22 @@ codeSessions.get('/:sessionId', async (c) => {
   const session = await ownSession(sb, sessionId, userId);
   if (!session) return c.json({ error: 'Session not found' }, 404);
 
-  const [{ data: messages }, { data: files }] = await Promise.all([
+  const [{ data: messages }, { data: files }, { data: proj }] = await Promise.all([
     sb.from('code_session_messages').select('id, role, content, model_used, state, created_at')
       .eq('session_id', sessionId).order('created_at', { ascending: true }).limit(200),
     sb.from('code_session_files').select('id, path, content, change_state, updated_at')
       .eq('session_id', sessionId).order('updated_at', { ascending: true }),
+    sb.from('projects').select('preview_url, last_deployed_at').eq('id', session.project_id).single(),
   ]);
 
-  return c.json({ session, messages: messages ?? [], files: files ?? [] });
+  const p = proj as { preview_url: string | null; last_deployed_at: string | null } | null;
+  return c.json({
+    session,
+    messages: messages ?? [],
+    files: files ?? [],
+    deployUrl: p?.preview_url ?? null,
+    deployedAt: p?.last_deployed_at ?? null,
+  });
 });
 
 // ─── PATCH /api/code-sessions/:sessionId — rename / model / state ────────────────
@@ -265,6 +273,18 @@ codeSessions.post('/:sessionId/deploy', async (c) => {
       await sb.from('projects')
         .update({ preview_url: result.url, last_deployed_at: new Date().toISOString() })
         .eq('id', session.project_id);
+      // Log to deploy history (best-effort — table is migration 0056; ignore if absent).
+      try {
+        await sb.from('deployments').insert({
+          project_id: session.project_id,
+          user_id: userId,
+          url: result.url,
+          vercel_deployment_id: result.deploymentId ?? null,
+          session_id: sessionId,
+        });
+      } catch (err) {
+        logger.warn({ err: err instanceof Error ? err.message : String(err) }, 'deployment_log_skipped');
+      }
       // Mark this session's saved files as deployed.
       await sb.from('code_session_files')
         .update({ change_state: 'deployed', updated_at: new Date().toISOString() })

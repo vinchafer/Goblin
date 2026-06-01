@@ -33,6 +33,13 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange 
   const [deployConfirm, setDeployConfirm] = useState(false);
   const [deploying, setDeploying] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [liveUrl, setLiveUrl] = useState<string | null>(null);
+  const [liveDismissed, setLiveDismissed] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+  // Seed the persistent live-URL card from the session's last deploy, so it
+  // survives a browser close + reopen (not just the deploy moment).
+  useEffect(() => { if (detail.deployUrl) setLiveUrl(detail.deployUrl); }, [detail.deployUrl]);
 
   // Keep parent's tab badge in sync with the real draft count.
   useEffect(() => { onDraftCountChange(detail.draftCount); }, [detail.draftCount, onDraftCountChange]);
@@ -60,9 +67,22 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange 
     setToast("Veröffentliche …");
     const { url, error } = await detail.deploySession((msg) => setToast(msg));
     setDeploying(false);
-    if (url) setToast(`Veröffentlicht → ${url}`);
-    else setToast(error ?? "Veröffentlichen fehlgeschlagen");
-    setTimeout(() => setToast(null), 6000);
+    if (url) {
+      // Persistent live-URL card (no auto-dismiss) instead of a fleeting toast.
+      setLiveUrl(url);
+      setLiveDismissed(false);
+      setToast(null);
+    } else {
+      setToast(error ?? "Veröffentlichen fehlgeschlagen");
+      setTimeout(() => setToast(null), 6000);
+    }
+  };
+
+  const copyLiveUrl = () => {
+    if (!liveUrl) return;
+    navigator.clipboard?.writeText(liveUrl);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1600);
   };
 
   const doSave = async () => {
@@ -166,6 +186,27 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange 
             </div>
           )}
         </div>
+
+        {/* Persistent live URL — stays put after deploy (replaces the old toast
+            that vanished after a few seconds). Survives reopen via detail.deployUrl. */}
+        {liveUrl && !liveDismissed && (
+          <div style={{ flexShrink: 0, borderTop: "1px solid var(--ed-rule)", background: "var(--ed-canvas)", padding: "10px 14px", display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#6db97b", flexShrink: 0 }} />
+            <span style={{ fontSize: 11, fontWeight: 600, color: "var(--ed-fg-3)", fontFamily: "var(--font-sans)", textTransform: "uppercase", letterSpacing: "0.06em", flexShrink: 0 }}>Live</span>
+            <a href={liveUrl} target="_blank" rel="noopener noreferrer" title={liveUrl} style={{ flex: 1, minWidth: 0, color: "var(--ed-accent)", fontFamily: "JetBrains Mono, monospace", fontSize: 12, textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {liveUrl.replace(/^https?:\/\//, "")}
+            </a>
+            <button onClick={copyLiveUrl} title="URL kopieren" style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "transparent", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-2)", borderRadius: 8, padding: "5px 10px", fontSize: 12, cursor: "pointer", fontFamily: "var(--font-sans)", flexShrink: 0 }}>
+              <Icon name={copied ? "check" : "copy"} size={12} /> {copied ? "Kopiert" : "Kopieren"}
+            </button>
+            <a href={liveUrl} target="_blank" rel="noopener noreferrer" title="Im neuen Tab öffnen" style={{ display: "inline-flex", alignItems: "center", background: "var(--ed-primary)", color: "var(--ed-on-primary)", borderRadius: 8, padding: "5px 10px", fontSize: 12, fontWeight: 600, textDecoration: "none", flexShrink: 0, gap: 5 }}>
+              <Icon name="play" size={12} /> Öffnen
+            </a>
+            <button onClick={() => setLiveDismissed(true)} aria-label="Ausblenden" title="Ausblenden" style={{ background: "transparent", border: "none", color: "var(--ed-fg-3)", cursor: "pointer", flexShrink: 0, display: "inline-flex", alignItems: "center" }}>
+              <Icon name="close" size={14} />
+            </button>
+          </div>
+        )}
 
         {/* Status line + the two-step Sichern → Veröffentlichen */}
         <div style={{ flexShrink: 0, borderTop: "1px solid var(--ed-rule)", background: "var(--ed-chrome)", padding: "10px 14px", display: "flex", alignItems: "center", gap: 12 }}>

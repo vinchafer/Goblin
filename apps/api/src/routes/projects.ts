@@ -55,6 +55,43 @@ projects.put('/:id/instructions', async (c) => {
   return c.json({ success: true });
 });
 
+// GET /api/projects/:id/deployments — full live-URL history (newest first).
+// Reads the deployments table (migration 0056). Falls back to the project's
+// latest preview_url so the hub still shows the live URL before the migration
+// lands or for projects deployed under the old single-URL model.
+projects.get('/:id/deployments', async (c) => {
+  const userId = c.get('userId');
+  const projectId = c.req.param('id');
+  const limit = Math.min(parseInt(c.req.query('limit') ?? '10', 10) || 10, 50);
+  const supabase = getSupabaseAdmin();
+
+  const { data: project } = await supabase
+    .from('projects')
+    .select('preview_url, last_deployed_at')
+    .eq('id', projectId).eq('user_id', userId)
+    .maybeSingle() as { data: { preview_url: string | null; last_deployed_at: string | null } | null };
+  if (!project) return c.json({ error: 'Not found' }, 404);
+
+  let rows: Array<{ id: string; url: string; created_at: string }> = [];
+  const { data, error } = await supabase
+    .from('deployments')
+    .select('id, url, created_at')
+    .eq('project_id', projectId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+  if (!error && data) rows = data as typeof rows;
+
+  // Fallback: no history table / no rows yet but project has a live URL.
+  if (rows.length === 0 && project.preview_url) {
+    rows = [{
+      id: 'latest',
+      url: project.preview_url,
+      created_at: project.last_deployed_at ?? new Date().toISOString(),
+    }];
+  }
+  return c.json({ deployments: rows });
+});
+
 // List user projects
 projects.get('/', async (c) => {
   const userId = c.get('userId');

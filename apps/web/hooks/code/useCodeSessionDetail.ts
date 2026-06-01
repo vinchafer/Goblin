@@ -26,6 +26,8 @@ export function useCodeSessionDetail(sessionId: string | null) {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [deployUrl, setDeployUrl] = useState<string | null>(null);
+  const [deployedAt, setDeployedAt] = useState<string | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const authFetch = useCallback(async (path: string, init?: RequestInit) => {
@@ -48,6 +50,8 @@ export function useCodeSessionDetail(sessionId: string | null) {
       setFiles(f);
       setMessages(data.messages ?? []);
       setActivePath(prev => (prev && f.some(x => x.path === prev)) ? prev : (f[0]?.path ?? null));
+      setDeployUrl(data.deployUrl ?? null);
+      setDeployedAt(data.deployedAt ?? null);
       setDirty(false);
     } catch { /* swallow */ } finally { setLoading(false); }
   }, [authFetch, sessionId]);
@@ -149,6 +153,7 @@ export function useCodeSessionDetail(sessionId: string | null) {
   return {
     files, messages, activePath, setActivePath, activeFile,
     loading, saving, dirty, aggregateState, draftCount,
+    deployUrl, deployedAt,
     refresh, editActive, persistFile, applyDraftPaths,
     saveSession, deploySession, discardDraft, setFiles, setMessages,
   };

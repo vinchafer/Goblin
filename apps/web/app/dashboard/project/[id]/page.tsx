@@ -1,6 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
+import { DeployUrlList, type DeployUrlItem } from "@/components/project/DeployUrlList";
 
 export const dynamic = 'force-dynamic';
 
@@ -68,6 +69,21 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 
   const deploys: DeployRow[] = (deploysRes.data as DeployRow[] | null) ?? [];
   const messages = (msgsRes.data as Array<{ id: string; role: string; content: string; model_used: string | null; created_at: string }> | null) ?? [];
+
+  // Full live-URL history (deployments table, migration 0056). Falls back to the
+  // single latest preview_url so the card works before the migration lands.
+  let deployUrlItems: DeployUrlItem[] = [];
+  const { data: depRows, error: depErr } = await supabase
+    .from('deployments')
+    .select('id, url, created_at')
+    .eq('project_id', id)
+    .order('created_at', { ascending: false })
+    .limit(8) as { data: Array<{ id: string; url: string; created_at: string }> | null; error: unknown };
+  if (!depErr && depRows && depRows.length > 0) {
+    deployUrlItems = depRows.map((r, i) => ({ url: r.url, ago: timeAgoDe(r.created_at), live: i === 0 }));
+  } else if (project.preview_url) {
+    deployUrlItems = [{ url: project.preview_url, ago: project.last_active ? timeAgoDe(project.last_active) : '', live: true }];
+  }
 
   // Unified activity feed — merge chat turns + deploys, newest first. (Code-session
   // + file-save events fold in once migration 0055 is live; omitted gracefully now.)
@@ -313,22 +329,8 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                     URLs
                   </h2>
                 </div>
-                <div style={{ padding: '12px 18px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {project.preview_url ? (
-                    <a href={project.preview_url} target="_blank" rel="noopener noreferrer" style={{
-                      display: 'inline-flex', alignItems: 'center', gap: 8,
-                      background: 'var(--ok-soft)', border: '1px solid rgba(47,106,71,.30)',
-                      color: 'var(--ok)', borderRadius: 999, padding: '7px 14px',
-                      fontFamily: 'JetBrains Mono, monospace', fontSize: 11.5,
-                      textDecoration: 'none', width: 'fit-content',
-                    }}>
-                      🌐 {project.preview_url.replace(/^https?:\/\//, '')} · LIVE
-                    </a>
-                  ) : (
-                    <span style={{ fontSize: 12.5, color: 'var(--ink-3)' }}>
-                      Noch nicht deployed.
-                    </span>
-                  )}
+                <div style={{ padding: '12px 18px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <DeployUrlList items={deployUrlItems} />
                   {project.github_repo && (
                     <a href={`https://github.com/${project.github_repo}`} target="_blank" rel="noopener noreferrer" style={{
                       display: 'inline-flex', alignItems: 'center', gap: 8,
