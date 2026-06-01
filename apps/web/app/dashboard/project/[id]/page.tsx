@@ -2,6 +2,8 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { DeployUrlList, type DeployUrlItem } from "@/components/project/DeployUrlList";
+import { RecentChatsCard, type RecentChatItem } from "@/components/project/RecentChatsCard";
+import { RecentSessionsCard, type RecentSessionItem } from "@/components/project/RecentSessionsCard";
 
 export const dynamic = 'force-dynamic';
 
@@ -51,8 +53,10 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 
   if (!project) notFound();
 
-  // Deploys + recent activity in parallel. Best-effort; both can be empty.
-  const [deploysRes, msgsRes] = await Promise.all([
+  // Deploys + recent activity + recent chats + recent code-sessions in parallel.
+  // Best-effort; all can be empty. Direct DB reads (server component) so the hub
+  // works without a separate API round-trip.
+  const [deploysRes, msgsRes, chatsRes, sessionsRes] = await Promise.all([
     supabase
       .from('build_runs')
       .select('id, commit_message, status, model_used, duration_ms, created_at')
@@ -65,7 +69,25 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
       .eq('project_id', id)
       .order('created_at', { ascending: false })
       .limit(6),
+    supabase
+      .from('chat_sessions')
+      .select('id, title, updated_at')
+      .eq('project_id', id)
+      .order('updated_at', { ascending: false })
+      .limit(5),
+    supabase
+      .from('code_sessions')
+      .select('id, name, updated_at')
+      .eq('project_id', id)
+      .eq('state', 'active')
+      .order('updated_at', { ascending: false })
+      .limit(5),
   ]);
+
+  const recentChats: RecentChatItem[] = ((chatsRes.data as Array<{ id: string; title: string | null; updated_at: string }> | null) ?? [])
+    .map((r) => ({ id: r.id, title: r.title?.trim() || 'Unbenannter Chat', ago: timeAgoDe(r.updated_at) }));
+  const recentSessions: RecentSessionItem[] = ((sessionsRes.data as Array<{ id: string; name: string | null; updated_at: string }> | null) ?? [])
+    .map((r) => ({ id: r.id, name: r.name?.trim() || 'Session', ago: timeAgoDe(r.updated_at) }));
 
   const deploys: DeployRow[] = (deploysRes.data as DeployRow[] | null) ?? [];
   const messages = (msgsRes.data as Array<{ id: string; role: string; content: string; model_used: string | null; created_at: string }> | null) ?? [];
@@ -171,12 +193,14 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
             </Link>
           </div>
 
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'minmax(0, 1.6fr) minmax(0, 1fr)',
-            gap: 24,
-          }}>
-            <div className="gobl-panel" style={{ overflow: 'hidden', alignSelf: 'start' }}>
+          <style>{`
+            .gobl-hub-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 24px; }
+            @media (max-width: 820px) { .gobl-hub-grid { grid-template-columns: 1fr; } }
+          `}</style>
+          <div className="gobl-hub-grid">
+            {/* LEFT COLUMN — deploys + chats + code-sessions */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
+            <div className="gobl-panel" style={{ overflow: 'hidden', alignSelf: 'stretch' }}>
               <div style={{
                 padding: '14px 18px', borderBottom: '1px solid var(--line)',
               }}>
@@ -234,7 +258,11 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                 })
               )}
             </div>
+            <RecentChatsCard items={recentChats} projectId={id} />
+            <RecentSessionsCard items={recentSessions} projectId={id} />
+            </div>
 
+            {/* RIGHT COLUMN — activity + files + URLs */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
 
               <div className="gobl-panel" style={{ overflow: 'hidden' }}>
