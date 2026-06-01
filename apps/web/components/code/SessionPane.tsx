@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import { undo, redo, undoDepth, redoDepth } from "@codemirror/commands";
+import type { EditorView } from "@codemirror/view";
+import { Undo2, Redo2 } from "lucide-react";
 import { Icon } from "@/components/ui/icon";
 import { GoblinLogo } from "@/components/brand/GoblinLogo";
 import { SessionThread } from "./SessionThread";
@@ -44,11 +47,27 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange 
   // Keep parent's tab badge in sync with the real draft count.
   useEffect(() => { onDraftCountChange(detail.draftCount); }, [detail.draftCount, onDraftCountChange]);
 
-  // While streaming, surface the block currently being written in the editor.
+  // While streaming, surface the block currently being written (overlay only).
   const liveBlock = useMemo(() => {
     if (!agent.streaming) return null;
     return agent.blocks[agent.blocks.length - 1] ?? null;
   }, [agent.streaming, agent.blocks]);
+
+  // ── Undo / Redo (CodeMirror history) ──
+  // The editor stays mounted across the AI boundary (the live stream is a separate
+  // overlay), so an AI generation lands as ONE undoable transaction via the
+  // external-content update. Manual edits use CodeMirror's per-keystroke history.
+  const editorViewRef = useRef<EditorView | null>(null);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
+  const refreshHistory = useCallback(() => {
+    const v = editorViewRef.current;
+    if (!v) { setCanUndo(false); setCanRedo(false); return; }
+    setCanUndo(undoDepth(v.state) > 0);
+    setCanRedo(redoDepth(v.state) > 0);
+  }, []);
+  const doUndo = useCallback(() => { const v = editorViewRef.current; if (v) { undo(v); v.focus(); refreshHistory(); } }, [refreshHistory]);
+  const doRedo = useCallback(() => { const v = editorViewRef.current; if (v) { redo(v); v.focus(); refreshHistory(); } }, [refreshHistory]);
 
   const handleSubmit = (prompt: string) => {
     agent.submit(prompt, session.model_id ?? undefined, async () => {
@@ -96,9 +115,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange 
   const canSave = detail.draftCount > 0;
   const canDeploy = detail.files.length > 0 && detail.draftCount === 0;
 
-  const editorContent = liveBlock ? liveBlock.content : (detail.activeFile?.content ?? "");
   const editorFilename = liveBlock ? liveBlock.path : (detail.activeFile?.path ?? "index.html");
-  const editorReadOnly = !!liveBlock; // live stream is display-only until persisted
 
   return (
     <div className="gb-session-pane" style={{ flex: 1, display: "flex", minHeight: 0, position: "relative" }}>
@@ -149,6 +166,19 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange 
           <span style={{ color: "var(--ed-fg-1)", fontFamily: "JetBrains Mono, monospace", fontSize: 12.5, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {editorFilename}
           </span>
+          {/* Undo / Redo — work for manual edits AND AI generations (one event). */}
+          {detail.activeFile && !liveBlock && (
+            <>
+              <button onClick={doUndo} disabled={!canUndo} title="Rückgängig (Strg+Z)" aria-label="Rückgängig"
+                style={{ display: "inline-flex", alignItems: "center", background: "transparent", border: "1px solid var(--ed-rule)", color: canUndo ? "var(--ed-fg-2)" : "var(--ed-fg-3)", borderRadius: 8, padding: "5px 8px", cursor: canUndo ? "pointer" : "not-allowed", opacity: canUndo ? 1 : 0.5 }}>
+                <Undo2 size={14} />
+              </button>
+              <button onClick={doRedo} disabled={!canRedo} title="Wiederherstellen (Strg+Y)" aria-label="Wiederherstellen"
+                style={{ display: "inline-flex", alignItems: "center", background: "transparent", border: "1px solid var(--ed-rule)", color: canRedo ? "var(--ed-fg-2)" : "var(--ed-fg-3)", borderRadius: 8, padding: "5px 8px", cursor: canRedo ? "pointer" : "not-allowed", opacity: canRedo ? 1 : 0.5 }}>
+                <Redo2 size={14} />
+              </button>
+            </>
+          )}
           {/* Review actions for a draft file (the editor is the review surface). */}
           {!liveBlock && detail.activeFile?.change_state === "draft" && (
             <>
@@ -167,22 +197,37 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange 
           <StateBadge state={liveBlock ? "draft" : state} />
         </div>
 
-        {/* Editor / empty */}
-        <div style={{ flex: 1, minHeight: 0 }}>
-          {(detail.activeFile || liveBlock) ? (
+        {/* Editor / empty. The real editor stays mounted (key = file path only) so
+            its undo history survives an AI generation; the live stream renders as an
+            overlay on top. */}
+        <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
+          {detail.activeFile ? (
             <CodeEditor
-              key={editorFilename + (editorReadOnly ? ":live" : "")}
-              content={editorContent}
-              filename={editorFilename}
+              key={detail.activeFile.path}
+              content={detail.activeFile.content}
+              filename={detail.activeFile.path}
               theme={theme}
-              onChange={editorReadOnly ? () => {} : detail.editActive}
-              onSave={editorReadOnly ? () => {} : (c) => detail.editActive(c)}
+              onChange={(c) => { detail.editActive(c); refreshHistory(); }}
+              onSave={(c) => detail.editActive(c)}
+              onEditorReady={(v) => { editorViewRef.current = v; refreshHistory(); }}
             />
-          ) : (
+          ) : !liveBlock ? (
             <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
               <div style={{ textAlign: "center", maxWidth: 280, color: "var(--ed-fg-3)", fontFamily: "var(--font-sans)", fontSize: 14, lineHeight: 1.6 }}>
                 Noch nichts zu zeigen. Stell links eine Aufgabe — der Code erscheint hier als Entwurf.
               </div>
+            </div>
+          ) : null}
+
+          {liveBlock && (
+            <div style={{ position: "absolute", inset: 0, background: "var(--ed-canvas)", display: "flex", flexDirection: "column" }}>
+              <CodeEditor
+                key={liveBlock.path + ":live"}
+                content={liveBlock.content}
+                filename={liveBlock.path}
+                theme={theme}
+                readOnly
+              />
             </div>
           )}
         </div>
