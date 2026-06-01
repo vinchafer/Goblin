@@ -14,9 +14,12 @@
   --gold:          var(--brand-gold);   /* #D4A737 */
   --accent-bright: var(--brand-gold);   /* #D4A737 */
   --brand-header:  var(--brand-green);  /* #1A3A2A — consolidated header, PRESERVED */
-  --bone:          var(--bone);         /* #F4ECD8 */
+  /* --bone / --ink-1 are NOT re-aliased here: `--bone: var(--bone)` inside this
+     scope is a self-reference (cycle) → resolves to an invalid value, so any
+     `color: var(--bone)` was being dropped and inherited ink-deep instead. That
+     made the primary "Chat öffnen" button render dark-green text on dark-green.
+     Inherit the valid global :root values (#F4ECD8 / #0F2B1E) directly. */
   --bone-warm:     var(--paper);        /* #FBF7EC */
-  --ink-1:         var(--ink-1);        /* #0F2B1E */
   --d-surface:     var(--bone);         /* #F4ECD8 */
   --d-surface-elev:var(--paper);        /* #FBF7EC */
   --d-surface-deep:var(--ink-deep);     /* #0F2B1E */
