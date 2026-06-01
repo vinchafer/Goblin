@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { randomUUID } from 'crypto';
 import { authMiddleware } from '../middleware/auth';
 import { generateProject } from '../services/project-generator';
-import { createZip, listFiles, getFile, uploadFile, deleteFile, deleteProject } from '../services/file-storage';
+import { createZip, listFiles, getFile, uploadFile, deleteFile, deleteProject, listFilesWithMeta, getFileBytes, uploadProjectFileBytes } from '../services/file-storage';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { createTwoFilesPatch } from 'diff';
 import { createProjectFromTemplate } from './templates';
@@ -343,6 +343,65 @@ projects.get('/:id/download', async (c) => {
       'Content-Disposition': `attachment; filename="project-${projectId}.zip"`
     }
   });
+});
+
+// ── File Explorer (Sprint 8) ─────────────────────────────────────────────────
+// Ownership helper for the explorer endpoints.
+async function ownsProject(sb: ReturnType<typeof getSupabaseAdmin>, projectId: string, userId: string) {
+  const { data } = await sb.from('projects').select('id').eq('id', projectId).eq('user_id', userId).single();
+  return !!data;
+}
+
+// GET /:id/files-tree — flat file list with size + last-modified (explorer builds the tree).
+projects.get('/:id/files-tree', async (c) => {
+  const userId = c.get('userId');
+  const projectId = c.req.param('id');
+  const sb = getSupabaseAdmin();
+  if (!(await ownsProject(sb, projectId, userId))) return c.json({ error: 'Project not found' }, 404);
+  const entries = await listFilesWithMeta(projectId);
+  return c.json({ entries });
+});
+
+// GET /:id/files-raw/<path> — raw bytes (base64) + content-type for preview/download.
+// Wildcard path derived from URL (Hono does not populate param('*') reliably — see note below).
+projects.get('/:id/files-raw/*', async (c) => {
+  const userId = c.get('userId');
+  const projectId = c.req.param('id');
+  const m = c.req.path.match(/\/files-raw\/(.+)$/);
+  const filePath = m?.[1] ? decodeURIComponent(m[1]) : '';
+  if (!filePath) return c.json({ error: 'Path required' }, 400);
+  const sb = getSupabaseAdmin();
+  if (!(await ownsProject(sb, projectId, userId))) return c.json({ error: 'Project not found' }, 404);
+  const file = await getFileBytes(projectId, filePath);
+  if (!file) return c.json({ error: 'File not found' }, 404);
+  return c.json({
+    path: filePath,
+    contentType: file.contentType,
+    size: file.bytes.length,
+    base64: file.bytes.toString('base64'),
+  });
+});
+
+// POST /:id/files/upload — multipart upload of any file type (max 10MB).
+projects.post('/:id/files/upload', async (c) => {
+  const userId = c.get('userId');
+  const projectId = c.req.param('id');
+  const sb = getSupabaseAdmin();
+  if (!(await ownsProject(sb, projectId, userId))) return c.json({ error: 'Project not found' }, 404);
+
+  const form = await c.req.formData().catch(() => null);
+  const file = form?.get('file');
+  const targetDir = (form?.get('path') as string | null)?.replace(/^\/+|\/+$/g, '') ?? '';
+  if (!file || typeof file === 'string') return c.json({ error: 'No file' }, 400);
+
+  const MAX = 10 * 1024 * 1024;
+  if (file.size > MAX) return c.json({ error: 'Datei zu gross (max 10MB)' }, 413);
+
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+  const relPath = targetDir ? `${targetDir}/${safeName}` : safeName;
+  const bytes = Buffer.from(await file.arrayBuffer());
+  await uploadProjectFileBytes(projectId, relPath, bytes, file.type || 'application/octet-stream');
+  return c.json({ ok: true, path: relPath, size: bytes.length });
 });
 
 // Get pending code injections for a project

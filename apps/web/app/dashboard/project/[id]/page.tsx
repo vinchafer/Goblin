@@ -335,16 +335,22 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                   }}>
                     Dateien
                   </h2>
-                  <Link href={`/dashboard/project/${id}/work?tab=code`} style={{
+                  <Link href={`/dashboard/project/${id}/files`} style={{
                     fontFamily: 'JetBrains Mono, monospace', fontSize: 10,
                     letterSpacing: '0.14em', textTransform: 'uppercase',
                     color: 'var(--ink-3)', textDecoration: 'none',
                   }}>
-                    EDITOR ÖFFNEN →
+                    EXPLORER ÖFFNEN →
                   </Link>
                 </div>
-                <div style={{ padding: '16px 18px', fontSize: 13, color: 'var(--ink-3)', lineHeight: 1.5 }}>
-                  Vollständiger Dateibaum lebt im Editor. Tippe oben rechts „Editor öffnen“.
+                <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'flex-start' }}>
+                  <span style={{ fontSize: 13, color: 'var(--ink-3)', lineHeight: 1.5 }}>
+                    Durchsuche, lade hoch und verwalte alle Projektdateien.
+                  </span>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <Link href={`/dashboard/project/${id}/files`} className="gobl-btn primary">Explorer öffnen →</Link>
+                    <Link href={`/dashboard/project/${id}/work?tab=code`} className="gobl-btn ghost">Editor öffnen</Link>
+                  </div>
                 </div>
               </div>
 

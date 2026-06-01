@@ -189,6 +189,76 @@ export async function listFiles(projectId: string): Promise<string[]> {
   return files;
 }
 
+export interface FileMeta { path: string; size: number; modified: string | null; }
+
+/**
+ * List project files with size + last-modified metadata (for the file explorer).
+ * Same prefix walk as listFiles but keeps Size / LastModified.
+ */
+export async function listFilesWithMeta(projectId: string): Promise<FileMeta[]> {
+  const prefix = projectPrefix(projectId);
+  const s3 = getS3Client();
+
+  if (!s3) {
+    const out: FileMeta[] = [];
+    for (const [key, val] of memoryStorage.entries()) {
+      if (key.startsWith(prefix)) out.push({ path: key.slice(prefix.length), size: val.length, modified: null });
+    }
+    return out;
+  }
+
+  const out: FileMeta[] = [];
+  let continuationToken: string | undefined;
+  do {
+    const response = await s3.send(new ListObjectsV2Command({
+      Bucket: getBucket(), Prefix: prefix, ContinuationToken: continuationToken,
+    }));
+    for (const obj of response.Contents ?? []) {
+      if (obj.Key) out.push({
+        path: obj.Key.slice(prefix.length),
+        size: obj.Size ?? 0,
+        modified: obj.LastModified ? new Date(obj.LastModified).toISOString() : null,
+      });
+    }
+    continuationToken = response.NextContinuationToken;
+  } while (continuationToken);
+  return out;
+}
+
+/**
+ * Fetch raw bytes + content-type for a single file (image preview / download).
+ */
+export async function getFileBytes(
+  projectId: string, filePath: string,
+): Promise<{ bytes: Buffer; contentType: string } | null> {
+  const key = storageKey(projectId, filePath);
+  const s3 = getS3Client();
+  if (!s3) {
+    const v = memoryStorage.get(key);
+    if (v == null) return null;
+    return { bytes: Buffer.from(v, 'utf-8'), contentType: 'application/octet-stream' };
+  }
+  try {
+    const response = await s3.send(new GetObjectCommand({ Bucket: getBucket(), Key: key }));
+    if (!response.Body) return null;
+    const bytes = Buffer.from(await response.Body.transformToByteArray());
+    return { bytes, contentType: response.ContentType ?? 'application/octet-stream' };
+  } catch (err: unknown) {
+    const code = (err as { $metadata?: { httpStatusCode?: number } })?.$metadata?.httpStatusCode;
+    if (code === 404) return null;
+    throw err;
+  }
+}
+
+/**
+ * Upload raw bytes to a project-relative path (file explorer upload, any type).
+ */
+export async function uploadProjectFileBytes(
+  projectId: string, filePath: string, body: Buffer, contentType: string,
+): Promise<string> {
+  return (await uploadBytes(storageKey(projectId, filePath), body, contentType)).key;
+}
+
 /**
  * Delete a single file from storage.
  */
