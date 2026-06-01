@@ -82,9 +82,7 @@ export function Footer() {
           <div className="footer-brand">
             <Lockup size="md" onDeep ariaLabel="Goblin" />
             <div className="footer-socials">
-              <a href="#" target="_blank" rel="noopener noreferrer">Discord</a>
-              <a href="#" target="_blank" rel="noopener noreferrer">Twitter</a>
-              <a href="#" target="_blank" rel="noopener noreferrer">GitHub</a>
+              <a href="https://github.com/vinchafer/Goblin" target="_blank" rel="noopener noreferrer">GitHub</a>
             </div>
           </div>
 
@@ -92,13 +90,12 @@ export function Footer() {
             <div className="header">Product</div>
             <a href="#pricing">Pricing</a>
             <a href="#faq">FAQ</a>
-            <a href="#">Changelog</a>
+            <a href="/changelog">Changelog</a>
           </div>
           <div className="footer-col">
             <div className="header">Company</div>
-            <a href="#">About</a>
-            <a href="#">Manifesto</a>
-            <a href="#">Press</a>
+            <a href="/about">About</a>
+            <a href="/manifesto">Manifesto</a>
           </div>
           <div className="footer-col">
             <div className="header">Legal</div>
