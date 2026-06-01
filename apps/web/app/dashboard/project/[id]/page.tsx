@@ -69,6 +69,20 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   const deploys: DeployRow[] = (deploysRes.data as DeployRow[] | null) ?? [];
   const messages = (msgsRes.data as Array<{ id: string; role: string; content: string; model_used: string | null; created_at: string }> | null) ?? [];
 
+  // Unified activity feed — merge chat turns + deploys, newest first. (Code-session
+  // + file-save events fold in once migration 0055 is live; omitted gracefully now.)
+  type ActivityItem = { id: string; kind: 'chat' | 'deploy'; text: string; created_at: string };
+  const activity: ActivityItem[] = [
+    ...messages.map((m) => ({
+      id: 'm' + m.id, kind: 'chat' as const, created_at: m.created_at,
+      text: `${m.role === 'user' ? 'Du' : 'Goblin'}: ${m.content.replace(/```[\s\S]*?```/g, '[Code-Block]').slice(0, 140)}`,
+    })),
+    ...deploys.map((d) => ({
+      id: 'd' + d.id, kind: 'deploy' as const, created_at: d.created_at,
+      text: `Veröffentlicht${d.status ? ` · ${String(d.status).toUpperCase()}` : ''}`,
+    })),
+  ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 8);
+
   const status = (project.status ?? 'idle').toUpperCase();
 
   return (
@@ -226,25 +240,25 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                     CHAT ÖFFNEN →
                   </Link>
                 </div>
-                {messages.length === 0 ? (
+                {activity.length === 0 ? (
                   <div style={{ padding: '20px 18px', fontSize: 13.5, color: 'var(--ink-3)' }}>
                     Noch nichts passiert. Stelle Goblin eine Frage im Chat.
                   </div>
                 ) : (
-                  messages.map((m, i) => (
-                    <div key={m.id} style={{
+                  activity.map((a, i) => (
+                    <div key={a.id} style={{
                       display: 'flex', gap: 12, padding: '12px 18px',
-                      borderBottom: i === messages.length - 1 ? 'none' : '1px solid var(--line)',
+                      borderBottom: i === activity.length - 1 ? 'none' : '1px solid var(--line)',
                     }}>
                       <div style={{
                         width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        background: m.role === 'user' ? 'var(--ink-1)' : 'var(--green)',
-                        color: m.role === 'user' ? 'var(--bone)' : 'var(--gold)',
+                        background: a.kind === 'deploy' ? 'var(--gold)' : 'var(--green)',
+                        color: a.kind === 'deploy' ? 'var(--green)' : 'var(--gold)',
                         fontFamily: 'var(--font-dash-display), Manrope, sans-serif',
-                        fontWeight: 700, fontSize: 10,
+                        fontWeight: 700, fontSize: 11,
                       }}>
-                        {m.role === 'user' ? 'D' : 'G'}
+                        {a.kind === 'deploy' ? '↑' : 'G'}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{
@@ -252,13 +266,13 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                           overflow: 'hidden', display: '-webkit-box',
                           WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
                         }}>
-                          <b>{m.role === 'user' ? 'Du' : 'Goblin'}:</b> {m.content.replace(/```[\s\S]*?```/g, '[Code-Block]').slice(0, 200)}
+                          {a.text}
                         </div>
                         <div style={{
                           fontFamily: 'JetBrains Mono, monospace', fontSize: 10.5,
                           color: 'var(--ink-3)', marginTop: 3, letterSpacing: '0.04em',
                         }}>
-                          {timeAgoDe(m.created_at)}
+                          {timeAgoDe(a.created_at)}
                         </div>
                       </div>
                     </div>
