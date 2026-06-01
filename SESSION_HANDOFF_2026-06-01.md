@@ -1,50 +1,44 @@
-# Goblin — Session Handoff (2026-06-01, after Sprint 6 overnight)
+# Goblin — Session Handoff (2026-06-01, after Sprint 7 overnight)
 
-> Read **SPRINT_6_COMPLETE_2026-06-01.md** for the full report. This is the 60-sec version.
+> Full report: **SPRINT_7_COMPLETE_2026-06-01.md**. This is the 60-sec version.
 
 ## The one thing that matters
-**Open the Code Tab.** It's **light** now — you can finally read code (the old
-`#28251D`/`#08170F` dark editor you couldn't use is gone). Toggle *Dunkel* top-left
-for the retuned warm-dark. And Send-to-Code no longer auto-deploys: code lands as a
-**Entwurf**, you *Sichern*, then a **confirmed** *Veröffentlichen*. Those were your
-two sharpest complaints — both fixed and verified live.
+The **full multi-session Code-Tab vision is built** — parallel sessions, an in-tab AI
+composer that streams code into the editor live, per-session models, the
+Entwurf→Gesichert→Veröffentlicht spine, mobile single-column. It is **latent** until
+you do two ops: `npx supabase db push` (migration 0055) **and** redeploy the API to
+Railway. Until then the Code Tab safely shows the Sprint-6 classic editor (verified —
+zero regression). The seam between this code and the live tables is the one thing that
+hasn't had a real run; the e2e harness (`SPRINT7_LIVE=1`) is ready for it.
 
 ## State
-- **Sprints 1–6 done.** Beta-readiness ~85% (was ~80%). Nothing regressed; typecheck
-  ×4 + production `next build` both green.
-- **7 commits this session**, `fd6b634` → `135c450`, all local on `master`. Not pushed.
-- Code Tab is the focus of this sprint: editor light-by-default + the Save↔Deploy
-  Zwischenraum shipped. The full thread/parallel-session/in-tab-AI workspace is
-  **fully designed** (`CODETAB_REIMAGINE_ARCHITECTURE_2026-06-01.md`) and staged as
-  the next build — best done with you watching it stream live.
+- **Sprints 1–7 done.** Beta-readiness ~88% built; remaining gap is mostly operational.
+- **6 commits**, `8303058` → `c7446d6`, local on `master`. Not pushed. typecheck
+  (api+web) + production build green.
 
 ## Founder action list (priority order)
-1. Open the Code Tab, toggle light/dark, walk Send-to-Code (Entwurf → Sichern →
-   Veröffentlichen). This is the headline.
-2. Read `CODETAB_REIMAGINE_ARCHITECTURE_2026-06-01.md` → "build this" or revise. The
-   thread + in-tab agent + parallel sessions are the next conversation.
-3. Tell me **which screen** has the green-on-green "Neuer Chat" (Phase 6.1 — couldn't
-   repro).
-4. Decide Phase 4 (density) + Phase 6.4 (footer About/Manifesto/Changelog) for a
-   follow-up.
-5. Push the 7 commits after review.
+1. `npx supabase db push` (applies 0055 — `code_sessions*` tables).
+2. Push these commits → Railway redeploys the API with `routes/code-sessions.ts`.
+3. Confirm a BYOK model key for the test user (streaming agent needs a model).
+4. Live walk the Code Tab: prompt → stream → Entwurf → Sichern → Veröffentlichen;
+   2nd parallel session; Send-to-Code picker. Or `SPRINT7_LIVE=1` Playwright.
+5. Eyeball the "Chat öffnen" button (fixed) + the new /about /manifesto /changelog.
+6. Push after review.
 
-## What shipped (one-liners)
-- **Light editor (`fd6b634`):** CodeMirror `goblinLight` default + warm-dark option,
-  real Goblin syntax palette, scoped `--ed-*` chrome, persisted action-bar toggle.
-- **Zwischenraum (`b0861bf`):** draft → Sichern → confirmed Veröffentlichen; no
-  adjacent deploy; review modal re-skinned light.
-- **Chat buttons (`63f3eb0`):** Copy + An Code senden now equal-weight in one footer.
-- **Polish (`357e690`):** hero-title 2-line clamp; wordmark 18.66px contrast.
-- **Docs (`252ab38`, `135c450`):** Screen 07 folded; onboarding copy matches the
-  new flow.
+## What shipped this session (one-liners)
+- **Multi-session Code Tab (`8303058`):** 0055 migration + `/code-sessions` REST/SSE +
+  streaming agent (prompt → live editor → draft files) + workspace UI; classic
+  fallback when the API is down.
+- **Draft review + e2e (`c89d904`):** Kopieren/Verwerfen on draft files; founder test.
+- **Readable button (`5adb6b8`):** fixed a circular `--bone` token — "Chat öffnen" was
+  dark-on-dark across the whole dashboard. Verified live.
+- **Footer pages (`850d94a`):** /about, /manifesto, /changelog; dead links removed.
+- **Activity feed (`1b69924`):** chat + deploys merged, newest first.
+- **Density (`c7446d6`):** section-title 700→600 + `DENSITY_AUDIT_2026-06-01.md`.
 
 ## Operational notes (unchanged)
-- `pnpm dev` → :3000 (web), :3001 (local API); web talks to **prod** API. Test creds
-  in `.env.local`.
-- Harness auth: password grant → `/auth/magic-callback` (see `audit/lean.mjs`).
-- For browser CDP work this session I launched Chrome on `:9222` with a temp profile
-  (`%TEMP%\goblin-cdp-profile`) because it wasn't already running.
-- No push / no amend / no rebase / no force. Atomic commits, reports at repo root.
-- Editor-theme + proposed Code-Tab tokens are documented PROPOSED for design-system
-  v1.2 (`CODETAB_PROPOSED_TOKENS_2026-06-01.md`) — review before they enter the SSOT.
+- `pnpm dev` → :3000 (web), :3001 (local API); web talks to **prod** API + **prod**
+  Supabase (no local DB). Test creds in `.env.local`. No push / no amend / no force.
+- Editor-theme + Code-Tab tokens still PROPOSED for design-system v1.2
+  (`CODETAB_PROPOSED_TOKENS_2026-06-01.md`) — `--ed-deployed` added this sprint.
+- CDP browser on :9222 was already logged in (project c7f53841) — used for live checks.
