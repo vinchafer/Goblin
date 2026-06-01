@@ -399,7 +399,7 @@ button, input, textarea, select {
 .section-title {
   font-family: var(--font-sans);
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 600; /* density: 700 read heavy on app surfaces; 600 = calm-dense (Linear/Vercel sit here) */
   color: var(--brand-green);
   letter-spacing: -0.3px;
   margin-bottom: var(--space-1);
