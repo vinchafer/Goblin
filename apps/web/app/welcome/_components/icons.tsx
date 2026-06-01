@@ -5,7 +5,7 @@ import {
   Check, Code, Cpu, Eye, EyeOff, Folder, Github, Globe, Link2, Plus, Search,
   Shield, Sparkles, Triangle,
 } from 'lucide-react';
-import { GoblinMark } from '@/components/ui/goblin-mark';
+import { GoblinLogo } from '@/components/brand/GoblinLogo';
 
 type IconProps = { size?: number; className?: string; strokeWidth?: number };
 
@@ -42,5 +42,5 @@ export const IVercel = wrap(Triangle, 2);
 
 // Goblin mark — reuse existing brand component
 export function GMark({ size = 22, className }: { size?: number; className?: string }) {
-  return <GoblinMark size={size} className={className} />;
+  return <GoblinLogo state="idle" size={size} variant="gold" className={className} />;
 }

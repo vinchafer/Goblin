@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { Icon } from "@/components/ui/icon";
-import { GoblinMark } from "@/components/ui/goblin-mark";
+import { GoblinLogo } from "@/components/brand/GoblinLogo";
 import { SessionThread } from "./SessionThread";
 import { SessionPromptInput } from "./SessionPromptInput";
 import { useCodeSessionDetail } from "@/hooks/code/useCodeSessionDetail";
@@ -187,7 +187,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange 
               cursor: canSave && !detail.saving ? "pointer" : "not-allowed", fontFamily: "var(--font-sans)",
             }}
           >
-            {detail.saving ? <GoblinMark size={14} /> : <Icon name="save" size={14} />} Sichern
+            {detail.saving ? <GoblinLogo state="working" size={14} variant="gold" /> : <Icon name="save" size={14} />} Sichern
           </button>
           <span style={{ width: 1, height: 22, background: "var(--ed-rule)" }} />
           <button
@@ -202,7 +202,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange 
               cursor: canDeploy && !deploying ? "pointer" : "not-allowed", fontFamily: "var(--font-sans)",
             }}
           >
-            {deploying ? <GoblinMark size={14} /> : <Icon name="play" size={14} />} Veröffentlichen
+            {deploying ? <GoblinLogo state="working" size={14} variant="gold" /> : <Icon name="play" size={14} />} Veröffentlichen
           </button>
         </div>
       </div>

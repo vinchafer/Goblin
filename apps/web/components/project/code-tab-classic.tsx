@@ -17,7 +17,7 @@ import { CodeEmptyState } from "@/components/code/CodeEmptyState";
 import { useCodeTab } from "@/hooks/useCodeTab";
 import { useEditorTheme } from "@/hooks/code/useEditorTheme";
 import { Icon } from "@/components/ui/icon";
-import { GoblinMark } from "@/components/ui/goblin-mark";
+import { GoblinLogo } from "@/components/brand/GoblinLogo";
 
 const CodeEditor = dynamic(
   () => import("@/components/editor/code-editor").then(m => ({ default: m.CodeEditor })),
@@ -227,7 +227,7 @@ export function CodeTabClassic({ projectId, projectName = 'project', pendingCode
           <Icon name="github" size={18} />
         </button>
         <button onClick={() => setDeployConfirm(true)} disabled={tab.deploying} aria-label="Veröffentlichen" title="Veröffentlichen" style={{ width: 56, height: 56, borderRadius: '50%', background: tab.deploying ? 'rgba(45,74,43,0.6)' : 'var(--brand-green)', border: 'none', color: 'var(--brand-gold)', cursor: tab.deploying ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 20px rgba(45,74,43,0.5)' } as React.CSSProperties}>
-          {tab.deploying ? <GoblinMark size={22} /> : <Icon name="play" size={20} />}
+          {tab.deploying ? <GoblinLogo state="working" size={22} variant="gold" /> : <Icon name="play" size={20} />}
         </button>
       </div>
 

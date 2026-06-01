@@ -5,7 +5,7 @@ import { CodeTabClassic } from "./code-tab-classic";
 import { CodeWorkspace } from "@/components/code/CodeWorkspace";
 import { useApp } from "@/contexts/app-context";
 import { useEditorTheme } from "@/hooks/code/useEditorTheme";
-import { GoblinMark } from "@/components/ui/goblin-mark";
+import { GoblinLogo } from "@/components/brand/GoblinLogo";
 import { API_URL, getToken } from "@/hooks/code/getToken";
 
 interface CodeTabProps {
@@ -53,7 +53,7 @@ export function CodeTab({ projectId, projectName = "project", pendingCode }: Cod
   if (avail === "probing") {
     return (
       <div className="gb-codetab" data-editor-theme={theme} style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--ed-canvas)" }}>
-        <GoblinMark size={26} />
+        <GoblinLogo state="breath" size={26} variant="green" />
       </div>
     );
   }

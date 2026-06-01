@@ -3,7 +3,7 @@
 import { useRef, useEffect } from "react";
 import { CodeBlock } from "./CodeBlock";
 import type { ChatMessage as ChatMessageType } from "@goblin/shared/src/schemas";
-import { GoblinMark } from "@/components/ui/goblin-mark";
+import { GoblinLogo } from "@/components/brand/GoblinLogo";
 
 const THINKING_PHRASES = [
   'Your goblin is thinking…',
@@ -93,9 +93,10 @@ export function ChatMessageItem({ msg, isStreaming, onSendToCode }: Props) {
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         marginTop: 2,
       }}>
-        <GoblinMark
+        <GoblinLogo
+          state={isThinking ? 'thinking' : 'idle'}
           size={18}
-          className={isThinking ? 'goblin-think' : undefined}
+          variant="white"
         />
       </div>
 

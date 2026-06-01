@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { Icon } from "@/components/ui/icon";
-import { GoblinMark } from "@/components/ui/goblin-mark";
+import { GoblinLogo } from "@/components/brand/GoblinLogo";
 import type { SessionMessage } from "@/hooks/code/useCodeSessionDetail";
 import { parseCodeBlocks } from "@/lib/parse-code-blocks";
 
@@ -94,7 +94,7 @@ export function SessionThread({ messages, streaming, streamingText, streamingMod
       {streaming && (
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
           <span style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 11.5, color: "var(--ed-fg-3)", fontFamily: "var(--font-sans)", fontWeight: 600 }}>
-            <GoblinMark size={14} /> Goblin{streamingModel ? <span style={{ fontWeight: 400 }}>· {streamingModel}</span> : null} <span style={{ fontWeight: 400, color: "var(--ed-accent)" }}>· schreibt …</span>
+            <GoblinLogo state="thinking" size={14} variant="gold" /> Goblin{streamingModel ? <span style={{ fontWeight: 400 }}>· {streamingModel}</span> : null} <span style={{ fontWeight: 400, color: "var(--ed-accent)" }}>· schreibt …</span>
           </span>
           {streamingSummary.prose && (
             <div style={{ fontSize: 13.5, lineHeight: 1.55, color: "var(--ed-fg-2)", fontFamily: "var(--font-sans)", whiteSpace: "pre-wrap" }}>{streamingSummary.prose}</div>

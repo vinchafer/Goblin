@@ -2,7 +2,7 @@
 
 import { useRef, useState, useEffect } from "react";
 import { Icon } from "@/components/ui/icon";
-import { GoblinMark } from "@/components/ui/goblin-mark";
+import { GoblinLogo } from "@/components/brand/GoblinLogo";
 import { SessionModelPicker } from "./SessionModelPicker";
 
 interface Props {
@@ -84,7 +84,7 @@ export function SessionPromptInput({ modelId, onModelChange, onSubmit, streaming
                 padding: "7px 12px", fontSize: 13, cursor: "pointer", fontFamily: "var(--font-sans)",
               }}
             >
-              <GoblinMark size={15} /> Stoppen
+              <GoblinLogo state="thinking" size={15} variant="gold" /> Stoppen
             </button>
           ) : (
             <button

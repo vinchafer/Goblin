@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Icon } from "@/components/ui/icon";
-import { GoblinMark } from "@/components/ui/goblin-mark";
+import { GoblinLogo } from "@/components/brand/GoblinLogo";
 import { SessionTabs } from "./SessionTabs";
 import { SessionPane } from "./SessionPane";
 import { SessionPickerDialog } from "./SessionPickerDialog";
@@ -71,7 +71,7 @@ export function CodeWorkspace({ projectId, pendingCode, onPendingConsumed }: Pro
   if (s.loading) {
     return (
       <div className="gb-codetab" data-editor-theme={theme} style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--ed-canvas)" }}>
-        <GoblinMark size={28} />
+        <GoblinLogo state="breath" size={28} variant="green" />
       </div>
     );
   }

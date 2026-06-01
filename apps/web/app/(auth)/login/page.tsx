@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
-import { GoblinMark } from '@/components/ui/goblin-mark';
+import { GoblinLogo } from '@/components/brand/GoblinLogo';
 
 export const dynamic = 'force-dynamic';
 
@@ -361,7 +361,7 @@ export default function LoginPage() {
             width: 'fit-content',
           }}
         >
-          <GoblinMark size={28} />
+          <GoblinLogo state="idle" size={28} variant="gold" />
           <span style={{ fontFamily: 'var(--font-sans)', fontSize: 24, fontWeight: 700, letterSpacing: '-0.5px' }}>
             Goblin<span style={{ color: 'var(--brand-gold)' }}>.</span>
           </span>
@@ -429,7 +429,7 @@ export default function LoginPage() {
               textDecoration: 'none', marginBottom: 24, justifyContent: 'center',
             }}
           >
-            <GoblinMark size={24} />
+            <GoblinLogo state="idle" size={24} variant="gold" />
             <span style={{ fontFamily: 'var(--font-sans)', fontSize: 22, color: 'var(--brand-green)', fontWeight: 700 }}>
               Goblin<span style={{ color: 'var(--brand-gold)' }}>.</span>
             </span>

@@ -1,7 +1,7 @@
 'use client';
 
 import { Icon } from '@/components/ui/icon';
-import { GoblinMark } from '@/components/ui/goblin-mark';
+import { GoblinLogo } from '@/components/brand/GoblinLogo';
 
 interface CodeActionBarProps {
   deploying: boolean;
@@ -71,7 +71,7 @@ export function CodeActionBar({ deploying, onDeploy, onPush, editorTheme = 'ligh
         onMouseLeave={e => { if (!deploying) (e.currentTarget as HTMLElement).style.opacity = '1'; }}
       >
         {deploying
-          ? <><GoblinMark size={14} /> Wird gebaut…</>
+          ? <><GoblinLogo state="working" size={14} variant="gold" /> Wird gebaut…</>
           : <><Icon name="play" size={13} /> Build</>}
       </button>
     </div>
