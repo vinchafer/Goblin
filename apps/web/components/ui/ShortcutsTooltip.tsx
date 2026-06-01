@@ -2,9 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
-const STORAGE_KEY = 'goblin:shortcuts-tip-seen';
-const INACTIVITY_MS = 5000;
-
 const SHORTCUTS = [
   { keys: '⌘K', label: 'Befehlspalette' },
   { keys: '⌘1/2/3', label: 'Tab wechseln' },
@@ -13,42 +10,38 @@ const SHORTCUTS = [
   { keys: '?', label: 'Alle Shortcuts' },
 ];
 
+// Sprint 9 P1: the panel no longer auto-pops on inactivity (it squatted on every
+// screen and wouldn't stay dismissed). It is now a desktop-only, `?`-toggled
+// reference: press `?` to show, `?`/Esc/× to hide. Hidden entirely on touch
+// devices, where keyboard hints are meaningless.
 export function ShortcutsTooltip() {
   const [visible, setVisible] = useState(false);
 
-  const dismiss = useCallback(() => {
-    setVisible(false);
-    if (typeof window !== 'undefined') localStorage.setItem(STORAGE_KEY, '1');
-  }, []);
+  const dismiss = useCallback(() => setVisible(false), []);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (localStorage.getItem(STORAGE_KEY)) return;
+    // Touch / coarse-pointer devices: never render keyboard hints.
+    if (window.matchMedia?.('(pointer: coarse)').matches) return;
 
-    let timer: ReturnType<typeof setTimeout> | null = null;
-
-    const schedule = () => {
-      if (timer) clearTimeout(timer);
-      timer = setTimeout(() => {
-        if (!localStorage.getItem(STORAGE_KEY)) setVisible(true);
-      }, INACTIVITY_MS);
+    const isTypingTarget = (el: EventTarget | null) => {
+      const node = el as HTMLElement | null;
+      if (!node) return false;
+      const tag = node.tagName;
+      return tag === 'INPUT' || tag === 'TEXTAREA' || node.isContentEditable;
     };
 
-    const onActivity = () => schedule();
-    const onShortcut = (e: KeyboardEvent) => {
-      if (e.metaKey || e.ctrlKey || e.key === '?') dismiss();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') { setVisible(false); return; }
+      if (e.key === '?' && !e.metaKey && !e.ctrlKey && !e.altKey && !isTypingTarget(e.target)) {
+        e.preventDefault();
+        setVisible((v) => !v);
+      }
     };
 
-    schedule();
-    window.addEventListener('mousemove', onActivity);
-    window.addEventListener('keydown', onShortcut);
-
-    return () => {
-      if (timer) clearTimeout(timer);
-      window.removeEventListener('mousemove', onActivity);
-      window.removeEventListener('keydown', onShortcut);
-    };
-  }, [dismiss]);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   if (!visible) return null;
 
