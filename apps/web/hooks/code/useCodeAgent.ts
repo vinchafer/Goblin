@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from 'react';
 import { apiStream } from '@/lib/api';
 import { parseCodeBlocks, type ParsedBlock } from '@/lib/parse-code-blocks';
+import { friendlyError } from '@/lib/friendly-error';
 
 interface AgentDone {
   files: string[];
@@ -52,7 +53,7 @@ export function useCodeAgent(sessionId: string | null) {
             setStreaming(false);
             onDone?.({ files: d.files ?? [], text: textRef.current });
           } else if (d.type === 'error') {
-            setError(d.message || 'Modell hat nicht geantwortet — nochmal?');
+            setError(friendlyError(d.message, 'Modell hat nicht geantwortet — nochmal?'));
             setStreaming(false);
           }
         },
@@ -61,7 +62,7 @@ export function useCodeAgent(sessionId: string | null) {
     } catch (e) {
       // Aborted intentionally is not an error to surface.
       if ((e as Error)?.name !== 'AbortError') {
-        setError(e instanceof Error ? e.message : 'Server nicht erreichbar — nochmal versuchen?');
+        setError(friendlyError(e, 'Server nicht erreichbar — nochmal versuchen?'));
       }
       setStreaming(false);
     }

@@ -61,10 +61,10 @@ export function ProjectsList({ projects, onProjectCreated }: ProjectsListProps) 
         {projects.length === 0 ? (
           <div className="px-2.5 py-4 text-center">
             <div className="text-xs font-medium mb-1" style={{ color: 'var(--ink-2)' }}>
-              No projects yet
+              Noch keine Projekte
             </div>
             <div className="text-[10px]" style={{ color: 'var(--ink-3)' }}>
-              Click above to create your first
+              Oben tippen, um dein erstes zu erstellen
             </div>
           </div>
         ) : (

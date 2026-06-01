@@ -9,6 +9,7 @@ import type { SelectedModel } from "@/components/chat/ChatInput";
 import { EmptyChat } from "@/components/chat/EmptyChat";
 import Message from "./Message";
 import { useUser } from "@/lib/hooks/useUser";
+import { friendlyError } from "@/lib/friendly-error";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -268,7 +269,7 @@ export function StandaloneChat({ sessionId, initialMessages = [] }: StandaloneCh
             }
             setIsStreaming(false);
           } else if (d.type === "error") {
-            setError(d.message || "Stream error");
+            setError(friendlyError(d.message));
             setMessages(baseMessagesRef.current);
             streamingMsgRef.current = null;
             setIsStreaming(false);
@@ -284,7 +285,7 @@ export function StandaloneChat({ sessionId, initialMessages = [] }: StandaloneCh
         setIsStreaming(false);
         return;
       }
-      setError(err instanceof Error ? err.message : "Failed to send");
+      setError(friendlyError(err, "Senden fehlgeschlagen — bitte nochmal versuchen."));
       setMessages(baseMessagesRef.current);
       streamingMsgRef.current = null;
       setIsStreaming(false);

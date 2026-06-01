@@ -7,6 +7,8 @@ import { createClient } from '@/lib/supabase/client';
 import { useApp } from '@/contexts/app-context';
 import { NewProjectModal } from '@/components/projects/new-project-modal';
 import { ChatInput, useChatModel } from '@/components/chat/ChatInput';
+import { filterVisibleProjects } from '@/lib/project-visibility';
+import { friendlyError } from '@/lib/friendly-error';
 
 interface Project {
   id: string;
@@ -107,14 +109,14 @@ export default function DashboardPage() {
       ]);
 
       if (!projRes.ok) throw new Error('Projekte konnten nicht geladen werden');
-      setProjects(await projRes.json());
+      setProjects(filterVisibleProjects(await projRes.json()));
 
       if (meRes.ok) {
         const me = await meRes.json();
         setDisplayName(me.displayName ?? null);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Etwas ist schiefgelaufen');
+      setError(friendlyError(err, 'Etwas ist schiefgelaufen'));
     } finally {
       setLoading(false);
     }
