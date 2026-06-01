@@ -360,6 +360,7 @@
   --ed-hover:     rgba(26,58,42,0.05);
   --ed-draft:     #BC8E2E;  /* Entwurf */
   --ed-saved:     #3D7A4F;  /* Gesichert */
+  --ed-deployed:  #D4A737;  /* Veröffentlicht (live URL) */
 }
 .gb-codetab[data-editor-theme="dark"] {
   --ed-canvas:    #3F3A2C;
@@ -376,4 +377,5 @@
   --ed-hover:     rgba(212,167,55,0.08);
   --ed-draft:     #E8C97F;
   --ed-saved:     #87C098;
+  --ed-deployed:  #D4A737;
 }

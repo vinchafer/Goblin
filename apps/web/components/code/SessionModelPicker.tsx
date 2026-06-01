@@ -1,0 +1,112 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { API_URL, getToken } from "@/hooks/code/getToken";
+import { Icon } from "@/components/ui/icon";
+
+interface ModelOpt {
+  slug: string;
+  name: string;
+  provider: string;
+  available: boolean;
+}
+
+interface Props {
+  value: string | null;
+  onChange: (slug: string) => void;
+  /** compact = chip in the composer; full = wider button */
+  variant?: "compact" | "full";
+}
+
+let _cache: ModelOpt[] | null = null;
+
+/** Per-session model picker. Scoped to one session; reads /api/models. */
+export function SessionModelPicker({ value, onChange, variant = "compact" }: Props) {
+  const [models, setModels] = useState<ModelOpt[]>(_cache ?? []);
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (_cache) return;
+    (async () => {
+      try {
+        const t = await getToken();
+        if (!t) return;
+        const res = await fetch(`${API_URL}/api/models`, { headers: { Authorization: `Bearer ${t}` } });
+        if (!res.ok) return;
+        const data = await res.json();
+        const list: ModelOpt[] = (data.models ?? data ?? []).map((m: Record<string, unknown>) => ({
+          slug: String(m.slug ?? m.id), name: String(m.name ?? m.slug ?? m.id),
+          provider: String(m.provider ?? ""), available: m.available !== false,
+        }));
+        _cache = list;
+        setModels(list);
+      } catch { /* silent — picker just shows the raw slug */ }
+    })();
+  }, []);
+
+  useEffect(() => {
+    const h = (e: MouseEvent) => { if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false); };
+    if (open) document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, [open]);
+
+  const current = models.find(m => m.slug === value);
+  const label = current?.name ?? (value ? value : "Modell wählen");
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        style={{
+          display: "inline-flex", alignItems: "center", gap: 6,
+          background: "transparent", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-2)",
+          borderRadius: 8, padding: variant === "compact" ? "5px 9px" : "7px 12px",
+          fontSize: 12, fontFamily: "var(--font-sans)", cursor: "pointer", maxWidth: 200,
+        }}
+      >
+        <Icon name="model" size={13} />
+        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
+        <Icon name={open ? "collapse" : "expand"} size={11} />
+      </button>
+
+      {open && (
+        <div
+          role="listbox"
+          style={{
+            position: "absolute", bottom: "calc(100% + 6px)", left: 0, zIndex: 60,
+            minWidth: 240, maxHeight: 320, overflowY: "auto",
+            background: "var(--ed-chrome-2)", border: "1px solid var(--ed-rule)", borderRadius: 10,
+            boxShadow: "0 12px 32px rgba(15,43,30,0.24)", padding: 6,
+          }}
+        >
+          {models.length === 0 && (
+            <div style={{ padding: "10px 12px", fontSize: 12, color: "var(--ed-fg-3)", fontFamily: "var(--font-sans)" }}>
+              Keine Modelle — API-Key in den Einstellungen hinterlegen.
+            </div>
+          )}
+          {models.map(m => (
+            <button
+              key={m.slug}
+              type="button"
+              onClick={() => { onChange(m.slug); setOpen(false); }}
+              disabled={!m.available}
+              style={{
+                display: "flex", alignItems: "center", gap: 8, width: "100%", textAlign: "left",
+                background: m.slug === value ? "var(--ed-hover)" : "transparent", border: "none",
+                color: m.available ? "var(--ed-fg-1)" : "var(--ed-fg-3)", borderRadius: 7,
+                padding: "8px 10px", fontSize: 12.5, fontFamily: "var(--font-sans)",
+                cursor: m.available ? "pointer" : "not-allowed",
+              }}
+            >
+              <span style={{ flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{m.name}</span>
+              <span style={{ fontSize: 10.5, color: "var(--ed-fg-3)" }}>{m.provider}</span>
+              {m.slug === value && <Icon name="check" size={13} />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

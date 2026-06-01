@@ -1,0 +1,110 @@
+// Frontend mirror of apps/api/src/lib/parse-code-blocks.ts — used for the LIVE
+// typewriter: as stream deltas arrive, we re-parse the accumulating text so the
+// editor shows code appearing block-by-block. The backend re-parses the final
+// text authoritatively when persisting draft files; this copy is display-only.
+// Tolerant + never throws. Handles incomplete (still-streaming) trailing blocks.
+
+export interface ParsedBlock {
+  path: string;
+  content: string;
+  lang: string;
+  complete: boolean;
+}
+
+const LANG_EXT: Record<string, string> = {
+  html: 'index.html', htm: 'index.html',
+  css: 'styles.css', scss: 'styles.scss',
+  js: 'script.js', javascript: 'script.js', mjs: 'script.mjs',
+  ts: 'script.ts', typescript: 'script.ts',
+  jsx: 'App.jsx', tsx: 'App.tsx',
+  json: 'data.json', md: 'README.md', markdown: 'README.md',
+  py: 'main.py', python: 'main.py',
+  sh: 'script.sh', bash: 'script.sh',
+  yaml: 'config.yaml', yml: 'config.yml',
+  txt: 'scratch.txt', text: 'scratch.txt',
+};
+
+const FILENAME_RE = /[A-Za-z0-9_\-./]+\.[A-Za-z0-9]+/;
+
+function filenameFromFirstLine(line: string): string | null {
+  const trimmed = line.trim();
+  const comment = trimmed
+    .replace(/^<!--\s*/, '').replace(/\s*-->$/, '')
+    .replace(/^\/\*\s*/, '').replace(/\s*\*\/$/, '')
+    .replace(/^\/\/\s*/, '').replace(/^#\s*/, '')
+    .trim();
+  const m = comment.match(FILENAME_RE);
+  if (m && (trimmed.startsWith('<!--') || trimmed.startsWith('//') || trimmed.startsWith('#') || trimmed.startsWith('/*'))) {
+    return m[0];
+  }
+  return null;
+}
+
+function resolveFromInfoAndBody(info: string, body: string): { path: string | null; body: string; lang: string } {
+  const lang = info.split(/[\s:]/)[0]?.toLowerCase() ?? '';
+  let path: string | null = null;
+
+  const colonIdx = info.indexOf(':');
+  if (colonIdx >= 0) {
+    const after = info.slice(colonIdx + 1).match(FILENAME_RE);
+    if (after) path = after[0] ?? null;
+  }
+  if (!path) {
+    const titled = info.match(/(?:title|file|filename)=([A-Za-z0-9_\-./]+\.[A-Za-z0-9]+)/i);
+    if (titled) path = titled[1] ?? null;
+  }
+  if (!path) {
+    const firstNl = body.indexOf('\n');
+    const firstLine = firstNl >= 0 ? body.slice(0, firstNl) : body;
+    const fromComment = filenameFromFirstLine(firstLine);
+    if (fromComment) {
+      path = fromComment;
+      body = firstNl >= 0 ? body.slice(firstNl + 1) : '';
+    }
+  }
+  if (!path) path = LANG_EXT[lang] ?? 'scratch.txt';
+  return { path, body, lang };
+}
+
+export function parseCodeBlocks(text: string): ParsedBlock[] {
+  if (!text) return [];
+  const blocks: ParsedBlock[] = [];
+  const used = new Set<string>();
+
+  const pushBlock = (info: string, rawBody: string, complete: boolean) => {
+    const { path, body, lang } = resolveFromInfoAndBody(info.trim(), rawBody);
+    let finalPath = path ?? 'scratch.txt';
+    let n = 1;
+    while (used.has(finalPath)) {
+      const dot = finalPath.lastIndexOf('.');
+      const base = path ?? 'scratch.txt';
+      const d = base.lastIndexOf('.');
+      finalPath = d > 0 ? `${base.slice(0, d)}-${n}${base.slice(d)}` : `${base}-${n}`;
+      n++;
+      void dot;
+    }
+    used.add(finalPath);
+    const content = body.replace(/\n$/, '');
+    blocks.push({ path: finalPath, content, lang, complete });
+  };
+
+  // Walk fences manually so we can capture an unterminated trailing block (streaming).
+  const fenceOpen = /```([^\n`]*)\n/g;
+  let m: RegExpExecArray | null;
+  while ((m = fenceOpen.exec(text)) !== null) {
+    const info = m[1] ?? '';
+    const bodyStart = m.index + m[0].length;
+    const closeIdx = text.indexOf('\n```', bodyStart - 1);
+    if (closeIdx >= 0) {
+      const body = text.slice(bodyStart, closeIdx + 1);
+      pushBlock(info, body, true);
+      fenceOpen.lastIndex = closeIdx + 4;
+    } else {
+      // Unterminated — still streaming.
+      const body = text.slice(bodyStart);
+      pushBlock(info, body, false);
+      break;
+    }
+  }
+  return blocks;
+}

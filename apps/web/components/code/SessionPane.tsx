@@ -1,0 +1,235 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
+import { Icon } from "@/components/ui/icon";
+import { GoblinMark } from "@/components/ui/goblin-mark";
+import { SessionThread } from "./SessionThread";
+import { SessionPromptInput } from "./SessionPromptInput";
+import { useCodeSessionDetail } from "@/hooks/code/useCodeSessionDetail";
+import { useCodeAgent } from "@/hooks/code/useCodeAgent";
+import type { EditorTheme } from "@/hooks/code/useEditorTheme";
+import type { CodeSession } from "@/hooks/code/useCodeSessions";
+
+const CodeEditor = dynamic(
+  () => import("@/components/editor/code-editor").then(m => ({ default: m.CodeEditor })),
+  { ssr: false, loading: () => <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ed-fg-3)", fontFamily: "JetBrains Mono, monospace", fontSize: 13 }}>Editor lädt…</div> },
+);
+
+interface Props {
+  session: CodeSession;
+  theme: EditorTheme;
+  onModelChange: (modelId: string) => void;
+  onDraftCountChange: (n: number) => void;
+}
+
+/** One session = thread (talk) + work surface (the file in play). Desktop split,
+ *  mobile single-column. The change-state spine (Entwurf → Gesichert → Veröffentlicht)
+ *  lives in the work-surface status line; deploy is gated on Saved. */
+export function SessionPane({ session, theme, onModelChange, onDraftCountChange }: Props) {
+  const detail = useCodeSessionDetail(session.id);
+  const agent = useCodeAgent(session.id);
+  const [mobileView, setMobileView] = useState<"thread" | "editor">("thread");
+  const [deployConfirm, setDeployConfirm] = useState(false);
+  const [deploying, setDeploying] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+
+  // Keep parent's tab badge in sync with the real draft count.
+  useEffect(() => { onDraftCountChange(detail.draftCount); }, [detail.draftCount, onDraftCountChange]);
+
+  // While streaming, surface the block currently being written in the editor.
+  const liveBlock = useMemo(() => {
+    if (!agent.streaming) return null;
+    return agent.blocks[agent.blocks.length - 1] ?? null;
+  }, [agent.streaming, agent.blocks]);
+
+  const handleSubmit = (prompt: string) => {
+    agent.submit(prompt, session.model_id ?? undefined, async () => {
+      await detail.refresh();          // pull the persisted draft files
+      agent.reset();
+      setMobileView("editor");
+    });
+    setMobileView("editor");
+  };
+
+  const handleViewFile = (path: string) => { detail.setActivePath(path); setMobileView("editor"); };
+
+  const runDeploy = async () => {
+    setDeployConfirm(false);
+    setDeploying(true);
+    setToast("Veröffentliche …");
+    const { url, error } = await detail.deploySession((msg) => setToast(msg));
+    setDeploying(false);
+    if (url) setToast(`Veröffentlicht → ${url}`);
+    else setToast(error ?? "Veröffentlichen fehlgeschlagen");
+    setTimeout(() => setToast(null), 6000);
+  };
+
+  const doSave = async () => {
+    const ok = await detail.saveSession();
+    setToast(ok ? "Gesichert" : "Konnte nicht sichern — erneut?");
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  // ── Status line state ──
+  const state = detail.aggregateState;
+  const canSave = detail.draftCount > 0;
+  const canDeploy = detail.files.length > 0 && detail.draftCount === 0;
+
+  const editorContent = liveBlock ? liveBlock.content : (detail.activeFile?.content ?? "");
+  const editorFilename = liveBlock ? liveBlock.path : (detail.activeFile?.path ?? "index.html");
+  const editorReadOnly = !!liveBlock; // live stream is display-only until persisted
+
+  return (
+    <div className="gb-session-pane" style={{ flex: 1, display: "flex", minHeight: 0, position: "relative" }}>
+      <style>{`
+        .gb-session-pane { flex-direction: row; }
+        .gb-thread-col { width: 42%; max-width: 520px; min-width: 320px; border-right: 1px solid var(--ed-rule); }
+        .gb-surface-col { flex: 1; min-width: 0; }
+        .gb-mobile-back { display: none; }
+        @media (max-width: 860px) {
+          .gb-session-pane { flex-direction: column; }
+          .gb-thread-col { width: 100%; max-width: none; min-width: 0; border-right: none; display: ${mobileView === "thread" ? "flex" : "none"}; }
+          .gb-surface-col { display: ${mobileView === "editor" ? "flex" : "none"}; }
+          .gb-mobile-back { display: inline-flex !important; }
+        }
+      `}</style>
+
+      {/* THREAD column */}
+      <div className="gb-thread-col" style={{ display: "flex", flexDirection: "column", minHeight: 0, background: "var(--ed-canvas)" }}>
+        <SessionThread
+          messages={detail.messages}
+          streaming={agent.streaming}
+          streamingText={agent.text}
+          streamingModel={agent.model}
+          onViewFile={handleViewFile}
+        />
+        {agent.error && (
+          <div style={{ margin: "0 16px 8px", padding: "8px 12px", borderRadius: 8, background: "rgba(176,67,42,0.08)", border: "1px solid rgba(176,67,42,0.3)", color: "#B0432A", fontSize: 12.5, fontFamily: "var(--font-sans)" }}>
+            {agent.error}
+          </div>
+        )}
+        <SessionPromptInput
+          modelId={session.model_id}
+          onModelChange={onModelChange}
+          onSubmit={handleSubmit}
+          streaming={agent.streaming}
+          onCancel={agent.cancel}
+          autoFocus
+        />
+      </div>
+
+      {/* WORK SURFACE column */}
+      <div className="gb-surface-col" style={{ display: "flex", flexDirection: "column", minHeight: 0, background: "var(--ed-canvas)" }}>
+        {/* File bar + status */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderBottom: "1px solid var(--ed-rule)", background: "var(--ed-chrome)", flexShrink: 0 }}>
+          <button className="gb-mobile-back" onClick={() => setMobileView("thread")} aria-label="Zurück zum Thread" style={{ background: "transparent", border: "none", color: "var(--ed-fg-2)", cursor: "pointer", alignItems: "center" }}>
+            <Icon name="back" size={16} />
+          </button>
+          <span style={{ color: "var(--ed-fg-1)", fontFamily: "JetBrains Mono, monospace", fontSize: 12.5, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {editorFilename}
+          </span>
+          <StateBadge state={liveBlock ? "draft" : state} />
+        </div>
+
+        {/* Editor / empty */}
+        <div style={{ flex: 1, minHeight: 0 }}>
+          {(detail.activeFile || liveBlock) ? (
+            <CodeEditor
+              key={editorFilename + (editorReadOnly ? ":live" : "")}
+              content={editorContent}
+              filename={editorFilename}
+              theme={theme}
+              onChange={editorReadOnly ? () => {} : detail.editActive}
+              onSave={editorReadOnly ? () => {} : (c) => detail.editActive(c)}
+            />
+          ) : (
+            <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
+              <div style={{ textAlign: "center", maxWidth: 280, color: "var(--ed-fg-3)", fontFamily: "var(--font-sans)", fontSize: 14, lineHeight: 1.6 }}>
+                Noch nichts zu zeigen. Stell links eine Aufgabe — der Code erscheint hier als Entwurf.
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Status line + the two-step Sichern → Veröffentlichen */}
+        <div style={{ flexShrink: 0, borderTop: "1px solid var(--ed-rule)", background: "var(--ed-chrome)", padding: "10px 14px", display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={{ fontSize: 12, color: "var(--ed-fg-3)", fontFamily: "var(--font-sans)", flex: 1 }}>
+            {state === "draft" && "Entwurf · nichts wird veröffentlicht, bis du sicherst"}
+            {state === "saved" && "Gesichert · bereit zum Veröffentlichen"}
+            {state === "deployed" && "Veröffentlicht"}
+            {state === "empty" && "Noch keine Dateien"}
+          </span>
+          <button
+            onClick={doSave}
+            disabled={!canSave || detail.saving}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
+              background: canSave ? "var(--ed-primary)" : "transparent",
+              color: canSave ? "var(--ed-on-primary)" : "var(--ed-fg-3)",
+              border: canSave ? "none" : "1px solid var(--ed-rule)",
+              borderRadius: 9, padding: "8px 14px", fontSize: 13, fontWeight: 600,
+              cursor: canSave && !detail.saving ? "pointer" : "not-allowed", fontFamily: "var(--font-sans)",
+            }}
+          >
+            {detail.saving ? <GoblinMark size={14} /> : <Icon name="save" size={14} />} Sichern
+          </button>
+          <span style={{ width: 1, height: 22, background: "var(--ed-rule)" }} />
+          <button
+            onClick={() => setDeployConfirm(true)}
+            disabled={!canDeploy || deploying}
+            title={canDeploy ? "Veröffentlichen" : "Erst alle Entwürfe sichern"}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
+              background: "transparent", color: canDeploy ? "var(--ed-accent)" : "var(--ed-fg-3)",
+              border: `1px solid ${canDeploy ? "var(--ed-accent)" : "var(--ed-rule)"}`,
+              borderRadius: 9, padding: "8px 14px", fontSize: 13, fontWeight: 600,
+              cursor: canDeploy && !deploying ? "pointer" : "not-allowed", fontFamily: "var(--font-sans)",
+            }}
+          >
+            {deploying ? <GoblinMark size={14} /> : <Icon name="play" size={14} />} Veröffentlichen
+          </button>
+        </div>
+      </div>
+
+      {/* Deploy confirm */}
+      {deployConfirm && (
+        <>
+          <div style={{ position: "absolute", inset: 0, zIndex: 80, background: "var(--surface-overlay, rgba(0,0,0,0.4))" }} onClick={() => setDeployConfirm(false)} />
+          <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "var(--ed-chrome-2)", border: "1px solid var(--ed-rule)", borderRadius: 14, padding: "22px 24px", zIndex: 81, minWidth: 320, maxWidth: 380, boxShadow: "0 16px 40px rgba(15,43,30,0.28)" }}>
+            <div style={{ fontSize: 16, fontWeight: 600, color: "var(--ed-fg-1)", fontFamily: "var(--font-sans)", marginBottom: 8 }}>Veröffentlichen?</div>
+            <div style={{ fontSize: 13, lineHeight: 1.55, color: "var(--ed-fg-3)", fontFamily: "var(--font-sans)", marginBottom: 18 }}>
+              Das baut dein Projekt und stellt es unter einer öffentlichen URL bereit. Du kannst vorher in Ruhe sichern und ansehen.
+            </div>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button onClick={() => setDeployConfirm(false)} style={{ background: "transparent", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-2)", borderRadius: 9, padding: "9px 16px", fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "var(--font-sans)" }}>Abbrechen</button>
+              <button onClick={runDeploy} style={{ background: "var(--ed-primary)", border: "none", color: "var(--ed-on-primary)", borderRadius: 9, padding: "9px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-sans)", display: "inline-flex", alignItems: "center", gap: 7 }}><Icon name="play" size={14} /> Veröffentlichen</button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* Toast */}
+      {toast && (
+        <div style={{ position: "absolute", bottom: 16, left: "50%", transform: "translateX(-50%)", background: "var(--ed-primary)", color: "var(--ed-on-primary)", borderRadius: 9, padding: "9px 16px", fontSize: 12.5, fontFamily: "var(--font-sans)", zIndex: 90, maxWidth: 460, textAlign: "center", boxShadow: "0 6px 24px rgba(15,43,30,0.3)" }}>
+          {toast}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function StateBadge({ state }: { state: "draft" | "saved" | "deployed" | "empty" }) {
+  if (state === "empty") return null;
+  const cfg = {
+    draft: { color: "var(--ed-draft)", label: "Entwurf", hollow: true },
+    saved: { color: "var(--ed-saved)", label: "Gesichert", hollow: false },
+    deployed: { color: "var(--ed-deployed)", label: "Veröffentlicht", hollow: false },
+  }[state];
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11.5, color: cfg.color, fontFamily: "var(--font-sans)", fontWeight: 600 }}>
+      <span style={{ width: 8, height: 8, borderRadius: "50%", background: cfg.hollow ? "transparent" : cfg.color, border: `1.5px solid ${cfg.color}` }} />
+      {cfg.label}
+    </span>
+  );
+}
