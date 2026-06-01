@@ -3,6 +3,7 @@ import { Manrope, Instrument_Serif } from "next/font/google";
 import { createClient } from "@/lib/supabase/server";
 import { AppProvider } from "@/contexts/app-context";
 import { DashboardShell } from "@/components/app-shell/dashboard-shell";
+import { filterVisibleProjects } from "@/lib/project-visibility";
 import { AdvancedModeProvider } from "@/components/ui/advanced-mode-provider";
 import SoftLimitBanner from "@/components/onboarding/SoftLimitBanner";
 import "../../styles/dashboard-tokens.css";
@@ -75,7 +76,7 @@ export default async function DashboardLayout({
         <AdvancedModeProvider>
           <SoftLimitBanner />
           <DashboardShell
-            projects={(projects as Project[]) || []}
+            projects={filterVisibleProjects((projects as Project[]) || [])}
             isFirstLogin={isFirstLogin}
             userName={user?.user_metadata?.full_name ?? user?.email}
           >
