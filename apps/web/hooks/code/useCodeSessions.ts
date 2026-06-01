@@ -33,6 +33,8 @@ export function useCodeSessions(projectId: string) {
   const [available, setAvailable] = useState(true);
   const activeRef = useRef<string | null>(null);
   activeRef.current = activeSessionId;
+  // Sprint 9 P1: consume a `?session=<id>` deep-link from the dashboard exactly once.
+  const deepLinkConsumedRef = useRef(false);
 
   const authFetch = useCallback(async (path: string, init?: RequestInit) => {
     const t = await getToken();
@@ -58,7 +60,15 @@ export function useCodeSessions(projectId: string) {
       setAvailable(true);
       // Keep a valid active session selected.
       const first = list[0];
-      if (first && !list.some(s => s.id === activeRef.current)) {
+      // On first load, honor a ?session=<id> deep-link from the dashboard if it
+      // points at a real session; otherwise fall back to the first session.
+      const wanted = (!deepLinkConsumedRef.current && typeof window !== 'undefined')
+        ? new URLSearchParams(window.location.search).get('session')
+        : null;
+      deepLinkConsumedRef.current = true;
+      if (wanted && list.some(s => s.id === wanted)) {
+        setActiveSessionId(wanted);
+      } else if (first && !list.some(s => s.id === activeRef.current)) {
         setActiveSessionId(first.id);
       }
       setLoading(false);
