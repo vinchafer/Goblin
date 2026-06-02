@@ -1,3 +1,39 @@
+# Session Handoff — 2026-06-02 (Sprint 10 close: the Convergence is built)
+
+## State
+Sprint 10 **COMPLETE** — all 6 convergence slices shipped as 6 atomic commits on
+`master` (local, **NOT pushed**). Range `a45dcc6..e2aa57a`. Web production build
+**PASS**; typecheck (web + api + shared) **PASS**. Full report: `SPRINT_10_COMPLETE_2026-06-02.md`.
+
+## What shipped (one commit per slice)
+- `cb60ca9` **Slice 1 Intent** — migration 0057, 4 intent cards in create form, "Layout wechseln" on hub, intent-driven first-paint foreground. (UI verified live.)
+- `ce6842b` **Slice 5 Find/Replace + Multi-cursor** — wired @codemirror/search; freed Ctrl+D (was shadowed by copyLineDown) for multi-cursor.
+- `078bca2` **Slice 2 Command Palette** — extended the existing ⌘K into a real dev registry (Navigate / This Project / Edit / Workspace / Appearance / Help). (UI verified live.)
+- `a93aecb` **Slice 4 Git** — honest READ+WRITE: project-status endpoint + commit-message push to the linked repo + footer Git pill/panel. (No fake per-file staging — store is a Backblaze snapshot.)
+- `738c2a4` **Slice 3 Multi-file** — wired CodeFileTabs into SessionPane (data model already supported multi-file; no migration 0058 needed).
+- `e2aa57a` **Slice 6 Explorer ops** — move/folder backend endpoints + rename/new-file/new-folder/folder-delete UI. (UI verified live.)
+
+## The constraint that shaped verification (READ THIS)
+Local web → **prod Railway API** (`.env.local`) → **prod Supabase**. localhost client
+calls are **CORS-limited** to prod, and the new code isn't deployed. So I verified
+**pure-UI** features live on localhost and left **API/DB-bound** behavior (intent
+persist, AI streaming, git ops, multi-file workspace, file-row ops) for the founder to
+verify on prod after push+deploy. All features degrade gracefully pre-migration.
+
+## Founder next steps (in order)
+1. `supabase db push` (migration **0057** only — 0058 was intentionally not created).
+2. Push the 6 commits + deploy web + api.
+3. Walk Max (mobile, Landing Page) + Sofia (desktop, Web-App) on prod — fix anything CORS hid.
+4. Confirm GitHub OAuth configured on prod (Slice 4 push depends on it).
+5. Sprint 11: unify classic/multi-session Code Tab paths (#1 debt) · Repo Import (Slice 7) · session-linked tree (Slice 6 deferred half).
+
+## Model status
+Composer default = **Llama 3.3 70B (Groq)** confirmed on the dashboard (9.5 hotfix live).
+Per the Sprint 10 brief preamble, the founder already verified all model paths work
+after the SQL prefix fix; full 3-model re-verification needs a prod login (not done here).
+
+---
+
 # Session Handoff — 2026-06-02 (Sprint 9 close)
 
 ## State
