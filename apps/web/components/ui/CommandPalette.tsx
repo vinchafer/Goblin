@@ -199,45 +199,85 @@ export function CommandPalette({ open, onClose, commands }: Props) {
   );
 }
 
-// Hook to build command list — use in shell
+/** Bridge a palette command to the mounted CodeMirror editor (Slice 2 + 5). The
+ *  editor listens for `goblin:editor-cmd`; no-ops gracefully if none is mounted. */
+function editorCmd(type: 'find' | 'replace') {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('goblin:editor-cmd', { detail: type }));
+  }
+}
+
+// Hook to build the command registry. Sprint 10 Slice 2: a real developer command
+// palette (reusing the existing ⌘K shell, per the Convergence architecture) — not
+// the old nav-only switcher. Sofia's #1 reach tool; Max never opens it.
 export function useCommandPalette({
   projects,
   activeProjectId,
   onNewProject,
   onToggleSidebar,
   onLogout,
+  onShortcuts,
+  onReplayTour,
 }: {
   projects: { id: string; name: string }[];
   activeProjectId?: string;
   onNewProject: () => void;
   onToggleSidebar: () => void;
   onLogout: () => void;
+  onShortcuts?: () => void;
+  onReplayTour?: () => void;
 }) {
   const router = useRouter();
   const { setTheme } = useTheme();
+  const p = activeProjectId;
 
   const commands: CommandItem[] = [
-    // Navigation
-    { id: 'nav-dashboard', label: 'Go to Dashboard', category: 'Navigation', icon: 'project', action: () => router.push('/dashboard'), keywords: 'home' },
-    { id: 'nav-settings', label: 'Open Settings', category: 'Navigation', icon: 'settings', action: () => router.push('/dashboard/settings'), keywords: 'preferences' },
-    { id: 'nav-api-keys', label: 'API Keys', category: 'Navigation', icon: 'apiKey', action: () => router.push('/dashboard/settings/keys'), keywords: 'byok keys provider' },
-    // Actions
-    { id: 'act-new-project', label: 'New Project', category: 'Actions', icon: 'add', action: onNewProject, keywords: 'create' },
-    { id: 'act-toggle-sidebar', label: 'Toggle Sidebar', category: 'Actions', icon: 'menu', action: onToggleSidebar, keywords: 'sidebar menu close open' },
-    // Per-project navigation
-    ...projects.slice(0, 8).map(p => ({
-      id: `proj-${p.id}`,
-      label: `${p.name} — Chat`,
-      category: 'Projects',
-      icon: 'chat' as const,
-      action: () => router.push(`/dashboard/project/${p.id}`),
-      keywords: p.name.toLowerCase(),
+    // ── Navigate ──
+    { id: 'nav-dashboard', label: 'Go to Dashboard', category: 'Navigate', icon: 'project', action: () => router.push('/dashboard'), keywords: 'home start' },
+    { id: 'nav-usage', label: 'Usage & Spend', category: 'Navigate', icon: 'usage', action: () => router.push('/dashboard/usage'), keywords: 'verbrauch billing tokens cost' },
+    { id: 'nav-settings', label: 'Open Settings', category: 'Navigate', icon: 'settings', action: () => router.push('/dashboard/settings'), keywords: 'preferences einstellungen' },
+    { id: 'nav-api-keys', label: 'API Keys (BYOK)', category: 'Navigate', icon: 'apiKey', action: () => router.push('/dashboard/settings/keys'), keywords: 'byok keys provider model' },
+
+    // ── Current project (only in a project context) ──
+    ...(p ? [
+      { id: 'cur-code', label: 'Open Code', category: 'This Project', icon: 'code' as const, action: () => router.push(`/dashboard/project/${p}/work?tab=code`), keywords: 'editor code session' },
+      { id: 'cur-chat', label: 'Open Chat', category: 'This Project', icon: 'chat' as const, action: () => router.push(`/dashboard/project/${p}/work?tab=chat`), keywords: 'chat talk' },
+      { id: 'cur-preview', label: 'Open Preview', category: 'This Project', icon: 'web' as const, action: () => router.push(`/dashboard/project/${p}/work?tab=preview`), keywords: 'preview live' },
+      { id: 'cur-files', label: 'File Explorer', category: 'This Project', icon: 'document' as const, action: () => router.push(`/dashboard/project/${p}/files`), keywords: 'files explorer dateien tree' },
+      { id: 'cur-secrets', label: 'Secrets / Env Vars', category: 'This Project', icon: 'security' as const, action: () => router.push(`/dashboard/project/${p}/secrets`), keywords: 'secrets env environment variables' },
+      { id: 'cur-hub', label: 'Project Hub', category: 'This Project', icon: 'project' as const, action: () => router.push(`/dashboard/project/${p}`), keywords: 'overview hub layout' },
+    ] : []),
+
+    // ── Edit (bridged to the mounted editor) ──
+    { id: 'edit-find', label: 'Find in File', category: 'Edit', icon: 'search', action: () => editorCmd('find'), keywords: 'find search suchen ctrl+f' },
+    { id: 'edit-replace', label: 'Find & Replace', category: 'Edit', icon: 'rename', action: () => editorCmd('replace'), keywords: 'replace ersetzen ctrl+h' },
+
+    // ── Workspace ──
+    { id: 'act-new-project', label: 'New Project', category: 'Workspace', icon: 'add', action: onNewProject, keywords: 'create neu projekt' },
+    ...(p ? [
+      { id: 'act-new-session', label: 'New Code Session', category: 'Workspace', icon: 'code' as const, action: () => router.push(`/dashboard/project/${p}/work?tab=code`), keywords: 'session neue code' },
+    ] : []),
+    { id: 'act-toggle-sidebar', label: 'Toggle Sidebar', category: 'Workspace', icon: 'menu', action: onToggleSidebar, keywords: 'sidebar menu close open' },
+
+    // ── Appearance ──
+    { id: 'theme-light', label: 'Light Theme', category: 'Appearance', icon: 'sun', action: () => setTheme('light'), keywords: 'light theme hell appearance' },
+    { id: 'theme-dark', label: 'Dark Theme', category: 'Appearance', icon: 'moon', action: () => setTheme('dark'), keywords: 'dark theme dunkel appearance' },
+    { id: 'theme-system', label: 'System Theme', category: 'Appearance', icon: 'monitor', action: () => setTheme('system'), keywords: 'system theme auto' },
+
+    // ── Help & Account ──
+    ...(onShortcuts ? [{ id: 'help-shortcuts', label: 'Keyboard Shortcuts', category: 'Help', icon: 'help' as const, action: onShortcuts, keywords: 'shortcuts keys tastatur' }] : []),
+    ...(onReplayTour ? [{ id: 'help-tour', label: 'Replay Onboarding', category: 'Help', icon: 'refresh' as const, action: onReplayTour, keywords: 'onboarding tour intro replay' }] : []),
+    { id: 'logout', label: 'Logout', category: 'Account', icon: 'logout', action: onLogout, keywords: 'sign out abmelden' },
+
+    // ── Jump to project ──
+    ...projects.slice(0, 10).map(pr => ({
+      id: `proj-${pr.id}`,
+      label: pr.name,
+      category: 'Jump to Project',
+      icon: 'project' as const,
+      action: () => router.push(`/dashboard/project/${pr.id}`),
+      keywords: pr.name.toLowerCase(),
     })),
-    // Settings
-    { id: 'theme-light', label: 'Switch to Light Mode', category: 'Settings', icon: 'sun', action: () => setTheme('light'), keywords: 'light theme appearance' },
-    { id: 'theme-dark', label: 'Switch to Dark Mode', category: 'Settings', icon: 'moon', action: () => setTheme('dark'), keywords: 'dark theme appearance' },
-    { id: 'theme-system', label: 'Use System Theme', category: 'Settings', icon: 'monitor', action: () => setTheme('system'), keywords: 'system theme auto' },
-    { id: 'logout', label: 'Logout', category: 'Settings', icon: 'logout', action: onLogout, keywords: 'sign out' },
   ];
 
   return commands;

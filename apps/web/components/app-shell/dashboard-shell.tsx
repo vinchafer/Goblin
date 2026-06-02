@@ -58,11 +58,24 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
     router.push('/');
   }, [router]);
 
+  const activeProjectId = (() => {
+    const match = pathname.match(/\/project\/([^/]+)/);
+    return match ? match[1] : undefined;
+  })();
+
+  const replayTour = useCallback(() => {
+    if (typeof window !== 'undefined') localStorage.removeItem('goblin_tour_done');
+    setShowTour(true);
+  }, []);
+
   const commands = useCommandPalette({
     projects: projects.map(p => ({ id: p.id, name: p.name })),
+    activeProjectId,
     onNewProject: () => setShowNewProjectModal(true),
     onToggleSidebar: () => setMobileOpen(s => !s),
     onLogout: handleLogout,
+    onShortcuts: () => setShortcutsOpen(true),
+    onReplayTour: replayTour,
   });
 
   useKeyboardShortcuts({
@@ -95,11 +108,6 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
     setShowTour(false);
     if (typeof window !== 'undefined') localStorage.setItem('goblin_tour_done', '1');
   }, []);
-
-  const activeProjectId = (() => {
-    const match = pathname.match(/\/project\/([^/]+)/);
-    return match ? match[1] : undefined;
-  })();
 
   // We are "in a project context" if any /project/[id]/* route. Tabs become
   // navigation when the user is on the overview, real tab-state when on /work.

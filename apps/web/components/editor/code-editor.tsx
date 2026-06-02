@@ -14,7 +14,7 @@ import {
   indentWithTab,
   moveLineUp, moveLineDown, copyLineDown,
 } from '@codemirror/commands';
-import { search, searchKeymap } from '@codemirror/search';
+import { search, searchKeymap, openSearchPanel } from '@codemirror/search';
 
 // ── Goblin editor themes — resolved from design-tokens.css v1.1 + the PROPOSED
 // Code-Tab token set (CODETAB_PROPOSED_TOKENS_2026-06-01.md). Light is the new
@@ -181,6 +181,14 @@ export function CodeEditor({ content, filename, onChange, onSave, onEditorReady,
 
     return () => { view.destroy(); viewRef.current = null; };
   }, [filename, theme]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Command-palette bridge (Slice 2): "Find in File" / "Find & Replace" dispatch a
+  // window event; the mounted editor opens its search panel. No-op if unmounted.
+  useEffect(() => {
+    const onCmd = () => { const v = viewRef.current; if (v) { openSearchPanel(v); v.focus(); } };
+    window.addEventListener('goblin:editor-cmd', onCmd as EventListener);
+    return () => window.removeEventListener('goblin:editor-cmd', onCmd as EventListener);
+  }, []);
 
   // Update content from outside (injection)
   useEffect(() => {
