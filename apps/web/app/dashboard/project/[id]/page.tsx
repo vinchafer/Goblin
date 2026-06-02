@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { DeployUrlList, type DeployUrlItem } from "@/components/project/DeployUrlList";
 import { RecentChatsCard, type RecentChatItem } from "@/components/project/RecentChatsCard";
 import { RecentSessionsCard, type RecentSessionItem } from "@/components/project/RecentSessionsCard";
+import { ProjectIntentControl } from "@/components/project/ProjectIntentControl";
 
 export const dynamic = 'force-dynamic';
 
@@ -166,6 +167,8 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
               <Link href={`/dashboard/project/${id}/secrets`} className="gobl-btn ghost lg" title="Verschlüsselte Umgebungsvariablen">
                 Secrets
               </Link>
+              {/* Quiet "Layout wechseln" — changes the Code-Tab default foreground. */}
+              <ProjectIntentControl projectId={id} />
             </div>
           </div>
         </header>

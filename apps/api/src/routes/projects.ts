@@ -15,10 +15,15 @@ const projects = new Hono<{ Variables: Variables }>();
 
 projects.use('*', authMiddleware);
 
+const INTENTS = ["landing_page", "web_app", "import_repo", "exploring"] as const;
+
 const CreateProjectSchema = z.object({
   name: z.string().min(1).max(100),
   description: z.string().max(500).optional(),
-  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional()
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
+  // Convergence keystone (Sprint 10). Optional + persisted best-effort so the
+  // create flow never breaks before migration 0057 lands on the target DB.
+  intent: z.enum(INTENTS).optional(),
 });
 
 // GET /api/projects/:id/instructions
@@ -152,7 +157,50 @@ projects.post('/', async (c) => {
       .eq('id', projectId);
   } catch { /* storage_path column may not exist yet — non-fatal */ }
 
+  // Persist intent best-effort. Inserted via UPDATE (not the original INSERT) so a
+  // pre-migration DB (no `intent` column) silently no-ops instead of failing the
+  // whole create. The client also stashes intent in localStorage, so the Code-Tab
+  // foreground is correct even before this column exists. (Sprint 10, Slice 1.)
+  if (result.data.intent) {
+    try {
+      const { data: withIntent } = await supabase
+        .from('projects')
+        .update({ intent: result.data.intent })
+        .eq('id', projectId)
+        .select()
+        .single();
+      if (withIntent) return c.json(withIntent, 201);
+    } catch { /* intent column may not exist yet — non-fatal */ }
+  }
+
   return c.json(data, 201);
+});
+
+// PATCH /:id — change project intent (the quiet "Layout wechseln"). Tolerant of a
+// pre-migration DB: returns ok:false (not 500) so the UI degrades gracefully.
+projects.patch('/:id', async (c) => {
+  const userId = c.get('userId');
+  const projectId = c.req.param('id');
+  const body = await c.req.json().catch(() => ({}));
+
+  const schema = z.object({ intent: z.enum(INTENTS) });
+  const parsed = schema.safeParse(body);
+  if (!parsed.success) return c.json({ error: 'Invalid input' }, 400);
+
+  const supabase = getSupabaseAdmin();
+  if (!(await verifyProjectOwnership(supabase, projectId, userId))) {
+    return c.json({ error: 'Not found' }, 404);
+  }
+
+  const { error } = await supabase
+    .from('projects')
+    .update({ intent: parsed.data.intent })
+    .eq('id', projectId)
+    .eq('user_id', userId);
+
+  // Column missing pre-migration → soft-fail; client keeps its localStorage hint.
+  if (error) return c.json({ ok: false, persisted: false, intent: parsed.data.intent });
+  return c.json({ ok: true, persisted: true, intent: parsed.data.intent });
 });
 
 // POST /api/projects/from-template

@@ -9,6 +9,7 @@ import { SessionPickerDialog } from "./SessionPickerDialog";
 import { useCodeSessions } from "@/hooks/code/useCodeSessions";
 import { useEditorTheme } from "@/hooks/code/useEditorTheme";
 import { API_URL, getToken } from "@/hooks/code/getToken";
+import { getStoredIntent, DEFAULT_INTENT, type Intent } from "@/lib/intent";
 
 interface Props {
   projectId: string;
@@ -28,6 +29,24 @@ export function CodeWorkspace({ projectId, pendingCode, onPendingConsumed }: Pro
   const [picker, setPicker] = useState<{ content: string; filename?: string } | null>(null);
   const autoCreated = useRef(false);
   const consumedRef = useRef(false);
+
+  // Intent → first-paint foreground. Seed synchronously from the localStorage hint
+  // (correct even pre-migration), then let the persisted DB value override.
+  const [intent, setIntent] = useState<Intent>(() => getStoredIntent(projectId) ?? DEFAULT_INTENT);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const t = await getToken();
+      if (!t) return;
+      try {
+        const res = await fetch(`${API_URL}/api/projects/${projectId}`, { headers: { Authorization: `Bearer ${t}` } });
+        if (!res.ok || cancelled) return;
+        const p = await res.json();
+        if (!cancelled && p?.intent) setIntent(p.intent as Intent);
+      } catch { /* keep the localStorage/default hint */ }
+    })();
+    return () => { cancelled = true; };
+  }, [projectId]);
 
   // Auto-create a first session so the tab is ready to talk to (once).
   useEffect(() => {
@@ -93,6 +112,7 @@ export function CodeWorkspace({ projectId, pendingCode, onPendingConsumed }: Pro
           key={active.id}
           session={active}
           theme={theme}
+          intent={intent}
           onModelChange={(modelId) => s.setSessionModel(active.id, modelId)}
           onDraftCountChange={(n) => s.setDraftCount(active.id, n)}
         />

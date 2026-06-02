@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { INTENTS, setStoredIntent, type Intent } from '@/lib/intent';
 
 const COLORS = [
   { name: 'Gold',   hex: '#D4A737' },
@@ -50,6 +51,7 @@ export function NewProjectModal({ onClose, initialMode }: NewProjectModalProps) 
   const [mode, setMode] = useState<Mode>(initialMode === 'template' ? 'gallery' : 'blank');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [intent, setIntent] = useState<Intent>('exploring');
   const [selectedColor, setSelectedColor] = useState(COLORS[0]?.hex ?? '#D4A737');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -112,10 +114,13 @@ export function NewProjectModal({ onClose, initialMode }: NewProjectModalProps) 
       const res = await fetch(`${apiBase}/api/projects`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ name: name.trim(), description: description.trim() || undefined, color: selectedColor }),
+        body: JSON.stringify({ name: name.trim(), description: description.trim() || undefined, color: selectedColor, intent }),
       });
       if (!res.ok) throw new Error((await res.json()).error || 'Failed to create project');
       const project = await res.json();
+      // Local hint so the Code-Tab foreground is correct immediately, even if the
+      // DB has no `intent` column yet (migration 0057 may be unapplied). DB wins later.
+      if (project?.id) setStoredIntent(project.id, intent);
       onClose();
       router.push(`/dashboard/project/${project.id}`);
     } catch (err) {
@@ -205,6 +210,44 @@ export function NewProjectModal({ onClose, initialMode }: NewProjectModalProps) 
                   onBlur={e => (e.target.style.borderColor = 'var(--border)')}
                 />
                 <div style={{ fontSize: 11, color: 'var(--meta)', marginTop: 4, textAlign: 'right' }}>{description.length}/200</div>
+              </div>
+
+              {/* Intent — sets the Code-Tab default foreground (not a mode). Default
+                  "exploring" is pre-selected, so Max never has to touch this. */}
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 10 }}>Was baust du?</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+                  {INTENTS.map(opt => {
+                    const active = intent === opt.id;
+                    const I = opt.icon;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => setIntent(opt.id)}
+                        aria-pressed={active}
+                        data-testid={`intent-${opt.id}`}
+                        style={{
+                          position: 'relative', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: 4,
+                          padding: '11px 12px', borderRadius: 10, cursor: 'pointer',
+                          border: active ? '2px solid var(--brand-green)' : '1.5px solid var(--border)',
+                          background: active ? 'rgba(45,74,43,0.06)' : 'var(--surface)',
+                          transition: 'border-color 0.12s, background 0.12s',
+                          fontFamily: 'var(--font-sans)',
+                        }}
+                      >
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 7, color: active ? 'var(--brand-green)' : 'var(--text)' }}>
+                          <I size={17} weight={active ? 'fill' : 'regular'} />
+                          <span style={{ fontSize: 12.5, fontWeight: 600, lineHeight: 1.15 }}>{opt.label}</span>
+                        </span>
+                        <span style={{ fontSize: 11, color: 'var(--meta)', lineHeight: 1.35 }}>{opt.sub}</span>
+                        {opt.comingSoon && (
+                          <span style={{ position: 'absolute', top: 8, right: 8, fontSize: 9, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: 'var(--brand-gold)', background: 'rgba(212,167,55,0.14)', padding: '1px 5px', borderRadius: 4 }} title="Import-Feature kommt Sprint 11">Bald</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               <div style={{ marginBottom: 24 }}>

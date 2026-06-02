@@ -14,6 +14,7 @@ import { useCodeSessionDetail } from "@/hooks/code/useCodeSessionDetail";
 import { useCodeAgent } from "@/hooks/code/useCodeAgent";
 import type { EditorTheme } from "@/hooks/code/useEditorTheme";
 import type { CodeSession } from "@/hooks/code/useCodeSessions";
+import { layoutPreset, type Intent } from "@/lib/intent";
 
 const CodeEditor = dynamic(
   () => import("@/components/editor/code-editor").then(m => ({ default: m.CodeEditor })),
@@ -25,15 +26,18 @@ interface Props {
   theme: EditorTheme;
   onModelChange: (modelId: string) => void;
   onDraftCountChange: (n: number) => void;
+  /** Project intent → first-paint foreground (not a mode). Defaults Max-forward. */
+  intent?: Intent;
 }
 
 /** One session = thread (talk) + work surface (the file in play). Desktop split,
  *  mobile single-column. The change-state spine (Entwurf → Gesichert → Veröffentlicht)
  *  lives in the work-surface status line; deploy is gated on Saved. */
-export function SessionPane({ session, theme, onModelChange, onDraftCountChange }: Props) {
+export function SessionPane({ session, theme, onModelChange, onDraftCountChange, intent }: Props) {
   const detail = useCodeSessionDetail(session.id);
   const agent = useCodeAgent(session.id);
-  const [mobileView, setMobileView] = useState<"thread" | "editor">("thread");
+  const preset = layoutPreset(intent);
+  const [mobileView, setMobileView] = useState<"thread" | "editor">(preset.mobileDefault);
   const [deployConfirm, setDeployConfirm] = useState(false);
   const [deploying, setDeploying] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -122,7 +126,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange 
     <div className="gb-session-pane" style={{ flex: 1, display: "flex", minHeight: 0, position: "relative" }}>
       <style>{`
         .gb-session-pane { flex-direction: row; }
-        .gb-thread-col { width: 42%; max-width: 520px; min-width: 320px; border-right: 1px solid var(--ed-rule); }
+        .gb-thread-col { width: ${preset.threadPct}%; max-width: 560px; min-width: 300px; border-right: 1px solid var(--ed-rule); }
         .gb-surface-col { flex: 1; min-width: 0; }
         .gb-mobile-back { display: none; }
         @media (max-width: 860px) {

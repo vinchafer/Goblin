@@ -6,6 +6,8 @@ export const ProjectSchema = z.object({
   name: z.string().min(1).max(100),
   description: z.string().max(500).optional(),
   color: z.string(),
+  // Convergence (Sprint 10): default Code-Tab foreground hint, never a mode.
+  intent: z.enum(["landing_page", "web_app", "import_repo", "exploring"]).optional(),
   last_active: z.coerce.date(),
   created_at: z.coerce.date()
 });
