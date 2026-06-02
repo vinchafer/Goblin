@@ -670,6 +670,74 @@ projects.post('/:id/files/rename', async (c) => {
   return c.json({ success: true, from: result.data.from, to: result.data.to });
 });
 
+// Move file — alias of rename (the store is path-keyed, so a move IS a rename to a
+// new path). Separate route for API clarity / Slice 6 explorer drag-drop. (Sprint 10)
+projects.post('/:id/files/move', async (c) => {
+  const userId = c.get('userId');
+  const projectId = c.req.param('id');
+  const body = await c.req.json();
+
+  const schema = z.object({ from: z.string().min(1).max(500), to: z.string().min(1).max(500) });
+  const result = schema.safeParse(body);
+  if (!result.success) return c.json({ error: 'Invalid request' }, 400);
+  if (!isSafePath(result.data.from) || !isSafePath(result.data.to)) {
+    return c.json({ error: 'Invalid file path' }, 400);
+  }
+
+  const supabase = getSupabaseAdmin();
+  if (!await verifyProjectOwnership(supabase, projectId, userId)) {
+    return c.json({ error: 'Not found' }, 404);
+  }
+
+  const content = await getFile(projectId, result.data.from);
+  if (content === null) return c.json({ error: 'Source file not found' }, 404);
+  await uploadFile(projectId, result.data.to, content);
+  await deleteFile(projectId, result.data.from);
+  return c.json({ success: true, from: result.data.from, to: result.data.to });
+});
+
+// Folder ops (Slice 6). Folders are implicit in a path-keyed store:
+//  - create: write a `<path>/.gitkeep` placeholder so the (empty) folder appears.
+//  - delete: soft-delete every file under `<path>/` (mirrors the per-file .trash flow).
+projects.post('/:id/files/folder', async (c) => {
+  const userId = c.get('userId');
+  const projectId = c.req.param('id');
+  const body = await c.req.json();
+
+  const schema = z.object({ path: z.string().min(1).max(500), action: z.enum(['create', 'delete']) });
+  const result = schema.safeParse(body);
+  if (!result.success) return c.json({ error: 'Invalid request' }, 400);
+  const folder = result.data.path.replace(/^\/+|\/+$/g, '');
+  if (!folder || !isSafePath(folder)) return c.json({ error: 'Invalid folder path' }, 400);
+
+  const supabase = getSupabaseAdmin();
+  if (!await verifyProjectOwnership(supabase, projectId, userId)) {
+    return c.json({ error: 'Not found' }, 404);
+  }
+
+  if (result.data.action === 'create') {
+    await uploadFile(projectId, `${folder}/.gitkeep`, '');
+    return c.json({ success: true, path: folder });
+  }
+
+  // delete: soft-delete all files under the folder prefix.
+  const all = await listFiles(projectId);
+  const prefix = `${folder}/`;
+  const victims = all
+    .map((p) => p.replace(`${projectId}/`, '').replace(/^\/+/, ''))
+    .filter((p) => p === folder || p.startsWith(prefix));
+  let deleted = 0;
+  for (const path of victims) {
+    const content = await getFile(projectId, path);
+    if (content !== null) {
+      await uploadFile(projectId, `.trash/${Date.now()}_${path.replace(/\//g, '_')}`, content);
+      await deleteFile(projectId, path);
+      deleted++;
+    }
+  }
+  return c.json({ success: true, path: folder, deleted });
+});
+
 // Diff endpoint — compute unified diff between current and proposed content
 projects.post('/:id/diff', async (c) => {
   const userId = c.get('userId');

@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   FileCode, FileJson, FileText, Image as ImageIcon, Palette, File as FileIcon,
   Folder, ChevronRight, Upload, Download, Trash2, ArrowLeft, X,
+  Pencil, FolderPlus, FilePlus,
 } from "lucide-react";
 import { API_URL, getToken } from "@/hooks/code/getToken";
 
@@ -57,6 +58,9 @@ export function FileExplorer({ projectId, projectName }: Props) {
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
+  const [confirmFolderDel, setConfirmFolderDel] = useState<string | null>(null);
+  // Name prompt for rename / new file / new folder (Slice 6).
+  const [namePrompt, setNamePrompt] = useState<{ kind: "rename" | "newfile" | "newfolder"; from?: string; value: string } | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const fileInput = useRef<HTMLInputElement>(null);
 
@@ -159,6 +163,58 @@ export function FileExplorer({ projectId, projectName }: Props) {
     } catch { flash("Upload fehlgeschlagen"); } finally { setBusy(false); }
   }, [authFetch, projectId, cwd, load]);
 
+  // ── Slice 6 ops: rename/move, new file, new folder, folder delete ──
+  const submitPrompt = useCallback(async () => {
+    if (!namePrompt) return;
+    const raw = namePrompt.value.trim();
+    if (!raw) return;
+    setBusy(true);
+    try {
+      if (namePrompt.kind === "rename" && namePrompt.from) {
+        // Allow a bare name (rename in place) or a relative path (move).
+        const to = raw.includes("/") ? raw.replace(/^\/+/, "") : (cwd ? `${cwd}/${raw}` : raw);
+        const r = await authFetch(`/api/projects/${projectId}/files/rename`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ from: namePrompt.from, to }),
+        });
+        if (!r.ok) throw new Error();
+        if (selected === namePrompt.from) { setSelected(null); setPreview(null); }
+        flash("Umbenannt");
+      } else if (namePrompt.kind === "newfile") {
+        const path = cwd ? `${cwd}/${raw}` : raw;
+        const r = await authFetch(`/api/projects/${projectId}/files`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ path, content: "" }),
+        });
+        if (!r.ok) throw new Error();
+        flash("Datei erstellt");
+      } else if (namePrompt.kind === "newfolder") {
+        const path = cwd ? `${cwd}/${raw}` : raw;
+        const r = await authFetch(`/api/projects/${projectId}/files/folder`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ path, action: "create" }),
+        });
+        if (!r.ok) throw new Error();
+        flash("Ordner erstellt");
+      }
+      setNamePrompt(null);
+      await load();
+    } catch { flash("Aktion fehlgeschlagen"); } finally { setBusy(false); }
+  }, [namePrompt, cwd, authFetch, projectId, selected, load]);
+
+  const deleteFolder = useCallback(async (folder: string) => {
+    setConfirmFolderDel(null); setBusy(true);
+    const full = cwd ? `${cwd}/${folder}` : folder;
+    try {
+      const r = await authFetch(`/api/projects/${projectId}/files/folder`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: full, action: "delete" }),
+      });
+      if (!r.ok) throw new Error();
+      await load(); flash("Ordner gelöscht");
+    } catch { flash("Löschen fehlgeschlagen"); } finally { setBusy(false); }
+  }, [authFetch, projectId, cwd, load]);
+
   const crumbs = cwd ? cwd.split("/") : [];
 
   return (
@@ -181,6 +237,12 @@ export function FileExplorer({ projectId, projectName }: Props) {
         <span style={{ color: "var(--ink-3)" }}>/</span>
         <span style={{ fontWeight: 600, color: "var(--ink-1)", fontFamily: "var(--font-dash-display), Manrope, sans-serif" }}>Dateien</span>
         <div style={{ flex: 1 }} />
+        <button onClick={() => setNamePrompt({ kind: "newfolder", value: "" })} disabled={busy} style={btnGhost} title="Neuer Ordner">
+          <FolderPlus size={14} /> Ordner
+        </button>
+        <button onClick={() => setNamePrompt({ kind: "newfile", value: "" })} disabled={busy} style={btnGhost} title="Neue Datei">
+          <FilePlus size={14} /> Datei
+        </button>
         <button onClick={() => fileInput.current?.click()} disabled={busy} style={btnPrimary}>
           <Upload size={14} /> Hochladen
         </button>
@@ -210,12 +272,14 @@ export function FileExplorer({ projectId, projectName }: Props) {
           ) : (
             <div>
               {folders.map((f) => (
-                <button key={"d" + f} onClick={() => { setCwd(cwd ? `${cwd}/${f}` : f); setSelected(null); setPreview(null); }}
-                  style={rowBtn}>
-                  <Folder size={17} style={{ color: "var(--gold)", flexShrink: 0 }} />
-                  <span style={{ flex: 1, textAlign: "left", color: "var(--ink-1)", fontSize: 13.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f}</span>
-                  <ChevronRight size={15} style={{ color: "var(--ink-3)" }} />
-                </button>
+                <div key={"d" + f} style={row}>
+                  <button onClick={() => { setCwd(cwd ? `${cwd}/${f}` : f); setSelected(null); setPreview(null); }} style={rowInner}>
+                    <Folder size={17} style={{ color: "var(--gold)", flexShrink: 0 }} />
+                    <span style={{ flex: 1, textAlign: "left", color: "var(--ink-1)", fontSize: 13.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f}</span>
+                    <ChevronRight size={15} style={{ color: "var(--ink-3)" }} />
+                  </button>
+                  <button onClick={() => setConfirmFolderDel(f)} title="Ordner löschen" style={{ ...iconBtn, color: "var(--danger)" }}><Trash2 size={14} /></button>
+                </div>
               ))}
               {files.map((file) => {
                 const name = file.path.split("/").pop() ?? file.path;
@@ -229,6 +293,7 @@ export function FileExplorer({ projectId, projectName }: Props) {
                       <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 11, color: "var(--ink-3)", flexShrink: 0 }}>{fmtSize(file.size)}</span>
                       <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 11, color: "var(--ink-3)", flexShrink: 0, minWidth: 64, textAlign: "right" }}>{ago(file.modified)}</span>
                     </button>
+                    <button onClick={() => setNamePrompt({ kind: "rename", from: file.path, value: name })} title="Umbenennen / verschieben" style={iconBtn}><Pencil size={14} /></button>
                     <button onClick={() => download(file.path)} title="Herunterladen" style={iconBtn}><Download size={14} /></button>
                     <button onClick={() => setConfirmDel(file.path)} title="Löschen" style={{ ...iconBtn, color: "var(--danger)" }}><Trash2 size={14} /></button>
                   </div>
@@ -287,6 +352,45 @@ export function FileExplorer({ projectId, projectName }: Props) {
         </>
       )}
 
+      {confirmFolderDel && (
+        <>
+          <div onClick={() => setConfirmFolderDel(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 90 }} />
+          <div style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "var(--d-surface-elev)", border: "1px solid var(--line)", borderRadius: 14, padding: "22px 24px", zIndex: 91, minWidth: 300, maxWidth: 380 }}>
+            <div style={{ fontSize: 16, fontWeight: 600, color: "var(--ink-1)", marginBottom: 8, fontFamily: "var(--font-dash-display), Manrope, sans-serif" }}>Ordner löschen?</div>
+            <div style={{ fontSize: 13, color: "var(--ink-2)", marginBottom: 18, wordBreak: "break-all" }}>Alle Dateien in <strong>{confirmFolderDel}</strong> werden gelöscht.</div>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button onClick={() => setConfirmFolderDel(null)} style={btnGhost}>Abbrechen</button>
+              <button onClick={() => deleteFolder(confirmFolderDel)} style={{ ...btnPrimary, background: "var(--danger)" }}><Trash2 size={14} /> Löschen</button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {namePrompt && (
+        <>
+          <div onClick={() => setNamePrompt(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 90 }} />
+          <div style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "var(--d-surface-elev)", border: "1px solid var(--line)", borderRadius: 14, padding: "22px 24px", zIndex: 91, minWidth: 320, maxWidth: 420 }}>
+            <div style={{ fontSize: 16, fontWeight: 600, color: "var(--ink-1)", marginBottom: 6, fontFamily: "var(--font-dash-display), Manrope, sans-serif" }}>
+              {namePrompt.kind === "rename" ? "Umbenennen / verschieben" : namePrompt.kind === "newfolder" ? "Neuer Ordner" : "Neue Datei"}
+            </div>
+            <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 14 }}>
+              {namePrompt.kind === "rename" ? "Name oder Pfad (z.B. src/app.ts zum Verschieben)." : `Wird in ${cwd || "/"} erstellt.`}
+            </div>
+            <input
+              autoFocus value={namePrompt.value}
+              onChange={(e) => setNamePrompt({ ...namePrompt, value: e.target.value })}
+              onKeyDown={(e) => { if (e.key === "Enter") submitPrompt(); if (e.key === "Escape") setNamePrompt(null); }}
+              placeholder={namePrompt.kind === "newfolder" ? "ordnername" : "datei.txt"}
+              style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid var(--line)", background: "var(--d-surface)", color: "var(--ink-1)", fontSize: 13.5, fontFamily: "JetBrains Mono, monospace", outline: "none", boxSizing: "border-box", marginBottom: 18 }}
+            />
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button onClick={() => setNamePrompt(null)} style={btnGhost}>Abbrechen</button>
+              <button onClick={submitPrompt} disabled={busy || !namePrompt.value.trim()} style={{ ...btnPrimary, opacity: !namePrompt.value.trim() ? 0.5 : 1 }}>Speichern</button>
+            </div>
+          </div>
+        </>
+      )}
+
       {toast && (
         <div style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", background: "var(--green)", color: "#fff", padding: "9px 16px", borderRadius: 9, fontSize: 12.5, zIndex: 95 }}>{toast}</div>
       )}
@@ -295,9 +399,8 @@ export function FileExplorer({ projectId, projectName }: Props) {
 }
 
 const btnPrimary: React.CSSProperties = { display: "inline-flex", alignItems: "center", gap: 6, background: "var(--green)", color: "#fff", border: "none", borderRadius: 9, padding: "8px 14px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-sans)" };
-const btnGhost: React.CSSProperties = { background: "transparent", border: "1px solid var(--line)", color: "var(--ink-2)", borderRadius: 9, padding: "8px 14px", fontSize: 13, cursor: "pointer", fontFamily: "var(--font-sans)" };
+const btnGhost: React.CSSProperties = { display: "inline-flex", alignItems: "center", gap: 6, background: "transparent", border: "1px solid var(--line)", color: "var(--ink-2)", borderRadius: 9, padding: "8px 14px", fontSize: 13, cursor: "pointer", fontFamily: "var(--font-sans)" };
 const crumbBtn: React.CSSProperties = { background: "transparent", border: "none", color: "var(--ink-2)", cursor: "pointer", fontFamily: "JetBrains Mono, monospace", fontSize: 12.5, padding: 0 };
 const row: React.CSSProperties = { display: "flex", alignItems: "center", gap: 4, padding: "2px 12px 2px 18px", borderBottom: "1px solid var(--line)" };
 const rowInner: React.CSSProperties = { flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 12, padding: "10px 0", background: "transparent", border: "none", cursor: "pointer" };
-const rowBtn: React.CSSProperties = { width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "11px 18px", background: "transparent", border: "none", borderBottom: "1px solid var(--line)", cursor: "pointer" };
 const iconBtn: React.CSSProperties = { display: "inline-flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", color: "var(--ink-2)", cursor: "pointer", padding: 6, flexShrink: 0 };
