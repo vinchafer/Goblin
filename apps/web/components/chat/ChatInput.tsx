@@ -374,12 +374,16 @@ async function fetchModelsAndKeys(): Promise<{ models: ApiModel[]; keys: Connect
 
 const MODEL_STORAGE_KEY = 'goblin:last-model';
 
+// Sprint 9.5: default new users to the working Groq model. The free Gemini model
+// is broken in the prod LiteLLM proxy; Groq Llama 3.3 70B works end-to-end and is
+// now the onboarding-recommended provider. The first-BYOK auto-select below still
+// applies once the user connects any key.
 export const DEFAULT_MODEL: SelectedModel = {
-  slug: 'free/gemini-flash',
-  name: 'Gemini Flash',
-  provider: 'google',
-  layer: 'free_api',
-  displayName: 'Gemini Flash',
+  slug: 'groq/llama-3.3-70b-versatile',
+  name: 'Llama 3.3 70B',
+  provider: 'groq',
+  layer: 'byok',
+  displayName: 'Llama 3.3 70B',
 };
 
 export function useChatModel() {

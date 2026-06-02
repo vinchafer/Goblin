@@ -45,10 +45,28 @@ interface Provider {
 
 const PROVIDERS: Provider[] = [
   {
+    id: 'groq', name: 'Groq', sub: 'LLAMA 3.3 70B · KOSTENLOS', hero: true,
+    pill: 'fast', pillLabel: 'FREE · FAST',
+    brand: { glyph: 'q', bg: '#F55036' },
+    copy: 'Der einfachste Start: schnell, kostenlos, und sofort einsatzbereit. Läuft heute schon zuverlässig in Goblin — perfekt für deinen ersten Build.',
+    pros: [
+      'Groq · schnell, kostenlos, ~14400 req/day',
+      '3–5× schneller als die Standard-API',
+      "Läuft über Goblins verschlüsselten Proxy",
+    ],
+    price: 'KOSTENLOS · KEINE KARTE · ~ 60 SEK',
+    placeholder: 'gsk_…',
+    guide: [
+      'Geh auf console.groq.com/keys',
+      'Mit Google/GitHub anmelden',
+      'Auf "Create API Key" klicken',
+      'Schlüssel kopieren, unten einfügen',
+    ],
+  },
+  {
     id: 'google', name: 'Google Gemini', sub: 'GEMINI 2.5 PRO · FREE TIER',
-    pill: 'free', pillLabel: 'FREE', hero: true,
+    pill: 'free', pillLabel: 'FREE',
     brand: { glyph: 'G', bg: 'linear-gradient(135deg, #4285F4 0%, #9B72CB 50%, #D96570 100%)' },
-    copy: 'The gentlest start in the room. Generous free tier, solid coding, and the only one that needs nothing but a Google account.',
     pros: [
       '1,500 requests/day on the free tier — no card',
       'Strong coding, image + audio, 1M-token context',
@@ -89,19 +107,6 @@ const PROVIDERS: Provider[] = [
       'Go to console.anthropic.com',
       'Sign in, open "API Keys"',
       'Click "Create key"',
-      'Copy, paste below',
-    ],
-  },
-  {
-    id: 'groq', name: 'Groq', sub: 'LLAMA 3.3 70B · MIXTRAL',
-    pill: 'fast', pillLabel: 'FREE · FAST',
-    brand: { glyph: 'q', bg: '#F55036' },
-    pros: ['3-5× faster than the standard API', '30 requests/min on the free tier, no card'],
-    price: 'FREE · LIMITED MODELS',
-    placeholder: 'gsk_…',
-    guide: [
-      'Go to console.groq.com/keys',
-      'Sign in, click "Create API Key"',
       'Copy, paste below',
     ],
   },
@@ -267,7 +272,7 @@ function Step2Inner() {
         <h1>Pick your AI <span className="gobl-serif">provider.</span></h1>
         <p className="lead">
           Six providers, three patterns: <b>free tier</b>, <b>pay-as-you-go</b>,
-          and <b>fast inference</b>. Start with Gemini — Goblin handles the rest.
+          and <b>fast inference</b>. Start with Groq — Goblin handles the rest.
         </p>
       </header>
 
