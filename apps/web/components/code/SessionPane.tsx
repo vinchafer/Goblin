@@ -12,6 +12,7 @@ import { StreamingDiffView } from "./StreamingDiffView";
 import { SessionThread } from "./SessionThread";
 import { SessionPromptInput } from "./SessionPromptInput";
 import { SessionGitPill } from "./SessionGitPill";
+import { CodeFileTabs } from "./CodeFileTabs";
 import { useCodeSessionDetail } from "@/hooks/code/useCodeSessionDetail";
 import { useCodeAgent } from "@/hooks/code/useCodeAgent";
 import type { EditorTheme } from "@/hooks/code/useEditorTheme";
@@ -167,6 +168,19 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
 
       {/* WORK SURFACE column */}
       <div className="gb-surface-col" style={{ display: "flex", flexDirection: "column", minHeight: 0, background: "var(--ed-canvas)" }}>
+        {/* Multi-file tabs (Slice 3). The session already holds many files; tabs let
+            Sofia switch between them. Hidden for a single file so Max's landing-page
+            flow stays clean. Closing only discards drafts (saved files are a no-op). */}
+        {!liveBlock && detail.files.length >= 2 && (
+          <CodeFileTabs
+            openFiles={detail.files.map(f => f.path)}
+            activePath={detail.activePath}
+            injectedFiles={new Set(detail.files.filter(f => f.change_state === "draft").map(f => f.path))}
+            isDirty={detail.dirty}
+            onSelect={(p) => detail.setActivePath(p)}
+            onClose={(p) => detail.discardDraft(p)}
+          />
+        )}
         {/* File bar + status */}
         <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderBottom: "1px solid var(--ed-rule)", background: "var(--ed-chrome)", flexShrink: 0 }}>
           <button className="gb-mobile-back" onClick={() => setMobileView("thread")} aria-label="Zurück zum Thread" style={{ background: "transparent", border: "none", color: "var(--ed-fg-2)", cursor: "pointer", alignItems: "center" }}>
