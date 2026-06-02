@@ -11,6 +11,7 @@ import { GoblinLogo } from "@/components/brand/GoblinLogo";
 import { StreamingDiffView } from "./StreamingDiffView";
 import { SessionThread } from "./SessionThread";
 import { SessionPromptInput } from "./SessionPromptInput";
+import { SessionGitPill } from "./SessionGitPill";
 import { useCodeSessionDetail } from "@/hooks/code/useCodeSessionDetail";
 import { useCodeAgent } from "@/hooks/code/useCodeAgent";
 import type { EditorTheme } from "@/hooks/code/useEditorTheme";
@@ -29,12 +30,14 @@ interface Props {
   onDraftCountChange: (n: number) => void;
   /** Project intent → first-paint foreground (not a mode). Defaults Max-forward. */
   intent?: Intent;
+  /** For the footer git pill (Slice 4). */
+  projectId?: string;
 }
 
 /** One session = thread (talk) + work surface (the file in play). Desktop split,
  *  mobile single-column. The change-state spine (Entwurf → Gesichert → Veröffentlicht)
  *  lives in the work-surface status line; deploy is gated on Saved. */
-export function SessionPane({ session, theme, onModelChange, onDraftCountChange, intent }: Props) {
+export function SessionPane({ session, theme, onModelChange, onDraftCountChange, intent, projectId }: Props) {
   const detail = useCodeSessionDetail(session.id);
   const agent = useCodeAgent(session.id);
   const preset = layoutPreset(intent);
@@ -276,6 +279,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
 
         {/* Status line + the two-step Sichern → Veröffentlichen */}
         <div style={{ flexShrink: 0, borderTop: "1px solid var(--ed-rule)", background: "var(--ed-chrome)", padding: "10px 14px", display: "flex", alignItems: "center", gap: 12 }}>
+          {projectId && <SessionGitPill projectId={projectId} />}
           <span style={{ fontSize: 12, color: "var(--ed-fg-3)", fontFamily: "var(--font-sans)", flex: 1 }}>
             {state === "draft" && "Entwurf · nichts wird veröffentlicht, bis du sicherst"}
             {state === "saved" && "Gesichert · bereit zum Veröffentlichen"}

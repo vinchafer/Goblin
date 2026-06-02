@@ -113,6 +113,7 @@ export function CodeWorkspace({ projectId, pendingCode, onPendingConsumed }: Pro
           session={active}
           theme={theme}
           intent={intent}
+          projectId={projectId}
           onModelChange={(modelId) => s.setSessionModel(active.id, modelId)}
           onDraftCountChange={(n) => s.setDraftCount(active.id, n)}
         />

@@ -15,6 +15,7 @@ const github = new Hono<{ Variables: Variables }>();
 // Protected routes
 github.use('/connect', authMiddleware);
 github.use('/status', authMiddleware);
+github.use('/project-status', authMiddleware);
 github.use('/push', authMiddleware);
 github.use('/disconnect', authMiddleware);
 
@@ -134,15 +135,52 @@ github.get('/callback', async (c) => {
   }
 });
 
+// GET /project-status?projectId= — git surface READ (Slice 4). Honest status:
+// account connection + whether THIS project is linked to a repo. (The file store
+// is a Backblaze snapshot, not a git working tree, so there is no per-file diff /
+// ahead-behind to report — we report only what is true.)
+github.get('/project-status', async (c) => {
+  const userId = c.get('userId');
+  const projectId = c.req.query('projectId');
+  if (!projectId) return c.json({ error: 'projectId required' }, 400);
+
+  const accessToken = await getDecryptedAccessToken(userId);
+  let username: string | null = null;
+  if (accessToken) {
+    try { username = await getUsername(accessToken); } catch { username = null; }
+  }
+
+  const supabase = getSupabaseAdmin();
+  const { data: project } = await supabase
+    .from('projects')
+    .select('github_repo, last_active')
+    .eq('id', projectId)
+    .eq('user_id', userId)
+    .maybeSingle() as { data: { github_repo: string | null; last_active: string | null } | null };
+  if (!project) return c.json({ error: 'Project not found' }, 404);
+
+  const repoUrl = project.github_repo;
+  const repoSlug = repoUrl ? repoUrl.replace(/^https?:\/\/github\.com\//, '').replace(/\.git$/, '') : null;
+
+  return c.json({
+    connected: !!accessToken,
+    username,
+    repo: repoSlug ? { url: repoUrl, slug: repoSlug } : null,
+  });
+});
+
 github.post('/push', async (c) => {
   const userId = c.get('userId');
   const body = await c.req.json();
 
+  // `name` only needed for the FIRST push (repo creation); subsequent pushes go to
+  // the linked repo. `message` is the commit message (the WRITE half of Slice 4).
   const schema = z.object({
     projectId: z.string().uuid(),
-    name: z.string().regex(/^[a-zA-Z0-9-_]+$/),
+    name: z.string().regex(/^[a-zA-Z0-9-_]+$/).optional(),
     description: z.string().optional(),
-    isPrivate: z.boolean().optional()
+    isPrivate: z.boolean().optional(),
+    message: z.string().max(500).optional(),
   });
 
   const result = schema.safeParse(body);
@@ -152,13 +190,13 @@ github.post('/push', async (c) => {
 
   const supabase = getSupabaseAdmin();
 
-  // Verify project ownership
+  // Verify project ownership + read any existing repo link.
   const { data: project, error: projectError } = await supabase
     .from('projects')
-    .select('id')
+    .select('id, github_repo, name')
     .eq('id', result.data.projectId)
     .eq('user_id', userId)
-    .single();
+    .single() as { data: { id: string; github_repo: string | null; name: string | null } | null; error: unknown };
 
   if (projectError || !project) {
     return c.json({ error: 'Project not found' }, 404);
@@ -170,57 +208,60 @@ github.post('/push', async (c) => {
   }
 
   try {
-    // Create repo
-    const repo = await createRepo(accessToken, {
-      name: result.data.name,
-      description: result.data.description,
-      private: result.data.isPrivate
-    });
-
-    // Get all project files
+    // Collect all project files into a path→content map.
     const filePaths = await listFiles(result.data.projectId);
-    const files = await Promise.all(
-      filePaths.map(async fullPath => {
-        // Remove project ID prefix and fix leading slash
-        let path = fullPath.replace(`${result.data.projectId}/`, '');
-        path = path.startsWith('/') ? path.slice(1) : path;
-        return {
-          path,
-          content: await getFile(result.data.projectId, fullPath) || ''
-        };
-      })
-    );
-
-    // Push all files
     const fileMap: Record<string, string> = {};
-    files.forEach(file => {
-      fileMap[file.path] = file.content;
-    });
-    
-    await pushFiles(accessToken, repo.owner.login, repo.name, fileMap);
+    await Promise.all(filePaths.map(async (fullPath) => {
+      let path = fullPath.replace(`${result.data.projectId}/`, '');
+      path = path.startsWith('/') ? path.slice(1) : path;
+      fileMap[path] = (await getFile(result.data.projectId, fullPath)) || '';
+    }));
 
-    // Update project with GitHub repo URL
-    const repoUrl = `https://github.com/${repo.owner.login}/${repo.name}`;
-    await supabase
-      .from('projects')
-      .update({ github_repo: repoUrl })
-      .eq('id', result.data.projectId)
-      .eq('user_id', userId);
+    if (Object.keys(fileMap).length === 0) {
+      return c.json({ error: 'Keine Dateien zum Pushen' }, 400);
+    }
+
+    let owner: string, repoName: string, repoUrl: string, htmlUrl: string;
+
+    if (project.github_repo) {
+      // Linked repo → commit + push to it (the recurring WRITE path).
+      const slug = project.github_repo.replace(/^https?:\/\/github\.com\//, '').replace(/\.git$/, '');
+      [owner, repoName] = slug.split('/') as [string, string];
+      await pushFiles(accessToken, owner, repoName, fileMap, result.data.message);
+      repoUrl = project.github_repo;
+      htmlUrl = project.github_repo;
+    } else {
+      // First push → create the repo, then push. `name` required here.
+      const name = result.data.name || (project.name ?? '').replace(/[^a-zA-Z0-9-_]/g, '-').slice(0, 80);
+      if (!name) return c.json({ error: 'Repo-Name erforderlich' }, 400);
+      const repo = await createRepo(accessToken, {
+        name,
+        description: result.data.description,
+        private: result.data.isPrivate,
+      });
+      await pushFiles(accessToken, repo.owner.login, repo.name, fileMap, result.data.message);
+      owner = repo.owner.login; repoName = repo.name;
+      repoUrl = `https://github.com/${owner}/${repoName}`;
+      htmlUrl = repo.html_url;
+      await supabase
+        .from('projects')
+        .update({ github_repo: repoUrl })
+        .eq('id', result.data.projectId)
+        .eq('user_id', userId);
+    }
 
     sendToUser(userId, {
       title: `⬆ Pushed to GitHub`,
-      body: `${result.data.name} → ${repoUrl}`,
+      body: `${repoName} → ${repoUrl}`,
       url: `/dashboard/project/${result.data.projectId}`,
       tag: 'build_complete',
-      actionUrls: {
-        open_preview: repoUrl,
-      },
+      actionUrls: { open_preview: repoUrl },
     }).catch((err: unknown) => console.error('[github] push notification failed:', err));
 
-    return c.json({ success: true, url: repo.html_url });
+    return c.json({ success: true, url: htmlUrl, repo: `${owner}/${repoName}` });
   } catch (err) {
-    return c.json({ 
-      error: err instanceof Error ? err.message : 'Failed to push to GitHub' 
+    return c.json({
+      error: err instanceof Error ? err.message : 'Failed to push to GitHub'
     }, 500);
   }
 });
