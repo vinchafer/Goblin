@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { undo, redo, undoDepth, redoDepth } from "@codemirror/commands";
+import { openSearchPanel } from "@codemirror/search";
 import type { EditorView } from "@codemirror/view";
-import { Undo2, Redo2 } from "lucide-react";
+import { Undo2, Redo2, Search } from "lucide-react";
 import { Icon } from "@/components/ui/icon";
 import { GoblinLogo } from "@/components/brand/GoblinLogo";
 import { StreamingDiffView } from "./StreamingDiffView";
@@ -171,6 +172,18 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
           <span style={{ color: "var(--ed-fg-1)", fontFamily: "JetBrains Mono, monospace", fontSize: 12.5, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {editorFilename}
           </span>
+          {/* Find/Replace — keyboard does Ctrl+F/Ctrl+H; this button gives mobile +
+              discoverability. Title surfaces the multi-cursor hint (Alt+Klick / Ctrl+D). */}
+          {detail.activeFile && !liveBlock && (
+            <button
+              onClick={() => { const v = editorViewRef.current; if (v) { openSearchPanel(v); v.focus(); } }}
+              title="Suchen / Ersetzen (Strg+F · Strg+H) — Alt+Klick oder Strg+D für Mehrfach-Cursor"
+              aria-label="Suchen und Ersetzen"
+              style={{ display: "inline-flex", alignItems: "center", background: "transparent", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-2)", borderRadius: 8, padding: "5px 8px", cursor: "pointer" }}
+            >
+              <Search size={14} />
+            </button>
+          )}
           {/* Undo / Redo — work for manual edits AND AI generations (one event). */}
           {detail.activeFile && !liveBlock && (
             <>

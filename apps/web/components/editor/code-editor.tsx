@@ -14,6 +14,7 @@ import {
   indentWithTab,
   moveLineUp, moveLineDown, copyLineDown,
 } from '@codemirror/commands';
+import { search, searchKeymap } from '@codemirror/search';
 
 // ── Goblin editor themes — resolved from design-tokens.css v1.1 + the PROPOSED
 // Code-Tab token set (CODETAB_PROPOSED_TOKENS_2026-06-01.md). Light is the new
@@ -150,14 +151,21 @@ export function CodeEditor({ content, filename, onChange, onSave, onEditorReady,
         buildViewTheme(palette, theme === 'dark'),
         buildHighlight(palette),
         history(),
+        // Find/Replace panel at top (Slice 5). basicSetup bundles searchKeymap, but
+        // we add it explicitly + position the panel so it never hides behind the
+        // status bar. Ctrl+F find, Ctrl+H replace.
+        search({ top: true }),
         keymap.of([
+          ...searchKeymap,   // Ctrl+F/Ctrl+H + Ctrl+D = select next occurrence (multi-cursor)
           ...defaultKeymap,
           ...historyKeymap,
           indentWithTab,
           { key: 'Mod-s',       run: (view: EditorView) => { handleSave(view); return true; } },
           { key: 'Alt-ArrowUp',   run: moveLineUp },
           { key: 'Alt-ArrowDown', run: moveLineDown },
-          { key: 'Mod-d',        run: copyLineDown },
+          // copyLineDown moved off Ctrl+D (which now does multi-cursor select-next,
+          // matching VS Code) to Shift+Alt+Down (also VS Code's "copy line down").
+          { key: 'Shift-Alt-ArrowDown', run: copyLineDown },
         ]),
         EditorView.updateListener.of((update) => {
           if (update.docChanged) onChange?.(update.state.doc.toString());
