@@ -9,7 +9,8 @@
 // Routing can be tuned later in Settings → Routing; no in-flow detour here.
 
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { getAuthHeaders, API_URL } from '@/lib/api';
 import { IArrowL, IArrowR, ICheck, IShield } from '../_components/icons';
 import { patchOnboardingState } from '../_components/onboarding-state';
@@ -50,11 +51,17 @@ const LAYERS: Array<{
   },
 ];
 
-export default function RoutingStepPage() {
+function RoutingInner() {
   const [waitlist, setWaitlist] = useState<'idle' | 'busy' | 'done'>('idle');
+  const search = useSearchParams();
+  const path = search?.get('path') === 'a' ? 'a' : 'b';
+  // After the 10.7-6 swap the layer-story is Step 2 and the provider step
+  // follows it. Carry the path choice forward so the provider step still
+  // pre-expands the right hero card.
+  const nextHref = `/welcome/provider?path=${path}`;
 
   useEffect(() => {
-    patchOnboardingState({ current_step: 3 });
+    patchOnboardingState({ current_step: 2 });
   }, []);
 
   async function joinWaitlist() {
@@ -77,10 +84,10 @@ export default function RoutingStepPage() {
   return (
     <div className="step3">
       <header className="head">
-        <Link href="/welcome/provider" className="back">
-          <IArrowL size={12} /> <span>Back to provider</span>
+        <Link href="/welcome" className="back">
+          <IArrowL size={12} /> <span>Back</span>
         </Link>
-        <div className="eyebrow"><span className="tick" /><span>Step 03 of 06 — How Goblin routes your prompts</span></div>
+        <div className="eyebrow"><span className="tick" /><span>Step 02 of 06 — How Goblin routes your prompts</span></div>
         <h1>How Goblin <span className="gobl-serif">works.</span></h1>
         <p className="lead">
           Three layers. You choose how far up you want to go. Most people start
@@ -99,6 +106,15 @@ export default function RoutingStepPage() {
               </div>
               <h3>{layer.title}</h3>
               <p>{layer.body}</p>
+              {layer.n === '3' && (
+                <Link
+                  href={nextHref}
+                  className="layer3-link"
+                  onClick={() => patchOnboardingState({ current_step: 3 })}
+                >
+                  Premium-Provider hinzufügen <IArrowR size={13} />
+                </Link>
+              )}
               {layer.status.tone === 'soon' && (
                 <button
                   type="button"
@@ -133,16 +149,16 @@ export default function RoutingStepPage() {
 
       <div className="actions">
         <Link
-          href="/welcome/tools"
+          href={nextHref}
           className="btn-primary"
-          onClick={() => patchOnboardingState({ current_step: 4 })}
+          onClick={() => patchOnboardingState({ current_step: 3 })}
         >
-          Continue <IArrowR size={14} />
+          Continue — pick your provider <IArrowR size={14} />
         </Link>
         <Link
-          href="/welcome/tools"
+          href={nextHref}
           className="btn-ghost"
-          onClick={() => patchOnboardingState({ current_step: 4 })}
+          onClick={() => patchOnboardingState({ current_step: 3 })}
         >
           Skip — use defaults
         </Link>
@@ -150,8 +166,8 @@ export default function RoutingStepPage() {
 
       <div className="footstrip">
         <span className="skip"><IShield size={11} />CHANGE ANY TIME · SETTINGS / ROUTING</span>
-        <span className="gobl-mono">/welcome/routing · STEP 03 OF 06</span>
-        <Link href="/welcome/tools">SKIP — TUNE LATER →</Link>
+        <span className="gobl-mono">/welcome/routing · STEP 02 OF 06</span>
+        <Link href={nextHref}>NEXT — PROVIDER →</Link>
       </div>
 
       <style jsx>{`
@@ -248,6 +264,19 @@ export default function RoutingStepPage() {
         .waitlist.joined { background: var(--ok-soft); color: var(--ok); border-color: rgba(47,106,71,.32); cursor: default; }
         .waitlist:disabled { cursor: default; }
 
+        .layer3-link {
+          margin-top: 12px;
+          display: inline-flex; align-items: center; gap: 6px;
+          font-family: var(--font-onb-display), Manrope, sans-serif;
+          font-weight: 600; font-size: 13px;
+          color: var(--green); text-decoration: none;
+          padding: 8px 13px; border-radius: var(--radius);
+          border: 1px solid var(--line-strong); background: transparent;
+          width: fit-content;
+          transition: border-color .15s, color .15s;
+        }
+        .layer3-link:hover { border-color: var(--green); }
+
         .flow {
           display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
           padding: 14px 18px; margin-bottom: 8px;
@@ -301,5 +330,13 @@ export default function RoutingStepPage() {
         }
       `}</style>
     </div>
+  );
+}
+
+export default function RoutingStepPage() {
+  return (
+    <Suspense fallback={<div style={{ padding: 32 }} />}>
+      <RoutingInner />
+    </Suspense>
   );
 }

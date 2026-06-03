@@ -201,9 +201,10 @@ function Step2Inner() {
     return init;
   });
 
-  // Track that the user entered step 2
+  // Track that the user entered step 3 (provider now follows the layer-story
+  // after the 10.7-6 swap).
   useEffect(() => {
-    patchOnboardingState({ current_step: 2 });
+    patchOnboardingState({ current_step: 3 });
   }, []);
 
   function openCard(id: string) {
@@ -281,8 +282,8 @@ function Step2Inner() {
     } catch {
       // Non-blocking — user can retry from settings if creation fails.
     }
-    await patchOnboardingState({ ai_provider_choice: 'byok', current_step: 3 });
-    router.push('/welcome/routing');
+    await patchOnboardingState({ ai_provider_choice: 'byok', current_step: 4 });
+    router.push('/welcome/tools');
   }
 
   const heroOnly = PROVIDERS.filter((p) => p.hero);
@@ -291,7 +292,10 @@ function Step2Inner() {
   return (
     <div className="step2" data-path={path}>
       <header className="head">
-        <div className="eyebrow"><span className="tick" />Step 02 of 06 — Pick a provider</div>
+        <Link href="/welcome/routing" className="back-link">
+          ← Back to how Goblin works
+        </Link>
+        <div className="eyebrow"><span className="tick" />Step 03 of 06 — Pick a provider</div>
         <h1>Pick your AI <span className="gobl-serif">provider.</span></h1>
         <p className="lead">
           Six providers, three patterns: <b>free tier</b>, <b>pay-as-you-go</b>,
@@ -305,7 +309,7 @@ function Step2Inner() {
           <div className="t">Pick one. Get all six.</div>
           <div className="s">When your provider hits a rate limit or errors, Goblin swaps to the next one in your chain — silently, instantly, no dropped messages.</div>
         </div>
-        <span className="tag">AUTO-FALLBACK · TUNED IN STEP 03</span>
+        <span className="tag">AUTO-FALLBACK · TUNE IN SETTINGS</span>
       </div>
 
       <div className="hero-row">
@@ -358,14 +362,21 @@ function Step2Inner() {
 
       <div className="footstrip">
         <span className="skip"><IShield size={11} />KEYS ENCRYPTED · CHANGE OR REVOKE ANY TIME</span>
-        <span className="gobl-mono">/welcome/provider · STEP 02 OF 06</span>
-        <Link href="/welcome/routing">SKIP — DECIDE LATER →</Link>
+        <span className="gobl-mono">/welcome/provider · STEP 03 OF 06</span>
+        <Link href="/welcome/tools">SKIP — DECIDE LATER →</Link>
       </div>
 
       <style jsx>{`
         .step2 { padding: 28px 80px 40px; max-width: 1280px; margin: 0 auto; }
         @media (max-width: 880px) { .step2 { padding: 22px 18px 32px; } }
         .head { margin-bottom: 24px; max-width: 720px; }
+        .back-link {
+          display: inline-block;
+          font-family: var(--font-mono), monospace; font-size: 10.5px;
+          letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3);
+          margin-bottom: 16px; text-decoration: none;
+        }
+        .back-link:hover { color: var(--ink-1); }
         .eyebrow {
           font-family: var(--font-mono), monospace; font-size: 10.5px;
           letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-3);

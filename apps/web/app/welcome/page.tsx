@@ -30,7 +30,7 @@ export default function WelcomeStep1() {
       </div>
 
       <div className="paths">
-        <Link href="/welcome/provider?path=b" className="gobl-path-card path-card primary">
+        <Link href="/welcome/routing?path=b" className="gobl-path-card path-card primary">
           <span className="badge">RECOMMENDED</span>
           <div className="top">
             <span className="num">PATH B</span>
@@ -47,7 +47,7 @@ export default function WelcomeStep1() {
           </div>
         </Link>
 
-        <Link href="/welcome/provider?path=a" className="gobl-path-card path-card">
+        <Link href="/welcome/routing?path=a" className="gobl-path-card path-card">
           <div className="top">
             <span className="num">PATH A</span>
             <span className="time">~ 60 SEC</span>
