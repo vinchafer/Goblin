@@ -125,6 +125,29 @@ export function NewProjectModal({ onClose, initialMode, initialIdea }: NewProjec
       // Local hint so the Code-Tab foreground is correct immediately, even if the
       // DB has no `intent` column yet (migration 0057 may be unapplied). DB wins later.
       if (project?.id) setStoredIntent(project.id, intent);
+
+      // 10.7-12: when this project was started from a "Sag Goblin" prompt, drop
+      // the user straight into a chat with the prompt already sent — no hub
+      // detour, no "Chat öffnen", no retype. Mirrors the existing-project /
+      // just-chat paths (sendComposer), which use the same single-use seed.
+      const seed = initialIdea?.trim();
+      if (seed && project?.id && !pendingStcTab()) {
+        try {
+          const sres = await fetch(`${apiBase}/api/chat-sessions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ projectId: project.id }),
+          });
+          if (sres.ok) {
+            const sess = await sres.json() as { id: string };
+            try { sessionStorage.setItem(`goblin:seed:${sess.id}`, seed); } catch { /* ignore */ }
+            onClose();
+            router.push(`/dashboard/chat/${sess.id}`);
+            return;
+          }
+        } catch { /* fall through to the hub below */ }
+      }
+
       onClose();
       // B-S4 / 10.6-4: if code is waiting from a project-less chat, land in the Code
       // tab so CodeWorkspace rehydrates the stashed payload (the hub never mounts it).
