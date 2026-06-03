@@ -100,9 +100,13 @@ export async function deployToVercel(
     throw new Error(`Vercel deploy failed: ${err.error?.message ?? res.statusText}`);
   }
 
-  const data = await res.json() as { id: string; url: string };
-  onProgress?.('Deployment created — waiting for build…');
-  return { deploymentId: data.id, url: `https://${data.url}` };
+  const data = await res.json() as { id: string; url: string; alias?: string[] };
+  // B-S5: data.url is the deployment-unique hash URL; for a production target
+  // Vercel also assigns a stable production alias (<project>.vercel.app). Prefer
+  // the alias so "Öffnen"/"Kopieren" point at the canonical, non-404 URL.
+  const canonical = (Array.isArray(data.alias) && data.alias.length > 0) ? data.alias[0]! : data.url;
+  console.log('[vercel] deployment created', JSON.stringify({ id: data.id, url: data.url, alias: data.alias ?? null, canonical }));
+  return { deploymentId: data.id, url: `https://${canonical}` };
 }
 
 export async function getDeployStatus(
@@ -121,9 +125,12 @@ export async function getDeployStatus(
     throw new Error(`Failed to get deployment status: ${res.status} ${res.statusText}`);
   }
 
-  const data = await res.json() as { readyState?: string; status?: string; url?: string };
+  const data = await res.json() as { readyState?: string; status?: string; url?: string; alias?: string[] };
+  // Prefer the production alias once it's assigned (see createDeployment note).
+  const canonical = (Array.isArray(data.alias) && data.alias.length > 0) ? data.alias[0]! : data.url;
+  console.log('[vercel] deployment status', JSON.stringify({ id: deploymentId, state: data.readyState ?? data.status, url: data.url, alias: data.alias ?? null, canonical }));
   return {
     state: data.readyState ?? data.status ?? 'UNKNOWN',
-    url: data.url ? `https://${data.url}` : undefined,
+    url: canonical ? `https://${canonical}` : undefined,
   };
 }
