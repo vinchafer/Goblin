@@ -129,18 +129,21 @@ function CodeActionButton({ lastMessage, hasProject }: {
     <div ref={ref} style={{ position: "relative" }}>
       <button
         onClick={() => setOpen(o => !o)}
-        title="Code actions"
+        title="Code-Aktionen"
+        aria-label="Code-Aktionen"
         style={{
-          width: 32, height: 32, borderRadius: 8,
-          background: "var(--subtle)", border: "1px solid var(--div)",
-          color: "var(--brand-green)", fontSize: 11, fontFamily: "JetBrains Mono, monospace",
-          cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-          fontWeight: 600, transition: "background 0.1s",
+          height: 30, padding: "0 11px", borderRadius: 8,
+          background: "var(--panel)", border: "1px solid var(--div)",
+          color: "var(--ink-2, var(--text-2))", fontSize: 12.5, lineHeight: 1,
+          fontFamily: "JetBrains Mono, monospace", letterSpacing: "-0.02em",
+          cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6,
+          fontWeight: 600, boxShadow: "var(--shadow-sm)", transition: "border-color 0.12s, color 0.12s",
         }}
-        onMouseEnter={e => (e.currentTarget.style.background = "var(--div)")}
-        onMouseLeave={e => (e.currentTarget.style.background = "var(--subtle)")}
+        onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--brand-green)"; e.currentTarget.style.color = "var(--brand-green)"; }}
+        onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--div)"; e.currentTarget.style.color = "var(--ink-2, var(--text-2))"; }}
       >
-        {"</>"}
+        <span aria-hidden>{"</>"}</span>
+        <span style={{ fontFamily: "var(--font-sans)", fontSize: 11.5, fontWeight: 600 }}>Code</span>
       </button>
 
       {open && (
@@ -417,7 +420,7 @@ export function StandaloneChat({ sessionId, initialMessages = [] }: StandaloneCh
         <div style={{ position: "relative" }}>
           {/* Code action button — sits above the input */}
           {lastAssistantMsg?.has_code && (
-            <div style={{ position: "absolute", right: 12, bottom: "calc(100% + 6px)", zIndex: 10 }}>
+            <div style={{ position: "absolute", right: 12, bottom: "calc(100% + 10px)", zIndex: 10 }}>
               <CodeActionButton lastMessage={lastAssistantMsg} hasProject={hasProject} />
             </div>
           )}
