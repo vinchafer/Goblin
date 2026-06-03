@@ -189,15 +189,15 @@ export default function WelcomeStep1() {
           border-color: var(--green);
         }
         :global(.path-card.primary h3) { color: var(--bone); }
-        :global(.path-card.primary p) { color: rgba(244,236,216,.78); }
+        :global(.path-card.primary p) { color: rgba(244,236,216,.88); }
         :global(.path-card.primary .num),
         :global(.path-card.primary .time) { color: var(--gold); }
-        :global(.path-card.primary .foot) { border-top-color: rgba(244,236,216,.14); }
+        :global(.path-card.primary .foot) { border-top-color: rgba(244,236,216,.22); }
         :global(.path-card.primary .arr) { color: var(--bone); }
         :global(.path-card.primary .tag) {
-          background: rgba(244,236,216,.10);
+          background: rgba(244,236,216,.16);
           color: var(--bone);
-          border-color: rgba(244,236,216,.18);
+          border-color: rgba(244,236,216,.32);
         }
         :global(.path-card.primary .badge) {
           position: absolute; top: -10px; right: 18px;
