@@ -59,9 +59,31 @@ deploy.post('/vercel', deployRateLimit, async (c) => {
         },
       );
 
+      // 10.6-3: at creation time Vercel has not yet assigned the production alias,
+      // so result.url is the build-hash URL (which can 404 while still building).
+      // Poll until READY to surface the canonical <project>.vercel.app alias (B-S5)
+      // and a URL that actually answers 200. Fall back to the hash URL on timeout.
+      let finalUrl = result.url;
+      const deadline = Date.now() + 90_000;
+      while (Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, 3000));
+        let status: { state: string; url?: string };
+        try {
+          status = await getDeployStatus(userId, result.deploymentId);
+        } catch {
+          continue; // transient status read failure — keep polling
+        }
+        if (status.url) finalUrl = status.url;
+        await stream.writeSSE({ data: JSON.stringify({ type: 'progress', message: `Status: ${status.state}…` }) });
+        if (status.state === 'READY') break;
+        if (status.state === 'ERROR' || status.state === 'CANCELED') {
+          throw new Error(`Vercel deployment ${status.state.toLowerCase()}`);
+        }
+      }
+
       await supabase
         .from('projects')
-        .update({ preview_url: result.url, last_deployed_at: new Date().toISOString() })
+        .update({ preview_url: finalUrl, last_deployed_at: new Date().toISOString() })
         .eq('id', projectId);
 
       // Push notification (non-blocking)
@@ -69,11 +91,11 @@ deploy.post('/vercel', deployRateLimit, async (c) => {
         const { sendToUser } = await import('../services/notification-service');
         await sendToUser(userId, {
           title: `✅ ${project.name} deployed`,
-          body: result.url,
+          body: finalUrl,
           url: `/dashboard/project/${projectId}`,
           tag: 'build_complete',
           actionUrls: {
-            open_preview: result.url,
+            open_preview: finalUrl,
           },
         });
       } catch {
@@ -83,7 +105,7 @@ deploy.post('/vercel', deployRateLimit, async (c) => {
       await stream.writeSSE({
         data: JSON.stringify({
           type: 'success',
-          url: result.url,
+          url: finalUrl,
           deploymentId: result.deploymentId,
         }),
       });
