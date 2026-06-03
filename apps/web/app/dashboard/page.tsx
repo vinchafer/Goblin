@@ -124,6 +124,21 @@ export default function DashboardPage() {
 
   useEffect(() => { loadProjects(); }, [loadProjects]);
 
+  // Post-onboarding hand-off (A-S11): finishing onboarding lands here with
+  // ?start=1 so the user opens the project-create flow first, not chat. Read
+  // from location (not useSearchParams) to avoid a Suspense boundary, and strip
+  // the param so a refresh doesn't reopen the modal.
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('start') === '1') {
+      setShowNewProjectModal(true);
+      params.delete('start');
+      const qs = params.toString();
+      window.history.replaceState(null, '', `/dashboard${qs ? `?${qs}` : ''}`);
+    }
+  }, [setShowNewProjectModal]);
+
   const prevModalOpen = useRef(false);
   useEffect(() => {
     if (prevModalOpen.current && !showNewProjectModal) loadProjects();
