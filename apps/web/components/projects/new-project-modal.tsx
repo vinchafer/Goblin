@@ -255,7 +255,7 @@ export function NewProjectModal({ onClose, initialMode, initialIdea }: NewProjec
 
               <div style={{ marginBottom: 24 }}>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 10 }}>Color</label>
-                <div style={{ display: 'flex', gap: 10 }}>
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                   {COLORS.map(c => (
                     <button key={c.hex} type="button" onClick={() => setSelectedColor(c.hex)} title={c.name}
                       style={{ width: 32, height: 32, borderRadius: '50%', background: c.hex, border: selectedColor === c.hex ? '3px solid var(--brand-green)' : '3px solid transparent', cursor: 'pointer', transition: 'all 0.15s', transform: selectedColor === c.hex ? 'scale(1.15)' : 'scale(1)' }}
