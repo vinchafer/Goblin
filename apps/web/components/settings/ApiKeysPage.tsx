@@ -94,25 +94,6 @@ export function ApiKeysPage() {
           ))}
         </SettingsCard>
       </SettingsGroup>
-
-      <div style={{ marginTop: 16 }}>
-        <a
-          href="/dashboard/settings/keys"
-          style={{
-            display: 'block',
-            textAlign: 'center',
-            padding: 14,
-            background: 'color-mix(in srgb, var(--brand-green) 8%, transparent)',
-            color: 'var(--brand-green)',
-            borderRadius: 'var(--radius-lg)',
-            fontSize: 15,
-            fontWeight: 600,
-            textDecoration: 'none',
-          }}
-        >
-          Schlüssel verwalten →
-        </a>
-      </div>
     </div>
   );
 }

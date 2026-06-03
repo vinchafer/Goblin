@@ -42,7 +42,10 @@ export function SettingsSheetInner({ current, depth, onClose }: Props) {
         </span>
         <span style={{ minWidth: 40 }} />
       </header>
-      <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+      {/* B-S7: overscroll-behavior contain stops the iOS scroll-chaining that
+          made the first few scrolls feel glitchy ("spring"). Single scroll
+          container; the body is locked while the sheet is open. */}
+      <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch', overscrollBehavior: 'contain' }}>
         {current.node}
       </div>
     </div>

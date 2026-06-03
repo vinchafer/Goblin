@@ -244,7 +244,7 @@ function SettingsModalPane({
         </button>
       </div>
       <div style={{
-        flex: 1, overflowY: 'auto', padding: '24px 32px',
+        flex: 1, overflowY: 'auto', overscrollBehavior: 'contain', padding: '24px 32px',
         // Query container: pilot section components use @container
         // (settings-pane) to apply desktop density. The mobile sheet has no
         // such container, so those rules never match there.

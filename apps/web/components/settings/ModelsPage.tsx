@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/client';
 import { SettingsCard } from '../ui/SettingsCard';
 import { IOSToggle } from '../ui/IOSToggle';
 import { getModelAccess, ACCESS_COLORS } from '@/lib/model-access';
+import { useSheetStack } from '../ui/SheetStack';
+import { ApiKeysPage } from './ApiKeysPage';
 
 type Tab = 'rankings' | 'keys' | 'advanced';
 type TaskType = 'coding' | 'reasoning' | 'speed' | 'cost-efficiency' | 'general';
@@ -281,6 +283,7 @@ function RankingsTab() {
 }
 
 function KeysTab() {
+  const { push } = useSheetStack();
   const [keys, setKeys] = useState<ByokKeyRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -319,14 +322,14 @@ function KeysTab() {
                   {k ? `sk-…${k.key_hint ?? '****'}` : 'Nicht verbunden'}
                 </div>
               </div>
-              <a href="/dashboard/settings/keys" style={{
-                padding: '6px 12px', borderRadius: 8,
+              <button type="button" onClick={() => push('keys', <ApiKeysPage />, 'API-Schlüssel')} style={{
+                padding: '6px 12px', borderRadius: 8, cursor: 'pointer',
                 background: k ? 'transparent' : 'var(--brand-green)',
                 color: k ? 'var(--text-2)' : '#fff',
                 border: '1px solid', borderColor: k ? 'var(--border-subtle)' : 'var(--brand-green)',
-                fontSize: 'var(--t-caption-fs)', fontWeight: 600, textDecoration: 'none',
+                fontSize: 'var(--t-caption-fs)', fontWeight: 600,
                 fontFamily: 'var(--font-sans)',
-              }}>{k ? 'Verwalten' : 'Hinzufügen'}</a>
+              }}>{k ? 'Verwalten' : 'Hinzufügen'}</button>
             </div>
           );
         })}
