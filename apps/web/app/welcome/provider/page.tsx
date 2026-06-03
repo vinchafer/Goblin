@@ -20,10 +20,32 @@ import { Suspense, useEffect, useRef, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { getAuthHeaders, API_URL } from '@/lib/api';
 import {
-  IArrowR, ICheck, IEye, IEyeOff, ILink, IPlus, IShield,
+  IArrowR, ICheck, IEye, IEyeOff, ILink, IShield,
 } from '../_components/icons';
 import { ProviderLogo } from '@/components/onboarding/ProviderLogo';
 import { patchOnboardingState } from '../_components/onboarding-state';
+
+// Turn bare domains / URLs inside guide copy into real, clickable links.
+// (A-S4: the console.groq.com link — and every other — must be tappable.)
+const URL_RE = /((?:https?:\/\/)?[a-z0-9-]+(?:\.[a-z0-9-]+)+(?:\/[^\s]*)?)/gi;
+function Linkify({ text }: { text: string }) {
+  const parts = text.split(URL_RE);
+  return (
+    <>
+      {parts.map((part, i) => {
+        if (i % 2 === 1) {
+          const href = part.startsWith('http') ? part : `https://${part}`;
+          return (
+            <a key={i} href={href} target="_blank" rel="noopener noreferrer" className="guide-link">
+              {part}
+            </a>
+          );
+        }
+        return <span key={i}>{part}</span>;
+      })}
+    </>
+  );
+}
 
 // Provider catalog — matches mockup. `id` aligns with ByokProviderSchema
 // except `custom` (see TODO above).
@@ -316,6 +338,16 @@ function Step2Inner() {
         ))}
       </div>
 
+      <div className="pro-note">
+        <span className="ic"><IShield size={16} /></span>
+        <p>
+          <b>Claude Pro oder ChatGPT Plus?</b> Dein Abo gilt nur für die
+          Anbieter-Webseite — hier brauchst du den API-Schlüssel der Firma, den
+          holst du dir separat. Oft günstiger als ein Pro-Abo, vor allem wenn du
+          Goblin nur ab und zu nutzt.
+        </p>
+      </div>
+
       <CustomProviderCard
         state={cards['custom'] ?? emptyCard}
         onOpen={() => openCard('custom')}
@@ -427,6 +459,23 @@ function Step2Inner() {
         @media (max-width: 600px) {
           .footstrip { flex-wrap: wrap; gap: 8px; font-size: 10px; }
         }
+
+        .pro-note {
+          margin-top: 14px;
+          display: flex; align-items: flex-start; gap: 12px;
+          background: var(--surface-2);
+          border: 1px solid var(--line);
+          border-radius: var(--radius-lg);
+          padding: 14px 18px;
+        }
+        .pro-note .ic {
+          color: var(--accent); margin-top: 2px; flex-shrink: 0;
+          display: inline-flex;
+        }
+        .pro-note p {
+          font-size: 13px; color: var(--ink-2); line-height: 1.55; margin: 0;
+        }
+        .pro-note b { color: var(--ink-1); font-weight: 600; }
       `}</style>
     </div>
   );
@@ -614,15 +663,26 @@ function CustomProviderCard({
   return (
     <div className={`prov-more gobl-prov-card ${state.open ? 'open' : ''}`}>
       <div className="more-head">
-        <span className="more-mark"><IPlus size={18} /></span>
+        <span className="power-badge">POWER USER · ALL FRONTIER MODELS</span>
+        <span className="more-logos" aria-hidden>
+          <span className="lchip"><ProviderLogo id="fireworks" size={16} tone="ink" /></span>
+          <span className="lchip"><ProviderLogo id="together" size={16} tone="ink" /></span>
+          <span className="lchip"><ProviderLogo id="openrouter" size={16} tone="ink" /></span>
+        </span>
         <div className="more-name">
-          <h3>Another provider</h3>
+          <h3>One key, every model</h3>
           <span className="sub">
             Fireworks, Together, OpenRouter, Perplexity — or any OpenAI-compatible
-            endpoint. Bring what you already use.
+            endpoint. Pay-as-you-go. Get Llama, Mixtral, Qwen, DeepSeek and more
+            with a single key.
           </span>
         </div>
-        <button type="button" className="btn-secondary" onClick={onOpen}>Add endpoint</button>
+        <div className="more-foot">
+          <span className="more-price">FROM ~$0.10 / M TOKENS</span>
+          <button type="button" className="btn-secondary" onClick={onOpen}>
+            Add endpoint <IArrowR size={12} />
+          </button>
+        </div>
       </div>
 
       {state.open && (
@@ -645,38 +705,79 @@ function CustomProviderCard({
       <style jsx>{`
         .prov-more {
           margin-top: 14px;
-          background: var(--surface-2);
-          border: 1px dashed var(--line-strong);
+          background:
+            radial-gradient(120% 140% at 100% 0%, var(--accent-soft) 0%, transparent 55%),
+            var(--surface-elev);
+          border: 1px solid var(--accent-rule);
+          box-shadow: 0 0 0 1px var(--accent-rule), var(--shadow-card);
           border-radius: var(--radius-lg);
-          padding: 20px 22px;
+          padding: 22px 24px;
           display: flex; flex-direction: column; gap: 14px;
         }
-        .more-head { display: flex; align-items: center; gap: 14px; }
-        @media (max-width: 600px) { .more-head { flex-wrap: wrap; } }
-        .more-mark {
-          width: 44px; height: 44px; border-radius: 10px; flex-shrink: 0;
-          display: inline-flex; align-items: center; justify-content: center;
-          background: var(--surface-elev);
-          border: 1px solid var(--line-strong); color: var(--ink-2);
+        .more-head {
+          display: grid;
+          grid-template-columns: 1fr auto;
+          grid-template-areas:
+            'badge logos'
+            'name name'
+            'foot foot';
+          gap: 12px; align-items: start;
         }
-        .more-name { flex: 1; }
+        @media (max-width: 600px) {
+          .more-head {
+            grid-template-columns: 1fr;
+            grid-template-areas: 'badge' 'logos' 'name' 'foot';
+          }
+        }
+        .power-badge {
+          grid-area: badge; align-self: center;
+          display: inline-flex; align-items: center; width: fit-content;
+          font-family: var(--font-mono), monospace;
+          font-size: 10px; font-weight: 600;
+          letter-spacing: 0.14em; text-transform: uppercase;
+          color: var(--gold-deep);
+          background: var(--accent-soft);
+          border: 1px solid var(--accent-rule);
+          padding: 4px 9px; border-radius: var(--radius-xs);
+        }
+        .more-logos { grid-area: logos; display: inline-flex; gap: 6px; }
+        .more-logos .lchip {
+          width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
+          display: inline-flex; align-items: center; justify-content: center;
+          background: var(--surface-2);
+          border: 1px solid var(--line-strong); color: var(--ink-1);
+        }
+        .more-name { grid-area: name; }
         .more-name h3 {
           font-family: var(--font-onb-display), Manrope, sans-serif;
-          font-weight: 600; font-size: 16px;
-          letter-spacing: -0.016em; color: var(--ink-1);
+          font-weight: 600; font-size: 19px;
+          letter-spacing: -0.018em; color: var(--ink-1);
         }
         .more-name .sub {
           font-size: 13px; color: var(--ink-2);
-          line-height: 1.5; margin-top: 3px; display: block;
+          line-height: 1.5; margin-top: 4px; display: block; max-width: 64ch;
+        }
+        .more-foot {
+          grid-area: foot;
+          display: flex; align-items: center; justify-content: space-between;
+          gap: 12px; margin-top: 4px;
+          padding-top: 14px; border-top: 1px solid var(--line);
+        }
+        @media (max-width: 600px) { .more-foot { flex-wrap: wrap; } }
+        .more-price {
+          font-family: var(--font-mono), monospace;
+          font-size: 11px; letter-spacing: 0.08em;
+          text-transform: uppercase; color: var(--ink-3);
         }
         .btn-secondary {
-          background: transparent; color: var(--ink-1);
-          border: 1px solid var(--line-strong);
+          display: inline-flex; align-items: center; gap: 6px;
+          background: var(--green); color: var(--bone);
+          border: 1px solid var(--green);
           font-family: var(--font-onb-display), Manrope, sans-serif;
           font-weight: 600; font-size: 12.5px;
-          padding: 8px 12px; border-radius: 6px; cursor: pointer;
+          padding: 9px 14px; border-radius: 6px; cursor: pointer;
         }
-        .btn-secondary:hover { border-color: var(--ink-1); }
+        .btn-secondary:hover { background: #081710; }
       `}</style>
     </div>
   );
@@ -715,7 +816,7 @@ function KeyPanel({
         </summary>
         <ol>
           {guide.map((step, i) => (
-            <li key={i} data-num={`/0${i + 1}`}>{step}</li>
+            <li key={i} data-num={`/0${i + 1}`}><Linkify text={step} /></li>
           ))}
         </ol>
       </details>
@@ -821,6 +922,14 @@ function KeyPanel({
           color: var(--accent); letter-spacing: 0.12em;
           flex-shrink: 0; margin-top: 3px;
         }
+        .key-guide :global(.guide-link) {
+          color: var(--gold-deep); font-weight: 600;
+          text-decoration: underline;
+          text-decoration-color: var(--accent-rule);
+          text-underline-offset: 2px;
+          word-break: break-all;
+        }
+        .key-guide :global(.guide-link:hover) { text-decoration-color: var(--gold-deep); }
         .field-label {
           display: block;
           font-family: var(--font-mono), monospace;
