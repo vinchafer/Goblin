@@ -22,6 +22,7 @@ import { getAuthHeaders, API_URL } from '@/lib/api';
 import {
   IArrowR, ICheck, IEye, IEyeOff, ILink, IPlus, IShield,
 } from '../_components/icons';
+import { ProviderLogo } from '@/components/onboarding/ProviderLogo';
 import { patchOnboardingState } from '../_components/onboarding-state';
 
 // Provider catalog — matches mockup. `id` aligns with ByokProviderSchema
@@ -449,7 +450,7 @@ function ProviderCard({
       {p.hero && <span className="ribbon">RECOMMENDED · FREE TIER</span>}
       <div className="prov-head">
         <span className={`brand ${p.hero ? 'brand-lg' : ''}`} style={{ background: p.brand.bg }}>
-          {p.brand.glyph}
+          <ProviderLogo id={p.id} size={p.hero ? 40 : 22} tone="light" fallbackLabel={p.name[0]} />
         </span>
         <div className="prov-name">
           <h3>{p.name}</h3>
