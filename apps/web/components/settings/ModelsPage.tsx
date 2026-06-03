@@ -6,7 +6,7 @@ import { SettingsCard } from '../ui/SettingsCard';
 import { IOSToggle } from '../ui/IOSToggle';
 import { getModelAccess, ACCESS_COLORS } from '@/lib/model-access';
 import { useSheetStack } from '../ui/SheetStack';
-import { ApiKeysPage } from './ApiKeysPage';
+import { ProviderKeyForm } from './ProviderKeyForm';
 
 type Tab = 'rankings' | 'keys' | 'advanced';
 type TaskType = 'coding' | 'reasoning' | 'speed' | 'cost-efficiency' | 'general';
@@ -283,20 +283,35 @@ function RankingsTab() {
 }
 
 function KeysTab() {
-  const { push } = useSheetStack();
+  const { push, pop } = useSheetStack();
   const [keys, setKeys] = useState<ByokKeyRow[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    (async () => {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) { setLoading(false); return; }
-      const { data } = await supabase.from('byok_keys').select('provider, key_hint, status').eq('user_id', session.user.id);
-      setKeys((data ?? []) as ByokKeyRow[]);
-      setLoading(false);
-    })();
-  }, []);
+  const load = async () => {
+    const supabase = createClient();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { setLoading(false); return; }
+    const { data } = await supabase.from('byok_keys').select('provider, key_hint, status').eq('user_id', session.user.id);
+    setKeys((data ?? []) as ByokKeyRow[]);
+    setLoading(false);
+  };
+
+  useEffect(() => { void load(); }, []);
+
+  function openProvider(p: string, existing?: ByokKeyRow) {
+    const labelName = PROVIDER_LABELS[p] ?? p;
+    push(
+      `key-${p}`,
+      <ProviderKeyForm
+        provider={p}
+        providerLabel={labelName}
+        existingHint={existing?.key_hint ?? null}
+        onSaved={() => void load()}
+        onBack={pop}
+      />,
+      `${labelName} ${existing ? 'verwalten' : 'verbinden'}`,
+    );
+  }
 
   if (loading) return <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-meta)' }}>Lade Keys…</div>;
 
@@ -322,7 +337,7 @@ function KeysTab() {
                   {k ? `sk-…${k.key_hint ?? '****'}` : 'Nicht verbunden'}
                 </div>
               </div>
-              <button type="button" onClick={() => push('keys', <ApiKeysPage />, 'API-Schlüssel')} style={{
+              <button type="button" onClick={() => openProvider(p, k)} style={{
                 padding: '6px 12px', borderRadius: 8, cursor: 'pointer',
                 background: k ? 'transparent' : 'var(--brand-green)',
                 color: k ? 'var(--text-2)' : '#fff',
