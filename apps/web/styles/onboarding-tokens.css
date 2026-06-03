@@ -70,6 +70,22 @@
   color: var(--ink-3);
 }
 
+/* Onboarding "Back" link (A-S12). Defined globally under .gobl-onb because the
+   step pages render it as a Next <Link> (a React component), and styled-jsx
+   does not add its scope class to components — so per-page `.back` rules never
+   matched and the link rendered inline, colliding with the step eyebrow on
+   mobile. Block-level flex here puts it on its own row at every width. */
+.gobl-onb .back {
+  display: flex; width: fit-content; max-width: 100%;
+  align-items: center; gap: 8px;
+  font-family: var(--font-mono), 'JetBrains Mono', monospace;
+  font-size: 10.5px; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--ink-3);
+  margin-bottom: 18px; text-decoration: none;
+}
+.gobl-onb .back:hover { color: var(--ink-1); }
+.gobl-onb .back svg { flex-shrink: 0; }
+
 /* Focus ring + reduced-motion — additive, scoped */
 .gobl-onb :where(a, button, input, textarea, select, [tabindex], summary,
                  .gobl-path-card, .gobl-prov-card, .gobl-preset,

@@ -181,7 +181,8 @@ export default function IntegrationsStepPage() {
         @media (max-width: 880px) { .step5 { padding: 22px 18px 32px; } }
         .head { margin-bottom: 28px; max-width: 760px; }
         .back {
-          display: inline-flex; align-items: center; gap: 8px;
+          display: flex; width: fit-content; max-width: 100%;
+          align-items: center; gap: 8px;
           font-family: var(--font-mono), monospace;
           font-size: 10.5px; letter-spacing: 0.14em;
           text-transform: uppercase; color: var(--ink-3); margin-bottom: 18px;

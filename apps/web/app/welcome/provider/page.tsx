@@ -291,7 +291,7 @@ function Step2Inner() {
   return (
     <div className="step2" data-path={path}>
       <header className="head">
-        <div className="eyebrow"><span className="tick" />Step 02 of 05 — Pick a provider</div>
+        <div className="eyebrow"><span className="tick" />Step 02 of 06 — Pick a provider</div>
         <h1>Pick your AI <span className="gobl-serif">provider.</span></h1>
         <p className="lead">
           Six providers, three patterns: <b>free tier</b>, <b>pay-as-you-go</b>,
@@ -358,7 +358,7 @@ function Step2Inner() {
 
       <div className="footstrip">
         <span className="skip"><IShield size={11} />KEYS ENCRYPTED · CHANGE OR REVOKE ANY TIME</span>
-        <span className="gobl-mono">/welcome/provider · STEP 02 OF 05</span>
+        <span className="gobl-mono">/welcome/provider · STEP 02 OF 06</span>
         <Link href="/welcome/routing">SKIP — DECIDE LATER →</Link>
       </div>
 

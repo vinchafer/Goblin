@@ -143,7 +143,7 @@ export default function ToolsStepPage() {
         <Link href="/welcome/routing" className="back">
           <IArrowL size={12} /> Back to your build team
         </Link>
-        <div className="eyebrow"><span className="tick" />Step 04 of 05 — Tools</div>
+        <div className="eyebrow"><span className="tick" /><span>Step 04 of 06 — Tools</span></div>
         <h1>Give Goblin the right <span className="gobl-serif">tools.</span></h1>
         <p className="lead">
           Two toolkits, separately tuned. <b>Chat &amp; architecture</b> for the
@@ -223,7 +223,7 @@ export default function ToolsStepPage() {
 
       <div className="footstrip">
         <span className="skip"><IShield size={11} />CHANGE ANY TIME · SETTINGS / TOOLS</span>
-        <span className="gobl-mono">/welcome/tools · STEP 04 OF 05</span>
+        <span className="gobl-mono">/welcome/tools · STEP 04 OF 06</span>
         <Link href="/welcome/integrations">SKIP — USE THE DEFAULTS →</Link>
       </div>
 
@@ -232,11 +232,14 @@ export default function ToolsStepPage() {
         @media (max-width: 880px) { .step4 { padding: 22px 18px 32px; } }
         .head { margin-bottom: 28px; max-width: 760px; }
         .back {
-          display: inline-flex; align-items: center; gap: 6px;
+          display: flex; width: fit-content; max-width: 100%;
+          align-items: center; gap: 8px;
           font-family: var(--font-mono), monospace;
           font-size: 10.5px; letter-spacing: 0.14em;
           text-transform: uppercase; color: var(--ink-3); margin-bottom: 18px;
         }
+        .back:hover { color: var(--ink-1); }
+        .back :global(svg) { flex-shrink: 0; }
         .eyebrow {
           font-family: var(--font-mono), monospace; font-size: 10.5px;
           letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-3);
