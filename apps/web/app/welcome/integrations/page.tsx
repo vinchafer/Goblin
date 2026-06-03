@@ -104,15 +104,8 @@ export default function IntegrationsStepPage() {
           ctaLabel={githubLoading ? 'Connecting…' : 'Connect GitHub'}
           primary
         />
-        <Integration
-          name="Vercel"
-          req="RECOMMENDED"
-          logoId="vercel" logoBg="#000"
-          desc="Deploys go to YOUR OWN Vercel account — your domain, your costs. Goblin doesn't host live sites for you. Free for personal projects."
-          href="/dashboard/settings/keys"
-          ctaLabel="Add token in Settings"
-          primary
-        />
+        {/* 10.7-11: ownership explainer ABOVE the Vercel card so the user reads
+            "your own Vercel" BEFORE the add-token CTA, not after. */}
         <div className="own-note">
           <IShield size={13} />
           <div className="own-body">
@@ -124,6 +117,15 @@ export default function IntegrationsStepPage() {
             Create a free Vercel account →
           </a>
         </div>
+        <Integration
+          name="Vercel"
+          req="RECOMMENDED"
+          logoId="vercel" logoBg="#000"
+          desc="Deploys go to YOUR OWN Vercel account — your domain, your costs. Goblin doesn't host live sites for you. Free for personal projects."
+          href="/dashboard/settings/keys"
+          ctaLabel="Add token in Settings"
+          primary
+        />
       </Section>
 
       <Section
@@ -156,11 +158,11 @@ export default function IntegrationsStepPage() {
         <div className="mobile-hint">
           <span className="ic"><ISpark size={16} /></span>
           <div className="mh-body">
-            <b>Du bist am Desktop.</b> Goblin läuft auch am Handy — von überall
-            arbeiten, von überall shippen.
+            <b>You&apos;re on desktop.</b> Goblin runs on your phone too — work from
+            anywhere, ship from anywhere.
           </div>
           <button type="button" className="mh-btn" onClick={copyUrl}>
-            {copied ? 'Link kopiert ✓' : 'Link kopieren'}
+            {copied ? 'Link copied ✓' : 'Copy link'}
           </button>
         </div>
       )}
