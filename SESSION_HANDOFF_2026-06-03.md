@@ -1,11 +1,43 @@
-# Session Handoff — 2026-06-03 (Sprint 10.5 close)
+# Session Handoff — 2026-06-03 (Sprint 10.6 close)
 
 ## State
-Sprint 10.5 (Max-Walk Fixes) **COMPLETE**. 25 commits on master,
-1e898d4 → ebaf872 (auto-pushed via post-commit hook). Full typecheck + prod
-build green. Sprint-10 Convergence intact.
+Sprint 10.6 (Max-Walk Blockers hotfix) **COMPLETE**. 6 commits on master,
+9998d1c → 47c631d (auto-pushed). typecheck (web+api+shared) + web prod build green.
+Sprint 10 / 10.5 intact (additive changes only).
 
-See **SPRINT_10_5_COMPLETE_2026-06-03.md** for the full slice-by-slice report.
+See **SPRINT_10_6_COMPLETE_2026-06-03.md** for the full per-item report, and
+`sprint-10-6/*` for traces/evidence.
+
+## Sprint 10.6 — what changed (the 2 real Max-walk blockers + 3 supports)
+- **GitHub Connect now sticks**: the active Settings panel queried a dead
+  `/api/connectors/status` (404) so it always showed "Verbinden". Now `/api/github/status`
+  + one-click OAuth with `returnTo`. (Login-bounce prime suspect = Railway
+  `NEXT_PUBLIC_APP_URL` domain — founder to verify.)
+- **Send-to-Code makes real files**: multi-block sends no longer glue into one
+  `// File:`-commented blob; `blocksToFiles()` splits into index.html / style.css /
+  script.js with HTML-ref-matched names. Fixture 6/6.
+- **Vercel URL**: deploy now polls until READY → canonical `<project>.vercel.app` alias.
+- **Send-to-Code w/o project**: new-project create now deep-links to the Code tab so the
+  stashed code is actually delivered (was landing on the hub/chat).
+- **Vercel ownership UX**: onboarding card+callout, pre-deploy explainer, settings note —
+  every user brings their own Vercel.
+
+## Founder actions (Sprint 10.6 — before the Max-walk)
+1. **No new migrations** in 10.6.
+2. Verify Railway **`NEXT_PUBLIC_APP_URL`** == the canonical login domain (the GitHub
+   login-bounce prime suspect), then disconnect+reconnect GitHub and confirm Settings →
+   Konnektoren shows "@username". Railway logs: `github_callback {…}`.
+3. Deploy a multi-file project; confirm `[vercel] deployment status … READY` with a
+   non-null alias and "Öffnen" → 200.
+4. **iPhone Max-walk** = the real sign-off (signup → Send-to-Code multi-block → live URL,
+   Vercel ownership visible). Per-item checklists in `sprint-10-6/*`.
+
+> CDP walks could not run this session (no Chrome remote-debugging port locally:
+> `browser-harness` "DevToolsActivePort not found"). All visual/live verifies deferred
+> to the founder walk.
+
+---
+## (Prev) Sprint 10.5 report below
 
 ## What changed
 - **Onboarding (Phase A)**: new Step 0 language selection → 6 steps; the
