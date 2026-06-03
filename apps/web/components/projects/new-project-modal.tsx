@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { INTENTS, setStoredIntent, type Intent } from '@/lib/intent';
+import { pendingStcTab } from '@/lib/stc-pending';
 
 const COLORS = [
   { name: 'Gold',   hex: '#D4A737' },
@@ -125,7 +126,9 @@ export function NewProjectModal({ onClose, initialMode, initialIdea }: NewProjec
       // DB has no `intent` column yet (migration 0057 may be unapplied). DB wins later.
       if (project?.id) setStoredIntent(project.id, intent);
       onClose();
-      router.push(`/dashboard/project/${project.id}`);
+      // B-S4 / 10.6-4: if code is waiting from a project-less chat, land in the Code
+      // tab so CodeWorkspace rehydrates the stashed payload (the hub never mounts it).
+      router.push(`/dashboard/project/${project.id}${pendingStcTab()}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create project');
     } finally {
@@ -150,7 +153,7 @@ export function NewProjectModal({ onClose, initialMode, initialIdea }: NewProjec
       if (!res.ok) throw new Error((await res.json()).error || 'Failed to create project');
       const project = await res.json();
       onClose();
-      router.push(`/dashboard/project/${project.id}`);
+      router.push(`/dashboard/project/${project.id}${pendingStcTab()}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create project');
     } finally {

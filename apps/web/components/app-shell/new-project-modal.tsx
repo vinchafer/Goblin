@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { X, CircleNotch } from "@phosphor-icons/react";
 import { createClient } from "@/lib/supabase/client";
 import type { Project } from "@goblin/shared/src/schemas";
+import { pendingStcTab } from "@/lib/stc-pending";
 
 const COLOR_PRESETS = [
   { hex: 'var(--brand-gold)', label: 'Ochre' },
@@ -83,7 +84,8 @@ export function NewProjectModal({ onClose, onProjectCreated }: NewProjectModalPr
       const project = await response.json();
       onProjectCreated?.(project);
       dialogRef.current?.close();
-      router.push(`/dashboard/project/${project.id}`);
+      // B-S4 / 10.6-4: deep-link to the Code tab if a Send-to-Code payload is waiting.
+      router.push(`/dashboard/project/${project.id}${pendingStcTab()}`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Failed to create project';
       console.error('Project creation failed:', {
