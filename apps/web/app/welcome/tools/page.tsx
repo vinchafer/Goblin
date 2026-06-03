@@ -140,8 +140,8 @@ export default function ToolsStepPage() {
   return (
     <div className="step4">
       <header className="head">
-        <Link href="/welcome/routing" className="back">
-          <IArrowL size={12} /> Back to your build team
+        <Link href="/welcome/provider" className="back">
+          <IArrowL size={12} /> Back to providers
         </Link>
         <div className="eyebrow"><span className="tick" /><span>Step 04 of 06 — Tools</span></div>
         <h1>Give Goblin the right <span className="gobl-serif">tools.</span></h1>
@@ -326,15 +326,24 @@ export default function ToolsStepPage() {
           padding: 5px 10px; border-radius: 999px;
         }
         .recap .chip .v { color: var(--gold); font-weight: 600; }
+        /* 10.7-10: read clearly as a raised button on the dark recap, not a
+           highlighted label. Gold fill + ink text + shadow = unmistakable CTA. */
         .btn-primary {
           display: inline-flex; align-items: center; gap: 8px;
-          background: var(--bone); color: var(--green);
+          background: var(--gold); color: var(--green);
           font-family: var(--font-onb-display), Manrope, sans-serif;
-          font-weight: 600; font-size: 13.5px;
-          padding: 10px 16px; border-radius: var(--radius);
-          border: 1px solid transparent;
+          font-weight: 700; font-size: 14px;
+          padding: 13px 20px; border-radius: var(--radius);
+          border: 1px solid var(--gold);
+          box-shadow: 0 2px 8px rgba(0,0,0,.22);
+          cursor: pointer; text-decoration: none;
+          transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
         }
-        .btn-primary:hover { background: #fff; }
+        .btn-primary:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 14px rgba(0,0,0,.28);
+          background: var(--gold-bright, var(--gold));
+        }
 
         .footstrip {
           margin-top: 24px;
@@ -484,9 +493,14 @@ function ToolCategory({
           font-size: 12px; color: var(--ink-3);
           line-height: 1.45; margin-top: 2px;
         }
-        /* Rounded-rectangle toggle (A-S8) — flat, modern, no circles. */
+        /* Flat WIDE rectangle toggle (10.7-9, 3rd pass — definitive).
+           Track is clearly wider than tall (48×26) and the slider nearly
+           fills the track height (22px in 26px), so it reads as a flat
+           horizontal rectangle with a sliding block — NOT two nested
+           squares (the 10.6 look) and NOT a pill/circle (the 10.5 look).
+           "Nur so hoch wie der Schiebebutton." */
         .switch {
-          width: 44px; height: 24px;
+          width: 48px; height: 26px;
           background: var(--surface-2);
           border: 1px solid var(--line-strong);
           border-radius: 7px;
@@ -497,13 +511,14 @@ function ToolCategory({
         }
         .switch.on { background: var(--green); border-color: var(--green); }
         .knob {
-          width: 18px; height: 18px;
-          background: #fff; border-radius: 4px;
-          position: absolute; top: 2px; left: 2px;
+          width: 22px; height: 22px;
+          background: #fff; border-radius: 5px;
+          position: absolute; top: 1px; left: 1px;
           transition: transform .15s ease-out;
-          box-shadow: 0 1px 2px rgba(15,43,30,.25);
+          box-shadow: 0 1px 2px rgba(15,43,30,.22);
         }
-        .switch.on .knob { transform: translateX(20px); }
+        /* 48 − 22 − 1 (left) − 1 (right) = 24 */
+        .switch.on .knob { transform: translateX(24px); }
       `}</style>
     </div>
   );
