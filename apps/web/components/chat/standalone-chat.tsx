@@ -39,6 +39,9 @@ interface StreamChunk {
 interface StandaloneChatProps {
   sessionId: string;
   initialMessages?: StandaloneMessage[];
+  /** When this chat belongs to a project, these wire the header + Send-to-Code. */
+  projectId?: string | null;
+  projectName?: string | null;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -49,9 +52,10 @@ function hasCodeBlock(text: string) {
 
 // ─── Code Action Dropdown ─────────────────────────────────────────────────────
 
-function CodeActionButton({ lastMessage, hasProject }: {
+function CodeActionButton({ lastMessage, hasProject, projectId }: {
   lastMessage: StandaloneMessage | null;
   hasProject: boolean;
+  projectId?: string | null;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -90,10 +94,14 @@ function CodeActionButton({ lastMessage, hasProject }: {
   };
 
   const handleSendToCode = async () => {
-    if (hasProject) {
-      window.dispatchEvent(new CustomEvent("goblin:sendToCode", {
-        detail: { code: lastCodeBlock, filename: "generated-code.js" },
-      }));
+    if (hasProject && projectId) {
+      // Project-bound standalone chat: CodeWorkspace isn't mounted here, so we
+      // can't dispatch the in-page event. Stash the payload and open the
+      // project's Code tab — CodeWorkspace rehydrates it on mount (10.7-14).
+      try {
+        sessionStorage.setItem("goblin:stc-pending", JSON.stringify({ content: lastCodeBlock, filename: "generated-code.js" }));
+      } catch { /* ignore */ }
+      router.push(`/dashboard/project/${projectId}/work?tab=code`);
       setOpen(false);
       return;
     }
@@ -226,7 +234,7 @@ function DropItem({ onClick, disabled, icon, label, sub }: {
 
 // ─── StandaloneChat ───────────────────────────────────────────────────────────
 
-export function StandaloneChat({ sessionId, initialMessages = [] }: StandaloneChatProps) {
+export function StandaloneChat({ sessionId, initialMessages = [], projectId = null, projectName = null }: StandaloneChatProps) {
   const router = useRouter();
   const [messages, setMessages] = useState<(StandaloneMessage & { id: string })[]>(
     initialMessages.map(m => ({ ...m, model_used: undefined, source_tier: undefined }))
@@ -270,8 +278,8 @@ export function StandaloneChat({ sessionId, initialMessages = [] }: StandaloneCh
   }, []);
 
   const lastAssistantMsg = [...messages].reverse().find(m => m.role === "assistant") ?? null;
-  // Project detection — if URL has a project context in the future
-  const hasProject = false;
+  // Project-bound chat (10.7-14): same component, project context via props.
+  const hasProject = !!projectId;
 
   const handleSubmit = async (text: string, model: SelectedModel) => {
     const tempId = `temp-${Date.now()}`;
@@ -381,6 +389,33 @@ export function StandaloneChat({ sessionId, initialMessages = [] }: StandaloneCh
 
   return (
     <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--bone)" }}>
+      {/* Project context bar — only when this chat belongs to a project.
+          Keeps the body identical to a top-level chat (10.7-14 parity). */}
+      {projectName && (
+        <div style={{
+          display: "flex", alignItems: "center", gap: 8, flexShrink: 0,
+          padding: "8px 16px", borderBottom: "1px solid var(--rule)",
+          background: "var(--bone)", fontFamily: "var(--font-sans)",
+        }}>
+          <button
+            onClick={() => projectId && router.push(`/dashboard/project/${projectId}`)}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
+              background: "none", border: "none", cursor: "pointer", padding: 0,
+              fontSize: 12.5, color: "var(--meta)", fontFamily: "var(--font-sans)",
+            }}
+            title="Zum Projekt"
+          >
+            <span aria-hidden>←</span>
+            <span style={{
+              fontSize: 11, fontWeight: 700, letterSpacing: "0.04em",
+              color: "var(--brand-green)", background: "color-mix(in srgb, var(--brand-green) 10%, transparent)",
+              padding: "2px 8px", borderRadius: 6,
+            }}>{projectName}</span>
+          </button>
+        </div>
+      )}
+
       {/* ChatKeyBanner removed (STAGE 1B): a model is always available
           via the Groq free pool; the banner was misleading. Model switching
           lives on the composer pill, full management in Settings. */}
@@ -421,7 +456,7 @@ export function StandaloneChat({ sessionId, initialMessages = [] }: StandaloneCh
           {/* Code action button — sits above the input */}
           {lastAssistantMsg?.has_code && (
             <div style={{ position: "absolute", right: 12, bottom: "calc(100% + 10px)", zIndex: 10 }}>
-              <CodeActionButton lastMessage={lastAssistantMsg} hasProject={hasProject} />
+              <CodeActionButton lastMessage={lastAssistantMsg} hasProject={hasProject} projectId={projectId} />
             </div>
           )}
           <ChatInput
