@@ -96,6 +96,7 @@ import { account } from './routes/account';
 import { auth2fa } from './routes/auth-2fa';
 import { auth } from './routes/auth';
 import { shared } from './routes/shared';
+import { waitlist } from './routes/waitlist';
 import { startCron } from './lib/cron';
 
 const app = new Hono();
@@ -213,6 +214,7 @@ app.route('/api/account', account);
 app.route('/api/auth/2fa', auth2fa);
 app.route('/api/auth', auth);
 app.route('/api/shared', shared);
+app.route('/api/waitlist', waitlist);
 
 // 9R — rankings aggregator every 6h (production only)
 startCron();
