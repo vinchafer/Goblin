@@ -48,6 +48,23 @@ export function CodeWorkspace({ projectId, pendingCode, onPendingConsumed }: Pro
     return () => { cancelled = true; };
   }, [projectId]);
 
+  // B-S4: code sent from a project-less chat is stashed in sessionStorage, then
+  // we land here. Re-dispatch it so the normal Send-to-Code path (create/inject/
+  // picker) handles it. Runs once on mount; key is cleared immediately.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("goblin:stc-pending");
+      if (!raw) return;
+      sessionStorage.removeItem("goblin:stc-pending");
+      const payload = JSON.parse(raw) as { content?: string; filename?: string };
+      if (payload?.content) {
+        window.dispatchEvent(new CustomEvent("goblin:sendToCode", {
+          detail: { code: payload.content, filename: payload.filename },
+        }));
+      }
+    } catch { /* ignore */ }
+  }, []);
+
   // Auto-create a first session so the tab is ready to talk to (once).
   useEffect(() => {
     if (s.available && !s.loading && s.sessions.length === 0 && !autoCreated.current && !pendingCode) {

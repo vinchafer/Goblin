@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, type ReactNode } from "react";
+import { useState, useEffect, useRef, type ReactNode, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowUpRight, Copy, Download } from "lucide-react";
 import { apiStream } from "@/lib/api";
@@ -53,7 +53,10 @@ function CodeActionButton({ lastMessage, hasProject }: {
   lastMessage: StandaloneMessage | null;
   hasProject: boolean;
 }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [picking, setPicking] = useState(false);
+  const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -86,12 +89,40 @@ function CodeActionButton({ lastMessage, hasProject }: {
     setOpen(false);
   };
 
-  const handleSendToCode = () => {
-    if (!hasProject) return;
-    window.dispatchEvent(new CustomEvent("goblin:sendToCode", {
-      detail: { code: lastCodeBlock, filename: "generated-code.js" },
-    }));
-    setOpen(false);
+  const handleSendToCode = async () => {
+    if (hasProject) {
+      window.dispatchEvent(new CustomEvent("goblin:sendToCode", {
+        detail: { code: lastCodeBlock, filename: "generated-code.js" },
+      }));
+      setOpen(false);
+      return;
+    }
+    // No project yet (B-S4): stash the code and let the user pick a target.
+    try {
+      sessionStorage.setItem("goblin:stc-pending", JSON.stringify({ content: lastCodeBlock, filename: "generated-code.js" }));
+    } catch { /* ignore */ }
+    // Fetch the user's projects for the picker (best-effort).
+    try {
+      const { createClient } = await import("@/lib/supabase/client");
+      const { data: { session } } = await createClient().auth.getSession();
+      const token = session?.access_token;
+      if (token) {
+        const apiBase = process.env.NEXT_PUBLIC_API_URL || "";
+        const res = await fetch(`${apiBase}/api/projects`, { headers: { Authorization: `Bearer ${token}` } });
+        if (res.ok) {
+          const list = await res.json();
+          if (Array.isArray(list)) setProjects(list.map((p: { id: string; name: string }) => ({ id: p.id, name: p.name })));
+        }
+      }
+    } catch { /* ignore */ }
+    setPicking(true);
+  };
+
+  const sendToExisting = (projectId: string) => {
+    router.push(`/dashboard/project/${projectId}/work?tab=code`);
+  };
+  const sendToNew = () => {
+    router.push("/dashboard?start=1");
   };
 
   return (
@@ -121,17 +152,46 @@ function CodeActionButton({ lastMessage, hasProject }: {
         }}>
           <DropItem
             onClick={handleSendToCode}
-            disabled={!hasProject}
             icon={<ArrowUpRight size={14} />}
             label="Send to Code"
-            sub={!hasProject ? "Open a project first" : undefined}
+            sub={!hasProject ? "Projekt wählen…" : undefined}
           />
           <DropItem onClick={handleCopy} icon={<Copy size={14} />} label="Copy code" />
           <DropItem onClick={handleDownload} icon={<Download size={14} />} label="Download as file" />
         </div>
       )}
+
+      {picking && (
+        <>
+          <div onClick={() => setPicking(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", backdropFilter: "blur(4px)", zIndex: 300 }} />
+          <div role="dialog" aria-label="An welches Projekt senden?" style={{
+            position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
+            width: "min(420px, calc(100vw - 32px))", maxHeight: "calc(100dvh - 48px)", overflow: "auto",
+            background: "var(--panel)", borderRadius: 16, zIndex: 301, boxShadow: "var(--shadow-lg)", padding: 22,
+          }}>
+            <h3 style={{ fontFamily: "var(--font-sans)", fontSize: 17, fontWeight: 700, color: "var(--brand-green)", margin: "0 0 4px" }}>An welches Projekt senden?</h3>
+            <p style={{ fontSize: 12.5, color: "var(--meta)", margin: "0 0 16px", lineHeight: 1.5 }}>Goblin legt den Code dort als Entwurf an.</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <button type="button" onClick={sendToNew} style={pickBtn(true)}>Neues Projekt erstellen</button>
+              {projects.map(p => (
+                <button key={p.id} type="button" onClick={() => sendToExisting(p.id)} style={pickBtn(false)}>{p.name}</button>
+              ))}
+              <button type="button" onClick={() => setPicking(false)} style={{ ...pickBtn(false), borderStyle: "dashed" as const, color: "var(--meta)" }}>Abbrechen</button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
+}
+
+function pickBtn(primary: boolean): React.CSSProperties {
+  return {
+    width: "100%", textAlign: "left", padding: "12px 14px", borderRadius: 10, cursor: "pointer",
+    border: primary ? "2px solid var(--brand-green)" : "1.5px solid var(--border)",
+    background: primary ? "rgba(45,74,43,0.06)" : "var(--surface)",
+    color: "var(--text)", fontFamily: "var(--font-sans)", fontSize: 14, fontWeight: 600,
+  };
 }
 
 function DropItem({ onClick, disabled, icon, label, sub }: {
