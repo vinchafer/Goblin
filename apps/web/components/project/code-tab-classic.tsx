@@ -34,7 +34,7 @@ const CodeEditor = dynamic(
 interface CodeTabProps {
   projectId: string;
   projectName?: string;
-  pendingCode?: { content: string; filename?: string } | null;
+  pendingCode?: { content: string; filename?: string; files?: { path: string; content: string }[] } | null;
 }
 
 // Sprint-6 single-buffer Code Tab — preserved as the graceful fallback when the

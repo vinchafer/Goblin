@@ -45,8 +45,8 @@ interface AppContextType {
   setShowSettingsSheet: (show: boolean) => void;
   settingsInitialItem: string | null;
   setSettingsInitialItem: (item: string | null) => void;
-  pendingCodePayload: { content: string; filename?: string } | null;
-  setPendingCodePayload: (payload: { content: string; filename?: string } | null) => void;
+  pendingCodePayload: { content: string; filename?: string; files?: { path: string; content: string }[] } | null;
+  setPendingCodePayload: (payload: { content: string; filename?: string; files?: { path: string; content: string }[] } | null) => void;
   previewUrl: string | null;
   setPreviewUrl: (url: string | null) => void;
 }
@@ -69,7 +69,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [newProjectIdea, setNewProjectIdea] = useState('');
   const [showSettingsSheet, setShowSettingsSheet] = useState(false);
   const [settingsInitialItem, setSettingsInitialItem] = useState<string | null>(null);
-  const [pendingCodePayload, setPendingCodePayload] = useState<{ content: string; filename?: string } | null>(null);
+  const [pendingCodePayload, setPendingCodePayload] = useState<{ content: string; filename?: string; files?: { path: string; content: string }[] } | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const clearPendingInjections = useCallback(() => setPendingInjections([]), []);
   const addInjection = useCallback((injection: PendingInjection) => {
@@ -82,10 +82,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // Listen for send-to-code events
   useEffect(() => {
-    const handleSendToCode = (event: CustomEvent<{ code: string; filename?: string }>) => {
+    const handleSendToCode = (event: CustomEvent<{ code: string; filename?: string; files?: { path: string; content: string }[] }>) => {
       setPendingCodePayload({
         content: event.detail.code,
-        filename: event.detail.filename
+        filename: event.detail.filename,
+        files: event.detail.files,
       });
       setActiveTab("code");
     };

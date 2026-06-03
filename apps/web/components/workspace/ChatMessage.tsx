@@ -4,6 +4,7 @@ import { useRef, useEffect } from "react";
 import { CodeBlock } from "./CodeBlock";
 import type { ChatMessage as ChatMessageType } from "@goblin/shared/src/schemas";
 import { GoblinLogo } from "@/components/brand/GoblinLogo";
+import { blocksToFiles, type CodeFile } from "@/lib/code-blocks-to-files";
 
 const THINKING_PHRASES = [
   'Your goblin is thinking…',
@@ -47,7 +48,7 @@ function parseMessage(text: string): {
 interface Props {
   msg: ChatMessageType;
   isStreaming: boolean;
-  onSendToCode: (code: string, filename?: string) => void;
+  onSendToCode: (code: string, filename?: string, files?: CodeFile[]) => void;
 }
 
 export function ChatMessageItem({ msg, isStreaming, onSendToCode }: Props) {
@@ -148,8 +149,10 @@ export function ChatMessageItem({ msg, isStreaming, onSendToCode }: Props) {
                 {codeBlocks.length > 1 && (
                   <button
                     onClick={() => {
-                      const combined = codeBlocks.map((b, i) => `// File: ${b.filename || `block-${i + 1}.${b.language || 'txt'}`}\n${b.code}`).join('\n\n');
-                      onSendToCode(combined, 'all-blocks.js');
+                      // Split into real, separate files (index.html / style.css /
+                      // script.js …) — no more `// File:` comment-glued blob.
+                      const files = blocksToFiles(codeBlocks);
+                      onSendToCode(files[0]?.content ?? '', files[0]?.path, files);
                     }}
                     style={{
                       display: 'flex', alignItems: 'center', gap: 6,

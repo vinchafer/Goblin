@@ -110,13 +110,20 @@ export function ChatTab({ projectId }: ChatTabProps) {
 
   const loadOlder = () => loadHistory(offset);
 
-  const sendToCode = (code: string, filename?: string) => {
+  const sendToCode = (code: string, filename?: string, files?: { path: string; content: string }[]) => {
     // R1 fix: never fall back to an extensionless/non-deployable name — detect from content.
     const target = filename || detectFilename(code);
+    // 10.6-2: multi-block sends carry a full files[] (index.html / style.css / …).
+    const multi = files && files.length > 1;
     window.dispatchEvent(new CustomEvent('goblin:sendToCode', {
-      detail: { code, filename: target }
+      detail: multi ? { code, filename: target, files } : { code, filename: target }
     }));
-    toast.success(`An Code-Tab gesendet (${target})`, { duration: 1500 });
+    toast.success(
+      multi
+        ? `${files!.length} Dateien an Code-Tab gesendet: ${files!.map(f => f.path).join(', ')}`
+        : `An Code-Tab gesendet (${target})`,
+      { duration: multi ? 2600 : 1500 }
+    );
   };
 
   const handleSubmit = async (text: string, model: SelectedModel) => {

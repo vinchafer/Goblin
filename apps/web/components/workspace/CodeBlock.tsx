@@ -7,7 +7,7 @@ interface CodeBlockProps {
   code: string;
   language: string;
   filename?: string;
-  onSendToCode: (code: string, filename?: string) => void;
+  onSendToCode: (code: string, filename?: string, files?: { path: string; content: string }[]) => void;
 }
 
 export function CodeBlock({ code, language, filename, onSendToCode }: CodeBlockProps) {

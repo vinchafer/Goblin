@@ -17,7 +17,7 @@ export interface UndoPayload {
 interface UseCodeInjectionsArgs {
   projectId: string;
   token: string | null;
-  pendingCode?: { content: string; filename?: string } | null;
+  pendingCode?: { content: string; filename?: string; files?: { path: string; content: string }[] } | null;
   applyExternalEdit: (filePath: string, content: string, t: string) => Promise<void>;
   loadFileContent: (filePath: string) => Promise<string>;
   openFile: (filePath: string) => Promise<void>;
@@ -75,9 +75,20 @@ export function useCodeInjections({
 
   const handleSendToCodeApply = useCallback(async () => {
     if (!pendingCode) return;
-    const filename = pendingCode.filename || 'generated.js';
     const t = token ?? await getToken();
     if (!t) return;
+    // 10.6-2: multi-block send → write each real file directly (no diff modal).
+    if (pendingCode.files && pendingCode.files.length > 1) {
+      const files = pendingCode.files;
+      for (const f of files) {
+        await applyInjectionDirect(f.path, f.content, t);
+      }
+      const first = files[0];
+      if (first) await openFile(first.path);
+      setPendingCodePayload(null);
+      return;
+    }
+    const filename = pendingCode.filename || 'generated.js';
     try {
       const res = await fetch(`${API_URL}/api/projects/${projectId}/diff`, {
         method: 'POST',
@@ -90,7 +101,7 @@ export function useCodeInjections({
     } catch {
       await applyInjectionDirect(filename, pendingCode.content, t);
     }
-  }, [pendingCode, projectId, token, applyInjectionDirect]);
+  }, [pendingCode, projectId, token, applyInjectionDirect, openFile, setPendingCodePayload]);
 
   const handleDiffApply = useCallback(async () => {
     if (!diffData) return;

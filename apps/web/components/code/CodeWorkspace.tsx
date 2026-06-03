@@ -13,7 +13,7 @@ import { getStoredIntent, DEFAULT_INTENT, type Intent } from "@/lib/intent";
 
 interface Props {
   projectId: string;
-  pendingCode?: { content: string; filename?: string } | null;
+  pendingCode?: { content: string; filename?: string; files?: { path: string; content: string }[] } | null;
   onPendingConsumed?: () => void;
 }
 
@@ -90,6 +90,30 @@ export function CodeWorkspace({ projectId, pendingCode, onPendingConsumed }: Pro
     if (!pendingCode || consumedRef.current || s.loading || !s.available) return;
     consumedRef.current = true;
     (async () => {
+      // 10.6-2: a multi-block send carries real separate files. Seed a fresh session
+      // with all of them as drafts (index.html + style.css + script.js → valid deploy).
+      const files = pendingCode.files;
+      const [firstFile, ...restFiles] = files ?? [];
+      if (files && files.length > 1 && firstFile) {
+        const ns = await s.createSession({ initialContent: firstFile.content, initialFilename: firstFile.path, name: "Aus dem Chat" });
+        const sid = ns?.id;
+        if (sid) {
+          const t = await getToken();
+          for (const f of restFiles) {
+            if (!t) break;
+            await fetch(`${API_URL}/api/code-sessions/${sid}/files`, {
+              method: "PATCH",
+              headers: { Authorization: `Bearer ${t}`, "Content-Type": "application/json" },
+              body: JSON.stringify({ path: f.path, content: f.content, changeState: "draft" }),
+            });
+          }
+          s.setActiveSessionId(sid);
+          s.refresh();
+        }
+        onPendingConsumed?.();
+        return;
+      }
+
       const only = s.sessions[0];
       if (s.sessions.length === 0) {
         await s.createSession({ initialContent: pendingCode.content, initialFilename: pendingCode.filename, name: "Aus dem Chat" });

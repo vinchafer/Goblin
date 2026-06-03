@@ -9,7 +9,7 @@ import { useCodeInjections } from '@/hooks/code/useCodeInjections';
 export type { ActiveFile } from '@/hooks/code/useCodeFiles';
 export type { DiffData, UndoPayload } from '@/hooks/code/useCodeInjections';
 
-export function useCodeTab(projectId: string, pendingCode?: { content: string; filename?: string } | null) {
+export function useCodeTab(projectId: string, pendingCode?: { content: string; filename?: string; files?: { path: string; content: string }[] } | null) {
   const { setActiveTab } = useApp();
 
   const filesHook = useCodeFiles(projectId);
