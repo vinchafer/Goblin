@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ProjectChatLaunch } from "./ProjectChatLaunch";
 
 export interface RecentChatItem {
   id: string;
@@ -16,15 +17,18 @@ export function RecentChatsCard({ items, projectId }: { items: RecentChatItem[];
           Letzte Chats
         </h2>
         {items.length > 0 && (
-          <Link href={`/dashboard/project/${projectId}/work?tab=chat`} style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-3)", textDecoration: "none" }}>
-            Alle Chats →
-          </Link>
+          <ProjectChatLaunch
+            projectId={projectId}
+            label="+ Neuer Chat"
+            className=""
+            style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 10, letterSpacing: "0.14em", textTransform: "uppercase", color: "var(--ink-3)", background: "none", border: "none", cursor: "pointer", padding: 0 }}
+          />
         )}
       </div>
       {items.length === 0 ? (
         <div style={{ padding: "20px 18px", fontSize: 13.5, color: "var(--ink-3)", display: "flex", flexDirection: "column", gap: 12, alignItems: "flex-start" }}>
           <span>Noch keine Chats.</span>
-          <Link href={`/dashboard/project/${projectId}/work?tab=chat`} className="gobl-btn primary">Chat öffnen →</Link>
+          <ProjectChatLaunch projectId={projectId} label="Chat öffnen" className="gobl-btn primary" />
         </div>
       ) : (
         items.map((c, i) => (

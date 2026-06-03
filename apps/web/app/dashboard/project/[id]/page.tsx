@@ -5,6 +5,7 @@ import { DeployUrlList, type DeployUrlItem } from "@/components/project/DeployUr
 import { RecentChatsCard, type RecentChatItem } from "@/components/project/RecentChatsCard";
 import { RecentSessionsCard, type RecentSessionItem } from "@/components/project/RecentSessionsCard";
 import { ProjectIntentControl } from "@/components/project/ProjectIntentControl";
+import { ProjectChatLaunch } from "@/components/project/ProjectChatLaunch";
 
 export const dynamic = 'force-dynamic';
 
@@ -157,9 +158,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
             </div>
 
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <Link href={`/dashboard/project/${id}/work?tab=chat`} className="gobl-btn primary lg">
-                Chat öffnen →
-              </Link>
+              <ProjectChatLaunch projectId={id} label="Neuer Chat" className="gobl-btn primary lg" />
               <Link href={`/dashboard/project/${id}/work?tab=code`} className="gobl-btn secondary lg">
                 Code öffnen
               </Link>
