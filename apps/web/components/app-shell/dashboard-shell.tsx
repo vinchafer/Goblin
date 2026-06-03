@@ -13,6 +13,7 @@ import { CommandPalette, useCommandPalette } from "@/components/ui/CommandPalett
 import { ShortcutsHelp } from "@/components/ui/ShortcutsHelp";
 import { ShortcutsTooltip } from "@/components/ui/ShortcutsTooltip";
 import { SettingsSheet } from "@/components/settings/settings-sheet";
+import { NewProjectModal } from "@/components/projects/new-project-modal";
 import { SettingsModal } from "@/components/settings/SettingsModal";
 import dynamic from "next/dynamic";
 const FirstRunTour = dynamic(() => import("@/components/onboarding/first-run-tour").then(m => m.FirstRunTour), { ssr: false });
@@ -34,7 +35,7 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
   const [showTour, setShowTour] = useState(false);
   const [cmdPaletteOpen, setCmdPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
-  const { activeTab, setActiveTab, injectionCount, setShowNewProjectModal, previewUrl: contextPreviewUrl, setShowSettingsSheet, showSettingsSheet, settingsInitialItem, setSettingsInitialItem } = useApp();
+  const { activeTab, setActiveTab, injectionCount, showNewProjectModal, setShowNewProjectModal, newProjectIdea, setNewProjectIdea, previewUrl: contextPreviewUrl, setShowSettingsSheet, showSettingsSheet, settingsInitialItem, setSettingsInitialItem } = useApp();
   const pathname = usePathname();
   const router = useRouter();
   const [isDesktop, setIsDesktop] = useState(false);
@@ -186,6 +187,17 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
         onClose={closeSettings}
         initialSectionId={settingsInitialItem ?? undefined}
       />
+
+      {/* Global New Project modal — rendered at shell level so the sidebar
+          "+ Neues Projekt" works from any dashboard route (B-S6), including
+          while Settings is open. initialIdea comes from the "Sag Goblin"
+          composer flow (B-S3) via context. */}
+      {showNewProjectModal && (
+        <NewProjectModal
+          onClose={() => { setShowNewProjectModal(false); setNewProjectIdea(''); }}
+          initialIdea={newProjectIdea || undefined}
+        />
+      )}
     </div>
   );
 }

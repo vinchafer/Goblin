@@ -426,11 +426,11 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
                 background: 'var(--brand-header)', border: 'none', cursor: 'pointer',
                 padding: 0, borderRadius: 7, color: 'var(--bone, #F4ECD8)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                minWidth: 28, minHeight: 28,
+                width: 22, height: 22, flexShrink: 0,
                 boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
               }}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
                 <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
               </svg>
             </button>

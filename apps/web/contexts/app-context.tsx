@@ -39,6 +39,8 @@ interface AppContextType {
   injectionCount: number;
   showNewProjectModal: boolean;
   setShowNewProjectModal: (show: boolean) => void;
+  newProjectIdea: string;
+  setNewProjectIdea: (idea: string) => void;
   showSettingsSheet: boolean;
   setShowSettingsSheet: (show: boolean) => void;
   settingsInitialItem: string | null;
@@ -64,6 +66,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [activeModel, setActiveModel] = useState<AppModel>(DEFAULT_MODEL);
   const [pendingInjections, setPendingInjections] = useState<PendingInjection[]>([]);
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
+  const [newProjectIdea, setNewProjectIdea] = useState('');
   const [showSettingsSheet, setShowSettingsSheet] = useState(false);
   const [settingsInitialItem, setSettingsInitialItem] = useState<string | null>(null);
   const [pendingCodePayload, setPendingCodePayload] = useState<{ content: string; filename?: string } | null>(null);
@@ -111,6 +114,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       injectionCount,
       showNewProjectModal,
       setShowNewProjectModal,
+      newProjectIdea,
+      setNewProjectIdea,
       showSettingsSheet,
       setShowSettingsSheet,
       settingsInitialItem,

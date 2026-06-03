@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import { useApp } from '@/contexts/app-context';
-import { NewProjectModal } from '@/components/projects/new-project-modal';
 import { ChatInput, useChatModel } from '@/components/chat/ChatInput';
 import { filterVisibleProjects } from '@/lib/project-visibility';
 import { friendlyError } from '@/lib/friendly-error';
@@ -85,7 +84,7 @@ function buildGreeting(firstName: string): string {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { showNewProjectModal, setShowNewProjectModal } = useApp();
+  const { showNewProjectModal, setShowNewProjectModal, setNewProjectIdea } = useApp();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -97,7 +96,6 @@ export default function DashboardPage() {
   // B-S3: "Sag Goblin" submit no longer silently makes a chat — it asks whether
   // to start a project, add to one, or just chat.
   const [choicePrompt, setChoicePrompt] = useState<string | null>(null);
-  const [newProjectIdea, setNewProjectIdea] = useState('');
 
   const loadProjects = useCallback(async () => {
     try {
@@ -183,12 +181,7 @@ export default function DashboardPage() {
 
   return (
     <div style={{ height: '100%', overflowY: 'auto', background: 'var(--d-surface)' }}>
-      {showNewProjectModal && (
-        <NewProjectModal
-          onClose={() => { setShowNewProjectModal(false); setNewProjectIdea(''); }}
-          initialIdea={newProjectIdea || undefined}
-        />
-      )}
+      {/* New Project modal is rendered globally in dashboard-shell (B-S6). */}
 
       {choicePrompt !== null && (
         <SagGoblinChoice
