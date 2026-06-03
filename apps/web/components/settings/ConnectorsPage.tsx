@@ -26,15 +26,35 @@ export function ConnectorsPage() {
       try {
         const headers = await authHeaders();
         if (!headers) return;
-        const r = await fetch(`${apiBase}/api/connectors/status`, { headers });
+        // /api/github/status returns { connected, username } directly.
+        const r = await fetch(`${apiBase}/api/github/status`, { headers });
         if (r.ok) {
-          const data = await r.json();
-          if (data.github) setGithub(data.github);
+          const data = await r.json() as GithubState;
+          setGithub({ connected: !!data.connected, username: data.username });
         }
       } finally {
         setLoading(false);
       }
     })();
+  }, []);
+
+  // Initiate OAuth directly (one click) and return to this settings page after.
+  const connectGithub = useCallback(async () => {
+    const headers = await authHeaders();
+    if (!headers) return;
+    try {
+      const r = await fetch(`${apiBase}/api/github/connect`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ returnTo: '/dashboard/settings/integrations' }),
+      });
+      if (r.ok) {
+        const { url } = await r.json() as { url: string };
+        if (url) window.location.href = url;
+      }
+    } catch {
+      /* swallow — button stays clickable */
+    }
   }, []);
 
   if (loading) return <div style={{ padding: 24, color: 'var(--text-meta)', fontFamily: 'var(--font-sans)' }}>Lade Konnektoren...</div>;
@@ -48,7 +68,7 @@ export function ConnectorsPage() {
             initial="GH"
             connected={github.connected}
             detail={github.connected ? `@${github.username}` : 'Repos pushen, deployen'}
-            onConnect={() => { window.location.href = '/dashboard/settings/integrations?service=github'; }}
+            onConnect={() => { void connectGithub(); }}
           />
           <ComingSoonRow name="GitLab" initial="GL" detail="Repos & CI/CD" />
           <ComingSoonRow name="Bitbucket" initial="BB" detail="Repos & Pipelines" last />

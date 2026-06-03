@@ -26,8 +26,12 @@ export function GitHubConnectButton({ connected, username }: GitHubConnectButton
       const response = await fetch(`${API_URL}/api/github/connect`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${token}`
-        }
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        // Return to this page after OAuth so the user sees the connected state,
+        // not a bare /dashboard.
+        body: JSON.stringify({ returnTo: '/dashboard/settings/integrations' })
       });
 
       if (response.ok) {

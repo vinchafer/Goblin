@@ -99,6 +99,7 @@ github.get('/callback', async (c) => {
     .single();
 
   if (error || !oauthState) {
+    logger.warn({ stateValid: false }, 'github_callback');
     return c.redirect(`${process.env.NEXT_PUBLIC_APP_URL}/dashboard?error=github_oauth_expired`);
   }
 
@@ -118,6 +119,7 @@ github.get('/callback', async (c) => {
     const username = await getUsername(accessToken);
 
     await saveGitHubConnection(oauthState.user_id, accessToken, username);
+    logger.info({ stateValid: true, tokenExchanged: true, saved: true, returnTo: safeReturnTo }, 'github_callback');
 
     // Send notification for success toast
     await sendToUser(oauthState.user_id, {
@@ -129,7 +131,8 @@ github.get('/callback', async (c) => {
 
     const sep = safeReturnTo.includes('?') ? '&' : '?';
     return c.redirect(`${process.env.NEXT_PUBLIC_APP_URL}${safeReturnTo}${sep}github=connected`);
-  } catch {
+  } catch (err) {
+    logger.warn({ stateValid: true, tokenExchanged: false, err: err instanceof Error ? err.message : String(err) }, 'github_callback');
     const sep = safeReturnTo.includes('?') ? '&' : '?';
     return c.redirect(`${process.env.NEXT_PUBLIC_APP_URL}${safeReturnTo}${sep}error=github_failed`);
   }
