@@ -87,17 +87,14 @@ export function ChatMessageItem({ msg, isStreaming, onSendToCode }: Props) {
   // AI message — no background bubble, inline text like claude.ai
   return (
     <div className="animate-msg-appear" style={{ display: 'flex', gap: 10, alignItems: 'flex-start', maxWidth: '100%' }}>
-      {/* Goblin avatar */}
-      <div style={{
-        width: 26, height: 26, borderRadius: '50%', flexShrink: 0,
-        background: 'var(--brand-green)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        marginTop: 2,
-      }}>
+      {/* Goblin avatar — bare mark, NO background fill (10.7-15). Matches the
+          top-level StandaloneChat (Message.tsx) so project + normal chat read
+          identically. The green circle behind the mark was the regression. */}
+      <div style={{ flexShrink: 0, marginTop: 2, lineHeight: 0 }}>
         <GoblinLogo
           state={isThinking ? 'thinking' : 'idle'}
-          size={18}
-          variant="white"
+          size={24}
+          variant="ink"
         />
       </div>
 
