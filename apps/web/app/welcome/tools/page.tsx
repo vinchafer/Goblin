@@ -33,23 +33,31 @@ const PRESETS: Record<Preset, ToolId[]> = {
 interface ToolDef {
   id: ToolId; name: string; desc: string; Icon: React.ComponentType<{ size?: number }>;
   beta?: boolean;
+  // `soon` = capability not wired into the agent yet. We badge it honestly
+  // (BALD) rather than imply it works today (A-S8 honesty pass).
+  soon?: boolean;
 }
 
+// Honesty audit (Sprint 10.5 A-S8): only tools actually wired today ship
+// unbadged. Everything not yet executed by the agent is marked BALD ("soon").
+// Verified against apps/api: deploy = Vercel (real), schema/screenshot rely on
+// the model itself (real); web/docs/repo search + lint/type/test/PR have no
+// tool registry yet.
 const CHAT_TOOLS: ToolDef[] = [
-  { id: 'web_search', name: 'Web search', desc: 'Cited, live web search.', Icon: ISearch },
-  { id: 'docs_lookup', name: 'Documentation lookup', desc: 'MDN, npm, official docs.', Icon: IFolder },
-  { id: 'repo_search', name: 'Repo search', desc: 'Searches your linked GitHub repos.', Icon: ICode },
-  { id: 'screenshot', name: 'Screenshot understanding', desc: 'Drop a screenshot, Goblin reads it.', Icon: IEye },
+  { id: 'web_search', name: 'Web search', desc: 'Cited, live web search.', Icon: ISearch, soon: true },
+  { id: 'docs_lookup', name: 'Documentation lookup', desc: 'Live MDN, npm & official-docs lookup.', Icon: IFolder, soon: true },
+  { id: 'repo_search', name: 'Repo search', desc: 'Searches your linked GitHub repos.', Icon: ICode, soon: true },
+  { id: 'screenshot', name: 'Screenshot understanding', desc: 'Drop a screenshot — works on a vision model (e.g. Gemini).', Icon: IEye },
   { id: 'design_refs', name: 'Design references', desc: 'Browses Dribbble & Behance.', Icon: ISpark, beta: true },
   { id: 'schema_gen', name: 'Schema generator', desc: 'Plain-English → SQL / Prisma / Zod.', Icon: IChart },
 ];
 
 const CODE_TOOLS: ToolDef[] = [
-  { id: 'lint_format', name: 'Lint & format', desc: 'Prettier · ESLint. Auto-fixes before diff.', Icon: ICheck },
-  { id: 'type_check', name: 'Type check', desc: "tsc · pyright. Won't propose type-failing code.", Icon: IShield },
-  { id: 'test_runner', name: 'Test runner', desc: 'Vitest · Jest · Playwright.', Icon: IBolt },
-  { id: 'deploy', name: 'Deploy', desc: 'Vercel · Netlify · Cloudflare Pages.', Icon: IVercel },
-  { id: 'pr_opener', name: 'PR opener', desc: 'Opens a draft PR instead of pushing direct.', Icon: IGithub },
+  { id: 'lint_format', name: 'Lint & format', desc: 'Prettier · ESLint, auto-fixed before diff.', Icon: ICheck, soon: true },
+  { id: 'type_check', name: 'Type check', desc: 'tsc · pyright on every change.', Icon: IShield, soon: true },
+  { id: 'test_runner', name: 'Test runner', desc: 'Vitest · Jest · Playwright.', Icon: IBolt, soon: true },
+  { id: 'deploy', name: 'Deploy', desc: 'One-click deploy to Vercel.', Icon: IVercel },
+  { id: 'pr_opener', name: 'PR opener', desc: 'Opens a draft PR instead of pushing direct.', Icon: IGithub, soon: true },
   { id: 'db_migrations', name: 'Database migrations', desc: 'Generates & runs Prisma / Drizzle migrations.', Icon: ICpu, beta: true },
 ];
 
@@ -303,7 +311,7 @@ export default function ToolsStepPage() {
           font-weight: 600; font-size: 17px;
           color: var(--bone); margin-bottom: 4px; letter-spacing: -0.016em;
         }
-        .recap .s { font-size: 13px; color: rgba(244,236,216,.78); line-height: 1.45; }
+        .recap .s { font-size: 13px; color: rgba(244,236,216,.88); line-height: 1.45; }
         .recap .count { display: flex; gap: 8px; flex-wrap: wrap; }
         .recap .chip {
           font-family: var(--font-mono), monospace;
@@ -376,7 +384,9 @@ function ToolCategory({
               <span className="glyph"><Icn size={15} /></span>
               <div className="body">
                 <div className="name">
-                  {t.name}{t.beta && <span className="badge">BETA</span>}
+                  {t.name}
+                  {t.beta && <span className="badge">BETA</span>}
+                  {t.soon && <span className="badge badge-soon">BALD</span>}
                 </div>
                 <div className="desc">{t.desc}</div>
               </div>
@@ -462,28 +472,35 @@ function ToolCategory({
           background: var(--accent-soft); color: var(--gold-deep);
           letter-spacing: 0.08em; margin-left: 6px;
         }
+        .badge-soon {
+          background: var(--surface);
+          color: var(--ink-3);
+          border: 1px solid var(--line-strong);
+        }
         .tool-row .desc {
           font-size: 12px; color: var(--ink-3);
           line-height: 1.45; margin-top: 2px;
         }
+        /* Rounded-rectangle toggle (A-S8) — flat, modern, no circles. */
         .switch {
-          width: 36px; height: 20px;
-          background: var(--line-strong);
-          border-radius: 999px;
+          width: 44px; height: 24px;
+          background: var(--surface-2);
+          border: 1px solid var(--line-strong);
+          border-radius: 7px;
           position: relative;
           cursor: pointer; flex-shrink: 0;
-          transition: background .15s;
-          border: none; padding: 0;
+          transition: background .15s ease-out, border-color .15s ease-out;
+          padding: 0;
         }
-        .switch.on { background: var(--green); }
+        .switch.on { background: var(--green); border-color: var(--green); }
         .knob {
-          width: 14px; height: 14px;
-          background: #fff; border-radius: 50%;
-          position: absolute; top: 3px; left: 3px;
-          transition: transform .15s;
-          box-shadow: 0 1px 2px rgba(0,0,0,.2);
+          width: 18px; height: 18px;
+          background: #fff; border-radius: 4px;
+          position: absolute; top: 2px; left: 2px;
+          transition: transform .15s ease-out;
+          box-shadow: 0 1px 2px rgba(15,43,30,.25);
         }
-        .switch.on .knob { transform: translateX(16px); }
+        .switch.on .knob { transform: translateX(20px); }
       `}</style>
     </div>
   );
