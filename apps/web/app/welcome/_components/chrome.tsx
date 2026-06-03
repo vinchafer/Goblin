@@ -7,12 +7,17 @@ import { getAuthHeaders, API_URL } from '@/lib/api';
 import { GMark } from './icons';
 
 const STEP_BY_PATH: Record<string, number> = {
+  '/welcome/language': 0,
   '/welcome': 1,
   '/welcome/provider': 2,
   '/welcome/routing': 3,
   '/welcome/tools': 4,
   '/welcome/integrations': 5,
 };
+
+// Six steps: 0 (language) … 5 (integrations). Header shows "STEP 0n / 06".
+const TOTAL_STEPS = 6;
+const PIP_STEPS = [0, 1, 2, 3, 4, 5];
 
 export function OnboardingChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? '/welcome';
@@ -24,6 +29,17 @@ export function OnboardingChrome({ children }: { children: React.ReactNode }) {
   // Mirrors the prior app/welcome/page.tsx behaviour, moved up to layout.
   useEffect(() => {
     let cancelled = false;
+    // Dev-only preview escape: lets QA walk onboarding even with keys
+    // already connected. Dead in production builds (NODE_ENV === 'production'),
+    // so it can never leak a returning user back into onboarding on prod.
+    if (
+      process.env.NODE_ENV !== 'production' &&
+      typeof window !== 'undefined' &&
+      window.localStorage.getItem('goblin:preview-onboarding') === '1'
+    ) {
+      setChecking(false);
+      return;
+    }
     (async () => {
       try {
         const headers = await getAuthHeaders();
@@ -63,9 +79,9 @@ export function OnboardingChrome({ children }: { children: React.ReactNode }) {
         </span>
         <div className="gobl-onb-top-right">
           <span className="gobl-onb-step">
-            <span className="gobl-onb-step-num">STEP 0{step} / 05</span>
+            <span className="gobl-onb-step-num">STEP 0{step} / 0{TOTAL_STEPS}</span>
             <span className="gobl-onb-pips">
-              {[1, 2, 3, 4, 5].map((n) => (
+              {PIP_STEPS.map((n) => (
                 <span
                   key={n}
                   className={`gobl-onb-pip ${n < step ? 'done' : n === step ? 'active' : ''}`}
@@ -83,7 +99,7 @@ export function OnboardingChrome({ children }: { children: React.ReactNode }) {
         <span className="gobl-mono">JUSTGOBLIN.COM</span>
         <span className="gobl-mono">
           <span className="gobl-onb-foot-dot" />
-          STEP 0{step} OF 05
+          STEP 0{step} OF 0{TOTAL_STEPS}
         </span>
       </footer>
 

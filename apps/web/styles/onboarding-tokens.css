@@ -13,15 +13,22 @@
   --green:         var(--ink-deep);     /* #0F2B1E */
   --gold:          var(--brand-gold);   /* #D4A737 */
   --accent-bright: var(--brand-gold);   /* #D4A737 */
-  --bone:          var(--bone);         /* #F4ECD8 */
+  /* Onboarding is a fixed light (bone) surface in both themes, so these
+     LOCKED brand values are pinned literally. They were previously written
+     as self-referencing var() aliases (e.g. --bone: var(--bone)), which is a
+     CSS custom-property cycle — the property resolves to the guaranteed-invalid
+     (empty) value, so every `color: var(--bone)` on a dark-green panel fell
+     back to inherited ink and rendered green-on-green. Pinning the literals
+     fixes that class of contrast bug across the whole /welcome flow. */
+  --bone:          #F4ECD8;             /* = global --bone (LOCKED) */
   --bone-warm:     var(--paper);        /* #FBF7EC */
-  --ink-1:         var(--ink-1);        /* #0F2B1E */
-  --surface:       var(--bone);         /* #F4ECD8 */
+  --ink-1:         #0F2B1E;             /* = global --ink-1 light (LOCKED) */
+  --surface:       #F4ECD8;             /* = --bone */
   --surface-elev:  var(--paper);        /* #FBF7EC */
   --surface-deep:  var(--ink-deep);     /* #0F2B1E */
   --radius:        var(--radius-sm);    /* 10px */
   --radius-lg:     var(--radius-md);    /* 14px */
-  --radius-xs:     var(--radius-xs);    /* 4px */
+  --radius-xs:     4px;                 /* = global --radius-xs */
 
   /* — onboarding-specific derived shades (no exact global match) — */
   --gold-deep:     #7A5A12;

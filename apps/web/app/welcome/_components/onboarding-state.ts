@@ -41,6 +41,30 @@ export async function patchOnboardingState(patch: OnboardingStatePatch): Promise
   }
 }
 
+export type PreferredLang = 'en' | 'de';
+
+// Persist onboarding language choice. Best-effort: writes localStorage
+// immediately (used by the app today) and PATCHes the API (column added in
+// migration 0059; degrades silently if not yet applied on this environment).
+export async function setPreferredLang(lang: PreferredLang): Promise<void> {
+  try {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('goblin:preferred-lang', lang);
+    }
+  } catch { /* ignore */ }
+  try {
+    const headers = await getAuthHeaders();
+    await fetch(`${API_URL}/api/users/me`, {
+      method: 'PATCH',
+      headers,
+      credentials: 'include',
+      body: JSON.stringify({ preferred_lang: lang }),
+    });
+  } catch {
+    // Non-blocking — flow continues on DE default.
+  }
+}
+
 export async function getOnboardingState(): Promise<OnboardingState | null> {
   try {
     const headers = await getAuthHeaders();

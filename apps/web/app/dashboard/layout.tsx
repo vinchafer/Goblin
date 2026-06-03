@@ -51,7 +51,7 @@ export default async function DashboardLayout({
       .single() as { data: { completed: boolean } | null };
 
     if (!onboardingState?.completed) {
-      redirect('/welcome');
+      redirect('/welcome/language');
     }
   }
 

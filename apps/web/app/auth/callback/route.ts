@@ -48,5 +48,5 @@ export async function GET(request: Request) {
     /* fall through — welcome page double-checks client-side */
   }
 
-  return NextResponse.redirect(`${origin}${hasKey ? '/dashboard' : '/welcome'}`);
+  return NextResponse.redirect(`${origin}${hasKey ? '/dashboard' : '/welcome/language'}`);
 }
