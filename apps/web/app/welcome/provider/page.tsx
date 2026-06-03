@@ -410,7 +410,7 @@ function Step2Inner() {
           font-weight: 600; font-size: 14px; color: var(--bone);
         }
         .fallback-call .s {
-          font-size: 12.5px; color: rgba(244,236,216,.78);
+          font-size: 12.5px; color: rgba(244,236,216,.88);
           margin-top: 2px; line-height: 1.45;
         }
         .fallback-call .tag {
@@ -418,9 +418,9 @@ function Step2Inner() {
           font-size: 10px; font-weight: 600;
           letter-spacing: 0.14em; text-transform: uppercase;
           padding: 4px 8px; border-radius: 6px;
-          background: rgba(244,236,216,.06);
-          border: 1px solid rgba(244,236,216,.14);
-          color: rgba(244,236,216,.78);
+          background: rgba(244,236,216,.10);
+          border: 1px solid rgba(244,236,216,.22);
+          color: rgba(244,236,216,.88);
         }
 
         .hero-row {
