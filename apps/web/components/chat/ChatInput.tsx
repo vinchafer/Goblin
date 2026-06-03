@@ -103,12 +103,15 @@ function ModelHub({
   selectedSlug,
   onSelect,
   onClose,
+  openDown = false,
 }: {
   models: ApiModel[];
   connectedKeys: ConnectedKey[];
   selectedSlug: string;
   onSelect: (m: ApiModel) => void;
   onClose: () => void;
+  /** Open below the composer (hero variant has room below; chat-bottom doesn't). */
+  openDown?: boolean;
 }) {
   const [query, setQuery] = useState('');
   const [activeTag, setActiveTag] = useState<string | null>(null);
@@ -183,11 +186,14 @@ function ModelHub({
   return (
     <div
       style={{
-        position: 'absolute', bottom: 'calc(100% + 8px)', left: 0, right: 0,
+        position: 'absolute',
+        bottom: openDown ? 'auto' : 'calc(100% + 8px)',
+        top: openDown ? 'calc(100% + 8px)' : 'auto',
+        left: 0, right: 0,
         background: 'var(--panel)', border: '1px solid var(--border-subtle)',
         borderRadius: 12, boxShadow: 'var(--shadow-popover)',
         zIndex: 200, overflow: 'hidden',
-        maxHeight: 480, display: 'flex', flexDirection: 'column',
+        maxHeight: 'min(70vh, 480px)', display: 'flex', flexDirection: 'column',
       }}
     >
       {/* Search */}
@@ -592,6 +598,7 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
               layer: m.layer, displayName: shortModelName(m.name),
             })}
             onClose={() => setHubOpen(false)}
+            openDown={hero}
           />
         )}
 
