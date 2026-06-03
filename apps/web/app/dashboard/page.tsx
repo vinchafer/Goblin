@@ -94,6 +94,10 @@ export default function DashboardPage() {
   // and a "prefill" channel for the quick-prompt chips → ChatInput.
   const { selectedModel, setSelectedModel } = useChatModel();
   const [prefill, setPrefill] = useState('');
+  // B-S3: "Sag Goblin" submit no longer silently makes a chat — it asks whether
+  // to start a project, add to one, or just chat.
+  const [choicePrompt, setChoicePrompt] = useState<string | null>(null);
+  const [newProjectIdea, setNewProjectIdea] = useState('');
 
   const loadProjects = useCallback(async () => {
     try {
@@ -148,7 +152,7 @@ export default function DashboardPage() {
   // Send composer text → create chat session + jump to it with the prompt prefilled.
   // Server creates session, then we navigate; the chat session page picks up the
   // sessionStorage seed (single-use, cleared on read).
-  const sendComposer = useCallback(async (text: string) => {
+  const sendComposer = useCallback(async (text: string, projectId?: string) => {
     const trimmed = text.trim();
     if (!trimmed) return;
     try {
@@ -160,7 +164,7 @@ export default function DashboardPage() {
       const res = await fetch(`${apiBase}/api/chat-sessions`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({}),
+        body: JSON.stringify(projectId ? { projectId } : {}),
       });
       if (!res.ok) return;
       const created = await res.json() as { id: string };
@@ -180,7 +184,21 @@ export default function DashboardPage() {
   return (
     <div style={{ height: '100%', overflowY: 'auto', background: 'var(--d-surface)' }}>
       {showNewProjectModal && (
-        <NewProjectModal onClose={() => setShowNewProjectModal(false)} />
+        <NewProjectModal
+          onClose={() => { setShowNewProjectModal(false); setNewProjectIdea(''); }}
+          initialIdea={newProjectIdea || undefined}
+        />
+      )}
+
+      {choicePrompt !== null && (
+        <SagGoblinChoice
+          prompt={choicePrompt}
+          projects={projects}
+          onClose={() => setChoicePrompt(null)}
+          onNewProject={() => { setNewProjectIdea(choicePrompt); setChoicePrompt(null); setShowNewProjectModal(true); }}
+          onExistingProject={(id) => { const p = choicePrompt; setChoicePrompt(null); sendComposer(p, id); }}
+          onJustChat={() => { const p = choicePrompt; setChoicePrompt(null); sendComposer(p); }}
+        />
       )}
 
       <div className="gobl-dash-home" style={{ maxWidth: 1140, margin: '0 auto', padding: '40px 32px 80px' }}>
@@ -225,7 +243,7 @@ export default function DashboardPage() {
             selectedModel={selectedModel}
             onModelChange={setSelectedModel}
             prefill={prefill}
-            onSubmit={(message) => sendComposer(message)}
+            onSubmit={(message) => { const t = message.trim(); if (t) setChoicePrompt(t); }}
           />
 
           <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
@@ -480,4 +498,83 @@ export default function DashboardPage() {
       </div>
     </div>
   );
+}
+
+// B-S3 — when the user submits the dashboard "Sag Goblin" composer, ask what
+// they meant instead of silently creating a chat. Default highlight: new project.
+function SagGoblinChoice({
+  prompt, projects, onClose, onNewProject, onExistingProject, onJustChat,
+}: {
+  prompt: string;
+  projects: Project[];
+  onClose: () => void;
+  onNewProject: () => void;
+  onExistingProject: (projectId: string) => void;
+  onJustChat: () => void;
+}) {
+  const [picking, setPicking] = useState(false);
+  const active = projects.filter(p => (p.status ?? 'idle') !== 'archived');
+
+  return (
+    <>
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)', zIndex: 300 }} />
+      <div role="dialog" aria-label="Was möchtest du tun?" style={{
+        position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
+        width: 'min(440px, calc(100vw - 32px))', maxHeight: 'calc(100dvh - 48px)', overflow: 'auto',
+        background: 'var(--panel)', borderRadius: 16, zIndex: 301, boxShadow: 'var(--shadow-lg)',
+        padding: 22,
+      }}>
+        <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 'var(--t-eyebrow-fs)', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--meta)', marginBottom: 8 }}>
+          Sag Goblin
+        </div>
+        <h3 style={{ fontFamily: 'var(--font-dash-display), Manrope, sans-serif', fontSize: 'var(--t-h4-fs)', fontWeight: 600, color: 'var(--ink-1)', margin: '0 0 4px' }}>
+          Womit fangen wir an?
+        </h3>
+        <p style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--ink-3)', margin: '0 0 16px', lineHeight: 1.5,
+          overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+          „{prompt}"
+        </p>
+
+        {!picking ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <button type="button" onClick={onNewProject} style={choiceBtn(true)}>
+              <span style={{ fontWeight: 600 }}>Neues Projekt erstellen</span>
+              <span style={choiceSub()}>Goblin baut es als richtiges Projekt — mit Code, Deploy und allem.</span>
+            </button>
+            <button type="button" onClick={() => active.length ? setPicking(true) : onNewProject()} style={choiceBtn(false)}>
+              <span style={{ fontWeight: 600 }}>Zu bestehendem Projekt hinzufügen</span>
+              <span style={choiceSub()}>{active.length ? 'Weiter an einem deiner Projekte arbeiten.' : 'Du hast noch kein Projekt — neues erstellen.'}</span>
+            </button>
+            <button type="button" onClick={onJustChat} style={choiceBtn(false)}>
+              <span style={{ fontWeight: 600 }}>Nur kurz im Chat probieren</span>
+              <span style={choiceSub()}>Schnell etwas ausprobieren, ohne Projekt.</span>
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <button type="button" onClick={() => setPicking(false)} style={{ alignSelf: 'flex-start', background: 'none', border: 'none', color: 'var(--meta)', fontSize: 'var(--t-caption-fs)', cursor: 'pointer', padding: 0, marginBottom: 4 }}>← Zurück</button>
+            {active.map(p => (
+              <button key={p.id} type="button" onClick={() => onExistingProject(p.id)} style={choiceBtn(false)}>
+                <span style={{ fontWeight: 600 }}>{p.name}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
+  );
+}
+
+function choiceBtn(primary: boolean): React.CSSProperties {
+  return {
+    display: 'flex', flexDirection: 'column', gap: 3, width: '100%', textAlign: 'left',
+    padding: '13px 16px', borderRadius: 11, cursor: 'pointer',
+    border: primary ? '2px solid var(--brand-green)' : '1.5px solid var(--border)',
+    background: primary ? 'rgba(45,74,43,0.06)' : 'var(--surface)',
+    color: 'var(--ink-1)', fontFamily: 'var(--font-dash-display), Manrope, sans-serif',
+    fontSize: 'var(--t-small-fs)',
+  };
+}
+function choiceSub(): React.CSSProperties {
+  return { fontWeight: 400, fontSize: 'var(--t-caption-fs)', color: 'var(--ink-3)', lineHeight: 1.4 };
 }

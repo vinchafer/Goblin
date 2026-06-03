@@ -40,17 +40,20 @@ interface Template {
 interface NewProjectModalProps {
   onClose: () => void;
   initialMode?: 'blank' | 'template';
+  /** Pre-fill the "What are you building?" field — e.g. the prompt the user
+      typed into the dashboard "Sag Goblin" composer (B-S3). */
+  initialIdea?: string;
 }
 
 type Mode = 'blank' | 'gallery' | 'template-detail' | 'template-name';
 
-export function NewProjectModal({ onClose, initialMode }: NewProjectModalProps) {
+export function NewProjectModal({ onClose, initialMode, initialIdea }: NewProjectModalProps) {
   const router = useRouter();
   const supabase = createClient();
 
   const [mode, setMode] = useState<Mode>(initialMode === 'template' ? 'gallery' : 'blank');
   const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
+  const [description, setDescription] = useState(initialIdea?.slice(0, 200) ?? '');
   const [intent, setIntent] = useState<Intent>('exploring');
   const [selectedColor, setSelectedColor] = useState(COLORS[0]?.hex ?? '#D4A737');
   const [loading, setLoading] = useState(false);
