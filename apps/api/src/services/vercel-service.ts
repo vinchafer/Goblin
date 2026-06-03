@@ -30,7 +30,7 @@ export async function deployToVercel(
   onProgress?: (msg: string) => void,
 ): Promise<{ deploymentId: string; url: string }> {
   const token = await getUserVercelToken(userId);
-  if (!token) throw new Error('NO_VERCEL_TOKEN — add your Vercel token in Settings → API Keys');
+  if (!token) throw new Error('NO_VERCEL_TOKEN — Du brauchst einen eigenen Vercel-Account (gratis). Token unter vercel.com/account/tokens erstellen und in Einstellungen → Konnektoren → Vercel einfügen.');
 
   onProgress?.('Preparing files…');
   const files = await listFiles(projectId);

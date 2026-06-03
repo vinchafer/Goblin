@@ -102,8 +102,11 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
       setLiveDismissed(false);
       setToast(null);
     } else {
-      setToast(error ?? "Veröffentlichen fehlgeschlagen");
-      setTimeout(() => setToast(null), 6000);
+      // 10.6-5: strip the NO_VERCEL_TOKEN marker so the user sees the plain
+      // "bring your own Vercel" guidance, not the internal prefix.
+      const msg = (error ?? "Veröffentlichen fehlgeschlagen").replace(/^NO_VERCEL_TOKEN —\s*/, "");
+      setToast(msg);
+      setTimeout(() => setToast(null), 8000);
     }
   };
 

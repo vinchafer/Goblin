@@ -108,11 +108,22 @@ export default function IntegrationsStepPage() {
           name="Vercel"
           req="RECOMMENDED"
           logoId="vercel" logoBg="#000"
-          desc="One-click deploy + a live URL. Add your Vercel token in Settings → Connectors."
+          desc="Deploys go to YOUR OWN Vercel account — your domain, your costs. Goblin doesn't host live sites for you. Free for personal projects."
           href="/dashboard/settings/keys"
           ctaLabel="Add token in Settings"
           primary
         />
+        <div className="own-note">
+          <IShield size={13} />
+          <div className="own-body">
+            <b>You bring your own Vercel.</b> Goblin pushes your code to your account
+            so the project is yours — you control the domain, the limits, and the
+            bill, and you can take it to any host later.
+          </div>
+          <a className="own-cta" href="https://vercel.com/signup" target="_blank" rel="noopener noreferrer">
+            Create a free Vercel account →
+          </a>
+        </div>
       </Section>
 
       <Section
@@ -207,6 +218,27 @@ export default function IntegrationsStepPage() {
           color: var(--ink-1); margin-bottom: 12px;
         }
         .lead { font-size: 16.5px; color: var(--ink-2); line-height: 1.5; max-width: 64ch; }
+
+        .own-note {
+          grid-column: 1 / -1;
+          display: flex; align-items: center; gap: 14px;
+          background: var(--accent-bright, rgba(212,169,74,.1));
+          border: 1px solid var(--accent-rule, rgba(212,169,74,.35));
+          border-radius: var(--radius-lg); padding: 14px 18px;
+        }
+        .own-note :global(svg) { color: var(--accent); flex-shrink: 0; }
+        .own-note .own-body { flex: 1; font-size: 13px; color: var(--ink-2); line-height: 1.5; }
+        .own-note .own-body b { color: var(--ink-1); }
+        .own-note .own-cta {
+          flex-shrink: 0;
+          font-family: var(--font-onb-display), Manrope, sans-serif;
+          font-weight: 600; font-size: 12.5px;
+          padding: 8px 14px; border-radius: var(--radius);
+          background: transparent; color: var(--ink-1);
+          border: 1px solid var(--line-strong); text-decoration: none;
+        }
+        .own-note .own-cta:hover { border-color: var(--ink-1); }
+        @media (max-width: 600px) { .own-note { flex-wrap: wrap; } .own-note .own-cta { width: 100%; text-align: center; } }
 
         .mobile-hint {
           display: flex; align-items: center; gap: 14px;

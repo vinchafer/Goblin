@@ -6,6 +6,9 @@ export function useCodeVercel(projectId: string, token: string | null) {
   const { activeBuilds, recentDone, startBuild } = useBuildStatus(projectId);
   const [deploying, setDeploying] = useState(false);
   const [deployMessage, setDeployMessage] = useState<string | null>(null);
+  // 10.6-5: surfaced when a deploy is attempted without a Vercel token, so the UI
+  // can show the "bring your own Vercel" explainer instead of a raw error.
+  const [needsVercel, setNeedsVercel] = useState(false);
 
   const handleDeploy = useCallback(async () => {
     if (deploying || !token) return;
@@ -33,7 +36,14 @@ export function useCodeVercel(projectId: string, token: string | null) {
               setDeployMessage(`Deployed ✓ ${event.url}`);
               setTimeout(() => setDeployMessage(null), 6000);
             }
-            if (event.type === 'error') setDeployMessage(`Error: ${event.message}`);
+            if (event.type === 'error') {
+              if (typeof event.message === 'string' && event.message.includes('NO_VERCEL_TOKEN')) {
+                setNeedsVercel(true);
+                setDeployMessage(null);
+              } else {
+                setDeployMessage(`Error: ${event.message}`);
+              }
+            }
           } catch { /* ignore */ }
         }
       }
@@ -43,5 +53,5 @@ export function useCodeVercel(projectId: string, token: string | null) {
     } finally { setDeploying(false); }
   }, [deploying, projectId, token, startBuild]);
 
-  return { deploying, deployMessage, handleDeploy, activeBuilds, recentDone };
+  return { deploying, deployMessage, handleDeploy, activeBuilds, recentDone, needsVercel, dismissNeedsVercel: () => setNeedsVercel(false) };
 }

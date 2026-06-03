@@ -130,10 +130,40 @@ export function CodeTabClassic({ projectId, projectName = 'project', pendingCode
             </div>
             <div style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--ed-fg-3)', fontFamily: 'var(--font-sans)', marginBottom: 18 }}>
               Das baut dein Projekt und stellt es unter einer öffentlichen URL bereit. Du kannst vorher in Ruhe sichern und ansehen.
+              <span style={{ display: 'block', marginTop: 8, fontStyle: 'italic', color: 'var(--ed-fg-3)' }}>
+                Läuft über deinen eigenen Vercel-Account — deine Domain, deine Kosten.
+              </span>
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button onClick={() => setDeployConfirm(false)} style={{ background: 'transparent', border: '1px solid var(--ed-rule)', color: 'var(--ed-fg-2)', borderRadius: 9, padding: '9px 16px', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>Abbrechen</button>
               <button onClick={() => { setDeployConfirm(false); tab.handleDeploy(); }} style={{ background: 'var(--ed-primary)', border: 'none', color: 'var(--ed-on-primary)', borderRadius: 9, padding: '9px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)', display: 'flex', alignItems: 'center', gap: 7 }}><Icon name="play" size={14} /> Veröffentlichen</button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* No Vercel token — "bring your own Vercel" explainer (10.6-5) */}
+      {tab.needsVercel && (
+        <>
+          <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--surface-overlay)' }} onClick={tab.dismissNeedsVercel} />
+          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: 'var(--ed-chrome-2)', border: '1px solid var(--ed-rule)', borderRadius: 14, padding: '24px', zIndex: 81, minWidth: 320, maxWidth: 420, boxShadow: '0 16px 40px rgba(15,43,30,0.28)' }}>
+            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--ed-fg-1)', fontFamily: 'var(--font-sans)', marginBottom: 10 }}>
+              Erstes Mal Live? Du brauchst einen Vercel-Account (gratis).
+            </div>
+            <div style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--ed-fg-3)', fontFamily: 'var(--font-sans)', marginBottom: 14 }}>
+              Goblin pusht deinen Code in deinen <b>eigenen</b> Vercel-Account. So gehört
+              das Projekt dir, du kontrollierst die Kosten, und du kannst es jederzeit zu
+              einem anderen Hoster mitnehmen.
+            </div>
+            <ol style={{ fontSize: 13, lineHeight: 1.7, color: 'var(--ed-fg-2)', fontFamily: 'var(--font-sans)', margin: '0 0 18px', paddingLeft: 18 }}>
+              <li>Bei Vercel registrieren (1 Minute)</li>
+              <li>Token erstellen unter vercel.com/account/tokens</li>
+              <li>Token in Einstellungen → Konnektoren → Vercel einfügen</li>
+            </ol>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              <button onClick={tab.dismissNeedsVercel} style={{ background: 'transparent', border: '1px solid var(--ed-rule)', color: 'var(--ed-fg-3)', borderRadius: 9, padding: '9px 16px', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>Später</button>
+              <a href="https://vercel.com/account/tokens" target="_blank" rel="noopener noreferrer" onClick={tab.dismissNeedsVercel} style={{ background: 'transparent', border: '1px solid var(--ed-rule)', color: 'var(--ed-fg-1)', borderRadius: 9, padding: '9px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center' }}>Habe schon einen Account → Token</a>
+              <a href="https://vercel.com/signup" target="_blank" rel="noopener noreferrer" style={{ background: 'var(--ed-primary)', border: 'none', color: 'var(--ed-on-primary)', borderRadius: 9, padding: '9px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 7 }}>Bei Vercel registrieren →</a>
             </div>
           </div>
         </>

@@ -224,6 +224,12 @@ function VercelConnectorRow() {
         )}
       </div>
 
+      <div style={{ padding: '0 16px 12px', marginTop: -4 }}>
+        <span style={{ fontSize: 11.5, fontStyle: 'italic', color: 'var(--text-meta)', lineHeight: 1.45 }}>
+          Goblin pusht in deinen eigenen Vercel-Account. Deine Deployments, deine Kosten.
+        </span>
+      </div>
+
       {showForm && !state.connected && (
         <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
           <input
