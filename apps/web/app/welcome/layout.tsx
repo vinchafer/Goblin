@@ -1,6 +1,18 @@
 import type { ReactNode } from 'react';
+import type { Viewport } from 'next';
 import { Manrope, Instrument_Serif } from 'next/font/google';
 import { OnboardingChrome } from './_components/chrome';
+
+// App route (B-S9): lock zoom so the onboarding flow can't be pinch-zoomed into
+// a broken layout on mobile. Marketing routes keep zoom (root layout).
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
+  themeColor: '#1A3A2A',
+};
 import '../../styles/onboarding-tokens.css';
 
 // Scoped font variables for the .gobl-onb wrapper. Manrope + Instrument

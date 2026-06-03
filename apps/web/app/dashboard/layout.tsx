@@ -1,3 +1,4 @@
+import type { Viewport } from "next";
 import { redirect } from "next/navigation";
 import { Manrope, Instrument_Serif } from "next/font/google";
 import { createClient } from "@/lib/supabase/server";
@@ -7,6 +8,17 @@ import { filterVisibleProjects } from "@/lib/project-visibility";
 import { AdvancedModeProvider } from "@/components/ui/advanced-mode-provider";
 import SoftLimitBanner from "@/components/onboarding/SoftLimitBanner";
 import "../../styles/dashboard-tokens.css";
+
+// App route (B-S9): lock zoom on the dashboard so pinch-zoom can't break the
+// mobile workspace layout. Marketing routes keep zoom (root layout).
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+  themeColor: "#1A3A2A",
+};
 
 // Scoped font variables for the .gobl-dash wrapper. Manrope + Instrument
 // Serif are also loaded globally in app/layout.tsx; these scoped loaders
