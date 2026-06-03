@@ -231,7 +231,7 @@ export default function RoutingStepPage() {
           letter-spacing: -0.016em; color: var(--ink-1); line-height: 1.25;
         }
         .layer p {
-          font-size: 13.5px; color: var(--ink-2); line-height: 1.55;
+          font-size: 14px; color: var(--ink-2); line-height: 1.55;
           margin-top: 6px; max-width: 66ch;
         }
         .waitlist {
@@ -264,7 +264,7 @@ export default function RoutingStepPage() {
         .fstep.soon { color: var(--gold-deep); border-color: var(--accent-rule); }
         .flow-cap {
           display: inline-flex; align-items: center; gap: 7px;
-          font-size: 12px; color: var(--ink-3); margin-bottom: 22px;
+          font-size: 12.5px; color: var(--ink-2); margin-bottom: 22px;
         }
         .flow-cap :global(svg) { color: var(--accent); flex-shrink: 0; }
 
