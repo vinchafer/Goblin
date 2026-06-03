@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { createClient } from '@supabase/supabase-js';
-import { streamCompletion } from '../services/model-router';
+import { streamCompletionGuarded } from '../services/model-router';
 import { authMiddleware } from '../middleware/auth';
 import { usageLimitMiddleware } from '../middleware/usage-limit';
 import { chatStreamRateLimit } from '../middleware/rate-limit';
@@ -90,7 +90,7 @@ chat.post('/stream', chatStreamRateLimit, usageLimitMiddleware, async (c) => {
     });
 
     try {
-      for await (const jsonToken of streamCompletion({
+      for await (const jsonToken of streamCompletionGuarded({
         userId,
         projectId,
         message,
@@ -122,6 +122,14 @@ chat.post('/stream', chatStreamRateLimit, usageLimitMiddleware, async (c) => {
               content: parsed.content,
             }),
           });
+          continue;
+        }
+
+        // Error / fallback_notice — forward verbatim so the client can surface
+        // it instead of spinning forever (e.g. the first-token watchdog).
+        if (parsed.type === 'error' || parsed.type === 'fallback_notice') {
+          await stream.writeSSE({ data: JSON.stringify(parsed) });
+          if (parsed.type === 'error') return;
           continue;
         }
 

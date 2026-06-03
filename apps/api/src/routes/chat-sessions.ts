@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { authMiddleware } from '../middleware/auth.js';
 import { getSupabaseAdmin } from '../lib/supabase.js';
-import { streamCompletion } from '../services/model-router.js';
+import { streamCompletionGuarded } from '../services/model-router.js';
 
 type Variables = { userId: string };
 const chatSessions = new Hono<{ Variables: Variables }>();
@@ -138,13 +138,14 @@ chatSessions.post('/:id/stream', async (c) => {
     c.req.raw.signal.addEventListener('abort', () => abortController.abort());
 
     try {
-      for await (const jsonToken of streamCompletion({
+      for await (const jsonToken of streamCompletionGuarded({
         userId,
         projectId: null,
         message,
         chatHistory,
         modelPreference: modelSlug,
         supabase,
+        signal: abortController.signal,
       })) {
         if (abortController.signal.aborted) break;
 

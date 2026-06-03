@@ -394,6 +394,71 @@ export async function* streamCompletion({
   }
 }
 
+// ─── First-token watchdog ──────────────────────────────────────────────────────
+// streamCompletion can stall after the `meta` event if the upstream provider
+// accepts the connection but never streams a token (the Gemini "spins forever"
+// symptom). The provider-level timeout is 120s — far too long to leave a user
+// staring at a spinner with no feedback. This wrapper races the first
+// content/done event against a short deadline; on timeout it cancels the
+// upstream fetch (via the chained AbortController) and emits a friendly error
+// the chat UI already knows how to render.
+const FIRST_TOKEN_TIMEOUT_MS = 45_000;
+
+export async function* streamCompletionGuarded(
+  params: StreamCompletionParams,
+): AsyncGenerator<string, void, unknown> {
+  const abort = new AbortController();
+  params.signal?.addEventListener('abort', () => abort.abort());
+
+  const it = streamCompletion({ ...params, signal: abort.signal })[Symbol.asyncIterator]();
+  let sawContent = false;
+
+  try {
+    while (true) {
+      const next = it.next();
+      let timer: ReturnType<typeof setTimeout> | undefined;
+      const guarded: Promise<IteratorResult<string>> = sawContent
+        ? next
+        : Promise.race([
+            next,
+            new Promise<never>((_, reject) => {
+              timer = setTimeout(
+                () => reject(new GoblinError('timeout', 'first-token-timeout')),
+                params.timeoutMs ?? FIRST_TOKEN_TIMEOUT_MS,
+              );
+            }),
+          ]);
+
+      let res: IteratorResult<string>;
+      try {
+        res = await guarded;
+      } finally {
+        if (timer) clearTimeout(timer);
+      }
+
+      if (res.done) break;
+
+      // Once any real content (or a terminal event) has flowed, drop the
+      // first-token deadline — long replies are legitimate.
+      try {
+        const parsed = JSON.parse(res.value) as { type?: string };
+        if (parsed.type === 'delta' || parsed.type === 'done' || parsed.type === 'error') {
+          sawContent = true;
+        }
+      } catch { /* non-JSON token — treat as content */ sawContent = true; }
+
+      yield res.value;
+    }
+  } catch (err) {
+    abort.abort(); // cancel the dangling upstream fetch
+    const isTimeout = isGoblinError(err) && err.code === 'timeout';
+    const message = isTimeout
+      ? 'Das Modell hat nicht rechtzeitig geantwortet. Bitte versuche es erneut oder wähle ein anderes Modell.'
+      : (err instanceof Error ? err.message : 'Stream failed');
+    yield JSON.stringify({ type: 'error', message });
+  }
+}
+
 // ─── Fallback chain persistence ───────────────────────────────────────────────
 
 export async function saveFallbackChain(userId: string, chain: string[], supabase: SupabaseClient): Promise<void> {
