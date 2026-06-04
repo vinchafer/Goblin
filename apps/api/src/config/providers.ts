@@ -1,5 +1,22 @@
-// Provider and static model definitions for Goblin
-// Used as fallback when LiteLLM is not reachable
+// Provider and static model definitions for Goblin.
+//
+// 10.9-A2 — HAND-MAINTAINED DISPLAY LIST (OPTION B; see sprint-10-9/PHASE_0_GATE.md).
+//
+// Two distinct things live here:
+//  1. Provider METADATA (baseURL, keyEnvVar, litellmPrefix, docs/credits URLs) —
+//     routing infrastructure. Stable; edit only when a provider changes its API.
+//  2. The `models: [...]` arrays — a small, curated, hand-maintained DISPLAY list.
+//     Their JOB is the not-connected onboarding view ("here's what you can
+//     connect", shown greyed). They are NOT the routing source-of-truth: for a
+//     connected key, routing slugs come from per-user provider-discovery
+//     (byok_keys.discovered_models), sent to the provider VERBATIM (hard slug
+//     rule). The only time a static slug reaches a provider is the safety
+//     fallback when discovery is unavailable for a connected key — keep the
+//     curated slugs correct, but treat this list as display-first.
+//
+// Vincent edits this ~quarterly. Keep it tiny and obvious: one file, the
+// PROVIDERS map below, a handful of headline models per provider. No proxy,
+// no /v1/models, no auto-generation.
 
 export type ProviderId =
   | 'anthropic' | 'openai' | 'google' | 'groq' | 'mistral'
