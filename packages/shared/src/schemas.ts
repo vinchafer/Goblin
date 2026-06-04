@@ -66,4 +66,7 @@ export interface ByokKey {
   last_used: Date | null;
   created_at: Date;
   validated_at?: Date | null;
+  // 10.9-2 — outcome of the last daily provider-discovery refresh.
+  last_validation_result?: "valid" | "invalid" | "rate_limited" | "error" | null;
+  last_validated_at?: Date | string | null;
 }

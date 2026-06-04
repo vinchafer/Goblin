@@ -1,0 +1,49 @@
+name: Catalog Ops Cron
+
+# Sprint 10.9 — scheduled ops on the Goblin API (OPTION B). Railway has no native
+# cron, so GitHub Actions drives the schedule and hits admin endpoints with the
+# ADMIN_API_KEY. Each job no-ops gracefully if the secrets are unset.
+#
+# Required repo secrets (Settings → Secrets → Actions):
+#   GOBLIN_API_URL   e.g. https://api.goblin.app   (no trailing slash)
+#   ADMIN_API_KEY    matches the API's ADMIN_API_KEY env
+
+on:
+  schedule:
+    - cron: '0 4 * * *'   # daily 04:00 UTC — per-user provider-discovery refresh
+  workflow_dispatch:
+    inputs:
+      job:
+        description: 'Which job to run manually'
+        type: choice
+        options: [refresh]
+        default: refresh
+
+jobs:
+  discovery-refresh:
+    name: Daily provider-discovery refresh
+    runs-on: ubuntu-latest
+    steps:
+      - name: Guard — secrets present
+        id: guard
+        env:
+          GOBLIN_API_URL: ${{ secrets.GOBLIN_API_URL }}
+          ADMIN_API_KEY: ${{ secrets.ADMIN_API_KEY }}
+        run: |
+          if [ -z "$GOBLIN_API_URL" ] || [ -z "$ADMIN_API_KEY" ]; then
+            echo "Secrets GOBLIN_API_URL / ADMIN_API_KEY not set — skipping."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: POST /api/admin/catalog/refresh
+        if: steps.guard.outputs.run == 'true'
+        env:
+          GOBLIN_API_URL: ${{ secrets.GOBLIN_API_URL }}
+          ADMIN_API_KEY: ${{ secrets.ADMIN_API_KEY }}
+        run: |
+          code=$(curl -sS -o resp.json -w '%{http_code}' \
+            -X POST "$GOBLIN_API_URL/api/admin/catalog/refresh?source=cron" \
+            -H "x-admin-key: $ADMIN_API_KEY")
+          echo "HTTP $code"; cat resp.json
+          test "$code" = "200"

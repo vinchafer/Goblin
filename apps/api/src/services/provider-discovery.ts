@@ -92,6 +92,77 @@ export async function discoverModels(
   }
 }
 
+// ── 10.9-2 — detailed discovery for the daily refresh ────────────────────────
+// discoverModels() collapses every failure to [] (fine for key-add: "fall back
+// to catalog"). The daily refresh must distinguish a now-INVALID key (401/403 →
+// surface, don't delete) from a transient RATE_LIMIT (429 → back off, never mark
+// invalid). This variant returns the provider's HTTP outcome alongside the slugs.
+export type DiscoveryStatus = 'ok' | 'invalid' | 'rate_limited' | 'error';
+
+export interface DetailedDiscovery {
+  status: DiscoveryStatus;
+  models: string[];
+}
+
+function classify(status: number): DiscoveryStatus {
+  if (status === 401 || status === 403) return 'invalid';
+  if (status === 429) return 'rate_limited';
+  return status >= 200 && status < 300 ? 'ok' : 'error';
+}
+
+export async function discoverModelsDetailed(
+  provider: ByokProvider,
+  key: string,
+  baseURL?: string,
+): Promise<DetailedDiscovery> {
+  try {
+    switch (provider) {
+      case 'anthropic': {
+        const res = await fetchJson('https://api.anthropic.com/v1/models?limit=100', {
+          headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01' },
+        });
+        if (!res.ok) return { status: classify(res.status), models: [] };
+        const body = (await res.json()) as AnthropicModelsResponse;
+        return { status: 'ok', models: dedupeSorted((body.data ?? []).map((m) => m.id ?? '')) };
+      }
+      case 'google': {
+        const res = await fetchJson(
+          `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(key)}&pageSize=200`,
+          { method: 'GET' },
+        );
+        if (!res.ok) return { status: classify(res.status), models: [] };
+        const body = (await res.json()) as GoogleModelsResponse;
+        return {
+          status: 'ok',
+          models: dedupeSorted(
+            (body.models ?? [])
+              .filter((m) => !m.supportedGenerationMethods || m.supportedGenerationMethods.includes('generateContent'))
+              .map((m) => (m.name ?? '').replace(/^models\//, '')),
+          ),
+        };
+      }
+      case 'openai':
+      case 'groq':
+      case 'mistral':
+      case 'deepseek':
+      case 'xai':
+      case 'together':
+      case 'custom': {
+        const url = providerModelsUrl(provider, baseURL);
+        if (!url) return { status: 'error', models: [] };
+        const res = await fetchJson(url, { headers: { Authorization: `Bearer ${key}` } });
+        if (!res.ok) return { status: classify(res.status), models: [] };
+        const body = (await res.json()) as OpenAIModelsResponse;
+        return { status: 'ok', models: dedupeSorted((body.data ?? []).map((m) => m.id ?? '')) };
+      }
+      default:
+        return { status: 'error', models: [] };
+    }
+  } catch {
+    return { status: 'error', models: [] };
+  }
+}
+
 function providerModelsUrl(provider: ByokProvider, baseURL?: string): string | null {
   switch (provider) {
     case 'openai':     return 'https://api.openai.com/v1/models';

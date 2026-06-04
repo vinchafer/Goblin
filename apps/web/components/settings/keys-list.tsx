@@ -144,7 +144,17 @@ export function KeysList({ initialKeys }: KeysListProps) {
                     <span style={{ fontSize: 'var(--t-small-fs)', fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-sans)' }}>
                       {p.label}
                     </span>
-                    {activeKey && (
+                    {activeKey && activeKey.last_validation_result === 'invalid' ? (
+                      // 10.9-2 — the daily refresh found this key no longer valid.
+                      // We never delete it; we surface it so the user can re-enter.
+                      <span style={{
+                        display: 'flex', alignItems: 'center', gap: 4,
+                        fontSize: 11, color: 'var(--danger)', fontWeight: 600,
+                      }}>
+                        <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--danger)', display: 'inline-block' }} />
+                        Key ungültig — bitte prüfen
+                      </span>
+                    ) : activeKey && (
                       <span style={{
                         display: 'flex', alignItems: 'center', gap: 4,
                         fontSize: 11, color: 'var(--brand-green)', fontWeight: 500,

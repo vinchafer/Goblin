@@ -341,7 +341,32 @@ export async function listKeys(userId: string): Promise<ByokKey[]> {
     .eq('user_id', userId)
     .order('created_at', { ascending: false });
 
-  return (data ?? []) as ByokKey[];
+  const keys = (data ?? []) as ByokKey[];
+
+  // 10.9-2: merge in the daily-refresh validation outcome so Settings can flag a
+  // now-invalid key. Tolerant of column absence (migration 0062 unapplied) — a
+  // failed select just leaves the field undefined rather than breaking the list.
+  try {
+    const { data: vData, error } = await supabase
+      .from('byok_keys')
+      .select('id, last_validation_result, last_validated_at')
+      .eq('user_id', userId);
+    if (!error && vData) {
+      const byId = new Map(
+        (vData as Array<{ id: string; last_validation_result: string | null; last_validated_at: string | null }>)
+          .map((r) => [r.id, r]),
+      );
+      for (const k of keys) {
+        const v = byId.get(k.id);
+        if (v) {
+          (k as Record<string, unknown>).last_validation_result = v.last_validation_result ?? null;
+          (k as Record<string, unknown>).last_validated_at = v.last_validated_at ?? null;
+        }
+      }
+    }
+  } catch { /* columns not present yet — non-fatal */ }
+
+  return keys;
 }
 
 /**

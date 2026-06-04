@@ -436,11 +436,21 @@ admin.get('/health', async (c) => {
   });
 });
 
-// Sprint 10.8 — manual catalog re-sync from LiteLLM (cron lands in 10.9).
+// Sprint 10.9-2 — manual + cron catalog refresh (OPTION B: per-user
+// provider-discovery; the LiteLLM /v1/models sync was retired in 10.9-A1).
+// The daily cron (04:00 UTC) posts here; see .github/workflows/catalog-cron.yml.
+admin.post('/catalog/refresh', async (c) => {
+  const { refreshAllUserDiscovery } = await import('../services/catalog-refresh.js');
+  const source = c.req.query('source') === 'manual' ? 'manual' : 'cron';
+  const summary = await refreshAllUserDiscovery({ source });
+  return c.json({ ok: true, ...summary });
+});
+
+// Back-compat alias for the 10.8 endpoint name. Same per-user refresh.
 admin.post('/catalog/sync', async (c) => {
-  const { syncFromLiteLLM } = await import('../services/catalog.js');
-  const result = await syncFromLiteLLM({ force: true });
-  return c.json(result, result.ok ? 200 : 502);
+  const { refreshAllUserDiscovery } = await import('../services/catalog-refresh.js');
+  const summary = await refreshAllUserDiscovery({ source: 'manual' });
+  return c.json({ ok: true, ...summary });
 });
 
 export { admin };
