@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Eye, EyeSlash, Warning, CircleNotch, ArrowSquareOut } from '@phosphor-icons/react';
+import { Eye, EyeSlash, Warning, CircleNotch, ArrowSquareOut, CheckCircle } from '@phosphor-icons/react';
 import { createClient } from '@/lib/supabase/client';
 
 // Where to grab a key per provider — shown inline so the user never leaves to hunt.
@@ -44,6 +44,9 @@ export function ProviderKeyForm({ provider, providerLabel, existingHint, onSaved
   const [loading, setLoading] = useState(false);
   const [removing, setRemoving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // 10.8-4: after a successful connect we show the models THIS key unlocked
+  // (discovered live from the provider) instead of bouncing straight back.
+  const [discovered, setDiscovered] = useState<string[] | null>(null);
 
   const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
   const keyUrl = PROVIDER_KEY_URLS[provider];
@@ -74,8 +77,18 @@ export function ProviderKeyForm({ provider, providerLabel, existingHint, onSaved
         setError(friendly(msg));
         return;
       }
-      onSaved();
-      onBack();
+      // Parse the discovered model list off the created key (10.8-2 backend).
+      let models: string[] = [];
+      try {
+        const created = await res.json();
+        if (Array.isArray(created?.discovered_models)) models = created.discovered_models as string[];
+      } catch { /* non-JSON — fine, fall through with empty list */ }
+      onSaved(); // let the parent list refetch immediately
+      if (models.length > 0) {
+        setDiscovered(models); // show the unlocked-models panel; user dismisses
+      } else {
+        onBack();
+      }
     } catch {
       setError('Netzwerkfehler. Bitte nochmal versuchen.');
     } finally {
@@ -113,6 +126,45 @@ export function ProviderKeyForm({ provider, providerLabel, existingHint, onSaved
     fontFamily: 'var(--font-sans)', outline: 'none',
   };
 
+  // 10.8-4: connected — show exactly what this key unlocks (no hardcoded promise).
+  if (discovered) {
+    const shown = discovered.slice(0, 14);
+    const rest = discovered.length - shown.length;
+    return (
+      <div style={{ padding: '4px 16px 24px', fontFamily: 'var(--font-sans)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+          <CheckCircle size={22} weight="fill" style={{ color: 'var(--brand-green)' }} />
+          <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>
+            Verbunden — {discovered.length} {discovered.length === 1 ? 'Modell' : 'Modelle'} verfügbar
+          </span>
+        </div>
+        <p style={{ fontSize: 13, color: 'var(--text-meta)', margin: '0 0 14px', lineHeight: 1.5 }}>
+          Dein {providerLabel}-Key schaltet diese Modelle frei. Du findest sie ab jetzt im Modell-Auswahlmenü.
+        </p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 20 }}>
+          {shown.map((m) => (
+            <span key={m} style={{
+              fontFamily: 'var(--font-mono)', fontSize: 12, padding: '4px 8px', borderRadius: 6,
+              background: 'var(--subtle)', border: '1px solid var(--border-subtle)', color: 'var(--text)',
+            }}>{m}</span>
+          ))}
+          {rest > 0 && (
+            <span style={{ fontSize: 12, padding: '4px 8px', color: 'var(--text-meta)' }}>+{rest} weitere</span>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={onBack}
+          style={{
+            width: '100%', padding: '13px', borderRadius: 10, border: 'none',
+            background: 'var(--brand-green)', color: '#fff', fontSize: 15, fontWeight: 600,
+            cursor: 'pointer', fontFamily: 'var(--font-sans)',
+          }}
+        >Fertig</button>
+      </div>
+    );
+  }
+
   return (
     <div style={{ padding: '4px 16px 24px', fontFamily: 'var(--font-sans)' }}>
       {existingHint && (
@@ -128,8 +180,9 @@ export function ProviderKeyForm({ provider, providerLabel, existingHint, onSaved
       )}
 
       <p style={{ fontSize: 13, color: 'var(--text-meta)', margin: '0 0 16px', lineHeight: 1.5 }}>
-        Dein Key wird verschlüsselt gespeichert und nur genutzt, um {providerLabel} in deinem Auftrag
-        aufzurufen — niemals weiterverkauft.
+        Verbinde deinen {providerLabel}-Key → Zugriff auf alle {providerLabel}-Modelle, die dein Key freischaltet.
+        Der Key wird verschlüsselt gespeichert und nur genutzt, um {providerLabel} in deinem Auftrag aufzurufen —
+        niemals weiterverkauft.
       </p>
 
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
