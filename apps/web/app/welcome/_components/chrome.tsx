@@ -5,12 +5,18 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { getAuthHeaders, API_URL } from '@/lib/api';
 import { GMark } from './icons';
+import { useOnbLang, STR } from './i18n';
+import { getOnboardingState } from './onboarding-state';
 
+// Single source of truth for the header step chip. Order matches the actual
+// visit order after the 10.7-6 swap: language → welcome → routing → provider →
+// tools → integrations. The in-page eyebrow + footer on each step already read
+// these numbers (routing="02", provider="03"); this map now agrees (10.10 C.4).
 const STEP_BY_PATH: Record<string, number> = {
   '/welcome/language': 0,
   '/welcome': 1,
-  '/welcome/provider': 2,
-  '/welcome/routing': 3,
+  '/welcome/routing': 2,
+  '/welcome/provider': 3,
   '/welcome/tools': 4,
   '/welcome/integrations': 5,
 };
@@ -23,15 +29,20 @@ export function OnboardingChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? '/welcome';
   const step = STEP_BY_PATH[pathname] ?? 1;
   const router = useRouter();
+  const lang = useOnbLang();
+  const tc = STR[lang].chrome;
   const [checking, setChecking] = useState(true);
 
-  // Returning-user guard: if a BYOK key already exists, skip onboarding.
-  // Mirrors the prior app/welcome/page.tsx behaviour, moved up to layout.
+  // Returning-user guard: skip onboarding only for users who have ALREADY
+  // COMPLETED it. 10.10 C.2 fix: previously this fired whenever ANY key
+  // existed, which kicked a *new* user who just added a provider key mid-flow
+  // out to /dashboard — and the dashboard's new-user guard then bounced them to
+  // /welcome/language (the founder's "GitHub/Vercel → Step-0 bounce"). Gating
+  // on completion keeps mid-flow users in the flow regardless of keys.
   useEffect(() => {
     let cancelled = false;
-    // Dev-only preview escape: lets QA walk onboarding even with keys
-    // already connected. Dead in production builds (NODE_ENV === 'production'),
-    // so it can never leak a returning user back into onboarding on prod.
+    // Dev-only preview escape: lets QA walk onboarding even when completed.
+    // Dead in production builds (NODE_ENV === 'production').
     if (
       process.env.NODE_ENV !== 'production' &&
       typeof window !== 'undefined' &&
@@ -42,14 +53,10 @@ export function OnboardingChrome({ children }: { children: React.ReactNode }) {
     }
     (async () => {
       try {
-        const headers = await getAuthHeaders();
-        const res = await fetch(`${API_URL}/api/byok-keys/has-any`, { headers, credentials: 'include' });
-        if (!cancelled && res.ok) {
-          const body = await res.json();
-          if (body?.exists) {
-            router.replace('/dashboard');
-            return;
-          }
+        const state = await getOnboardingState();
+        if (!cancelled && state?.completed) {
+          router.replace('/dashboard');
+          return;
         }
       } catch {
         /* fall through — show onboarding */
@@ -79,7 +86,7 @@ export function OnboardingChrome({ children }: { children: React.ReactNode }) {
         </span>
         <div className="gobl-onb-top-right">
           <span className="gobl-onb-step">
-            <span className="gobl-onb-step-num">STEP 0{step} / 0{TOTAL_STEPS}</span>
+            <span className="gobl-onb-step-num">{tc.step} 0{step} / 0{TOTAL_STEPS}</span>
             <span className="gobl-onb-pips">
               {PIP_STEPS.map((n) => (
                 <span
@@ -89,7 +96,7 @@ export function OnboardingChrome({ children }: { children: React.ReactNode }) {
               ))}
             </span>
           </span>
-          <Link href="/help" className="gobl-onb-help">HELP</Link>
+          <Link href="/help" className="gobl-onb-help">{tc.help}</Link>
         </div>
       </header>
 
@@ -99,7 +106,7 @@ export function OnboardingChrome({ children }: { children: React.ReactNode }) {
         <span className="gobl-mono">JUSTGOBLIN.COM</span>
         <span className="gobl-mono">
           <span className="gobl-onb-foot-dot" />
-          STEP 0{step} OF 0{TOTAL_STEPS}
+          {tc.step} 0{step} {tc.of} 0{TOTAL_STEPS}
         </span>
       </footer>
 

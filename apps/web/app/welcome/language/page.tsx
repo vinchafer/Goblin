@@ -7,11 +7,13 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { IArrowR, ICheck } from '../_components/icons';
 import { setPreferredLang, type PreferredLang } from '../_components/onboarding-state';
+import { STR } from '../_components/i18n';
 
 export default function WelcomeStep0Language() {
   const router = useRouter();
   const [lang, setLang] = useState<PreferredLang>('de');
   const [busy, setBusy] = useState(false);
+  const t = STR[lang].lang;
 
   async function go(choice: PreferredLang) {
     if (busy) return;
@@ -28,8 +30,8 @@ export default function WelcomeStep0Language() {
   return (
     <div className="step0">
       <div className="panel">
-        <div className="eyebrow"><span className="tick" />Step 00 · Language</div>
-        <h1>Welcome to Goblin</h1>
+        <div className="eyebrow"><span className="tick" />{t.eyebrow}</div>
+        <h1>{t.title}</h1>
 
         <div className="rows" role="radiogroup" aria-label="Language">
           {OPTIONS.map((o) => (
@@ -47,10 +49,10 @@ export default function WelcomeStep0Language() {
           ))}
         </div>
 
-        <p className="hint">You can change this any time in Settings.</p>
+        <p className="hint">{t.hint}</p>
 
         <button type="button" className="cta" onClick={() => go(lang)} disabled={busy}>
-          Continue <IArrowR size={15} />
+          {t.cta} <IArrowR size={15} />
         </button>
       </div>
 

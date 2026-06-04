@@ -8,63 +8,62 @@
 // "user already has a key → /dashboard" guard moved up to layout.tsx.
 import Link from 'next/link';
 import { ICheck, IEye, IArrowR } from './_components/icons';
+import { useOnbLang, STR } from './_components/i18n';
 
 export default function WelcomeStep1() {
+  const lang = useOnbLang();
+  const t = STR[lang].step1;
   return (
     <div className="step1">
       <div className="lead-col">
-        <div className="eyebrow"><span className="tick" />Set up your workshop</div>
+        <div className="eyebrow"><span className="tick" />{t.eyebrow}</div>
         <h1>
-          How should Goblin <span className="gold-rule" />{' '}
-          <span className="gobl-serif">talk to AI?</span>
+          {t.titleA} <span className="gold-rule" />{' '}
+          <span className="gobl-serif">{t.titleB}</span>
         </h1>
-        <p className="lead">
-          Goblin doesn&apos;t run the model — you do. Bring a key, or let us
-          walk you through getting a free one. Either way, you stay in control.
-        </p>
+        <p className="lead">{t.lead}</p>
         <div className="small-print">
-          <span className="line"><span className="ic"><ICheck size={10} /></span>BYOK — Anthropic, OpenAI, Google, Groq</span>
-          <span className="line"><span className="ic"><ICheck size={10} /></span>No card on file. Cancel anytime.</span>
-          <span className="line"><span className="ic"><ICheck size={10} /></span>Your keys live in your account, encrypted.</span>
+          {t.bullets.map((b) => (
+            <span key={b} className="line"><span className="ic"><ICheck size={10} /></span>{b}</span>
+          ))}
         </div>
       </div>
 
       <div className="paths">
         <Link href="/welcome/routing?path=b" className="gobl-path-card path-card primary">
-          <span className="badge">RECOMMENDED</span>
+          <span className="badge">{t.pathBBadge}</span>
           <div className="top">
-            <span className="num">PATH B</span>
-            <span className="time">~ 2 MIN</span>
+            <span className="num">{t.pathBNum}</span>
+            <span className="time">{t.pathBTime}</span>
           </div>
-          <h3>I&apos;m new to this.</h3>
-          <p>No key yet? We&apos;ll walk you through getting a free one from Google — no card, no jargon.</p>
+          <h3>{t.pathBTitle}</h3>
+          <p>{t.pathBBody}</p>
           <div className="foot">
             <div className="chips">
-              <span className="tag">GUIDED</span>
-              <span className="tag">FREE</span>
+              {t.pathBTags.map((tag) => <span key={tag} className="tag">{tag}</span>)}
             </div>
-            <span className="arr">Walk me through it <IArrowR size={14} /></span>
+            <span className="arr">{t.pathBArr} <IArrowR size={14} /></span>
           </div>
         </Link>
 
         <Link href="/welcome/routing?path=a" className="gobl-path-card path-card">
           <div className="top">
-            <span className="num">PATH A</span>
-            <span className="time">~ 60 SEC</span>
+            <span className="num">{t.pathANum}</span>
+            <span className="time">{t.pathATime}</span>
           </div>
-          <h3>I already have a key.</h3>
-          <p>Anthropic, OpenAI, Google, Groq and more — paste it, test it, you&apos;re building.</p>
+          <h3>{t.pathATitle}</h3>
+          <p>{t.pathABody}</p>
           <div className="foot">
             <div className="chips">
-              <span className="tag">PASTE &amp; GO</span>
+              <span className="tag">{t.pathATag}</span>
             </div>
-            <span className="arr">Continue <IArrowR size={14} /></span>
+            <span className="arr">{t.pathAArr} <IArrowR size={14} /></span>
           </div>
         </Link>
 
         <Link href="/dashboard" className="path-link">
           <IEye size={12} />
-          <span>Just looking? <u>Explore first</u> — no key needed, soft limits on.</span>
+          <span>{t.explore}<u>{t.exploreLink}</u>{t.exploreTail}</span>
         </Link>
       </div>
 
