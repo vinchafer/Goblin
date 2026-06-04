@@ -9,7 +9,8 @@
 // LiteLLM /v1/models docs: https://docs.litellm.ai/docs/proxy/model_management
 
 import { getSupabaseAdmin } from '../lib/supabase';
-import { PROVIDERS, type ProviderId } from '../config/providers';
+import { PROVIDERS, ALL_STATIC_MODELS, FREE_API_MODELS, type ProviderId } from '../config/providers';
+import { listKeys, getDiscoveredModelsByProvider } from './byok-service';
 
 // ── LiteLLM endpoint resolution (mirrors litellm-client.ts) ──────────────────
 function getLiteLLMBase(): string | null {
@@ -201,6 +202,154 @@ export async function syncFromLiteLLM(opts: { force?: boolean } = {}): Promise<S
 
   lastSyncAt = Date.now();
   return { ok: true, source: 'litellm', discovered: rows.length, upserted, disabled };
+}
+
+// ── Catalog read path (models table is a cache, not source-of-truth) ─────────
+
+export type Badge = 'BYOK' | 'FREE' | 'GOBLIN_HOSTED' | 'COMING_SOON';
+
+export interface AnnotatedModel {
+  id: string;
+  name: string;
+  slug: string;
+  provider: string;
+  layer: 'byok' | 'free_api' | 'goblin_hosted';
+  description: string | null;
+  tags: string[];
+  requires_key: boolean;
+  available: boolean;
+  phase: number;
+  keyConnected: boolean | null;
+  badge: Badge;
+  capabilities?: Record<string, boolean>;
+}
+
+interface SourceModel {
+  id?: string;
+  name: string;
+  slug: string;
+  provider: string;
+  layer: string;
+  description: string | null;
+  tags: string[];
+  requires_key: boolean;
+  available: boolean;
+  phase: number;
+  capabilities?: Record<string, boolean>;
+}
+
+// Discovered /models lists are noisy (embeddings, whisper, tts, image, …).
+// Keep only chat/completion-capable ids.
+const NON_CHAT_RE =
+  /embed|whisper|tts|dall-?e|moderation|audio|image|vision-?only|rerank|guard|transcrib|stable-?diffusion|flux|sdxl|realtime|text-embedding|computer-use|similarity|search-|-search|babbage|^ada-|davinci-002|qwen.*vl|distil-whisper|playai/i;
+
+function isChatModel(id: string): boolean {
+  return !NON_CHAT_RE.test(id);
+}
+
+/**
+ * 10.8-3/10.8-4 — the user-facing catalog. Intersects the synced cache /
+ * curated static list with what each user's keys actually unlock:
+ *  - connected provider WITH discovered models → show the real discovered list
+ *  - connected provider WITHOUT discovery       → show cached/static for it
+ *  - not-connected provider                     → show curated static (greyed)
+ */
+export async function getCatalogForUser(userId: string): Promise<AnnotatedModel[]> {
+  const supabase = getSupabaseAdmin();
+
+  const [userKeys, discoveredMap] = await Promise.all([
+    listKeys(userId).catch(() => []),
+    getDiscoveredModelsByProvider(userId).catch(() => ({} as Record<string, string[]>)),
+  ]);
+  const connected = new Set(
+    userKeys.filter((k) => k.status === 'active' && (k.provider as string) !== 'vercel').map((k) => k.provider as string),
+  );
+
+  // Cached DB models (source-of-truth is upstream; this table is the cache).
+  let dbModels: SourceModel[] = [];
+  try {
+    const { data } = await supabase.from('models').select('*').eq('available', true).order('phase', { ascending: true });
+    if (data && data.length > 0) dbModels = data as SourceModel[];
+  } catch { /* fall back to static */ }
+
+  const hasDbCache = dbModels.length > 0;
+  const staticSource: SourceModel[] = [...ALL_STATIC_MODELS, ...FREE_API_MODELS] as unknown as SourceModel[];
+
+  // Per-provider lookup for cached/static byok entries.
+  const byProvider = (src: SourceModel[]) => {
+    const m = new Map<string, SourceModel[]>();
+    for (const s of src.filter((x) => x.layer === 'byok')) {
+      const arr = m.get(s.provider);
+      if (arr) arr.push(s);
+      else m.set(s.provider, [s]);
+    }
+    return m;
+  };
+  const cachedByok = byProvider(hasDbCache ? dbModels : staticSource);
+  const staticByok = byProvider(staticSource);
+
+  const out: AnnotatedModel[] = [];
+  const seen = new Set<string>();
+  const push = (m: AnnotatedModel) => {
+    if (seen.has(m.slug)) return;
+    seen.add(m.slug);
+    out.push(m);
+  };
+
+  // BYOK: build per provider.
+  const allProviders = Object.values(PROVIDERS).filter((p) => p.id !== 'custom');
+  for (const p of allProviders) {
+    const isConnected = connected.has(p.id);
+    const discovered = (discoveredMap[p.id] ?? []).filter(isChatModel);
+
+    if (isConnected && discovered.length > 0) {
+      // Real, user-specific list.
+      for (const id of discovered) {
+        const slug = id.includes('/') ? id : `${p.litellmPrefix}${id}`;
+        const dbMatch = (cachedByok.get(p.id) ?? []).find((s) => s.slug === slug || s.slug.endsWith(`/${id}`));
+        push({
+          id, name: dbMatch?.name ?? humanizeName(id), slug, provider: p.id, layer: 'byok',
+          description: dbMatch?.description ?? `${p.displayName} model.`,
+          tags: dbMatch?.tags ?? [], requires_key: true, available: true, phase: dbMatch?.phase ?? 1,
+          keyConnected: true, badge: 'BYOK', capabilities: dbMatch?.capabilities ?? deriveCapabilities(id),
+        });
+      }
+    } else {
+      // No discovery → curated/cached list for this provider.
+      const list = (isConnected ? cachedByok.get(p.id) : staticByok.get(p.id)) ?? staticByok.get(p.id) ?? [];
+      for (const s of list) {
+        push({
+          id: s.id ?? s.slug, name: s.name, slug: s.slug, provider: s.provider, layer: 'byok',
+          description: s.description, tags: s.tags ?? [], requires_key: true,
+          available: isConnected, phase: s.phase, keyConnected: isConnected, badge: 'BYOK',
+          capabilities: s.capabilities,
+        });
+      }
+    }
+  }
+
+  // free_api + goblin_hosted: pass through from source.
+  for (const s of (hasDbCache ? dbModels : staticSource)) {
+    if (s.layer === 'free_api') {
+      push({ id: s.id ?? s.slug, name: s.name, slug: s.slug, provider: s.provider, layer: 'free_api',
+        description: s.description, tags: s.tags ?? [], requires_key: false, available: s.available, phase: s.phase,
+        keyConnected: null, badge: 'FREE', capabilities: s.capabilities });
+    } else if (s.layer === 'goblin_hosted') {
+      push({ id: s.id ?? s.slug, name: s.name, slug: s.slug, provider: s.provider, layer: 'goblin_hosted',
+        description: s.description, tags: s.tags ?? [], requires_key: false, available: s.available, phase: s.phase,
+        keyConnected: null, badge: 'GOBLIN_HOSTED', capabilities: s.capabilities });
+    }
+  }
+
+  // Sort: connected BYOK → free → unconnected BYOK → hosted.
+  const score = (m: AnnotatedModel) => {
+    if (m.layer === 'byok' && m.keyConnected) return 0;
+    if (m.layer === 'free_api') return 1;
+    if (m.layer === 'byok' && !m.keyConnected) return 2;
+    return 3;
+  };
+  out.sort((a, b) => score(a) - score(b));
+  return out;
 }
 
 /**

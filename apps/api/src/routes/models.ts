@@ -4,7 +4,7 @@ import { authMiddleware } from '../middleware/auth';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { listKeys, getActiveKey } from '../services/byok-service';
 import { ByokProviderSchema } from '@goblin/shared/src/schemas';
-import { ALL_STATIC_MODELS, FREE_API_MODELS } from '../config/providers';
+import { getCatalogForUser } from '../services/catalog';
 
 type Variables = { userId: string };
 const models = new Hono<{ Variables: Variables }>();
@@ -29,61 +29,10 @@ models.get('/', async (c) => {
     return c.json(cached.data);
   }
 
-  const supabase = getSupabaseAdmin();
-
-  // Fetch user's connected providers
-  const userKeys = await listKeys(userId).catch(() => []);
-  const connectedProviders = new Set<string>(userKeys.filter(k => k.status === 'active').map(k => k.provider as string));
-
-  // Fetch models from DB (falls back to static if table empty/missing)
-  let dbModels: Array<{
-    id: string; name: string; slug: string; provider: string;
-    layer: string; description: string | null; tags: string[];
-    requires_key: boolean; available: boolean; phase: number;
-  }> = [];
-
-  try {
-    const { data } = await supabase
-      .from('models')
-      .select('*')
-      .eq('available', true)
-      .order('phase', { ascending: true });
-    if (data && data.length > 0) dbModels = data;
-  } catch { /* use static fallback */ }
-
-  const sourceModels = dbModels.length > 0 ? dbModels : [...ALL_STATIC_MODELS, ...FREE_API_MODELS];
-
-  // Annotate each model with user-specific info
-  const annotated = sourceModels
-    .filter(m => {
-      if (m.layer === 'byok') return true; // Always show BYOK options
-      if (m.layer === 'free_api') return true; // Always show free options
-      if (m.layer === 'goblin_hosted') return true; // Phase 3
-      return false;
-    })
-    .map(m => {
-      const keyConnected = m.layer === 'byok' ? connectedProviders.has(m.provider) : null;
-      let badge: 'BYOK' | 'FREE' | 'GOBLIN_HOSTED' | 'COMING_SOON' = 'BYOK';
-      if (m.layer === 'free_api') badge = 'FREE';
-      else if (m.layer === 'goblin_hosted') badge = 'GOBLIN_HOSTED';
-
-      return {
-        ...m,
-        keyConnected,
-        badge,
-        available: m.layer === 'byok' ? (keyConnected ?? false) : m.available,
-      };
-    })
-    .sort((a, b) => {
-      // BYOK connected first, then free, then BYOK not connected, then goblin_hosted
-      const score = (m: typeof a) => {
-        if (m.layer === 'byok' && m.keyConnected) return 0;
-        if (m.layer === 'free_api') return 1;
-        if (m.layer === 'byok' && !m.keyConnected) return 2;
-        return 3;
-      };
-      return score(a) - score(b);
-    });
+  // 10.8-3: catalog read path lives in services/catalog.ts. The models table is
+  // a cache (synced from LiteLLM) intersected with each user's discovered BYOK
+  // models; static providers.ts is the last-resort fallback inside getCatalogForUser.
+  const annotated = await getCatalogForUser(userId);
 
   modelCache.set(userId, { data: annotated, ts: Date.now() });
   return c.json(annotated);
