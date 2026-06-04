@@ -143,6 +143,14 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
           .gb-surface-col { display: ${mobileView === "editor" ? "flex" : "none"}; }
           .gb-mobile-back { display: inline-flex !important; }
         }
+        /* 10.8-6: mobile bottom-row is icon-only with 44px tap targets — no more
+           overflow from "Kopieren Verwerfen Entwurf | Sichern | Veröffentlichen". */
+        @media (max-width: 640px) {
+          .gb-actbar { gap: 8px !important; justify-content: flex-end !important; }
+          .gb-btn-lbl { display: none !important; }
+          .gb-icon-btn { padding: 0 !important; width: 44px !important; height: 44px !important; justify-content: center !important; gap: 0 !important; }
+          .gb-statusline { display: none !important; }
+        }
       `}</style>
 
       {/* THREAD column */}
@@ -221,15 +229,19 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
           {!liveBlock && detail.activeFile?.change_state === "draft" && (
             <>
               <button
+                className="gb-icon-btn"
                 onClick={() => { navigator.clipboard?.writeText(detail.activeFile?.content ?? ""); setToast("Kopiert"); setTimeout(() => setToast(null), 1800); }}
                 title="Kopieren"
+                aria-label="Kopieren"
                 style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "transparent", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-2)", borderRadius: 8, padding: "5px 9px", fontSize: 12, cursor: "pointer", fontFamily: "var(--font-sans)" }}
-              ><Icon name="copy" size={12} /> Kopieren</button>
+              ><Icon name="copy" size={12} /> <span className="gb-btn-lbl">Kopieren</span></button>
               <button
+                className="gb-icon-btn"
                 onClick={() => detail.activeFile && detail.discardDraft(detail.activeFile.path)}
                 title="Entwurf verwerfen"
+                aria-label="Entwurf verwerfen"
                 style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "transparent", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-3)", borderRadius: 8, padding: "5px 9px", fontSize: 12, cursor: "pointer", fontFamily: "var(--font-sans)" }}
-              ><Icon name="close" size={12} /> Verwerfen</button>
+              ><Icon name="close" size={12} /> <span className="gb-btn-lbl">Verwerfen</span></button>
             </>
           )}
           <StateBadge state={liveBlock ? "draft" : state} />
@@ -295,17 +307,20 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
         )}
 
         {/* Status line + the two-step Sichern → Veröffentlichen */}
-        <div style={{ flexShrink: 0, borderTop: "1px solid var(--ed-rule)", background: "var(--ed-chrome)", padding: "10px 14px", display: "flex", alignItems: "center", gap: 12 }}>
+        <div className="gb-actbar" style={{ flexShrink: 0, borderTop: "1px solid var(--ed-rule)", background: "var(--ed-chrome)", padding: "10px 14px", display: "flex", alignItems: "center", gap: 12 }}>
           {projectId && <SessionGitPill projectId={projectId} />}
-          <span style={{ fontSize: 12, color: "var(--ed-fg-3)", fontFamily: "var(--font-sans)", flex: 1 }}>
+          <span className="gb-statusline" style={{ fontSize: 12, color: "var(--ed-fg-3)", fontFamily: "var(--font-sans)", flex: 1 }}>
             {state === "draft" && "Entwurf · nichts wird veröffentlicht, bis du sicherst"}
             {state === "saved" && "Gesichert · bereit zum Veröffentlichen"}
             {state === "deployed" && "Veröffentlicht"}
             {state === "empty" && "Noch keine Dateien"}
           </span>
           <button
+            className="gb-icon-btn"
             onClick={doSave}
             disabled={!canSave || detail.saving}
+            title="Sichern"
+            aria-label="Sichern"
             style={{
               display: "inline-flex", alignItems: "center", gap: 6,
               background: canSave ? "var(--ed-primary)" : "transparent",
@@ -315,13 +330,15 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
               cursor: canSave && !detail.saving ? "pointer" : "not-allowed", fontFamily: "var(--font-sans)",
             }}
           >
-            {detail.saving ? <GoblinLogo state="working" size={14} variant="gold" /> : <Icon name="save" size={14} />} Sichern
+            {detail.saving ? <GoblinLogo state="working" size={14} variant="gold" /> : <Icon name="save" size={14} />} <span className="gb-btn-lbl">Sichern</span>
           </button>
           <span style={{ width: 1, height: 22, background: "var(--ed-rule)" }} />
           <button
+            className="gb-icon-btn"
             onClick={() => setDeployConfirm(true)}
             disabled={!canDeploy || deploying}
             title={canDeploy ? "Veröffentlichen" : "Erst alle Entwürfe sichern"}
+            aria-label="Veröffentlichen"
             style={{
               display: "inline-flex", alignItems: "center", gap: 6,
               background: "transparent", color: canDeploy ? "var(--ed-accent)" : "var(--ed-fg-3)",
@@ -330,7 +347,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
               cursor: canDeploy && !deploying ? "pointer" : "not-allowed", fontFamily: "var(--font-sans)",
             }}
           >
-            {deploying ? <GoblinLogo state="working" size={14} variant="gold" /> : <Icon name="play" size={14} />} Veröffentlichen
+            {deploying ? <GoblinLogo state="working" size={14} variant="gold" /> : <Icon name="play" size={14} />} <span className="gb-btn-lbl">Veröffentlichen</span>
           </button>
         </div>
       </div>
