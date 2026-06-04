@@ -135,4 +135,14 @@ classification held.
 ---
 
 ## STATUS
-Local: **108 passed / 0 failed**. CI confirmation: <pending — appended after push>.
+Local: **108 passed / 0 failed**.
+CI (source of truth, was red since 05-29): **GREEN** — run `26969242118`
+(commit 9053bed): **107 passed / 1 flaky / 0 failed**.
+
+The 1 flaky: `19-mobile-create-project` on auth-mobile failed attempt 1 (17.7s) and
+passed on retry — genuine CI-load timing flakiness on the heaviest authed flow
+(create-project → DB write → redirect), NOT a masked real failure (it passes
+deterministically locally and passed on the CI retry). Left as-is under the existing
+`retries: 1`; no timeout bump applied.
+
+**GREEN (CI run 26969242118).**
