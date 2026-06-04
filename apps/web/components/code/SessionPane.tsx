@@ -83,11 +83,13 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
   const doRedo = useCallback(() => { const v = editorViewRef.current; if (v) { redo(v); v.focus(); refreshHistory(); } }, [refreshHistory]);
 
   const handleSubmit = (prompt: string) => {
+    // 10.8-8: pass the open file so the agent edits it in place (→ live diff)
+    // rather than dumping a new file.
     agent.submit(prompt, session.model_id ?? undefined, async () => {
       await detail.refresh();          // pull the persisted draft files
       agent.reset();
       setMobileView("editor");
-    });
+    }, detail.activePath);
     setMobileView("editor");
   };
 

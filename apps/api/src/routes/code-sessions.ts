@@ -300,9 +300,13 @@ codeSessions.post('/:sessionId/deploy', async (c) => {
 codeSessions.post('/:sessionId/messages', async (c) => {
   const userId = c.get('userId');
   const sessionId = c.req.param('sessionId');
-  const body = await c.req.json().catch(() => ({})) as { prompt?: string; modelId?: string };
+  const body = await c.req.json().catch(() => ({})) as { prompt?: string; modelId?: string; activePath?: string };
   const prompt = (body.prompt ?? '').trim();
   if (!prompt) return c.json({ error: 'prompt required' }, 400);
+  // 10.8-8: the file the user currently has open. When set, the agent edits it
+  // in place (returns the same path) instead of inventing a new file — which
+  // makes the existing live-diff + draft-review flow (SessionPane) light up.
+  const activePath = (body.activePath ?? '').trim();
 
   const sb = getSupabaseAdmin();
   const session = await ownSession(sb, sessionId, userId);
@@ -322,13 +326,23 @@ codeSessions.post('/:sessionId/messages', async (c) => {
     sb.from('code_session_files').select('path, content').eq('session_id', sessionId),
   ]);
 
+  const activeExists = activePath && (existingFiles ?? []).some(f => f.path === activePath);
   const fileContext = (existingFiles ?? []).length
-    ? (existingFiles ?? []).map(f => `### ${f.path}\n\`\`\`\n${f.content.slice(0, 8000)}\n\`\`\``).join('\n\n')
+    ? (existingFiles ?? []).map(f => {
+        const marker = (activeExists && f.path === activePath) ? `### ${f.path}  ⟵ AKTUELL GEÖFFNET` : `### ${f.path}`;
+        return `${marker}\n\`\`\`\n${f.content.slice(0, 8000)}\n\`\`\``;
+      }).join('\n\n')
     : '(noch keine Dateien)';
+
+  // 10.8-8: when a file is open, instruct edit-in-place so the response targets
+  // the SAME path (→ live diff + draft review) rather than dumping a new file.
+  const editInPlace = activeExists
+    ? `\n\n## Wichtig\nDie aktuell geöffnete Datei ist \`${activePath}\`. Wenn die Aufgabe eine Änderung am aktuellen Code beschreibt (z.B. "mach den Hintergrund blau"), gib die KOMPLETTE aktualisierte Datei unter EXAKT demselben Pfad \`${activePath}\` zurück — leg KEINE neue Datei an. Nur wenn ausdrücklich eine neue Datei verlangt wird, verwende einen neuen Pfad.`
+    : '';
 
   // The history excludes the just-inserted user turn (we pass it as `message`).
   const history = (priorMsgs ?? []).slice(0, -1).map(m => ({ role: m.role, content: m.content }));
-  const augmented = `${CODE_SYSTEM_PREAMBLE}\n\n## Aktuelle Dateien\n${fileContext}\n\n## Aufgabe\n${prompt}`;
+  const augmented = `${CODE_SYSTEM_PREAMBLE}\n\n## Aktuelle Dateien\n${fileContext}${editInPlace}\n\n## Aufgabe\n${prompt}`;
 
   return streamSSE(c, async (stream) => {
     let full = '';

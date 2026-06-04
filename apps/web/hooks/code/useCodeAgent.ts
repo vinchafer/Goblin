@@ -27,6 +27,7 @@ export function useCodeAgent(sessionId: string | null) {
     prompt: string,
     modelId: string | undefined,
     onDone?: (d: AgentDone) => void,
+    activePath?: string | null,
   ) => {
     if (!sessionId || !prompt.trim()) return;
     setStreaming(true);
@@ -39,7 +40,7 @@ export function useCodeAgent(sessionId: string | null) {
     try {
       await apiStream(
         `/api/code-sessions/${sessionId}/messages`,
-        { prompt, modelId },
+        { prompt, modelId, activePath: activePath ?? undefined },
         (raw: unknown) => {
           const d = raw as { type: string; content?: string; model?: string; files?: string[]; message?: string };
           if (d.type === 'meta') {
