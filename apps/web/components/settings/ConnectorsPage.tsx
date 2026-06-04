@@ -227,6 +227,7 @@ function VercelConnectorRow() {
       <div style={{ padding: '0 16px 12px', marginTop: -4 }}>
         <span style={{ fontSize: 11.5, fontStyle: 'italic', color: 'var(--text-meta)', lineHeight: 1.45 }}>
           Goblin pusht in deinen eigenen Vercel-Account. Deine Deployments, deine Kosten.
+          {state.connected && ' Dein veröffentlichtes Projekt ist öffentlich erreichbar.'}
         </span>
       </div>
 

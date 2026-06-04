@@ -107,6 +107,9 @@ deploy.post('/vercel', deployRateLimit, async (c) => {
           type: 'success',
           url: finalUrl,
           deploymentId: result.deploymentId,
+          // 10.9-6 — 'public' = Goblin disabled SSO protection; 'manual' = token
+          // lacked scope, the UI shows the one-time Vercel instruction.
+          protection: result.protection ?? 'public',
         }),
       });
     } catch (err) {

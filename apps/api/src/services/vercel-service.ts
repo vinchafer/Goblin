@@ -23,12 +23,62 @@ async function getUserVercelToken(userId: string): Promise<string | null> {
   return token;
 }
 
+// Sprint 10.9-6 — zero-config public publish. On Hobby the production alias is
+// already public; this closes the Pro/team gap by disabling Vercel Deployment
+// Protection (Vercel Authentication) on the project Goblin created, via the
+// user's own token. Never fails the deploy: returns 'public' on success, 'manual'
+// when the token lacks scope (the UI then shows the one-time instruction).
+async function disableDeploymentProtection(
+  token: string,
+  projectName: string,
+): Promise<'public' | 'manual'> {
+  // Dev-safety shield: only ever touch the project we just created.
+  guardVercelCall(projectName, 'disable-protection');
+
+  const patch = async (teamId?: string): Promise<number> => {
+    const url = `https://api.vercel.com/v9/projects/${encodeURIComponent(projectName)}${teamId ? `?teamId=${encodeURIComponent(teamId)}` : ''}`;
+    try {
+      const res = await fetch(url, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ssoProtection: null }),
+      });
+      return res.status;
+    } catch {
+      return 0; // network — treat as failure → manual
+    }
+  };
+
+  // §7f — attempt personal scope first; on 403/404 try each team scope.
+  let status = await patch();
+  if (status === 200) return 'public';
+
+  if (status === 403 || status === 404) {
+    try {
+      const teamsRes = await fetch('https://api.vercel.com/v2/teams', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (teamsRes.ok) {
+        const body = (await teamsRes.json()) as { teams?: Array<{ id?: string }> };
+        for (const t of body.teams ?? []) {
+          if (!t.id) continue;
+          status = await patch(t.id);
+          if (status === 200) return 'public';
+        }
+      }
+    } catch { /* fall through to manual */ }
+  }
+
+  console.warn('[vercel] could not disable SSO protection', JSON.stringify({ projectName, status }));
+  return 'manual';
+}
+
 export async function deployToVercel(
   userId: string,
   projectId: string,
   projectName: string,
   onProgress?: (msg: string) => void,
-): Promise<{ deploymentId: string; url: string; deploymentUrl?: string; aliasUrl?: string }> {
+): Promise<{ deploymentId: string; url: string; deploymentUrl?: string; aliasUrl?: string; protection?: 'public' | 'manual' }> {
   const token = await getUserVercelToken(userId);
   if (!token) throw new Error('NO_VERCEL_TOKEN — Du brauchst einen eigenen Vercel-Account (gratis). Token unter vercel.com/account/tokens erstellen und in Einstellungen → Konnektoren → Vercel einfügen.');
 
@@ -101,6 +151,11 @@ export async function deployToVercel(
   }
 
   const data = await res.json() as { id: string; url: string; alias?: string[] };
+
+  // 10.9-6 — make the project public (best-effort, never fails the deploy).
+  onProgress?.('Veröffentlichung wird öffentlich geschaltet…');
+  const protection = await disableDeploymentProtection(token, deployName);
+
   // 10.8-9 ROOT CAUSE of the recurring "Öffnen → SSO → 404": at POST time
   // `data.alias` is almost always EMPTY, so we fell back to `data.url` — the
   // deployment-unique HASH url (<project>-<hash>-<scope>.vercel.app). Vercel's
@@ -119,9 +174,9 @@ export async function deployToVercel(
 
   const best = aliasUrl ?? deploymentUrl;
   console.log('[vercel] deployment created', JSON.stringify({
-    id: data.id, deploymentUrl, alias: data.alias ?? null, aliasUrl: aliasUrl ?? null, returned: best,
+    id: data.id, deploymentUrl, alias: data.alias ?? null, aliasUrl: aliasUrl ?? null, returned: best, protection,
   }));
-  return { deploymentId: data.id, url: best, deploymentUrl, aliasUrl };
+  return { deploymentId: data.id, url: best, deploymentUrl, aliasUrl, protection };
 }
 
 // The production alias is the short, public `<project>.vercel.app` (and the

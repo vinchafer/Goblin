@@ -9,6 +9,9 @@ export function useCodeVercel(projectId: string, token: string | null) {
   // 10.6-5: surfaced when a deploy is attempted without a Vercel token, so the UI
   // can show the "bring your own Vercel" explainer instead of a raw error.
   const [needsVercel, setNeedsVercel] = useState(false);
+  // 10.9-6 — 'public' = Goblin made the project public; 'manual' = the team
+  // protects deployments and the user must flip one setting once.
+  const [protection, setProtection] = useState<'public' | 'manual' | null>(null);
 
   const handleDeploy = useCallback(async () => {
     if (deploying || !token) return;
@@ -33,8 +36,14 @@ export function useCodeVercel(projectId: string, token: string | null) {
             const event = JSON.parse(line.slice(5));
             if (event.message) setDeployMessage(event.message);
             if (event.type === 'success') {
-              setDeployMessage(`Deployed ✓ ${event.url}`);
-              setTimeout(() => setDeployMessage(null), 6000);
+              const mode = event.protection === 'manual' ? 'manual' : 'public';
+              setProtection(mode);
+              setDeployMessage(
+                mode === 'manual'
+                  ? `Deployed ✓ ${event.url} — Hinweis: Dein Vercel-Team schützt Deployments. Einmalig: Vercel → Settings → Deployment Protection → „Only Preview Deployments".`
+                  : `Deployed ✓ ${event.url} · öffentlich erreichbar`,
+              );
+              setTimeout(() => setDeployMessage(null), mode === 'manual' ? 15000 : 6000);
             }
             if (event.type === 'error') {
               if (typeof event.message === 'string' && event.message.includes('NO_VERCEL_TOKEN')) {
@@ -53,5 +62,5 @@ export function useCodeVercel(projectId: string, token: string | null) {
     } finally { setDeploying(false); }
   }, [deploying, projectId, token, startBuild]);
 
-  return { deploying, deployMessage, handleDeploy, activeBuilds, recentDone, needsVercel, dismissNeedsVercel: () => setNeedsVercel(false) };
+  return { deploying, deployMessage, handleDeploy, activeBuilds, recentDone, needsVercel, protection, dismissNeedsVercel: () => setNeedsVercel(false) };
 }
