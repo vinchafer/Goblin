@@ -341,7 +341,15 @@ export async function* streamCompletion({
     }
   }
 
-  // Direct SDK fallback
+  // Direct SDK fallback — the real routing path (OPTION B; see
+  // sprint-10-9/PHASE_0_GATE.md). HARD SLUG RULE (10.9, §1): `route.model` is the
+  // model id exactly as the provider's own /models endpoint returned it
+  // (provider-discovery → byok_keys.discovered_models, prefix stripped by
+  // slugToModelId). Send it to the provider VERBATIM. Do NOT canonicalize it to a
+  // "LiteLLM-canonical" name or guess an alias here — when Goblin talks directly
+  // to a provider, the provider only accepts its own slug. A provider
+  // "model not found / invalid model" error is a slug failure: it must surface
+  // (and feed the 10.9-3 circuit breaker), never be silently rewritten.
   try {
     if (route.provider === 'anthropic') {
       const anthropic = new Anthropic({ apiKey: route.apiKey });
