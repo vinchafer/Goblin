@@ -13,6 +13,7 @@ import { SessionThread } from "./SessionThread";
 import { SessionPromptInput } from "./SessionPromptInput";
 import { SessionGitPill } from "./SessionGitPill";
 import { CodeFileTabs } from "./CodeFileTabs";
+import { SessionFileNav } from "./SessionFileNav";
 import { useCodeSessionDetail } from "@/hooks/code/useCodeSessionDetail";
 import { useCodeAgent } from "@/hooks/code/useCodeAgent";
 import type { EditorTheme } from "@/hooks/code/useEditorTheme";
@@ -49,6 +50,8 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
   const [liveUrl, setLiveUrl] = useState<string | null>(null);
   const [liveDismissed, setLiveDismissed] = useState(false);
   const [copied, setCopied] = useState(false);
+  // 10.8-7: file navigation panel (browse/open all session files, add new).
+  const [fileNavOpen, setFileNavOpen] = useState(false);
 
   // Seed the persistent live-URL card from the session's last deploy, so it
   // survives a browser close + reopen (not just the deploy moment).
@@ -89,6 +92,23 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
   };
 
   const handleViewFile = (path: string) => { detail.setActivePath(path); setMobileView("editor"); };
+
+  // 10.8-7: open a file from the nav panel.
+  const handleNavSelect = (path: string) => {
+    detail.setActivePath(path);
+    setMobileView("editor");
+    setFileNavOpen(false);
+  };
+
+  // 10.8-7: create a new empty draft file, then focus it.
+  const handleNewFile = async (name: string) => {
+    if (detail.files.some(f => f.path === name)) { detail.setActivePath(name); setFileNavOpen(false); return; }
+    await detail.persistFile(name, "", "draft");
+    await detail.refresh();
+    detail.setActivePath(name);
+    setMobileView("editor");
+    setFileNavOpen(false);
+  };
 
   const runDeploy = async () => {
     setDeployConfirm(false);
@@ -178,7 +198,16 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
       </div>
 
       {/* WORK SURFACE column */}
-      <div className="gb-surface-col" style={{ display: "flex", flexDirection: "column", minHeight: 0, background: "var(--ed-canvas)" }}>
+      <div className="gb-surface-col" style={{ display: "flex", flexDirection: "column", minHeight: 0, background: "var(--ed-canvas)", position: "relative" }}>
+        {/* 10.8-7: file navigation panel (overlays the surface column). */}
+        <SessionFileNav
+          open={fileNavOpen}
+          files={detail.files}
+          activePath={detail.activePath}
+          onClose={() => setFileNavOpen(false)}
+          onSelect={handleNavSelect}
+          onNewFile={handleNewFile}
+        />
         {/* Multi-file tabs (Slice 3). The session already holds many files; tabs let
             Sofia switch between them. Hidden for a single file so Max's landing-page
             flow stays clean. Closing only discards drafts (saved files are a no-op). */}
@@ -196,6 +225,14 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
         <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderBottom: "1px solid var(--ed-rule)", background: "var(--ed-chrome)", flexShrink: 0 }}>
           <button className="gb-mobile-back" onClick={() => setMobileView("thread")} aria-label="Zurück zum Thread" style={{ background: "transparent", border: "none", color: "var(--ed-fg-2)", cursor: "pointer", alignItems: "center" }}>
             <Icon name="back" size={16} />
+          </button>
+          {/* 10.8-7: open the file navigation panel (browse all session files). */}
+          <button
+            onClick={() => setFileNavOpen(true)}
+            title="Dateien" aria-label="Dateien öffnen"
+            style={{ display: "inline-flex", alignItems: "center", background: "transparent", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-2)", borderRadius: 8, padding: "5px 8px", cursor: "pointer", flexShrink: 0 }}
+          >
+            <Icon name="menu" size={14} />
           </button>
           <span style={{ color: "var(--ed-fg-1)", fontFamily: "JetBrains Mono, monospace", fontSize: 12.5, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {editorFilename}
