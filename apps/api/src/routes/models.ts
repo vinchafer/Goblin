@@ -38,6 +38,14 @@ models.get('/', async (c) => {
   return c.json(annotated);
 });
 
+// GET /api/models/health — 10.9-3 per-provider circuit-breaker state. Only
+// returns providers that are NOT healthy (empty object = all good), so the
+// ModelPicker can badge a degraded provider.
+models.get('/health', async (c) => {
+  const { getHealthMap } = await import('../services/provider-health');
+  return c.json(getHealthMap());
+});
+
 // GET /api/models/status — BYOK key status + free API availability
 models.get('/status', async (c) => {
   const userId = c.get('userId');

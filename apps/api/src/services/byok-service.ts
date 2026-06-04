@@ -359,8 +359,8 @@ export async function listKeys(userId: string): Promise<ByokKey[]> {
       for (const k of keys) {
         const v = byId.get(k.id);
         if (v) {
-          (k as Record<string, unknown>).last_validation_result = v.last_validation_result ?? null;
-          (k as Record<string, unknown>).last_validated_at = v.last_validated_at ?? null;
+          k.last_validation_result = (v.last_validation_result as ByokKey['last_validation_result']) ?? null;
+          k.last_validated_at = v.last_validated_at ?? null;
         }
       }
     }

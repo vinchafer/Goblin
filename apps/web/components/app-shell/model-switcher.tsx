@@ -48,6 +48,8 @@ export function ModelSwitcher() {
   const [byokKeys, setByokKeys] = useState<ByokKeyInfo[]>([]);
   const [loading, setLoading] = useState(true);
   const [recommendedTokens, setRecommendedTokens] = useState<string[]>([]);
+  // 10.9-3 — provider → 'degraded'|'down' (only unhealthy providers present).
+  const [health, setHealth] = useState<Record<string, string>>({});
   const dropdownRef = useRef<HTMLDivElement>(null);
   const supabase = createClient();
 
@@ -156,6 +158,24 @@ export function ModelSwitcher() {
     }
 
     fetchData();
+  }, [supabase]);
+
+  // 10.9-3: poll provider health so a degraded provider gets a picker badge.
+  useEffect(() => {
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
+    let cancelled = false;
+    async function load() {
+      try {
+        const { data } = await supabase.auth.getSession();
+        const token = data.session?.access_token;
+        if (!token) return;
+        const res = await fetch(`${apiBase}/api/models/health`, { headers: { Authorization: `Bearer ${token}` } });
+        if (res.ok && !cancelled) setHealth(await res.json());
+      } catch { /* picker works without health */ }
+    }
+    load();
+    const t = setInterval(load, 60_000);
+    return () => { cancelled = true; clearInterval(t); };
   }, [supabase]);
 
   // 9R: fetch top-3 recommended for coding (public endpoint, no auth)
@@ -374,6 +394,19 @@ export function ModelSwitcher() {
                                 }}
                               >
                                 EMPFOHLEN
+                              </span>
+                            )}
+                            {health[model.provider] && (
+                              <span
+                                title="Provider temporär instabil — Routing zu Fallback"
+                                style={{
+                                  fontSize: 9, fontWeight: 700, letterSpacing: '0.5px',
+                                  padding: '2px 5px', borderRadius: 3,
+                                  background: 'color-mix(in srgb, var(--danger) 12%, transparent)',
+                                  color: 'var(--danger)', lineHeight: 1,
+                                }}
+                              >
+                                INSTABIL
                               </span>
                             )}
                             {PROVIDER_FREE_TIER[model.provider] && (

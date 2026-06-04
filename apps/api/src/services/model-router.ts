@@ -8,6 +8,7 @@ import { PROVIDERS, PROVIDER_BASE_URLS, type ProviderId } from '../config/provid
 import { GoblinError, isGoblinError, litellmStream } from './litellm-client';
 import { formatTokenDisplay } from '../config/pricing';
 import { trackCompletion } from '../lib/track-completion';
+import { recordOutcome, getHealth, isModelNotFound } from './provider-health';
 
 export type { GoblinError };
 export { isGoblinError };
@@ -256,6 +257,34 @@ export async function resolveModel(
   );
 }
 
+// ─── 10.9-3 — circuit-breaker fallback ──────────────────────────────────────────
+// If the resolved provider is currently 'degraded', try to re-route to the first
+// model in the user's fallback chain whose provider is healthy AND which the user
+// actually has a key for. Conservative: any uncertainty → keep the original route
+// (never throws, never regresses a working generation).
+async function applyHealthFallback(
+  userId: string,
+  route: RouteResult,
+  supabase?: SupabaseClient,
+): Promise<{ route: RouteResult; reroutedFrom?: ProviderName }> {
+  if (getHealth(route.provider).state !== 'degraded') return { route };
+  try {
+    const chain = await getFallbackChain(userId, getSupabaseAdmin());
+    for (const slug of chain) {
+      const prov = slugToProvider(slug);
+      if (!prov || prov === route.provider) continue;
+      if (getHealth(prov).state === 'degraded') continue;
+      const alt = await resolveModel(userId, slug, supabase);
+      // Only accept the reroute if it actually landed on the intended healthy
+      // provider (resolveModel falls back to any key otherwise).
+      if (alt.provider === prov && getHealth(alt.provider).state !== 'degraded') {
+        return { route: alt, reroutedFrom: route.provider };
+      }
+    }
+  } catch { /* keep original route */ }
+  return { route };
+}
+
 // ─── Streaming ────────────────────────────────────────────────────────────────
 
 interface StreamCompletionParams {
@@ -279,7 +308,10 @@ export async function* streamCompletion({
   timeoutMs = 120_000,
   signal,
 }: StreamCompletionParams): AsyncGenerator<string, void, unknown> {
-  const route = await resolveModel(userId, modelPreference, supabase);
+  const resolved = await resolveModel(userId, modelPreference, supabase);
+  // 10.9-3 — if the resolved provider is degraded, transparently re-route to a
+  // healthy provider in the user's fallback chain (no-op when all healthy).
+  const { route, reroutedFrom } = await applyHealthFallback(userId, resolved, supabase);
 
   const messages = [
     ...chatHistory.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
@@ -288,6 +320,13 @@ export async function* streamCompletion({
 
   let inputTokens = 0;
   let outputTokens = 0;
+
+  if (reroutedFrom) {
+    yield JSON.stringify({
+      type: 'fallback_notice',
+      reason: `${reroutedFrom} ist gerade instabil — Routing zu ${route.provider}.`,
+    });
+  }
 
   yield JSON.stringify({
     type: 'meta',
@@ -330,9 +369,11 @@ export async function* streamCompletion({
         tokensIn: inputTokens,
         tokensOut: outputTokens,
       });
+      recordOutcome(route.provider, true);
       yield JSON.stringify({ type: 'done', input_tokens: inputTokens, output_tokens: outputTokens, token_display: tokenDisplay, source_tier: route.layer, model_used: route.model });
       return;
     } catch (err) {
+      recordOutcome(route.provider, false, { slug: route.modelSlug, modelNotFound: isModelNotFound(err) });
       if (!isGoblinError(err) || (err.code !== 'rate_limit' && err.code !== 'provider_down')) {
         throw err; // Hard error (invalid key, etc.) — propagate
       }
@@ -392,8 +433,10 @@ export async function* streamCompletion({
       tokensIn: inputTokens,
       tokensOut: outputTokens,
     });
+    recordOutcome(route.provider, true);
     yield JSON.stringify({ type: 'done', input_tokens: inputTokens, output_tokens: outputTokens, token_display: tokenDisplay, source_tier: route.layer, model_used: route.model });
   } catch (err: unknown) {
+    recordOutcome(route.provider, false, { slug: route.modelSlug, modelNotFound: isModelNotFound(err) });
     if (agentRun) {
       await sb.from('agent_runs').update({ status: 'failed', completed_at: new Date().toISOString() }).eq('id', agentRun.id);
     }
