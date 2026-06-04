@@ -82,6 +82,21 @@ instead of an exact RGB.
 not off.
 **Selector strategy:** test-id + a structural color invariant (g > r, g > b).
 
+### 28 Rankings tab — data/copy-dependent assertion (caught by CI, not local)
+**Stale/brittle:** the Rankings assertion matched `#1` (a ranked row) OR the exact
+empty copy `Noch keine Daten`. This passed locally (my `.env.local` points the web at
+the PROD API, which has ranking data) but failed in CI: CI points the web at its own
+`localhost:3001` api, `onlyUsable` defaults on, the test account has no keys, so the
+panel shows the *other* empty message ("Keine nutzbare Modelle…") and both strings
+miss → `expect(hasModels || isEmpty)` false on both projects.
+**Changed to:** assert the rankings PANEL rendered via its stable chrome — the task
+filter pills `[data-testid^="task-"]`, which render unconditionally regardless of
+data/keys/environment.
+**Kept:** "clicking Rankings shows the rankings tab" — the real intent, now
+environment-independent.
+**Selector strategy:** structural test-id over data/copy. (This was the local↔CI gap
+that turned the first green-up push red; fixed in the follow-up commit.)
+
 ### 19-mobile-create-project
 **Stale:** sidebar new-project button looked up by English `/new project/i`; it is
 now `aria-label="Neues Projekt"` after the sidebar restructure. Also used the
