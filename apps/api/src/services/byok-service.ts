@@ -5,6 +5,7 @@ import {
   encryptUserData, decryptUserData, generateUserSalt
 } from './encryption';
 import { encryptApiKeyV2, decryptApiKey } from '../lib/byok-encryption';
+import { discoverModels } from './provider-discovery';
 
 export type ValidationResult = 'valid' | 'invalid' | 'timeout' | 'unsupported' | 'error';
 
@@ -314,6 +315,18 @@ export async function createKey(
         .update({ label: resolvedLabel })
         .eq('id', (data as { id: string }).id);
     } catch { /* label column may not exist yet — non-fatal */ }
+
+    // 10.8-2: discover which models THIS key actually unlocks and cache them
+    // on the row. Tolerant of a missing column (migration 0061 not yet applied)
+    // and of providers that don't answer — [] just means "fall back to catalog".
+    try {
+      const discovered = await discoverModels(provider, rawKey, baseURL);
+      await supabase
+        .from('byok_keys')
+        .update({ discovered_models: discovered, last_validated_at: new Date().toISOString() })
+        .eq('id', (data as { id: string }).id);
+      (data as Record<string, unknown>).discovered_models = discovered;
+    } catch { /* discovery columns may not exist yet — non-fatal */ }
   }
 
   return data as ByokKey;
@@ -329,6 +342,31 @@ export async function listKeys(userId: string): Promise<ByokKey[]> {
     .order('created_at', { ascending: false });
 
   return (data ?? []) as ByokKey[];
+}
+
+/**
+ * 10.8-2/3: per-user map of provider → discovered model ids. Tolerant of the
+ * column not existing yet (migration 0061 unapplied) — returns {} in that case
+ * so the read path falls back to the LiteLLM/static catalog.
+ */
+export async function getDiscoveredModelsByProvider(userId: string): Promise<Record<string, string[]>> {
+  const supabase = getSupabaseAdmin();
+  try {
+    const { data, error } = await supabase
+      .from('byok_keys')
+      .select('provider, discovered_models')
+      .eq('user_id', userId)
+      .eq('status', 'active');
+    if (error || !data) return {};
+    const out: Record<string, string[]> = {};
+    for (const row of data as Array<{ provider: string; discovered_models: string[] | null }>) {
+      const list = Array.isArray(row.discovered_models) ? row.discovered_models : [];
+      out[row.provider] = Array.from(new Set([...(out[row.provider] ?? []), ...list]));
+    }
+    return out;
+  } catch {
+    return {};
+  }
 }
 
 export async function revokeKey(userId: string, keyId: string): Promise<void> {
