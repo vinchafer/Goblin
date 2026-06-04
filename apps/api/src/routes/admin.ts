@@ -453,4 +453,12 @@ admin.post('/catalog/sync', async (c) => {
   return c.json({ ok: true, ...summary });
 });
 
+// Sprint 10.9-4 — founder weekly digest. Monday 09:00 UTC cron posts here;
+// ?test=1 for the admin dashboard "Send test digest" trigger.
+admin.post('/digest/send', async (c) => {
+  const { sendDigest } = await import('../services/digest.js');
+  const result = await sendDigest({ test: c.req.query('test') === '1' });
+  return c.json(result, result.ok ? 200 : 502);
+});
+
 export { admin };

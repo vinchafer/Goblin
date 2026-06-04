@@ -11,18 +11,21 @@ name: Catalog Ops Cron
 on:
   schedule:
     - cron: '0 4 * * *'   # daily 04:00 UTC — per-user provider-discovery refresh
+    - cron: '0 9 * * 1'   # Monday 09:00 UTC — founder weekly digest
   workflow_dispatch:
     inputs:
       job:
         description: 'Which job to run manually'
         type: choice
-        options: [refresh]
+        options: [refresh, digest]
         default: refresh
 
 jobs:
   discovery-refresh:
     name: Daily provider-discovery refresh
     runs-on: ubuntu-latest
+    # daily cron OR manual "refresh" (skip on the Monday digest cron)
+    if: github.event.schedule == '0 4 * * *' || github.event.inputs.job == 'refresh'
     steps:
       - name: Guard — secrets present
         id: guard
@@ -44,6 +47,36 @@ jobs:
         run: |
           code=$(curl -sS -o resp.json -w '%{http_code}' \
             -X POST "$GOBLIN_API_URL/api/admin/catalog/refresh?source=cron" \
+            -H "x-admin-key: $ADMIN_API_KEY")
+          echo "HTTP $code"; cat resp.json
+          test "$code" = "200"
+
+  weekly-digest:
+    name: Founder weekly digest
+    runs-on: ubuntu-latest
+    # Monday cron OR manual "digest"
+    if: github.event.schedule == '0 9 * * 1' || github.event.inputs.job == 'digest'
+    steps:
+      - name: Guard — secrets present
+        id: guard
+        env:
+          GOBLIN_API_URL: ${{ secrets.GOBLIN_API_URL }}
+          ADMIN_API_KEY: ${{ secrets.ADMIN_API_KEY }}
+        run: |
+          if [ -z "$GOBLIN_API_URL" ] || [ -z "$ADMIN_API_KEY" ]; then
+            echo "Secrets not set — skipping."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: POST /api/admin/digest/send
+        if: steps.guard.outputs.run == 'true'
+        env:
+          GOBLIN_API_URL: ${{ secrets.GOBLIN_API_URL }}
+          ADMIN_API_KEY: ${{ secrets.ADMIN_API_KEY }}
+        run: |
+          code=$(curl -sS -o resp.json -w '%{http_code}' \
+            -X POST "$GOBLIN_API_URL/api/admin/digest/send" \
             -H "x-admin-key: $ADMIN_API_KEY")
           echo "HTTP $code"; cat resp.json
           test "$code" = "200"
