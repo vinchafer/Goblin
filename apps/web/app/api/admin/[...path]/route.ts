@@ -15,6 +15,11 @@ async function isAdmin(): Promise<boolean> {
     .eq('id', user.id)
     .single() as unknown as { data: { is_admin: boolean } | null };
 
+  // 10.9-5 / §7c — fallback gate by ADMIN_EMAIL when migration 0064 isn't applied
+  // yet (or is_admin not set). Never a hardcoded email — env only.
+  const adminEmail = process.env.ADMIN_EMAIL;
+  if (adminEmail && user.email && user.email.toLowerCase() === adminEmail.toLowerCase()) return true;
+
   return !!data?.is_admin;
 }
 

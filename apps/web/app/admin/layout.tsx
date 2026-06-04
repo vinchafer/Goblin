@@ -16,7 +16,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     .eq('id', user.id)
     .single() as unknown as { data: { is_admin: boolean } | null };
 
-  if (!userData?.is_admin) redirect('/dashboard');
+  // 10.9-5 / §7c — ADMIN_EMAIL fallback when is_admin isn't set (migration 0064
+  // unapplied). Env only; never a hardcoded email.
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const emailAllows = !!adminEmail && !!user.email && user.email.toLowerCase() === adminEmail.toLowerCase();
+
+  if (!userData?.is_admin && !emailAllows) redirect('/dashboard');
 
   return <AdminShell>{children}</AdminShell>;
 }

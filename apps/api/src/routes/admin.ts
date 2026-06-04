@@ -461,4 +461,37 @@ admin.post('/digest/send', async (c) => {
   return c.json(result, result.ok ? 200 : 502);
 });
 
+// Sprint 10.9-5 — ops dashboard data for /admin/catalog.
+admin.get('/catalog', async (c) => {
+  const supabase = getSupabaseAdmin();
+  const { getAllHealth, getSuspectSlugs } = await import('../services/provider-health.js');
+  const since24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+  const [modelsAgg, syncLog, healthEvents] = await Promise.all([
+    supabase.from('models').select('provider, available'),
+    supabase.from('catalog_sync_log').select('synced_at, source, added, updated, deactivated')
+      .order('synced_at', { ascending: false }).limit(10),
+    supabase.from('provider_health_events').select('provider, state, error_rate, ts')
+      .gte('ts', since24h).order('ts', { ascending: false }),
+  ]);
+
+  const models = (modelsAgg.data ?? []) as Array<{ provider: string; available: boolean }>;
+  const providers = new Set(models.map((m) => m.provider));
+  const log = (syncLog.data ?? []) as Array<Record<string, unknown>>;
+
+  return c.json({
+    source: { mode: 'OPTION B', label: 'per-user provider-discovery (no LiteLLM proxy)' },
+    lastSyncAt: (log[0] as { synced_at?: string } | undefined)?.synced_at ?? null,
+    stats: {
+      models: models.length,
+      available: models.filter((m) => m.available).length,
+      providers: providers.size,
+    },
+    recentSyncLog: log,
+    providerHealth: getAllHealth(),
+    healthEvents24h: healthEvents.data ?? [],
+    suspectSlugs: getSuspectSlugs(),
+  });
+});
+
 export { admin };
