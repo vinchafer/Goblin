@@ -1,4 +1,4 @@
-import { type Page, type BrowserContext } from '@playwright/test';
+import { type Page, type Locator, type BrowserContext } from '@playwright/test';
 
 const BASE_URL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000';
 const TEST_TOKEN = process.env.TEST_AUTH_TOKEN || 'goblin-playwright-test-token-2026';
@@ -203,6 +203,55 @@ export async function logoutTestUser(page: Page): Promise<void> {
   }
   await page.context().clearCookies();
   await page.goto(`${BASE_URL}/`);
+}
+
+// ─── Device-aware account-menu / settings helpers ──────────────────────────────
+// The 9D shell intentionally renders two shapes per surface
+// (AvatarMenu.tsx, settings-sheet.tsx, SettingsModal.tsx):
+//   • avatar menu : desktop → [data-testid="avatar-menu-popover"], mobile → [data-testid="avatar-menu-sheet"]
+//   • settings    : desktop → [data-testid="settings-modal"]       , mobile → [data-testid="settings-sheet"]
+// These helpers open whichever the viewport produces, so specs assert the
+// *behaviour* ("menu opens", "settings opens", "section reachable") and survive
+// the next copy/layout redesign. The menu BODY (avatar-menu-settings, the
+// "Hilfe" row, etc.) and the section pages (ProfilePage, ModelsPage) are shared
+// components, so post-open assertions are identical across both shells.
+
+/** Desktop = the 9D anchored popover / two-pane modal (≥768px, matchMedia in the shell). */
+export function isDesktopViewport(page: Page): boolean {
+  const vp = page.viewportSize();
+  return !!vp && vp.width >= 768;
+}
+
+/** Open the account (avatar) menu. Resolves once the popover OR the sheet is visible. */
+export async function openAvatarMenu(page: Page): Promise<Locator> {
+  const avatar = page.locator('[data-testid="header-avatar"]');
+  await avatar.waitFor({ state: 'visible', timeout: 10000 });
+  await avatar.click();
+  const menu = page.locator('[data-testid="avatar-menu-popover"], [data-testid="avatar-menu-sheet"]').first();
+  await menu.waitFor({ state: 'visible', timeout: 5000 });
+  return menu;
+}
+
+/** Open Settings via the avatar menu. Resolves to the settings surface
+ *  (desktop modal or mobile sheet), whichever the viewport renders. */
+export async function openSettings(page: Page): Promise<Locator> {
+  await openAvatarMenu(page);
+  await page.click('[data-testid="avatar-menu-settings"]');
+  const surface = page.locator('[data-testid="settings-modal"], [data-testid="settings-sheet"]').first();
+  await surface.waitFor({ state: 'visible', timeout: 5000 });
+  return surface;
+}
+
+/** Open a named settings section. Mobile uses the SettingsRoot row test-id;
+ *  desktop uses the left-nav button label (same German label in both). */
+export async function openSettingsSection(page: Page, rowTestId: string, label: string): Promise<Locator> {
+  const surface = await openSettings(page);
+  if (isDesktopViewport(page)) {
+    await surface.getByRole('button', { name: label, exact: true }).first().click();
+  } else {
+    await page.locator(`[data-testid="${rowTestId}"]`).click();
+  }
+  return surface;
 }
 
 // Dismiss FirstRunTour if present

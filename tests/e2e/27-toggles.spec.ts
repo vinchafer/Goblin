@@ -1,13 +1,13 @@
 import { test, expect } from '@playwright/test';
-import { loginAsRealTestUser, dismissTour } from './helpers/auth';
+import { loginAsRealTestUser, dismissTour, openSettingsSection } from './helpers/auth';
 
+// Open the Funktionen (Features) section via whichever settings shell the
+// viewport renders (mobile sheet row vs desktop modal nav). FeaturesPage is a
+// shared component, so the toggle test-ids are identical across both.
 async function openFunktionen(page: import('@playwright/test').Page) {
   await page.waitForLoadState('networkidle');
   await dismissTour(page);
-  await page.locator('[data-testid="header-avatar"]').waitFor({ state: 'visible', timeout: 10000 });
-  await page.click('[data-testid="header-avatar"]');
-  await page.click('[data-testid="avatar-menu-settings"]');
-  await page.click('[data-testid="row-funktionen"]');
+  await openSettingsSection(page, 'row-funktionen', 'Funktionen');
 }
 
 test.describe('@auth 9D-3 IOSToggle', () => {
@@ -27,7 +27,7 @@ test.describe('@auth 9D-3 IOSToggle', () => {
     await expect(page.locator('[data-testid="toggle-memory"]')).toHaveAttribute('aria-checked', after);
   });
 
-  test('Toggle uses moss background when on', async ({ page }) => {
+  test('Toggle uses a green (brand) background when on', async ({ page }) => {
     await loginAsRealTestUser(page);
     await openFunktionen(page);
 
@@ -35,8 +35,16 @@ test.describe('@auth 9D-3 IOSToggle', () => {
     await expect(toggle).toBeVisible();
     const checked = await toggle.getAttribute('aria-checked');
     if (checked !== 'true') await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-checked', 'true');
+
+    // "On" uses var(--brand-green) (IOSToggle). Assert it is a green — green
+    // channel dominant, clearly not the gray off-state — rather than pinning an
+    // exact RGB, so a future brand-green tweak does not re-break this.
     const bg = await toggle.evaluate((el) => getComputedStyle(el).backgroundColor);
-    // moss light = rgb(45,74,43), dark = rgb(58,94,56)
-    expect(bg).toMatch(/rgb\((45|58),\s*(74|94),\s*(43|56)\)/);
+    const m = bg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+    expect(m, `toggle background was "${bg}"`).not.toBeNull();
+    const [r, g, b] = [Number(m![1]), Number(m![2]), Number(m![3])];
+    expect(g).toBeGreaterThan(r);
+    expect(g).toBeGreaterThan(b);
   });
 });

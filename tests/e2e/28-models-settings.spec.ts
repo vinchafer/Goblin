@@ -1,18 +1,16 @@
 import { test, expect } from '@playwright/test';
-import { loginAsRealTestUser, dismissTour } from './helpers/auth';
+import { loginAsRealTestUser, dismissTour, openSettingsSection } from './helpers/auth';
 
 test.describe('@auth 9P Models Settings', () => {
   test('Modelle row opens 3-tab page with Rankings/Meine Keys/Erweitert', async ({ page }) => {
     await loginAsRealTestUser(page);
     await page.waitForLoadState('networkidle');
     await dismissTour(page);
-    await page.locator('[data-testid="header-avatar"]').waitFor({ state: 'visible', timeout: 10000 });
-    await page.click('[data-testid="header-avatar"]');
-    await page.click('[data-testid="avatar-menu-settings"]');
 
-    const modelsRow = page.locator('[data-testid="row-models"]');
-    await expect(modelsRow).toBeVisible({ timeout: 5000 });
-    await modelsRow.click();
+    // Reach the Models section via whichever settings shell the viewport renders
+    // (mobile sheet row vs desktop modal nav). Both mount the same ModelsPage,
+    // so the tab assertions below are identical across shells.
+    await openSettingsSection(page, 'row-models', 'Modelle');
 
     // 3 tabs visible
     await expect(page.locator('[data-testid="models-tab-rankings"]')).toBeVisible({ timeout: 5000 });

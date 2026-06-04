@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { loginAsRealTestUser, dismissTour } from './helpers/auth';
+import { loginAsRealTestUser, dismissTour, openAvatarMenu } from './helpers/auth';
 
 test.describe('9C — Help cleanup (BUG-014, BUG-015)', { tag: '@auth' }, () => {
   test('No floating SupportBubble button on dashboard', async ({ page }) => {
@@ -13,23 +13,25 @@ test.describe('9C — Help cleanup (BUG-014, BUG-015)', { tag: '@auth' }, () => 
   });
 
   test('Avatar menu contains "Hilfe" entry', async ({ page }) => {
-    // 9D-6: avatar dropdown replaced with AvatarMenu BottomSheet (mobile + desktop).
+    // 9D-6: account menu is a popover on desktop, a BottomSheet on mobile;
+    // openAvatarMenu resolves either. The "Hilfe" row is shared menu body.
     await loginAsRealTestUser(page);
     await dismissTour(page);
     await page.waitForLoadState('networkidle');
 
-    await page.locator('[data-testid="header-avatar"]').waitFor({ state: 'visible', timeout: 10000 });
-    await page.click('[data-testid="header-avatar"]');
-    await expect(page.locator('[data-testid="avatar-menu-sheet"]')).toBeVisible({ timeout: 3000 });
-    await expect(page.getByText('Hilfe', { exact: true }).first()).toBeVisible();
+    const menu = await openAvatarMenu(page);
+    await expect(menu.getByText('Hilfe', { exact: true }).first()).toBeVisible();
   });
 
   test('/help page renders FAQ + email CTA', async ({ page }) => {
     await page.goto('/help');
     await page.waitForLoadState('domcontentloaded');
 
-    await expect(page.getByRole('heading', { name: /Hilfe & Support/i })).toBeVisible();
-    await expect(page.getByText(/Was ist Goblin\?/)).toBeVisible();
-    await expect(page.getByText(/support@justgoblin\.com/).first()).toBeVisible();
+    // /help was redesigned (now "Help & Support" + English FAQ). Assert the
+    // CONTRACT — a top heading, the FAQ accordion, and a real support contact —
+    // by structure/role so the next copy tweak does not re-break this.
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    await expect(page.getByText(/What is Goblin\?/i).first()).toBeVisible();
+    await expect(page.getByRole('link', { name: /support@justgoblin\.com/i })).toBeVisible();
   });
 });

@@ -8,16 +8,17 @@ test.describe('9C — Mobile Create Project (BUG-010)', { tag: '@auth' }, () => 
     await loginAsRealTestUser(page);
     await dismissTour(page);
 
-    // Open mobile sidebar via hamburger (aria-label exists pre-9C)
+    // Open mobile sidebar via hamburger (aria-label "Open menu")
     await page.getByRole('button', { name: /open menu/i }).click();
     const sidebar = page.locator('.goblin-sidebar-mobile');
     await expect(sidebar).toBeVisible();
 
-    // Click "+ New Project" inside sidebar
-    await sidebar.getByRole('button', { name: /new project/i }).click();
+    // New-project affordance in the mobile sidebar (aria-label "Neues Projekt"
+    // since the 9C/9D sidebar restructure — was English "New Project").
+    await sidebar.getByRole('button', { name: /neues projekt/i }).click();
 
-    // Modal should open with name input
-    const nameInput = page.getByPlaceholder('My Awesome Project');
+    // Modal opens — target stable test-ids, not the (translatable) placeholder/label.
+    const nameInput = page.getByTestId('project-name-input');
     await expect(nameInput).toBeVisible({ timeout: 5000 });
 
     // Fill unique name
@@ -25,7 +26,7 @@ test.describe('9C — Mobile Create Project (BUG-010)', { tag: '@auth' }, () => 
     await nameInput.fill(name);
 
     // Submit
-    await page.getByRole('button', { name: /create project/i }).click();
+    await page.getByTestId('project-create-submit').click();
 
     // CRITICAL: Should NOT see "invalid project data" error
     await expect(page.getByText(/invalid project data/i)).not.toBeVisible({ timeout: 3000 });
