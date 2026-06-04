@@ -11,6 +11,7 @@ import { GoblinLoader } from "@/components/ui/GoblinLoader";
 import { FirstChatTip } from "@/components/onboarding/first-chat-tip";
 import type { ChatMessage } from "@goblin/shared/src/schemas";
 import type { SelectedModel } from "@/components/chat/ChatInput";
+import { StcPreviewSheet, type StcFile } from "@/components/code/StcPreviewSheet";
 
 const EXAMPLE_PROMPTS = [
   'Build a simple landing page with a hero section and CTA button.',
@@ -50,6 +51,8 @@ export function ChatTab({ projectId }: ChatTabProps) {
   const [error, setError] = useState<string | null>(null);
   const [tokenInfo, setTokenInfo] = useState<TokenInfo | null>(null);
   const [hasAvailableModel, setHasAvailableModel] = useState<boolean | null>(null);
+  // 10.8-5: preview files before dispatching them to the Code tab.
+  const [stcPreview, setStcPreview] = useState<StcFile[] | null>(null);
 
   const { selectedModel, setSelectedModel } = useChatModel();
 
@@ -110,18 +113,28 @@ export function ChatTab({ projectId }: ChatTabProps) {
 
   const loadOlder = () => loadHistory(offset);
 
+  // 10.8-5: open the preview sheet instead of sending immediately. The actual
+  // dispatch happens in confirmStc once the user has reviewed/selected files.
   const sendToCode = (code: string, filename?: string, files?: { path: string; content: string }[]) => {
-    // R1 fix: never fall back to an extensionless/non-deployable name — detect from content.
     const target = filename || detectFilename(code);
-    // 10.6-2: multi-block sends carry a full files[] (index.html / style.css / …).
-    const multi = files && files.length > 1;
+    const list: StcFile[] = (files && files.length > 0)
+      ? files
+      : [{ path: target, content: code }];
+    setStcPreview(list);
+  };
+
+  const confirmStc = (selected: StcFile[]) => {
+    setStcPreview(null);
+    if (selected.length === 0) return;
+    const multi = selected.length > 1;
+    const first = selected[0]!;
     window.dispatchEvent(new CustomEvent('goblin:sendToCode', {
-      detail: multi ? { code, filename: target, files } : { code, filename: target }
+      detail: multi ? { code: first.content, filename: first.path, files: selected } : { code: first.content, filename: first.path }
     }));
     toast.success(
       multi
-        ? `${files!.length} Dateien an Code-Tab gesendet: ${files!.map(f => f.path).join(', ')}`
-        : `An Code-Tab gesendet (${target})`,
+        ? `${selected.length} Dateien an Code-Tab gesendet: ${selected.map(f => f.path).join(', ')}`
+        : `An Code-Tab gesendet (${first.path})`,
       { duration: multi ? 2600 : 1500 }
     );
   };
@@ -343,6 +356,14 @@ export function ChatTab({ projectId }: ChatTabProps) {
         selectedModel={selectedModel}
         onModelChange={setSelectedModel}
       />
+
+      {stcPreview && (
+        <StcPreviewSheet
+          files={stcPreview}
+          onConfirm={confirmStc}
+          onCancel={() => setStcPreview(null)}
+        />
+      )}
     </div>
   );
 }

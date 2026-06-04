@@ -56,8 +56,15 @@ export function CodeWorkspace({ projectId, pendingCode, onPendingConsumed }: Pro
       const raw = sessionStorage.getItem("goblin:stc-pending");
       if (!raw) return;
       sessionStorage.removeItem("goblin:stc-pending");
-      const payload = JSON.parse(raw) as { content?: string; filename?: string };
-      if (payload?.content) {
+      const payload = JSON.parse(raw) as { content?: string; filename?: string; files?: { path: string; content: string }[] };
+      // 10.8-5: a previewed multi-file send carries files[]; replay it so the
+      // multi-file seeding path (CodeWorkspace) creates one session with all of them.
+      if (payload?.files && payload.files.length > 0) {
+        const first = payload.files[0]!;
+        window.dispatchEvent(new CustomEvent("goblin:sendToCode", {
+          detail: { code: first.content, filename: first.path, files: payload.files },
+        }));
+      } else if (payload?.content) {
         window.dispatchEvent(new CustomEvent("goblin:sendToCode", {
           detail: { code: payload.content, filename: payload.filename },
         }));
