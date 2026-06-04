@@ -52,6 +52,9 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
   const [copied, setCopied] = useState(false);
   // 10.8-7: file navigation panel (browse/open all session files, add new).
   const [fileNavOpen, setFileNavOpen] = useState(false);
+  // 10.8-9: deploy URL diagnostics, surfaced only with ?debug=1.
+  const [deployDebug, setDeployDebug] = useState<{ deploymentUrl?: string; aliasUrl?: string } | null>(null);
+  const debugMode = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("debug") === "1";
 
   // Seed the persistent live-URL card from the session's last deploy, so it
   // survives a browser close + reopen (not just the deploy moment).
@@ -116,8 +119,9 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
     setDeployConfirm(false);
     setDeploying(true);
     setToast("Veröffentliche …");
-    const { url, error } = await detail.deploySession((msg) => setToast(msg));
+    const { url, error, deploymentUrl, aliasUrl } = await detail.deploySession((msg) => setToast(msg));
     setDeploying(false);
+    setDeployDebug({ deploymentUrl, aliasUrl });
     if (url) {
       // Persistent live-URL card (no auto-dismiss) instead of a fleeting toast.
       setLiveUrl(url);
@@ -342,6 +346,17 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
             <button onClick={() => setLiveDismissed(true)} aria-label="Ausblenden" title="Ausblenden" style={{ background: "transparent", border: "none", color: "var(--ed-fg-3)", cursor: "pointer", flexShrink: 0, display: "inline-flex", alignItems: "center" }}>
               <Icon name="close" size={14} />
             </button>
+          </div>
+        )}
+
+        {/* 10.8-9: ?debug=1 surfaces every URL Vercel returned, so a future 404
+            can be diagnosed by copying each candidate (production alias vs the
+            protection-gated deployment hash url). */}
+        {debugMode && deployDebug && (
+          <div style={{ flexShrink: 0, borderTop: "1px dashed var(--ed-rule)", background: "var(--ed-chrome)", padding: "8px 14px", fontFamily: "JetBrains Mono, monospace", fontSize: 11, color: "var(--ed-fg-3)" }}>
+            <div style={{ fontWeight: 700, marginBottom: 4 }}>DEBUG · Vercel URLs</div>
+            <div>alias (öffentlich): {deployDebug.aliasUrl ?? "—"}</div>
+            <div>deployment (geschützt): {deployDebug.deploymentUrl ?? "—"}</div>
           </div>
         )}
 

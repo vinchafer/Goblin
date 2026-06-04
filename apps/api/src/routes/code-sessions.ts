@@ -289,7 +289,7 @@ codeSessions.post('/:sessionId/deploy', async (c) => {
       await sb.from('code_session_files')
         .update({ change_state: 'deployed', updated_at: new Date().toISOString() })
         .eq('session_id', sessionId).eq('change_state', 'saved');
-      await stream.writeSSE({ data: JSON.stringify({ type: 'success', url: result.url, deploymentId: result.deploymentId }) });
+      await stream.writeSSE({ data: JSON.stringify({ type: 'success', url: result.url, deploymentId: result.deploymentId, deploymentUrl: result.deploymentUrl, aliasUrl: result.aliasUrl }) });
     } catch (err) {
       await stream.writeSSE({ data: JSON.stringify({ type: 'error', message: err instanceof Error ? err.message : 'Deploy failed' }) });
     }

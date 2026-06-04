@@ -28,7 +28,7 @@ export async function deployToVercel(
   projectId: string,
   projectName: string,
   onProgress?: (msg: string) => void,
-): Promise<{ deploymentId: string; url: string }> {
+): Promise<{ deploymentId: string; url: string; deploymentUrl?: string; aliasUrl?: string }> {
   const token = await getUserVercelToken(userId);
   if (!token) throw new Error('NO_VERCEL_TOKEN — Du brauchst einen eigenen Vercel-Account (gratis). Token unter vercel.com/account/tokens erstellen und in Einstellungen → Konnektoren → Vercel einfügen.');
 
@@ -101,12 +101,72 @@ export async function deployToVercel(
   }
 
   const data = await res.json() as { id: string; url: string; alias?: string[] };
-  // B-S5: data.url is the deployment-unique hash URL; for a production target
-  // Vercel also assigns a stable production alias (<project>.vercel.app). Prefer
-  // the alias so "Öffnen"/"Kopieren" point at the canonical, non-404 URL.
-  const canonical = (Array.isArray(data.alias) && data.alias.length > 0) ? data.alias[0]! : data.url;
-  console.log('[vercel] deployment created', JSON.stringify({ id: data.id, url: data.url, alias: data.alias ?? null, canonical }));
-  return { deploymentId: data.id, url: `https://${canonical}` };
+  // 10.8-9 ROOT CAUSE of the recurring "Öffnen → SSO → 404": at POST time
+  // `data.alias` is almost always EMPTY, so we fell back to `data.url` — the
+  // deployment-unique HASH url (<project>-<hash>-<scope>.vercel.app). Vercel's
+  // Deployment Protection gates exactly that hash/preview url behind SSO → the
+  // login wall + 404 Vincent saw. The PRODUCTION ALIAS (<project>.vercel.app) is
+  // public by default, but it's only assigned once the deployment is READY.
+  // So: poll until the production alias appears, and return THAT.
+  const deploymentUrl = `https://${data.url}`;
+  let aliasUrl: string | undefined =
+    pickProductionAlias(data.alias, deployName) ?? undefined;
+
+  if (!aliasUrl) {
+    onProgress?.('Warte auf öffentliche URL…');
+    aliasUrl = await pollForProductionAlias(token, data.id, deployName, onProgress);
+  }
+
+  const best = aliasUrl ?? deploymentUrl;
+  console.log('[vercel] deployment created', JSON.stringify({
+    id: data.id, deploymentUrl, alias: data.alias ?? null, aliasUrl: aliasUrl ?? null, returned: best,
+  }));
+  return { deploymentId: data.id, url: best, deploymentUrl, aliasUrl };
+}
+
+// The production alias is the short, public `<project>.vercel.app` (and the
+// team-scoped `<project>-<scope>.vercel.app`). Deployment hash urls contain a
+// random segment and stay protected — never pick those. Prefer an exact
+// `<deployName>.vercel.app`, else the shortest *.vercel.app alias.
+function pickProductionAlias(aliases: string[] | undefined, deployName: string): string | undefined {
+  if (!Array.isArray(aliases) || aliases.length === 0) return undefined;
+  const vercelAliases = aliases.filter((a) => a.endsWith('.vercel.app'));
+  if (vercelAliases.length === 0) {
+    // Custom domain attached — that's the most public of all.
+    return aliases[0] ? `https://${aliases[0]}` : undefined;
+  }
+  const exact = vercelAliases.find((a) => a === `${deployName}.vercel.app`);
+  const chosen = exact ?? [...vercelAliases].sort((a, b) => a.length - b.length)[0]!;
+  return `https://${chosen}`;
+}
+
+async function pollForProductionAlias(
+  token: string,
+  deploymentId: string,
+  deployName: string,
+  onProgress?: (msg: string) => void,
+): Promise<string | undefined> {
+  const MAX_ATTEMPTS = 12; // ~24s at 2s intervals
+  for (let i = 0; i < MAX_ATTEMPTS; i++) {
+    await new Promise((r) => setTimeout(r, 2000));
+    try {
+      const res = await fetch(`https://api.vercel.com/v13/deployments/${deploymentId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) continue;
+      const d = await res.json() as { readyState?: string; status?: string; alias?: string[] };
+      const alias = pickProductionAlias(d.alias, deployName);
+      const state = d.readyState ?? d.status;
+      if (alias) return alias;
+      if (state === 'READY') {
+        // Ready but no alias yet — give it one more cycle, then give up.
+        if (i >= MAX_ATTEMPTS - 2) return undefined;
+      }
+      if (state === 'ERROR' || state === 'CANCELED') return undefined;
+      onProgress?.(`Build läuft… (${state ?? 'queued'})`);
+    } catch { /* transient — keep polling */ }
+  }
+  return undefined;
 }
 
 export async function getDeployStatus(

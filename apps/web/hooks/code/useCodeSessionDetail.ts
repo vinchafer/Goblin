@@ -99,7 +99,7 @@ export function useCodeSessionDetail(sessionId: string | null) {
   /** Veröffentlichen — deploy (SSE). 409 if drafts remain. */
   const deploySession = useCallback(async (
     onProgress?: (msg: string) => void,
-  ): Promise<{ url?: string; error?: string }> => {
+  ): Promise<{ url?: string; error?: string; deploymentUrl?: string; aliasUrl?: string }> => {
     if (!sessionId) return { error: 'no-session' };
     const t = await getToken();
     if (!t) return { error: 'no-token' };
@@ -113,6 +113,8 @@ export function useCodeSessionDetail(sessionId: string | null) {
     let buffer = '';
     let url: string | undefined;
     let error: string | undefined;
+    let deploymentUrl: string | undefined;
+    let aliasUrl: string | undefined;
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
@@ -125,13 +127,13 @@ export function useCodeSessionDetail(sessionId: string | null) {
         try {
           const d = JSON.parse(t2.slice(6));
           if (d.type === 'progress') onProgress?.(d.message);
-          else if (d.type === 'success') url = d.url;
+          else if (d.type === 'success') { url = d.url; deploymentUrl = d.deploymentUrl; aliasUrl = d.aliasUrl; }
           else if (d.type === 'error') error = d.message;
         } catch { /* skip */ }
       }
     }
     await refresh();
-    return { url, error };
+    return { url, error, deploymentUrl, aliasUrl };
   }, [sessionId, refresh]);
 
   const discardDraft = useCallback(async (path: string) => {
