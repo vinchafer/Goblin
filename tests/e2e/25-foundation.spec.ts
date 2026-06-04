@@ -6,17 +6,16 @@ test.describe('@public 9D-0 Foundation', () => {
     const tokens = await page.evaluate(() => {
       const s = getComputedStyle(document.documentElement);
       return {
-        mossSoft: s.getPropertyValue('--moss-green-soft').trim(),
         radiusSheet: s.getPropertyValue('--radius-sheet').trim(),
-        ochreSoft: s.getPropertyValue('--ochre-soft').trim(),
         shadowSheet: s.getPropertyValue('--shadow-sheet').trim(),
       };
     });
-    // Browser may serialize rgba(r,g,b,a) as 8-digit hex (#rrggbbaa) or rgba(...) string.
-    // Accept both forms.
-    const rgbaOrHex8 = /(rgba?\([^)]+\)|#[0-9a-fA-F]{8})/;
-    expect(tokens.mossSoft).toMatch(rgbaOrHex8);
-    expect(tokens.ochreSoft).toMatch(rgbaOrHex8);
+    // NOTE: --moss-green-soft and --ochre-soft were 9D additive color tokens that
+    // were retired in the brand-color refactor (refactor(brand): migrate hardcoded
+    // colors, 2026-05-19). They are no longer defined and are referenced via var()
+    // nowhere in the app — asserting them guarded nothing. The two surviving 9D
+    // sheet tokens (--radius-sheet, --shadow-sheet) still back the BottomSheet UI,
+    // so the foundation-tokens-resolve intent is preserved on those.
     expect(tokens.radiusSheet).toBe('24px');
     expect(tokens.shadowSheet.length).toBeGreaterThan(0);
   });
