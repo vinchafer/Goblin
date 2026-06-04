@@ -436,4 +436,11 @@ admin.get('/health', async (c) => {
   });
 });
 
+// Sprint 10.8 — manual catalog re-sync from LiteLLM (cron lands in 10.9).
+admin.post('/catalog/sync', async (c) => {
+  const { syncFromLiteLLM } = await import('../services/catalog.js');
+  const result = await syncFromLiteLLM({ force: true });
+  return c.json(result, result.ok ? 200 : 502);
+});
+
 export { admin };

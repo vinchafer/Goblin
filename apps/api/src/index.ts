@@ -243,3 +243,10 @@ const server = serve({
 });
 
 console.log(`Goblin API listening on port ${port}`);
+
+// Sprint 10.8 — refresh the model catalog from LiteLLM on boot (fire-and-forget;
+// no-op if LITELLM_BASE_URL is unset). Keeps the `models` cache aligned with what
+// the proxy actually serves; Sprint 10.9 adds a cron on top of the same path.
+import('./services/catalog.js')
+  .then(({ scheduleBootSync }) => scheduleBootSync())
+  .catch((e) => console.warn('[catalog] boot sync import failed:', e));
