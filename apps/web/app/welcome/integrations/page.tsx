@@ -18,16 +18,21 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getAuthHeaders, API_URL } from '@/lib/api';
 import {
-  IArrowL, IArrowR, IBell, ICard, IGlobe, IShield, ISpark,
+  IArrowL, IArrowR, IBell, ICard, ICheck, IGlobe, IShield, ISpark,
 } from '../_components/icons';
 import { ProviderLogo } from '@/components/onboarding/ProviderLogo';
 import { patchOnboardingState } from '../_components/onboarding-state';
+import { useOnbLang, STR } from '../_components/i18n';
 
-// Where onboarding hands off. Project-create landing, not chat (A-S11).
-const NEXT_DEST = '/dashboard?start=1';
+// Where onboarding hands off. 10.10 C.5 (founder decision): land on a CLEAN
+// dashboard — NO ?start=1, which auto-opened the New-Project modal. This
+// intentionally reverses the Sprint-10.5 A-S11 behaviour.
+const NEXT_DEST = '/dashboard';
 
 export default function IntegrationsStepPage() {
   const router = useRouter();
+  const lang = useOnbLang();
+  const t = STR[lang].integ;
   const [githubLoading, setGithubLoading] = useState(false);
   const [showMobileHint, setShowMobileHint] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -79,29 +84,21 @@ export default function IntegrationsStepPage() {
     <div className="step5">
       <header className="head">
         <Link href="/welcome/tools" className="back">
-          <IArrowL size={12} /> <span>Back to tools</span>
+          <IArrowL size={12} /> <span>{t.back}</span>
         </Link>
-        <div className="eyebrow"><span className="tick" /><span>Step 05 of 06 — Integrations</span></div>
-        <h1>Plug Goblin into your <span className="gobl-serif">stack.</span></h1>
-        <p className="lead">
-          Goblin pushes code, runs builds, and pings the right people — everywhere
-          you already work. Skip anything you don&apos;t use; add it later from
-          Settings. Every line here is optional.
-        </p>
+        <div className="eyebrow"><span className="tick" /><span>{t.eyebrow}</span></div>
+        <h1>{t.titleA} <span className="gobl-serif">{t.titleB}</span></h1>
+        <p className="lead">{t.lead}</p>
       </header>
 
-      <Section
-        num="/01 — Live now"
-        title="Source & deploy"
-        desc='The two integrations behind Goblin&apos;s "prompt-to-live-URL" loop.'
-      >
+      <Section num={t.sec1num} title={t.sec1title} desc={t.sec1desc}>
         <Integration
           name="GitHub"
-          req="RECOMMENDED"
+          req={t.recommended}
           logoId="github" logoBg="#0F0F0F"
-          desc="Auto-commit & push straight from chat — the source-of-truth for every Goblin project."
+          desc={t.githubDesc}
           onClick={connectGithub}
-          ctaLabel={githubLoading ? 'Connecting…' : 'Connect GitHub'}
+          ctaLabel={githubLoading ? t.connecting : t.connectGithub}
           primary
         />
         {/* 10.7-11: ownership explainer ABOVE the Vercel card so the user reads
@@ -109,84 +106,72 @@ export default function IntegrationsStepPage() {
         <div className="own-note">
           <IShield size={13} />
           <div className="own-body">
-            <b>You bring your own Vercel.</b> Goblin pushes your code to your account
-            so the project is yours — you control the domain, the limits, and the
-            bill, and you can take it to any host later.
+            <b>{t.ownTitle}</b>{t.ownBody}
           </div>
           <a className="own-cta" href="https://vercel.com/signup" target="_blank" rel="noopener noreferrer">
-            Create a free Vercel account →
+            {t.ownCta}
           </a>
         </div>
-        <Integration
-          name="Vercel"
-          req="RECOMMENDED"
-          logoId="vercel" logoBg="#000"
-          desc="Deploys go to YOUR OWN Vercel account — your domain, your costs. Goblin doesn't host live sites for you. Free for personal projects."
-          href="/dashboard/settings/keys"
-          ctaLabel="Add token in Settings"
-          primary
-        />
+        {/* 10.10 C.2: inline Vercel token save — persists via API and STAYS on
+            this step. Replaces the old "Add token in Settings" link that
+            navigated into /dashboard and tripped the new-user → language bounce. */}
+        <VercelCard t={t} />
       </Section>
 
-      <Section
-        num="/02 — Infrastructure"
-        title="Backend & hosting"
-        desc="For projects that outgrow a static deploy. Connectable from Settings as these land."
-      >
+      <Section num={t.sec2num} title={t.sec2title} desc={t.sec2desc}>
         <Integration name="Supabase" logoId="supabase" logoBg="#1F1F1F"
-          desc="Postgres, auth & storage — migrations straight from chat." soon />
+          desc={lang === 'de' ? 'Postgres, Auth & Storage — Migrationen direkt aus dem Chat.' : 'Postgres, auth & storage — migrations straight from chat.'} soon soonLabel={t.soon} />
         <Integration name="Railway" logoId="railway" logoBg="#0B0D0E"
-          desc="API hosting for non-Next.js stacks — an alternative to Vercel." soon />
+          desc={lang === 'de' ? 'API-Hosting für Nicht-Next.js-Stacks — eine Alternative zu Vercel.' : 'API hosting for non-Next.js stacks — an alternative to Vercel.'} soon soonLabel={t.soon} />
       </Section>
 
-      <Section num="/03 — Planned" title="Payments, productivity & alerts">
+      <Section num={t.sec3num} title={t.sec3title}>
         <Integration name="Stripe" Logo={ICard} logoBg="#635BFF"
-          desc="Scaffold Checkout, webhooks & pricing tables." soon />
+          desc={lang === 'de' ? 'Checkout, Webhooks & Pricing-Tabellen gerüstet.' : 'Scaffold Checkout, webhooks & pricing tables.'} soon soonLabel={t.soon} />
         <Integration name="Resend" Logo={IBell} logoBg="#111111"
-          desc="Transactional & magic-link email." soon />
+          desc={lang === 'de' ? 'Transaktions- & Magic-Link-E-Mails.' : 'Transactional & magic-link email.'} soon soonLabel={t.soon} />
         <Integration name="Linear" letter="L" logoBg="#5E6AD2"
-          desc='Turn "this should be a feature" into an issue, mid-chat.' soon />
+          desc={lang === 'de' ? 'Mach „das sollte ein Feature sein“ mitten im Chat zum Issue.' : 'Turn "this should be a feature" into an issue, mid-chat.'} soon soonLabel={t.soon} />
         <Integration name="Notion" letter="N" logoBg="#111111"
-          desc="Sync product specs into your Notion workspace." soon />
+          desc={lang === 'de' ? 'Synct Produkt-Specs in deinen Notion-Workspace.' : 'Sync product specs into your Notion workspace.'} soon soonLabel={t.soon} />
         <Integration name="Discord" Logo={IBell} logoBg="#5865F2"
-          desc='Ship pings to a channel — "Newsletter Tool deployed in 28s".' soon />
+          desc={lang === 'de' ? 'Pings in einen Channel — „Newsletter-Tool in 28s deployed“.' : 'Ship pings to a channel — "Newsletter Tool deployed in 28s".'} soon soonLabel={t.soon} />
         <Integration name="Cloudflare" Logo={IGlobe} logoBg="#F38020"
-          desc="DNS + Workers / KV / R2 for edge stacks." soon />
+          desc={lang === 'de' ? 'DNS + Workers / KV / R2 für Edge-Stacks.' : 'DNS + Workers / KV / R2 for edge stacks.'} soon soonLabel={t.soon} />
       </Section>
 
       {showMobileHint && (
         <div className="mobile-hint">
           <span className="ic"><ISpark size={16} /></span>
           <div className="mh-body">
-            <b>You&apos;re on desktop.</b> Goblin runs on your phone too — work from
-            anywhere, ship from anywhere.
+            <b>{t.mobileTitle}</b>{t.mobileBody}
           </div>
           <button type="button" className="mh-btn" onClick={copyUrl}>
-            {copied ? 'Link copied ✓' : 'Copy link'}
+            {copied ? t.linkCopied : t.copyLink}
           </button>
         </div>
       )}
 
       <div className="summary">
         <div className="body">
-          <div className="eyebrow on-dark"><span className="tick" /><span className="gobl-mono">YOU&apos;RE READY · 5 MIN TOTAL</span></div>
-          <h2>Provider, routing, tools, integrations — <span className="gobl-serif">done.</span></h2>
-          <p>Goblin&apos;s got everything queued. Let&apos;s build your first project.</p>
+          <div className="eyebrow on-dark"><span className="tick" /><span className="gobl-mono">{t.summaryEyebrow}</span></div>
+          <h2>{t.summaryTitle} <span className="gobl-serif">done.</span></h2>
+          <p>{t.summaryBody}</p>
         </div>
         <div className="cta">
           <button type="button" className="btn-primary-light" onClick={() => finish(false)}>
-            Start building <IArrowR size={13} />
+            {t.startBuilding} <IArrowR size={13} />
           </button>
           <button type="button" className="btn-secondary-light" onClick={() => finish(true)}>
-            Skip all
+            {t.skipAll}
           </button>
         </div>
       </div>
 
       <div className="footstrip">
-        <span className="skip"><IShield size={11} />ADD INTEGRATIONS ANY TIME · SETTINGS / CONNECTORS</span>
-        <span className="gobl-mono">/welcome/integrations · STEP 05 OF 06</span>
-        <button type="button" className="finish" onClick={() => finish(true)}>FINISH →</button>
+        <span className="skip"><IShield size={11} />{t.footAdd}</span>
+        <span className="gobl-mono">/welcome/integrations · {STR[lang].chrome.step} 05 {STR[lang].chrome.of} 06</span>
+        <button type="button" className="finish" onClick={() => finish(true)}>{t.finish}</button>
       </div>
 
       <style jsx>{`
@@ -221,11 +206,14 @@ export default function IntegrationsStepPage() {
         }
         .lead { font-size: 16.5px; color: var(--ink-2); line-height: 1.5; max-width: 64ch; }
 
+        /* 10.10: was a gold FILL on light (design-system v1.1 flags gold-on-
+           light). Now a quiet sand surface with a hairline — the gold lives
+           only in the shield accent. */
         .own-note {
           grid-column: 1 / -1;
           display: flex; align-items: center; gap: 14px;
-          background: var(--accent-bright, rgba(212,169,74,.1));
-          border: 1px solid var(--accent-rule, rgba(212,169,74,.35));
+          background: var(--surface-2);
+          border: 1px solid var(--line);
           border-radius: var(--radius-lg); padding: 14px 18px;
         }
         .own-note :global(svg) { color: var(--accent); flex-shrink: 0; }
@@ -320,6 +308,165 @@ export default function IntegrationsStepPage() {
   );
 }
 
+// 10.10 C.2 — inline Vercel token card. Saves the token via
+// POST /api/integrations/vercel (same endpoint Settings → Connectors uses) and
+// stays on Step 5. No navigation out of the onboarding flow.
+type IntegT = (typeof STR)['de']['integ'];
+
+function VercelCard({ t }: { t: IntegT }) {
+  const [open, setOpen] = useState(false);
+  const [token, setToken] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [connected, setConnected] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function save() {
+    setError(null);
+    if (!token.trim()) { setError(t.vercelTokenLabel); return; }
+    setBusy(true);
+    try {
+      const headers = await getAuthHeaders();
+      const res = await fetch(`${API_URL}/api/integrations/vercel`, {
+        method: 'POST', headers, credentials: 'include',
+        body: JSON.stringify({ token: token.trim() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { setError(data.error ?? 'Error'); return; }
+      setConnected(true); setOpen(false); setToken('');
+    } catch {
+      setError('Error');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className={`int-card required ${connected ? 'vc-connected' : ''}`} style={{ flexWrap: 'wrap' }}>
+      <span className="logo" style={{ background: '#000' }}>
+        <ProviderLogo id="vercel" size={20} tone="light" fallbackLabel="V" />
+      </span>
+      <div className="ibody">
+        <div className="itop">
+          <span className="iname">Vercel</span>
+          {connected
+            ? <span className="req vc-ok"><ICheck size={11} /> {t.connected}</span>
+            : <span className="req">{t.recommended}</span>}
+        </div>
+        <div className="idesc">{t.vercelDesc}</div>
+      </div>
+      <div className="ctrl">
+        {!connected && (
+          <button type="button" className="vc-cta" onClick={() => setOpen((v) => !v)}>
+            {t.addVercel} <IArrowR size={12} />
+          </button>
+        )}
+      </div>
+
+      {open && !connected && (
+        <div className="vc-form">
+          <label className="vc-label">{t.vercelTokenLabel}</label>
+          <div className="vc-row">
+            <input
+              type="password"
+              className="vc-input"
+              placeholder="vercel.com → Settings → Tokens"
+              value={token}
+              onChange={(e) => { setToken(e.target.value); setError(null); }}
+              autoComplete="off" spellCheck={false}
+            />
+            <button type="button" className="vc-save" onClick={save} disabled={busy}>
+              {busy ? t.saving : t.saveToken}
+            </button>
+          </div>
+          {error && <span className="vc-error">{error}</span>}
+        </div>
+      )}
+
+      <style jsx>{`
+        .int-card {
+          background: var(--surface-elev);
+          border: 1px solid var(--line);
+          border-radius: var(--radius-lg);
+          padding: 18px;
+          display: flex; align-items: center; gap: 14px;
+          color: var(--ink-1); width: 100%; text-align: left;
+        }
+        .int-card.required { border-color: var(--accent-rule); box-shadow: 0 0 0 1px var(--accent-rule); }
+        .logo {
+          width: 44px; height: 44px; border-radius: 10px;
+          display: inline-flex; align-items: center; justify-content: center;
+          flex-shrink: 0; color: #fff;
+        }
+        .ibody { flex: 1; min-width: 0; }
+        .itop { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .iname {
+          font-family: var(--font-onb-display), Manrope, sans-serif;
+          font-weight: 600; font-size: 14.5px;
+          color: var(--ink-1); letter-spacing: -0.014em;
+        }
+        .req {
+          font-family: var(--font-mono), monospace;
+          font-size: 9px; letter-spacing: 0.18em;
+          padding: 2px 6px; border-radius: 3px;
+          background: var(--accent-bright); color: var(--green); font-weight: 600;
+        }
+        .idesc { font-size: 12.5px; color: var(--ink-3); line-height: 1.45; margin-top: 3px; }
+        .ctrl { flex-shrink: 0; }
+        @media (max-width: 600px) { .int-card { flex-wrap: wrap; } .ctrl { width: 100%; } }
+
+        .vc-connected { border-color: var(--ok); box-shadow: 0 0 0 1px var(--ok); }
+        .req.vc-ok {
+          display: inline-flex; align-items: center; gap: 4px;
+          background: var(--ok); color: #fff;
+        }
+        .vc-cta {
+          display: inline-flex; align-items: center; gap: 8px;
+          background: var(--green); color: var(--bone);
+          font-family: var(--font-onb-display), Manrope, sans-serif;
+          font-weight: 600; font-size: 12.5px;
+          padding: 8px 12px; border-radius: 6px;
+          border: 1px solid var(--green); cursor: pointer;
+        }
+        .vc-cta:hover { background: #081710; }
+        .vc-form {
+          flex-basis: 100%; width: 100%; margin-top: 6px;
+          padding-top: 14px; border-top: 1px dashed var(--line-strong);
+          display: flex; flex-direction: column; gap: 8px;
+        }
+        .vc-label {
+          font-family: var(--font-mono), monospace;
+          font-size: 10.5px; letter-spacing: 0.16em; text-transform: uppercase;
+          color: var(--ink-3); font-weight: 500;
+        }
+        .vc-row { display: flex; gap: 8px; flex-wrap: wrap; }
+        .vc-input {
+          flex: 1; min-width: 200px;
+          background: var(--surface-elev);
+          border: 1px solid var(--line-strong);
+          border-radius: var(--radius); padding: 11px 13px;
+          font-family: var(--font-mono), 'JetBrains Mono', monospace;
+          font-size: 13px; color: var(--ink-1);
+        }
+        .vc-input:focus { outline: none; border-color: var(--ink-1); background: #fff; }
+        .vc-save {
+          display: inline-flex; align-items: center; gap: 6px;
+          background: var(--green); color: var(--bone);
+          font-family: var(--font-onb-display), Manrope, sans-serif;
+          font-weight: 600; font-size: 13px;
+          padding: 11px 16px; border-radius: var(--radius);
+          border: 1px solid var(--green); cursor: pointer; white-space: nowrap;
+        }
+        .vc-save:hover { background: #081710; }
+        .vc-save:disabled { opacity: .6; cursor: default; }
+        .vc-error {
+          font-size: 12px; color: #a04230;
+          font-family: var(--font-mono), monospace;
+        }
+      `}</style>
+    </div>
+  );
+}
+
 function Section({
   num, title, desc, children,
 }: {
@@ -360,7 +507,7 @@ function Section({
 }
 
 function Integration({
-  name, req, Logo, logoId, letter, logoBg, desc, href, onClick, ctaLabel, primary, soon,
+  name, req, Logo, logoId, letter, logoBg, desc, href, onClick, ctaLabel, primary, soon, soonLabel,
 }: {
   name: string;
   req?: string;
@@ -374,8 +521,9 @@ function Integration({
   ctaLabel?: string;
   primary?: boolean;
   soon?: boolean;
+  soonLabel?: string;
 }) {
-  const label = soon ? 'Bald' : (ctaLabel ?? 'Connect');
+  const label = soon ? (soonLabel ?? 'Soon') : (ctaLabel ?? 'Connect');
   // Dynamic wrapper tag — div (soon, non-actionable) / button (onClick) / a (href).
   // Elements + <style jsx> live in ONE return expression so styled-jsx scopes
   // the whole card under one id (extracting them into consts broke scoping).
@@ -395,7 +543,7 @@ function Integration({
         <div className="itop">
           <span className="iname">{name}</span>
           {req && !soon && <span className="req">{req}</span>}
-          {soon && <span className="soon">BALD</span>}
+          {soon && <span className="soon">{soonLabel ?? 'Soon'}</span>}
         </div>
         <div className="idesc">{desc}</div>
       </div>

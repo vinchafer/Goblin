@@ -84,6 +84,7 @@ export const STR: Record<Lang, {
     whereKey: string; baseUrlLabel: string; pasteKeyLabel: string;
     securityNote: string; testConn: string; testing: string;
     connectedMsg: string; continueLabel: string; addAnother: string; savedAddAnother: string;
+    save: string; connected: string; customGuide: string[];
     pasteFirst: string; baseRequired: string; invalidKey: string;
     footKeys: string; footSkip: string;
   };
@@ -223,7 +224,13 @@ export const STR: Record<Lang, {
       testConn: 'Verbindung testen', testing: 'Teste…',
       connectedMsg: 'Verbunden. {p} ist bereit.',
       continueLabel: 'Weiter', addAnother: 'Noch einen Provider hinzufügen',
-      savedAddAnother: 'Key gespeichert ✓ — noch einen hinzufügen',
+      savedAddAnother: 'Key gespeichert ✓ — noch einen hinzufügen oder weiter',
+      save: 'Key speichern', connected: 'GESPEICHERT',
+      customGuide: [
+        'Die Base-URL des Providers — z.B. https://api.together.xyz/v1',
+        'Ein API-Schlüssel aus dem Dashboard dieses Providers',
+        'Beides unten einfügen — Goblin routet über seinen OpenAI-kompatiblen Adapter',
+      ],
       pasteFirst: 'Erst einen Key einfügen',
       baseRequired: 'Base-URL für einen Custom-Provider nötig',
       invalidKey: 'Ungültiger Key',
@@ -402,7 +409,13 @@ export const STR: Record<Lang, {
       testConn: 'Test connection', testing: 'Testing…',
       connectedMsg: 'Connected. {p} is ready.',
       continueLabel: 'Continue', addAnother: 'Add another provider',
-      savedAddAnother: 'Key saved ✓ — add another',
+      savedAddAnother: 'Key saved ✓ — add another or continue',
+      save: 'Save key', connected: 'SAVED',
+      customGuide: [
+        "The provider's base URL — e.g. https://api.together.xyz/v1",
+        "An API key from that provider's dashboard",
+        'Paste both below — Goblin routes through its OpenAI-compatible adapter',
+      ],
       pasteFirst: 'Paste a key first',
       baseRequired: 'Base URL required for a custom provider',
       invalidKey: 'Invalid key',
@@ -476,3 +489,198 @@ export const STR: Record<Lang, {
 };
 
 export type { Dict };
+
+// ── Provider catalog copy (Step 3) ────────────────────────────────────────
+// Language-dependent, version-free copy keyed by provider id. Header subs use
+// an UN-versioned family name + capability tier only (A.4): "Llama", "Gemini",
+// "GPT", "Claude" — NEVER "3.3 70B" / "2.5 Pro" / "GPT-5". The live dynamic
+// catalog in-app shows the actual model names.
+export type ProvCopyId = 'groq' | 'google' | 'openai' | 'anthropic' | 'deepseek' | 'mistral';
+
+export interface ProvCopy {
+  sub: string;
+  pillLabel: string;
+  copy?: string;
+  pros: string[];
+  price: string;
+  guide: string[];
+}
+
+export const PROV_COPY: Record<Lang, Record<ProvCopyId, ProvCopy>> = {
+  de: {
+    groq: {
+      sub: 'Llama · kostenlos, schnell', pillLabel: 'KOSTENLOS · SCHNELL',
+      copy:
+        'Der einfachste Start: schnell, kostenlos und sofort einsatzbereit. Läuft '
+        + 'heute schon zuverlässig in Goblin — perfekt für deinen ersten Build.',
+      pros: [
+        'Kostenlos, schnell, großzügiges Tageslimit',
+        '3–5× schneller als die Standard-API',
+        'Läuft über Goblins verschlüsselten Proxy',
+      ],
+      price: 'KOSTENLOS · KEINE KARTE · ~ 60 SEK',
+      guide: [
+        'Geh auf console.groq.com/keys',
+        'Mit Google/GitHub anmelden',
+        'Auf „Create API Key“ klicken',
+        'Schlüssel kopieren, unten einfügen',
+      ],
+    },
+    google: {
+      sub: 'Gemini · Free Tier', pillLabel: 'KOSTENLOS',
+      pros: [
+        'Großzügiges kostenloses Kontingent — keine Karte',
+        'Starkes Coding, Bild + Audio, riesiger Kontext',
+        'Auto-Routing über Goblins verschlüsselten Proxy',
+      ],
+      price: 'KOSTENLOS · KEINE KARTE · ~ 60 SEK',
+      guide: [
+        'Geh auf aistudio.google.com',
+        'Mit Google-Account anmelden',
+        'Auf „Get API key“ → „Create“ klicken',
+        'Schlüssel kopieren, unten einfügen',
+      ],
+    },
+    openai: {
+      sub: 'GPT · nutzungsbasiert', pillLabel: 'NUTZUNG',
+      pros: ['Frontier-Reasoning, tiefste Modell-Bench', 'Pay-as-you-go, kein Abo', 'Bild, Audio, strukturierte Outputs'],
+      price: 'AB ~$0,01 / CHAT',
+      guide: [
+        'Geh auf platform.openai.com/api-keys',
+        'Anmelden, „Create new secret key“ klicken',
+        'Schlüssel kopieren (nur einmal sichtbar)',
+        'Unten einfügen',
+      ],
+    },
+    anthropic: {
+      sub: 'Claude · Premium', pillLabel: 'NUTZUNG',
+      pros: ['Spitzenklasse-Code-Generierung', 'Riesiger Kontext, lange Edits', 'Wo die meisten Goblin-Nutzer landen'],
+      price: 'AB ~$0,02 / CHAT',
+      guide: [
+        'Geh auf console.anthropic.com',
+        'Anmelden, „API Keys“ öffnen',
+        'Auf „Create key“ klicken',
+        'Kopieren, unten einfügen',
+      ],
+    },
+    deepseek: {
+      sub: 'DeepSeek · nutzungsbasiert', pillLabel: 'NUTZUNG',
+      pros: ['Günstigster Frontier-Coder', 'Spezialisierter Coder für Code-Generierung'],
+      price: 'AB ~$0,003 / CHAT',
+      guide: ['Geh auf platform.deepseek.com', 'Anmelden, „API keys“ öffnen', 'Erstellen + kopieren', 'Unten einfügen'],
+    },
+    mistral: {
+      sub: 'Mistral · EU-gehostet', pillLabel: 'NUTZUNG',
+      pros: ['EU-gehostet, DSGVO-bereit — für Teams mit Datenresidenz', 'Spezialisiertes Code-Completion-Modell'],
+      price: 'AB ~$0,008 / CHAT',
+      guide: ['Geh auf console.mistral.ai', 'Anmelden, „API Keys“ öffnen', 'Erstellen + kopieren', 'Unten einfügen'],
+    },
+  },
+  en: {
+    groq: {
+      sub: 'Llama · free, fast', pillLabel: 'FREE · FAST',
+      copy:
+        'The easiest start: fast, free, and ready right away. Already runs reliably '
+        + 'in Goblin today — perfect for your first build.',
+      pros: [
+        'Free, fast, generous daily limit',
+        '3–5× faster than the standard API',
+        "Runs through Goblin's encrypted proxy",
+      ],
+      price: 'FREE · NO CARD · ~ 60 SEC',
+      guide: [
+        'Go to console.groq.com/keys',
+        'Sign in with Google/GitHub',
+        'Click "Create API Key"',
+        'Copy the key, paste it below',
+      ],
+    },
+    google: {
+      sub: 'Gemini · Free Tier', pillLabel: 'FREE',
+      pros: [
+        'Generous free tier — no card',
+        'Strong coding, image + audio, huge context',
+        "Auto-routes through Goblin's encrypted proxy",
+      ],
+      price: 'FREE · NO CARD · ~ 60 SEC SETUP',
+      guide: [
+        'Go to aistudio.google.com',
+        'Sign in with your Google account',
+        'Click "Get API key" → "Create"',
+        'Copy the key, paste it below',
+      ],
+    },
+    openai: {
+      sub: 'GPT · pay-as-you-go', pillLabel: 'USAGE',
+      pros: ['Frontier reasoning, deepest model bench', 'Pay-as-you-go, no subscription', 'Image, audio, structured outputs'],
+      price: 'FROM ~$0.01 / CHAT',
+      guide: [
+        'Go to platform.openai.com/api-keys',
+        'Sign in, click "Create new secret key"',
+        'Copy the key (shown only once)',
+        'Paste below',
+      ],
+    },
+    anthropic: {
+      sub: 'Claude · Premium', pillLabel: 'USAGE',
+      pros: ['Best-in-class code generation', 'Huge context, long-running edits', 'What most Goblin users end on'],
+      price: 'FROM ~$0.02 / CHAT',
+      guide: [
+        'Go to console.anthropic.com',
+        'Sign in, open "API Keys"',
+        'Click "Create key"',
+        'Copy, paste below',
+      ],
+    },
+    deepseek: {
+      sub: 'DeepSeek · pay-as-you-go', pillLabel: 'USAGE',
+      pros: ['Cheapest frontier-class coder', 'Specialised coder for code generation'],
+      price: 'FROM ~$0.003 / CHAT',
+      guide: ['Go to platform.deepseek.com', 'Sign in, open "API keys"', 'Create + copy', 'Paste below'],
+    },
+    mistral: {
+      sub: 'Mistral · EU-hosted', pillLabel: 'USAGE',
+      pros: ['EU-hosted, GDPR-ready — for teams that need data residency', 'Specialised code-completion model'],
+      price: 'FROM ~$0.008 / CHAT',
+      guide: ['Go to console.mistral.ai', 'Sign in, open "API Keys"', 'Create + copy', 'Paste below'],
+    },
+  },
+};
+
+// ── Tool catalog copy (Step 4) ─────────────────────────────────────────────
+export type ToolCopyId =
+  | 'web_search' | 'docs_lookup' | 'repo_search' | 'screenshot'
+  | 'design_refs' | 'schema_gen'
+  | 'lint_format' | 'type_check' | 'test_runner' | 'deploy'
+  | 'pr_opener' | 'db_migrations';
+
+export const TOOL_COPY: Record<Lang, Record<ToolCopyId, { name: string; desc: string }>> = {
+  de: {
+    web_search: { name: 'Websuche', desc: 'Belegte Live-Websuche mit Quellen.' },
+    docs_lookup: { name: 'Doku-Lookup', desc: 'Live MDN, npm & offizielle Docs nachschlagen.' },
+    repo_search: { name: 'Repo-Suche', desc: 'Durchsucht deine verknüpften GitHub-Repos.' },
+    screenshot: { name: 'Screenshot-Verständnis', desc: 'Wirf einen Screenshot rein — braucht ein Vision-Modell (z.B. Gemini).' },
+    design_refs: { name: 'Design-Referenzen', desc: 'Stöbert in Dribbble & Behance.' },
+    schema_gen: { name: 'Schema-Generator', desc: 'Klartext → SQL / Prisma / Zod.' },
+    lint_format: { name: 'Lint & Format', desc: 'Prettier · ESLint, vor dem Diff auto-gefixt.' },
+    type_check: { name: 'Type-Check', desc: 'tsc · pyright bei jeder Änderung.' },
+    test_runner: { name: 'Test-Runner', desc: 'Vitest · Jest · Playwright.' },
+    deploy: { name: 'Deploy', desc: 'Ein-Klick-Deploy zu Vercel.' },
+    pr_opener: { name: 'PR-Öffner', desc: 'Öffnet einen Draft-PR statt direkt zu pushen.' },
+    db_migrations: { name: 'Datenbank-Migrationen', desc: 'Generiert & führt Prisma- / Drizzle-Migrationen aus.' },
+  },
+  en: {
+    web_search: { name: 'Web search', desc: 'Cited, live web search.' },
+    docs_lookup: { name: 'Documentation lookup', desc: 'Live MDN, npm & official-docs lookup.' },
+    repo_search: { name: 'Repo search', desc: 'Searches your linked GitHub repos.' },
+    screenshot: { name: 'Screenshot understanding', desc: 'Drop a screenshot — works on a vision model (e.g. Gemini).' },
+    design_refs: { name: 'Design references', desc: 'Browses Dribbble & Behance.' },
+    schema_gen: { name: 'Schema generator', desc: 'Plain-English → SQL / Prisma / Zod.' },
+    lint_format: { name: 'Lint & format', desc: 'Prettier · ESLint, auto-fixed before diff.' },
+    type_check: { name: 'Type check', desc: 'tsc · pyright on every change.' },
+    test_runner: { name: 'Test runner', desc: 'Vitest · Jest · Playwright.' },
+    deploy: { name: 'Deploy', desc: 'One-click deploy to Vercel.' },
+    pr_opener: { name: 'PR opener', desc: 'Opens a draft PR instead of pushing direct.' },
+    db_migrations: { name: 'Database migrations', desc: 'Generates & runs Prisma / Drizzle migrations.' },
+  },
+};

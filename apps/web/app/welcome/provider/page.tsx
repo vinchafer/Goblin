@@ -24,6 +24,7 @@ import {
 } from '../_components/icons';
 import { ProviderLogo } from '@/components/onboarding/ProviderLogo';
 import { patchOnboardingState } from '../_components/onboarding-state';
+import { useOnbLang, STR, PROV_COPY, type Lang, type ProvCopy, type ProvCopyId } from '../_components/i18n';
 
 // Turn bare domains / URLs inside guide copy into real, clickable links.
 // (A-S4: the console.groq.com link — and every other — must be tappable.)
@@ -51,117 +52,30 @@ function Linkify({ text }: { text: string }) {
 // except `custom` (see TODO above).
 type ProviderId = 'google' | 'openai' | 'anthropic' | 'groq' | 'deepseek' | 'mistral' | 'custom';
 
-interface Provider {
-  id: ProviderId;
+// Static, language-independent provider meta. All display copy (sub, pill
+// label, pros, price, guide) is version-free and lives in PROV_COPY keyed by
+// lang + id (10.10 A.4). Merged at render via providerCopy().
+interface ProviderMeta {
+  id: Exclude<ProviderId, 'custom'>;
   name: string;
-  sub: string;
   pill: 'free' | 'paid' | 'fast';
-  pillLabel: string;
   hero?: boolean;
   brand: { glyph: string; bg: string };
-  pros: string[];
-  copy?: string;
-  price: string;
   placeholder: string;
-  guide: string[];
 }
 
-const PROVIDERS: Provider[] = [
-  {
-    id: 'groq', name: 'Groq', sub: 'LLAMA 3.3 70B · KOSTENLOS', hero: true,
-    pill: 'fast', pillLabel: 'FREE · FAST',
-    brand: { glyph: 'q', bg: '#F55036' },
-    copy: 'Der einfachste Start: schnell, kostenlos, und sofort einsatzbereit. Läuft heute schon zuverlässig in Goblin — perfekt für deinen ersten Build.',
-    pros: [
-      'Groq · schnell, kostenlos, ~14400 req/day',
-      '3–5× schneller als die Standard-API',
-      "Läuft über Goblins verschlüsselten Proxy",
-    ],
-    price: 'KOSTENLOS · KEINE KARTE · ~ 60 SEK',
-    placeholder: 'gsk_…',
-    guide: [
-      'Geh auf console.groq.com/keys',
-      'Mit Google/GitHub anmelden',
-      'Auf "Create API Key" klicken',
-      'Schlüssel kopieren, unten einfügen',
-    ],
-  },
-  {
-    id: 'google', name: 'Google Gemini', sub: 'GEMINI 2.5 PRO · FREE TIER',
-    pill: 'free', pillLabel: 'FREE',
-    brand: { glyph: 'G', bg: 'linear-gradient(135deg, #4285F4 0%, #9B72CB 50%, #D96570 100%)' },
-    pros: [
-      '1,500 requests/day on the free tier — no card',
-      'Strong coding, image + audio, 1M-token context',
-      "Auto-routes through Goblin's encrypted proxy",
-    ],
-    price: 'FREE · NO CARD · ~ 60 SEC SETUP',
-    placeholder: 'AIza…',
-    guide: [
-      'Go to aistudio.google.com',
-      'Sign in with your Google account',
-      'Click "Get API key" → "Create"',
-      'Copy the key, paste it below',
-    ],
-  },
-  {
-    id: 'openai', name: 'OpenAI', sub: 'GPT-5 FAMILY',
-    pill: 'paid', pillLabel: 'USAGE',
-    brand: { glyph: '○', bg: '#0F0F0F' },
-    pros: ['Frontier reasoning, deepest model bench', 'Pay-as-you-go, no subscription', 'Image, audio, structured outputs'],
-    price: 'FROM ~$0.01 / CHAT',
-    placeholder: 'sk-…',
-    guide: [
-      'Go to platform.openai.com/api-keys',
-      'Sign in, click "Create new secret key"',
-      'Copy the key (shown only once)',
-      'Paste below',
-    ],
-  },
-  {
-    id: 'anthropic', name: 'Anthropic', sub: 'CLAUDE SONNET 4.6',
-    pill: 'paid', pillLabel: 'USAGE',
-    // Anthropic brand clay — see notes in mockup _new.html
-    brand: { glyph: 'A', bg: '#D97757' },
-    pros: ['Best-in-class code generation', '200k context, long-running edits', 'What most Goblin users end on'],
-    price: 'FROM ~$0.02 / CHAT',
-    placeholder: 'sk-ant-…',
-    guide: [
-      'Go to console.anthropic.com',
-      'Sign in, open "API Keys"',
-      'Click "Create key"',
-      'Copy, paste below',
-    ],
-  },
-  {
-    id: 'deepseek', name: 'DeepSeek', sub: 'V3 · CODER V3',
-    pill: 'paid', pillLabel: 'USAGE',
-    brand: { glyph: 'D', bg: '#1E40AF' },
-    pros: ['Cheapest frontier-class coder — ~$0.14/M tokens', 'Specialised Coder V3 for code generation'],
-    price: 'FROM ~$0.003 / CHAT',
-    placeholder: 'sk-…',
-    guide: [
-      'Go to platform.deepseek.com',
-      'Sign in, open "API keys"',
-      'Create + copy',
-      'Paste below',
-    ],
-  },
-  {
-    id: 'mistral', name: 'Mistral', sub: 'LARGE 2 · CODESTRAL · EU-HOSTED',
-    pill: 'paid', pillLabel: 'USAGE',
-    brand: { glyph: 'M', bg: 'linear-gradient(180deg, #FF9D33 0%, #F54B16 100%)' },
-    pros: ['EU-hosted, GDPR-ready — for teams that need data residency', 'Codestral — specialised code-completion model'],
-    price: 'FROM ~$0.008 / CHAT',
-    placeholder: '…',
-    guide: [
-      'Go to console.mistral.ai',
-      'Sign in, open "API Keys"',
-      'Create + copy',
-      'Paste below',
-    ],
-  },
+const PROVIDERS: ProviderMeta[] = [
+  { id: 'groq', name: 'Groq', hero: true, pill: 'fast', brand: { glyph: 'q', bg: '#F55036' }, placeholder: 'gsk_…' },
+  { id: 'google', name: 'Google Gemini', pill: 'free', brand: { glyph: 'G', bg: 'linear-gradient(135deg, #4285F4 0%, #9B72CB 50%, #D96570 100%)' }, placeholder: 'AIza…' },
+  { id: 'openai', name: 'OpenAI', pill: 'paid', brand: { glyph: '○', bg: '#0F0F0F' }, placeholder: 'sk-…' },
+  { id: 'anthropic', name: 'Anthropic', pill: 'paid', brand: { glyph: 'A', bg: '#D97757' }, placeholder: 'sk-ant-…' },
+  { id: 'deepseek', name: 'DeepSeek', pill: 'paid', brand: { glyph: 'D', bg: '#1E40AF' }, placeholder: 'sk-…' },
+  { id: 'mistral', name: 'Mistral', pill: 'paid', brand: { glyph: 'M', bg: 'linear-gradient(180deg, #FF9D33 0%, #F54B16 100%)' }, placeholder: '…' },
 ];
+
+function providerCopy(lang: Lang, id: ProvCopyId) {
+  return PROV_COPY[lang][id];
+}
 
 type CardState = {
   open: boolean;
@@ -169,6 +83,7 @@ type CardState = {
   guideOpen: boolean;
   testing: boolean;
   connected: boolean;
+  saved: boolean;        // persisted via POST /byok-keys (10.10 C.1 dual-key)
   error?: string;
   keyValue: string;
   baseURL?: string;      // custom only
@@ -176,12 +91,14 @@ type CardState = {
 
 const emptyCard: CardState = {
   open: false, shown: false, guideOpen: false,
-  testing: false, connected: false, keyValue: '',
+  testing: false, connected: false, saved: false, keyValue: '',
 };
 
 function Step2Inner() {
   const search = useSearchParams();
   const router = useRouter();
+  const lang = useOnbLang();
+  const t = STR[lang].provider;
   const path = (search?.get('path') === 'a' ? 'a' : 'b') as 'a' | 'b';
 
   const [cards, setCards] = useState<Record<string, CardState>>(() => {
@@ -194,6 +111,7 @@ function Step2Inner() {
         guideOpen: path === 'b' && hero,
         testing: false,
         connected: false,
+        saved: false,
         keyValue: '',
       };
     });
@@ -230,11 +148,11 @@ function Step2Inner() {
   async function testConnection(id: string) {
     const card = cards[id] ?? emptyCard;
     if (!card.keyValue) {
-      patchCard(id, { error: 'Paste a key first' });
+      patchCard(id, { error: t.pasteFirst });
       return;
     }
     if (id === 'custom' && !card.baseURL) {
-      patchCard(id, { error: 'Base URL required for a custom provider' });
+      patchCard(id, { error: t.baseRequired });
       return;
     }
     patchCard(id, { testing: true, error: undefined });
@@ -255,16 +173,17 @@ function Step2Inner() {
       if (body?.valid) {
         patchCard(id, { testing: false, connected: true, error: undefined });
       } else {
-        patchCard(id, { testing: false, error: body?.error || 'Invalid key' });
+        patchCard(id, { testing: false, error: body?.error || t.invalidKey });
       }
     } catch (e) {
       patchCard(id, { testing: false, error: e instanceof Error ? e.message : 'Test failed' });
     }
   }
 
-  async function continueAfterTest(id: string) {
-    // Persist the validated key, then advance to step 3.
-    // POST /api/byok-keys/ re-runs testKey server-side — safe + idempotent.
+  // 10.10 C.1 — dual-key: persist the validated key but STAY on the step so the
+  // user can add another provider before continuing. POST /api/byok-keys/
+  // re-runs testKey server-side — safe + idempotent.
+  async function saveKey(id: string) {
     try {
       const headers = await getAuthHeaders();
       const card = cards[id] ?? emptyCard;
@@ -282,9 +201,18 @@ function Step2Inner() {
     } catch {
       // Non-blocking — user can retry from settings if creation fails.
     }
+    await patchOnboardingState({ ai_provider_choice: 'byok' });
+    // Mark saved + collapse this card so another provider can be opened.
+    patchCard(id, { saved: true, open: false });
+  }
+
+  // Advance to the tools step. Available once at least one key is saved.
+  async function goNext() {
     await patchOnboardingState({ ai_provider_choice: 'byok', current_step: 4 });
     router.push('/welcome/tools');
   }
+
+  const anySaved = Object.values(cards).some((c) => c.saved);
 
   const heroOnly = PROVIDERS.filter((p) => p.hero);
   const rest = PROVIDERS.filter((p) => !p.hero);
@@ -293,23 +221,20 @@ function Step2Inner() {
     <div className="step2" data-path={path}>
       <header className="head">
         <Link href="/welcome/routing" className="back-link">
-          ← Back to how Goblin works
+          {t.back}
         </Link>
-        <div className="eyebrow"><span className="tick" />Step 03 of 06 — Pick a provider</div>
-        <h1>Pick your AI <span className="gobl-serif">provider.</span></h1>
-        <p className="lead">
-          Six providers, three patterns: <b>free tier</b>, <b>pay-as-you-go</b>,
-          and <b>fast inference</b>. Start with Groq — Goblin handles the rest.
-        </p>
+        <div className="eyebrow"><span className="tick" />{t.eyebrow}</div>
+        <h1>{t.titleA} <span className="gobl-serif">{t.titleB}</span></h1>
+        <p className="lead">{t.lead}</p>
       </header>
 
       <div className="fallback-call">
         <span className="ic"><ILink size={18} /></span>
         <div className="body">
-          <div className="t">Pick one. Get all six.</div>
-          <div className="s">When your provider hits a rate limit or errors, Goblin swaps to the next one in your chain — silently, instantly, no dropped messages.</div>
+          <div className="t">{t.fallbackTitle}</div>
+          <div className="s">{t.fallbackBody}</div>
         </div>
-        <span className="tag">AUTO-FALLBACK · TUNE IN SETTINGS</span>
+        <span className="tag">{t.fallbackTag}</span>
       </div>
 
       <div className="hero-row">
@@ -317,12 +242,15 @@ function Step2Inner() {
           <ProviderCard
             key={p.id}
             p={p}
+            copy={providerCopy(lang, p.id)}
+            t={t}
             state={cards[p.id] ?? emptyCard}
             path={path}
             onOpen={() => openCard(p.id)}
             onChange={(patch) => patchCard(p.id, patch)}
             onTest={() => testConnection(p.id)}
-            onContinue={() => continueAfterTest(p.id)}
+            onSave={() => saveKey(p.id)}
+            onNext={goNext}
           />
         ))}
       </div>
@@ -332,12 +260,15 @@ function Step2Inner() {
           <ProviderCard
             key={p.id}
             p={p}
+            copy={providerCopy(lang, p.id)}
+            t={t}
             state={cards[p.id] ?? emptyCard}
             path={path}
             onOpen={() => openCard(p.id)}
             onChange={(patch) => patchCard(p.id, patch)}
             onTest={() => testConnection(p.id)}
-            onContinue={() => continueAfterTest(p.id)}
+            onSave={() => saveKey(p.id)}
+            onNext={goNext}
           />
         ))}
       </div>
@@ -345,25 +276,33 @@ function Step2Inner() {
       <div className="pro-note">
         <span className="ic"><IShield size={16} /></span>
         <p>
-          <b>Claude Pro oder ChatGPT Plus?</b> Dein Abo gilt nur für die
-          Anbieter-Webseite — hier brauchst du den API-Schlüssel der Firma, den
-          holst du dir separat. Oft günstiger als ein Pro-Abo, vor allem wenn du
-          Goblin nur ab und zu nutzt.
+          <b>{t.proNoteTitle}</b>{t.proNoteBody}
         </p>
       </div>
 
       <CustomProviderCard
         state={cards['custom'] ?? emptyCard}
+        t={t}
         onOpen={() => openCard('custom')}
         onChange={(patch) => patchCard('custom', patch)}
         onTest={() => testConnection('custom')}
-        onContinue={() => continueAfterTest('custom')}
+        onSave={() => saveKey('custom')}
+        onNext={goNext}
       />
 
+      {anySaved && (
+        <div className="continue-bar">
+          <span className="cb-msg"><ICheck size={15} /> {t.savedAddAnother}</span>
+          <button type="button" className="cb-next" onClick={goNext}>
+            {t.continueLabel} <IArrowR size={14} />
+          </button>
+        </div>
+      )}
+
       <div className="footstrip">
-        <span className="skip"><IShield size={11} />KEYS ENCRYPTED · CHANGE OR REVOKE ANY TIME</span>
-        <span className="gobl-mono">/welcome/provider · STEP 03 OF 06</span>
-        <Link href="/welcome/tools">SKIP — DECIDE LATER →</Link>
+        <span className="skip"><IShield size={11} />{t.footKeys}</span>
+        <span className="gobl-mono">/welcome/provider · {STR[lang].chrome.step} 03 {STR[lang].chrome.of} 06</span>
+        <Link href="/welcome/tools">{t.footSkip}</Link>
       </div>
 
       <style jsx>{`
@@ -487,53 +426,86 @@ function Step2Inner() {
           font-size: 13px; color: var(--ink-2); line-height: 1.55; margin: 0;
         }
         .pro-note b { color: var(--ink-1); font-weight: 600; }
+
+        /* 10.10 C.1 — dual-key: appears once a key is saved, lets the user add
+           another provider before advancing. */
+        .continue-bar {
+          margin-top: 18px;
+          display: flex; align-items: center; justify-content: space-between;
+          gap: 14px; flex-wrap: wrap;
+          background: var(--surface-deep); color: var(--bone);
+          border: 1px solid var(--green);
+          border-radius: var(--radius-lg);
+          padding: 16px 20px;
+        }
+        .continue-bar .cb-msg {
+          display: inline-flex; align-items: center; gap: 8px;
+          font-family: var(--font-onb-display), Manrope, sans-serif;
+          font-weight: 600; font-size: 14px; color: var(--bone);
+        }
+        .continue-bar .cb-msg :global(svg) { color: var(--gold); flex-shrink: 0; }
+        .continue-bar .cb-next {
+          display: inline-flex; align-items: center; gap: 8px;
+          background: var(--gold); color: var(--green);
+          font-family: var(--font-onb-display), Manrope, sans-serif;
+          font-weight: 700; font-size: 14px;
+          padding: 12px 18px; border-radius: var(--radius);
+          border: 1px solid var(--gold); cursor: pointer;
+          box-shadow: 0 2px 8px rgba(0,0,0,.22);
+          transition: transform .12s ease, box-shadow .12s ease;
+        }
+        .continue-bar .cb-next:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,0,0,.28); }
       `}</style>
     </div>
   );
 }
 
 // ── Provider card ──────────────────────────────────────────────────────
+type ProviderT = (typeof STR)['de']['provider'];
+
 function ProviderCard({
-  p, state, path, onOpen, onChange, onTest, onContinue,
+  p, copy, t, state, path, onOpen, onChange, onTest, onSave, onNext,
 }: {
-  p: Provider; state: CardState; path: 'a' | 'b';
+  p: ProviderMeta; copy: ProvCopy; t: ProviderT; state: CardState; path: 'a' | 'b';
   onOpen: () => void;
   onChange: (patch: Partial<CardState>) => void;
   onTest: () => void;
-  onContinue: () => void;
+  onSave: () => void;
+  onNext: () => void;
 }) {
-  const dim = path === 'b' && !p.hero && !state.open;
+  const dim = path === 'b' && !p.hero && !state.open && !state.saved;
   return (
     <article
-      className={`gobl-prov-card prov ${p.hero ? 'hero' : ''} ${state.open ? 'open' : ''} ${dim ? 'dim' : ''}`}
+      className={`gobl-prov-card prov ${p.hero ? 'hero' : ''} ${state.open ? 'open' : ''} ${state.saved ? 'saved' : ''} ${dim ? 'dim' : ''}`}
     >
-      {p.hero && <span className="ribbon">RECOMMENDED · FREE TIER</span>}
+      {p.hero && !state.saved && <span className="ribbon">{t.recommended}</span>}
+      {state.saved && <span className="ribbon saved-ribbon"><ICheck size={11} /> {t.connected}</span>}
       <div className="prov-head">
         <span className={`brand ${p.hero ? 'brand-lg' : ''}`} style={{ background: p.brand.bg }}>
           <ProviderLogo id={p.id} size={p.hero ? 40 : 22} tone="light" fallbackLabel={p.name[0]} />
         </span>
         <div className="prov-name">
           <h3>{p.name}</h3>
-          <span className="sub">{p.sub}</span>
+          <span className="sub">{copy.sub}</span>
         </div>
-        <span className={`pill pill-${p.pill}`}>{p.pillLabel}</span>
+        <span className={`pill pill-${p.pill}`}>{copy.pillLabel}</span>
       </div>
-      {p.copy && <p className="copy">{p.copy}</p>}
+      {copy.copy && <p className="copy">{copy.copy}</p>}
       <div className="pros">
-        {p.pros.map((pro) => (
+        {copy.pros.map((pro) => (
           <div key={pro} className="pro">
             <span className="ic"><ICheck size={14} /></span>{pro}
           </div>
         ))}
       </div>
       <div className="prov-foot">
-        <span className="price">{p.price}</span>
+        <span className="price">{copy.price}</span>
         <button
           type="button"
           className={`btn ${p.hero ? 'btn-primary btn-lg' : 'btn-secondary btn-sm'}`}
           onClick={onOpen}
         >
-          {p.hero ? 'Start setup' : 'Connect'} <IArrowR size={p.hero ? 13 : 11} />
+          {state.saved ? t.addAnother : p.hero ? t.startSetup : t.connect} <IArrowR size={p.hero ? 13 : 11} />
         </button>
       </div>
 
@@ -541,11 +513,13 @@ function ProviderCard({
         <KeyPanel
           providerLabel={p.name}
           placeholder={p.placeholder}
-          guide={p.guide}
+          guide={copy.guide}
+          t={t}
           state={state}
           onChange={onChange}
           onTest={onTest}
-          onContinue={onContinue}
+          onSave={onSave}
+          onNext={onNext}
         />
       )}
 
@@ -587,6 +561,11 @@ function ProviderCard({
           padding: 4px 10px; border-radius: var(--radius-xs);
           background: var(--accent-bright); color: var(--green);
         }
+        .ribbon.saved-ribbon {
+          display: inline-flex; align-items: center; gap: 5px;
+          background: var(--ok); color: #fff; letter-spacing: 0.12em;
+        }
+        .prov.saved { border-color: var(--ok); box-shadow: 0 0 0 1px var(--ok); }
         .prov-head { display: flex; align-items: center; gap: 14px; }
         .brand {
           width: 44px; height: 44px; border-radius: 10px;
@@ -663,52 +642,47 @@ function ProviderCard({
 
 // ── Custom-provider card (dashed) ──────────────────────────────────────
 function CustomProviderCard({
-  state, onOpen, onChange, onTest, onContinue,
+  state, t, onOpen, onChange, onTest, onSave, onNext,
 }: {
-  state: CardState;
+  state: CardState; t: ProviderT;
   onOpen: () => void;
   onChange: (patch: Partial<CardState>) => void;
   onTest: () => void;
-  onContinue: () => void;
+  onSave: () => void;
+  onNext: () => void;
 }) {
   return (
-    <div className={`prov-more gobl-prov-card ${state.open ? 'open' : ''}`}>
+    <div className={`prov-more gobl-prov-card ${state.open ? 'open' : ''} ${state.saved ? 'saved' : ''}`}>
       <div className="more-head">
-        <span className="power-badge">POWER USER · ALL FRONTIER MODELS</span>
+        <span className="power-badge">{t.powerBadge}</span>
         <span className="more-logos" aria-hidden>
           <span className="lchip"><ProviderLogo id="fireworks" size={16} tone="ink" /></span>
           <span className="lchip"><ProviderLogo id="together" size={16} tone="ink" /></span>
           <span className="lchip"><ProviderLogo id="openrouter" size={16} tone="ink" /></span>
         </span>
         <div className="more-name">
-          <h3>One key, every model</h3>
-          <span className="sub">
-            Fireworks, Together, OpenRouter, Perplexity — or any OpenAI-compatible
-            endpoint. Pay-as-you-go. Get Llama, Mixtral, Qwen, DeepSeek and more
-            with a single key.
-          </span>
+          <h3>{t.customTitle}</h3>
+          <span className="sub">{t.customBody}</span>
         </div>
         <div className="more-foot">
-          <span className="more-price">FROM ~$0.10 / M TOKENS</span>
+          <span className="more-price">{t.customPrice}</span>
           <button type="button" className="btn-secondary" onClick={onOpen}>
-            Add endpoint <IArrowR size={12} />
+            {state.saved ? t.addAnother : t.addEndpoint} <IArrowR size={12} />
           </button>
         </div>
       </div>
 
       {state.open && (
         <KeyPanel
-          providerLabel="Custom endpoint"
+          providerLabel={t.customTitle}
           placeholder="key…"
-          guide={[
-            "The provider's base URL — e.g. https://api.together.xyz/v1",
-            "An API key from that provider's dashboard",
-            'Paste both below — Goblin routes through its OpenAI-compatible adapter',
-          ]}
+          guide={t.customGuide}
+          t={t}
           state={state}
           onChange={onChange}
           onTest={onTest}
-          onContinue={onContinue}
+          onSave={onSave}
+          onNext={onNext}
           baseUrlField
         />
       )}
@@ -796,15 +770,17 @@ function CustomProviderCard({
 
 // ── Key panel (inline) ─────────────────────────────────────────────────
 function KeyPanel({
-  providerLabel, placeholder, guide, state, onChange, onTest, onContinue, baseUrlField,
+  providerLabel, placeholder, guide, t, state, onChange, onTest, onSave, onNext, baseUrlField,
 }: {
   providerLabel: string;
   placeholder: string;
   guide: string[];
+  t: ProviderT;
   state: CardState;
   onChange: (patch: Partial<CardState>) => void;
   onTest: () => void;
-  onContinue: () => void;
+  onSave: () => void;
+  onNext: () => void;
   baseUrlField?: boolean;
 }) {
   const detailsRef = useRef<HTMLDetailsElement>(null);
@@ -823,7 +799,7 @@ function KeyPanel({
       >
         <summary>
           <span className="chev"><IArrowR size={12} /></span>
-          Where do I get this key?
+          {t.whereKey}
         </summary>
         <ol>
           {guide.map((step, i) => (
@@ -834,7 +810,7 @@ function KeyPanel({
 
       {baseUrlField && (
         <div>
-          <label className="field-label">Base URL</label>
+          <label className="field-label">{t.baseUrlLabel}</label>
           <div className="key-input-wrap">
             <input
               type="text"
@@ -848,7 +824,7 @@ function KeyPanel({
       )}
 
       <div>
-        <label className="field-label">Paste your API key</label>
+        <label className="field-label">{t.pasteKeyLabel}</label>
         <div className="key-input-wrap">
           <input
             type={state.shown ? 'text' : 'password'}
@@ -870,14 +846,14 @@ function KeyPanel({
         </div>
         <p className="security-note">
           <span className="ic"><IShield size={12} /></span>
-          Encrypted the moment you paste. Goblin never logs it, never shows it in chat.
+          {t.securityNote}
         </p>
       </div>
 
       <div className="key-actions">
         {!state.connected && (
           <button type="button" className="btn-primary" onClick={onTest} disabled={state.testing}>
-            {state.testing ? 'Testing…' : 'Test connection'}
+            {state.testing ? t.testing : t.testConn}
           </button>
         )}
         {state.error && <span className="error">{state.error}</span>}
@@ -886,9 +862,9 @@ function KeyPanel({
       {state.connected && (
         <div className="key-success">
           <span className="check"><ICheck size={14} /></span>
-          <span className="msg">Connected. {providerLabel} is ready.</span>
-          <button type="button" className="continue" onClick={onContinue}>
-            Continue <IArrowR size={12} />
+          <span className="msg">{t.connectedMsg.replace('{p}', providerLabel)}</span>
+          <button type="button" className="continue" onClick={onSave}>
+            {t.save} <IArrowR size={12} />
           </button>
         </div>
       )}

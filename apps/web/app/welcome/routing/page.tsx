@@ -14,44 +14,15 @@ import { useSearchParams } from 'next/navigation';
 import { getAuthHeaders, API_URL } from '@/lib/api';
 import { IArrowL, IArrowR, ICheck, IShield } from '../_components/icons';
 import { patchOnboardingState } from '../_components/onboarding-state';
+import { useOnbLang, STR } from '../_components/i18n';
 
-type LayerStatus = { label: string; tone: 'active' | 'soon' | 'optional' };
-
-const LAYERS: Array<{
-  n: string;
-  title: string;
-  status: LayerStatus;
-  body: string;
-}> = [
-  {
-    n: '1',
-    title: 'Free models with your own keys',
-    status: { label: 'Active', tone: 'active' },
-    body:
-      'Groq Llama 3.3 70B (you connected this) and Google Gemini 2.5 Pro free tier. '
-      + 'Goblin orchestrates and falls back automatically if one hits its limit. '
-      + 'Most people start here and never leave.',
-  },
-  {
-    n: '2',
-    title: 'Bigger models, no key needed',
-    status: { label: 'Coming Q1 2027', tone: 'soon' },
-    body:
-      'We run Llama 70B+ on our own GPU pool. You use them straight through Goblin '
-      + '— no API key, no token panic, no provider rate-limits. This is what makes '
-      + 'Goblin different from a key manager.',
-  },
-  {
-    n: '3',
-    title: 'Claude Sonnet 4.6, GPT-5 — optional',
-    status: { label: 'Optional · own key', tone: 'optional' },
-    body:
-      'For your hardest builds. Goblin routes to your premium provider when you ask '
-      + 'for it — or always, if you set that as the default in Settings.',
-  },
-];
+// Tone per layer index (0 active, 1 soon, 2 optional) — drives card styling.
+// Copy itself lives in i18n.ts; speak PROVIDERS + tiers, never model versions.
+const TONES = ['active', 'soon', 'optional'] as const;
 
 function RoutingInner() {
+  const lang = useOnbLang();
+  const t = STR[lang].layers;
   const [waitlist, setWaitlist] = useState<'idle' | 'busy' | 'done'>('idle');
   const search = useSearchParams();
   const path = search?.get('path') === 'a' ? 'a' : 'b';
@@ -85,66 +56,67 @@ function RoutingInner() {
     <div className="step3">
       <header className="head">
         <Link href="/welcome" className="back">
-          <IArrowL size={12} /> <span>Back</span>
+          <IArrowL size={12} /> <span>{t.back}</span>
         </Link>
-        <div className="eyebrow"><span className="tick" /><span>Step 02 of 06 — How Goblin routes your prompts</span></div>
-        <h1>How Goblin <span className="gobl-serif">works.</span></h1>
-        <p className="lead">
-          Three layers. You choose how far up you want to go. Most people start
-          at Layer 1 and never leave.
-        </p>
+        <div className="eyebrow"><span className="tick" /><span>{t.eyebrow}</span></div>
+        <h1>{t.titleA} <span className="gobl-serif">{t.titleB}</span></h1>
+        <p className="lead">{t.lead}</p>
       </header>
 
       <div className="layers">
-        {LAYERS.map((layer) => (
-          <div key={layer.n} className={`layer layer-${layer.status.tone}`}>
-            <span className="lnum">{layer.n}</span>
-            <div className="lbody">
-              <div className="lhead">
-                <span className="ltag">Layer {layer.n}</span>
-                <span className={`lbadge badge-${layer.status.tone}`}>{layer.status.label}</span>
+        {t.items.map((layer, i) => {
+          const tone = TONES[i];
+          const n = String(i + 1);
+          return (
+            <div key={n} className={`layer layer-${tone}`}>
+              <span className="lnum">{n}</span>
+              <div className="lbody">
+                <div className="lhead">
+                  <span className="ltag">{layer.tag}</span>
+                  <span className={`lbadge badge-${tone}`}>{layer.badge}</span>
+                </div>
+                <h3>{layer.title}</h3>
+                <p>{layer.body}</p>
+                {n === '3' && (
+                  <Link
+                    href={nextHref}
+                    className="layer3-link"
+                    onClick={() => patchOnboardingState({ current_step: 3 })}
+                  >
+                    {t.l3cta} <IArrowR size={13} />
+                  </Link>
+                )}
+                {tone === 'soon' && (
+                  <button
+                    type="button"
+                    className={`waitlist ${waitlist === 'done' ? 'joined' : ''}`}
+                    onClick={joinWaitlist}
+                    disabled={waitlist !== 'idle'}
+                  >
+                    {waitlist === 'done'
+                      ? <><ICheck size={13} /> {t.waitlistDone}</>
+                      : waitlist === 'busy'
+                        ? t.waitlistBusy
+                        : <>{t.waitlistIdle} <IArrowR size={13} /></>}
+                  </button>
+                )}
               </div>
-              <h3>{layer.title}</h3>
-              <p>{layer.body}</p>
-              {layer.n === '3' && (
-                <Link
-                  href={nextHref}
-                  className="layer3-link"
-                  onClick={() => patchOnboardingState({ current_step: 3 })}
-                >
-                  Premium-Provider hinzufügen <IArrowR size={13} />
-                </Link>
-              )}
-              {layer.status.tone === 'soon' && (
-                <button
-                  type="button"
-                  className={`waitlist ${waitlist === 'done' ? 'joined' : ''}`}
-                  onClick={joinWaitlist}
-                  disabled={waitlist !== 'idle'}
-                >
-                  {waitlist === 'done'
-                    ? <><ICheck size={13} /> You&apos;re on the list</>
-                    : waitlist === 'busy'
-                      ? 'Adding you…'
-                      : <>Get on the list <IArrowR size={13} /></>}
-                </button>
-              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="flow">
-        <span className="fstep">Prompt</span>
+        <span className="fstep">{t.flow.prompt}</span>
         <IArrowR size={13} />
-        <span className="fstep on">Layer 1 · default</span>
+        <span className="fstep on">{t.flow.l1}</span>
         <IArrowR size={13} />
-        <span className="fstep soon">Goblin-Hosted · Q1 2027</span>
+        <span className="fstep soon">{t.flow.l2}</span>
         <IArrowR size={13} />
-        <span className="fstep">Layer 3 · if you opt in</span>
+        <span className="fstep">{t.flow.l3}</span>
       </div>
       <p className="flow-cap">
-        <IShield size={11} /> You can change routing any time in Settings → Routing.
+        <IShield size={11} /> {t.flowCap}
       </p>
 
       <div className="actions">
@@ -153,21 +125,21 @@ function RoutingInner() {
           className="btn-primary"
           onClick={() => patchOnboardingState({ current_step: 3 })}
         >
-          Continue — pick your provider <IArrowR size={14} />
+          {t.continue} <IArrowR size={14} />
         </Link>
         <Link
           href={nextHref}
           className="btn-ghost"
           onClick={() => patchOnboardingState({ current_step: 3 })}
         >
-          Skip — use defaults
+          {t.skip}
         </Link>
       </div>
 
       <div className="footstrip">
-        <span className="skip"><IShield size={11} />CHANGE ANY TIME · SETTINGS / ROUTING</span>
-        <span className="gobl-mono">/welcome/routing · STEP 02 OF 06</span>
-        <Link href={nextHref}>NEXT — PROVIDER →</Link>
+        <span className="skip"><IShield size={11} />{t.footChange}</span>
+        <span className="gobl-mono">/welcome/routing · {STR[lang].chrome.step} 02 {STR[lang].chrome.of} 06</span>
+        <Link href={nextHref}>{t.footNext}</Link>
       </div>
 
       <style jsx>{`

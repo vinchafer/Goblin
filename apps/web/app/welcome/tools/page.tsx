@@ -13,6 +13,8 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { IArrowL, IArrowR, IChat, ICheck, ICode, ICpu, IEye, IFolder, IGithub, ISearch, IShield, ISpark, IBolt, IChart, IVercel } from '../_components/icons';
 import { patchOnboardingState, getOnboardingState } from '../_components/onboarding-state';
+import { useOnbLang, STR, TOOL_COPY, type Lang } from '../_components/i18n';
+import { IOSToggle } from '@/components/ui/IOSToggle';
 
 const LS_KEY = 'goblin:onboarding:tools';
 
@@ -31,34 +33,34 @@ const PRESETS: Record<Preset, ToolId[]> = {
 };
 
 interface ToolDef {
-  id: ToolId; name: string; desc: string; Icon: React.ComponentType<{ size?: number }>;
+  id: ToolId; Icon: React.ComponentType<{ size?: number }>;
   beta?: boolean;
   // `soon` = capability not wired into the agent yet. We badge it honestly
-  // (BALD) rather than imply it works today (A-S8 honesty pass).
+  // (BALD/SOON) rather than imply it works today (A-S8 honesty pass).
   soon?: boolean;
 }
 
 // Honesty audit (Sprint 10.5 A-S8): only tools actually wired today ship
-// unbadged. Everything not yet executed by the agent is marked BALD ("soon").
-// Verified against apps/api: deploy = Vercel (real), schema/screenshot rely on
-// the model itself (real); web/docs/repo search + lint/type/test/PR have no
-// tool registry yet.
+// unbadged. Everything not yet executed by the agent is marked soon. Name +
+// desc come from TOOL_COPY keyed by lang (10.10 i18n). Verified against
+// apps/api: deploy = Vercel (real), schema/screenshot rely on the model itself
+// (real); web/docs/repo search + lint/type/test/PR have no tool registry yet.
 const CHAT_TOOLS: ToolDef[] = [
-  { id: 'web_search', name: 'Web search', desc: 'Cited, live web search.', Icon: ISearch, soon: true },
-  { id: 'docs_lookup', name: 'Documentation lookup', desc: 'Live MDN, npm & official-docs lookup.', Icon: IFolder, soon: true },
-  { id: 'repo_search', name: 'Repo search', desc: 'Searches your linked GitHub repos.', Icon: ICode, soon: true },
-  { id: 'screenshot', name: 'Screenshot understanding', desc: 'Drop a screenshot — works on a vision model (e.g. Gemini).', Icon: IEye },
-  { id: 'design_refs', name: 'Design references', desc: 'Browses Dribbble & Behance.', Icon: ISpark, beta: true },
-  { id: 'schema_gen', name: 'Schema generator', desc: 'Plain-English → SQL / Prisma / Zod.', Icon: IChart },
+  { id: 'web_search', Icon: ISearch, soon: true },
+  { id: 'docs_lookup', Icon: IFolder, soon: true },
+  { id: 'repo_search', Icon: ICode, soon: true },
+  { id: 'screenshot', Icon: IEye },
+  { id: 'design_refs', Icon: ISpark, beta: true },
+  { id: 'schema_gen', Icon: IChart },
 ];
 
 const CODE_TOOLS: ToolDef[] = [
-  { id: 'lint_format', name: 'Lint & format', desc: 'Prettier · ESLint, auto-fixed before diff.', Icon: ICheck, soon: true },
-  { id: 'type_check', name: 'Type check', desc: 'tsc · pyright on every change.', Icon: IShield, soon: true },
-  { id: 'test_runner', name: 'Test runner', desc: 'Vitest · Jest · Playwright.', Icon: IBolt, soon: true },
-  { id: 'deploy', name: 'Deploy', desc: 'One-click deploy to Vercel.', Icon: IVercel },
-  { id: 'pr_opener', name: 'PR opener', desc: 'Opens a draft PR instead of pushing direct.', Icon: IGithub, soon: true },
-  { id: 'db_migrations', name: 'Database migrations', desc: 'Generates & runs Prisma / Drizzle migrations.', Icon: ICpu, beta: true },
+  { id: 'lint_format', Icon: ICheck, soon: true },
+  { id: 'type_check', Icon: IShield, soon: true },
+  { id: 'test_runner', Icon: IBolt, soon: true },
+  { id: 'deploy', Icon: IVercel },
+  { id: 'pr_opener', Icon: IGithub, soon: true },
+  { id: 'db_migrations', Icon: ICpu, beta: true },
 ];
 
 function usePersistedTools(): [Set<ToolId>, Preset, (next: Set<ToolId>) => void, (p: Preset) => void] {
@@ -122,6 +124,8 @@ function usePersistedTools(): [Set<ToolId>, Preset, (next: Set<ToolId>) => void,
 
 export default function ToolsStepPage() {
   const [selected, preset, setSelected, setPreset] = usePersistedTools();
+  const lang = useOnbLang();
+  const t = STR[lang].tools;
 
   useEffect(() => {
     patchOnboardingState({ current_step: 4 });
@@ -133,24 +137,20 @@ export default function ToolsStepPage() {
     setSelected(next);
   }
 
-  const chatOn = CHAT_TOOLS.filter((t) => selected.has(t.id)).length;
-  const codeOn = CODE_TOOLS.filter((t) => selected.has(t.id)).length;
+  const chatOn = CHAT_TOOLS.filter((x) => selected.has(x.id)).length;
+  const codeOn = CODE_TOOLS.filter((x) => selected.has(x.id)).length;
   const total = chatOn + codeOn;
+  const presetName = preset === 'indie' ? t.presetIndieName : preset === 'starter' ? t.presetStarterName : t.presetAllName;
 
   return (
     <div className="step4">
       <header className="head">
         <Link href="/welcome/provider" className="back">
-          <IArrowL size={12} /> Back to providers
+          <IArrowL size={12} /> {t.back}
         </Link>
-        <div className="eyebrow"><span className="tick" /><span>Step 04 of 06 — Tools</span></div>
-        <h1>Give Goblin the right <span className="gobl-serif">tools.</span></h1>
-        <p className="lead">
-          Two toolkits, separately tuned. <b>Chat &amp; architecture</b> for the
-          thinking — web search, docs, your own repo. <b>Coding &amp; shipping</b>
-          for the doing — lint, type-check, tests, deploy. Pick a preset or
-          curate by hand.
-        </p>
+        <div className="eyebrow"><span className="tick" /><span>{t.eyebrow}</span></div>
+        <h1>{t.titleA} <span className="gobl-serif">{t.titleB}</span></h1>
+        <p className="lead">{t.lead}</p>
       </header>
 
       <div className="presets">
@@ -159,72 +159,76 @@ export default function ToolsStepPage() {
           className={`gobl-preset preset ${preset === 'indie' ? 'active' : ''}`}
           onClick={() => setPreset('indie')}
         >
-          <span className="l">RECOMMENDED · MOST POPULAR</span>
-          <span className="name">Indie builder</span>
-          <span className="desc">The 8 tools 84% of Goblin users keep on. Balanced cost vs. capability.</span>
+          <span className="l">{t.presetIndieL}</span>
+          <span className="name">{t.presetIndieName}</span>
+          <span className="desc">{t.presetIndieDesc}</span>
         </button>
         <button
           type="button"
           className={`gobl-preset preset ${preset === 'starter' ? 'active' : ''}`}
           onClick={() => setPreset('starter')}
         >
-          <span className="l">MIN · FREE TIER FRIENDLY</span>
-          <span className="name">Starter</span>
-          <span className="desc">Only docs lookup + lint. No web calls.</span>
+          <span className="l">{t.presetStarterL}</span>
+          <span className="name">{t.presetStarterName}</span>
+          <span className="desc">{t.presetStarterDesc}</span>
         </button>
         <button
           type="button"
           className={`gobl-preset preset ${preset === 'all_on' ? 'active' : ''}`}
           onClick={() => setPreset('all_on')}
         >
-          <span className="l">MAX · POWER USER</span>
-          <span className="name">All on, all the time</span>
-          <span className="desc">Every tool below. Best on Sonnet 4.6 or GPT-5.</span>
+          <span className="l">{t.presetAllL}</span>
+          <span className="name">{t.presetAllName}</span>
+          <span className="desc">{t.presetAllDesc}</span>
         </button>
       </div>
 
       <ToolCategory
-        title="Chat & architecture tools"
-        sub="Goblin reaches for these when you're specifying, planning, or asking questions."
+        title={t.chatTitle}
+        sub={t.chatSub}
         Icon={IChat}
         onCount={chatOn}
         total={CHAT_TOOLS.length}
         tools={CHAT_TOOLS}
         selected={selected}
         onToggle={toggle}
+        lang={lang}
+        t={t}
       />
 
       <ToolCategory
-        title="Coding & shipping tools"
-        sub="Used by Goblin while writing, testing, and pushing code."
+        title={t.codeTitle}
+        sub={t.codeSub}
         Icon={ICode}
         onCount={codeOn}
         total={CODE_TOOLS.length}
         tools={CODE_TOOLS}
         selected={selected}
         onToggle={toggle}
+        lang={lang}
+        t={t}
       />
 
       <div className="recap">
         <div className="body">
-          <div className="t">{total} tools enabled — {preset === 'indie' ? 'Indie builder' : preset === 'starter' ? 'Starter' : 'All-on'} preset.</div>
-          <div className="s">Skip and Goblin keeps this preset — change tools any time in Settings.</div>
+          <div className="t">{t.recapEnabled.replace('{n}', String(total)).replace('{preset}', presetName)}</div>
+          <div className="s">{t.recapSub}</div>
         </div>
         <div className="count">
-          <span className="chip"><span className="v">{chatOn}</span> CHAT</span>
-          <span className="chip"><span className="v">{codeOn}</span> CODING</span>
+          <span className="chip"><span className="v">{chatOn}</span> {t.chat}</span>
+          <span className="chip"><span className="v">{codeOn}</span> {t.coding}</span>
         </div>
         <div className="cta">
           <Link href="/welcome/integrations" className="btn-primary">
-            Continue → Integrations <IArrowR size={13} />
+            {t.continueLabel} <IArrowR size={13} />
           </Link>
         </div>
       </div>
 
       <div className="footstrip">
-        <span className="skip"><IShield size={11} />CHANGE ANY TIME · SETTINGS / TOOLS</span>
-        <span className="gobl-mono">/welcome/tools · STEP 04 OF 06</span>
-        <Link href="/welcome/integrations">SKIP — USE THE DEFAULTS →</Link>
+        <span className="skip"><IShield size={11} />{t.footChange}</span>
+        <span className="gobl-mono">/welcome/tools · {STR[lang].chrome.step} 04 {STR[lang].chrome.of} 06</span>
+        <Link href="/welcome/integrations">{t.footSkip}</Link>
       </div>
 
       <style jsx>{`
@@ -370,12 +374,14 @@ export default function ToolsStepPage() {
 }
 
 function ToolCategory({
-  title, sub, Icon, onCount, total, tools, selected, onToggle,
+  title, sub, Icon, onCount, total, tools, selected, onToggle, lang, t,
 }: {
   title: string; sub: string; Icon: React.ComponentType<{ size?: number }>;
   onCount: number; total: number;
   tools: ToolDef[]; selected: Set<ToolId>;
   onToggle: (id: ToolId) => void;
+  lang: Lang;
+  t: (typeof STR)['de']['tools'];
 }) {
   return (
     <div className="cat">
@@ -385,32 +391,25 @@ function ToolCategory({
           <div className="t">{title}</div>
           <div className="s">{sub}</div>
         </div>
-        <span className="meta"><span className="v">{onCount}</span> OF {total} ON</span>
+        <span className="meta"><span className="v">{onCount}</span> {t.of} {total} {t.on}</span>
       </div>
       <div className="tools-grid">
-        {tools.map((t) => {
-          const on = selected.has(t.id);
-          const Icn = t.Icon;
+        {tools.map((tool) => {
+          const on = selected.has(tool.id);
+          const Icn = tool.Icon;
+          const copy = TOOL_COPY[lang][tool.id];
           return (
-            <div key={t.id} className={`tool-row ${on ? 'on' : ''}`}>
+            <div key={tool.id} className={`tool-row ${on ? 'on' : ''}`}>
               <span className="glyph"><Icn size={15} /></span>
               <div className="body">
                 <div className="name">
-                  {t.name}
-                  {t.beta && <span className="badge">BETA</span>}
-                  {t.soon && <span className="badge badge-soon">BALD</span>}
+                  {copy.name}
+                  {tool.beta && <span className="badge">{t.beta}</span>}
+                  {tool.soon && <span className="badge badge-soon">{t.soon}</span>}
                 </div>
-                <div className="desc">{t.desc}</div>
+                <div className="desc">{copy.desc}</div>
               </div>
-              <button
-                type="button"
-                className={`switch ${on ? 'on' : ''}`}
-                onClick={() => onToggle(t.id)}
-                aria-pressed={on}
-                aria-label={t.name}
-              >
-                <span className="knob" />
-              </button>
+              <IOSToggle value={on} onChange={() => onToggle(tool.id)} ariaLabel={copy.name} />
             </div>
           );
         })}
