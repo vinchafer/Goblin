@@ -1,49 +1,64 @@
-# Session Handoff — after Sprint 10.9 (2026-06-04)
+# Session Handoff — after Sprint 10.11 (2026-06-05)
 
 ## State
-Sprint 10.9 complete: 8 items done (10.9-1 STRUCK as N/A), 8 atomic commits
-(`134f114` → `40dcd6f`). typecheck (api+web+shared) green. Prod build green.
-CDP-verified the auth-gated surfaces (login, ModelPicker, admin deny-path).
+Sprint 10.11 "Make the Loop Actually Work" complete. Two CRITICAL correctness
+bugs root-caused + fixed before any polish, plus the Step-01 restructure and 6
+re-walk fixes. 5 atomic commits pushed: `7b7c64b`, `2122a3d`, `0c683b2`,
+`48ec419`, `85782ed`. typecheck (web+shared+api) green. Web prod build green.
+Full report: `SPRINT_10_11_COMPLETE.md`. Phase write-ups:
+`sprint-10-11/PHASE_0_ROOTCAUSE.md`, `PHASE_A_KEYPERSIST.md`.
 
-## The correction this sprint made
-Phase 0 gate **disproved** the 10.8 assumption of a LiteLLM proxy. Reality
-(`sprint-10-9/PHASE_0_GATE.md`): routing is **direct to provider SDKs**, there is
-**no `litellm` npm dep**, and the proxy instance referenced in `.env.local`
-(`litellm-production-6ba8.up.railway.app`) is an **empty/unconfigured shell**
-(`/v1/models` empty even with master key, `/model/info` 500, every
-`/chat/completions` → 400). → **OPTION B**: per-user provider-discovery is the
-routing source-of-truth.
+## The two critical fixes
+1. **Conversation memory was dead in the standalone (default) chat.** Root
+   cause: `public.standalone_messages` does not exist in prod — it lived only in
+   the manual `scripts/migrate-chat-sessions.sql`, never a formal migration.
+   `routes/chat-sessions.ts` swallowed the resulting insert/select errors, so
+   every turn lost history. Proven live: standalone chat had zero memory; the
+   code tab (its tables exist) had full memory + working edit-in-place.
+   Fix: migration `0065` + error surfacing + a chat.ts dedupe.
+2. **Onboarding key never persisted.** Root cause: `welcome/provider` saved to
+   `/api/byok-keys/` (trailing slash → 404 under strict Hono) and swallowed the
+   error while marking the card saved. Fix: post to `/api/byok-keys` (the exact
+   working Settings endpoint), check res.ok, surface failures.
 
-## What shipped
-- **Catalog reality-check**: dead `/v1/models` sync retired (no-op); hard slug
-  rule locked at the routing call site; `config/providers.ts` formalised as the
-  DISPLAY-ONLY list.
-- **Daily refresh** (10.9-2): per-user provider-discovery re-validation; invalid
-  keys marked + surfaced in Settings (never deleted); rate-limit back-off.
-- **Provider health + circuit breaker** (10.9-3): rolling-window error rate,
-  auto-reroute to the user's fallback chain, "INSTABIL" ModelPicker badge,
-  slug-failure flagging.
-- **Weekly founder digest** (10.9-4): Discord (file fallback), branch-aware.
-- **/admin/catalog dashboard** (10.9-5): ops view + manual triggers; session
-  `is_admin` gate + `ADMIN_EMAIL` fallback.
-- **Vercel zero-config** (10.9-6): disable SSO protection on the Goblin-created
-  project via the user's token; graceful manual fallback; public/manual UX.
+## 🔴 Founder action items (blockers)
+1. **Apply `supabase/migrations/0065_standalone_messages.sql`** to prod
+   (`npx supabase db push` or Studio). This session could NOT apply it — the DB
+   password in `.env.local` is stale (auth rejected) and there is no Supabase
+   management token. Idempotent; safe to re-run.
+2. **Redeploy Railway API** (chat.ts + chat-sessions.ts) and confirm **Vercel
+   deployed the web** (Step-01 A/B/C, Phase A key fix, Phase C UI). At session
+   end prod still served pre-deploy HTML.
+3. **Phase A live round-trip** (needs a throwaway Groq key): walk onboarding →
+   add key → finish → confirm it appears in Settings → My Keys → generate.
+4. After apply+deploy: repeat the 3-turn standalone build
+   ("newsletter page" → "heading bigger" → "background blue").
 
-## Founder actions (priority order)
-1. Apply migrations `0062` / `0063` / `0064` (idempotent, Supabase Studio).
-2. Cron secrets `GOBLIN_API_URL` + `ADMIN_API_KEY` — `sprint-10-9/RAILWAY_CRON_SETUP.md`.
-3. `DISCORD_OPS_WEBHOOK_URL` — `sprint-10-9/DISCORD_WEBHOOK_SETUP.md`.
-4. `UPDATE users SET is_admin=TRUE WHERE email='vinc.hafner@gmail.com'` — `sprint-10-9/ADMIN_USER_SETUP.md`.
-5. **Remove the dead `LITELLM_BASE_URL` line from `.env.local`** and decommission
-   the empty Railway proxy (it would 400 every local generation if loaded).
-6. iPhone Max-walk Round 5: confirm a real generation routes + a publish gives a
-   public URL (Vercel 10.9-6 live PATCH was code/build-verified only — CORS/scope
-   wall blocks a localhost live test).
+## What else shipped
+- Step-01 → A/B/C. A = "Ohne Key starten / Goblins eigenes Modell" + COMING SOON
+  badge (honest teaser, never starts a keyless session; the moat, shown first).
+  B = guided free key, EMPFOHLEN. C = already have a key.
+- False "{n} Anfragen heute übrig" banner gated behind
+  `NEXT_PUBLIC_FREE_POOL_ENABLED` (off) → hidden until the hosted pool is live.
+- C.1 calm "Verbunden ✓"; C.2 real provider logos in Settings (was a
+  letter-avatar regression); C.3 mobile toggle locked to a 51×31 pill (390px,
+  both states); C.4 layer CTAs are real buttons (Next <Link> gets no styled-jsx
+  scope → :global fix); C.5 GitHub create-account explainer + removed the Vercel
+  "Settings" placeholder; C.6 chat code chip → Lucide Code2.
 
-## Verification done / deferred
-- Done (CDP/build/probe): Phase-0 proxy probe, prod build, typecheck (all),
-  ModelPicker catalog renders (Groq), /admin/catalog deny-path redirect,
-  `/api/models/health` live (401).
-- Deferred to founder (env/CORS/scope-bound): live generation no-regression
-  (local confounded by dead-proxy env), live Vercel SSO-disable PATCH=200, live
-  provider-degrade breaker test, Discord webhook delivery.
+## Verification posture
+- Phase 0: prod-proven (CDP, vinc.hafner3).
+- Phase A: root cause proven (local Hono test); code-path-equivalent to Settings;
+  live deferred (no spare key).
+- Phase B/C: verified on a LOCAL prod-data dev build (web not yet deployed);
+  screenshots in `sprint-10-11/`. Toggle measured at 390px.
+
+## Known / Sprint-11 scope
+- Dashboard mixes DE/EN (chat composer placeholder English under DE).
+- Code-tab beautification.
+- Pre-existing: Next <Link> elements miss styled-jsx scope on onboarding pages
+  (also affects `.back`); only the in-scope `.layer-cta` was fixed.
+
+## E2E
+See "E2E status" in SPRINT_10_11_COMPLETE.md (CI projects, local prod-data).
+No green-wash.
