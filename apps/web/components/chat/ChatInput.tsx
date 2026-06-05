@@ -4,6 +4,7 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { apiGet } from '@/lib/api';
 import { createClient } from '@/lib/supabase/client';
+import { useLang } from '@/lib/use-lang';
 import { ComposerPlusPopover, type PlusAction } from './ComposerPlusPopover';
 import { Icon } from '@/components/ui/icon';
 import { GoblinLogo } from '@/components/brand/GoblinLogo';
@@ -113,6 +114,7 @@ function ModelHub({
   /** Open below the composer (hero variant has room below; chat-bottom doesn't). */
   openDown?: boolean;
 }) {
+  const lang = useLang();
   const [query, setQuery] = useState('');
   const [activeTag, setActiveTag] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -202,7 +204,7 @@ function ModelHub({
           ref={inputRef}
           value={query}
           onChange={e => setQuery(e.target.value)}
-          placeholder="Search models…"
+          placeholder={lang === 'en' ? 'Search models…' : 'Modelle suchen …'}
           style={{
             width: '100%', border: '1px solid var(--rule-soft)', borderRadius: 8,
             padding: '7px 12px', fontSize: 'var(--t-small-fs)', outline: 'none',
@@ -419,6 +421,7 @@ export function useChatModel() {
 
 export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelChange, variant = 'default', placeholder, prefill, isStreaming = false, onStop }: ChatInputProps) {
   const hero = variant === 'hero';
+  const lang = useLang();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [input, setInput] = useState('');
 
@@ -620,7 +623,7 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={placeholder ?? 'Describe what you want to build, or ask anything…'}
+            placeholder={placeholder ?? (lang === 'en' ? 'Describe what you want to build, or ask anything…' : 'Beschreibe, was du bauen willst — oder frag einfach …')}
             disabled={disabled}
             rows={hero ? 2 : 1}
             data-chat-input

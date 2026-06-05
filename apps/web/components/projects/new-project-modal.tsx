@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { INTENTS, setStoredIntent, type Intent } from '@/lib/intent';
 import { pendingStcTab } from '@/lib/stc-pending';
+import { useLang } from '@/lib/use-lang';
 
 const COLORS = [
   { name: 'Gold',   hex: '#D4A737' },
@@ -50,6 +51,7 @@ type Mode = 'blank' | 'gallery' | 'template-detail' | 'template-name';
 
 export function NewProjectModal({ onClose, initialMode, initialIdea }: NewProjectModalProps) {
   const router = useRouter();
+  const lang = useLang();
   const supabase = createClient();
 
   const [mode, setMode] = useState<Mode>(initialMode === 'template' ? 'gallery' : 'blank');
@@ -204,8 +206,8 @@ export function NewProjectModal({ onClose, initialMode, initialIdea }: NewProjec
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 24px', borderBottom: '1px solid var(--div)', flexShrink: 0 }}>
           <div style={{ display: 'flex', gap: 4, background: 'var(--subtle)', borderRadius: 9, padding: 4 }}>
-            <ModeTab label="Blank Project" active={mode === 'blank'} onClick={() => setMode('blank')} />
-            <ModeTab label="From Template" active={mode !== 'blank'} onClick={() => setMode('gallery')} />
+            <ModeTab label={lang === 'en' ? 'Blank Project' : 'Leeres Projekt'} active={mode === 'blank'} onClick={() => setMode('blank')} />
+            <ModeTab label={lang === 'en' ? 'From Template' : 'Aus Vorlage'} active={mode !== 'blank'} onClick={() => setMode('gallery')} />
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: 'var(--meta)', padding: 4 }}>✕</button>
         </div>
@@ -217,10 +219,10 @@ export function NewProjectModal({ onClose, initialMode, initialIdea }: NewProjec
           {mode === 'blank' && (
             <form onSubmit={handleBlankSubmit} style={{ padding: '20px 24px 24px' }}>
               <div style={{ marginBottom: 16 }}>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 6 }}>Project Name</label>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 6 }}>{lang === 'en' ? 'Project Name' : 'Projektname'}</label>
                 <input
                   type="text" value={name} onChange={e => setName(e.target.value.slice(0, 50))}
-                  placeholder="My Awesome Project" required maxLength={50} autoFocus
+                  placeholder={lang === 'en' ? 'My Awesome Project' : 'Mein tolles Projekt'} required maxLength={50} autoFocus
                   data-testid="project-name-input"
                   style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 'var(--t-small-fs)', fontFamily: 'var(--font-sans)', outline: 'none', background: 'var(--surface)', color: 'var(--text)', boxSizing: 'border-box' }}
                   onFocus={e => (e.target.style.borderColor = 'var(--brand-green)')}
@@ -230,10 +232,10 @@ export function NewProjectModal({ onClose, initialMode, initialIdea }: NewProjec
               </div>
 
               <div style={{ marginBottom: 16 }}>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 6 }}>What are you building?</label>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 6 }}>{lang === 'en' ? 'What are you building?' : 'Worum geht’s?'}</label>
                 <textarea
                   value={description} onChange={e => setDescription(e.target.value.slice(0, 200))}
-                  rows={3} placeholder="Optional — describe your project idea..." maxLength={200}
+                  rows={3} placeholder={lang === 'en' ? 'Optional — describe your project idea...' : 'Optional — beschreibe deine Projektidee …'} maxLength={200}
                   style={{ width: '100%', padding: '10px 14px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 'var(--t-small-fs)', resize: 'none', fontFamily: 'var(--font-sans)', outline: 'none', background: 'var(--surface)', color: 'var(--text)', boxSizing: 'border-box' }}
                   onFocus={e => (e.target.style.borderColor = 'var(--brand-green)')}
                   onBlur={e => (e.target.style.borderColor = 'var(--border)')}
@@ -280,7 +282,7 @@ export function NewProjectModal({ onClose, initialMode, initialIdea }: NewProjec
               </div>
 
               <div style={{ marginBottom: 24 }}>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 10 }}>Color</label>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 10 }}>{lang === 'en' ? 'Color' : 'Farbe'}</label>
                 <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                   {COLORS.map(c => (
                     <button key={c.hex} type="button" onClick={() => setSelectedColor(c.hex)} title={c.name}
@@ -295,7 +297,7 @@ export function NewProjectModal({ onClose, initialMode, initialIdea }: NewProjec
               <button type="submit" disabled={!name.trim() || loading}
                 data-testid="project-create-submit"
                 style={{ width: '100%', padding: '12px 20px', borderRadius: 10, background: 'var(--brand-green)', color: 'var(--brand-gold)', border: 'none', fontSize: 15, fontWeight: 600, cursor: loading ? 'wait' : 'pointer', fontFamily: 'var(--font-sans)', opacity: !name.trim() ? 0.5 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                {loading ? <Spinner /> : 'Create project →'}
+                {loading ? <Spinner /> : (lang === 'en' ? 'Create project →' : 'Projekt erstellen →')}
               </button>
             </form>
           )}
@@ -314,9 +316,9 @@ export function NewProjectModal({ onClose, initialMode, initialIdea }: NewProjec
               </div>
 
               {templatesLoading ? (
-                <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--meta)' }}>Loading templates…</div>
+                <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--meta)' }}>{lang === 'en' ? 'Loading templates…' : 'Vorlagen werden geladen …'}</div>
               ) : templates.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--meta)' }}>No templates yet.</div>
+                <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--meta)' }}>{lang === 'en' ? 'No templates yet.' : 'Noch keine Vorlagen.'}</div>
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
                   {templates.map(t => (
@@ -332,7 +334,7 @@ export function NewProjectModal({ onClose, initialMode, initialIdea }: NewProjec
             <div style={{ padding: '20px 24px 24px' }}>
               <button onClick={() => { setMode('gallery'); setSelectedTemplate(null); }}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--meta)', fontSize: 13, display: 'flex', alignItems: 'center', gap: 4, marginBottom: 16, padding: 0 }}>
-                ← Back to gallery
+                ← {lang === 'en' ? 'Back to gallery' : 'Zurück zur Galerie'}
               </button>
 
               {/* Thumbnail placeholder */}
@@ -344,7 +346,7 @@ export function NewProjectModal({ onClose, initialMode, initialIdea }: NewProjec
                 <div style={{ flex: 1 }}>
                   <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: 20, fontWeight: 700, color: 'var(--brand-green)', letterSpacing: '-0.3px', margin: 0, marginBottom: 4 }}>{selectedTemplate.name}</h2>
                   {selectedTemplate.is_official && (
-                    <span style={{ fontSize: 11, background: 'rgba(45,74,43,0.1)', color: 'var(--brand-green)', padding: '2px 8px', borderRadius: 4, fontWeight: 700 }}>✓ Official</span>
+                    <span style={{ fontSize: 11, background: 'rgba(45,74,43,0.1)', color: 'var(--brand-green)', padding: '2px 8px', borderRadius: 4, fontWeight: 700 }}>{lang === 'en' ? '✓ Official' : '✓ Offiziell'}</span>
                   )}
                 </div>
                 <span style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--meta)' }}>↓ {selectedTemplate.downloads}</span>
@@ -364,7 +366,7 @@ export function NewProjectModal({ onClose, initialMode, initialIdea }: NewProjec
 
               <button onClick={() => { setTemplateName(selectedTemplate.name); setMode('template-name'); }}
                 style={{ width: '100%', padding: '12px 20px', borderRadius: 10, background: 'var(--brand-gold)', color: '#fff', border: 'none', fontSize: 15, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
-                Start with this template →
+                {lang === 'en' ? 'Start with this template →' : 'Mit dieser Vorlage starten →'}
               </button>
             </div>
           )}
@@ -377,8 +379,8 @@ export function NewProjectModal({ onClose, initialMode, initialIdea }: NewProjec
                 ← {selectedTemplate.name}
               </button>
 
-              <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: 20, fontWeight: 700, color: 'var(--brand-green)', marginBottom: 4 }}>Name your project</h2>
-              <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 20 }}>Starting from: {selectedTemplate.name}</p>
+              <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: 20, fontWeight: 700, color: 'var(--brand-green)', marginBottom: 4 }}>{lang === 'en' ? 'Name your project' : 'Benenne dein Projekt'}</h2>
+              <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 20 }}>{lang === 'en' ? 'Starting from: ' : 'Basis: '}{selectedTemplate.name}</p>
 
               <div style={{ marginBottom: 20 }}>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 6 }}>Project Name</label>
@@ -396,7 +398,7 @@ export function NewProjectModal({ onClose, initialMode, initialIdea }: NewProjec
 
               <button onClick={handleTemplateCreate} disabled={!templateName.trim() || loading}
                 style={{ width: '100%', padding: '12px 20px', borderRadius: 10, background: 'var(--brand-green)', color: 'var(--brand-gold)', border: 'none', fontSize: 15, fontWeight: 600, cursor: loading ? 'wait' : 'pointer', fontFamily: 'var(--font-sans)', opacity: !templateName.trim() ? 0.5 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                {loading ? <Spinner /> : 'Create project →'}
+                {loading ? <Spinner /> : (lang === 'en' ? 'Create project →' : 'Projekt erstellen →')}
               </button>
             </div>
           )}
