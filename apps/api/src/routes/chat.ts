@@ -65,19 +65,28 @@ chat.post('/stream', chatStreamRateLimit, usageLimitMiddleware, async (c) => {
   if (!projectCheck) return c.json({ error: 'Project not found' }, 404);
 
   // Save user message
-  await supabase.from('chat_messages').insert({
+  const { error: userInsertErr } = await supabase.from('chat_messages').insert({
     project_id: projectId,
     role: 'user',
     content: message
   });
+  if (userInsertErr) {
+    // Persistence failure here means the next turn loses this message → broken
+    // conversation memory. Surface it loudly instead of failing silently.
+    console.error('[chat] failed to persist user message:', userInsertErr.message);
+  }
 
-  // Get chat history
-  const { data: chatHistory } = await supabase
+  // Get chat history. We just inserted the user message above, so the most
+  // recent row is THIS turn's message — drop it: the model-router appends
+  // `message` itself, and including it here would duplicate the last user turn.
+  const { data: chatHistoryRows, error: historyErr } = await supabase
     .from('chat_messages')
     .select('role, content')
     .eq('project_id', projectId)
     .order('created_at', { ascending: true })
     .limit(50);
+  if (historyErr) console.error('[chat] failed to load history:', historyErr.message);
+  const chatHistory = (chatHistoryRows ?? []).slice(0, -1);
 
   return streamSSE(c, async (stream) => {
     let fullResponse = '';

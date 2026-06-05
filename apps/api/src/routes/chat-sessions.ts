@@ -92,12 +92,19 @@ chatSessions.post('/:id/stream', async (c) => {
 
   if (!session) return c.json({ error: 'Session not found' }, 404);
 
-  // Save user message
-  await supabase.from('standalone_messages').insert({
+  // Save user message. A failure here (e.g. the standalone_messages table
+  // missing — the Sprint 10.11 root cause) silently breaks conversation memory:
+  // the history fetch below returns nothing and every turn looks like turn 1.
+  // Never swallow it.
+  const { error: userMsgErr } = await supabase.from('standalone_messages').insert({
     session_id: sessionId,
     role: 'user',
     content: message,
   });
+  if (userMsgErr) {
+    console.error('[chat-sessions] failed to persist user message:', userMsgErr.message);
+    return c.json({ error: 'Chat-Speicher nicht verfügbar — bitte später erneut versuchen.' }, 503);
+  }
 
   // Auto-title from first user message
   const { count } = await supabase
@@ -118,12 +125,13 @@ chatSessions.post('/:id/stream', async (c) => {
   }
 
   // Get conversation history
-  const { data: history } = await supabase
+  const { data: history, error: historyErr } = await supabase
     .from('standalone_messages')
     .select('role, content')
     .eq('session_id', sessionId)
     .order('created_at', { ascending: true })
     .limit(50);
+  if (historyErr) console.error('[chat-sessions] failed to load history:', historyErr.message);
 
   const chatHistory = (history ?? [])
     .slice(0, -1) // exclude the message we just inserted
@@ -167,7 +175,7 @@ chatSessions.post('/:id/stream', async (c) => {
         if (parsed.type === 'done' || parsed.type === 'fallback_notice' || parsed.type === 'error') {
           if (parsed.type === 'done' && fullResponse) {
             const hasCode = fullResponse.includes('```');
-            const { data: savedMsg } = await supabase
+            const { data: savedMsg, error: asstErr } = await supabase
               .from('standalone_messages')
               .insert({
                 session_id: sessionId,
@@ -177,6 +185,7 @@ chatSessions.post('/:id/stream', async (c) => {
               })
               .select('id')
               .single();
+            if (asstErr) console.error('[chat-sessions] failed to persist assistant message:', asstErr.message);
 
             await supabase.from('chat_sessions')
               .update({ model_slug: currentModel, updated_at: new Date().toISOString() })
