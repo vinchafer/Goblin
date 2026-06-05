@@ -54,11 +54,12 @@ function hasCodeBlock(text: string) {
 
 // ─── Code Action Dropdown ─────────────────────────────────────────────────────
 
-function CodeActionButton({ lastMessage, hasProject, projectId, projectName }: {
+function CodeActionButton({ lastMessage, hasProject, projectId, projectName, sessionId }: {
   lastMessage: StandaloneMessage | null;
   hasProject: boolean;
   projectId?: string | null;
   projectName?: string | null;
+  sessionId: string;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -134,6 +135,9 @@ function CodeActionButton({ lastMessage, hasProject, projectId, projectName }: {
     setPreview(null);
     const target = chosenProjectId ?? projectId;
     if (target) {
+      // 11A-A: remember the conversation we're leaving so the workspace "Chat"
+      // tab (and back-from-code) returns HERE, not a new/different window.
+      try { sessionStorage.setItem(`goblin:lastChat:${target}`, sessionId); } catch { /* ignore */ }
       router.push(`/dashboard/project/${target}/work?tab=code`);
     } else {
       // No project chosen → new-project flow picks up the stash on landing.
@@ -446,7 +450,7 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
           {/* Code action button — sits above the input */}
           {lastAssistantMsg?.has_code && (
             <div style={{ position: "absolute", right: 12, bottom: "calc(100% + 10px)", zIndex: 10 }}>
-              <CodeActionButton lastMessage={lastAssistantMsg} hasProject={hasProject} projectId={projectId} projectName={projectName} />
+              <CodeActionButton lastMessage={lastAssistantMsg} hasProject={hasProject} projectId={projectId} projectName={projectName} sessionId={sessionId} />
             </div>
           )}
           <ChatInput

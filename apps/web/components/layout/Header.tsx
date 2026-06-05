@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useApp } from '@/contexts/app-context';
 import { AvatarMenu } from '@/components/header/AvatarMenu';
 import { GoblinLogo } from '@/components/brand/GoblinLogo';
+import { useLang } from '@/lib/use-lang';
 
 interface HeaderProps {
   projectName?: string;
@@ -60,6 +61,7 @@ export function Header({
   previewUrl,
 }: HeaderProps) {
   const router = useRouter();
+  const lang = useLang();
   const { setShowNewProjectModal } = useApp();
   const [plusOpen, setPlusOpen] = useState(false);
   const plusRef = useRef<HTMLDivElement | null>(null);
@@ -324,8 +326,8 @@ export function Header({
               }}
             >
               {[
-                { label: 'Neuer Chat', sub: 'Start a fresh conversation', onClick: handleNewChat },
-                { label: 'Neues Projekt', sub: 'Create a project workspace', onClick: () => { setPlusOpen(false); setShowNewProjectModal(true); } },
+                { label: lang === 'en' ? 'New chat' : 'Neuer Chat', sub: lang === 'en' ? 'Start a fresh conversation' : 'Eine neue Unterhaltung starten', onClick: handleNewChat },
+                { label: lang === 'en' ? 'New project' : 'Neues Projekt', sub: lang === 'en' ? 'Create a project workspace' : 'Einen Projekt-Workspace anlegen', onClick: () => { setPlusOpen(false); setShowNewProjectModal(true); } },
               ].map(item => (
                 <button
                   key={item.label}

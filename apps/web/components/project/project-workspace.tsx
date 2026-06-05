@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams } from "next/navigation";
 import { useApp } from "@/contexts/app-context";
-import { ChatTab } from "@/components/workspace/chat-tab";
+import { ProjectChatSurface } from "@/components/project/ProjectChatSurface";
 import { CodeTab } from "@/components/project/code-tab";
 import { ErrorBoundary } from "@/components/error-boundary";
 
@@ -54,7 +54,7 @@ export function ProjectWorkspace({ projectId, projectName, previewUrl }: Project
 
   return (
     <ErrorBoundary label="chat-tab">
-      <ChatTab projectId={projectId} />
+      <ProjectChatSurface projectId={projectId} projectName={projectName} />
     </ErrorBoundary>
   );
 }
