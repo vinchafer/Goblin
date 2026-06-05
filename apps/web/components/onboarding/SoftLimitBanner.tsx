@@ -14,10 +14,22 @@ interface SoftLimitStatus {
   blockReason?: string;
 }
 
+// 10.11-B (Rule 1 — never promise a capability the user can't reach now):
+// every branch of this banner promises a free-usage allowance ("X Anfragen
+// heute übrig", "Tageslimit erreicht", trial nudges). That allowance does NOT
+// exist today — keyless users have no hosted model and cannot generate at all,
+// so the banner is a live false promise (the Sprint-9 lesson). It stays hidden
+// until the Goblin-hosted free pool is live. The day it ships, flip
+// NEXT_PUBLIC_FREE_POOL_ENABLED=true — a single env change, no rebuild — and the
+// banner (now true) returns. Until then onboarding's "bring a free key" story
+// is the honest path.
+const FREE_POOL_ENABLED = process.env.NEXT_PUBLIC_FREE_POOL_ENABLED === 'true';
+
 export default function SoftLimitBanner() {
   const [status, setStatus] = useState<SoftLimitStatus | null>(null);
 
   useEffect(() => {
+    if (!FREE_POOL_ENABLED) return;
     let cancelled = false;
     (async () => {
       try {
@@ -37,6 +49,7 @@ export default function SoftLimitBanner() {
     return () => { cancelled = true; };
   }, []);
 
+  if (!FREE_POOL_ENABLED) return null; // 10.11-B: false-promise guard (see top)
   if (!status || status.hasKey) return null;
 
   // Trial active: only nudge from day 2 onward; day 3+ is silent.

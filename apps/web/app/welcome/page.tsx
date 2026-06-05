@@ -43,6 +43,26 @@ export default function WelcomeStep1() {
       </div>
 
       <div className="paths">
+        {/* Option A — Goblin's own hosted model. The moat, shown first as the
+            promise. NOT a working path yet (no GPU server): a non-clickable
+            Coming Soon teaser, never starts a keyless session (Rule 1). Becomes
+            the hero the day FREE_POOL_ENABLED flips. */}
+        <div className="gobl-path-card path-card coming" aria-disabled="true">
+          <span className="badge soon-badge">{t.freeBadge}</span>
+          <div className="top">
+            <span className="num">{t.freeNum}</span>
+          </div>
+          <h3>{t.freeTitle}</h3>
+          <p>{t.freeBody}</p>
+          <div className="foot">
+            <div className="chips">
+              {t.freeTags.map((tag) => <span key={tag} className="tag">{tag}</span>)}
+            </div>
+          </div>
+        </div>
+
+        {/* Option B — guided free key. The RECOMMENDED working entry path
+            (permanently — keeps users on a mix of providers, off our server). */}
         <Link href="/welcome/routing?path=b" className="gobl-path-card path-card primary">
           <span className="badge">{t.pathBBadge}</span>
           <div className="top">
@@ -59,6 +79,7 @@ export default function WelcomeStep1() {
           </div>
         </Link>
 
+        {/* Option C — already have a key. */}
         <Link href="/welcome/routing?path=a" className="gobl-path-card path-card">
           <div className="top">
             <span className="num">{t.pathANum}</span>
@@ -212,6 +233,26 @@ export default function WelcomeStep1() {
           border-color: rgba(244,236,216,.32);
         }
         :global(.path-card.primary .badge) {
+          position: absolute; top: -10px; right: 18px;
+          font-family: var(--font-mono), 'JetBrains Mono', monospace;
+          font-size: 10px; font-weight: 600; letter-spacing: 0.18em;
+          padding: 4px 8px; border-radius: var(--radius-xs);
+          background: var(--gold); color: var(--green);
+        }
+        /* Option A — Coming Soon teaser: present + honest, not actionable. */
+        :global(.path-card.coming) {
+          cursor: default;
+          border-style: dashed;
+          border-color: var(--accent-rule);
+          background:
+            radial-gradient(120% 140% at 100% 0%, var(--accent-soft) 0%, transparent 55%),
+            var(--surface-elev);
+        }
+        :global(.path-card.coming:hover) {
+          transform: none; box-shadow: none; border-color: var(--accent-rule);
+        }
+        :global(.path-card.coming h3) { color: var(--ink-1); }
+        :global(.path-card .soon-badge) {
           position: absolute; top: -10px; right: 18px;
           font-family: var(--font-mono), 'JetBrains Mono', monospace;
           font-size: 10px; font-weight: 600; letter-spacing: 0.18em;

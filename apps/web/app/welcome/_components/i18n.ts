@@ -61,6 +61,8 @@ export const STR: Record<Lang, {
     pathBTitle: string; pathBBody: string; pathBTags: string[]; pathBArr: string;
     pathANum: string; pathATime: string; pathATitle: string; pathABody: string;
     pathATag: string; pathAArr: string;
+    // 10.11-B — option A: Goblin's own hosted model (Coming Soon teaser, the moat).
+    freeBadge: string; freeNum: string; freeTitle: string; freeBody: string; freeTags: string[];
     explore: string; exploreLink: string; exploreTail: string;
   };
   // Step 2 — layers / how Goblin works
@@ -150,8 +152,14 @@ export const STR: Record<Lang, {
         'Anthropic, OpenAI, Google, Groq und mehr — einfügen, testen, loslegen.',
       pathATag: 'EINFÜGEN & LOS',
       pathAArr: 'Weiter',
+      freeBadge: 'COMING SOON', freeNum: 'GOBLIN',
+      freeTitle: 'Ohne Key starten.',
+      freeBody:
+        'Goblins eigenes Modell — kein Key nötig. Wir bringen es gerade online; '
+        + 'dann baust du hier ganz ohne eigenen Schlüssel.',
+      freeTags: ['KEIN KEY', 'BALD'],
       explore: 'Nur schauen? ', exploreLink: 'Erst erkunden',
-      exploreTail: ' — ohne Key, mit weichen Limits.',
+      exploreTail: ' — Key fürs Bauen, jederzeit nachträglich.',
     },
     layers: {
       back: 'Zurück',
@@ -335,8 +343,14 @@ export const STR: Record<Lang, {
         "Anthropic, OpenAI, Google, Groq and more — paste it, test it, you're building.",
       pathATag: 'PASTE & GO',
       pathAArr: 'Continue',
+      freeBadge: 'COMING SOON', freeNum: 'GOBLIN',
+      freeTitle: 'Start without a key.',
+      freeBody:
+        "Goblin's own hosted model — no key needed. We're bringing it online now; "
+        + 'then you build here with no key of your own.',
+      freeTags: ['NO KEY', 'SOON'],
       explore: 'Just looking? ', exploreLink: 'Explore first',
-      exploreTail: ' — no key needed, soft limits on.',
+      exploreTail: ' — a key to build, add it anytime.',
     },
     layers: {
       back: 'Back',
