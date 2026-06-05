@@ -122,14 +122,14 @@ function RoutingInner() {
       <div className="actions">
         <Link
           href={nextHref}
-          className="btn-primary"
+          className="onb-btn-primary"
           onClick={() => patchOnboardingState({ current_step: 3 })}
         >
           {t.continue} <IArrowR size={14} />
         </Link>
         <Link
           href={nextHref}
-          className="btn-ghost"
+          className="onb-btn-ghost"
           onClick={() => patchOnboardingState({ current_step: 3 })}
         >
           {t.skip}

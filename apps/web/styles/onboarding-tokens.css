@@ -103,3 +103,48 @@
     transition-duration: .001ms !important;
   }
 }
+
+/* ── Onboarding CTA buttons (10.10 C.3) ────────────────────────────────────
+   Uniquely-named so they never collide with the global .btn-primary in
+   globals.css. Needed because <Link> CTAs don't receive styled-jsx scope
+   classes, so a scoped `.btn-primary` rule never attached and the generic
+   global one (green, no padding) won — making CTAs read like highlighted
+   text instead of buttons. These are real, scoped-by-name, filled buttons. */
+.gobl-onb .onb-btn-primary {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  font-family: var(--font-onb-display), Manrope, sans-serif;
+  font-weight: 600; font-size: 14.5px; line-height: 1;
+  padding: 14px 22px; border-radius: var(--radius);
+  background: var(--green); color: var(--bone);
+  border: 1px solid var(--green); cursor: pointer; text-decoration: none;
+  box-shadow: 0 2px 8px rgba(15,43,30,.18);
+  transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
+}
+.gobl-onb .onb-btn-primary:hover {
+  transform: translateY(-1px); background: #081710;
+  box-shadow: 0 4px 14px rgba(15,43,30,.26);
+}
+.gobl-onb .onb-btn-ghost {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  font-family: var(--font-onb-display), Manrope, sans-serif;
+  font-weight: 600; font-size: 14.5px; line-height: 1;
+  padding: 14px 22px; border-radius: var(--radius);
+  background: transparent; color: var(--ink-2);
+  border: 1px solid var(--line-strong); cursor: pointer; text-decoration: none;
+  transition: color .12s ease, border-color .12s ease;
+}
+.gobl-onb .onb-btn-ghost:hover { color: var(--ink-1); border-color: var(--ink-1); }
+/* Gold fill for use on dark-green panels (recap / summary). */
+.gobl-onb .onb-btn-gold {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  font-family: var(--font-onb-display), Manrope, sans-serif;
+  font-weight: 700; font-size: 14px; line-height: 1;
+  padding: 13px 20px; border-radius: var(--radius);
+  background: var(--gold); color: var(--green);
+  border: 1px solid var(--gold); cursor: pointer; text-decoration: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,.22);
+  transition: transform .12s ease, box-shadow .12s ease, background .12s ease;
+}
+.gobl-onb .onb-btn-gold:hover {
+  transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,0,0,.28);
+}

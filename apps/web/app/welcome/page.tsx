@@ -7,12 +7,25 @@
 // Note: this file replaces the previous /welcome content. The
 // "user already has a key → /dashboard" guard moved up to layout.tsx.
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ICheck, IEye, IArrowR } from './_components/icons';
 import { useOnbLang, STR } from './_components/i18n';
+import { patchOnboardingState } from './_components/onboarding-state';
 
 export default function WelcomeStep1() {
   const lang = useOnbLang();
   const t = STR[lang].step1;
+  const router = useRouter();
+
+  // "Explore first" must actually reach the dashboard. A fresh user is
+  // otherwise bounced back to /welcome/language by the dashboard's new-user
+  // guard (see PHASE_0.md 0.2). Mark onboarding complete (as a skip) BEFORE
+  // navigating so the guard lets them in; keys can be added later in Settings.
+  async function explore() {
+    await patchOnboardingState({ completed: true, skipped_steps: [1, 2, 3, 4, 5] });
+    router.push('/dashboard');
+  }
+
   return (
     <div className="step1">
       <div className="lead-col">
@@ -61,10 +74,10 @@ export default function WelcomeStep1() {
           </div>
         </Link>
 
-        <Link href="/dashboard" className="path-link">
+        <button type="button" onClick={explore} className="path-link">
           <IEye size={12} />
           <span>{t.explore}<u>{t.exploreLink}</u>{t.exploreTail}</span>
-        </Link>
+        </button>
       </div>
 
       <style jsx>{`
@@ -210,6 +223,9 @@ export default function WelcomeStep1() {
           display: inline-flex; align-items: center; gap: 8px;
           font-size: 13px; color: var(--ink-2);
           padding: 10px 4px;
+          background: none; border: none; cursor: pointer;
+          font-family: inherit; text-align: left;
+          width: fit-content;
         }
         .path-link u {
           text-decoration-color: var(--accent-rule);

@@ -219,7 +219,7 @@ export default function ToolsStepPage() {
           <span className="chip"><span className="v">{codeOn}</span> {t.coding}</span>
         </div>
         <div className="cta">
-          <Link href="/welcome/integrations" className="btn-primary">
+          <Link href="/welcome/integrations" className="onb-btn-gold">
             {t.continueLabel} <IArrowR size={13} />
           </Link>
         </div>
