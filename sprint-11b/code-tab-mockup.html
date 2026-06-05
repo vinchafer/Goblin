@@ -1,0 +1,682 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Goblin · Sprint 11B — Code Tab, mobile-first</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* ───────────────────────────────────────────────────────────────────
+   Goblin design tokens — verbatim from apps/web/styles/design-tokens.css
+   (v1.1, GLOBAL SOURCE OF TRUTH). No new colour system. No emoji.
+   ─────────────────────────────────────────────────────────────────── */
+:root{
+  --brand-green:#1A3A2A; --ink-deep:#0F2B1E; --brand-gold:#D4A737;
+  --bone:#F4ECD8; --paper:#FBF7EC;
+  --green-50:#EEF3EF; --green-100:#D9E5DE; --green-200:#B5CCC0; --green-300:#87A998;
+  --green-400:#5E8973; --green-500:#3D6D55; --green-600:#2A523E; --green-700:#1A3A2A;
+  --green-800:#133224; --green-900:#0F2B1E; --green-950:#08170F;
+  --gold-50:#FBF3DF; --gold-100:#F6E7C5; --gold-200:#F0D9A4; --gold-300:#E8C97F;
+  --gold-400:#DEB75A; --gold-500:#D4A737; --gold-600:#BC8E2E; --gold-700:#A07726;
+  --surface-0:#FFFFFF; --surface-1:#FBF7EC; --surface-2:#F4ECD8; --surface-3:#E8DEC2; --surface-4:#D8CBA8;
+  --rule-soft:#E8DEC2; --rule:#D8CBA8; --rule-strong:#B8A988;
+  --ink-1:#0F2B1E; --ink-2:#3F3A2C; --ink-3:#5F5640; --ink-disabled:#B8A988;
+  --ink-on-dark-1:#FBF7EC; --ink-on-dark-2:#D8CBA8; --ink-on-dark-3:#968768;
+  --success:#3D7A4F; --success-soft:#E1EDDE;
+  --warning:#C7901A; --warning-soft:#F7E8C2;
+  --danger:#B0432A; --danger-soft:#F0DACF;
+  --info:#355B7A; --info-soft:#DCE6F0;
+  --font-sans:'Manrope',system-ui,-apple-system,sans-serif;
+  --font-serif:'Instrument Serif',Georgia,serif;
+  --font-mono:'JetBrains Mono',ui-monospace,monospace;
+  --radius-xs:4px; --radius-sm:10px; --radius-md:14px; --radius-lg:20px; --radius-pill:9999px;
+  --shadow-2:0 6px 16px -8px rgba(15,43,30,.18),0 2px 4px -2px rgba(15,43,30,.12);
+  --shadow-3:0 24px 60px -20px rgba(15,43,30,.34),0 8px 16px -8px rgba(15,43,30,.18);
+  --ease-out:cubic-bezier(.2,.7,.2,1);
+  /* editor-surface light tokens (.gb-codetab data-editor-theme=light) */
+  --ed-canvas:#FBF7EC; --ed-chrome:#F4ECD8; --ed-chrome-2:#FBF7EC;
+  --ed-fg-1:#0F2B1E; --ed-fg-2:#3F3A2C; --ed-fg-3:#5F5640;
+  --ed-rule:#D8CBA8; --ed-rule-soft:#E8DEC2;
+  --ed-accent:#D4A737; --ed-primary:#1A3A2A; --ed-on-primary:#FBF7EC;
+  --ed-draft:#BC8E2E; --ed-saved:#3D7A4F; --ed-deployed:#D4A737;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px}
+body{
+  font-family:var(--font-sans);
+  background:
+    radial-gradient(1200px 600px at 80% -10%, #fff 0%, transparent 60%),
+    var(--bone);
+  color:var(--ink-1);
+  -webkit-font-smoothing:antialiased;
+  padding:48px 24px 96px;
+  line-height:1.5;
+}
+
+/* ─── presentation chrome ─── */
+.deck{max-width:1340px;margin:0 auto}
+.deck-head{margin-bottom:8px}
+.eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--gold-700);display:flex;align-items:center;gap:8px}
+.deck-title{font-family:var(--font-serif);font-size:clamp(34px,5vw,64px);line-height:1.02;letter-spacing:-.02em;color:var(--ink-deep);margin:10px 0 14px;font-weight:400}
+.deck-title em{font-style:italic;color:var(--green-600)}
+.deck-lede{font-size:17px;line-height:1.55;color:var(--ink-2);max-width:760px}
+.deck-lede b{color:var(--ink-deep);font-weight:700}
+.bet{display:inline-flex;gap:10px;align-items:flex-start;margin-top:20px;background:var(--brand-green);color:var(--ink-on-dark-1);padding:14px 18px;border-radius:var(--radius-md);max-width:780px;box-shadow:var(--shadow-2)}
+.bet svg{stroke:var(--brand-gold);flex-shrink:0;margin-top:1px}
+.bet b{color:var(--brand-gold)}
+.bet span{font-size:14.5px;line-height:1.5}
+
+.section-rule{display:flex;align-items:center;gap:14px;margin:56px 0 28px}
+.section-rule .n{font-family:var(--font-mono);font-size:12px;color:var(--gold-700);font-weight:700;border:1px solid var(--rule);border-radius:var(--radius-pill);padding:3px 10px;background:var(--surface-0)}
+.section-rule h2{font-family:var(--font-serif);font-weight:400;font-size:26px;letter-spacing:-.01em;color:var(--ink-deep)}
+.section-rule .line{flex:1;height:1px;background:var(--rule)}
+
+.gallery{display:flex;gap:40px;flex-wrap:wrap;align-items:flex-start}
+
+/* frame caption */
+.frame{display:flex;flex-direction:column;gap:0;width:390px}
+.frame-tag{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.frame-tag .dir{font-family:var(--font-mono);font-size:10px;font-weight:700;letter-spacing:.06em;color:var(--gold-700);background:var(--gold-50);border:1px solid var(--gold-200);padding:3px 8px;border-radius:var(--radius-pill)}
+.frame-tag .name{font-size:14px;font-weight:700;color:var(--ink-deep)}
+.frame-note{font-size:13px;line-height:1.5;color:var(--ink-2);margin-top:14px;max-width:390px}
+.frame-note b{color:var(--ink-deep)}
+
+/* ─── iPhone device frame · true 390×844 ─── */
+.phone{
+  width:390px;height:844px;flex:0 0 auto;
+  border:11px solid #0E2018;border-radius:46px;
+  background:var(--ed-canvas);position:relative;overflow:hidden;
+  box-shadow:var(--shadow-3);
+  display:flex;flex-direction:column;
+}
+.notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:128px;height:30px;background:#0E2018;border-radius:0 0 18px 18px;z-index:60}
+.statusbar{height:44px;flex-shrink:0;display:flex;align-items:flex-end;justify-content:space-between;padding:0 26px 7px;font-size:13px;font-weight:700;color:var(--ink-deep);z-index:50;font-variant-numeric:tabular-nums}
+.statusbar .sb-r{display:flex;align-items:center;gap:6px}
+
+/* app header (brand green) — mirrors apps/web Header */
+.appbar{background:var(--brand-green);color:var(--ink-on-dark-1);flex-shrink:0;padding:8px 14px 0}
+.appbar-top{display:flex;align-items:center;justify-content:space-between;height:34px}
+.brand{display:flex;align-items:center;gap:9px;font-weight:800;font-size:15px;letter-spacing:-.01em}
+.mark{width:22px;height:22px;border-radius:7px;background:var(--brand-gold);display:flex;align-items:center;justify-content:center;color:var(--ink-deep)}
+.appbar-proj{font-size:12px;color:var(--ink-on-dark-3);font-family:var(--font-mono)}
+.tabs{display:flex;gap:4px;margin-top:6px}
+.tab{font-size:13px;font-weight:600;color:var(--ink-on-dark-3);padding:8px 10px 10px;position:relative;cursor:default}
+.tab.active{color:var(--ink-on-dark-1)}
+.tab.active::after{content:"";position:absolute;left:10px;right:10px;bottom:0;height:2px;background:var(--brand-gold);border-radius:2px}
+
+.screen{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;background:var(--ed-canvas);position:relative}
+.scroll{flex:1;overflow:hidden;padding:16px 14px;display:flex;flex-direction:column;gap:12px}
+
+/* generic small bits */
+.icon{display:inline-flex;align-items:center;justify-content:center}
+.icon svg{stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.icon.fill svg{fill:currentColor;stroke:none}
+.mono{font-family:var(--font-mono)}
+.serif{font-family:var(--font-serif)}
+.dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;display:inline-block}
+
+.pill-row{display:flex;gap:7px;align-items:center}
+.filepill{font-family:var(--font-mono);font-size:12px;padding:7px 11px;border-radius:var(--radius-pill);border:1px solid var(--ed-rule);background:var(--ed-chrome-2);color:var(--ed-fg-3);white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+.filepill.active{color:var(--ed-fg-1);border-color:var(--gold-300);background:var(--gold-50);font-weight:600;box-shadow:0 1px 0 rgba(212,167,55,.25)}
+.filepill .dot{width:6px;height:6px}
+
+.thumbbar{flex-shrink:0;display:flex;gap:10px;padding:12px 14px 16px;border-top:1px solid var(--ed-rule);background:var(--ed-chrome)}
+.tbtn{flex:1;min-height:56px;border-radius:var(--radius-md);border:none;font-family:var(--font-sans);font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:9px;cursor:pointer;transition:transform .1s var(--ease-out),filter .15s}
+.tbtn:active{transform:scale(.97)}
+.tbtn.reject{background:transparent;color:var(--danger);border:1.5px solid color-mix(in srgb,var(--danger) 38%,transparent)}
+.tbtn.approve{flex:1.5;background:var(--success);color:#fff;box-shadow:0 6px 16px -6px rgba(61,122,79,.6)}
+
+/* request bubble (from chat / smart layer) */
+.req{align-self:flex-start;max-width:88%;background:var(--brand-green);color:var(--ink-on-dark-1);border-radius:14px 14px 14px 4px;padding:10px 13px;font-size:14px;line-height:1.45;display:flex;gap:8px;align-items:flex-start}
+.req .icon{color:var(--brand-gold);margin-top:1px}
+.req.gold{background:var(--gold-50);color:var(--ink-deep);border:1px solid var(--gold-200);border-radius:14px 14px 4px 14px;align-self:flex-end}
+.req.gold .icon{color:var(--gold-700)}
+
+/* diff block */
+.diffcard{background:var(--surface-0);border:1px solid var(--ed-rule);border-radius:var(--radius-md);overflow:hidden;box-shadow:var(--shadow-2)}
+.diff-head{display:flex;align-items:center;gap:9px;padding:11px 13px;border-bottom:1px solid var(--ed-rule-soft);background:var(--ed-chrome-2)}
+.diff-head .fn{font-family:var(--font-mono);font-size:12.5px;color:var(--ed-fg-1);font-weight:600}
+.diff-head .sum{font-size:12px;color:var(--ed-fg-3);margin-left:auto}
+.diff{font-family:var(--font-mono);font-size:12px;line-height:1.85;padding:8px 0}
+.dl{display:flex;padding:0 12px;white-space:pre}
+.dl .gut{width:18px;flex-shrink:0;color:var(--ink-disabled);text-align:center;user-select:none}
+.dl.ctx{color:var(--ed-fg-3)}
+.dl.del{background:rgba(176,67,42,.09);color:#8f3622;box-shadow:inset 2px 0 0 var(--danger)}
+.dl.add{background:rgba(61,122,79,.12);color:#27623c;box-shadow:inset 2px 0 0 var(--success)}
+.dl.del .gut{color:var(--danger)}
+.dl.add .gut{color:var(--success)}
+.swatch{display:inline-block;width:11px;height:11px;border-radius:3px;vertical-align:-1px;margin-left:6px;border:1px solid rgba(0,0,0,.15)}
+
+/* swipe affordance */
+.swipe-wrap{position:relative}
+.swipe-hint{position:absolute;top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:4px;font-size:11px;font-weight:700;opacity:.5}
+.swipe-hint.l{left:-2px;color:var(--danger)}
+.swipe-hint.r{right:-2px;color:var(--success)}
+
+/* working state */
+.work-hero{display:flex;flex-direction:column;align-items:center;text-align:center;padding:24px 16px 14px}
+.breath{width:64px;height:64px;border-radius:20px;background:var(--brand-green);display:flex;align-items:center;justify-content:center;color:var(--brand-gold);animation:breath 2.2s var(--ease-out) infinite}
+@keyframes breath{0%,100%{opacity:.85;transform:scale(1)}50%{opacity:1;transform:scale(1.04)}}
+.work-title{font-family:var(--font-serif);font-size:27px;color:var(--ink-deep);margin-top:14px}
+.work-sub{font-size:13px;color:var(--ink-3);margin-top:4px}
+.logline{display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:var(--radius-sm);background:var(--surface-0);border:1px solid var(--rule-soft)}
+.logline .mono{font-size:12.5px;color:var(--ed-fg-2)}
+.logline .t{margin-left:auto;font-size:11px;color:var(--ink-3);font-family:var(--font-mono)}
+.ring{width:18px;height:18px;border-radius:50%;border:2px solid var(--rule);border-top-color:var(--brand-gold);animation:spin 1s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.lockcard{margin:2px 0;background:rgba(15,43,30,.92);color:var(--ink-on-dark-1);border-radius:18px;padding:13px 15px;backdrop-filter:blur(8px);box-shadow:var(--shadow-2)}
+.lockcard .lc-top{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--ink-on-dark-3);font-weight:600}
+.lockcard .lc-top .mark{width:16px;height:16px;border-radius:5px}
+.lockcard .lc-body{font-size:14px;margin-top:6px;line-height:1.4}
+.statbar{display:flex;gap:0;border:1px solid var(--rule-soft);border-radius:var(--radius-sm);overflow:hidden;background:var(--surface-0)}
+.statbar>div{flex:1;padding:10px 8px;text-align:center;border-right:1px solid var(--rule-soft)}
+.statbar>div:last-child{border-right:none}
+.statbar .v{font-size:16px;font-weight:800;color:var(--ink-deep);font-family:var(--font-mono)}
+.statbar .k{font-size:10px;color:var(--ink-3);margin-top:2px;letter-spacing:.02em}
+
+/* files-at-rest list */
+.filelist{display:flex;flex-direction:column;border:1px solid var(--rule-soft);border-radius:var(--radius-md);overflow:hidden;background:var(--surface-0)}
+.filerow{display:flex;align-items:center;gap:11px;padding:13px 14px;border-bottom:1px solid var(--rule-soft)}
+.filerow:last-child{border-bottom:none}
+.filerow .icon{color:var(--ed-fg-3)}
+.filerow .nm{font-family:var(--font-mono);font-size:13px;color:var(--ed-fg-1);font-weight:500}
+.filerow .meta{font-size:11px;color:var(--ink-3);margin-top:1px}
+.filerow .st{margin-left:auto;font-size:10px;font-weight:700;letter-spacing:.04em;padding:3px 8px;border-radius:var(--radius-pill);text-transform:uppercase}
+.st.draft{color:var(--gold-700);background:var(--gold-50);border:1px solid var(--gold-200)}
+.st.saved{color:var(--success);background:var(--success-soft)}
+.st.live{color:var(--ink-deep);background:var(--brand-gold)}
+
+/* preview sheet */
+.sheet{margin-top:4px;border:1px solid var(--rule);border-radius:18px;background:var(--surface-0);overflow:hidden;box-shadow:var(--shadow-2)}
+.sheet-grab{width:38px;height:4px;background:var(--rule);border-radius:3px;margin:9px auto 4px}
+.sheet-head{display:flex;align-items:center;gap:8px;padding:4px 14px 10px;border-bottom:1px solid var(--rule-soft)}
+.sheet-head .icon{color:var(--ed-fg-3)}
+.sheet-head .url{font-family:var(--font-mono);font-size:11px;color:var(--ink-3);margin-left:auto}
+.preview{padding:0;background:#fff}
+/* the user's running page — their content, deliberately off-palette (their site, not Goblin chrome) */
+.usr-hero{background:#1E40AF;color:#fff;padding:26px 18px;text-align:center}
+.usr-hero .serif{font-size:21px}
+.usr-hero p{font-size:12px;opacity:.85;margin-top:6px}
+.usr-form{padding:16px 18px;display:flex;flex-direction:column;gap:8px}
+.usr-form input{height:38px;border:1px solid #cbd5e1;border-radius:8px;padding:0 12px;font-size:12px;color:#334155}
+.usr-form .ubtn{height:38px;background:#1E40AF;color:#fff;border:none;border-radius:8px;font-weight:700;font-size:13px}
+
+.cta{flex-shrink:0;padding:12px 14px 16px;border-top:1px solid var(--ed-rule);background:var(--ed-chrome)}
+.cta .pub{width:100%;min-height:52px;border-radius:var(--radius-md);background:var(--brand-green);color:var(--ink-on-dark-1);border:none;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:9px;cursor:pointer}
+.cta .pub:active{transform:scale(.98)}
+.cta .sub{text-align:center;font-size:11px;color:var(--ink-3);margin-top:8px;font-style:italic}
+
+/* the layers thread */
+.thread{position:relative;padding-left:30px}
+.thread::before{content:"";position:absolute;left:13px;top:8px;bottom:30px;width:2px;background:linear-gradient(var(--gold-300),var(--green-400))}
+.node{position:relative;margin-bottom:14px}
+.node .bullet{position:absolute;left:-30px;top:2px;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid var(--ed-canvas)}
+.node .bullet.smart{background:var(--gold-50);color:var(--gold-700);box-shadow:0 0 0 2px var(--gold-300)}
+.node .bullet.free{background:var(--green-700);color:var(--brand-gold);box-shadow:0 0 0 2px var(--green-400)}
+.node .who{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;color:var(--ink-2);margin-bottom:6px}
+.node .who .tagm{font-family:var(--font-mono);font-weight:500;color:var(--ink-3)}
+.chip{font-size:9.5px;font-weight:700;letter-spacing:.04em;padding:2px 7px;border-radius:var(--radius-pill);text-transform:uppercase}
+.chip.smart{background:var(--gold-100);color:var(--gold-700)}
+.chip.free{background:var(--success-soft);color:var(--success)}
+.bubble{background:var(--surface-0);border:1px solid var(--rule-soft);border-radius:var(--radius-md);padding:12px 13px;font-size:13.5px;line-height:1.5;color:var(--ed-fg-1)}
+.bubble.plan ol{margin:8px 0 0;padding-left:18px;font-size:13px;color:var(--ed-fg-2);line-height:1.7}
+.handoff{margin:2px 0 16px;display:flex;justify-content:center}
+.handoff button{display:inline-flex;align-items:center;gap:9px;background:var(--brand-gold);color:var(--ink-deep);border:none;border-radius:var(--radius-pill);padding:11px 20px;font-size:14px;font-weight:700;cursor:pointer;box-shadow:0 6px 16px -6px rgba(212,167,55,.7)}
+.handoff button:active{transform:scale(.97)}
+
+/* checklist inside free build node */
+.tasklist{display:flex;flex-direction:column;gap:7px;margin-top:9px}
+.task{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ed-fg-2)}
+.task .icon{flex-shrink:0}
+.task.done{color:var(--ed-fg-3)}
+.task.done .icon{color:var(--success)}
+.task.now .icon{color:var(--brand-gold)}
+.task.now{color:var(--ed-fg-1);font-weight:600}
+.task.todo{color:var(--ink-disabled)}
+
+/* toast */
+.toast{position:absolute;left:50%;bottom:90px;transform:translateX(-50%);background:var(--ink-deep);color:var(--brand-gold);font-size:12px;padding:9px 16px;border-radius:var(--radius-pill);box-shadow:var(--shadow-3);font-weight:600;white-space:nowrap;z-index:40;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(-4px)}
+
+/* hero card stack swap */
+.cardstack{position:relative}
+.cardstate{transition:transform .35s var(--ease-out),opacity .3s}
+.cardstate.gone-l{transform:translateX(-120%) rotate(-7deg);opacity:0}
+.cardstate.gone-r{transform:translateX(120%) rotate(7deg);opacity:0}
+.done-state{display:none;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:30px 16px}
+.done-state.show{display:flex}
+.done-state .big{width:58px;height:58px;border-radius:50%;background:var(--success-soft);color:var(--success);display:flex;align-items:center;justify-content:center}
+
+/* ─── desktop frame ─── */
+.desk{
+  width:1280px;max-width:100%;height:760px;border-radius:16px;overflow:hidden;
+  border:1px solid var(--rule);background:var(--ed-canvas);box-shadow:var(--shadow-3);
+  display:flex;flex-direction:column;
+}
+.desk-traffic{height:38px;background:var(--brand-green);display:flex;align-items:center;gap:14px;padding:0 16px;flex-shrink:0}
+.desk-traffic .lights{display:flex;gap:7px}
+.desk-traffic .lights i{width:11px;height:11px;border-radius:50%;display:block}
+.desk-traffic .brand{color:var(--ink-on-dark-1);font-size:13px}
+.desk-traffic .tabs{margin-left:8px}
+.desk-traffic .tab{padding:0;height:38px;display:flex;align-items:center}
+.desk-actionbar{height:46px;background:var(--ed-chrome);border-bottom:1px solid var(--ed-rule);display:flex;align-items:center;gap:8px;padding:0 14px;flex-shrink:0}
+.desk-actionbar .grow{flex:1}
+.dbtn{display:inline-flex;align-items:center;gap:7px;height:32px;padding:0 13px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;border:1px solid var(--ed-rule);background:var(--ed-chrome-2);color:var(--ed-fg-2)}
+.dbtn.primary{background:var(--brand-green);color:var(--ink-on-dark-1);border-color:var(--brand-green)}
+.dbtn.gold{background:var(--brand-gold);color:var(--ink-deep);border-color:var(--brand-gold)}
+.desk-body{flex:1;display:flex;min-height:0}
+.desk-tree{width:230px;flex-shrink:0;border-right:1px solid var(--ed-rule);background:var(--ed-chrome-2);padding:12px 10px;overflow:hidden}
+.desk-tree .h{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);padding:4px 8px 8px}
+.tnode{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:var(--radius-sm);font-family:var(--font-mono);font-size:12.5px;color:var(--ed-fg-2)}
+.tnode .icon{color:var(--ed-fg-3)}
+.tnode.active{background:var(--gold-50);color:var(--ed-fg-1);font-weight:600}
+.desk-editor{flex:1;min-width:0;display:flex;flex-direction:column;background:var(--ed-canvas)}
+.desk-filetabs{height:40px;display:flex;align-items:stretch;border-bottom:1px solid var(--ed-rule);background:var(--ed-chrome)}
+.dft{display:flex;align-items:center;gap:8px;padding:0 14px;font-family:var(--font-mono);font-size:12px;color:var(--ed-fg-3);border-right:1px solid var(--ed-rule)}
+.dft.active{background:var(--ed-canvas);color:var(--ed-fg-1);border-bottom:2px solid var(--brand-gold)}
+.codearea{flex:1;overflow:hidden;padding:14px 0;font-family:var(--font-mono);font-size:13px;line-height:1.7}
+.cl{display:flex;padding:0 16px}
+.cl .ln{width:30px;color:var(--ink-disabled);text-align:right;padding-right:14px;user-select:none}
+.cl .tk{color:var(--ed-fg-2)}
+.k{color:var(--green-600);font-weight:700}.s{color:var(--gold-700)}.p{color:var(--info)}.c{color:var(--ink-3);font-style:italic}
+.cl.add{background:rgba(61,122,79,.12);box-shadow:inset 3px 0 0 var(--success)}
+.desk-review{width:340px;flex-shrink:0;border-left:1px solid var(--ed-rule);background:var(--ed-chrome-2);display:flex;flex-direction:column;min-height:0}
+.dr-head{padding:12px 14px;border-bottom:1px solid var(--ed-rule);display:flex;align-items:center;gap:8px}
+.dr-head .icon{color:var(--gold-700)}
+.dr-head b{font-size:13px;color:var(--ed-fg-1)}
+.dr-head .ct{margin-left:auto;font-size:11px;font-family:var(--font-mono);color:var(--ink-3)}
+.dr-feed{flex:1;overflow:hidden;padding:12px;display:flex;flex-direction:column;gap:10px}
+.dr-card{background:var(--surface-0);border:1px solid var(--ed-rule);border-radius:var(--radius-md);overflow:hidden}
+.dr-card .h{display:flex;align-items:center;gap:8px;padding:9px 11px;border-bottom:1px solid var(--ed-rule-soft);font-family:var(--font-mono);font-size:11.5px;color:var(--ed-fg-1)}
+.dr-card .h .req{all:unset;font-family:var(--font-sans);font-size:11px;color:var(--ink-3);margin-left:auto}
+.dr-mini{font-family:var(--font-mono);font-size:11px;line-height:1.7;padding:6px 0}
+.dr-actions{display:flex;gap:7px;padding:9px 11px;border-top:1px solid var(--ed-rule-soft)}
+.dr-actions button{flex:1;height:34px;border-radius:var(--radius-sm);font-size:12px;font-weight:700;cursor:pointer;border:none;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.dr-actions .rj{background:transparent;border:1px solid color-mix(in srgb,var(--danger) 35%,transparent);color:var(--danger)}
+.dr-actions .ap{background:var(--success);color:#fff}
+.desk-status{height:32px;flex-shrink:0;border-top:1px solid var(--ed-rule);background:var(--ed-chrome);display:flex;align-items:center;gap:16px;padding:0 14px;font-size:11.5px;color:var(--ed-fg-3);font-family:var(--font-mono)}
+.desk-status .dot{width:7px;height:7px}
+
+.legend{margin-top:32px;background:var(--surface-0);border:1px solid var(--rule);border-radius:var(--radius-md);padding:20px 22px;max-width:1100px;font-size:14px;line-height:1.6;color:var(--ink-2)}
+.legend b{color:var(--ink-deep)}
+.legend .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:14px}
+.legend h4{font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:var(--gold-700);margin-bottom:5px}
+.footer-meta{margin-top:40px;font-size:12px;color:var(--ink-3);font-family:var(--font-mono)}
+@media(max-width:480px){body{padding:24px 12px}.phone{transform:scale(.92);transform-origin:top left}}
+</style>
+</head>
+<body>
+
+<!-- ═══════ ICON SPRITE (Lucide-style, stroke 2) ═══════ -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M6 4v16l13-8z"/></symbol>
+  <symbol id="i-chevdown" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-chevright" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="i-chevleft" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></symbol>
+  <symbol id="i-folder" viewBox="0 0 24 24"><path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+  <symbol id="i-sparkles" viewBox="0 0 24 24"><path d="M12 3v4M12 17v4M3 12h4M17 12h4M6.3 6.3l2.4 2.4M15.3 15.3l2.4 2.4M17.7 6.3l-2.4 2.4M8.7 15.3l-2.4 2.4"/></symbol>
+  <symbol id="i-arrowdown" viewBox="0 0 24 24"><path d="M12 5v14M19 12l-7 7-7-7"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-git" viewBox="0 0 24 24"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="8" r="3"/><path d="M6 9v6M18 11a6 6 0 0 1-6 6H9"/></symbol>
+  <symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 2 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5M3 17l9 5 9-5"/></symbol>
+  <symbol id="i-code" viewBox="0 0 24 24"><path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/></symbol>
+  <symbol id="i-wifi" viewBox="0 0 24 24"><path d="M5 13a10 10 0 0 1 14 0M8.5 16.5a5 5 0 0 1 7 0M12 20h.01"/></symbol>
+  <symbol id="i-battery" viewBox="0 0 24 24"><rect x="2" y="7" width="18" height="10" rx="2"/><path d="M22 11v2"/></symbol>
+  <symbol id="i-cell" viewBox="0 0 24 24"><path d="M4 18h.01M9 18v-4M14 18V9M19 18V4"/></symbol>
+</svg>
+
+<div class="deck">
+
+  <!-- HEADER -->
+  <div class="deck-head">
+    <div class="eyebrow"><span class="icon" style="color:var(--gold-700);width:14px;height:14px"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-layers"/></svg></span> Sprint 11B · Code Tab · mobile-first mockup</div>
+    <h1 class="deck-title">Du baust <em>im Schlaf.</em><br>Reviewen tust du mit dem Daumen.</h1>
+    <p class="deck-lede">Der Code Tab auf dem Desktop stimmt schon. Auf dem iPhone ist er heute ein
+    geschrumpfter Desktop-Editor — und genau das bricht. Die Wette: am Telefon
+    <b>schreibst</b> du keinen Code. Du <b>übergibst</b> einen Plan, ein gratis Modell
+    baut stundenlang weiter, und du <b>urteilst</b> über jede Änderung per Wisch.</p>
+    <div class="bet">
+      <span class="icon" style="width:20px;height:20px"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke-width="2"><use href="#i-sparkles"/></svg></span>
+      <span><b>Die Wette:</b> Der mobile Code Tab ist kein Editor — er ist ein <b>Review-Feed für einen autonomen Builder, den du verlassen kannst.</b> Code wird zum Strom wisch­barer Diffs. Das Handy ist Leitstand, nicht Mini-IDE.</span>
+    </div>
+  </div>
+
+  <!-- ═══════ MOBILE — primary ═══════ -->
+  <div class="section-rule"><span class="n">390 × 844</span><h2>Mobile — das eigentliche Artefakt</h2><div class="line"></div></div>
+
+  <div class="gallery">
+
+    <!-- ░░░ FRAME 1 — HANDOFF / THREAD ░░░ -->
+    <div class="frame">
+      <div class="frame-tag"><span class="dir">Richtung 2</span><span class="name">Ein Faden: Architektur → Bau</span></div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="statusbar"><span>23:14</span><span class="sb-r"><span class="icon" style="width:16px;height:13px"><svg viewBox="0 0 24 24" width="16" height="13"><use href="#i-cell"/></svg></span><span class="icon" style="width:16px;height:14px"><svg viewBox="0 0 24 24" width="16" height="14"><use href="#i-wifi"/></svg></span><span class="icon" style="width:20px;height:14px"><svg viewBox="0 0 24 24" width="20" height="14"><use href="#i-battery"/></svg></span></span></div>
+        <div class="appbar">
+          <div class="appbar-top">
+            <div class="brand"><span class="mark"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4"><use href="#i-code"/></svg></span> Goblin</div>
+            <span class="appbar-proj">newsletter-lp</span>
+          </div>
+          <div class="tabs"><span class="tab">Chat</span><span class="tab active">Code</span><span class="tab">Vorschau</span></div>
+        </div>
+        <div class="screen"><div class="scroll" style="gap:0">
+          <div class="thread">
+            <div class="node">
+              <div class="bullet smart"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-sparkles"/></svg></div>
+              <div class="who">Architekt <span class="chip smart">Smart · gratis Kontingent</span></div>
+              <div class="who" style="margin-top:-2px;margin-bottom:6px"><span class="tagm">Claude Opus 4.8</span></div>
+              <div class="bubble plan">
+                Plan für die Newsletter-Sektion steht.
+                <ol><li>Hero auf eine Zeile kürzen</li><li>E-Mail-Formular einbauen</li><li>Danke-Zustand nach Absenden</li></ol>
+              </div>
+            </div>
+          </div>
+          <div class="handoff"><button><span class="icon" style="width:16px;height:16px"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2"><use href="#i-arrowdown"/></svg></span> An den Bau-Goblin übergeben</button></div>
+          <div class="thread" style="--x:0">
+            <div class="node" style="margin-bottom:0">
+              <div class="bullet free"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-code"/></svg></div>
+              <div class="who">Bau-Goblin <span class="chip free">Frei · kein Limit</span></div>
+              <div class="who" style="margin-top:-2px;margin-bottom:6px"><span class="tagm">Llama 3.3 70B · 0 €/Token</span></div>
+              <div class="bubble">
+                Übernehme den Plan. Baue jetzt <b>3 Dateien</b>. Läuft auch
+                weiter, wenn du das Handy sperrst.
+                <div class="tasklist">
+                  <div class="task now"><span class="icon" style="width:15px;height:15px"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4"><use href="#i-chevright"/></svg></span> index.html — Hero kürzen</div>
+                  <div class="task todo"><span class="icon" style="width:15px;height:15px"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-file"/></svg></span> styles.css — Formular stylen</div>
+                  <div class="task todo"><span class="icon" style="width:15px;height:15px"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-file"/></svg></span> script.js — Absenden + Danke</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div></div>
+      </div>
+      <p class="frame-note">Schlauer Plan und gratis Bau leben in <b>einem Faden</b>, eine Spalte.
+      Die Übergabe ist ein Tipp — kein Tab-Wechsel, kein Kopieren. Die Schichten als Fluss, nicht als Reiter.</p>
+    </div>
+
+    <!-- ░░░ FRAME 2 — BUILDS WHILE YOU SLEEP ░░░ -->
+    <div class="frame">
+      <div class="frame-tag"><span class="dir">Richtung 1</span><span class="name">Baut, während du schläfst</span></div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="statusbar"><span>23:31</span><span class="sb-r"><span class="icon" style="width:16px;height:13px"><svg viewBox="0 0 24 24" width="16" height="13"><use href="#i-cell"/></svg></span><span class="icon" style="width:16px;height:14px"><svg viewBox="0 0 24 24" width="16" height="14"><use href="#i-wifi"/></svg></span><span class="icon" style="width:20px;height:14px"><svg viewBox="0 0 24 24" width="20" height="14"><use href="#i-battery"/></svg></span></span></div>
+        <div class="appbar">
+          <div class="appbar-top">
+            <div class="brand"><span class="mark"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4"><use href="#i-code"/></svg></span> Goblin</div>
+            <span class="appbar-proj">newsletter-lp</span>
+          </div>
+          <div class="tabs"><span class="tab">Chat</span><span class="tab active">Code</span><span class="tab">Vorschau</span></div>
+        </div>
+        <div class="screen"><div class="scroll">
+          <div class="work-hero">
+            <div class="breath"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-code"/></svg></div>
+            <div class="work-title">Goblin baut.</div>
+            <div class="work-sub">Kein Ladekreis. Ein Logbuch.</div>
+          </div>
+
+          <div class="statbar">
+            <div><div class="v">14<span style="font-size:11px">min</span></div><div class="k">läuft seit</div></div>
+            <div><div class="v">0</div><div class="k">Rate-Limits</div></div>
+            <div><div class="v">1 240</div><div class="k">Zeilen</div></div>
+          </div>
+
+          <div class="logline"><span class="icon" style="color:var(--success);width:17px;height:17px"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4"><use href="#i-check"/></svg></span><span class="mono">index.html</span><span class="t">vor 6 min</span></div>
+          <div class="logline"><span class="icon" style="color:var(--success);width:17px;height:17px"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.4"><use href="#i-check"/></svg></span><span class="mono">styles.css</span><span class="t">vor 2 min</span></div>
+          <div class="logline"><span class="ring"></span><span class="mono" style="color:var(--ed-fg-1);font-weight:600">script.js</span><span class="t">jetzt…</span></div>
+          <div class="logline" style="opacity:.5"><span class="icon" style="color:var(--ink-disabled);width:17px;height:17px"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-clock"/></svg></span><span class="mono">sw.js</span><span class="t">in Warteschlange</span></div>
+
+          <div class="lockcard">
+            <div class="lc-top"><span class="mark" style="background:var(--brand-gold)"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="var(--ink-deep)" stroke-width="2.6"><use href="#i-code"/></svg></span> Goblin · jetzt</div>
+            <div class="lc-body">3 Dateien geändert · Vorschau in ~28 s.<br><span style="color:var(--ink-on-dark-3);font-size:12px">Du kannst dein Handy sperren — ich wecke dich, wenn's fertig ist.</span></div>
+          </div>
+        </div>
+        <div class="thumbbar" style="border-top:1px solid var(--ed-rule)">
+          <button class="tbtn reject" style="flex:1"><span class="icon" style="width:18px;height:18px"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-lock"/></svg></span> Sperren & gehen</button>
+          <button class="tbtn approve" style="flex:1.4;background:var(--brand-green)"><span class="icon" style="width:18px;height:18px"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-eye"/></svg></span> Live mitsehen</button>
+        </div>
+        </div>
+      </div>
+      <p class="frame-note">Island Flow, sichtbar gemacht: der lange, gratis Bau wird vom Hosentaschen-Blick
+      <b>vertrauenswürdig</b>. Konkreter Fortschritt statt Spinner — welche Datei, wie lange,
+      wie viele Zeilen. Ruhig genug, um das Handy wegzulegen.</p>
+    </div>
+
+    <!-- ░░░ FRAME 3 — THUMB DIFF REVIEW (HERO) ░░░ -->
+    <div class="frame">
+      <div class="frame-tag"><span class="dir">Richtung 3 · HERO</span><span class="name">Daumen-Review</span></div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="statusbar"><span>7:02</span><span class="sb-r"><span class="icon" style="width:16px;height:13px"><svg viewBox="0 0 24 24" width="16" height="13"><use href="#i-cell"/></svg></span><span class="icon" style="width:16px;height:14px"><svg viewBox="0 0 24 24" width="16" height="14"><use href="#i-wifi"/></svg></span><span class="icon" style="width:20px;height:14px"><svg viewBox="0 0 24 24" width="20" height="14"><use href="#i-battery"/></svg></span></span></div>
+        <div class="appbar">
+          <div class="appbar-top">
+            <div class="brand"><span class="mark"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4"><use href="#i-code"/></svg></span> Goblin</div>
+            <span class="appbar-proj" id="reviewcount">1 von 3 zum Prüfen</span>
+          </div>
+          <div class="tabs"><span class="tab">Chat</span><span class="tab active">Code</span><span class="tab">Vorschau</span></div>
+        </div>
+        <div class="screen"><div class="scroll" style="justify-content:flex-start">
+          <!-- file pill rail (not a sidebar) -->
+          <div class="pill-row" style="overflow:hidden">
+            <span class="filepill">index.html</span>
+            <span class="filepill active"><span class="dot" style="background:var(--ed-draft)"></span>styles.css</span>
+            <span class="filepill">script.js</span>
+          </div>
+
+          <div class="cardstack" style="margin-top:2px">
+            <div class="cardstate" id="herocard">
+              <div class="req gold"><span class="icon" style="width:15px;height:15px"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-sparkles"/></svg></span> Mach den Hintergrund blau</div>
+              <div class="swipe-wrap" style="margin-top:10px">
+                <div class="swipe-hint l"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><use href="#i-chevleft"/></svg></div>
+                <div class="swipe-hint r"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5"><use href="#i-chevright"/></svg></div>
+                <div class="diffcard">
+                  <div class="diff-head"><span class="icon" style="color:var(--ed-fg-3);width:14px;height:14px"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-file"/></svg></span><span class="fn">styles.css</span><span class="sum">1 Änderung · Z. 12</span></div>
+                  <div class="diff">
+                    <div class="dl ctx"><span class="gut"> </span>.hero {</div>
+                    <div class="dl ctx"><span class="gut"> </span>  padding: 26px 18px;</div>
+                    <div class="dl del"><span class="gut">−</span>  background: #F4ECD8;<span class="swatch" style="background:#F4ECD8"></span></div>
+                    <div class="dl add"><span class="gut">+</span>  background: #1E40AF;<span class="swatch" style="background:#1E40AF"></span></div>
+                    <div class="dl del"><span class="gut">−</span>  color: #0F2B1E;</div>
+                    <div class="dl add"><span class="gut">+</span>  color: #FFFFFF;</div>
+                    <div class="dl ctx"><span class="gut"> </span>}</div>
+                  </div>
+                </div>
+              </div>
+              <p style="font-size:11.5px;color:var(--ink-3);text-align:center;margin-top:10px">Wischen oder tippen · ✕ links verwerfen · ✓ rechts übernehmen</p>
+            </div>
+
+            <div class="done-state" id="donestate">
+              <div class="big"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2.6"><use href="#i-check"/></svg></div>
+              <div class="serif" style="font-size:22px;color:var(--ink-deep)" id="doneword">Übernommen.</div>
+              <div style="font-size:13px;color:var(--ink-3)">2 Änderungen noch zu prüfen.</div>
+              <button onclick="resetHero()" style="margin-top:6px;background:var(--gold-50);border:1px solid var(--gold-200);color:var(--gold-700);border-radius:var(--radius-pill);padding:8px 16px;font-size:12px;font-weight:700;cursor:pointer">Nächste anzeigen</button>
+            </div>
+          </div>
+        </div>
+        <div class="thumbbar" id="herobar">
+          <button class="tbtn reject" onclick="swipeHero('l')"><span class="icon" style="width:20px;height:20px"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4"><use href="#i-x"/></svg></span> Verwerfen</button>
+          <button class="tbtn approve" onclick="swipeHero('r')"><span class="icon" style="width:20px;height:20px"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4"><use href="#i-check"/></svg></span> Übernehmen</button>
+        </div>
+        <div class="toast" id="herotoast"></div>
+        </div>
+      </div>
+      <p class="frame-note">Code-Review neu gedacht für den Daumen: Anfrage → exakter <b>Diff gegen die echte Datei</b>
+      → Wisch ✓/✕. Keine winzige Textauswahl, keine Desktop-Chrome. Direkte Antwort auf das kaputte
+      Edit-in-place. <b>(Interaktiv — Knöpfe testen.)</b></p>
+    </div>
+
+    <!-- ░░░ FRAME 4 — FILES AT REST + PREVIEW + PUBLISH ░░░ -->
+    <div class="frame">
+      <div class="frame-tag"><span class="dir">Ruhezustand + Vorschau</span><span class="name">Dateien, Vorschau, Live</span></div>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="statusbar"><span>7:05</span><span class="sb-r"><span class="icon" style="width:16px;height:13px"><svg viewBox="0 0 24 24" width="16" height="13"><use href="#i-cell"/></svg></span><span class="icon" style="width:16px;height:14px"><svg viewBox="0 0 24 24" width="16" height="14"><use href="#i-wifi"/></svg></span><span class="icon" style="width:20px;height:14px"><svg viewBox="0 0 24 24" width="20" height="14"><use href="#i-battery"/></svg></span></span></div>
+        <div class="appbar">
+          <div class="appbar-top">
+            <div class="brand"><span class="mark"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4"><use href="#i-code"/></svg></span> Goblin</div>
+            <span class="appbar-proj">newsletter-lp</span>
+          </div>
+          <div class="tabs"><span class="tab">Chat</span><span class="tab active">Code</span><span class="tab">Vorschau</span></div>
+        </div>
+        <div class="screen"><div class="scroll">
+          <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);padding:0 2px">3 Dateien · alle geprüft</div>
+          <div class="filelist">
+            <div class="filerow"><span class="icon" style="width:17px;height:17px"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-file"/></svg></span><div><div class="nm">index.html</div><div class="meta">Hero gekürzt · vor 1 min</div></div><span class="st saved">Gesichert</span></div>
+            <div class="filerow"><span class="icon" style="width:17px;height:17px"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-file"/></svg></span><div><div class="nm">styles.css</div><div class="meta">Hintergrund blau · vor 2 min</div></div><span class="st saved">Gesichert</span></div>
+            <div class="filerow"><span class="icon" style="width:17px;height:17px"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-file"/></svg></span><div><div class="nm">script.js</div><div class="meta">Danke-State · gerade eben</div></div><span class="st draft">Entwurf</span></div>
+          </div>
+
+          <div class="sheet">
+            <div class="sheet-grab"></div>
+            <div class="sheet-head"><span class="icon" style="width:15px;height:15px"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-eye"/></svg></span><b style="font-size:12px;color:var(--ed-fg-1)">Live-Vorschau</b><span class="url">localhost · läuft</span></div>
+            <div class="preview">
+              <div class="usr-hero"><span class="serif">Bleib informiert</span><p>Ein Brief pro Woche. Kein Spam.</p></div>
+              <div class="usr-form"><input value="du@beispiel.de" readonly><button class="ubtn">Abonnieren</button></div>
+            </div>
+          </div>
+        </div>
+        <div class="cta">
+          <button class="pub"><span class="icon" style="width:18px;height:18px"><svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" stroke="none"><use href="#i-play"/></svg></span> Veröffentlichen</button>
+          <div class="sub">Über deinen eigenen Vercel-Account — deine Domain, deine Kosten.</div>
+        </div>
+        </div>
+      </div>
+      <p class="frame-note">Dateien als <b>glanceable Statusliste</b>, kein geschrumpfter Datei-Baum. Die Vorschau ist
+      die <b>laufende Seite</b>, einen Tipp entfernt (Bottom-Sheet). Veröffentlichen bleibt ein bewusster,
+      einzelner Schritt.</p>
+    </div>
+
+  </div>
+
+  <!-- ═══════ DESKTOP — secondary, same system ═══════ -->
+  <div class="section-rule"><span class="n">1280 × 760</span><h2>Desktop — dasselbe System, ein Organismus</h2><div class="line"></div></div>
+
+  <div class="desk">
+    <div class="desk-traffic">
+      <div class="lights"><i style="background:#FF5F57"></i><i style="background:#FEBC2E"></i><i style="background:#28C840"></i></div>
+      <span class="brand"><span class="mark" style="width:18px;height:18px;display:inline-flex;vertical-align:-3px"><svg viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="var(--ink-deep)" stroke-width="2.4"><use href="#i-code"/></svg></span> Goblin · newsletter-lp</span>
+      <div class="tabs" style="margin-left:8px"><span class="tab">Chat</span><span class="tab active">Code</span><span class="tab">Vorschau</span></div>
+    </div>
+    <div class="desk-actionbar">
+      <button class="dbtn"><span class="icon" style="width:15px;height:15px"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-moon"/></svg></span> Dunkel</button>
+      <span style="font-family:var(--font-mono);font-size:12px;color:var(--ed-fg-3);display:inline-flex;align-items:center;gap:6px;margin-left:6px"><span class="dot" style="background:var(--success)"></span> Bau-Goblin aktiv · Llama 3.3 · kein Limit</span>
+      <span class="grow"></span>
+      <button class="dbtn"><span class="icon" style="width:15px;height:15px"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-git"/></svg></span> Push</button>
+      <button class="dbtn"><span class="icon" style="width:15px;height:15px"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4"><use href="#i-check"/></svg></span> Sichern</button>
+      <button class="dbtn primary"><span class="icon" style="width:14px;height:14px"><svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" stroke="none"><use href="#i-play"/></svg></span> Veröffentlichen</button>
+    </div>
+    <div class="desk-body">
+      <!-- tree -->
+      <div class="desk-tree">
+        <div class="h">Faden</div>
+        <div class="tnode" style="color:var(--gold-700)"><span class="icon" style="width:15px;height:15px"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-sparkles"/></svg></span>Architekt · Opus</div>
+        <div class="tnode" style="color:var(--success)"><span class="icon" style="width:15px;height:15px"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-code"/></svg></span>Bau-Goblin · frei</div>
+        <div class="h" style="margin-top:14px">Dateien</div>
+        <div class="tnode"><span class="icon" style="width:15px;height:15px"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-folder"/></svg></span>src</div>
+        <div class="tnode" style="padding-left:22px"><span class="icon" style="width:14px;height:14px"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-file"/></svg></span>index.html</div>
+        <div class="tnode active" style="padding-left:22px"><span class="icon" style="width:14px;height:14px"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-file"/></svg></span>styles.css <span class="dot" style="background:var(--ed-draft);margin-left:auto"></span></div>
+        <div class="tnode" style="padding-left:22px"><span class="icon" style="width:14px;height:14px"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-file"/></svg></span>script.js</div>
+      </div>
+      <!-- editor -->
+      <div class="desk-editor">
+        <div class="desk-filetabs">
+          <div class="dft">index.html</div>
+          <div class="dft active">styles.css <span class="dot" style="background:var(--ed-draft)"></span></div>
+          <div class="dft">script.js</div>
+        </div>
+        <div class="codearea">
+          <div class="cl"><span class="ln">10</span><span class="tk"><span class="p">.hero</span> {</span></div>
+          <div class="cl"><span class="ln">11</span><span class="tk">  padding: <span class="s">26px 18px</span>;</span></div>
+          <div class="cl add"><span class="ln">12</span><span class="tk">  background: <span class="s">#1E40AF</span>;</span></div>
+          <div class="cl add"><span class="ln">13</span><span class="tk">  color: <span class="s">#FFFFFF</span>;</span></div>
+          <div class="cl"><span class="ln">14</span><span class="tk">  text-align: <span class="s">center</span>;</span></div>
+          <div class="cl"><span class="ln">15</span><span class="tk">}</span></div>
+          <div class="cl"><span class="ln">16</span><span class="tk"></span></div>
+          <div class="cl"><span class="ln">17</span><span class="tk"><span class="c">/* Formular — vom Bau-Goblin */</span></span></div>
+          <div class="cl"><span class="ln">18</span><span class="tk"><span class="p">.usr-form</span> { display: <span class="s">flex</span>; }</span></div>
+        </div>
+      </div>
+      <!-- review feed (same primitive as mobile swipe cards) -->
+      <div class="desk-review">
+        <div class="dr-head"><span class="icon" style="width:16px;height:16px"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-layers"/></svg></span><b>Review-Feed</b><span class="ct">3 offen</span></div>
+        <div class="dr-feed">
+          <div class="dr-card">
+            <div class="h"><span class="icon" style="width:13px;height:13px;color:var(--ed-fg-3)"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-file"/></svg></span>styles.css<span class="req">» Hintergrund blau</span></div>
+            <div class="dr-mini" style="padding:6px 11px">
+              <div style="color:#8f3622;background:rgba(176,67,42,.09);box-shadow:inset 2px 0 0 var(--danger);padding:0 6px">− background: #F4ECD8;</div>
+              <div style="color:#27623c;background:rgba(61,122,79,.12);box-shadow:inset 2px 0 0 var(--success);padding:0 6px">+ background: #1E40AF;</div>
+            </div>
+            <div class="dr-actions"><button class="rj"><span class="icon" style="width:14px;height:14px"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4"><use href="#i-x"/></svg></span>Verwerfen</button><button class="ap"><span class="icon" style="width:14px;height:14px"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4"><use href="#i-check"/></svg></span>Übernehmen</button></div>
+          </div>
+          <div class="dr-card">
+            <div class="h"><span class="icon" style="width:13px;height:13px;color:var(--ed-fg-3)"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><use href="#i-file"/></svg></span>index.html<span class="req">» Hero kürzen</span></div>
+            <div class="dr-mini" style="padding:6px 11px;color:var(--ed-fg-3)">2 Zeilen entfernt, 1 hinzugefügt</div>
+            <div class="dr-actions"><button class="rj"><span class="icon" style="width:14px;height:14px"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4"><use href="#i-x"/></svg></span>Verwerfen</button><button class="ap"><span class="icon" style="width:14px;height:14px"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4"><use href="#i-check"/></svg></span>Übernehmen</button></div>
+          </div>
+          <div class="dr-card" style="opacity:.6">
+            <div class="h"><span class="ring" style="width:13px;height:13px;border-width:2px"></span>script.js<span class="req">» Danke-State</span></div>
+            <div class="dr-mini" style="padding:6px 11px;color:var(--ink-3)">baut noch…</div>
+          </div>
+        </div>
+        <div style="padding:11px 12px;border-top:1px solid var(--ed-rule)"><button class="dbtn gold" style="width:100%;justify-content:center;height:36px">Alle übernehmen</button></div>
+      </div>
+    </div>
+    <div class="desk-status"><span><span class="dot" style="background:var(--success)"></span> läuft seit 14 min</span><span>0 Rate-Limits</span><span>1 240 Zeilen</span><span style="margin-left:auto">Vorschau in ~28 s · Vercel: dein Account</span></div>
+  </div>
+  <p class="frame-note" style="max-width:1100px;margin-top:14px">Auf dem Desktop ist der Review-Feed eine <b>rechte Spalte</b> neben dem Editor — dieselben Diff-Karten,
+  hier geklickt statt gewischt. Der Faden (Architekt → Bau) und das Logbuch unten sind dieselben Konzepte wie mobil.
+  Ein System, zwei Reichweiten: am Desktop editierst du <i>und</i> reviewst; am Telefon reviewst du nur — und genau das ist die Befreiung.</p>
+
+  <!-- LEGEND -->
+  <div class="legend">
+    <b>Warum das „I'd invest“ ist:</b> nicht weil der Editor hübscher ist, sondern weil das Primitiv falsch war.
+    Der mobile Code Tab hört auf, ein Editor zu sein, und wird zum Leitstand für einen Builder, der über Nacht läuft.
+    <div class="grid">
+      <div><h4>Richtung 1 · Baut im Schlaf</h4>Logbuch statt Spinner. „läuft seit 14 min · 0 Rate-Limits“. Lockscreen-Blick. Ruhig genug zum Weglegen.</div>
+      <div><h4>Richtung 2 · Ein Faden</h4>Schlauer Plan und gratis Bau in einer Spalte. Übergabe = ein Tipp, kein Tab-Copy-Paste.</div>
+      <div><h4>Richtung 3 · Daumen-Review</h4>Anfrage → Diff gegen echte Datei → Wisch ✓/✕. Das tägliche Tun. Tötet edit-in-place-Schmerz.</div>
+    </div>
+    <p style="margin-top:14px;font-style:italic;color:var(--ink-3)">Bewusst weggelassen: Code per Hand tippen am Telefon, persistenter Datei-Baum als Desktop-Chrome, der Spinner.
+    Design-System unverändert (Manrope / Instrument Serif / JetBrains Mono · --ink/--surface/--brand-green/--brand-gold · Lucide).</p>
+  </div>
+
+  <p class="footer-meta">sprint-11b/code-tab-mockup.html · erste Erkundung, Gesprächs-Starter · Tokens verbatim aus design-tokens.css v1.1</p>
+</div>
+
+<script>
+function swipeHero(dir){
+  var card=document.getElementById('herocard');
+  var bar=document.getElementById('herobar');
+  var toast=document.getElementById('herotoast');
+  var done=document.getElementById('donestate');
+  var word=document.getElementById('doneword');
+  card.classList.add(dir==='l'?'gone-l':'gone-r');
+  toast.textContent = dir==='l' ? 'Verworfen · styles.css unverändert' : 'Übernommen · styles.css gesichert';
+  toast.classList.add('show');
+  word.textContent = dir==='l' ? 'Verworfen.' : 'Übernommen.';
+  bar.style.opacity='.4'; bar.style.pointerEvents='none';
+  setTimeout(function(){
+    done.classList.add('show');
+    document.getElementById('reviewcount').textContent='2 von 3 zum Prüfen';
+  },340);
+  setTimeout(function(){toast.classList.remove('show')},1800);
+}
+function resetHero(){
+  var card=document.getElementById('herocard');
+  var bar=document.getElementById('herobar');
+  var done=document.getElementById('donestate');
+  done.classList.remove('show');
+  card.classList.remove('gone-l','gone-r');
+  bar.style.opacity='1'; bar.style.pointerEvents='auto';
+  document.getElementById('reviewcount').textContent='1 von 3 zum Prüfen';
+}
+</script>
+</body>
+</html>
