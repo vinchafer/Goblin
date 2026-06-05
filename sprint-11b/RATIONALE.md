@@ -1,64 +1,77 @@
-# Sprint 11B — Code Tab, mobile-first. The bet.
+# Sprint 11B v2 — Code Tab, mobile-first. The bet + the gaps.
 
-## The one disruptive idea
+## The one disruptive idea (unchanged — it held)
 
 **The mobile code tab is not an editor. It is a review feed for an autonomous
 builder you can walk away from.**
 
-Every shrunk-desktop code tab makes the same silent assumption: *the human
-types the code.* On a phone that assumption is fatal — tiny carets, pinch-zoom,
-no keyboard real estate. So we drop it. On mobile you never write code. You
-**direct** it and you **judge** it:
+On a phone you never hand-type code. You **direct** it (a plan), the free model
+**builds** it for hours, and you **judge** it (swipe a diff). The phone is
+mission control for an overnight build, not a shrunk IDE. v1 proved this lands.
+v2 keeps it and closes the three things that separated "good idea" from "build."
 
-1. You hand a plan from the smart model to the free model (one tap, same thread).
-2. The free model builds for minutes or hours — overnight if it has to — and
-   you lock your phone.
-3. Each change comes back as a **diff card** in a vertical feed. You swipe to
-   approve or reject with your thumb. The "file" is the thing being reviewed,
-   not edited.
+Example throughout: **mara-portfolio** — a small personal portfolio (the
+newsletter example is gone).
 
-The phone becomes **mission control for an overnight build**, not a cramped IDE.
-That is the "wait — you can do THIS from a phone?" moment, and no prettier small
-editor can reach it, because the editor is the wrong primitive.
+## How v2 resolves the three gaps
 
-## Why this is the thesis, made physical
+### Gap 1 — Hunk vs. file (the hero's unsolved detail)
+A real edit usually changes several distinct things in one file. The resolution
+is the **middle path, not either extreme**:
+- **One file = one card.** No card-flood.
+- **Multiple changes = hunks inside that card**, each with its own ✕/✓ and a
+  plain label ("1 · Akzentfarbe", "2 · Projekt-Grid"). Drill in when you care.
+- **One thumb gesture for the whole file** at the bottom ("Ganze Datei").
+Resolving both hunks auto-resolves the card. So the user gets *file-level speed*
+by default and *hunk-level precision* on demand — without drowning. Shown with a
+real two-hunk styles.css (accent colour + grid), interactive.
 
-Goblin's thesis is: architect with a frontier model, then let a free model code
-for hours with no rate-limit anxiety — from your pocket. The review-feed makes
-all three layers something you can *feel* in the code tab:
+### Gap 2 — The error / partial-success state (the hardest, was hidden)
+v1 only showed the happy path. v2 designs **the morning after a broken overnight
+build** (F4):
+- Calm headline ("Fast fertig — eins hakt"), not alarm.
+- **What landed / what didn't**: index.html ✓, styles.css ✓, script.js ✗.
+- **Why, in plain language**: "Eine Klammer fehlt (Zeile 22)" — no stack trace.
+- **Four ways out**: let Goblin fix it (free, it already knows the error), keep
+  the good parts, retry, or roll back to last night. "Dein Stand ist sicher."
+A mockup that hides its hardest state is hiding its weakest point. Now it leads
+with trust.
 
-- **Architecture → code as one flow (Dir 2):** the smart-model plan and the
-  free-model build live in **one continuous vertical thread**. The handoff is a
-  single pill ("An den Bau-Goblin übergeben"), not switch-tab-copy-paste.
-- **It builds while you sleep (Dir 1):** the working state is a **logbook, not a
-  spinner** — files landing one by one, "läuft seit 14 Min · 0 Rate-Limits", a
-  lock-screen-style glance line. Calm enough to put the phone down.
-- **Thumb-first diff review (Dir 3, the hero):** "Mach den Hintergrund blau" →
-  the exact diff against the real file → swipe ✓/✕. This is the daily
-  interaction and the direct answer to the broken edit-in-place.
+### Gap 3 — Architect → build as a moment, not a button
+v1's handoff was one pill and the two roles looked alike. v2 makes them **feel
+different and the handoff feel like something happened**:
+- **Architekt**: warm parchment card, Instrument Serif voice, deliberate, gold.
+- **bau-goblin**: green terminal card, JetBrains Mono voice, mechanical, fast.
+- Between them a **cesura band** ("Plan übergeben — der Plan wechselt die Hände,
+  Smart → Frei"). The thesis you can see: smart plans, free builds.
 
-The free model running unsupervised is the *reason* a feed beats an editor:
-there is too much to hand-type and review line-by-line on a 390px screen, so we
-batch it into swipeable judgments. Async build and thumb-review aren't two
-features — they're the same idea seen at two timescales.
+## Parity preserved (constraint A — the most important thing)
 
-## What it deliberately leaves out
+Phase 0 inventoried the real current chat + code tab (35 capabilities). Every
+one has a home in v2 — see **PARITY.md** for the full old→new table. Headlines:
+- **Model picker** (search/tags/Your-Keys/Free/Soon + badges), **Send-to-Code**
+  (+ preview/deselect/overwrite/target), **copy/download**, **voice**,
+  **attachments**, the **"+" menu**, **save/publish/push**, **multi-session
+  history** — all present and rendered.
+- **Manual editing stays a real, reachable capability** — the escape hatch: tap
+  a file → the real editor (undo/redo, search, theme, auto-save). It's just not
+  the headline.
+- Nothing dropped. Three things **moved to a better home** (diff/apply modal and
+  injections → feed cards; mobile FABs → publish bar + "⋯"). One thing **added**
+  that the current tab lacks entirely: the partial-failure state.
 
-- **Hand-typing code on mobile.** No cramped CodeMirror as the primary surface.
-  An escape-hatch tap-to-edit can exist, but it is never the headline.
-- **A persistent file tree / desktop chrome on the phone.** Files are a
-  glanceable status list and a pill rail, summoned — not a shrunk sidebar.
-- **The spinner.** Progress is always concrete (which file, how long, how many
-  lines), never an indeterminate wheel.
+## What it still deliberately leaves out
 
-## The other direction, noted not built
+- Hand-typing code as the *primary* mobile surface (the editor is the hatch, not
+  the headline).
+- A persistent desktop-style file tree on the phone (files = status list + pills).
+- The indeterminate spinner (progress is always concrete).
 
-A second viable framing is **"the phone is a remote control for a desktop
-session"** — mirror the desktop editor, drive it by voice. We rejected it for
-this pass: it inherits the editor primitive we're trying to escape and makes the
-phone secondary. The review-feed makes the phone *primary*. If user testing says
-power users still want the live editor on mobile, that's the fallback to explore
-next — shown here only as the desktop frame's right rail, to prove the feed and
-the editor are one coherent system.
+## The other direction, still noted not built
 
-— First exploration pass. A conversation starter, not a final answer.
+"Phone as a remote control for a desktop session" remains the fallback if user
+testing says power users want the live editor as the mobile headline. v2 shows
+the editor as a reachable hatch and as the desktop centre — proving the feed and
+the editor are one coherent system — without making the phone secondary.
+
+— Second exploration pass. Now it answers the three gaps and proves nothing was lost.
