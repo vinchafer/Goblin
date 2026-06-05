@@ -1,64 +1,55 @@
-# Session Handoff — after Sprint 10.11 (2026-06-05)
+# Session Handoff — after Sprint 11A (2026-06-05)
 
 ## State
-Sprint 10.11 "Make the Loop Actually Work" complete. Two CRITICAL correctness
-bugs root-caused + fixed before any polish, plus the Step-01 restructure and 6
-re-walk fixes. 5 atomic commits pushed: `7b7c64b`, `2122a3d`, `0c683b2`,
-`48ec419`, `85782ed`. typecheck (web+shared+api) green. Web prod build green.
-Full report: `SPRINT_10_11_COMPLETE.md`. Phase write-ups:
-`sprint-10-11/PHASE_0_ROOTCAUSE.md`, `PHASE_A_KEYPERSIST.md`.
+Sprint 11A "Fix the Code Loop & Navigation" complete. The product's #1 broken
+promise — code-tab edit-in-place creating a NEW file instead of changing the
+existing one — is root-caused, fixed, and PROVEN on prod. Chat surfaces unified to
+the canonical StandaloneChat, and the dashboard now honours the language choice.
 
-## The two critical fixes
-1. **Conversation memory was dead in the standalone (default) chat.** Root
-   cause: `public.standalone_messages` does not exist in prod — it lived only in
-   the manual `scripts/migrate-chat-sessions.sql`, never a formal migration.
-   `routes/chat-sessions.ts` swallowed the resulting insert/select errors, so
-   every turn lost history. Proven live: standalone chat had zero memory; the
-   code tab (its tables exist) had full memory + working edit-in-place.
-   Fix: migration `0065` + error surfacing + a chat.ts dedupe.
-2. **Onboarding key never persisted.** Root cause: `welcome/provider` saved to
-   `/api/byok-keys/` (trailing slash → 404 under strict Hono) and swallowed the
-   error while marking the card saved. Fix: post to `/api/byok-keys` (the exact
-   working Settings endpoint), check res.ok, surface failures.
+3 atomic commits, all pushed and DEPLOYED:
+- `f45a673` 11A-1 (Phase 0, API) — Railway live.
+- `734475a` 11A-A (Phase A, chat unification) — Vercel live.
+- `41109c5` 11A-B (Phase B, dashboard i18n) — Vercel live.
 
-## 🔴 Founder action items (blockers)
-1. **Apply `supabase/migrations/0065_standalone_messages.sql`** to prod
-   (`npx supabase db push` or Studio). This session could NOT apply it — the DB
-   password in `.env.local` is stale (auth rejected) and there is no Supabase
-   management token. Idempotent; safe to re-run.
-2. **Redeploy Railway API** (chat.ts + chat-sessions.ts) and confirm **Vercel
-   deployed the web** (Step-01 A/B/C, Phase A key fix, Phase C UI). At session
-   end prod still served pre-deploy HTML.
-3. **Phase A live round-trip** (needs a throwaway Groq key): walk onboarding →
-   add key → finish → confirm it appears in Settings → My Keys → generate.
-4. After apply+deploy: repeat the 3-turn standalone build
-   ("newsletter page" → "heading bigger" → "background blue").
+typecheck (web+shared+api) green · prod build green · **E2E 108/0 vs prod**.
+origin/master == HEAD == 41109c5. Reports: `SPRINT_11A_COMPLETE.md`,
+`SPRINT_11A_WIP.md`. Evidence + maps: `sprint-11a/`.
 
-## What else shipped
-- Step-01 → A/B/C. A = "Ohne Key starten / Goblins eigenes Modell" + COMING SOON
-  badge (honest teaser, never starts a keyless session; the moat, shown first).
-  B = guided free key, EMPFOHLEN. C = already have a key.
-- False "{n} Anfragen heute übrig" banner gated behind
-  `NEXT_PUBLIC_FREE_POOL_ENABLED` (off) → hidden until the hosted pool is live.
-- C.1 calm "Verbunden ✓"; C.2 real provider logos in Settings (was a
-  letter-avatar regression); C.3 mobile toggle locked to a 51×31 pill (390px,
-  both states); C.4 layer CTAs are real buttons (Next <Link> gets no styled-jsx
-  scope → :global fix); C.5 GitHub create-account explainer + removed the Vercel
-  "Settings" placeholder; C.6 chat code chip → Lucide Code2.
+## The fix that mattered (Phase 0)
+Code sessions stored files in `code_session_files` (seeded only from Send-to-Code);
+the project's REAL files live in S3 (`projects/{id}/...`). `code-sessions.ts` never
+read storage → the model saw an empty workspace → invented a new styles.css.
+Fix: `hydrateSessionFiles()` bridges project storage → session (as `saved`, only
+missing paths) on GET detail + before each message. Edit-in-place (10.8-8) then
+works. **Prod proof:** "mach den Hintergrund grün" changed the existing styles.css
+(`#00ff00`), preserved the other rules, one file, draft. See
+`sprint-11a/edit-in-place/`.
 
-## Verification posture
-- Phase 0: prod-proven (CDP, vinc.hafner3).
-- Phase A: root cause proven (local Hono test); code-path-equivalent to Settings;
-  live deferred (no spare key).
-- Phase B/C: verified on a LOCAL prod-data dev build (web not yet deployed);
-  screenshots in `sprint-10-11/`. Toggle measured at 390px.
+## Verified on PROD (CDP, account vinc.hafner3 — Groq, never the personal account)
+- Phase 0 edit-in-place ✅ · Phase A workspace chat = German StandaloneChat ✅ ·
+  header dropdown German ✅ · Phase B composer + new-project modal German (lang=de) ✅.
 
-## Known / Sprint-11 scope
-- Dashboard mixes DE/EN (chat composer placeholder English under DE).
-- Code-tab beautification.
-- Pre-existing: Next <Link> elements miss styled-jsx scope on onboarding pages
-  (also affects `.back`); only the in-scope `.layer-cta` was fixed.
+## 🔴 Founder action items
+1. **Carry-over from 10.11 — still required:** apply
+   `supabase/migrations/0065_standalone_messages.sql` to prod if not yet done (the
+   standalone-chat memory fix depends on it; `.env.local` DB password was stale
+   this session too, could not apply). Idempotent.
+2. **iPhone re-walk of the loop:** build a page → "mach es blau" → confirm the
+   existing file turns blue with a diff (no new file) → move chat↔code↔back without
+   a strange new English window → DE everywhere on the dashboard.
+3. **(Optional, cosmetic) Phase C:** trigger a Railway redeploy of the API so
+   `/version` reads HEAD (currently f45a673 = the API code; HEAD 41109c5 is web-only,
+   so the API is functionally current — the banner just over-reports drift).
 
-## E2E
-See "E2E status" in SPRINT_10_11_COMPLETE.md (CI projects, local prod-data).
-No green-wash.
+## Scoped follow-ups (reported, not half-done)
+- Hub "Aktivität" feed still reads `chat_messages` (old); new turns write
+  `standalone_messages`. Cosmetic. "Letzte Chats" already canonical.
+- Dead after unification: `ChatTab`, `/api/chat/stream`, `chat_messages` table —
+  separate cleanup.
+- i18n beyond dashboard+chat (deep settings pages etc.) — out of scope this pass.
+- Phase A "return to exact conversation" stash is code-complete; full round-trip
+  CDP walk not exhausted.
+
+## Next (11B)
+Mobile code-tab mockup — now designs on a working loop (edit-in-place + unified
+chat), per the original 11A→11B plan.
