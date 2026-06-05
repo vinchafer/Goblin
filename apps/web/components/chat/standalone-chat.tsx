@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, type ReactNode, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowUpRight, Copy, Download } from "lucide-react";
+import { ArrowUpRight, Copy, Download, Code2 } from "lucide-react";
 import { apiStream } from "@/lib/api";
 import { ChatInput, useChatModel } from "@/components/chat/ChatInput";
 import type { SelectedModel } from "@/components/chat/ChatInput";
@@ -148,18 +148,20 @@ function CodeActionButton({ lastMessage, hasProject, projectId, projectName }: {
         title="Code-Aktionen"
         aria-label="Code-Aktionen"
         style={{
-          height: 30, padding: "0 11px", borderRadius: 8,
+          // 10.11-C.6: real design-system control — Lucide icon, sans label,
+          // even 0 8px padding on a 32px target, no mono "</>" glyph.
+          height: 32, padding: "0 12px", borderRadius: 8,
           background: "var(--panel)", border: "1px solid var(--div)",
-          color: "var(--ink-2, var(--text-2))", fontSize: 12.5, lineHeight: 1,
-          fontFamily: "JetBrains Mono, monospace", letterSpacing: "-0.02em",
-          cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6,
+          color: "var(--ink-2, var(--text-2))", lineHeight: 1,
+          fontFamily: "var(--font-sans)",
+          cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 7,
           fontWeight: 600, boxShadow: "var(--shadow-sm)", transition: "border-color 0.12s, color 0.12s",
         }}
         onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--brand-green)"; e.currentTarget.style.color = "var(--brand-green)"; }}
         onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--div)"; e.currentTarget.style.color = "var(--ink-2, var(--text-2))"; }}
       >
-        <span aria-hidden>{"</>"}</span>
-        <span style={{ fontFamily: "var(--font-sans)", fontSize: 11.5, fontWeight: 600 }}>Code</span>
+        <Code2 size={15} strokeWidth={2} aria-hidden />
+        <span style={{ fontSize: 12.5, fontWeight: 600 }}>Code</span>
       </button>
 
       {open && (

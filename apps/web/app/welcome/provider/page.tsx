@@ -514,14 +514,29 @@ function ProviderCard({
         ))}
       </div>
       <div className="prov-foot">
-        <span className="price">{copy.price}</span>
-        <button
-          type="button"
-          className={`btn ${p.hero ? 'btn-primary btn-lg' : 'btn-secondary btn-sm'}`}
-          onClick={onOpen}
-        >
-          {state.saved ? t.addAnother : p.hero ? t.startSetup : t.connect} <IArrowR size={p.hero ? 13 : 11} />
-        </button>
+        {state.saved ? (
+          // 10.11-C.1 — saved = calm DONE state. "Verbunden ✓" is the primary
+          // read; "add another" is demoted to a quiet optional link (never a
+          // big green CTA, even on the hero card). Continue lives in the
+          // persistent bottom bar.
+          <>
+            <span className="done-flag"><ICheck size={14} /> {t.connected}</span>
+            <button type="button" className="btn btn-quiet btn-sm" onClick={onOpen}>
+              {t.addAnother} <IArrowR size={11} />
+            </button>
+          </>
+        ) : (
+          <>
+            <span className="price">{copy.price}</span>
+            <button
+              type="button"
+              className={`btn ${p.hero ? 'btn-primary btn-lg' : 'btn-secondary btn-sm'}`}
+              onClick={onOpen}
+            >
+              {p.hero ? t.startSetup : t.connect} <IArrowR size={p.hero ? 13 : 11} />
+            </button>
+          </>
+        )}
       </div>
 
       {state.open && (
@@ -650,6 +665,18 @@ function ProviderCard({
         .btn-secondary:hover { border-color: var(--ink-1); }
         .btn-lg { font-size: 14.5px; padding: 14px 20px; }
         .btn-sm { font-size: 12.5px; padding: 8px 12px; border-radius: 6px; }
+        /* 10.11-C.1 — saved card: prominent calm "Verbunden ✓" + quiet add-another. */
+        .done-flag {
+          display: inline-flex; align-items: center; gap: 7px;
+          font-family: var(--font-onb-display), Manrope, sans-serif;
+          font-weight: 600; font-size: 14px; color: var(--ok);
+        }
+        .done-flag :global(svg) { color: var(--ok); }
+        .btn-quiet {
+          background: transparent; color: var(--ink-3);
+          border-color: transparent;
+        }
+        .btn-quiet:hover { color: var(--ink-1); border-color: var(--line-strong); }
       `}</style>
     </article>
   );

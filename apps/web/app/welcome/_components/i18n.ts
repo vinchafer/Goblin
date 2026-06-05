@@ -109,6 +109,7 @@ export const STR: Record<Lang, {
     sec2num: string; sec2title: string; sec2desc: string;
     sec3num: string; sec3title: string;
     githubDesc: string; connectGithub: string; connecting: string;
+    githubOwnTitle: string; githubOwnBody: string; githubOwnCta: string;
     ownTitle: string; ownBody: string; ownCta: string;
     vercelDesc: string; addVercel: string; vercelTokenLabel: string;
     saveToken: string; saving: string; connected: string;
@@ -285,6 +286,11 @@ export const STR: Record<Lang, {
       sec3num: '/03 — Geplant', sec3title: 'Zahlungen, Produktivität & Alerts',
       githubDesc: 'Auto-Commit & Push direkt aus dem Chat — die Source-of-Truth für jedes Goblin-Projekt.',
       connectGithub: 'GitHub verbinden', connecting: 'Verbinde…',
+      githubOwnTitle: 'Noch kein GitHub?',
+      githubOwnBody:
+        ' Goblin pusht in dein eigenes GitHub — du behältst den Code. '
+        + 'Account in unter einer Minute, kostenlos.',
+      githubOwnCta: 'Kostenloses GitHub erstellen →',
       ownTitle: 'Du bringst dein eigenes Vercel mit.',
       ownBody:
         ' Goblin pusht deinen Code in deinen Account, damit das Projekt dir gehört — '
@@ -476,6 +482,11 @@ export const STR: Record<Lang, {
       sec3num: '/03 — Planned', sec3title: 'Payments, productivity & alerts',
       githubDesc: 'Auto-commit & push straight from chat — the source-of-truth for every Goblin project.',
       connectGithub: 'Connect GitHub', connecting: 'Connecting…',
+      githubOwnTitle: 'No GitHub yet?',
+      githubOwnBody:
+        " Goblin pushes to your own GitHub — you keep the code. "
+        + 'Account in under a minute, free.',
+      githubOwnCta: 'Create a free GitHub →',
       ownTitle: 'You bring your own Vercel.',
       ownBody:
         ' Goblin pushes your code to your account so the project is yours — you '

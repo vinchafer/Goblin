@@ -77,13 +77,17 @@ function RoutingInner() {
                 </div>
                 <h3>{layer.title}</h3>
                 <p>{layer.body}</p>
-                {n === '3' && (
+                {/* 10.11-C.4 — every layer now carries one consistent CTA.
+                    Layer 1 (active) = the working path → continue; Layer 2
+                    (soon) = filled green waitlist; Layer 3 (optional) =
+                    outline "add premium". No more faint text. */}
+                {tone === 'active' && (
                   <Link
                     href={nextHref}
-                    className="layer3-link"
+                    className="layer-cta active-cta"
                     onClick={() => patchOnboardingState({ current_step: 3 })}
                   >
-                    {t.l3cta} <IArrowR size={13} />
+                    {t.continue} <IArrowR size={13} />
                   </Link>
                 )}
                 {tone === 'soon' && (
@@ -99,6 +103,15 @@ function RoutingInner() {
                         ? t.waitlistBusy
                         : <>{t.waitlistIdle} <IArrowR size={13} /></>}
                   </button>
+                )}
+                {n === '3' && (
+                  <Link
+                    href={nextHref}
+                    className="layer-cta"
+                    onClick={() => patchOnboardingState({ current_step: 3 })}
+                  >
+                    {t.l3cta} <IArrowR size={13} />
+                  </Link>
                 )}
               </div>
             </div>
@@ -236,18 +249,22 @@ function RoutingInner() {
         .waitlist.joined { background: var(--ok-soft); color: var(--ok); border-color: rgba(47,106,71,.32); cursor: default; }
         .waitlist:disabled { cursor: default; }
 
-        .layer3-link {
-          margin-top: 12px;
-          display: inline-flex; align-items: center; gap: 6px;
+        /* 10.11-C.4 — shared layer CTA: a real bordered button, not faint text.
+           Used by Layer 1 (active, green-emphasis) and Layer 3 (optional). */
+        .layer-cta {
+          margin-top: 14px;
+          display: inline-flex; align-items: center; gap: 7px;
           font-family: var(--font-onb-display), Manrope, sans-serif;
           font-weight: 600; font-size: 13px;
-          color: var(--green); text-decoration: none;
-          padding: 8px 13px; border-radius: var(--radius);
-          border: 1px solid var(--line-strong); background: transparent;
+          color: var(--ink-1); text-decoration: none;
+          padding: 9px 15px; border-radius: var(--radius);
+          border: 1px solid var(--line-strong); background: var(--surface-elev);
           width: fit-content;
-          transition: border-color .15s, color .15s;
+          transition: border-color .15s, color .15s, background .15s;
         }
-        .layer3-link:hover { border-color: var(--green); }
+        .layer-cta:hover { border-color: var(--ink-1); }
+        .layer-cta.active-cta { color: var(--green); border-color: var(--green); }
+        .layer-cta.active-cta:hover { background: var(--ok-soft); }
 
         .flow {
           display: flex; align-items: center; gap: 10px; flex-wrap: wrap;

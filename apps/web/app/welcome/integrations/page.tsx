@@ -101,6 +101,18 @@ export default function IntegrationsStepPage() {
           ctaLabel={githubLoading ? t.connecting : t.connectGithub}
           primary
         />
+        {/* 10.11-C.5b: GitHub account-creation explainer — same pattern as the
+            Vercel ownership note below. GitHub + Vercel are the two that matter,
+            so both get a "no account? create one" path. */}
+        <div className="own-note">
+          <IShield size={13} />
+          <div className="own-body">
+            <b>{t.githubOwnTitle}</b>{t.githubOwnBody}
+          </div>
+          <a className="own-cta" href="https://github.com/signup" target="_blank" rel="noopener noreferrer">
+            {t.githubOwnCta}
+          </a>
+        </div>
         {/* 10.7-11: ownership explainer ABOVE the Vercel card so the user reads
             "your own Vercel" BEFORE the add-token CTA, not after. */}
         <div className="own-note">
@@ -369,7 +381,9 @@ function VercelCard({ t }: { t: IntegT }) {
             <input
               type="password"
               className="vc-input"
-              placeholder="vercel.com → Settings → Tokens"
+              /* 10.11-C.5a: no "do it in Settings" hint inside the field — the
+                 label above names it, the explainer above links to Vercel. */
+              placeholder=""
               value={token}
               onChange={(e) => { setToken(e.target.value); setError(null); }}
               autoComplete="off" spellCheck={false}

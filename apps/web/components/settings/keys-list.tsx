@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { ByokKey } from "@goblin/shared/src/schemas";
+import { ProviderLogo } from "@/components/onboarding/ProviderLogo";
 
 interface KeysListProps {
   initialKeys: ByokKey[];
@@ -133,9 +134,12 @@ export function KeysList({ initialKeys }: KeysListProps) {
             <div key={p.id}>
               {/* ── Provider row ── */}
               <div className={`keys-provider-row${activeKey ? ' connected' : ''}${isConnecting ? ' open' : ''}`}>
-                {/* Initial badge */}
+                {/* Real provider logo (10.11-C.2 — restore brand marks; was a
+                    letter-avatar regression). currentColor picks up the badge's
+                    connected/idle colour; xai + custom have no mark and fall
+                    back to their initial. */}
                 <div className={`keys-provider-badge ${activeKey ? 'connected' : 'idle'}`}>
-                  {p.initial}
+                  <ProviderLogo id={p.id} size={18} tone="ink" fallbackLabel={p.initial} />
                 </div>
 
                 {/* Label + hint */}
