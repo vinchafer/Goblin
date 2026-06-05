@@ -250,8 +250,12 @@ function RoutingInner() {
         .waitlist:disabled { cursor: default; }
 
         /* 10.11-C.4 — shared layer CTA: a real bordered button, not faint text.
-           Used by Layer 1 (active, green-emphasis) and Layer 3 (optional). */
-        .layer-cta {
+           Used by Layer 1 (active, green-emphasis) and Layer 3 (optional).
+           MUST be :global — these render on a Next <Link>, which does NOT
+           receive styled-jsx's scope class here, so a scoped selector never
+           matches (that was the original "faint text" bug: .layer3-link was
+           scoped and silently never applied). */
+        :global(.layer-cta) {
           margin-top: 14px;
           display: inline-flex; align-items: center; gap: 7px;
           font-family: var(--font-onb-display), Manrope, sans-serif;
@@ -262,9 +266,9 @@ function RoutingInner() {
           width: fit-content;
           transition: border-color .15s, color .15s, background .15s;
         }
-        .layer-cta:hover { border-color: var(--ink-1); }
-        .layer-cta.active-cta { color: var(--green); border-color: var(--green); }
-        .layer-cta.active-cta:hover { background: var(--ok-soft); }
+        :global(.layer-cta:hover) { border-color: var(--ink-1); }
+        :global(.layer-cta.active-cta) { color: var(--green); border-color: var(--green); }
+        :global(.layer-cta.active-cta:hover) { background: var(--ok-soft); }
 
         .flow {
           display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
