@@ -181,25 +181,40 @@ function Step2Inner() {
   }
 
   // 10.10 C.1 — dual-key: persist the validated key but STAY on the step so the
-  // user can add another provider before continuing. POST /api/byok-keys/
+  // user can add another provider before continuing. POST /api/byok-keys
   // re-runs testKey server-side — safe + idempotent.
+  //
+  // 10.11-A (CRITICAL): the endpoint MUST be `/api/byok-keys` with NO trailing
+  // slash. The API runs Hono in strict mode, so `/api/byok-keys/` does NOT match
+  // the POST '/' handler and returns 404. The previous code posted to the
+  // trailing-slash URL AND swallowed every error while still marking the card
+  // "saved" — so the onboarding key never persisted but looked successful (it
+  // was absent from Settings → My Keys afterwards). This is now the IDENTICAL
+  // call the working Settings add (ProviderKeyForm) makes, and failures surface.
   async function saveKey(id: string) {
+    const card = cards[id] ?? emptyCard;
+    patchCard(id, { error: undefined });
     try {
       const headers = await getAuthHeaders();
-      const card = cards[id] ?? emptyCard;
-      const body: { provider: string; key: string; baseURL?: string } = {
+      const body: { provider: string; key: string; label?: string; baseURL?: string } = {
         provider: id,
         key: card.keyValue,
       };
       if (id === 'custom' && card.baseURL) body.baseURL = card.baseURL;
-      await fetch(`${API_URL}/api/byok-keys/`, {
+      const res = await fetch(`${API_URL}/api/byok-keys`, {
         method: 'POST',
         headers,
-        credentials: 'include',
         body: JSON.stringify(body),
       });
-    } catch {
-      // Non-blocking — user can retry from settings if creation fails.
+      if (!res.ok) {
+        let msg = t.invalidKey;
+        try { const d = await res.json(); msg = d?.error || msg; } catch { /* non-JSON */ }
+        patchCard(id, { error: msg });
+        return; // do NOT mark saved on failure
+      }
+    } catch (e) {
+      patchCard(id, { error: e instanceof Error ? e.message : t.invalidKey });
+      return;
     }
     await patchOnboardingState({ ai_provider_choice: 'byok' });
     // Mark saved + collapse this card so another provider can be opened.
