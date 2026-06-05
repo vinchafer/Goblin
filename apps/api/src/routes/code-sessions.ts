@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { authMiddleware } from '../middleware/auth';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { streamCompletion } from '../services/model-router';
-import { uploadFile } from '../services/file-storage';
+import { uploadFile, listFiles, getFile } from '../services/file-storage';
 import { deployToVercel } from '../services/vercel-service';
 import { parseCodeBlocks } from '../lib/parse-code-blocks';
 import logger from '../lib/logger';
@@ -25,6 +25,53 @@ async function ownProject(sb: ReturnType<typeof getSupabaseAdmin>, projectId: st
 async function ownSession(sb: ReturnType<typeof getSupabaseAdmin>, sessionId: string, userId: string) {
   const { data } = await sb.from('code_sessions').select('*').eq('id', sessionId).eq('user_id', userId).single();
   return data;
+}
+
+/**
+ * Hydrate a session's working file set from the project's REAL storage (S3).
+ *
+ * 11A-0: a code session starts empty (auto-created) or with only the Send-to-Code
+ * payload — it never mirrored the project's actual files. So when the user typed
+ * "mach den Hintergrund blau", the model saw `(noch keine Dateien)`, `activeExists`
+ * was false, the edit-in-place instruction was skipped, and a brand-new styles.css
+ * was invented instead of the existing one changing. Fix: pull the project's
+ * storage files into `code_session_files` so the model sees the real code and
+ * edit-in-place (10.8-8) targets the existing file.
+ *
+ * Imports only paths NOT already present as a session row, as `saved` (they ARE
+ * the current real files) — so unsaved drafts are never clobbered. Idempotent,
+ * best-effort; failures must not break opening or messaging a session.
+ */
+async function hydrateSessionFiles(
+  sb: ReturnType<typeof getSupabaseAdmin>,
+  sessionId: string,
+  projectId: string,
+  userId: string,
+): Promise<void> {
+  try {
+    const [{ data: existing }, storagePaths] = await Promise.all([
+      sb.from('code_session_files').select('path').eq('session_id', sessionId),
+      listFiles(projectId),
+    ]);
+    const have = new Set((existing ?? []).map((r) => r.path as string));
+    const missing = storagePaths.filter((p) => p && !have.has(p)).slice(0, 50);
+    if (missing.length === 0) return;
+
+    const rows: Array<Record<string, unknown>> = [];
+    for (const path of missing) {
+      const content = await getFile(projectId, path);
+      if (content == null) continue;
+      rows.push({
+        session_id: sessionId, user_id: userId, path, content,
+        change_state: 'saved', updated_at: new Date().toISOString(),
+      });
+    }
+    if (rows.length) {
+      await sb.from('code_session_files').upsert(rows, { onConflict: 'session_id,path' });
+    }
+  } catch (err) {
+    logger.warn({ err: err instanceof Error ? err.message : String(err), sessionId }, 'session_hydrate_failed');
+  }
 }
 
 const CODE_SYSTEM_PREAMBLE = [
@@ -124,6 +171,10 @@ codeSessions.get('/:sessionId', async (c) => {
 
   const session = await ownSession(sb, sessionId, userId);
   if (!session) return c.json({ error: 'Session not found' }, 404);
+
+  // 11A-0: mirror the project's real files into the session before serving, so the
+  // editor + agent see the actual code (not an empty workspace).
+  await hydrateSessionFiles(sb, sessionId, session.project_id, userId);
 
   const [{ data: messages }, { data: files }, { data: proj }] = await Promise.all([
     sb.from('code_session_messages').select('id, role, content, model_used, state, created_at')
@@ -313,6 +364,11 @@ codeSessions.post('/:sessionId/messages', async (c) => {
   if (!session) return c.json({ error: 'Session not found' }, 404);
 
   const modelId = body.modelId || session.model_id || undefined;
+
+  // 11A-0: ensure the project's real files are in the session before we build the
+  // model's file context — otherwise it edits a phantom empty workspace and invents
+  // new files instead of changing the existing ones.
+  await hydrateSessionFiles(sb, sessionId, session.project_id, userId);
 
   // Persist the user turn.
   await sb.from('code_session_messages').insert({
