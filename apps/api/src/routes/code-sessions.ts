@@ -99,12 +99,17 @@ codeSessions.get('/', async (c) => {
   const sb = getSupabaseAdmin();
   if (!(await ownProject(sb, projectId, userId))) return c.json({ error: 'Project not found' }, 404);
 
+  // A.4 (NAVFIX-4): cap the list so the picker / tabs can't grow unbounded.
+  // Most-recent 20 active sessions, newest first; older ones stay in the DB and
+  // are reachable once newer ones are archived/deleted.
+  const SESSION_LIST_LIMIT = 20;
   const { data, error } = await sb
     .from('code_sessions')
     .select('id, name, model_id, state, created_at, updated_at')
     .eq('project_id', projectId)
     .eq('state', 'active')
-    .order('updated_at', { ascending: false });
+    .order('updated_at', { ascending: false })
+    .limit(SESSION_LIST_LIMIT);
 
   if (error) return c.json({ error: 'Failed to list sessions' }, 500);
 
