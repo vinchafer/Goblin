@@ -13,6 +13,9 @@ interface Props {
   onDelete: (id: string) => void;
   theme: EditorTheme;
   onToggleTheme: () => void;
+  /** NAVFIX-5 (Phase B): belt-and-suspenders escape from the code tab on mobile,
+   *  in case the sidebar overlay is ever trapped under the full-height surface. */
+  onBackToProject?: () => void;
 }
 
 function Tick() {
@@ -21,7 +24,7 @@ function Tick() {
 
 /** Session tabs at the top of the Code Tab. Desktop = horizontal strip; mobile =
  *  a single chip that opens a bottom sheet (no persistent bottom-tab-bar). */
-export function SessionTabs({ sessions, activeId, onSwitch, onCreate, onDelete, theme, onToggleTheme }: Props) {
+export function SessionTabs({ sessions, activeId, onSwitch, onCreate, onDelete, theme, onToggleTheme, onBackToProject }: Props) {
   const [sheetOpen, setSheetOpen] = useState(false);
   const active = sessions.find(s => s.id === activeId);
 
@@ -91,6 +94,16 @@ export function SessionTabs({ sessions, activeId, onSwitch, onCreate, onDelete, 
 
       {/* Mobile chip */}
       <div className="gb-sessiontabs-mobile" style={{ alignItems: "center", gap: 8, padding: "8px 12px" }}>
+        {onBackToProject && (
+          <button
+            onClick={onBackToProject}
+            aria-label="Zurück zum Projekt"
+            title="Zurück zum Projekt"
+            style={{ flexShrink: 0, background: "transparent", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-2)", borderRadius: 8, padding: "8px", cursor: "pointer", display: "inline-flex", alignItems: "center" }}
+          >
+            <Icon name="back" size={15} />
+          </button>
+        )}
         <button
           onClick={() => setSheetOpen(true)}
           style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "var(--ed-canvas)", border: "1px solid var(--ed-rule)", borderRadius: 999, padding: "7px 13px", fontSize: 13, color: "var(--ed-fg-1)", fontFamily: "var(--font-sans)", cursor: "pointer", flex: 1, minWidth: 0 }}

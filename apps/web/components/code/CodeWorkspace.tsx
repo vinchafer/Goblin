@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Icon } from "@/components/ui/icon";
 import { GoblinLogo } from "@/components/brand/GoblinLogo";
 import { SessionTabs } from "./SessionTabs";
@@ -26,6 +27,7 @@ interface Props {
  */
 export function CodeWorkspace({ projectId, pendingCode, onPendingConsumed }: Props) {
   const s = useCodeSessions(projectId);
+  const router = useRouter();
   const [theme, , toggleTheme] = useEditorTheme();
   const [picker, setPicker] = useState<{ content: string; filename?: string } | null>(null);
   const autoCreated = useRef(false);
@@ -154,6 +156,7 @@ export function CodeWorkspace({ projectId, pendingCode, onPendingConsumed }: Pro
         onDelete={s.deleteSession}
         theme={theme}
         onToggleTheme={toggleTheme}
+        onBackToProject={() => router.push(`/dashboard/project/${projectId}`)}
       />
 
       {active ? (

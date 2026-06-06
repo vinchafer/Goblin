@@ -129,14 +129,17 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
 
   return (
     <>
-      {/* Mobile backdrop */}
+      {/* Mobile backdrop. NAVFIX-5 (Phase B): z-index lifted to 1000/1001 so the
+          overlay reliably opens ABOVE the full-height code surface (gb-codetab)
+          and its internal stacking — previously z39/40 could be trapped under the
+          code tab on mobile, leaving no way to reach the project rows. */}
       {isOpen && (
         <div
           onClick={onClose}
           style={{
             position: 'fixed', inset: 0,
             background: 'rgba(0,0,0,0.45)',
-            zIndex: 39,
+            zIndex: 1000,
             backdropFilter: 'blur(2px)',
           }}
         />
@@ -374,7 +377,7 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
           background: 'var(--subtle)',
           borderRight: '1px solid var(--border)',
           display: 'flex', flexDirection: 'column',
-          zIndex: 40,
+          zIndex: 1001,
           transform: isOpen ? 'translateX(0)' : 'translateX(-100%)',
           transition: 'transform 0.28s cubic-bezier(0.4,0,0.2,1)',
           boxShadow: isOpen ? '8px 0 40px rgba(0,0,0,0.2)' : 'none',
