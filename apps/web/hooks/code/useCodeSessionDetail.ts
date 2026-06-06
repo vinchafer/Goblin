@@ -49,7 +49,16 @@ export function useCodeSessionDetail(sessionId: string | null) {
       const f: SessionFile[] = data.files ?? [];
       setFiles(f);
       setMessages(data.messages ?? []);
-      setActivePath(prev => (prev && f.some(x => x.path === prev)) ? prev : (f[0]?.path ?? null));
+      // C.3 (NAVFIX-6): foreground the work in play. Hydration mirrors the whole
+      // project's saved files into every session, so a fresh Send-to-Code task (a
+      // single draft) used to "sink" behind an arbitrary saved file (f[0]). Prefer
+      // a draft as the active file so the incoming task surfaces visibly; keep a
+      // still-valid previous selection, else fall back to the first file.
+      setActivePath(prev => {
+        if (prev && f.some(x => x.path === prev)) return prev;
+        const draft = f.find(x => x.change_state === 'draft');
+        return draft?.path ?? f[0]?.path ?? null;
+      });
       setDeployUrl(data.deployUrl ?? null);
       setDeployedAt(data.deployedAt ?? null);
       setDirty(false);

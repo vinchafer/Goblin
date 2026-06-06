@@ -32,6 +32,15 @@ export function CodeWorkspace({ projectId, pendingCode, onPendingConsumed }: Pro
   const [picker, setPicker] = useState<{ content: string; filename?: string } | null>(null);
   const autoCreated = useRef(false);
   const consumedRef = useRef(false);
+  // C.1 (NAVFIX-6): deterministic Send-to-Code ingest. A project-less chat stashes
+  // the payload in sessionStorage and navigates here; previously we re-dispatched a
+  // window event (chat → app-context → prop) and raced the auto-create + prop
+  // effects, sometimes landing on an empty session. Now the stash is read ONCE,
+  // synchronously, into local state — and auto-create is blocked until the stash
+  // has been checked (stashChecked) AND while a payload is pending — so the payload
+  // is never lost and never lands on an empty session.
+  const [stashPayload, setStashPayload] = useState<{ content?: string; filename?: string; files?: { path: string; content: string }[] } | null>(null);
+  const stashChecked = useRef(false);
 
   // Intent → first-paint foreground. Seed synchronously from the localStorage hint
   // (correct even pre-migration), then let the persisted DB value override.
@@ -51,37 +60,35 @@ export function CodeWorkspace({ projectId, pendingCode, onPendingConsumed }: Pro
     return () => { cancelled = true; };
   }, [projectId]);
 
-  // B-S4: code sent from a project-less chat is stashed in sessionStorage, then
-  // we land here. Re-dispatch it so the normal Send-to-Code path (create/inject/
-  // picker) handles it. Runs once on mount; key is cleared immediately.
+  // C.1: read the Send-to-Code stash ONCE, synchronously into state (no window-event
+  // round trip). Runs before the session list resolves, so the routing effect below
+  // always has the payload and auto-create can't win the race. The key is cleared
+  // immediately so a back/forward navigation doesn't replay it.
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem("goblin:stc-pending");
-      if (!raw) return;
-      sessionStorage.removeItem("goblin:stc-pending");
-      const payload = JSON.parse(raw) as { content?: string; filename?: string; files?: { path: string; content: string }[] };
-      // 10.8-5: a previewed multi-file send carries files[]; replay it so the
-      // multi-file seeding path (CodeWorkspace) creates one session with all of them.
-      if (payload?.files && payload.files.length > 0) {
-        const first = payload.files[0]!;
-        window.dispatchEvent(new CustomEvent("goblin:sendToCode", {
-          detail: { code: first.content, filename: first.path, files: payload.files },
-        }));
-      } else if (payload?.content) {
-        window.dispatchEvent(new CustomEvent("goblin:sendToCode", {
-          detail: { code: payload.content, filename: payload.filename },
-        }));
+      if (raw) {
+        sessionStorage.removeItem("goblin:stc-pending");
+        const p = JSON.parse(raw) as { content?: string; filename?: string; files?: { path: string; content: string }[] };
+        if (p?.files && p.files.length > 0) setStashPayload({ content: p.files[0]!.content, filename: p.files[0]!.path, files: p.files });
+        else if (p?.content) setStashPayload({ content: p.content, filename: p.filename });
       }
-    } catch { /* ignore */ }
+    } catch { /* ignore */ } finally { stashChecked.current = true; }
   }, []);
 
-  // Auto-create a first session so the tab is ready to talk to (once).
+  // The one payload to ingest: the app-context prop (legacy same-page send) OR the
+  // synchronously-read stash. Either is routed exactly once via consumedRef.
+  const incoming = pendingCode ?? stashPayload;
+
+  // Auto-create a first session so the tab is ready to talk to (once). Blocked
+  // until the stash has been checked and while any payload is pending — so a fresh
+  // Send-to-Code task never lands on an auto-created empty session.
   useEffect(() => {
-    if (s.available && !s.loading && s.sessions.length === 0 && !autoCreated.current && !pendingCode) {
+    if (s.available && !s.loading && s.sessions.length === 0 && !autoCreated.current && !incoming && stashChecked.current) {
       autoCreated.current = true;
       s.createSession({ name: "Neue Session" });
     }
-  }, [s.available, s.loading, s.sessions.length, s, pendingCode]);
+  }, [s.available, s.loading, s.sessions.length, s, incoming]);
 
   const injectIntoSession = useCallback(async (sessionId: string, content: string, filename?: string) => {
     const t = await getToken();
@@ -95,14 +102,24 @@ export function CodeWorkspace({ projectId, pendingCode, onPendingConsumed }: Pro
     s.refresh();
   }, [s]);
 
-  // Route an incoming Send-to-Code payload.
+  const consumeIncoming = useCallback(() => {
+    setStashPayload(null);
+    onPendingConsumed?.();
+  }, [onPendingConsumed]);
+
+  // Route an incoming Send-to-Code payload (C.1/C.2). The payload always maps to a
+  // CLEAR, content-titled session of its OWN — never a silent inject into a stale
+  // one. 0/1 existing session → create a fresh titled session; 2+ → the picker
+  // (which still offers pick-existing or new). The session's draft is foregrounded
+  // by useCodeSessionDetail (C.3) so the new task surfaces and doesn't sink behind
+  // the project's hydrated files.
   useEffect(() => {
-    if (!pendingCode || consumedRef.current || s.loading || !s.available) return;
+    if (!incoming || consumedRef.current || s.loading || !s.available) return;
     consumedRef.current = true;
     (async () => {
       // 10.6-2: a multi-block send carries real separate files. Seed a fresh session
       // with all of them as drafts (index.html + style.css + script.js → valid deploy).
-      const files = pendingCode.files;
+      const files = incoming.files;
       const [firstFile, ...restFiles] = files ?? [];
       if (files && files.length > 1 && firstFile) {
         const ns = await s.createSession({ initialContent: firstFile.content, initialFilename: firstFile.path, name: titleFromPath(firstFile.path) ?? "Aus dem Chat" });
@@ -120,21 +137,19 @@ export function CodeWorkspace({ projectId, pendingCode, onPendingConsumed }: Pro
           s.setActiveSessionId(sid);
           s.refresh();
         }
-        onPendingConsumed?.();
+        consumeIncoming();
         return;
       }
 
-      const only = s.sessions[0];
-      if (s.sessions.length === 0) {
-        await s.createSession({ initialContent: pendingCode.content, initialFilename: pendingCode.filename, name: titleFromPath(pendingCode.filename) ?? "Aus dem Chat" });
-      } else if (s.sessions.length === 1 && only) {
-        await injectIntoSession(only.id, pendingCode.content, pendingCode.filename);
+      if (s.sessions.length >= 2) {
+        setPicker({ content: incoming.content ?? "", filename: incoming.filename });
       } else {
-        setPicker({ content: pendingCode.content, filename: pendingCode.filename });
+        // 0 or 1 existing session: the new task gets its own clear titled session.
+        await s.createSession({ initialContent: incoming.content, initialFilename: incoming.filename, name: titleFromPath(incoming.filename) ?? "Aus dem Chat" });
       }
-      onPendingConsumed?.();
+      consumeIncoming();
     })();
-  }, [pendingCode, s, injectIntoSession, onPendingConsumed]);
+  }, [incoming, s, consumeIncoming]);
 
   const active = s.sessions.find(x => x.id === s.activeSessionId) ?? s.sessions[0] ?? null;
 
