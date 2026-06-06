@@ -12,6 +12,7 @@ import { useUser } from "@/lib/hooks/useUser";
 import { friendlyError } from "@/lib/friendly-error";
 import { parseCodeBlocks } from "@/lib/parse-code-blocks";
 import { StcPreviewSheet, type StcFile } from "@/components/code/StcPreviewSheet";
+import { useApp } from "@/contexts/app-context";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -234,6 +235,16 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { selectedModel, setSelectedModel } = useChatModel();
+  const { setChatProjectId } = useApp();
+
+  // A.1 (NAVFIX-1): tell the shell which project this chat belongs to (or none),
+  // so the header Code tab stays live from a project chat and project-less chats
+  // keep it disabled. Clear on unmount so a later standalone chat isn't stuck
+  // pointing at a stale project.
+  useEffect(() => {
+    setChatProjectId(projectId ?? null);
+    return () => setChatProjectId(null);
+  }, [projectId, setChatProjectId]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const streamingContentRef = useRef("");

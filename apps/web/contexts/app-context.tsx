@@ -49,6 +49,12 @@ interface AppContextType {
   setPendingCodePayload: (payload: { content: string; filename?: string; files?: { path: string; content: string }[] } | null) => void;
   previewUrl: string | null;
   setPreviewUrl: (url: string | null) => void;
+  // A.1 (NAVFIX-1): a project chat opens on the standalone /chat/[id] route, which
+  // has no /project/ URL segment — so the shell couldn't tell it belonged to a
+  // project and disabled the Code tab. StandaloneChat publishes its owning
+  // project here so the shell can keep Chat·Code·Preview live from a project chat.
+  chatProjectId: string | null;
+  setChatProjectId: (id: string | null) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -71,6 +77,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [settingsInitialItem, setSettingsInitialItem] = useState<string | null>(null);
   const [pendingCodePayload, setPendingCodePayload] = useState<{ content: string; filename?: string; files?: { path: string; content: string }[] } | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [chatProjectId, setChatProjectId] = useState<string | null>(null);
   const clearPendingInjections = useCallback(() => setPendingInjections([]), []);
   const addInjection = useCallback((injection: PendingInjection) => {
     setPendingInjections(prev => {
@@ -125,6 +132,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setPendingCodePayload,
       previewUrl,
       setPreviewUrl,
+      chatProjectId,
+      setChatProjectId,
     }}>
       {children}
     </AppContext.Provider>

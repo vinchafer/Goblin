@@ -35,7 +35,7 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
   const [showTour, setShowTour] = useState(false);
   const [cmdPaletteOpen, setCmdPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
-  const { activeTab, setActiveTab, injectionCount, showNewProjectModal, setShowNewProjectModal, newProjectIdea, setNewProjectIdea, previewUrl: contextPreviewUrl, setShowSettingsSheet, showSettingsSheet, settingsInitialItem, setSettingsInitialItem } = useApp();
+  const { activeTab, setActiveTab, injectionCount, showNewProjectModal, setShowNewProjectModal, newProjectIdea, setNewProjectIdea, previewUrl: contextPreviewUrl, setShowSettingsSheet, showSettingsSheet, settingsInitialItem, setSettingsInitialItem, chatProjectId } = useApp();
   const pathname = usePathname();
   const router = useRouter();
   const [isDesktop, setIsDesktop] = useState(false);
@@ -59,10 +59,16 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
     router.push('/');
   }, [router]);
 
-  const activeProjectId = (() => {
+  // Project context comes from the URL (/project/[id]/…) first. A project chat,
+  // however, lives on the standalone /chat/[id] route with no /project/ segment;
+  // there StandaloneChat publishes its owning project via chatProjectId so the
+  // header Code·Preview tabs stay live (A.1 / NAVFIX-1). Project-less standalone
+  // chats publish null → tabs stay disabled, unchanged.
+  const urlProjectId = (() => {
     const match = pathname.match(/\/project\/([^/]+)/);
     return match ? match[1] : undefined;
   })();
+  const activeProjectId = urlProjectId ?? (chatProjectId ?? undefined);
 
   const replayTour = useCallback(() => {
     if (typeof window !== 'undefined') localStorage.removeItem('goblin_tour_done');
