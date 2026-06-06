@@ -48,7 +48,7 @@ export default function Message({ msg, isStreaming }: { msg: StandaloneMessage &
     <div className="msg-asst">
       <style>{`@keyframes bounce { 0%,80%,100%{transform:scale(0)}40%{transform:scale(1)} }`}</style>
       <span className="msg-mark">
-        <GoblinLogo state={isStreaming ? "thinking" : "idle"} variant="ink" size={24} />
+        <GoblinLogo state={isStreaming ? "thinking" : "idle"} variant="green" size={24} />
       </span>
       <div className="msg-content" data-streaming={isStreaming || undefined}>
         {isThinking ? (

@@ -48,8 +48,8 @@ export function EmptyChat({ onSuggestionClick }: EmptyChatProps) {
         width: '100%', maxWidth: 640,
         display: 'flex', flexDirection: 'column', alignItems: 'center',
       }}>
-        {/* Idle brand mark — Ink Deep on the bone field (§B1.4 reversed-on-warm). */}
-        <GoblinLogo state="idle" size={48} variant="ink" />
+        {/* Idle brand mark — brand green on the bone field (founder: one green-logo chat). */}
+        <GoblinLogo state="idle" size={48} variant="green" />
 
         <h2 style={{
           fontFamily: 'var(--font-dash-display), Manrope, sans-serif',
