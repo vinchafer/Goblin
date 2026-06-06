@@ -197,7 +197,10 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
 
           <style>{`
             .gobl-hub-grid { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); gap: 24px; }
-            @media (max-width: 820px) { .gobl-hub-grid { grid-template-columns: 1fr; } }
+            /* WALK3-B.1: bare "1fr" min-sizes to min-content, so a card with an
+               unbreakable row blew the single column to ~502px and ran off a 390
+               phone. minmax(0,1fr) lets the column shrink; inner ellipsis clips. */
+            @media (max-width: 820px) { .gobl-hub-grid { grid-template-columns: minmax(0, 1fr); } }
           `}</style>
           <div className="gobl-hub-grid">
             {/* LEFT COLUMN — deploys + chats + code-sessions */}
@@ -265,7 +268,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
             </div>
 
             {/* RIGHT COLUMN — activity + files + URLs */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
 
               <div className="gobl-panel" style={{ overflow: 'hidden' }}>
                 <div style={{
@@ -349,9 +352,11 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                   <span style={{ fontSize: 13, color: 'var(--ink-3)', lineHeight: 1.5 }}>
                     Durchsuche, lade hoch und verwalte alle Projektdateien.
                   </span>
+                  {/* WALK3-B.2: the top-right "EXPLORER ÖFFNEN →" already opens the
+                      explorer — the bottom row duplicated it. One clear action each:
+                      keep the contextual "Editor öffnen" here, drop the dup explorer. */}
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    <Link href={`/dashboard/project/${id}/files`} className="gobl-btn primary">Explorer öffnen →</Link>
-                    <Link href={`/dashboard/project/${id}/work?tab=code`} className="gobl-btn ghost">Editor öffnen</Link>
+                    <Link href={`/dashboard/project/${id}/work?tab=code`} className="gobl-btn primary">Editor öffnen</Link>
                   </div>
                 </div>
               </div>
