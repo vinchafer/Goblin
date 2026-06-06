@@ -92,6 +92,20 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
   const [deployDebug, setDeployDebug] = useState<{ deploymentUrl?: string; aliasUrl?: string } | null>(null);
   const debugMode = typeof window !== "undefined" && new URLSearchParams(window.location.search).get("debug") === "1";
 
+  // C.3 (NAVFIX-6): a Send-to-Code session arrives with draft files but no chat
+  // messages. On mobile the default is the (empty) thread view, so the incoming
+  // task's file was hidden behind a toggle — visually the founder's "empty window
+  // + chat". Once loaded, foreground the editor for such a session so the draft
+  // surfaces immediately. Runs once; never overrides a later manual toggle.
+  const autoViewedRef = useRef(false);
+  useEffect(() => {
+    if (autoViewedRef.current || detail.loading) return;
+    autoViewedRef.current = true;
+    if (detail.messages.length === 0 && detail.files.some(f => f.change_state === "draft")) {
+      setMobileView("editor");
+    }
+  }, [detail.loading, detail.messages.length, detail.files]);
+
   // Seed the persistent live-URL card from the session's last deploy, so it
   // survives a browser close + reopen (not just the deploy moment).
   useEffect(() => { if (detail.deployUrl) setLiveUrl(detail.deployUrl); }, [detail.deployUrl]);
