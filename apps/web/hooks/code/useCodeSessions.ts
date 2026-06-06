@@ -116,9 +116,18 @@ export function useCodeSessions(projectId: string) {
     try { await authFetch(`/api/code-sessions/${id}`, { method: 'PATCH', body: JSON.stringify({ modelId }) }); } catch { /* swallow */ }
   }, [authFetch]);
 
-  /** Bump a session's draft badge locally (after a stream / send-to-code). */
+  /** Bump a session's draft badge locally (after a stream / send-to-code).
+   *  Returns the SAME array reference when the count is unchanged so React bails
+   *  out of the state update — otherwise a SessionPane effect that calls this on
+   *  every render (its callback identity changes each render) would spin an
+   *  infinite re-render loop, pegging the main thread and silently aborting every
+   *  in-app navigation out of the Code tab (the K3/K4/K7 "trapped" cluster). */
   const setDraftCount = useCallback((id: string, n: number) => {
-    setSessions(prev => prev.map(s => s.id === id ? { ...s, draftCount: n } : s));
+    setSessions(prev => {
+      const cur = prev.find(s => s.id === id);
+      if (!cur || cur.draftCount === n) return prev;
+      return prev.map(s => s.id === id ? { ...s, draftCount: n } : s);
+    });
   }, []);
 
   return {

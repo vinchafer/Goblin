@@ -152,6 +152,15 @@ export function CodeWorkspace({ projectId, pendingCode, onPendingConsumed }: Pro
   }, [incoming, s, consumeIncoming]);
 
   const active = s.sessions.find(x => x.id === s.activeSessionId) ?? s.sessions[0] ?? null;
+  const activeId = active?.id ?? null;
+
+  // Stable callback identities for SessionPane. These were inline arrows before,
+  // so they changed identity every render and re-fired SessionPane's draft-count
+  // effect each pass — which (with the old unconditional setDraftCount) span an
+  // infinite loop. Memoised on the stable hook fns + activeId.
+  const handleModelChange = useCallback((modelId: string) => { if (activeId) s.setSessionModel(activeId, modelId); }, [s.setSessionModel, activeId]);
+  const handleDraftCount = useCallback((n: number) => { if (activeId) s.setDraftCount(activeId, n); }, [s.setDraftCount, activeId]);
+  const handleAutoTitle = useCallback((name: string) => { if (activeId) s.renameSession(activeId, name); }, [s.renameSession, activeId]);
 
   if (s.loading) {
     return (
@@ -181,9 +190,9 @@ export function CodeWorkspace({ projectId, pendingCode, onPendingConsumed }: Pro
           theme={theme}
           intent={intent}
           projectId={projectId}
-          onModelChange={(modelId) => s.setSessionModel(active.id, modelId)}
-          onDraftCountChange={(n) => s.setDraftCount(active.id, n)}
-          onAutoTitle={(name) => s.renameSession(active.id, name)}
+          onModelChange={handleModelChange}
+          onDraftCountChange={handleDraftCount}
+          onAutoTitle={handleAutoTitle}
         />
       ) : (
         <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
