@@ -112,6 +112,19 @@ export function useCodeInjections({
     setPendingCodePayload(null);
   }, [diffData, token, applyInjectionDirect, setPendingCodePayload]);
 
+  // Row 1: partial apply — write a reconstructed subset (accepted hunks only)
+  // through the SAME write path as whole-file apply. The content is rebuilt in
+  // the review card from base + accepted hunks (lib/diff-hunks.ts); here we just
+  // persist it. No second store, no agent path.
+  const handleDiffApplyContent = useCallback(async (content: string) => {
+    if (!diffData) return;
+    const t = token ?? await getToken();
+    if (!t) return;
+    await applyInjectionDirect(diffData.filePath, content, t);
+    setDiffData(null);
+    setPendingCodePayload(null);
+  }, [diffData, token, applyInjectionDirect, setPendingCodePayload]);
+
   const handleUndoInjection = useCallback(async () => {
     if (!undoPayload) return;
     const t = token ?? await getToken();
@@ -129,6 +142,6 @@ export function useCodeInjections({
   return {
     pendingInjections, clearPendingInjections, setPendingCodePayload,
     diffData, setDiffData, undoPayload, injectedFiles,
-    handleSendToCodeApply, handleDiffApply, handleUndoInjection,
+    handleSendToCodeApply, handleDiffApply, handleDiffApplyContent, handleUndoInjection,
   };
 }

@@ -96,6 +96,7 @@ export function useCodeTab(projectId: string, pendingCode?: { content: string; f
     injectedFiles: injectionsHook.injectedFiles,
     handleSendToCodeApply: injectionsHook.handleSendToCodeApply,
     handleDiffApply: injectionsHook.handleDiffApply,
+    handleDiffApplyContent: injectionsHook.handleDiffApplyContent,
     handleUndoInjection: injectionsHook.handleUndoInjection,
     setPendingCodePayload: injectionsHook.setPendingCodePayload,
 

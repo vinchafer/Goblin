@@ -70,6 +70,7 @@ export function CodeTabClassic({ projectId, projectName = 'project', pendingCode
           proposedContent={tab.diffData.proposedContent}
           diff={tab.diffData.diff}
           onApply={tab.handleDiffApply}
+          onApplyContent={tab.handleDiffApplyContent}
           onDiscard={() => tab.setDiffData(null)}
         />
       )}
