@@ -14,6 +14,9 @@ import { SessionPromptInput } from "./SessionPromptInput";
 import { SessionGitPill } from "./SessionGitPill";
 import { CodeFileTabs } from "./CodeFileTabs";
 import { SessionFileNav } from "./SessionFileNav";
+import { createTwoFilesPatch } from "diff";
+import { parseCodeBlocks } from "@/lib/parse-code-blocks";
+import { DiffModal } from "@/components/project/diff-modal";
 import { useCodeSessionDetail } from "@/hooks/code/useCodeSessionDetail";
 import { useCodeAgent } from "@/hooks/code/useCodeAgent";
 import type { EditorTheme } from "@/hooks/code/useEditorTheme";
@@ -50,6 +53,11 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
   const [liveUrl, setLiveUrl] = useState<string | null>(null);
   const [liveDismissed, setLiveDismissed] = useState(false);
   const [copied, setCopied] = useState(false);
+  // Row 1b: hunk-review card on the LIVE surface. We snapshot the edited file's
+  // pre-edit content at submit time (the only place the base exists — the agent
+  // overwrites it with a draft), then show the Row-1 multi-hunk card base→draft.
+  const reviewBaseRef = useRef<{ path: string; content: string } | null>(null);
+  const [reviewCard, setReviewCard] = useState<{ path: string; base: string; proposed: string; diff: string } | null>(null);
   // 10.8-7: file navigation panel (browse/open all session files, add new).
   const [fileNavOpen, setFileNavOpen] = useState(false);
   // 10.8-9: deploy URL diagnostics, surfaced only with ?debug=1.
@@ -86,14 +94,34 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
   const doRedo = useCallback(() => { const v = editorViewRef.current; if (v) { redo(v); v.focus(); refreshHistory(); } }, [refreshHistory]);
 
   const handleSubmit = (prompt: string) => {
+    // Row 1b: snapshot the edited file's pre-edit content BEFORE the agent
+    // overwrites it — the base for the hunk-review card (transient, client-only).
+    reviewBaseRef.current = detail.activePath
+      ? { path: detail.activePath, content: detail.activeFile?.content ?? "" }
+      : null;
     // 10.8-8: pass the open file so the agent edits it in place (→ live diff)
     // rather than dumping a new file.
-    agent.submit(prompt, session.model_id ?? undefined, async () => {
+    agent.submit(prompt, session.model_id ?? undefined, async ({ text }) => {
       await detail.refresh();          // pull the persisted draft files
       agent.reset();
       setMobileView("editor");
+      maybeOpenReviewCard(text);
     }, detail.activePath);
     setMobileView("editor");
+  };
+
+  // Row 1b: open the multi-hunk review card when the agent EDITED an existing
+  // file (base non-empty, base ≠ produced). New files → no card (stream as today).
+  const maybeOpenReviewCard = (text: string) => {
+    const base = reviewBaseRef.current;
+    reviewBaseRef.current = null;
+    if (!base || !base.content.trim()) return;
+    const block = parseCodeBlocks(text).find(b => b.complete && b.path === base.path);
+    const proposed = block?.content;
+    if (proposed == null || proposed === base.content) return;
+    const diff = createTwoFilesPatch(base.path, base.path, base.content, proposed, "Gesichert", "Entwurf");
+    detail.setActivePath(base.path);
+    setReviewCard({ path: base.path, base: base.content, proposed, diff });
   };
 
   const handleViewFile = (path: string) => { detail.setActivePath(path); setMobileView("editor"); };
@@ -421,6 +449,21 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
             </div>
           </div>
         </>
+      )}
+
+      {/* Row 1b: hunk-review card for a fresh agent edit of an existing file.
+          Reuses the Row-1 DiffModal + lib/diff-hunks; applies a subset via the
+          SAME draft write path (editActive). Save/publish wiring untouched. */}
+      {reviewCard && (
+        <DiffModal
+          filePath={reviewCard.path}
+          currentContent={reviewCard.base}
+          proposedContent={reviewCard.proposed}
+          diff={reviewCard.diff}
+          onApply={() => setReviewCard(null)}                                   /* whole file: draft already == proposed */
+          onApplyContent={(content) => { detail.editActive(content); setReviewCard(null); }} /* subset → draft */
+          onDiscard={() => { detail.discardDraft(reviewCard.path); setReviewCard(null); }}   /* existing discard */
+        />
       )}
 
       {/* Toast */}
