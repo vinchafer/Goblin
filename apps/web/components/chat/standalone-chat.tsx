@@ -152,20 +152,18 @@ function CodeActionButton({ lastMessage, hasProject, projectId, projectName, ses
         title="Code-Aktionen"
         aria-label="Code-Aktionen"
         style={{
-          // 10.11-C.6: real design-system control — Lucide icon, sans label,
-          // even 0 8px padding on a 32px target, no mono "</>" glyph.
-          height: 32, padding: "0 12px", borderRadius: 8,
+          // Founder walk: just the code glyph — clean, centered, single line.
+          // Square 32px target, Lucide </> mark, no label.
+          width: 32, height: 32, padding: 0, borderRadius: 8,
           background: "var(--panel)", border: "1px solid var(--div)",
-          color: "var(--ink-2, var(--text-2))", lineHeight: 1,
-          fontFamily: "var(--font-sans)",
-          cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 7,
-          fontWeight: 600, boxShadow: "var(--shadow-sm)", transition: "border-color 0.12s, color 0.12s",
+          color: "var(--ink-2, var(--text-2))", lineHeight: 0,
+          cursor: "pointer", display: "inline-flex", alignItems: "center", justifyContent: "center",
+          boxShadow: "var(--shadow-sm)", transition: "border-color 0.12s, color 0.12s",
         }}
         onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--brand-green)"; e.currentTarget.style.color = "var(--brand-green)"; }}
         onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--div)"; e.currentTarget.style.color = "var(--ink-2, var(--text-2))"; }}
       >
-        <Code2 size={15} strokeWidth={2} aria-hidden />
-        <span style={{ fontSize: 12.5, fontWeight: 600 }}>Code</span>
+        <Code2 size={16} strokeWidth={2} aria-hidden />
       </button>
 
       {open && (
