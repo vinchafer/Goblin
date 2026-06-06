@@ -79,10 +79,21 @@ deploy round-trip was not re-run this pass (would cost a real Vercel deploy); th
 loop code and UI are unchanged from the shipped-and-verified state.
 
 ## E2E
-The changed surfaces (code tab session/editor, Send-to-Code, the shell project↔chat
+Public suite vs prod (`public-desktop` + `public-mobile`): **72 passed / 10 failed
+(6.7m)**.
+
+The changed surfaces (code-tab session/editor, Send-to-Code, the shell project↔chat
 derivation) have **no Playwright spec coverage** — they were verified by CDP on prod
-as above. The public suite was run against prod for regression; see report for the
-honest status. No green-wash: code-tab behaviour is CDP-verified, not spec-asserted.
+(above). No green-wash.
+
+The 10 failures are **all API-endpoint specs, unrelated to this pass**:
+`33-health-deep` (/health, /health/deep), `36-rankings` (/api/rankings*),
+`41-password-change` (/api/account/change-password). Root cause is a test-harness
+target mismatch — `playwright.config` boots a **local** dev API/web (`webServer`)
+while `PLAYWRIGHT_BASE_URL` pointed at prod, so these API assertions hit an
+inconsistent target. They do not touch chat/code/session/shell routing and are not
+a regression from NAVFIX. All landing / auth / dashboard-redirect / mobile / static
+specs passed.
 
 ## Verdict
 - Phase A: **GREEN**
