@@ -10,6 +10,7 @@ import { useCodeSessions } from "@/hooks/code/useCodeSessions";
 import { useEditorTheme } from "@/hooks/code/useEditorTheme";
 import { API_URL, getToken } from "@/hooks/code/getToken";
 import { getStoredIntent, DEFAULT_INTENT, type Intent } from "@/lib/intent";
+import { titleFromPath } from "@/lib/session-title";
 
 interface Props {
   projectId: string;
@@ -102,7 +103,7 @@ export function CodeWorkspace({ projectId, pendingCode, onPendingConsumed }: Pro
       const files = pendingCode.files;
       const [firstFile, ...restFiles] = files ?? [];
       if (files && files.length > 1 && firstFile) {
-        const ns = await s.createSession({ initialContent: firstFile.content, initialFilename: firstFile.path, name: "Aus dem Chat" });
+        const ns = await s.createSession({ initialContent: firstFile.content, initialFilename: firstFile.path, name: titleFromPath(firstFile.path) ?? "Aus dem Chat" });
         const sid = ns?.id;
         if (sid) {
           const t = await getToken();
@@ -123,7 +124,7 @@ export function CodeWorkspace({ projectId, pendingCode, onPendingConsumed }: Pro
 
       const only = s.sessions[0];
       if (s.sessions.length === 0) {
-        await s.createSession({ initialContent: pendingCode.content, initialFilename: pendingCode.filename, name: "Aus dem Chat" });
+        await s.createSession({ initialContent: pendingCode.content, initialFilename: pendingCode.filename, name: titleFromPath(pendingCode.filename) ?? "Aus dem Chat" });
       } else if (s.sessions.length === 1 && only) {
         await injectIntoSession(only.id, pendingCode.content, pendingCode.filename);
       } else {
@@ -164,6 +165,7 @@ export function CodeWorkspace({ projectId, pendingCode, onPendingConsumed }: Pro
           projectId={projectId}
           onModelChange={(modelId) => s.setSessionModel(active.id, modelId)}
           onDraftCountChange={(n) => s.setDraftCount(active.id, n)}
+          onAutoTitle={(name) => s.renameSession(active.id, name)}
         />
       ) : (
         <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
@@ -186,7 +188,7 @@ export function CodeWorkspace({ projectId, pendingCode, onPendingConsumed }: Pro
           sessions={s.sessions}
           onPick={async (sessionId) => { await injectIntoSession(sessionId, picker.content, picker.filename); setPicker(null); }}
           onNewSession={async () => {
-            const ns = await s.createSession({ initialContent: picker.content, initialFilename: picker.filename, name: "Aus dem Chat" });
+            const ns = await s.createSession({ initialContent: picker.content, initialFilename: picker.filename, name: titleFromPath(picker.filename) ?? "Aus dem Chat" });
             if (ns) s.setActiveSessionId(ns.id);
             setPicker(null);
           }}

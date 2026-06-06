@@ -22,6 +22,7 @@ import { useCodeAgent } from "@/hooks/code/useCodeAgent";
 import type { EditorTheme } from "@/hooks/code/useEditorTheme";
 import type { CodeSession } from "@/hooks/code/useCodeSessions";
 import { layoutPreset, type Intent } from "@/lib/intent";
+import { isPlaceholderTitle, titleFromPrompt } from "@/lib/session-title";
 
 const CodeEditor = dynamic(
   () => import("@/components/editor/code-editor").then(m => ({ default: m.CodeEditor })),
@@ -36,6 +37,8 @@ interface Props {
   theme: EditorTheme;
   onModelChange: (modelId: string) => void;
   onDraftCountChange: (n: number) => void;
+  /** A.3 (NAVFIX-3): rename a still-placeholder session from its first prompt. */
+  onAutoTitle?: (name: string) => void;
   /** Project intent → first-paint foreground (not a mode). Defaults Max-forward. */
   intent?: Intent;
   /** For the footer git pill (Slice 4). */
@@ -45,11 +48,16 @@ interface Props {
 /** One session = thread (talk) + work surface (the file in play). Desktop split,
  *  mobile single-column. The change-state spine (Entwurf → Gesichert → Veröffentlicht)
  *  lives in the work-surface status line; deploy is gated on Saved. */
-export function SessionPane({ session, theme, onModelChange, onDraftCountChange, intent, projectId }: Props) {
+export function SessionPane({ session, theme, onModelChange, onDraftCountChange, onAutoTitle, intent, projectId }: Props) {
   const detail = useCodeSessionDetail(session.id);
   const agent = useCodeAgent(session.id);
   const preset = layoutPreset(intent);
   const [mobileView, setMobileView] = useState<"thread" | "editor">(preset.mobileDefault);
+  // A.2 (NAVFIX-2): on mobile the editor view hides the thread (display:none), so
+  // you couldn't ask Goblin for a change without leaving the editor. A persistent
+  // docked bar here routes through the SAME chat→edit path (handleSubmit) — the
+  // change surfaces as the hunk-review card, the review is never hidden.
+  const [askText, setAskText] = useState("");
   const [deployConfirm, setDeployConfirm] = useState(false);
   const [deploying, setDeploying] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -114,6 +122,12 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
   const doRedo = useCallback(() => { const v = editorViewRef.current; if (v) { redo(v); v.focus(); refreshHistory(); } }, [refreshHistory]);
 
   const handleSubmit = (prompt: string) => {
+    // A.3: the first prompt names a still-placeholder session like the task,
+    // so the tabs/picker read meaningfully (no more duplicate "Session 2").
+    if (detail.messages.length === 0 && isPlaceholderTitle(session.name)) {
+      const title = titleFromPrompt(prompt);
+      if (title) onAutoTitle?.(title);
+    }
     // Row 1b: snapshot the edited file's pre-edit content BEFORE the agent
     // overwrites it — the base for the hunk-review card (transient, client-only).
     reviewBaseRef.current = detail.activePath
@@ -303,6 +317,11 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
           .gb-icon-btn { padding: 0 !important; width: 44px !important; height: 44px !important; justify-content: center !important; gap: 0 !important; }
           .gb-statusline { display: none !important; }
         }
+        /* A.2: the docked "ask Goblin" bar lives only in the mobile editor view
+           (desktop keeps the always-visible thread composer). The surface column
+           is itself display:none in mobile thread view, so this never doubles up. */
+        .gb-editor-ask { display: none; }
+        @media (max-width: 860px) { .gb-editor-ask { display: flex; } }
       `}</style>
 
       {/* THREAD column */}
@@ -488,6 +507,38 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
             <div>deployment (geschützt): {deployDebug.deploymentUrl ?? "—"}</div>
           </div>
         )}
+
+        {/* A.2: docked "ask Goblin" bar — only the mobile editor view (the thread
+            is hidden there). Routes through handleSubmit → the change comes back
+            as the review card; the editor/review is never hidden. */}
+        <form
+          className="gb-editor-ask"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const t = askText.trim();
+            if (!t || agent.streaming) return;
+            setAskText("");
+            handleSubmit(t);
+          }}
+          style={{ flexShrink: 0, borderTop: "1px solid var(--ed-rule)", background: "var(--ed-chrome)", padding: "8px 12px", alignItems: "center", gap: 8 }}
+        >
+          <input
+            value={askText}
+            onChange={(e) => setAskText(e.target.value)}
+            placeholder="Goblin um eine Änderung bitten…"
+            aria-label="Goblin um eine Änderung bitten"
+            disabled={agent.streaming}
+            style={{ flex: 1, minWidth: 0, background: "var(--ed-canvas)", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-1)", borderRadius: 9, padding: "10px 12px", fontSize: 14, fontFamily: "var(--font-sans)", outline: "none" }}
+          />
+          <button
+            type="submit"
+            disabled={!askText.trim() || agent.streaming}
+            aria-label="Senden"
+            style={{ flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", width: 44, height: 44, background: askText.trim() && !agent.streaming ? "var(--ed-primary)" : "transparent", color: askText.trim() && !agent.streaming ? "var(--ed-on-primary)" : "var(--ed-fg-3)", border: askText.trim() && !agent.streaming ? "none" : "1px solid var(--ed-rule)", borderRadius: 9, cursor: askText.trim() && !agent.streaming ? "pointer" : "not-allowed" }}
+          >
+            {agent.streaming ? <GoblinLogo state="working" size={15} variant="gold" /> : <Icon name="send" size={16} />}
+          </button>
+        </form>
 
         {/* Status line + the two-step Sichern → Veröffentlichen */}
         <div className="gb-actbar" style={{ flexShrink: 0, borderTop: "1px solid var(--ed-rule)", background: "var(--ed-chrome)", padding: "10px 14px", display: "flex", alignItems: "center", gap: 12 }}>
