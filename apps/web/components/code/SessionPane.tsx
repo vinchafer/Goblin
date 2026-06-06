@@ -71,6 +71,13 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
   // B: last computed review per path → the thread "Anwenden" can re-open it.
   const reviewsByPathRef = useRef<Map<string, ReviewItem>>(new Map());
   const [reviewablePaths, setReviewablePaths] = useState<Set<string>>(new Set());
+  // WALK3-A: discarding a draft is irreversible (drafts live only client-side).
+  // Never destroy on a single tap — confirm first, then a brief Undo restores it.
+  const [discardConfirm, setDiscardConfirm] = useState<string | null>(null);
+  const discardedRef = useRef<(typeof detail.files)[number] | null>(null);
+  const [undoDiscard, setUndoDiscard] = useState<{ path: string } | null>(null);
+  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (undoTimerRef.current) clearTimeout(undoTimerRef.current); }, []);
   // 10.8-7: file navigation panel (browse/open all session files, add new).
   const [fileNavOpen, setFileNavOpen] = useState(false);
   // 10.8-9: deploy URL diagnostics, surfaced only with ?debug=1.
@@ -198,6 +205,33 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
     setFileNavOpen(false);
   };
 
+  // WALK3-A: every draft discard goes through confirm + undo (no silent data loss).
+  const requestDiscard = (path: string) => {
+    const f = detail.files.find(x => x.path === path);
+    // Only a draft is destructive (saved files persist on the server). Saved → plain close.
+    if (f?.change_state === "draft") { setDiscardConfirm(path); return; }
+    detail.discardDraft(path);
+  };
+  const confirmDiscard = () => {
+    const path = discardConfirm;
+    setDiscardConfirm(null);
+    if (!path) return;
+    discardedRef.current = detail.files.find(x => x.path === path) ?? null;
+    detail.discardDraft(path);
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    setUndoDiscard({ path });
+    undoTimerRef.current = setTimeout(() => { setUndoDiscard(null); discardedRef.current = null; }, 7000);
+  };
+  const undoLastDiscard = () => {
+    const snap = discardedRef.current;
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    setUndoDiscard(null);
+    if (!snap) return;
+    detail.setFiles(prev => prev.some(x => x.path === snap.path) ? prev : [...prev, snap]);
+    detail.setActivePath(snap.path);
+    discardedRef.current = null;
+  };
+
   const runDeploy = async () => {
     setDeployConfirm(false);
     setDeploying(true);
@@ -319,7 +353,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
             injectedFiles={new Set(detail.files.filter(f => f.change_state === "draft").map(f => f.path))}
             isDirty={detail.dirty}
             onSelect={(p) => detail.setActivePath(p)}
-            onClose={(p) => detail.discardDraft(p)}
+            onClose={(p) => requestDiscard(p)}
           />
         )}
         {/* File bar + status */}
@@ -375,7 +409,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
               ><Icon name="copy" size={12} /> <span className="gb-btn-lbl">Kopieren</span></button>
               <button
                 className="gb-icon-btn"
-                onClick={() => detail.activeFile && detail.discardDraft(detail.activeFile.path)}
+                onClick={() => detail.activeFile && requestDiscard(detail.activeFile.path)}
                 title="Entwurf verwerfen"
                 aria-label="Entwurf verwerfen"
                 style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "transparent", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-3)", borderRadius: 8, padding: "5px 9px", fontSize: 12, cursor: "pointer", fontFamily: "var(--font-sans)" }}
@@ -518,6 +552,23 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
         </>
       )}
 
+      {/* WALK3-A: discard confirm — no draft is destroyed on a single unconfirmed tap. */}
+      {discardConfirm && (
+        <>
+          <div style={{ position: "absolute", inset: 0, zIndex: 80, background: "var(--surface-overlay, rgba(0,0,0,0.4))" }} onClick={() => setDiscardConfirm(null)} />
+          <div role="dialog" aria-label="Datei verwerfen" data-testid="discard-confirm" style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "var(--ed-chrome-2)", border: "1px solid var(--ed-rule)", borderRadius: 14, padding: "22px 24px", zIndex: 81, minWidth: 320, maxWidth: 380, boxShadow: "0 16px 40px rgba(15,43,30,0.28)" }}>
+            <div style={{ fontSize: 16, fontWeight: 600, color: "var(--ed-fg-1)", fontFamily: "var(--font-sans)", marginBottom: 8 }}>Datei verwerfen?</div>
+            <div style={{ fontSize: 13, lineHeight: 1.55, color: "var(--ed-fg-3)", fontFamily: "var(--font-sans)", marginBottom: 18 }}>
+              Nicht gespeicherte Änderungen an <span style={{ fontFamily: "JetBrains Mono, monospace", color: "var(--ed-fg-2)", wordBreak: "break-all" }}>{discardConfirm}</span> gehen verloren. Das kann nicht rückgängig gemacht werden.
+            </div>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button onClick={() => setDiscardConfirm(null)} style={{ background: "transparent", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-2)", borderRadius: 9, padding: "9px 16px", fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "var(--font-sans)" }}>Abbrechen</button>
+              <button data-testid="discard-confirm-yes" onClick={confirmDiscard} style={{ background: "var(--danger, #B0432A)", border: "none", color: "#fff", borderRadius: 9, padding: "9px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-sans)", display: "inline-flex", alignItems: "center", gap: 7 }}><Icon name="close" size={14} /> Verwerfen</button>
+            </div>
+          </div>
+        </>
+      )}
+
       {/* Row 1b: hunk-review card for a fresh agent edit of an existing file.
           Reuses the Row-1 DiffModal + lib/diff-hunks; applies a subset via the
           SAME draft write path (editActive). Save/publish wiring untouched. */}
@@ -531,6 +582,14 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
           onApplyContent={(content) => { detail.editActive(content); settleReviewable(reviewCard.path); advanceQueue(); }} /* subset → draft */
           onDiscard={() => { detail.discardDraft(reviewCard.path); settleReviewable(reviewCard.path); advanceQueue(); }}   /* existing discard */
         />
+      )}
+
+      {/* WALK3-A: Undo toast — restores the just-discarded draft for a few seconds. */}
+      {undoDiscard && (
+        <div data-testid="discard-undo" style={{ position: "absolute", bottom: 16, left: "50%", transform: "translateX(-50%)", background: "var(--ed-chrome-2)", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-1)", borderRadius: 10, padding: "8px 10px 8px 14px", fontSize: 12.5, fontFamily: "var(--font-sans)", zIndex: 91, maxWidth: 460, display: "flex", alignItems: "center", gap: 12, boxShadow: "0 6px 24px rgba(15,43,30,0.3)" }}>
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 240 }}>Verworfen · {undoDiscard.path}</span>
+          <button onClick={undoLastDiscard} style={{ background: "var(--ed-primary)", border: "none", color: "var(--ed-on-primary)", borderRadius: 7, padding: "6px 12px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "var(--font-sans)", display: "inline-flex", alignItems: "center", gap: 6, flexShrink: 0 }}><Icon name="back" size={13} /> Rückgängig</button>
+        </div>
       )}
 
       {/* Toast */}
