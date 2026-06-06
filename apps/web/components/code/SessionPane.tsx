@@ -28,6 +28,9 @@ const CodeEditor = dynamic(
   { ssr: false, loading: () => <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ed-fg-3)", fontFamily: "JetBrains Mono, monospace", fontSize: 13 }}>Editor lädt…</div> },
 );
 
+/** B: one reviewable chat-driven edit of an existing file (base → proposed). */
+interface ReviewItem { path: string; base: string; proposed: string; diff: string; }
+
 interface Props {
   session: CodeSession;
   theme: EditorTheme;
@@ -57,7 +60,17 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
   // pre-edit content at submit time (the only place the base exists — the agent
   // overwrites it with a draft), then show the Row-1 multi-hunk card base→draft.
   const reviewBaseRef = useRef<{ path: string; content: string } | null>(null);
-  const [reviewCard, setReviewCard] = useState<{ path: string; base: string; proposed: string; diff: string } | null>(null);
+  // B: snapshot ALL files pre-edit so a chat-driven edit to ANY existing file
+  // (even with no file open → reviewBaseRef null) surfaces as a review card,
+  // not just an "im Editor ansehen" chip. Map<path, pre-edit content>.
+  const baseFilesRef = useRef<Map<string, string>>(new Map());
+  // B: review queue — multi-file chat edits surface as sequential review cards
+  // (reuse DiffModal). reviewCard = head of the queue.
+  const [reviewQueue, setReviewQueue] = useState<ReviewItem[]>([]);
+  const reviewCard = reviewQueue[0] ?? null;
+  // B: last computed review per path → the thread "Anwenden" can re-open it.
+  const reviewsByPathRef = useRef<Map<string, ReviewItem>>(new Map());
+  const [reviewablePaths, setReviewablePaths] = useState<Set<string>>(new Set());
   // 10.8-7: file navigation panel (browse/open all session files, add new).
   const [fileNavOpen, setFileNavOpen] = useState(false);
   // 10.8-9: deploy URL diagnostics, surfaced only with ?debug=1.
@@ -99,6 +112,9 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
     reviewBaseRef.current = detail.activePath
       ? { path: detail.activePath, content: detail.activeFile?.content ?? "" }
       : null;
+    // B: snapshot ALL files too — a chat-driven edit may touch a file that isn't
+    // the open one (founder: "mach die Überschrift größer" with no file open).
+    baseFilesRef.current = new Map(detail.files.map(f => [f.path, f.content]));
     // 10.8-8: pass the open file so the agent edits it in place (→ live diff)
     // rather than dumping a new file.
     agent.submit(prompt, session.model_id ?? undefined, async ({ text }) => {
@@ -110,18 +126,57 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
     setMobileView("editor");
   };
 
-  // Row 1b: open the multi-hunk review card when the agent EDITED an existing
-  // file (base non-empty, base ≠ produced). New files → no card (stream as today).
+  // B: a chat turn → reviewable edits. Every produced block whose path matches an
+  // EXISTING, non-empty file that actually changed becomes a review item. Covers
+  // the open file AND files edited from the chat with nothing open; multi-file →
+  // a queue of cards. New files (no pre-edit base) keep streaming as today.
+  const buildReviews = (text: string): ReviewItem[] => {
+    const snap = baseFilesRef.current;
+    const items: ReviewItem[] = [];
+    for (const b of parseCodeBlocks(text)) {
+      if (!b.complete || !b.path) continue;
+      const base = snap.get(b.path);
+      if (base == null || !base.trim() || base === b.content) continue;
+      const diff = createTwoFilesPatch(b.path, b.path, base, b.content, "Gesichert", "Entwurf");
+      items.push({ path: b.path, base, proposed: b.content, diff });
+    }
+    return items;
+  };
+
   const maybeOpenReviewCard = (text: string) => {
-    const base = reviewBaseRef.current;
     reviewBaseRef.current = null;
-    if (!base || !base.content.trim()) return;
-    const block = parseCodeBlocks(text).find(b => b.complete && b.path === base.path);
-    const proposed = block?.content;
-    if (proposed == null || proposed === base.content) return;
-    const diff = createTwoFilesPatch(base.path, base.path, base.content, proposed, "Gesichert", "Entwurf");
-    detail.setActivePath(base.path);
-    setReviewCard({ path: base.path, base: base.content, proposed, diff });
+    const items = buildReviews(text);
+    if (items.length === 0) return;
+    // Remember per path so the thread can re-open "Anwenden" for any of them.
+    const map = reviewsByPathRef.current;
+    for (const it of items) map.set(it.path, it);
+    setReviewablePaths(new Set(map.keys()));
+    const first = items[0]!;
+    detail.setActivePath(first.path);
+    setReviewQueue(items);
+  };
+
+  // B: a path is "settled" once applied or discarded — drop it from the thread's
+  // Anwenden affordance and advance the queue (head is current card).
+  const settleReviewable = (path: string) => {
+    reviewsByPathRef.current.delete(path);
+    setReviewablePaths(new Set(reviewsByPathRef.current.keys()));
+  };
+  const advanceQueue = () => {
+    setReviewQueue(q => {
+      const rest = q.slice(1);
+      if (rest[0]) detail.setActivePath(rest[0].path);
+      return rest;
+    });
+  };
+
+  // B.2: re-open the review card for a path from the chat thread ("Anwenden").
+  // Graceful: if the pre-edit base is no longer known, just open the file.
+  const handleApplyFromChat = (path: string) => {
+    const it = reviewsByPathRef.current.get(path);
+    if (it) { detail.setActivePath(it.path); setReviewQueue([it]); }
+    else handleViewFile(path);
+    setMobileView("editor");
   };
 
   const handleViewFile = (path: string) => { detail.setActivePath(path); setMobileView("editor"); };
@@ -173,6 +228,11 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
 
   const doSave = async () => {
     const ok = await detail.saveSession();
+    if (ok) {
+      // Saved drafts → the pending chat reviews are now stale; clear them.
+      reviewsByPathRef.current.clear();
+      setReviewablePaths(new Set());
+    }
     setToast(ok ? "Gesichert" : "Konnte nicht sichern — erneut?");
     setTimeout(() => setToast(null), 3000);
   };
@@ -188,8 +248,12 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
     <div className="gb-session-pane" style={{ flex: 1, display: "flex", minHeight: 0, position: "relative" }}>
       <style>{`
         .gb-session-pane { flex-direction: row; }
-        .gb-thread-col { width: ${preset.threadPct}%; max-width: 560px; min-width: 300px; border-right: 1px solid var(--ed-rule); }
-        .gb-surface-col { flex: 1; min-width: 0; }
+        /* Base display lives in the stylesheet (NOT inline) so the @media toggle
+           below can actually flip thread↔surface on mobile. Inline display:flex
+           was overriding it → both columns stacked, the review squeezed to ~117px
+           and Sichern/Veröffentlichen pushed off-screen (founder's Sofia bug). */
+        .gb-thread-col { display: flex; width: ${preset.threadPct}%; max-width: 560px; min-width: 300px; border-right: 1px solid var(--ed-rule); }
+        .gb-surface-col { display: flex; flex: 1; min-width: 0; }
         .gb-mobile-back { display: none; }
         @media (max-width: 860px) {
           .gb-session-pane { flex-direction: column; }
@@ -208,13 +272,16 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
       `}</style>
 
       {/* THREAD column */}
-      <div className="gb-thread-col" style={{ display: "flex", flexDirection: "column", minHeight: 0, background: "var(--ed-canvas)" }}>
+      <div className="gb-thread-col" style={{ flexDirection: "column", minHeight: 0, background: "var(--ed-canvas)" }}>
         <SessionThread
           messages={detail.messages}
           streaming={agent.streaming}
           streamingText={agent.text}
           streamingModel={agent.model}
+          theme={theme}
           onViewFile={handleViewFile}
+          onApplyFromChat={handleApplyFromChat}
+          applicablePaths={reviewablePaths}
         />
         {agent.error && (
           <div style={{ margin: "0 16px 8px", padding: "8px 12px", borderRadius: 8, background: "rgba(176,67,42,0.08)", border: "1px solid rgba(176,67,42,0.3)", color: "#B0432A", fontSize: 12.5, fontFamily: "var(--font-sans)" }}>
@@ -232,7 +299,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
       </div>
 
       {/* WORK SURFACE column */}
-      <div className="gb-surface-col" style={{ display: "flex", flexDirection: "column", minHeight: 0, background: "var(--ed-canvas)", position: "relative" }}>
+      <div className="gb-surface-col" style={{ flexDirection: "column", minHeight: 0, background: "var(--ed-canvas)", position: "relative" }}>
         {/* 10.8-7: file navigation panel (overlays the surface column). */}
         <SessionFileNav
           open={fileNavOpen}
@@ -460,9 +527,9 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
           currentContent={reviewCard.base}
           proposedContent={reviewCard.proposed}
           diff={reviewCard.diff}
-          onApply={() => setReviewCard(null)}                                   /* whole file: draft already == proposed */
-          onApplyContent={(content) => { detail.editActive(content); setReviewCard(null); }} /* subset → draft */
-          onDiscard={() => { detail.discardDraft(reviewCard.path); setReviewCard(null); }}   /* existing discard */
+          onApply={() => { settleReviewable(reviewCard.path); advanceQueue(); }}                 /* whole file: draft already == proposed */
+          onApplyContent={(content) => { detail.editActive(content); settleReviewable(reviewCard.path); advanceQueue(); }} /* subset → draft */
+          onDiscard={() => { detail.discardDraft(reviewCard.path); settleReviewable(reviewCard.path); advanceQueue(); }}   /* existing discard */
         />
       )}
 
