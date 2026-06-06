@@ -10,7 +10,7 @@ export interface RecentSessionItem {
  *  newest first. Server component: click opens the Code Tab. */
 export function RecentSessionsCard({ items, projectId }: { items: RecentSessionItem[]; projectId: string }) {
   return (
-    <div className="gobl-panel" style={{ overflow: "hidden", alignSelf: "start" }}>
+    <div className="gobl-panel" style={{ overflow: "hidden", alignSelf: "stretch", minWidth: 0 }}>
       <div style={{ padding: "14px 18px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <h2 style={{ fontFamily: "var(--font-dash-display), Manrope, sans-serif", fontWeight: 600, fontSize: 15, color: "var(--ink-1)", margin: 0 }}>
           Letzte Code-Sessions
