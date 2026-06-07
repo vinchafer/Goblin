@@ -392,8 +392,9 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
             onClose={(p) => requestDiscard(p)}
           />
         )}
-        {/* File bar + status */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderBottom: "1px solid var(--ed-rule)", background: "var(--ed-chrome)", flexShrink: 0 }}>
+        {/* File bar + status. FIX3-6: overflowX so the row can never clip a control
+            at 390 — if the actions don't fit they scroll instead of being cut off. */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderBottom: "1px solid var(--ed-rule)", background: "var(--ed-chrome)", flexShrink: 0, overflowX: "auto" }}>
           <button className="gb-mobile-back" onClick={() => setMobileView("thread")} aria-label="Zurück zum Thread" style={{ background: "transparent", border: "none", color: "var(--ed-fg-2)", cursor: "pointer", alignItems: "center" }}>
             <Icon name="back" size={16} />
           </button>
@@ -415,7 +416,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
               onClick={() => { const v = editorViewRef.current; if (v) { openSearchPanel(v); v.focus(); } }}
               title="Suchen / Ersetzen (Strg+F · Strg+H) — Alt+Klick oder Strg+D für Mehrfach-Cursor"
               aria-label="Suchen und Ersetzen"
-              style={{ display: "inline-flex", alignItems: "center", background: "transparent", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-2)", borderRadius: 8, padding: "5px 8px", cursor: "pointer" }}
+              style={{ display: "inline-flex", alignItems: "center", background: "transparent", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-2)", borderRadius: 8, padding: "5px 8px", cursor: "pointer", flexShrink: 0 }}
             >
               <Search size={14} />
             </button>
@@ -424,11 +425,11 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
           {detail.activeFile && !liveBlock && (
             <>
               <button onClick={doUndo} disabled={!canUndo} title="Rückgängig (Strg+Z)" aria-label="Rückgängig"
-                style={{ display: "inline-flex", alignItems: "center", background: "transparent", border: "1px solid var(--ed-rule)", color: canUndo ? "var(--ed-fg-2)" : "var(--ed-fg-3)", borderRadius: 8, padding: "5px 8px", cursor: canUndo ? "pointer" : "not-allowed", opacity: canUndo ? 1 : 0.5 }}>
+                style={{ display: "inline-flex", alignItems: "center", background: "transparent", border: "1px solid var(--ed-rule)", color: canUndo ? "var(--ed-fg-2)" : "var(--ed-fg-3)", borderRadius: 8, padding: "5px 8px", cursor: canUndo ? "pointer" : "not-allowed", opacity: canUndo ? 1 : 0.5, flexShrink: 0 }}>
                 <Undo2 size={14} />
               </button>
               <button onClick={doRedo} disabled={!canRedo} title="Wiederherstellen (Strg+Y)" aria-label="Wiederherstellen"
-                style={{ display: "inline-flex", alignItems: "center", background: "transparent", border: "1px solid var(--ed-rule)", color: canRedo ? "var(--ed-fg-2)" : "var(--ed-fg-3)", borderRadius: 8, padding: "5px 8px", cursor: canRedo ? "pointer" : "not-allowed", opacity: canRedo ? 1 : 0.5 }}>
+                style={{ display: "inline-flex", alignItems: "center", background: "transparent", border: "1px solid var(--ed-rule)", color: canRedo ? "var(--ed-fg-2)" : "var(--ed-fg-3)", borderRadius: 8, padding: "5px 8px", cursor: canRedo ? "pointer" : "not-allowed", opacity: canRedo ? 1 : 0.5, flexShrink: 0 }}>
                 <Redo2 size={14} />
               </button>
             </>
@@ -452,7 +453,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
               ><Icon name="close" size={12} /> <span className="gb-btn-lbl">Verwerfen</span></button>
             </>
           )}
-          <StateBadge state={liveBlock ? "draft" : state} />
+          <span style={{ flexShrink: 0, display: "inline-flex" }}><StateBadge state={liveBlock ? "draft" : state} /></span>
         </div>
 
         {/* Editor / empty. The real editor stays mounted (key = file path only) so
