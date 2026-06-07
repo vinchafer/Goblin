@@ -1,7 +1,8 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Smartphone, Tablet, Monitor, RotateCw, ExternalLink, Globe, Github, Rocket } from 'lucide-react';
 import { GoblinLogo } from '@/components/brand/GoblinLogo';
+import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 
 type Viewport = '375' | '768' | '1440';
@@ -15,6 +16,28 @@ export function PreviewTab({ projectId, previewUrl }: PreviewTabProps) {
   const [viewport, setViewport] = useState<Viewport>('1440');
   const [reloadKey, setReloadKey] = useState(0);
   const [loading, setLoading] = useState(true);
+  // FIX3-5 (V2-P2-2): the empty-state CTA must reflect the real next step, not
+  // always "Vercel-Token hinzufügen" even when Vercel is already connected.
+  const [conn, setConn] = useState<{ github: boolean; vercel: boolean } | null>(null);
+
+  useEffect(() => {
+    if (previewUrl) return; // only needed for the empty state
+    let alive = true;
+    (async () => {
+      try {
+        const { data: { session } } = await createClient().auth.getSession();
+        if (!session) return;
+        const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
+        const headers = { Authorization: `Bearer ${session.access_token}` };
+        const [gh, vc] = await Promise.all([
+          fetch(`${apiBase}/api/github/status`, { headers, signal: AbortSignal.timeout(8000) }).then(r => r.ok ? r.json() : null).catch(() => null),
+          fetch(`${apiBase}/api/integrations/vercel`, { headers, signal: AbortSignal.timeout(8000) }).then(r => r.ok ? r.json() : null).catch(() => null),
+        ]);
+        if (alive) setConn({ github: !!gh?.connected, vercel: !!vc?.connected });
+      } catch { /* leave conn null → default add-token CTA */ }
+    })();
+    return () => { alive = false; };
+  }, [previewUrl]);
 
   const vpIcons: Record<Viewport, React.ReactNode> = {
     '375': <Smartphone size={14} />,
@@ -87,29 +110,53 @@ export function PreviewTab({ projectId, previewUrl }: PreviewTabProps) {
           ))}
         </div>
 
-        <div style={{ display: 'flex', gap: 8 }}>
-          <Link
-            href="/dashboard/settings/keys"
-            style={{
-              background: 'var(--brand-green)', color: '#fff', padding: '10px 20px',
-              borderRadius: 9, fontSize: 13, fontWeight: 600, textDecoration: 'none',
-              display: 'inline-flex', alignItems: 'center', gap: 6,
-              boxShadow: '0 1px 2px rgba(15,43,30,0.18)',
-            }}
-          >
-            Vercel-Token hinzufügen →
-          </Link>
-          <Link
-            href="/dashboard/settings/integrations"
-            style={{
-              background: 'transparent', color: 'var(--brand-green)', padding: '10px 20px',
-              borderRadius: 9, fontSize: 13, fontWeight: 500, textDecoration: 'none',
-              border: '1.5px solid var(--rule)',
-            }}
-          >
-            GitHub verbinden
-          </Link>
-        </div>
+        {/* FIX3-5: primary CTA = the actual next step for THIS account. */}
+        {(() => {
+          const primaryStyle: React.CSSProperties = {
+            background: 'var(--brand-green)', color: '#fff', padding: '10px 20px',
+            borderRadius: 9, fontSize: 13, fontWeight: 600, textDecoration: 'none',
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            boxShadow: '0 1px 2px rgba(15,43,30,0.18)',
+          };
+          const secondaryStyle: React.CSSProperties = {
+            background: 'transparent', color: 'var(--brand-green)', padding: '10px 20px',
+            borderRadius: 9, fontSize: 13, fontWeight: 500, textDecoration: 'none',
+            border: '1.5px solid var(--rule)',
+          };
+
+          // Default (status unknown or nothing connected) → add Vercel token.
+          if (!conn || (!conn.github && !conn.vercel)) {
+            return (
+              <div style={{ display: 'flex', gap: 8 }}>
+                <Link href="/dashboard/settings/keys" style={primaryStyle}>Vercel-Token hinzufügen →</Link>
+                <Link href="/dashboard/settings/integrations" style={secondaryStyle}>GitHub verbinden</Link>
+              </div>
+            );
+          }
+          // GitHub missing (Vercel may be connected) → connect GitHub first.
+          if (!conn.github) {
+            return (
+              <div style={{ display: 'flex', gap: 8 }}>
+                <Link href="/dashboard/settings/integrations" style={primaryStyle}>GitHub verbinden →</Link>
+                {!conn.vercel && <Link href="/dashboard/settings/keys" style={secondaryStyle}>Vercel-Token</Link>}
+              </div>
+            );
+          }
+          // GitHub connected, Vercel missing → add the token.
+          if (!conn.vercel) {
+            return (
+              <div style={{ display: 'flex', gap: 8 }}>
+                <Link href="/dashboard/settings/keys" style={primaryStyle}>Vercel-Token hinzufügen →</Link>
+              </div>
+            );
+          }
+          // Both connected → the real next step is push + deploy from the Code tab.
+          return (
+            <div style={{ display: 'flex', gap: 8 }}>
+              <Link href={`/dashboard/project/${projectId}/work?tab=code`} style={primaryStyle}>Im Code-Tab deployen →</Link>
+            </div>
+          );
+        })()}
       </div>
     );
   }
@@ -172,24 +219,34 @@ export function PreviewTab({ projectId, previewUrl }: PreviewTabProps) {
         ><ExternalLink size={14} /></a>
       </div>
 
-      {/* R3: new Vercel teams gate deployment URLs behind SSO by default → anonymous
-          visitors see 401. One-line, dismissible-by-ignoring hint. (--t-small + --ink-3
-          confirmed tokens in this file; --t-caption not in SSOT so not invented.) */}
+      {/* FIX3-7 (BUG-10): a protected ('manual') deploy shows Vercel's login wall in
+          the iframe. We can't detect that cross-origin, so we never leave the user at
+          a dead login screen: an honest, always-present escape with a prominent
+          "In Vercel öffnen" (the owner is logged in → sees it) + what makes auto-
+          publish succeed. The normal ('public') deploy renders fine in the iframe. */}
       <div style={{
-        padding: '6px 12px',
+        padding: '8px 12px',
         borderBottom: '1px solid var(--rule)',
         fontSize: 'var(--t-small-fs)',
         color: 'var(--ink-3)',
         lineHeight: 1.45,
+        display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
       }}>
-        Deine Vercel-URL ist möglicherweise SSO-geschützt. Falls Besucher 401 sehen: im{' '}
+        <span style={{ flex: 1, minWidth: 180 }}>
+          Siehst du statt deiner Seite eine Login-Wand? Dann ist die Vercel-Deployment-
+          Protection aktiv — auto-publish gelingt, wenn dein Vercel-Token vollen
+          Projekt-Zugriff hat. Öffne sie hier (du bist bei Vercel eingeloggt):
+        </span>
         <a
-          href="https://vercel.com/dashboard"
+          href={previewUrl}
           target="_blank"
           rel="noopener noreferrer"
-          style={{ color: 'var(--brand-green)', textDecoration: 'none' }}
-        >Vercel-Dashboard</a>{' '}
-        unter Project → Settings → Deployment Protection deaktivieren.
+          style={{
+            background: 'var(--brand-green)', color: '#fff', padding: '6px 14px',
+            borderRadius: 8, fontSize: 12, fontWeight: 600, textDecoration: 'none',
+            whiteSpace: 'nowrap', flexShrink: 0,
+          }}
+        >In Vercel öffnen →</a>
       </div>
 
       {/* Iframe area */}
