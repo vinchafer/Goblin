@@ -27,11 +27,15 @@ export function ConnectorsPage() {
         const headers = await authHeaders();
         if (!headers) return;
         // /api/github/status returns { connected, username } directly.
-        const r = await fetch(`${apiBase}/api/github/status`, { headers });
+        // FIX2-6 (BUG-20): hard timeout so a hung request can never leave the
+        // page stuck on "Lade Konnektoren…".
+        const r = await fetch(`${apiBase}/api/github/status`, { headers, signal: AbortSignal.timeout(8000) });
         if (r.ok) {
           const data = await r.json() as GithubState;
           setGithub({ connected: !!data.connected, username: data.username });
         }
+      } catch {
+        /* network/timeout — fall through to a definite (disconnected) state */
       } finally {
         setLoading(false);
       }
@@ -153,8 +157,12 @@ function VercelConnectorRow() {
     const headers = await authHeaders();
     if (!headers) { setLoading(false); return; }
     try {
-      const r = await fetch(`${apiBase}/api/integrations/vercel`, { headers });
+      // FIX2-6 (BUG-20): hard timeout so the Vercel subtitle can never stick on
+      // "Lade…" when the request hangs (CORS preflight, dead API, slow network).
+      const r = await fetch(`${apiBase}/api/integrations/vercel`, { headers, signal: AbortSignal.timeout(8000) });
       if (r.ok) setState(await r.json());
+    } catch {
+      /* network/timeout — leave state as disconnected, never an infinite spinner */
     } finally {
       setLoading(false);
     }
