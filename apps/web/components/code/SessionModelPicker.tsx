@@ -53,14 +53,27 @@ export function SessionModelPicker({ value, onChange, variant = "compact" }: Pro
   // connected-first.
   const usable = models.filter(m => m.available);
 
-  // Auto-select the first usable model when the session has none yet (e.g. right
-  // after Send-to-Code lands code) so the user never faces an empty picker.
+  // Auto-select a model when the session has none yet (e.g. right after
+  // Send-to-Code lands code) so the user never faces an empty picker.
+  //
+  // BUG-11 (Walk-4): the old default was usable[0] = the top benchmark-ranked
+  // usable model, which for a user with a Google key is "Gemini 2.5 Pro" — but
+  // Gemini produced NOTHING on prod (verified: no content change, no review).
+  // A cold code-tab send must succeed, so prefer the proven Groq Llama 3.3 70B
+  // (the same model the dashboard chat defaults to and generates with), then any
+  // Groq model, then fall back to the ranked top. The user can still pick any
+  // model manually; this only sets the cold default.
   const autoPicked = useRef(false);
   useEffect(() => {
     if (autoPicked.current) return;
     if (!value && usable.length > 0) {
       autoPicked.current = true;
-      onChange(usable[0]!.slug);
+      const preferred =
+        usable.find(m => /groq/i.test(m.provider) && /llama\s*3\.?3\s*70b/i.test(m.name)) ??
+        usable.find(m => /groq/i.test(m.provider) && /llama/i.test(m.name)) ??
+        usable.find(m => /groq/i.test(m.provider)) ??
+        usable[0]!;
+      onChange(preferred.slug);
     }
   }, [value, usable, onChange]);
 
