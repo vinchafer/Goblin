@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
@@ -52,6 +52,14 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
     setShowSettingsSheet(false);
     setSettingsInitialItem(null);
   }, [setShowSettingsSheet, setSettingsInitialItem]);
+
+  // CLEANUP-2: navigating away closes the settings sheet/modal so it can't stay
+  // stacked over the destination. Skip the first mount (no spurious close).
+  const settingsMountRef = useRef(false);
+  useEffect(() => {
+    if (!settingsMountRef.current) { settingsMountRef.current = true; return; }
+    closeSettings();
+  }, [pathname, closeSettings]);
 
   const handleLogout = useCallback(async () => {
     const supabase = createClient();
