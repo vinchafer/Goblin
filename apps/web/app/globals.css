@@ -665,9 +665,9 @@ button, input, textarea, select {
   white-space: pre-wrap;
   word-break: break-word;
 }
-.msg-asst { display: flex; gap: 12px; align-items: flex-start; }
+.msg-asst { display: flex; gap: 12px; align-items: flex-start; min-width: 0; max-width: 100%; }
 .msg-mark { width: 24px; height: 24px; color: var(--ink-deep); flex-shrink: 0; }
-.msg-content { flex: 1; min-width: 0; color: var(--ink-1); font-size: var(--t-body-fs); line-height: 1.55; }
+.msg-content { flex: 1; min-width: 0; max-width: 100%; color: var(--ink-1); font-size: var(--t-body-fs); line-height: 1.55; }
 .msg-content p { margin: 0 0 10px; }
 .msg-content p:last-child { margin-bottom: 0; }
 .msg-content strong { font-weight: 700; }
@@ -686,7 +686,7 @@ button, input, textarea, select {
 .msg-content a { color: var(--green-600); text-decoration: underline; text-underline-offset: 2px; }
 
 /* Code block — Variant A (Paper) only */
-.codeblock { border-radius: var(--radius-md); margin: 12px 0; overflow: hidden; }
+.codeblock { border-radius: var(--radius-md); margin: 12px 0; overflow: hidden; max-width: 100%; }
 .cb-head { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; }
 .cb-fname { font-family: 'JetBrains Mono', monospace; font-size: var(--t-mono-sm-fs); letter-spacing: 0.04em; }
 .cb-copy { background: none; border: none; display: flex; cursor: pointer; padding: 2px; }
