@@ -11,6 +11,7 @@ import { GoblinLogo } from "@/components/brand/GoblinLogo";
 import { StreamingDiffView } from "./StreamingDiffView";
 import { SessionThread } from "./SessionThread";
 import { SessionPromptInput } from "./SessionPromptInput";
+import { SessionModelPicker } from "./SessionModelPicker";
 import { SessionGitPill } from "./SessionGitPill";
 import { CodeFileTabs } from "./CodeFileTabs";
 import { SessionFileNav } from "./SessionFileNav";
@@ -526,7 +527,9 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
 
         {/* A.2: docked "ask Goblin" bar — only the mobile editor view (the thread
             is hidden there). Routes through handleSubmit → the change comes back
-            as the review card; the editor/review is never hidden. */}
+            as the review card; the editor/review is never hidden. BUG-5: now also
+            carries the model picker so you can choose the model for an in-editor
+            edit without switching to the thread. */}
         <form
           className="gb-editor-ask"
           onSubmit={(e) => {
@@ -536,24 +539,29 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
             setAskText("");
             handleSubmit(t);
           }}
-          style={{ flexShrink: 0, borderTop: "1px solid var(--ed-rule)", background: "var(--ed-chrome)", padding: "8px 12px", alignItems: "center", gap: 8 }}
+          style={{ flexShrink: 0, borderTop: "1px solid var(--ed-rule)", background: "var(--ed-chrome)", padding: "8px 12px", display: "flex", flexDirection: "column", gap: 8 }}
         >
-          <input
-            value={askText}
-            onChange={(e) => setAskText(e.target.value)}
-            placeholder="Goblin um eine Änderung bitten…"
-            aria-label="Goblin um eine Änderung bitten"
-            disabled={agent.streaming}
-            style={{ flex: 1, minWidth: 0, background: "var(--ed-canvas)", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-1)", borderRadius: 9, padding: "10px 12px", fontSize: 14, fontFamily: "var(--font-sans)", outline: "none" }}
-          />
-          <button
-            type="submit"
-            disabled={!askText.trim() || agent.streaming}
-            aria-label="Senden"
-            style={{ flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", width: 44, height: 44, background: askText.trim() && !agent.streaming ? "var(--ed-primary)" : "transparent", color: askText.trim() && !agent.streaming ? "var(--ed-on-primary)" : "var(--ed-fg-3)", border: askText.trim() && !agent.streaming ? "none" : "1px solid var(--ed-rule)", borderRadius: 9, cursor: askText.trim() && !agent.streaming ? "pointer" : "not-allowed" }}
-          >
-            {agent.streaming ? <GoblinLogo state="working" size={15} variant="gold" /> : <Icon name="send" size={16} />}
-          </button>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <input
+              value={askText}
+              onChange={(e) => setAskText(e.target.value)}
+              placeholder="Goblin um eine Änderung bitten…"
+              aria-label="Goblin um eine Änderung bitten"
+              disabled={agent.streaming}
+              style={{ flex: 1, minWidth: 0, background: "var(--ed-canvas)", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-1)", borderRadius: 9, padding: "10px 12px", fontSize: 14, fontFamily: "var(--font-sans)", outline: "none" }}
+            />
+            <button
+              type="submit"
+              disabled={!askText.trim() || agent.streaming}
+              aria-label="Senden"
+              style={{ flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", width: 44, height: 44, background: askText.trim() && !agent.streaming ? "var(--ed-primary)" : "transparent", color: askText.trim() && !agent.streaming ? "var(--ed-on-primary)" : "var(--ed-fg-3)", border: askText.trim() && !agent.streaming ? "none" : "1px solid var(--ed-rule)", borderRadius: 9, cursor: askText.trim() && !agent.streaming ? "pointer" : "not-allowed" }}
+            >
+              {agent.streaming ? <GoblinLogo state="working" size={15} variant="gold" /> : <Icon name="send" size={16} />}
+            </button>
+          </div>
+          <div style={{ display: "flex", alignItems: "center" }}>
+            <SessionModelPicker value={session.model_id} onChange={onModelChange} variant="compact" />
+          </div>
         </form>
 
         {/* Status line + the two-step Sichern → Veröffentlichen */}

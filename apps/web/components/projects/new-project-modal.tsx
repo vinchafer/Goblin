@@ -246,7 +246,7 @@ export function NewProjectModal({ onClose, initialMode, initialIdea }: NewProjec
               {/* Intent — sets the Code-Tab default foreground (not a mode). Default
                   "exploring" is pre-selected, so Max never has to touch this. */}
               <div style={{ marginBottom: 20 }}>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 10 }}>Was baust du?</label>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 10 }}>{lang === 'en' ? 'What kind of project?' : 'Was baust du?'}</label>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
                   {INTENTS.map(opt => {
                     const active = intent === opt.id;
@@ -383,7 +383,7 @@ export function NewProjectModal({ onClose, initialMode, initialIdea }: NewProjec
               <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 20 }}>{lang === 'en' ? 'Starting from: ' : 'Basis: '}{selectedTemplate.name}</p>
 
               <div style={{ marginBottom: 20 }}>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 6 }}>Project Name</label>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 6 }}>{lang === 'en' ? 'Project Name' : 'Projektname'}</label>
                 <input
                   type="text" value={templateName} onChange={e => setTemplateName(e.target.value.slice(0, 50))}
                   placeholder={selectedTemplate.name} maxLength={50} autoFocus
@@ -419,6 +419,7 @@ function ModeTab({ label, active, onClick }: { label: string; active: boolean; o
 
 function TemplateCard({ template, onSelect }: { template: Template; onSelect: () => void }) {
   const [hovered, setHovered] = useState(false);
+  const lang = useLang();
   return (
     <div
       onClick={onSelect}
@@ -429,11 +430,11 @@ function TemplateCard({ template, onSelect }: { template: Template; onSelect: ()
       <div style={{ height: 80, background: templateGradient(template.category), display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
         <span style={{ fontSize: 32 }}>{categoryIcon(template.category)}</span>
         {template.is_official && (
-          <span style={{ position: 'absolute', top: 6, right: 6, fontSize: 10, fontWeight: 700, background: 'var(--brand-green)', color: '#fff', padding: '2px 6px', borderRadius: 4 }}>Official</span>
+          <span style={{ position: 'absolute', top: 6, right: 6, fontSize: 10, fontWeight: 700, background: 'var(--brand-green)', color: '#fff', padding: '2px 6px', borderRadius: 4 }}>{lang === 'en' ? 'Official' : 'Offiziell'}</span>
         )}
         {hovered && (
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', animation: 'fadeIn 0.1s ease' }}>
-            <span style={{ color: '#fff', fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-sans)' }}>Use Template →</span>
+            <span style={{ color: '#fff', fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-sans)' }}>{lang === 'en' ? 'Use Template →' : 'Vorlage nutzen →'}</span>
           </div>
         )}
       </div>

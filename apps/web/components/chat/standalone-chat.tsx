@@ -13,6 +13,7 @@ import { friendlyError } from "@/lib/friendly-error";
 import { parseCodeBlocks } from "@/lib/parse-code-blocks";
 import { StcPreviewSheet, type StcFile } from "@/components/code/StcPreviewSheet";
 import { useApp } from "@/contexts/app-context";
+import { useLang } from "@/lib/use-lang";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -55,14 +56,16 @@ function hasCodeBlock(text: string) {
 
 // ─── Code Action Dropdown ─────────────────────────────────────────────────────
 
-function CodeActionButton({ lastMessage, hasProject, projectId, projectName, sessionId }: {
+function CodeActionButton({ lastMessage, lastUserPrompt, hasProject, projectId, projectName, sessionId }: {
   lastMessage: StandaloneMessage | null;
+  lastUserPrompt?: string | null;
   hasProject: boolean;
   projectId?: string | null;
   projectName?: string | null;
   sessionId: string;
 }) {
   const router = useRouter();
+  const lang = useLang();
   const [open, setOpen] = useState(false);
   const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
   // 10.8-5: preview the files before they land (no more black box).
@@ -131,6 +134,7 @@ function CodeActionButton({ lastMessage, hasProject, projectId, projectName, ses
     try {
       sessionStorage.setItem("goblin:stc-pending", JSON.stringify({
         files, content: files[0]?.content, filename: files[0]?.path,
+        prompt: lastUserPrompt ?? undefined,
       }));
     } catch { /* ignore */ }
     setPreview(null);
@@ -177,11 +181,11 @@ function CodeActionButton({ lastMessage, hasProject, projectId, projectName, ses
           <DropItem
             onClick={handleSendToCode}
             icon={<ArrowUpRight size={14} />}
-            label="Send to Code"
-            sub={!hasProject ? "Projekt wählen…" : undefined}
+            label={lang === 'en' ? 'Send to Code' : 'An Code senden'}
+            sub={!hasProject ? (lang === 'en' ? 'Choose a project…' : 'Projekt wählen…') : undefined}
           />
-          <DropItem onClick={handleCopy} icon={<Copy size={14} />} label="Copy code" />
-          <DropItem onClick={handleDownload} icon={<Download size={14} />} label="Download as file" />
+          <DropItem onClick={handleCopy} icon={<Copy size={14} />} label={lang === 'en' ? 'Copy code' : 'Code kopieren'} />
+          <DropItem onClick={handleDownload} icon={<Download size={14} />} label={lang === 'en' ? 'Download as file' : 'Als Datei speichern'} />
         </div>
       )}
 
@@ -281,6 +285,10 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
   }, []);
 
   const lastAssistantMsg = [...messages].reverse().find(m => m.role === "assistant") ?? null;
+  // BUG-6: the user prompt names the task — carried into Send-to-Code so the new
+  // code session reads like the task ("build a newsletter page") instead of a
+  // filename ("index.html").
+  const lastUserPrompt = [...messages].reverse().find(m => m.role === "user")?.content ?? null;
   // Project-bound chat (10.7-14): same component, project context via props.
   const hasProject = !!projectId;
 
@@ -459,7 +467,7 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
           {/* Code action button — sits above the input */}
           {lastAssistantMsg?.has_code && (
             <div style={{ position: "absolute", right: 12, bottom: "calc(100% + 10px)", zIndex: 10 }}>
-              <CodeActionButton lastMessage={lastAssistantMsg} hasProject={hasProject} projectId={projectId} projectName={projectName} sessionId={sessionId} />
+              <CodeActionButton lastMessage={lastAssistantMsg} lastUserPrompt={lastUserPrompt} hasProject={hasProject} projectId={projectId} projectName={projectName} sessionId={sessionId} />
             </div>
           )}
           <ChatInput

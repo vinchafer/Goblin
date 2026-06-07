@@ -1,11 +1,33 @@
 import Link from "next/link";
 
-const name    = process.env.NEXT_PUBLIC_IMPRINT_NAME    ?? '[YOUR NAME]';
-const address = process.env.NEXT_PUBLIC_IMPRINT_ADDRESS ?? '[YOUR ADDRESS]';
-const vat     = process.env.NEXT_PUBLIC_IMPRINT_VAT     ?? 'CHE-XXX.XXX.XXX MWST';
-const email   = process.env.NEXT_PUBLIC_IMPRINT_EMAIL   ?? '[YOUR EMAIL]';
+// BUG-7 carve-out (Walk-4): these come from env so we never ship invented legal
+// data. Until the founder sets NEXT_PUBLIC_IMPRINT_* on Vercel, we show an honest
+// "in preparation" notice instead of "[YOUR NAME]" template placeholders.
+const name    = process.env.NEXT_PUBLIC_IMPRINT_NAME    ?? '';
+const address = process.env.NEXT_PUBLIC_IMPRINT_ADDRESS ?? '';
+const vat     = process.env.NEXT_PUBLIC_IMPRINT_VAT     ?? '';
+const email   = process.env.NEXT_PUBLIC_IMPRINT_EMAIL   ?? '';
+const configured = Boolean(name && address && email);
 
 export default function ImprintPage() {
+  if (!configured) {
+    return (
+      <main className="max-w-3xl mx-auto py-16 px-4">
+        <nav className="mb-8">
+          <Link href="/" className="text-sm" style={{ color: 'var(--brand-green)' }}>← Back</Link>
+        </nav>
+        <h1 className="text-3xl font-bold mb-6" style={{ color: 'var(--brand-green)' }}>Imprint</h1>
+        <p className="mb-4" style={{ color: 'var(--ink-3)' }}>
+          Goblin Inc. — Switzerland.
+        </p>
+        <p style={{ color: 'var(--ink-3)' }}>
+          Full imprint details are being finalised. For any legal or contact enquiry
+          in the meantime, please email{' '}
+          <a href="mailto:hello@justgoblin.com" style={{ color: 'var(--brand-green)', textDecoration: 'underline' }}>hello@justgoblin.com</a>.
+        </p>
+      </main>
+    );
+  }
   return (
     <main className="max-w-3xl mx-auto py-16 px-4">
       <nav className="mb-8">

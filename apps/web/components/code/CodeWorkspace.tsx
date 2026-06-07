@@ -11,7 +11,7 @@ import { useCodeSessions } from "@/hooks/code/useCodeSessions";
 import { useEditorTheme } from "@/hooks/code/useEditorTheme";
 import { API_URL, getToken } from "@/hooks/code/getToken";
 import { getStoredIntent, DEFAULT_INTENT, type Intent } from "@/lib/intent";
-import { titleFromPath } from "@/lib/session-title";
+import { titleFromPath, titleFromPrompt } from "@/lib/session-title";
 
 interface Props {
   projectId: string;
@@ -39,7 +39,7 @@ export function CodeWorkspace({ projectId, pendingCode, onPendingConsumed }: Pro
   // synchronously, into local state — and auto-create is blocked until the stash
   // has been checked (stashChecked) AND while a payload is pending — so the payload
   // is never lost and never lands on an empty session.
-  const [stashPayload, setStashPayload] = useState<{ content?: string; filename?: string; files?: { path: string; content: string }[] } | null>(null);
+  const [stashPayload, setStashPayload] = useState<{ content?: string; filename?: string; files?: { path: string; content: string }[]; prompt?: string } | null>(null);
   const stashChecked = useRef(false);
 
   // Intent → first-paint foreground. Seed synchronously from the localStorage hint
@@ -69,9 +69,9 @@ export function CodeWorkspace({ projectId, pendingCode, onPendingConsumed }: Pro
       const raw = sessionStorage.getItem("goblin:stc-pending");
       if (raw) {
         sessionStorage.removeItem("goblin:stc-pending");
-        const p = JSON.parse(raw) as { content?: string; filename?: string; files?: { path: string; content: string }[] };
-        if (p?.files && p.files.length > 0) setStashPayload({ content: p.files[0]!.content, filename: p.files[0]!.path, files: p.files });
-        else if (p?.content) setStashPayload({ content: p.content, filename: p.filename });
+        const p = JSON.parse(raw) as { content?: string; filename?: string; files?: { path: string; content: string }[]; prompt?: string };
+        if (p?.files && p.files.length > 0) setStashPayload({ content: p.files[0]!.content, filename: p.files[0]!.path, files: p.files, prompt: p.prompt });
+        else if (p?.content) setStashPayload({ content: p.content, filename: p.filename, prompt: p.prompt });
       }
     } catch { /* ignore */ } finally { stashChecked.current = true; }
   }, []);
@@ -119,10 +119,13 @@ export function CodeWorkspace({ projectId, pendingCode, onPendingConsumed }: Pro
     (async () => {
       // 10.6-2: a multi-block send carries real separate files. Seed a fresh session
       // with all of them as drafts (index.html + style.css + script.js → valid deploy).
+      // BUG-6: title the new session like the TASK (the originating chat prompt),
+      // falling back to the file name only when no prompt is available.
+      const stcTitle = titleFromPrompt(stashPayload?.prompt) ?? null;
       const files = incoming.files;
       const [firstFile, ...restFiles] = files ?? [];
       if (files && files.length > 1 && firstFile) {
-        const ns = await s.createSession({ initialContent: firstFile.content, initialFilename: firstFile.path, name: titleFromPath(firstFile.path) ?? "Aus dem Chat" });
+        const ns = await s.createSession({ initialContent: firstFile.content, initialFilename: firstFile.path, name: stcTitle ?? titleFromPath(firstFile.path) ?? "Aus dem Chat" });
         const sid = ns?.id;
         if (sid) {
           const t = await getToken();
@@ -145,7 +148,7 @@ export function CodeWorkspace({ projectId, pendingCode, onPendingConsumed }: Pro
         setPicker({ content: incoming.content ?? "", filename: incoming.filename });
       } else {
         // 0 or 1 existing session: the new task gets its own clear titled session.
-        await s.createSession({ initialContent: incoming.content, initialFilename: incoming.filename, name: titleFromPath(incoming.filename) ?? "Aus dem Chat" });
+        await s.createSession({ initialContent: incoming.content, initialFilename: incoming.filename, name: stcTitle ?? titleFromPath(incoming.filename) ?? "Aus dem Chat" });
       }
       consumeIncoming();
     })();
