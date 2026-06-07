@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { apiGet } from '@/lib/api';
+import { planLabel } from '@/lib/plan-label';
 
 export interface UserProfile {
   id: string;
@@ -9,7 +11,7 @@ export interface UserProfile {
   fullName: string;
   displayName: string;
   avatarUrl?: string;
-  plan: { name: 'Build' | 'Pro' | 'Power' };
+  plan: { name: string };
   githubConnected: boolean;
 }
 
@@ -26,7 +28,7 @@ const EMPTY: UserProfile = {
   fullName: '',
   displayName: '',
   avatarUrl: undefined,
-  plan: { name: 'Build' },
+  plan: { name: 'Trial' },
   githubConnected: false,
 };
 
@@ -45,13 +47,25 @@ export function useUser(): UseUserResult {
     const u = session.user;
     const meta = (u.user_metadata ?? {}) as Record<string, unknown>;
     const identities = u.identities ?? [];
+
+    // FIX2-4 (BUG-15): the plan badge must reflect the authoritative server
+    // state, not a stale `user_metadata.plan` that defaults to "Build". Fetch
+    // the real plan + is_comped; fall back gracefully if the API is unreachable.
+    let planName = 'Trial';
+    try {
+      const me = await apiGet<{ plan?: string; is_comped?: boolean }>('/api/users/me');
+      planName = planLabel(me?.plan, me?.is_comped);
+    } catch {
+      planName = planLabel((meta.plan as string) ?? null);
+    }
+
     setProfile({
       id: u.id,
       email: u.email ?? '',
       fullName: (meta.full_name as string) ?? (meta.name as string) ?? '',
       displayName: (meta.display_name as string) ?? '',
       avatarUrl: (meta.avatar_url as string) ?? undefined,
-      plan: { name: ((meta.plan as string) ?? 'Build') as 'Build' | 'Pro' | 'Power' },
+      plan: { name: planName },
       githubConnected: identities.some((i) => i.provider === 'github'),
     });
     setLoading(false);

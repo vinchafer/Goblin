@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Icon } from '@/components/ui/icon';
+import { planLabel } from '@/lib/plan-label';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '';
 
@@ -34,13 +35,6 @@ interface UsageBreakdown {
   free_api: number;
   goblin_hosted: number;
 }
-
-const PLAN_LABEL: Record<string, string> = {
-  trial: 'Trial',
-  build: 'Build',
-  pro: 'Pro',
-  power: 'Power',
-};
 
 const PLAN_PRICE: Record<string, string> = {
   trial: 'kostenlos',
@@ -133,10 +127,10 @@ export function BillingPage() {
   }
 
   const planKey = status?.plan ?? 'trial';
-  const planName = PLAN_LABEL[planKey] ?? planKey;
+  const isComped = !!status?.isComped;
+  const planName = planLabel(planKey, isComped);
   const planPrice = PLAN_PRICE[planKey] ?? '';
   const features = PLAN_FEATURES[planKey] ?? [];
-  const isComped = !!status?.isComped;
   const monthName = new Date().toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
 
   const used = status?.monthlyUsed ?? 0;

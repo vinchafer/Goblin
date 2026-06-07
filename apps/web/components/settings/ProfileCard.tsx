@@ -4,7 +4,7 @@ interface ProfileCardProps {
   avatarUrl?: string;
   name: string;
   email: string;
-  plan: 'Build' | 'Pro' | 'Power';
+  plan: string;
   onClick: () => void;
   testId?: string;
 }

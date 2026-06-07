@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { apiGet } from '@/lib/api';
+import { planLabel } from '@/lib/plan-label';
 
 // Wired to the same usage endpoint screen 10 uses: GET /api/users/me/usage.
 // We only need the monthly headline numbers + plan here; the full breakdown
@@ -88,7 +89,7 @@ export function SidebarUsage() {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between',
         marginTop: 7, fontSize: 'var(--t-caption-fs)', color: 'var(--ink-3, #5c6f64)',
       }}>
-        <span style={{ textTransform: 'capitalize' }}>{data.plan}</span>
+        <span>{planLabel(data.plan)}</span>
         {data.daysUntilReset != null && (
           <span>Reset in {data.daysUntilReset} {data.daysUntilReset === 1 ? 'Tag' : 'Tagen'}</span>
         )}
