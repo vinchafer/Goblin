@@ -80,6 +80,48 @@ models.get('/health', async (c) => {
   return c.json(merged);
 });
 
+// POST /api/models/probe — liveness preflight for "Standard setzen" (FIX4). Does a
+// tiny REAL generation with the chosen model + the user's key. Returns ok:false
+// when the model doesn't actually answer (proven case: Gemini-via-BYOK errors on
+// prod), so the UI can refuse to set a dead model as the default. Deterministic —
+// it tests the real route, independent of circuit-breaker warmth.
+models.post('/probe', async (c) => {
+  const userId = c.get('userId');
+  let slug = '';
+  try { slug = String(((await c.req.json()) as { slug?: unknown })?.slug ?? ''); } catch { /* ignore */ }
+  if (!slug) return c.json({ ok: false, error: 'missing_slug' }, 400);
+
+  const { streamCompletion } = await import('../services/model-router');
+  const supabase = getSupabaseAdmin();
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 12_000);
+  try {
+    let gotDelta = false;
+    for await (const chunk of streamCompletion({
+      userId,
+      projectId: null,
+      message: 'ping',
+      chatHistory: [],
+      modelPreference: slug,
+      supabase,
+      timeoutMs: 12_000,
+      signal: controller.signal,
+    })) {
+      let evt: { type?: string; content?: string };
+      try { evt = JSON.parse(chunk) as { type?: string; content?: string }; } catch { continue; }
+      // Silently rerouted (chosen provider degraded) → the slug the user picked is
+      // NOT directly usable; don't let them pin it as default.
+      if (evt.type === 'fallback_notice') { clearTimeout(timer); return c.json({ ok: false, error: 'rerouted' }); }
+      if (evt.type === 'delta' && evt.content) { gotDelta = true; controller.abort(); break; }
+    }
+    clearTimeout(timer);
+    return c.json({ ok: gotDelta, ...(gotDelta ? {} : { error: 'no_response' }) });
+  } catch (e) {
+    clearTimeout(timer);
+    return c.json({ ok: false, error: e instanceof Error ? e.message.slice(0, 140) : 'probe_failed' });
+  }
+});
+
 // GET /api/models/status — BYOK key status + free API availability
 models.get('/status', async (c) => {
   const userId = c.get('userId');

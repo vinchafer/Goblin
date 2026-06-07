@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { apiGet } from '@/lib/api';
+import { apiGet, apiPost } from '@/lib/api';
 import { SettingsCard } from '../ui/SettingsCard';
 import { IOSToggle } from '../ui/IOSToggle';
 import { getModelAccess, ACCESS_COLORS } from '@/lib/model-access';
@@ -107,6 +107,10 @@ function RankingsTab() {
   const [rows, setRows] = useState<RankingRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [defaultId, setDefaultId] = useState<string | null>(null);
+  // FIX4: liveness preflight on "Standard setzen" — probe the real model before
+  // pinning it, so a dead model (e.g. Gemini-via-BYOK) can't become the default.
+  const [probing, setProbing] = useState<string | null>(null);
+  const [probeError, setProbeError] = useState<{ id: string; msg: string } | null>(null);
   const [connectedProviders, setConnectedProviders] = useState<Set<string>>(new Set());
   // FIX3-1 (V2-P1-1): per-provider liveness from the circuit-breaker. Without this
   // the ranking pushed a high-benchmark-but-dead model (Gemini) as a one-tap
@@ -149,9 +153,24 @@ function RankingsTab() {
       .finally(() => setLoading(false));
   }, [task]);
 
-  function setDefault(modelId: string) {
-    setDefaultId(modelId);
-    localStorage.setItem(`${DEFAULT_KEY}-${task}`, modelId);
+  // FIX4: probe the model with a tiny real generation before setting it as default.
+  // On failure we refuse + explain, so the user can't one-tap into a dead default.
+  async function setDefault(model: { id: string; provider: string }) {
+    setProbeError(null);
+    setProbing(model.id);
+    try {
+      const r = await apiPost<{ ok: boolean; error?: string }>('/api/models/probe', { slug: `${model.provider}/${model.id}` });
+      if (r?.ok) {
+        setDefaultId(model.id);
+        localStorage.setItem(`${DEFAULT_KEY}-${task}`, model.id);
+      } else {
+        setProbeError({ id: model.id, msg: 'Antwortet derzeit nicht — nicht als Standard gesetzt.' });
+      }
+    } catch {
+      setProbeError({ id: model.id, msg: 'Konnte nicht geprüft werden — bitte erneut versuchen.' });
+    } finally {
+      setProbing(null);
+    }
   }
 
   // Smart-sort: usable models first (keyed > free > free-then-byok > byok), then by rank.
@@ -252,8 +271,9 @@ function RankingsTab() {
             : ACCESS_COLORS[access.type];
         const badgeLabel = down ? 'Nicht verfügbar' : keyed ? 'Mein Key' : access.label;
         return (
-          <div key={m.id} className="list-item" style={{
-            padding: '14px 16px', marginBottom: 8,
+          <div key={m.id}>
+          <div className="list-item" style={{
+            padding: '14px 16px', marginBottom: probeError?.id === m.id ? 0 : 8,
             // Top-3 of each category get a subtle tint to surface the best picks.
             background: r.rank <= 3 ? 'color-mix(in srgb, var(--brand-green) 5%, var(--panel))' : 'var(--panel)',
             border: '1px solid', borderColor: isDefault ? 'var(--brand-green)' : 'var(--border-subtle)',
@@ -295,14 +315,25 @@ function RankingsTab() {
                 fontSize: 11, fontWeight: 600, flexShrink: 0,
               }}>Standard</span>
             ) : (
-              <button onClick={() => setDefault(m.id)} style={{
-                padding: '4px 10px', borderRadius: 8,
-                background: 'transparent', border: '1px solid var(--border-subtle)',
-                color: 'var(--text-2)', fontSize: 11, fontWeight: 600,
-                cursor: 'pointer', fontFamily: 'var(--font-sans)', flexShrink: 0,
-              }}>Standard setzen</button>
+              <button
+                onClick={() => setDefault({ id: m.id, provider: m.provider })}
+                disabled={probing === m.id}
+                style={{
+                  padding: '4px 10px', borderRadius: 8,
+                  background: 'transparent', border: '1px solid var(--border-subtle)',
+                  color: 'var(--text-2)', fontSize: 11, fontWeight: 600,
+                  cursor: probing === m.id ? 'wait' : 'pointer', fontFamily: 'var(--font-sans)',
+                  flexShrink: 0, opacity: probing === m.id ? 0.6 : 1,
+                }}
+              >{probing === m.id ? 'Prüfe…' : 'Standard setzen'}</button>
             )}
           </div>
+          {probeError?.id === m.id && (
+            <div style={{ marginTop: -2, marginBottom: 8, fontSize: 'var(--t-caption-fs)', color: 'var(--danger, #a04230)', paddingLeft: 46 }}>
+              {probeError.msg}
+            </div>
+          )}
+        </div>
         );
       })}
     </>
