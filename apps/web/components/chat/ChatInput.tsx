@@ -490,16 +490,23 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
     return () => { supabase.removeChannel(channel); };
   }, [refetchKeys]);
 
-  // Close hub on outside click
+  // Close hub on outside tap (CLEANUP-1: pointerdown, not mousedown, so a touch
+  // tap on the backdrop dismisses on iOS — mousedown is unreliable on touch) and
+  // on Escape. Selection + pill re-tap close it directly (below).
   useEffect(() => {
     if (!hubOpen) return;
-    const handler = (e: MouseEvent) => {
+    const onPointer = (e: Event) => {
       if (hubRef.current && !hubRef.current.contains(e.target as Node)) {
         setHubOpen(false);
       }
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setHubOpen(false); };
+    document.addEventListener('pointerdown', onPointer);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('pointerdown', onPointer);
+      document.removeEventListener('keydown', onKey);
+    };
   }, [hubOpen]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -596,10 +603,13 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
             models={models}
             connectedKeys={connectedKeys}
             selectedSlug={selectedModel.slug}
-            onSelect={m => onModelChange({
-              slug: m.slug, name: m.name, provider: m.provider,
-              layer: m.layer, displayName: shortModelName(m.name),
-            })}
+            onSelect={m => {
+              onModelChange({
+                slug: m.slug, name: m.name, provider: m.provider,
+                layer: m.layer, displayName: shortModelName(m.name),
+              });
+              setHubOpen(false); // CLEANUP-1: selection always closes the hub
+            }}
             onClose={() => setHubOpen(false)}
             openDown={hero}
           />
@@ -682,9 +692,9 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
               style={{ display: 'none' }}
             />
 
-            {/* Model picker pill — left */}
+            {/* Model picker pill — left. CLEANUP-1: re-tap toggles (closes if open). */}
             <button
-              onClick={openHub}
+              onClick={() => { if (hubOpen) setHubOpen(false); else void openHub(); }}
               style={{
                 display: 'flex', alignItems: 'center', gap: 4,
                 padding: '3px 8px', borderRadius: 6,
