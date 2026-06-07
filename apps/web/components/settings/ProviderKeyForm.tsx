@@ -174,7 +174,7 @@ export function ProviderKeyForm({ provider, providerLabel, existingHint, onSaved
           borderRadius: 10, padding: '10px 14px', marginBottom: 16,
           fontSize: 13, color: 'var(--text)',
         }}>
-          {providerLabel} ist verbunden — <span style={{ fontFamily: 'var(--font-mono)' }}>sk-…{existingHint}</span>.
+          {providerLabel} ist verbunden — <span style={{ fontFamily: 'var(--font-mono)' }}>…{existingHint}</span>.
           Du kannst den Key ersetzen oder entfernen.
         </div>
       )}

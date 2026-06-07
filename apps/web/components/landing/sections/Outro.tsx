@@ -14,7 +14,9 @@ export function Outro() {
         <Button href="/register" variant="primary" size="large">
           Start building free <span className="arrow" aria-hidden="true">→</span>
         </Button>
-        <div className="outro-foot">Public launch · 29 May MMXXVI</div>
+        {/* BUG-22 (Walk-4): honest status — the app is in beta, not "publicly
+            launched" on a fixed date. Matches the hero "NOW IN BETA" eyebrow. */}
+        <div className="outro-foot">Now in beta · Made in Switzerland</div>
       </div>
     </section>
   );

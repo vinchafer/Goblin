@@ -50,7 +50,9 @@
   --accent:         #D4A737;
   --accent-soft:    rgba(212,167,55,.14);
 
-  --nav-bg:         rgba(244,236,216,.86);
+  /* BUG-12 (Walk-4): opaque so page content never bleeds through the fixed nav
+     while scrolling (mobile backdrop-blur was not enough). */
+  --nav-bg:         rgb(244,236,216);
   --nav-border:     rgba(15,43,30,.10);
 
   --shadow-card:    0 1px 0 rgba(15,43,30,.04), 0 20px 40px -28px rgba(15,43,30,.20);
@@ -113,7 +115,7 @@
 
   --accent-soft:     rgba(212,167,55,.16);
 
-  --nav-bg:          rgba(15,43,30,.82);
+  --nav-bg:          rgb(15,43,30);
   --nav-border:      rgba(244,236,216,.08);
 }
 

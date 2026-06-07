@@ -707,13 +707,14 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
               </svg>
             </button>
 
-            {/* Spacer + hint */}
+            {/* Spacer + hint. BUG-16: nowrap + ellipsis so the hint never wraps to
+                two cramped lines next to the model pill at 390. */}
             <span style={{
-              flex: 1, fontSize: 'var(--t-caption-fs)', color: hero ? 'rgba(244,236,216,.5)' : '#B8B0A8',
+              flex: 1, minWidth: 0, fontSize: 'var(--t-caption-fs)', color: hero ? 'rgba(244,236,216,.5)' : '#B8B0A8',
               fontFamily: hero ? 'var(--font-dash-display), Manrope, sans-serif' : 'var(--font-sans)',
-              paddingLeft: 2,
+              paddingLeft: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
             }}>
-              {disabled ? '' : '⇧↵ new line'}
+              {disabled ? '' : (lang === 'en' ? '⇧↵ new line' : '⇧↵ neue Zeile')}
             </span>
 
             {/* Voice input button */}

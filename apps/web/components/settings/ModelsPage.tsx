@@ -257,8 +257,8 @@ function RankingsTab() {
                 }}>{badgeLabel}</span>
               </div>
               <div style={{ color: 'var(--text-meta)', fontSize: 'var(--t-caption-fs)', marginTop: 2 }}>
-                {m.provider} · Score {(r.composite_score * 100).toFixed(0)} · {r.source_count} Quellen
-                {m.context_tokens ? ` · ${(m.context_tokens / 1000).toFixed(0)}k Context` : ''}
+                {m.provider} · Score {(r.composite_score * 100).toFixed(0)} · {r.source_count} {r.source_count === 1 ? 'Quelle' : 'Quellen'}
+                {m.context_tokens ? ` · ${(m.context_tokens / 1000).toFixed(0)}k Kontext` : ''}
               </div>
             </div>
             {isDefault ? (
@@ -334,7 +334,9 @@ function KeysTab() {
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{PROVIDER_LABELS[p] ?? p}</div>
                 <div style={{ fontSize: 13, color: 'var(--text-meta)', marginTop: 2 }}>
-                  {k ? `sk-…${k.key_hint ?? '****'}` : 'Nicht verbunden'}
+                  {/* BUG-24: provider-agnostic mask — not every key is an OpenAI
+                      "sk-" key (Google is "AIza…", Anthropic "sk-ant-…"). */}
+                  {k ? `…${k.key_hint ?? '****'}` : 'Nicht verbunden'}
                 </div>
               </div>
               <button type="button" onClick={() => openProvider(p, k)} style={{

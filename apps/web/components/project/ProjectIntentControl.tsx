@@ -67,7 +67,9 @@ export function ProjectIntentControl({ projectId }: { projectId: string }) {
         title="Standard-Layout des Code-Tabs für dieses Projekt"
         style={{ display: "inline-flex", alignItems: "center", gap: 7 }}
       >
-        <def.icon size={15} /> Layout: {def.label.split(" / ")[0]}
+        {/* BUG-17 (Walk-4): "Layout: Nicht sicher" read like "insecure". Show the
+            action instead — the dialog explains it's the Code-tab default layout. */}
+        <def.icon size={15} /> Layout ändern
       </button>
 
       {open && (
