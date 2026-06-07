@@ -56,6 +56,15 @@ function hasCodeBlock(text: string) {
 
 // ─── Code Action Dropdown ─────────────────────────────────────────────────────
 
+// FIX3-2: a sensible project name from the user's prompt so "Neues Projekt" needs
+// no form. Strips markdown, takes the first few words, caps length.
+function deriveProjectName(prompt?: string | null): string {
+  const base = (prompt ?? "").replace(/[`*#>_~]/g, " ").replace(/\s+/g, " ").trim();
+  if (!base) return "Neues Projekt";
+  const words = base.split(" ").slice(0, 5).join(" ").trim();
+  return (words.length > 40 ? words.slice(0, 40).trim() : words) || "Neues Projekt";
+}
+
 function CodeActionButton({ lastMessage, lastUserPrompt, hasProject, projectId, projectName, sessionId }: {
   lastMessage: StandaloneMessage | null;
   lastUserPrompt?: string | null;
@@ -130,7 +139,7 @@ function CodeActionButton({ lastMessage, lastUserPrompt, hasProject, projectId, 
   };
 
   // Confirm: stash the selected files and deep-link into the target's Code tab.
-  const confirmSend = (files: StcFile[], chosenProjectId: string | null) => {
+  const confirmSend = async (files: StcFile[], chosenProjectId: string | null) => {
     try {
       sessionStorage.setItem("goblin:stc-pending", JSON.stringify({
         files, content: files[0]?.content, filename: files[0]?.path,
@@ -144,10 +153,35 @@ function CodeActionButton({ lastMessage, lastUserPrompt, hasProject, projectId, 
       // tab (and back-from-code) returns HERE, not a new/different window.
       try { sessionStorage.setItem(`goblin:lastChat:${target}`, sessionId); } catch { /* ignore */ }
       router.push(`/dashboard/project/${target}/work?tab=code`);
-    } else {
-      // No project chosen → new-project flow picks up the stash on landing.
-      router.push("/dashboard?start=1");
+      return;
     }
+
+    // FIX3-2 (V2-P1-2): "Neues Projekt" must LAND the code, not detour into the
+    // full new-project form. Create a project in one step (auto-named from the
+    // prompt) and deep-link straight into its Code tab where the stash unpacks.
+    try {
+      const { createClient } = await import("@/lib/supabase/client");
+      const { data: { session } } = await createClient().auth.getSession();
+      const token = session?.access_token;
+      const apiBase = process.env.NEXT_PUBLIC_API_URL || "";
+      if (token) {
+        const res = await fetch(`${apiBase}/api/projects`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ name: deriveProjectName(lastUserPrompt) }),
+        });
+        if (res.ok) {
+          const proj = (await res.json()) as { id?: string };
+          if (proj?.id) {
+            try { sessionStorage.setItem(`goblin:lastChat:${proj.id}`, sessionId); } catch { /* ignore */ }
+            router.push(`/dashboard/project/${proj.id}/work?tab=code`);
+            return;
+          }
+        }
+      }
+    } catch { /* fall through to the form as a safety net */ }
+    // Safety net only (create failed): the stash is set, so the form still works.
+    router.push("/dashboard?start=1");
   };
 
   return (
