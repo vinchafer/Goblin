@@ -17,6 +17,7 @@ interface UsageData {
 
 export function SidebarUsage() {
   const [data, setData] = useState<UsageData | null>(null);
+  const [isComped, setIsComped] = useState(false);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
@@ -24,6 +25,13 @@ export function SidebarUsage() {
     apiGet<UsageData>('/api/users/me/usage')
       .then((d) => { if (alive) setData(d); })
       .catch(() => { if (alive) setFailed(true); });
+    // FIX2-4 (BUG-15): the usage endpoint doesn't expose comp status, so a
+    // comped user wrongly read as "Trial" + a trial countdown here while the
+    // profile pill correctly showed "Vollzugriff". Pull is_comped so this
+    // widget agrees with every other surface.
+    apiGet<{ is_comped?: boolean }>('/api/users/me')
+      .then((u) => { if (alive) setIsComped(!!u?.is_comped); })
+      .catch(() => { /* default: not comped */ });
     return () => { alive = false; };
   }, []);
 
@@ -41,6 +49,36 @@ export function SidebarUsage() {
 
   // Couldn't reach the endpoint — stay quiet rather than show a fake number.
   if (failed || !data) return null;
+
+  // Comped users have no cap and no trial — a percent or countdown would be a
+  // lie. Show a calm "Vollzugriff" state instead.
+  if (isComped) {
+    return (
+      <Link
+        href="/dashboard/usage"
+        style={{
+          display: 'block', textDecoration: 'none',
+          margin: '0 12px 8px', padding: '10px 12px', borderRadius: 8,
+          background: 'rgba(15,43,30,0.05)',
+          border: '1px solid var(--line, rgba(15,43,30,.10))',
+          fontFamily: 'var(--font-dash-display), Manrope, sans-serif',
+          color: 'var(--ink-1, #0F2B1E)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: 'var(--t-caption-fs)', fontWeight: 600, color: 'var(--ink-2, #2c4538)' }}>
+            Verbrauch
+          </span>
+          <span style={{ fontSize: 'var(--t-caption-fs)', fontWeight: 600, color: 'var(--brand-green, #0F2B1E)' }}>
+            {planLabel(data.plan, true)}
+          </span>
+        </div>
+        <div style={{ marginTop: 6, fontSize: 'var(--t-caption-fs)', color: 'var(--ink-3, #5c6f64)' }}>
+          {data.monthlyUsed} Anfragen diesen Monat
+        </div>
+      </Link>
+    );
+  }
 
   const limit = data.monthlyLimit > 0 ? data.monthlyLimit : 0;
   const pct = limit > 0 ? Math.min(100, Math.round((data.monthlyUsed / limit) * 100)) : 0;
