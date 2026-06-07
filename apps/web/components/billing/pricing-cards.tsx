@@ -9,7 +9,7 @@ const PLANS = {
     price: 9,
     features: [
       "200 monthly requests",
-      "10 projects",
+      "Unlimited projects",
       "BYOK — all AI providers",
       "5 GB cloud storage",
       "GitHub push integration",
@@ -21,7 +21,7 @@ const PLANS = {
     price: 19,
     features: [
       "800 monthly requests",
-      "50 projects",
+      "Unlimited projects",
       "BYOK — all AI providers",
       "20 GB cloud storage",
       "GitHub push integration",

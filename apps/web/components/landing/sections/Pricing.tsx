@@ -19,7 +19,7 @@ const PLANS: Plan[] = [
     suffix: '/ month',
     features: [
       '200 AI requests / month',
-      '10 projects',
+      'Unlimited projects',
       'BYOK — all AI providers',
       '5 GB cloud storage',
       'GitHub push integration',
@@ -34,7 +34,7 @@ const PLANS: Plan[] = [
     recommended: true,
     features: [
       '800 AI requests / month',
-      '50 projects',
+      'Unlimited projects',
       'BYOK — all AI providers',
       '20 GB cloud storage',
       'GitHub push integration',
