@@ -1,78 +1,51 @@
 import Link from "next/link";
 
-// BUG-7 carve-out (Walk-4): these come from env so we never ship invented legal
-// data. Until the founder sets NEXT_PUBLIC_IMPRINT_* on Vercel, we show an honest
-// "in preparation" notice instead of "[YOUR NAME]" template placeholders.
-const name    = process.env.NEXT_PUBLIC_IMPRINT_NAME    ?? '';
-const address = process.env.NEXT_PUBLIC_IMPRINT_ADDRESS ?? '';
-const vat     = process.env.NEXT_PUBLIC_IMPRINT_VAT     ?? '';
-const email   = process.env.NEXT_PUBLIC_IMPRINT_EMAIL   ?? '';
-const configured = Boolean(name && address && email);
+// FIX2-1 (BUG-7): real, founder-supplied public display data baked as the live
+// defaults so /imprint renders correctly WITHOUT any Vercel env. Env may still
+// override if set, but these are the truth now. NOT VAT-registered → no VAT line
+// (we do not invent a CHE number).
+const name    = process.env.NEXT_PUBLIC_IMPRINT_NAME    || 'Goblin';
+const address = process.env.NEXT_PUBLIC_IMPRINT_ADDRESS || 'Alte Bahnhofstrasse 3, 7250 Klosters, Schweiz';
+const email   = process.env.NEXT_PUBLIC_IMPRINT_EMAIL   || 'vincent@justgoblin.com';
+const vat     = process.env.NEXT_PUBLIC_IMPRINT_VAT     || '';
 
 export default function ImprintPage() {
-  if (!configured) {
-    return (
-      <main className="max-w-3xl mx-auto py-16 px-4">
-        <nav className="mb-8">
-          <Link href="/" className="text-sm" style={{ color: 'var(--brand-green)' }}>← Back</Link>
-        </nav>
-        <h1 className="text-3xl font-bold mb-6" style={{ color: 'var(--brand-green)' }}>Imprint</h1>
-        <p className="mb-4" style={{ color: 'var(--ink-3)' }}>
-          Goblin Inc. — Switzerland.
-        </p>
-        <p style={{ color: 'var(--ink-3)' }}>
-          Full imprint details are being finalised. For any legal or contact enquiry
-          in the meantime, please email{' '}
-          <a href="mailto:hello@justgoblin.com" style={{ color: 'var(--brand-green)', textDecoration: 'underline' }}>hello@justgoblin.com</a>.
-        </p>
-      </main>
-    );
-  }
   return (
     <main className="max-w-3xl mx-auto py-16 px-4">
       <nav className="mb-8">
         <Link href="/" className="text-sm" style={{ color: 'var(--brand-green)' }}>← Back</Link>
       </nav>
 
-      <h1 className="text-3xl font-bold mb-8" style={{ color: 'var(--brand-green)' }}>Imprint</h1>
+      <h1 className="text-3xl font-bold mb-8" style={{ color: 'var(--brand-green)' }}>Impressum</h1>
 
       <section className="mb-8">
-        <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--ink-1)' }}>Contact</h2>
+        <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--ink-1)' }}>Kontakt</h2>
         <p className="mb-2" style={{ color: 'var(--ink-3)' }}>{name}</p>
         <p className="mb-2" style={{ color: 'var(--ink-3)' }}>{address}</p>
-        <p className="mb-2" style={{ color: 'var(--ink-3)' }}>Switzerland</p>
-        <p className="mb-2" style={{ color: 'var(--ink-3)' }}>Email: {email}</p>
-      </section>
-
-      <section className="mb-8">
-        <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--ink-1)' }}>Responsible for Content</h2>
-        <p className="mb-2" style={{ color: 'var(--ink-3)' }}>{name}</p>
-        <p style={{ color: 'var(--ink-3)' }}>{address}, Switzerland</p>
-      </section>
-
-      <section className="mb-8">
-        <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--ink-1)' }}>VAT</h2>
-        <p className="mb-2" style={{ color: 'var(--ink-3)' }}>{vat}</p>
-        <p style={{ color: 'var(--ink-3)' }}>
-          Subject to Swiss VAT from CHF 100,000 annual turnover (threshold not currently reached).
+        <p className="mb-2" style={{ color: 'var(--ink-3)' }}>
+          E-Mail:{' '}
+          <a href={`mailto:${email}`} style={{ color: 'var(--brand-green)', textDecoration: 'underline' }}>{email}</a>
         </p>
       </section>
 
       <section className="mb-8">
-        <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--ink-1)' }}>Dispute Resolution</h2>
-        <p className="mb-3" style={{ color: 'var(--ink-3)' }}>
-          The EU Commission provides a platform for online dispute resolution (ODR):{' '}
-          <a href="https://ec.europa.eu/consumers/odr/" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--brand-green)', textDecoration: 'underline' }}>
-            https://ec.europa.eu/consumers/odr/
-          </a>. We are neither obliged nor willing to participate in dispute resolution
-          proceedings before a consumer arbitration board.
-        </p>
+        <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--ink-1)' }}>Verantwortlich für den Inhalt</h2>
+        <p style={{ color: 'var(--ink-3)' }}>{name}</p>
       </section>
 
+      {vat && (
+        <section className="mb-8">
+          <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--ink-1)' }}>MwSt</h2>
+          <p className="mb-2" style={{ color: 'var(--ink-3)' }}>{vat}</p>
+        </section>
+      )}
+
       <section className="mb-8">
-        <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--ink-1)' }}>Disclaimer</h2>
+        <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--ink-1)' }}>Haftung für Inhalte</h2>
         <p className="mb-3" style={{ color: 'var(--ink-3)' }}>
-          The contents of this website were created with the utmost care. However, we cannot guarantee the accuracy, completeness and timeliness of the content.
+          Die Inhalte dieser Website wurden mit grösster Sorgfalt erstellt. Für die
+          Richtigkeit, Vollständigkeit und Aktualität der Inhalte können wir jedoch
+          keine Gewähr übernehmen.
         </p>
       </section>
     </main>
