@@ -39,6 +39,21 @@ const securityHeaders = [
   },
 ];
 
+// Demo routes (/demo-*) are embedded as iframes by the pitch at justgoblin.dev
+// (Sprint 7 §C). Relax ONLY the frame policy for them — drop X-Frame-Options:DENY
+// and widen CSP frame-ancestors. Every other security header stays identical, and
+// every non-demo route keeps the locked-down set below (note the negative-lookahead
+// source so the two header rules never both match and emit a duplicate CSP).
+const demoCsp = csp.replace(
+  "frame-ancestors 'none'",
+  "frame-ancestors 'self' https://justgoblin.dev",
+);
+const demoSecurityHeaders = securityHeaders
+  .filter((h) => h.key !== 'X-Frame-Options')
+  .map((h) =>
+    h.key === 'Content-Security-Policy' ? { ...h, value: demoCsp } : h,
+  );
+
 const nextConfig: NextConfig = {
   transpilePackages: ['@goblin/shared'],
   distDir: process.env.GOBLIN_DIST_DIR || '.next',
@@ -48,7 +63,11 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: '/(.*)',
+        source: '/demo-:slug',
+        headers: demoSecurityHeaders,
+      },
+      {
+        source: '/((?!demo-).*)',
         headers: securityHeaders,
       },
     ];

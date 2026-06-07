@@ -2,6 +2,13 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function middleware(request: NextRequest) {
+  // Bypass auth for demo routes (Sprint 7 — pitch iframe embedding). These render
+  // pre-seeded, read-only product surfaces with no user data; the frame-ancestors
+  // override for them lives in next.config.ts.
+  if (request.nextUrl.pathname.startsWith('/demo-')) {
+    return NextResponse.next();
+  }
+
   let response = NextResponse.next({ request: { headers: request.headers } });
 
   const supabase = createServerClient(
