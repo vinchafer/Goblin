@@ -103,8 +103,13 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
   const autoViewedRef = useRef(false);
   useEffect(() => {
     if (autoViewedRef.current || detail.loading) return;
-    autoViewedRef.current = true;
+    // CLEANUP-3: only consume the one-shot once files actually exist. A fresh
+    // Send-to-Code into a new session could resolve `loading=false` for a beat
+    // with `files=0` (fetch vs. write race); consuming the flag there stranded
+    // the user on the empty thread until a reload. Now we wait until files appear
+    // (deps include files.length, so this re-runs) before foregrounding + locking.
     if (detail.files.length > 0) {
+      autoViewedRef.current = true;
       setMobileView("editor");
     }
   }, [detail.loading, detail.files.length]);
