@@ -2,11 +2,14 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { apiGet } from '@/lib/api';
 import { SettingsCard } from '../ui/SettingsCard';
 import { IOSToggle } from '../ui/IOSToggle';
 import { getModelAccess, ACCESS_COLORS } from '@/lib/model-access';
 import { useSheetStack } from '../ui/SheetStack';
 import { ProviderKeyForm } from './ProviderKeyForm';
+
+type HealthState = 'degraded' | 'down';
 
 type Tab = 'rankings' | 'keys' | 'advanced';
 type TaskType = 'coding' | 'reasoning' | 'speed' | 'cost-efficiency' | 'general';
@@ -105,6 +108,11 @@ function RankingsTab() {
   const [loading, setLoading] = useState(true);
   const [defaultId, setDefaultId] = useState<string | null>(null);
   const [connectedProviders, setConnectedProviders] = useState<Set<string>>(new Set());
+  // FIX3-1 (V2-P1-1): per-provider liveness from the circuit-breaker. Without this
+  // the ranking pushed a high-benchmark-but-dead model (Gemini) as a one-tap
+  // "Standard setzen" while "Nur nutzbare" only meant "has a key". Now liveness is
+  // real: a 'down' provider can't be set as default and is filtered from usable.
+  const [health, setHealth] = useState<Record<string, HealthState>>({});
   // Default ON: a fresh session shows what the user can actually run first.
   const [onlyUsable, setOnlyUsable] = useState(true);
 
@@ -123,6 +131,10 @@ function RankingsTab() {
       }
       setConnectedProviders(set);
     })();
+    // /api/models/health returns only NOT-healthy providers (empty = all good).
+    apiGet<Record<string, HealthState>>('/api/models/health')
+      .then((h) => setHealth(h ?? {}))
+      .catch(() => { /* breaker unreachable → treat all as healthy */ });
   }, []);
 
   useEffect(() => {
@@ -151,6 +163,8 @@ function RankingsTab() {
     return 3;
   }
   function isUsable(provider: string): boolean {
+    // A provider the breaker reports 'down' is not usable, even with a key.
+    if (health[provider] === 'down') return false;
     return usabilityRank(provider) < 3;
   }
 
@@ -228,10 +242,15 @@ function RankingsTab() {
         const isDefault = defaultId === m.id;
         const access = getModelAccess(m.provider);
         const keyed = connectedProviders.has(m.provider);
-        const colors = keyed
-          ? { bg: 'rgba(45,74,43,0.10)', fg: 'var(--brand-green)', border: 'rgba(45,74,43,0.24)' }
-          : ACCESS_COLORS[access.type];
-        const badgeLabel = keyed ? 'Mein Key' : access.label;
+        const hstate = health[m.provider];
+        const down = hstate === 'down';
+        const degraded = hstate === 'degraded';
+        const colors = down
+          ? { bg: 'rgba(160,66,48,0.10)', fg: 'var(--danger, #a04230)', border: 'rgba(160,66,48,0.28)' }
+          : keyed
+            ? { bg: 'rgba(45,74,43,0.10)', fg: 'var(--brand-green)', border: 'rgba(45,74,43,0.24)' }
+            : ACCESS_COLORS[access.type];
+        const badgeLabel = down ? 'Nicht verfügbar' : keyed ? 'Mein Key' : access.label;
         return (
           <div key={m.id} className="list-item" style={{
             padding: '14px 16px', marginBottom: 8,
@@ -259,9 +278,17 @@ function RankingsTab() {
               <div style={{ color: 'var(--text-meta)', fontSize: 'var(--t-caption-fs)', marginTop: 2 }}>
                 {m.provider} · Score {(r.composite_score * 100).toFixed(0)} · {r.source_count} {r.source_count === 1 ? 'Quelle' : 'Quellen'}
                 {m.context_tokens ? ` · ${(m.context_tokens / 1000).toFixed(0)}k Kontext` : ''}
+                {down ? ' · antwortet derzeit nicht' : degraded ? ' · eingeschränkt' : ''}
               </div>
             </div>
-            {isDefault ? (
+            {down ? (
+              // Never let a user one-tap themselves into a dead default.
+              <span style={{
+                padding: '4px 10px', borderRadius: 8,
+                background: 'rgba(160,66,48,0.08)', color: 'var(--danger, #a04230)',
+                fontSize: 11, fontWeight: 600, flexShrink: 0, whiteSpace: 'nowrap',
+              }}>Nicht verfügbar</span>
+            ) : isDefault ? (
               <span style={{
                 padding: '4px 10px', borderRadius: 8,
                 background: 'color-mix(in srgb, var(--brand-green) 8%, transparent)', color: 'var(--brand-green)',

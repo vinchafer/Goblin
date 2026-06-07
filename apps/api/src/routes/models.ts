@@ -40,10 +40,44 @@ models.get('/', async (c) => {
 
 // GET /api/models/health — 10.9-3 per-provider circuit-breaker state. Only
 // returns providers that are NOT healthy (empty object = all good), so the
-// ModelPicker can badge a degraded provider.
+// ModelPicker + Modelle rankings can badge / gate a degraded provider.
+//
+// FIX3-1: the in-memory breaker starts 'healthy' on a cold process, so a model
+// proven dead (e.g. Gemini) would briefly look fine again after a redeploy. We
+// merge the LAST persisted transition per provider (provider_health_events,
+// recent window) so a known-down provider stays gated across restarts until it
+// recovers. In-memory state wins when present (it's the freshest signal).
 models.get('/health', async (c) => {
   const { getHealthMap } = await import('../services/provider-health');
-  return c.json(getHealthMap());
+  const live = getHealthMap();
+
+  const merged: Record<string, 'degraded' | 'down'> = {};
+  for (const [provider, state] of Object.entries(live)) {
+    if (state === 'degraded' || state === 'down') merged[provider] = state;
+  }
+  try {
+    const supabase = getSupabaseAdmin();
+    const since = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(); // 6h window
+    const { data } = await supabase
+      .from('provider_health_events')
+      .select('provider, state, created_at')
+      .gte('created_at', since)
+      .order('created_at', { ascending: false });
+    // Latest event per provider = its current persisted state.
+    const seen = new Set<string>();
+    for (const row of (data ?? []) as { provider: string; state: string }[]) {
+      if (seen.has(row.provider)) continue;
+      seen.add(row.provider);
+      if (merged[row.provider]) continue; // live signal already set → keep it
+      if (row.state === 'down' || row.state === 'degraded') {
+        merged[row.provider] = row.state;
+      }
+    }
+  } catch {
+    // provider_health_events may not exist (0063 unapplied) — fall back to live.
+  }
+
+  return c.json(merged);
 });
 
 // GET /api/models/status — BYOK key status + free API availability
