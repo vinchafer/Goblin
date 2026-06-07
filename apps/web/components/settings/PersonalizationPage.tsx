@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { resolveDisplayName } from '@/lib/display-name';
 import { SettingsCard } from '../ui/SettingsCard';
 import { SettingsGroup } from '../ui/SettingsGroup';
 import { SettingsRow } from '../ui/SettingsRow';
@@ -33,7 +34,9 @@ export function PersonalizationPage() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      setDisplayName(user.user_metadata?.full_name ?? '');
+      // FIX3-4: same canonical resolution as the pill/ProfileCard so the name shown
+      // here matches everywhere (no more "Vincent 418" vs "Vincent 286").
+      setDisplayName(resolveDisplayName(user.user_metadata, user.email));
       setUsername(user.user_metadata?.username ?? '');
       setBio(user.user_metadata?.bio ?? '');
 
@@ -60,8 +63,10 @@ export function PersonalizationPage() {
     setSaving(true);
     try {
       const supabase = createClient();
+      // FIX3-4: write the canonical field (display_name) the resolver reads first,
+      // and keep full_name aligned, so the edit shows consistently everywhere.
       await supabase.auth.updateUser({
-        data: { full_name: displayName, username, bio },
+        data: { display_name: displayName, full_name: displayName, username, bio },
       });
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {

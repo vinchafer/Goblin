@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { apiGet } from '@/lib/api';
 import { planLabel } from '@/lib/plan-label';
+import { resolveDisplayName } from '@/lib/display-name';
 
 export interface UserProfile {
   id: string;
@@ -59,11 +60,13 @@ export function useUser(): UseUserResult {
       planName = planLabel((meta.plan as string) ?? null);
     }
 
+    // FIX3-4: single canonical display name for pill + ProfileCard + everywhere.
+    const resolvedName = resolveDisplayName(meta, u.email);
     setProfile({
       id: u.id,
       email: u.email ?? '',
-      fullName: (meta.full_name as string) ?? (meta.name as string) ?? '',
-      displayName: (meta.display_name as string) ?? '',
+      fullName: resolvedName,
+      displayName: resolvedName,
       avatarUrl: (meta.avatar_url as string) ?? undefined,
       plan: { name: planName },
       githubConnected: identities.some((i) => i.provider === 'github'),
