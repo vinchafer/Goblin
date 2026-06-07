@@ -405,7 +405,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
           >
             <Icon name="menu" size={14} />
           </button>
-          <span style={{ color: "var(--ed-fg-1)", fontFamily: "JetBrains Mono, monospace", fontSize: 12.5, flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <span style={{ color: "var(--ed-fg-1)", fontFamily: "JetBrains Mono, monospace", fontSize: 12.5, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {editorFilename}
           </span>
           {/* Find/Replace — keyboard does Ctrl+F/Ctrl+H; this button gives mobile +

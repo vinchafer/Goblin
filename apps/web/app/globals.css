@@ -699,6 +699,14 @@ button, input, textarea, select {
 .cb-a .cb-copy { color: var(--ink-3); }
 .cb-a .cb-body { color: var(--ink-2); }
 
+/* FIX3-6 (V2-P2-4): code-tab editor toolbar must fit within 390. The draft
+   review actions (Kopieren/Verwerfen) carry text labels that overflowed the row
+   on mobile — collapse them to icon-only, and keep icon buttons from squishing. */
+.gb-icon-btn, .gb-mobile-back { flex-shrink: 0; }
+@media (max-width: 640px) {
+  .gb-btn-lbl { display: none; }
+}
+
 @keyframes caret-blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 /* Streaming caret — sits inline after the last word of the last
    paragraph in a streaming assistant message. CSS-only; no JSX. */
