@@ -1,17 +1,22 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
+import { apiGet } from '@/lib/api';
 import { SettingsCard } from '../ui/SettingsCard';
 import { SettingsGroup } from '../ui/SettingsGroup';
 
-interface UsageState {
-  requestsThisMonth: number;
-  requestsLimit: number;
-  storageUsedMb: number;
-  storageLimitMb: number;
-  byProvider: { provider: string; requests: number; tokens: number }[];
-  resetAt: string | null;
+// FIX2-3 (BUG-8): single source of truth. The old `/api/usage/summary` endpoint
+// did not exist on the API → this page always fell back to a fake "0 / 200",
+// contradicting the sidebar and billing. We now read the SAME authoritative
+// endpoint the sidebar uses (`/api/users/me/usage`), so all three surfaces agree.
+interface UsageResp {
+  plan: string;
+  monthlyUsed: number;
+  monthlyLimit: number;
+  daysUntilReset: number | null;
+  totalInPeriod: number;
+  byTier: { byok: number; free_api: number; goblin_hosted: number };
+  byModel: { model: string; count: number }[];
 }
 
 function formatNum(n: number) {
@@ -30,71 +35,77 @@ function ProgressBar({ value, max }: { value: number; max: number }) {
 }
 
 export function UsagePage() {
-  const [state, setState] = useState<UsageState | null>(null);
+  const [state, setState] = useState<UsageResp | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    (async () => {
-      try {
-        const supabase = createClient();
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) { setLoading(false); return; }
-        const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
-        const r = await fetch(`${apiBase}/api/usage/summary`, {
-          headers: { Authorization: `Bearer ${session.access_token}` },
-        });
-        if (r.ok) setState(await r.json());
-      } finally {
-        setLoading(false);
-      }
-    })();
+    let alive = true;
+    apiGet<UsageResp>('/api/users/me/usage')
+      .then((d) => { if (alive) setState(d); })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
   }, []);
 
-  if (loading) return <div style={{ padding: 24, color: 'var(--text-meta)', fontFamily: 'var(--font-sans)' }}>Lade Nutzung...</div>;
+  if (loading) return <div style={{ padding: 24, color: 'var(--text-meta)', fontFamily: 'var(--font-sans)' }}>Lade Nutzung…</div>;
 
-  const req = state?.requestsThisMonth ?? 0;
-  const reqLimit = state?.requestsLimit ?? 200;
-  const stor = state?.storageUsedMb ?? 0;
-  const storLimit = state?.storageLimitMb ?? 5120;
-  const resetAt = state?.resetAt ? new Date(state.resetAt).toLocaleDateString('de-DE') : null;
+  const used = state?.monthlyUsed ?? 0;
+  const limit = state?.monthlyLimit ?? 0;
+  const byok = state?.byTier?.byok ?? 0;
+  const hasGoblinCap = limit > 0;
 
   return (
     <div className="settings-section" style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
       <SettingsGroup label="Diesen Monat">
         <SettingsCard>
+          {/* Goblin-provided allowance — a real cap exists, so a percent is honest. */}
           <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-              <span style={{ fontSize: 15, color: 'var(--text)' }}>AI-Anfragen</span>
-              <span style={{ fontSize: 15, color: 'var(--text-meta)', fontFamily: 'var(--font-mono)' }}>{formatNum(req)} / {formatNum(reqLimit)}</span>
+              <span style={{ fontSize: 15, color: 'var(--text)' }}>Goblin-Anfragen</span>
+              <span style={{ fontSize: 15, color: 'var(--text-meta)', fontFamily: 'var(--font-mono)' }}>
+                {hasGoblinCap ? `${formatNum(used)} / ${formatNum(limit)}` : `${formatNum(used)}`}
+              </span>
             </div>
-            <ProgressBar value={req} max={reqLimit} />
+            {hasGoblinCap
+              ? <ProgressBar value={used} max={limit} />
+              : <div style={{ fontSize: 13, color: 'var(--text-meta)' }}>Kein Kontingent aktiv.</div>}
+            <div style={{ fontSize: 12, color: 'var(--text-meta)' }}>
+              Über das Goblin-Kontingent (Trial / Free-Pool).
+            </div>
           </div>
-          <div style={{ padding: 20, borderTop: '1px solid var(--border-hairline)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+
+          {/* BYOK — no cap, so we show an honest COUNT, never a fabricated percent. */}
+          <div style={{ padding: 20, borderTop: '1px solid var(--border-hairline)', display: 'flex', flexDirection: 'column', gap: 4 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-              <span style={{ fontSize: 15, color: 'var(--text)' }}>Speicher</span>
-              <span style={{ fontSize: 15, color: 'var(--text-meta)', fontFamily: 'var(--font-mono)' }}>{(stor / 1024).toFixed(2)} / {(storLimit / 1024).toFixed(0)} GB</span>
+              <span style={{ fontSize: 15, color: 'var(--text)' }}>Über deine Keys (BYOK)</span>
+              <span style={{ fontSize: 15, color: 'var(--text-meta)', fontFamily: 'var(--font-mono)' }}>
+                {formatNum(byok)} {byok === 1 ? 'Anfrage' : 'Anfragen'}
+              </span>
             </div>
-            <ProgressBar value={stor} max={storLimit} />
+            <div style={{ fontSize: 12, color: 'var(--text-meta)' }}>
+              Läuft über deine eigenen API-Keys — kein Limit von Goblin.
+            </div>
           </div>
         </SettingsCard>
       </SettingsGroup>
 
-      {state?.byProvider && state.byProvider.length > 0 && (
-        <SettingsGroup label="Pro Provider">
+      {state?.byModel && state.byModel.length > 0 && (
+        <SettingsGroup label="Pro Modell">
           <SettingsCard>
-            {state.byProvider.map((p) => (
-              <div key={p.provider} className="list-item" style={{ padding: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-hairline)' }}>
-                <span style={{ fontSize: 15, color: 'var(--text)' }}>{p.provider}</span>
-                <span style={{ fontSize: 13, color: 'var(--text-meta)', fontFamily: 'var(--font-mono)' }}>{formatNum(p.requests)} req · {formatNum(p.tokens)} tok</span>
+            {state.byModel.map((m) => (
+              <div key={m.model} className="list-item" style={{ padding: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-hairline)' }}>
+                <span style={{ fontSize: 14, color: 'var(--text)', fontFamily: 'var(--font-mono)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {m.model.replace(/^(?:anthropic|openai|google|groq)\//, '')}
+                </span>
+                <span style={{ fontSize: 13, color: 'var(--text-meta)', fontFamily: 'var(--font-mono)', flexShrink: 0, marginLeft: 12 }}>{formatNum(m.count)}</span>
               </div>
             ))}
           </SettingsCard>
         </SettingsGroup>
       )}
 
-      {resetAt && (
+      {state?.daysUntilReset != null && (
         <p style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--text-meta)', marginTop: 16, padding: '0 4px' }}>
-          Zähler werden am {resetAt} zurückgesetzt.
+          Goblin-Kontingent wird in {state.daysUntilReset} {state.daysUntilReset === 1 ? 'Tag' : 'Tagen'} zurückgesetzt.
         </p>
       )}
     </div>
