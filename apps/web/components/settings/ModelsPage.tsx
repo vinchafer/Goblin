@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import { apiGet, apiPost } from '@/lib/api';
 import { SettingsCard } from '../ui/SettingsCard';
 import { IOSToggle } from '../ui/IOSToggle';
@@ -121,20 +120,19 @@ function RankingsTab() {
   const [onlyUsable, setOnlyUsable] = useState(true);
 
   useEffect(() => {
-    (async () => {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-      const { data } = await supabase
-        .from('byok_keys')
-        .select('provider, status')
-        .eq('user_id', session.user.id);
-      const set = new Set<string>();
-      for (const k of (data ?? []) as { provider: string; status?: string }[]) {
-        if (k.status !== 'revoked') set.add(k.provider);
-      }
-      setConnectedProviders(set);
-    })();
+    // WALKFIX-2.3: read connected keys from the authoritative server source
+    // (/api/byok-keys, like the rest of the app) instead of a client-side supabase
+    // query against byok_keys. The direct client read was slow AND, when RLS/timing
+    // returned nothing, showed "kein Key verbunden" even though Groq IS connected.
+    // A stored key = connected here; liveness ("works") is handled separately by the
+    // health gate / probe — a connected-but-dead Gemini key still shows connected.
+    apiGet<Array<{ provider: string; status?: string }>>('/api/byok-keys')
+      .then((rows) => {
+        const set = new Set<string>();
+        for (const k of rows ?? []) if (k.status !== 'revoked') set.add(k.provider);
+        setConnectedProviders(set);
+      })
+      .catch(() => { /* leave empty — list still renders */ });
     // /api/models/health returns only NOT-healthy providers (empty = all good).
     apiGet<Record<string, HealthState>>('/api/models/health')
       .then((h) => setHealth(h ?? {}))
@@ -346,11 +344,12 @@ function KeysTab() {
   const [loading, setLoading] = useState(true);
 
   const load = async () => {
-    const supabase = createClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) { setLoading(false); return; }
-    const { data } = await supabase.from('byok_keys').select('provider, key_hint, status').eq('user_id', session.user.id);
-    setKeys((data ?? []) as ByokKeyRow[]);
+    // WALKFIX-2.3: authoritative server source (fast, no client RLS round-trip),
+    // same as the Modelle tab's connected-state read.
+    try {
+      const rows = await apiGet<ByokKeyRow[]>('/api/byok-keys');
+      setKeys(rows ?? []);
+    } catch { /* keep prior/empty — UI still renders the providers list */ }
     setLoading(false);
   };
 

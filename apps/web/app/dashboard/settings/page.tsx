@@ -5,5 +5,7 @@
 import { redirect } from 'next/navigation';
 
 export default function SettingsIndexRedirect() {
-  redirect('/dashboard');
+  // WALKFIX-2.1: open the canonical settings sheet (Profil) instead of dropping to
+  // a bare dashboard.
+  redirect('/dashboard?settings=profile');
 }

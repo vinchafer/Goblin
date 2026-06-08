@@ -50,7 +50,7 @@ export function ConnectorsPage() {
       const r = await fetch(`${apiBase}/api/github/connect`, {
         method: 'POST',
         headers,
-        body: JSON.stringify({ returnTo: '/dashboard/settings/integrations' }),
+        body: JSON.stringify({ returnTo: '/dashboard?settings=connectors' }),
       });
       if (r.ok) {
         const { url } = await r.json() as { url: string };

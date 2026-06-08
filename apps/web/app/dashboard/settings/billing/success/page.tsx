@@ -1,9 +1,7 @@
 "use client";
-// LEGACY — superseded by SettingsRoot + SettingsModal. Direct-URL
-// access only. Do not extend; future settings additions belong in
-// SettingsRoot (apps/web/components/settings/SettingsRoot.tsx)
-// and components/settings/sections.ts.
-
+// Stripe checkout return → confirm briefly, then open the canonical billing
+// section in the settings sheet (WALKFIX-2.1: the old /settings/billing page is
+// retired).
 import { useEffect } from "react";
 import { CheckCircle } from "@phosphor-icons/react";
 import { useRouter } from "next/navigation";
@@ -13,27 +11,16 @@ export default function BillingSuccessPage() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      router.push('/dashboard/settings/billing');
+      router.replace('/dashboard?settings=billing');
     }, 3000);
-
     return () => clearTimeout(timer);
   }, [router]);
 
   return (
-    <div className="min-h-[60vh] flex items-center justify-center">
-      <div className="text-center max-w-md">
-        <div className="w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center" style={{ backgroundColor: 'rgba(74, 124, 59, 0.1)' }}>
-          <CheckCircle className="w-10 h-10" style={{ color: 'var(--success)' }} />
-        </div>
-
-        <h1 className="text-2xl font-semibold mb-3" style={{ color: 'var(--ink-1)' }}>
-          Subscription activated!
-        </h1>
-
-        <p className="mb-6" style={{ color: 'var(--ink-3)' }}>
-          Your goblin just got stronger. Redirecting you back to billing settings...
-        </p>
-      </div>
+    <div style={{ minHeight: '60vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 16, fontFamily: 'var(--font-sans)' }}>
+      <CheckCircle size={56} weight="fill" style={{ color: 'var(--brand-green)' }} />
+      <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--brand-green)', margin: 0 }}>Zahlung bestätigt</h1>
+      <p style={{ fontSize: 14, color: 'var(--meta)' }}>Dein Plan ist aktiv. Weiterleitung …</p>
     </div>
   );
 }

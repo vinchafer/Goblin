@@ -15,6 +15,7 @@ import { ShortcutsTooltip } from "@/components/ui/ShortcutsTooltip";
 import { SettingsSheet } from "@/components/settings/settings-sheet";
 import { NewProjectModal } from "@/components/projects/new-project-modal";
 import { SettingsModal } from "@/components/settings/SettingsModal";
+import { SETTINGS_SECTIONS } from "@/components/settings/sections";
 import dynamic from "next/dynamic";
 const FirstRunTour = dynamic(() => import("@/components/onboarding/first-run-tour").then(m => m.FirstRunTour), { ssr: false });
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
@@ -122,6 +123,27 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
   const handleTourDone = useCallback(() => {
     setShowTour(false);
     if (typeof window !== 'undefined') localStorage.setItem('goblin_tour_done', '1');
+  }, []);
+
+  // WALKFIX-2: deep-link into the NEW settings via ?settings=<sectionId>. The
+  // GitHub OAuth return now lands on /dashboard?settings=connectors&github=connected
+  // (was the retired English /dashboard/settings/integrations full page). Opens the
+  // settings sheet/modal at that section, then strips the param so a back/refresh
+  // doesn't reopen it. This is the single entry point that replaces the old pages.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const sec = params.get('settings');
+    if (!sec) return;
+    if (SETTINGS_SECTIONS.some(s => s.id === sec)) {
+      setSettingsInitialItem(sec);
+      window.location.hash = sec; // desktop modal reads the hash to land on the section
+      setShowSettingsSheet(true);
+    }
+    params.delete('settings');
+    const qs = params.toString();
+    window.history.replaceState(null, '', window.location.pathname + (qs ? `?${qs}` : '') + window.location.hash);
+    // run once on mount — the OAuth redirect is a full navigation
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // We are "in a project context" if any /project/[id]/* route. Tabs become
