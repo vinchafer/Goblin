@@ -298,3 +298,44 @@ property access** — so any cleanup path is crash-safe:
 - **Fail-loud, not silent:** an *unmodelled* call path emits a one-time
   `console.warn("[demo-supabase] unmodelled call: <path>")` in dev so the gap
   surfaces next sprint, while still returning a safe value at runtime.
+
+---
+
+## Code-View scope (Checkpoint #1 follow-up decision, 2026-06-08)
+
+The code view's data layer turned out to be **much deeper than the Checkpoint #1
+estimate** ("CodeWorkspace ~30–40 LOC, one seed prop"). `CodeWorkspace` is not
+prop-driven — it sits on a 3-hook layer:
+
+- `useCodeSessions(projectId)` — session list + active session (Railway API)
+- `SessionPane` → `useCodeSessionDetail(id)` → `{ files, messages, activePath,
+  activeFile, deployUrl, persistFile, editActive, mergeDraft, deploy, … }`
+- `useCodeAgent(id)` → `{ streaming, text, blocks, submit, cancel, … }`
+- plus SessionPane machinery: thread, diff-review cards, deploy flow, auto-title.
+
+Full-fidelity code (**Option α**) means replicating 3 hook return shapes (~40–60
+fields incl. callbacks) + suppressing deploy/submit/review — ~100–180 LOC over
+5–6 files, brittle (tsc-guarded). That is 3–4× the accepted estimate.
+
+**DECISION — Option β (real chrome + real editor leaf).** The code demo renders:
+
+```
+DemoApp view="code"  →  DashboardShell (real Header + Sidebar + tab-bar, Code tab active)
+                          └─ CodeEditor (real leaf) content=DEMO_CODE_FILES[0] readOnly
+```
+
+- The **chrome is 100% the real production shell**; the **editor is the real
+  `CodeEditor` leaf** showing `Navbar.tsx`. ~95–99% of visible pixels match the
+  real Code tab.
+- **Not shown:** the multi-session SessionPane (session tabs, thread drawer,
+  diff-review cards) — power-user surfaces a pitch viewer doesn't miss in a
+  4-second glance, and the lowest-storytelling of the three views (§05's hero is
+  Chat→Code side-by-side; §04 is the three-device proof).
+- **Chat (mobile + desktop) and Preview stay full-fidelity** — unaffected by this.
+
+**Option α is deferred to a later mini-sprint (Sprint 11)** — best done once the
+real app gains Storybook (which would document the hook shapes as mock data) or
+when an investor explicitly asks for the multi-session code workflow.
+
+Consequence for `DemoApp`: the `code` branch renders `CodeEditor`, **not**
+`CodeWorkspace`. No code-hook seeding. `demo-code-files.ts` seeds the editor leaf.
