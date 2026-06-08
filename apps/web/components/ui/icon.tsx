@@ -123,7 +123,11 @@ export function Icon({
       strokeWidth={strokeWidth}
       color={color ?? 'currentColor'}
       className={className}
-      style={style}
+      // WALKFIX-4.1: SVGs default to vertical-align:baseline → an inline glyph (e.g.
+      // the </> code chip) sits a few px below the text baseline, looking misaligned.
+      // `middle` centres it on the text x-height. Ignored inside flex/grid rows (so
+      // existing centred chips are unaffected), corrects the inline cases.
+      style={{ verticalAlign: 'middle', ...style }}
       aria-label={ariaLabel}
       aria-hidden={!ariaLabel}
     />

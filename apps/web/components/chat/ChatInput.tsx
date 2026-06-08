@@ -455,15 +455,11 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
       setModels(ms);
       setConnectedKeys(keys);
 
-      // Auto-select first BYOK model if no preference set
-      const firstByok = ms.find(m => m.layer === 'byok' && keys.some(k => k.provider === m.provider));
-      if (firstByok && selectedModel.slug === DEFAULT_MODEL.slug) {
-        onModelChange({
-          slug: firstByok.slug, name: firstByok.name,
-          provider: firstByok.provider, layer: firstByok.layer,
-          displayName: shortModelName(firstByok.name),
-        });
-      }
+      // WALKFIX-4.2: do NOT auto-switch the active model just because the hub was
+      // opened. The old "select first BYOK" silently flipped a Gemini-key account
+      // to Gemini (proven dead on prod) the moment the picker opened — without the
+      // user choosing anything. Keep the current/last selection (DEFAULT_MODEL =
+      // Groq Llama, the working default) until the user actually taps a model.
     } catch { /* silently fail — user sees empty hub */ }
     setModelsLoaded(true);
   };

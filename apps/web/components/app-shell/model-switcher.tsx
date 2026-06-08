@@ -108,14 +108,20 @@ export function ModelSwitcher() {
           }
         }
 
-        // 2. First BYOK model with key
-        const firstByokWithKey = modelsArray.find(m => 
-          m.layer === 'byok' && 
-          m.available && 
-          activeProviders.includes(m.provider)
+        // 2. A BYOK model with a connected key — but prefer the PROVEN-WORKING
+        // Groq Llama over a blind "first BYOK". WALKFIX-4.2: the old first-match
+        // defaulted a Gemini-key account to Gemini (dead on prod) with no user
+        // choice. Prefer Groq Llama 3.3 70B → any Groq → then first BYOK.
+        const byokWithKey = modelsArray.filter(m =>
+          m.layer === 'byok' && m.available && activeProviders.includes(m.provider)
         );
-        if (firstByokWithKey) {
-          handleModelSelect(firstByokWithKey);
+        const preferredByok =
+          byokWithKey.find(m => /groq/i.test(m.provider) && /llama\s*3\.?3\s*70b/i.test(m.name)) ??
+          byokWithKey.find(m => /groq/i.test(m.provider) && /llama/i.test(m.name)) ??
+          byokWithKey.find(m => /groq/i.test(m.provider)) ??
+          byokWithKey[0];
+        if (preferredByok) {
+          handleModelSelect(preferredByok);
           return;
         }
 

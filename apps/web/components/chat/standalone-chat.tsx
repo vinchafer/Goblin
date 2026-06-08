@@ -202,7 +202,7 @@ function CodeActionButton({ lastMessage, lastUserPrompt, hasProject, projectId, 
         onMouseEnter={e => { e.currentTarget.style.borderColor = "var(--brand-green)"; e.currentTarget.style.color = "var(--brand-green)"; }}
         onMouseLeave={e => { e.currentTarget.style.borderColor = "var(--div)"; e.currentTarget.style.color = "var(--ink-2, var(--text-2))"; }}
       >
-        <Code2 size={16} strokeWidth={2} aria-hidden />
+        <Code2 size={16} strokeWidth={2} aria-hidden style={{ display: "block" }} />
       </button>
 
       {open && (
