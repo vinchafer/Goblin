@@ -252,3 +252,49 @@ when `demoMode === false`.**
   auth/fetch complexity lives — vs. partial-real (real Message/CodeEditor leaves,
   current state, static chrome). This doc assumes **full chrome**.
 - **Approve the touched-file list** above, or exclude any component.
+
+> **Checkpoint #1 decision (approved 2026-06-08):** Architecture ✓. Scope =
+> **full chrome** ✓. Suppressions checklist below is binding for B.1.
+
+---
+
+## Suppressions checklist (binding for B.1)
+
+Every item below is gated on `demoMode === true` and must be a no-op / not-rendered
+in demo, with zero change when `demoMode === false`:
+
+- [ ] **First-Run-Tour** — not triggered, including the "user hasn't seen it yet"
+      check. `FirstRunTour` dynamic import gated off entirely in demo.
+- [ ] **Command-Palette** — Cmd/Ctrl+K listener either ignored or **not
+      registered** in demo (prefer: don't register the listener).
+- [ ] **Settings-Sheet** — auto-open effects suppressed; the settings-gear button
+      stays visually present but its handler is a no-op.
+- [ ] **Auto-focus on composer/inputs at mount** — suppressed (must not steal the
+      cursor inside the iframe).
+- [ ] **Auto-scroll-to-bottom in conversation** — single initial scroll OK;
+      continuous auto-scroll suppressed.
+- [ ] **Toast notifications** — provider renders empty (demo = visually static).
+- [ ] **Realtime subscriptions** (Supabase channels) — not subscribed. (Covered
+      structurally by the demo supabase stub: `channel()/on()/subscribe()` are
+      no-ops; still skip the subscribe call where cheap.)
+- [ ] **Polling intervals** (`use*Poll`, model-health, usage, build-status) —
+      cleared / not started.
+- [ ] **Service-worker / push-notification permission prompts** — not triggered.
+- [ ] **Analytics events** — none fired, including pageview.
+
+### Stub-proxy unmount safety (answer to Checkpoint #1 follow-up)
+
+The demo supabase stub's chainable proxy returns a **truthy callable for every
+property access** — so any cleanup path is crash-safe:
+
+- `auth.onAuthStateChange(cb)` returns `{ data: { subscription: { unsubscribe } } }`
+  with a real no-op `unsubscribe`, so `return () => subscription.unsubscribe()`
+  cleanups don't throw.
+- `channel().on().subscribe()` returns a channel-like whose `unsubscribe()` is a
+  no-op; `removeChannel(ch)` is a no-op.
+- Any property the stub doesn't explicitly model resolves through the proxy to a
+  callable returning the proxy (and the proxy is `await`-able → `{data:[],error:null}`),
+  never `undefined` — so `undefined.unsubscribe()` cannot happen.
+- **Fail-loud, not silent:** an *unmodelled* call path emits a one-time
+  `console.warn("[demo-supabase] unmodelled call: <path>")` in dev so the gap
+  surfaces next sprint, while still returning a safe value at runtime.
