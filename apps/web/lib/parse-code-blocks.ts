@@ -9,6 +9,8 @@ export interface ParsedBlock {
   content: string;
   lang: string;
   complete: boolean;
+  /** true = path came from the language/scratch fallback (model named no file). */
+  inferred: boolean;
 }
 
 const LANG_EXT: Record<string, string> = {
@@ -40,7 +42,7 @@ function filenameFromFirstLine(line: string): string | null {
   return null;
 }
 
-function resolveFromInfoAndBody(info: string, body: string): { path: string | null; body: string; lang: string } {
+function resolveFromInfoAndBody(info: string, body: string): { path: string | null; body: string; lang: string; inferred: boolean } {
   const lang = info.split(/[\s:]/)[0]?.toLowerCase() ?? '';
   let path: string | null = null;
 
@@ -62,8 +64,9 @@ function resolveFromInfoAndBody(info: string, body: string): { path: string | nu
       body = firstNl >= 0 ? body.slice(firstNl + 1) : '';
     }
   }
-  if (!path) path = LANG_EXT[lang] ?? 'scratch.txt';
-  return { path, body, lang };
+  let inferred = false;
+  if (!path) { inferred = true; path = LANG_EXT[lang] ?? 'scratch.txt'; }
+  return { path, body, lang, inferred };
 }
 
 export function parseCodeBlocks(text: string): ParsedBlock[] {
@@ -72,7 +75,7 @@ export function parseCodeBlocks(text: string): ParsedBlock[] {
   const used = new Set<string>();
 
   const pushBlock = (info: string, rawBody: string, complete: boolean) => {
-    const { path, body, lang } = resolveFromInfoAndBody(info.trim(), rawBody);
+    const { path, body, lang, inferred } = resolveFromInfoAndBody(info.trim(), rawBody);
     let finalPath = path ?? 'scratch.txt';
     let n = 1;
     while (used.has(finalPath)) {
@@ -85,7 +88,7 @@ export function parseCodeBlocks(text: string): ParsedBlock[] {
     }
     used.add(finalPath);
     const content = body.replace(/\n$/, '');
-    blocks.push({ path: finalPath, content, lang, complete });
+    blocks.push({ path: finalPath, content, lang, complete, inferred });
   };
 
   // Walk fences manually so we can capture an unterminated trailing block (streaming).

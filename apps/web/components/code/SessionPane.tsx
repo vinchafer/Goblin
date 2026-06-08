@@ -173,22 +173,36 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
   // EXISTING, non-empty file that actually changed becomes a review item. Covers
   // the open file AND files edited from the chat with nothing open; multi-file →
   // a queue of cards. New files (no pre-edit base) keep streaming as today.
-  const buildReviews = (text: string): ReviewItem[] => {
+  const buildReviews = (text: string, activePath: string | null): ReviewItem[] => {
     const snap = baseFilesRef.current;
     const items: ReviewItem[] = [];
+    // WALKFIX-1 mirror: same edit-in-place retarget as the server — an unnamed block
+    // (inferred language-default name) edited against an open file is retargeted to
+    // that file, so the review card + foreground match the persisted draft instead
+    // of a phantom sibling. Only the first matching unnamed block.
+    const aDot = activePath ? activePath.lastIndexOf(".") : -1;
+    const activeExt = activePath && aDot >= 0 ? activePath.slice(aDot).toLowerCase() : "";
+    let retargeted = false;
     for (const b of parseCodeBlocks(text)) {
       if (!b.complete || !b.path) continue;
-      const base = snap.get(b.path);
+      let path = b.path;
+      if (!retargeted && b.inferred && activePath && path !== activePath) {
+        const bDot = path.lastIndexOf(".");
+        const bExt = bDot >= 0 ? path.slice(bDot).toLowerCase() : "";
+        if (bExt === activeExt) { path = activePath; retargeted = true; }
+      }
+      const base = snap.get(path);
       if (base == null || !base.trim() || base === b.content) continue;
-      const diff = createTwoFilesPatch(b.path, b.path, base, b.content, "Gesichert", "Entwurf");
-      items.push({ path: b.path, base, proposed: b.content, diff });
+      const diff = createTwoFilesPatch(path, path, base, b.content, "Gesichert", "Entwurf");
+      items.push({ path, base, proposed: b.content, diff });
     }
     return items;
   };
 
   const maybeOpenReviewCard = (text: string) => {
+    const submitPath = reviewBaseRef.current?.path ?? null;
     reviewBaseRef.current = null;
-    const items = buildReviews(text);
+    const items = buildReviews(text, submitPath ?? detail.activePath);
     if (items.length === 0) return;
     // Remember per path so the thread can re-open "Anwenden" for any of them.
     const map = reviewsByPathRef.current;

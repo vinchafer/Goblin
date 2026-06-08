@@ -12,6 +12,8 @@ export interface ParsedBlock {
   path: string;
   content: string;
   lang: string;
+  /** true = path came from the language/scratch fallback (model named no file). */
+  inferred: boolean;
 }
 
 const LANG_EXT: Record<string, string> = {
@@ -83,7 +85,9 @@ export function parseCodeBlocks(text: string): ParsedBlock[] {
     }
 
     // Fallback: infer from language, else scratch.
+    let inferred = false;
     if (!path) {
+      inferred = true;
       path = LANG_EXT[langToken] ?? `scratch${scratchN ? '-' + scratchN : ''}.txt`;
       if (LANG_EXT[langToken] === undefined) scratchN++;
     }
@@ -99,7 +103,7 @@ export function parseCodeBlocks(text: string): ParsedBlock[] {
     usedPaths.add(finalPath);
 
     const content = body.replace(/\n$/, '');
-    if (content.trim()) blocks.push({ path: finalPath, content, lang: langToken });
+    if (content.trim()) blocks.push({ path: finalPath, content, lang: langToken, inferred });
   }
 
   return blocks;

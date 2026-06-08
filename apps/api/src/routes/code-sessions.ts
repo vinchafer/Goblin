@@ -427,6 +427,30 @@ codeSessions.post('/:sessionId/messages', async (c) => {
 
       // Parse code blocks → upsert as draft files.
       const blocks = parseCodeBlocks(full);
+
+      // WALKFIX-1 (P0): edit-in-place safety net. parseCodeBlocks falls back to a
+      // language-default name (html→index.html, css→styles.css) when the model
+      // returns the edited file WITHOUT a filename comment. If the open file is
+      // named anything else, the edit would land in a SIBLING file — the real file
+      // ships unchanged on deploy (founder: "blau" never goes live). When we're
+      // editing a known open file, retarget the first UNNAMED block whose extension
+      // matches the active file to `activePath`, so the edit overwrites the file the
+      // user is actually editing. Explicitly-named blocks (real new files) and
+      // new-project sends (no active file) are untouched.
+      if (activeExists && activePath) {
+        const dot = activePath.lastIndexOf('.');
+        const activeExt = dot >= 0 ? activePath.slice(dot).toLowerCase() : '';
+        for (const b of blocks) {
+          if (!b.inferred) continue;
+          const bDot = b.path.lastIndexOf('.');
+          const bExt = bDot >= 0 ? b.path.slice(bDot).toLowerCase() : '';
+          if (bExt === activeExt && b.path !== activePath) {
+            b.path = activePath;
+            break; // only the first matching unnamed block is the in-place edit
+          }
+        }
+      }
+
       const draftFiles: Array<{ path: string; content: string }> = [];
       if (blocks.length === 0 && full.trim()) {
         // Graceful fallback: no parseable code → keep as scratch note, do not crash.
