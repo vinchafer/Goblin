@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { apiGet } from '@/lib/api';
 import { getAuthHeaders, API_URL } from '@/lib/api';
+import { isDemoActive } from '@/lib/demo/demo-flag';
 
 interface TrialInfo {
   trialStatus: 'not_started' | 'active' | 'expired' | 'subscribed' | 'none';
@@ -18,6 +19,8 @@ export function TrialBanner() {
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
+    // Demo (Sprint 10 §7): no trial fetch → info stays null → banner renders nothing.
+    if (isDemoActive()) return;
     apiGet<TrialInfo>('/api/users/me/trial').then(setInfo).catch(() => null);
   }, []);
 

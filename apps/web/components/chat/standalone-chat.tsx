@@ -13,6 +13,7 @@ import { friendlyError } from "@/lib/friendly-error";
 import { parseCodeBlocks } from "@/lib/parse-code-blocks";
 import { StcPreviewSheet, type StcFile } from "@/components/code/StcPreviewSheet";
 import { useApp } from "@/contexts/app-context";
+import { useDemoMode } from "@/lib/demo/demo-mode-context";
 import { useLang } from "@/lib/use-lang";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -274,6 +275,7 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
   const [error, setError] = useState<string | null>(null);
   const { selectedModel, setSelectedModel } = useChatModel();
   const { setChatProjectId } = useApp();
+  const demoMode = useDemoMode();
 
   // A.1 (NAVFIX-1): tell the shell which project this chat belongs to (or none),
   // so the header Code tab stays live from a project chat and project-less chats
@@ -498,14 +500,16 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
           bottom safe area (gesture zone) so the composer stays thumb-reachable. */}
       <div style={{ borderTop: "1px solid var(--rule)", background: "var(--bone)", paddingBottom: "env(safe-area-inset-bottom)" }}>
         <div style={{ position: "relative" }}>
-          {/* Code action button — sits above the input */}
-          {lastAssistantMsg?.has_code && (
+          {/* Code action button — sits above the input. Hidden in demo (its
+              actions fetch projects / deep-link out of the iframe). */}
+          {!demoMode && lastAssistantMsg?.has_code && (
             <div style={{ position: "absolute", right: 12, bottom: "calc(100% + 10px)", zIndex: 10 }}>
               <CodeActionButton lastMessage={lastAssistantMsg} lastUserPrompt={lastUserPrompt} hasProject={hasProject} projectId={projectId} projectName={projectName} sessionId={sessionId} />
             </div>
           )}
           <ChatInput
             onSubmit={handleSubmit}
+            disabled={demoMode}
             isStreaming={isStreaming}
             onStop={handleStop}
             selectedModel={selectedModel}

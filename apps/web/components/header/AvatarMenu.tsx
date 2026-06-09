@@ -9,6 +9,7 @@ import { SettingsCard } from '../ui/SettingsCard';
 import { SettingsRow } from '../ui/SettingsRow';
 import { useUser } from '@/lib/hooks/useUser';
 import { useAuth } from '@/lib/hooks/useAuth';
+import { useDemoMode } from '@/lib/demo/demo-mode-context';
 import { useRoutingMode } from '@/components/app-shell/local-cloud-switch';
 
 // Per v6 TASK 1: the primary nav rows carry NO leading icon (no settings cog,
@@ -96,6 +97,7 @@ export function AvatarMenu() {
   const [isDesktop, setIsDesktop] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const user = useUser();
+  const demoMode = useDemoMode();
   const { signOut } = useAuth();
   const { setShowSettingsSheet } = useApp();
   const router = useRouter();
@@ -149,7 +151,7 @@ export function AvatarMenu() {
       <button
         ref={triggerRef}
         data-testid="header-avatar"
-        onClick={() => setOpen(o => !o)}
+        onClick={() => { if (!demoMode) setOpen(o => !o); }}
         aria-label="Konto-Menü"
         aria-haspopup="menu"
         aria-expanded={open}

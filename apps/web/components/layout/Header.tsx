@@ -4,6 +4,7 @@ import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { useApp } from '@/contexts/app-context';
+import { useDemoMode } from '@/lib/demo/demo-mode-context';
 import { AvatarMenu } from '@/components/header/AvatarMenu';
 import { GoblinLogo } from '@/components/brand/GoblinLogo';
 import { useLang } from '@/lib/use-lang';
@@ -62,6 +63,7 @@ export function Header({
 }: HeaderProps) {
   const router = useRouter();
   const lang = useLang();
+  const demoMode = useDemoMode();
   const { setShowNewProjectModal } = useApp();
   const [plusOpen, setPlusOpen] = useState(false);
   const plusRef = useRef<HTMLDivElement | null>(null);
@@ -120,7 +122,7 @@ export function Header({
           Desktop: mark + "Goblin" wordmark. Mobile: mark only (.goblin-wordmark
           hidden ≤768px). Wordmark is Manrope 700, -0.02em, gold per §B1.1. */}
       <button
-        onClick={() => router.push('/dashboard')}
+        onClick={() => { if (!demoMode) router.push('/dashboard'); }}
         aria-label="Goblin home"
         style={{
           background: 'none', border: 'none', cursor: 'pointer',
@@ -205,7 +207,7 @@ export function Header({
                       role="menuitem"
                       disabled={disabled}
                       title={hint}
-                      onClick={() => { if (!disabled) { onTabChange?.(id); setModeOpen(false); } }}
+                      onClick={() => { if (!disabled && !demoMode) { onTabChange?.(id); setModeOpen(false); } }}
                       style={{
                         width: '100%', display: 'flex', alignItems: 'center', gap: 10,
                         padding: '10px 12px', minHeight: 44, borderRadius: 7,
@@ -262,7 +264,7 @@ export function Header({
                 aria-disabled={disabled}
                 title={hint}
                 disabled={disabled}
-                onClick={() => !disabled && onTabChange?.(id)}
+                onClick={() => { if (!disabled && !demoMode) onTabChange?.(id); }}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 5,
                   padding: '4px 10px', borderRadius: 7,
@@ -296,7 +298,7 @@ export function Header({
       {/* Plus FAB */}
       <div ref={plusRef} style={{ position: 'relative', flexShrink: 0 }}>
         <button
-          onClick={() => setPlusOpen(p => !p)}
+          onClick={() => { if (!demoMode) setPlusOpen(p => !p); }}
           data-testid="header-plus"
           aria-label="Create new"
           style={{

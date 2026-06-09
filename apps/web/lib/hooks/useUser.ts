@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { apiGet } from '@/lib/api';
+import { isDemoActive } from '@/lib/demo/demo-flag';
 import { planLabel } from '@/lib/plan-label';
 import { resolveDisplayName } from '@/lib/display-name';
 
@@ -53,11 +54,16 @@ export function useUser(): UseUserResult {
     // state, not a stale `user_metadata.plan` that defaults to "Build". Fetch
     // the real plan + is_comped; fall back gracefully if the API is unreachable.
     let planName = 'Trial';
-    try {
-      const me = await apiGet<{ plan?: string; is_comped?: boolean }>('/api/users/me');
-      planName = planLabel(me?.plan, me?.is_comped);
-    } catch {
+    // Demo (Sprint 10 §7): no network — derive the plan from the seed metadata.
+    if (isDemoActive()) {
       planName = planLabel((meta.plan as string) ?? null);
+    } else {
+      try {
+        const me = await apiGet<{ plan?: string; is_comped?: boolean }>('/api/users/me');
+        planName = planLabel(me?.plan, me?.is_comped);
+      } catch {
+        planName = planLabel((meta.plan as string) ?? null);
+      }
     }
 
     // FIX3-4: single canonical display name for pill + ProfileCard + everywhere.

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Smartphone, Tablet, Monitor, RotateCw, ExternalLink, Globe, Github, Rocket } from 'lucide-react';
 import { GoblinLogo } from '@/components/brand/GoblinLogo';
 import { createClient } from '@/lib/supabase/client';
+import { useDemoMode } from '@/lib/demo/demo-mode-context';
 import Link from 'next/link';
 
 type Viewport = '375' | '768' | '1440';
@@ -10,9 +11,13 @@ type Viewport = '375' | '768' | '1440';
 interface PreviewTabProps {
   projectId: string;
   previewUrl?: string | null;
+  /** Demo (Sprint 10): pretty URL shown in the toolbar bar instead of the long
+      `data:` URI that actually feeds the iframe. Defaults to `previewUrl`. */
+  displayUrl?: string;
 }
 
-export function PreviewTab({ projectId, previewUrl }: PreviewTabProps) {
+export function PreviewTab({ projectId, previewUrl, displayUrl }: PreviewTabProps) {
+  const demoMode = useDemoMode();
   const [viewport, setViewport] = useState<Viewport>('1440');
   const [reloadKey, setReloadKey] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -22,6 +27,7 @@ export function PreviewTab({ projectId, previewUrl }: PreviewTabProps) {
 
   useEffect(() => {
     if (previewUrl) return; // only needed for the empty state
+    if (demoMode) return; // Sprint 10 §7: no connector status fetch in demo.
     let alive = true;
     (async () => {
       try {
@@ -37,7 +43,7 @@ export function PreviewTab({ projectId, previewUrl }: PreviewTabProps) {
       } catch { /* leave conn null → default add-token CTA */ }
     })();
     return () => { alive = false; };
-  }, [previewUrl]);
+  }, [previewUrl, demoMode]);
 
   const vpIcons: Record<Viewport, React.ReactNode> = {
     '375': <Smartphone size={14} />,
@@ -203,7 +209,7 @@ export function PreviewTab({ projectId, previewUrl }: PreviewTabProps) {
             fontFamily: 'JetBrains Mono, monospace', fontSize: 11,
             color: 'var(--ink-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
           }}>
-            {previewUrl}
+            {displayUrl ?? previewUrl}
           </span>
         </div>
 
@@ -223,7 +229,10 @@ export function PreviewTab({ projectId, previewUrl }: PreviewTabProps) {
           the iframe. We can't detect that cross-origin, so we never leave the user at
           a dead login screen: an honest, always-present escape with a prominent
           "In Vercel öffnen" (the owner is logged in → sees it) + what makes auto-
-          publish succeed. The normal ('public') deploy renders fine in the iframe. */}
+          publish succeed. The normal ('public') deploy renders fine in the iframe.
+          Hidden in demo (Sprint 10): the demo preview is a static inline page, no
+          Vercel protection to escape. */}
+      {!demoMode && (
       <div style={{
         padding: '8px 12px',
         borderBottom: '1px solid var(--rule)',
@@ -248,6 +257,7 @@ export function PreviewTab({ projectId, previewUrl }: PreviewTabProps) {
           }}
         >In Vercel öffnen →</a>
       </div>
+      )}
 
       {/* Iframe area */}
       <div style={{

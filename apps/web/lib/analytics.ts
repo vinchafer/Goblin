@@ -1,11 +1,15 @@
 // PostHog analytics — NEVER track chat content, code, API keys, file content
 // posthog-js is an optional peer dep — imported dynamically so the app builds without it
 
+import { isDemoActive } from '@/lib/demo/demo-flag';
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let _ph: any = null;
 
 export function initAnalytics(): void {
   if (typeof window === 'undefined') return;
+  // Demo routes fire no analytics — not even a pageview (Sprint 10 §6/§7).
+  if (isDemoActive()) return;
   if (_ph) return;
 
   // Respect Do Not Track

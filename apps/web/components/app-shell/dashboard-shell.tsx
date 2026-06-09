@@ -20,6 +20,7 @@ import dynamic from "next/dynamic";
 const FirstRunTour = dynamic(() => import("@/components/onboarding/first-run-tour").then(m => m.FirstRunTour), { ssr: false });
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useApp } from "@/contexts/app-context";
+import { useDemoMode } from "@/lib/demo/demo-mode-context";
 import { createClient } from "@/lib/supabase/client";
 import type { Project } from "@goblin/shared/src/schemas";
 
@@ -32,6 +33,7 @@ interface DashboardShellProps {
 }
 
 export function DashboardShell({ projects, children, previewUrl, isFirstLogin, userName }: DashboardShellProps) {
+  const demoMode = useDemoMode();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showTour, setShowTour] = useState(false);
   const [cmdPaletteOpen, setCmdPaletteOpen] = useState(false);
@@ -111,6 +113,7 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
 
   // Show first-run tour if redirected from onboarding (?tour=1) or fresh account
   useEffect(() => {
+    if (demoMode) return; // Sprint 10 §6: never trigger the tour in demo.
     const tourDone = localStorage.getItem('goblin_tour_done');
     if (tourDone) return;
 
@@ -118,7 +121,7 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
     if (fromOnboarding || isFirstLogin) {
       setShowTour(true);
     }
-  }, [isFirstLogin]);
+  }, [isFirstLogin, demoMode]);
 
   const handleTourDone = useCallback(() => {
     setShowTour(false);
@@ -131,6 +134,7 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
   // settings sheet/modal at that section, then strips the param so a back/refresh
   // doesn't reopen it. This is the single entry point that replaces the old pages.
   useEffect(() => {
+    if (demoMode) return; // Sprint 10 §6: no settings deep-link / auto-open in demo.
     const params = new URLSearchParams(window.location.search);
     const sec = params.get('settings');
     if (!sec) return;

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { apiGet } from '@/lib/api';
 import { planLabel } from '@/lib/plan-label';
+import { isDemoActive } from '@/lib/demo/demo-flag';
 
 // Wired to the same usage endpoint screen 10 uses: GET /api/users/me/usage.
 // We only need the monthly headline numbers + plan here; the full breakdown
@@ -21,6 +22,8 @@ export function SidebarUsage() {
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
+    // Demo (Sprint 10 §7): no usage fetch → failed=true → widget renders nothing.
+    if (isDemoActive()) { setFailed(true); return; }
     let alive = true;
     apiGet<UsageData>('/api/users/me/usage')
       .then((d) => { if (alive) setData(d); })

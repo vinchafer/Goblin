@@ -10,6 +10,11 @@
 let active = false;
 
 export function setDemoActive(value: boolean): void {
+  // Client-only: never mutate the module flag during SSR, where it is a singleton
+  // shared across concurrent requests. The server has no consumer of this flag
+  // (server components use lib/supabase/server), and the /demo- pathname fallback
+  // below covers the brief pre-mount window on the client anyway.
+  if (typeof window === "undefined") return;
   active = value;
 }
 

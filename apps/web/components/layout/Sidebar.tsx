@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { useApp } from '@/contexts/app-context';
+import { useDemoMode } from '@/lib/demo/demo-mode-context';
+import { isDemoActive } from '@/lib/demo/demo-flag';
 import { createClient } from '@/lib/supabase/client';
 import { apiGet } from '@/lib/api';
 import { Gear } from '@phosphor-icons/react';
@@ -76,6 +78,7 @@ const STORAGE_KEY = 'goblin:sidebar:collapsed';
 export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClose }: SidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const demoMode = useDemoMode();
   const { setShowNewProjectModal, setShowSettingsSheet } = useApp();
   const { fullName, email, plan } = useUser();
 
@@ -119,9 +122,14 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
   const initial = displayName.charAt(0).toUpperCase();
 
   const navigate = (path: string) => {
+    if (demoMode) return; // Sprint 10 §6: sidebar nav is inert in demo.
     router.push(path);
     onClose?.();
   };
+
+  // Demo (Sprint 10 §6): the "+" project / settings handlers are no-ops.
+  const openNewProject = () => { if (!demoMode) setShowNewProjectModal(true); onClose?.(); };
+  const openSettings = () => { if (!demoMode) setShowSettingsSheet(true); onClose?.(); };
 
   const sidebarWidth = collapsed ? 48 : 280;
 
@@ -213,7 +221,7 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
               </button>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <button
-                  onClick={(e) => { e.stopPropagation(); setShowNewProjectModal(true); onClose?.(); }}
+                  onClick={(e) => { e.stopPropagation(); openNewProject(); }}
                   title="Neues Projekt"
                   aria-label="Neues Projekt"
                   data-testid="sidebar-projects-plus"
@@ -330,7 +338,7 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
         {!collapsed && (
           <div style={{ padding: '10px 12px', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
             <button
-              onClick={() => { setShowSettingsSheet(true); onClose?.(); }}
+              onClick={openSettings}
               data-testid="user-pill-desktop"
               aria-label="Profil & Einstellungen"
               style={{
@@ -533,6 +541,8 @@ function RecentChats({ pathname, navigate }: { pathname: string; navigate: (path
   const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
 
   const loadSessions = useCallback(async () => {
+    // Demo (Sprint 10 §7): no chat-session fetch → empty "No chats yet" state.
+    if (isDemoActive()) { setSessions([]); setLoading(false); return; }
     try {
       const data = await apiGet<ChatSession[]>('/api/chat-sessions');
       setSessions(data.slice(0, 5));
@@ -546,6 +556,7 @@ function RecentChats({ pathname, navigate }: { pathname: string; navigate: (path
   useEffect(() => { loadSessions(); }, [loadSessions]);
 
   const handleNewChat = async () => {
+    if (isDemoActive()) return; // Sprint 10 §6: inert in demo.
     try {
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();

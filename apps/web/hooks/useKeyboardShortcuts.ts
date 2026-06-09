@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { isDemoActive } from "@/lib/demo/demo-flag";
 
 function isInputFocused() {
   const el = document.activeElement;
@@ -22,6 +23,10 @@ interface KeyboardShortcutsConfig {
 
 export function useKeyboardShortcuts(config: KeyboardShortcutsConfig) {
   useEffect(() => {
+    // Demo mode (Sprint 10 §6): don't register the global key listener at all —
+    // Cmd/Ctrl+K command palette and tab/settings shortcuts stay inert.
+    if (isDemoActive()) return;
+
     const handler = (e: KeyboardEvent) => {
       const mod = e.metaKey || e.ctrlKey;
 

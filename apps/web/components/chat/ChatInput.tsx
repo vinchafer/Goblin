@@ -4,6 +4,7 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { toast } from 'sonner';
 import { apiGet } from '@/lib/api';
 import { createClient } from '@/lib/supabase/client';
+import { isDemoActive } from '@/lib/demo/demo-flag';
 import { useLang } from '@/lib/use-lang';
 import { ComposerPlusPopover, type PlusAction } from './ComposerPlusPopover';
 import { Icon } from '@/components/ui/icon';
@@ -476,6 +477,7 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
 
   // Realtime: refresh keys when byok_keys table changes for this user
   useEffect(() => {
+    if (isDemoActive()) return; // Sprint 10 §6: no realtime subscription in demo.
     const supabase = createClient();
     const channel = supabase
       .channel('byok_keys_changes')
@@ -654,7 +656,8 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
           }}>
             <button
               ref={plusBtnRef}
-              onClick={() => setPlusOpen(o => !o)}
+              onClick={() => { if (!disabled) setPlusOpen(o => !o); }}
+              disabled={disabled}
               data-testid="composer-plus"
               aria-label="Anhang hinzufügen"
               style={{
@@ -690,7 +693,8 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
 
             {/* Model picker pill — left. CLEANUP-1: re-tap toggles (closes if open). */}
             <button
-              onClick={() => { if (hubOpen) setHubOpen(false); else void openHub(); }}
+              onClick={() => { if (disabled) return; if (hubOpen) setHubOpen(false); else void openHub(); }}
+              disabled={disabled}
               style={{
                 display: 'flex', alignItems: 'center', gap: 4,
                 padding: '3px 8px', borderRadius: 6,
