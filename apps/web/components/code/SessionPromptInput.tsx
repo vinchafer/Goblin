@@ -53,6 +53,9 @@ export function SessionPromptInput({ modelId, onModelChange, onSubmit, streaming
         style={{
           border: "1px solid var(--ed-rule)", borderRadius: 12, background: "var(--ed-canvas)",
           padding: 8, display: "flex", flexDirection: "column", gap: 8,
+          // WALK2-4: name+size this as a query container so the model picker can
+          // collapse to an icon when the composer (editor pane) is narrow.
+          containerType: "inline-size", containerName: "gb-composer",
         }}
       >
         <textarea

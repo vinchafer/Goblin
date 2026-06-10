@@ -16,7 +16,7 @@ import { SessionGitPill } from "./SessionGitPill";
 import { CodeFileTabs } from "./CodeFileTabs";
 import { SessionFileNav } from "./SessionFileNav";
 import { createTwoFilesPatch } from "diff";
-import { parseCodeBlocks } from "@/lib/parse-code-blocks";
+import { parseCodeBlocks, linkedLocalAssets } from "@/lib/parse-code-blocks";
 import { DiffModal } from "@/components/project/diff-modal";
 import { useCodeSessionDetail } from "@/hooks/code/useCodeSessionDetail";
 import { useCodeAgent } from "@/hooks/code/useCodeAgent";
@@ -182,6 +182,23 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
     // of a phantom sibling. Only the first matching unnamed block.
     const aDot = activePath ? activePath.lastIndexOf(".") : -1;
     const activeExt = activePath && aDot >= 0 ? activePath.slice(aDot).toLowerCase() : "";
+    // WALK2-1 mirror: the assets the page's HTML actually links. A css/js edit must
+    // land there, not on an unlinked sibling (deploy-stale root cause — see
+    // DEPLOY_TRACE_2). Mirrors the server reconciliation so the review card targets
+    // the file the live page loads (e.g. style.css), not the orphan (styles.css).
+    const linkedCss = new Set<string>();
+    const linkedJs = new Set<string>();
+    for (const [p, c] of snap) {
+      if (!/\.html?$/i.test(p)) continue;
+      const a = linkedLocalAssets(c);
+      a.css.forEach((x) => linkedCss.add(x));
+      a.js.forEach((x) => linkedJs.add(x));
+    }
+    const reconcile = (path: string): string => {
+      if (/\.s?css$/i.test(path) && linkedCss.size === 1 && !linkedCss.has(path)) return [...linkedCss][0]!;
+      if (/\.m?js$/i.test(path) && linkedJs.size === 1 && !linkedJs.has(path)) return [...linkedJs][0]!;
+      return path;
+    };
     let retargeted = false;
     for (const b of parseCodeBlocks(text)) {
       if (!b.complete || !b.path) continue;
@@ -190,6 +207,17 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
         const bDot = path.lastIndexOf(".");
         const bExt = bDot >= 0 ? path.slice(bDot).toLowerCase() : "";
         if (bExt === activeExt) { path = activePath; retargeted = true; }
+      }
+      const reconciled = reconcile(path);
+      if (reconciled !== path) {
+        // Edit reconciled to the linked asset. Base = the linked file's current
+        // content if it exists, else the orphan we'd have written (so the diff is
+        // meaningful), else empty (a genuine create of the linked file).
+        const base = snap.get(reconciled) ?? snap.get(path) ?? "";
+        if (base === b.content) continue;
+        const diff = createTwoFilesPatch(reconciled, reconciled, base, b.content, "Gesichert", "Entwurf");
+        items.push({ path: reconciled, base, proposed: b.content, diff });
+        continue;
       }
       const base = snap.get(path);
       if (base == null || !base.trim() || base === b.content) continue;
@@ -282,27 +310,6 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
     discardedRef.current = null;
   };
 
-  const runDeploy = async () => {
-    setDeployConfirm(false);
-    setDeploying(true);
-    setToast("Veröffentliche …");
-    const { url, error, deploymentUrl, aliasUrl } = await detail.deploySession((msg) => setToast(msg));
-    setDeploying(false);
-    setDeployDebug({ deploymentUrl, aliasUrl });
-    if (url) {
-      // Persistent live-URL card (no auto-dismiss) instead of a fleeting toast.
-      setLiveUrl(url);
-      setLiveDismissed(false);
-      setToast(null);
-    } else {
-      // 10.6-5: strip the NO_VERCEL_TOKEN marker so the user sees the plain
-      // "bring your own Vercel" guidance, not the internal prefix.
-      const msg = (error ?? "Veröffentlichen fehlgeschlagen").replace(/^NO_VERCEL_TOKEN —\s*/, "");
-      setToast(msg);
-      setTimeout(() => setToast(null), 8000);
-    }
-  };
-
   const copyLiveUrl = () => {
     if (!liveUrl) return;
     navigator.clipboard?.writeText(liveUrl);
@@ -321,10 +328,49 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
     setTimeout(() => setToast(null), 3000);
   };
 
+  // WALK2-2 (Phase 2): ONE deliberate action to go live. A non-technical user
+  // shouldn't have to learn "save, then publish" — publishing saves any pending
+  // drafts first, then deploys, in a single press. Nothing auto-deploys; the user
+  // still chooses to publish (confirm dialog). The /save and /deploy endpoints are
+  // unchanged — this only orchestrates them client-side.
+  const publishNow = async () => {
+    setDeployConfirm(false);
+    setDeploying(true);
+    if (detail.draftCount > 0) {
+      setToast("Sichere Änderungen …");
+      const ok = await detail.saveSession();
+      if (!ok) {
+        setDeploying(false);
+        setToast("Konnte nicht sichern — erneut?");
+        setTimeout(() => setToast(null), 5000);
+        return;
+      }
+      reviewsByPathRef.current.clear();
+      setReviewablePaths(new Set());
+    }
+    setToast("Veröffentliche …");
+    const { url, error, deploymentUrl, aliasUrl } = await detail.deploySession((msg) => setToast(msg));
+    setDeploying(false);
+    setDeployDebug({ deploymentUrl, aliasUrl });
+    if (url) {
+      setLiveUrl(url);
+      setLiveDismissed(false);
+      setToast(null);
+    } else {
+      const msg = (error ?? "Veröffentlichen fehlgeschlagen").replace(/^NO_VERCEL_TOKEN —\s*/, "");
+      setToast(msg);
+      setTimeout(() => setToast(null), 8000);
+    }
+  };
+
   // ── Status line state ──
   const state = detail.aggregateState;
   const canSave = detail.draftCount > 0;
-  const canDeploy = detail.files.length > 0 && detail.draftCount === 0;
+  // Phase 2: publish is the single primary action — reachable whenever there are
+  // files (it saves pending drafts first), not gated behind a separate save step.
+  const canPublish = detail.files.length > 0;
+  const hasUnpublished = detail.draftCount > 0;
+  const lastDeployedRel = relTimeShort(detail.deployedAt);
 
   const editorFilename = liveBlock ? liveBlock.path : (detail.activeFile?.path ?? "index.html");
 
@@ -518,7 +564,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
         {liveUrl && !liveDismissed && (
           <div style={{ flexShrink: 0, borderTop: "1px solid var(--ed-rule)", background: "var(--ed-canvas)", padding: "10px 14px", display: "flex", alignItems: "center", gap: 10 }}>
             <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#6db97b", flexShrink: 0 }} />
-            <span style={{ fontSize: 11, fontWeight: 600, color: "var(--ed-fg-3)", fontFamily: "var(--font-sans)", textTransform: "uppercase", letterSpacing: "0.06em", flexShrink: 0 }}>Live</span>
+            <span style={{ fontSize: 11, fontWeight: 600, color: "var(--ed-fg-3)", fontFamily: "var(--font-sans)", textTransform: "uppercase", letterSpacing: "0.06em", flexShrink: 0 }}>Live{lastDeployedRel ? ` · aktualisiert ${lastDeployedRel}` : ""}</span>
             <a href={liveUrl} target="_blank" rel="noopener noreferrer" title={liveUrl} style={{ flex: 1, minWidth: 0, color: "var(--ed-accent)", fontFamily: "JetBrains Mono, monospace", fontSize: 12, textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {liveUrl.replace(/^https?:\/\//, "")}
             </a>
@@ -587,11 +633,22 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
         {/* Status line + the two-step Sichern → Veröffentlichen */}
         <div className="gb-actbar" style={{ flexShrink: 0, borderTop: "1px solid var(--ed-rule)", background: "var(--ed-chrome)", padding: "10px 14px", display: "flex", alignItems: "center", gap: 12 }}>
           {projectId && <SessionGitPill projectId={projectId} />}
-          <span className="gb-statusline" style={{ fontSize: 12, color: "var(--ed-fg-3)", fontFamily: "var(--font-sans)", flex: 1 }}>
-            {state === "draft" && "Entwurf · nichts wird veröffentlicht, bis du sicherst"}
-            {state === "saved" && "Gesichert · bereit zum Veröffentlichen"}
-            {state === "deployed" && "Veröffentlicht"}
-            {state === "empty" && "Noch keine Dateien"}
+          <span className="gb-statusline" style={{ fontSize: 12, fontFamily: "var(--font-sans)", flex: 1, display: "inline-flex", alignItems: "center", gap: 7, minWidth: 0 }}>
+            {state === "empty" ? (
+              <span style={{ color: "var(--ed-fg-3)" }}>Noch keine Dateien</span>
+            ) : hasUnpublished ? (
+              <>
+                <span style={{ width: 8, height: 8, borderRadius: "50%", border: "1.5px solid var(--ed-draft)", flexShrink: 0 }} />
+                <span style={{ color: "var(--ed-fg-2)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Nicht veröffentlichte Änderungen</span>
+              </>
+            ) : detail.deployedAt ? (
+              <>
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#6db97b", flexShrink: 0 }} />
+                <span style={{ color: "var(--ed-fg-3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Live{lastDeployedRel ? ` · zuletzt aktualisiert ${lastDeployedRel}` : ""}</span>
+              </>
+            ) : (
+              <span style={{ color: "var(--ed-fg-3)" }}>Gesichert · bereit zum Veröffentlichen</span>
+            )}
           </span>
           <button
             className="gb-icon-btn"
@@ -614,15 +671,16 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
           <button
             className="gb-icon-btn"
             onClick={() => setDeployConfirm(true)}
-            disabled={!canDeploy || deploying}
-            title={canDeploy ? "Veröffentlichen" : "Erst alle Entwürfe sichern"}
+            disabled={!canPublish || deploying}
+            title={hasUnpublished ? "Sichern + Veröffentlichen" : "Veröffentlichen"}
             aria-label="Veröffentlichen"
             style={{
               display: "inline-flex", alignItems: "center", gap: 6,
-              background: "transparent", color: canDeploy ? "var(--ed-accent)" : "var(--ed-fg-3)",
-              border: `1px solid ${canDeploy ? "var(--ed-accent)" : "var(--ed-rule)"}`,
+              background: canPublish ? "var(--ed-primary)" : "transparent",
+              color: canPublish ? "var(--ed-on-primary)" : "var(--ed-fg-3)",
+              border: canPublish ? "none" : "1px solid var(--ed-rule)",
               borderRadius: 9, padding: "8px 14px", fontSize: 13, fontWeight: 600,
-              cursor: canDeploy && !deploying ? "pointer" : "not-allowed", fontFamily: "var(--font-sans)",
+              cursor: canPublish && !deploying ? "pointer" : "not-allowed", fontFamily: "var(--font-sans)",
             }}
           >
             {deploying ? <GoblinLogo state="working" size={14} variant="gold" /> : <Icon name="play" size={14} />} <span className="gb-btn-lbl">Veröffentlichen</span>
@@ -637,11 +695,13 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
           <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "var(--ed-chrome-2)", border: "1px solid var(--ed-rule)", borderRadius: 14, padding: "22px 24px", zIndex: 81, minWidth: 320, maxWidth: 380, boxShadow: "0 16px 40px rgba(15,43,30,0.28)" }}>
             <div style={{ fontSize: 16, fontWeight: 600, color: "var(--ed-fg-1)", fontFamily: "var(--font-sans)", marginBottom: 8 }}>Veröffentlichen?</div>
             <div style={{ fontSize: 13, lineHeight: 1.55, color: "var(--ed-fg-3)", fontFamily: "var(--font-sans)", marginBottom: 18 }}>
-              Das baut dein Projekt und stellt es unter einer öffentlichen URL bereit. Du kannst vorher in Ruhe sichern und ansehen.
+              {hasUnpublished
+                ? "Goblin sichert deine Änderungen und stellt sie live — unter derselben Adresse wie bisher. Nichts geht automatisch online; du entscheidest."
+                : "Goblin baut dein Projekt und stellt es unter derselben öffentlichen Adresse bereit."}
             </div>
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
               <button onClick={() => setDeployConfirm(false)} style={{ background: "transparent", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-2)", borderRadius: 9, padding: "9px 16px", fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "var(--font-sans)" }}>Abbrechen</button>
-              <button onClick={runDeploy} style={{ background: "var(--ed-primary)", border: "none", color: "var(--ed-on-primary)", borderRadius: 9, padding: "9px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-sans)", display: "inline-flex", alignItems: "center", gap: 7 }}><Icon name="play" size={14} /> Veröffentlichen</button>
+              <button onClick={publishNow} style={{ background: "var(--ed-primary)", border: "none", color: "var(--ed-on-primary)", borderRadius: 9, padding: "9px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-sans)", display: "inline-flex", alignItems: "center", gap: 7 }}><Icon name="play" size={14} /> Veröffentlichen</button>
             </div>
           </div>
         </>
@@ -695,6 +755,20 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
       )}
     </div>
   );
+}
+
+// WALK2-2: compact relative time for "Live · zuletzt aktualisiert vor Xs".
+function relTimeShort(iso: string | null | undefined): string | null {
+  if (!iso) return null;
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return null;
+  const s = Math.max(0, Math.round((Date.now() - t) / 1000));
+  if (s < 60) return `vor ${s}s`;
+  const m = Math.round(s / 60);
+  if (m < 60) return `vor ${m}min`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `vor ${h}h`;
+  return `vor ${Math.round(h / 24)}d`;
 }
 
 function StateBadge({ state }: { state: "draft" | "saved" | "deployed" | "empty" }) {

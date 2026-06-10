@@ -22,6 +22,7 @@ import { HelpCenterPage } from './HelpCenterPage';
 import { ModelsPage } from './ModelsPage';
 import { useUser } from '@/lib/hooks/useUser';
 import { useAuth } from '@/lib/hooks/useAuth';
+import { useApp } from '@/contexts/app-context';
 
 const I = {
   Dollar: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 9.5c0-1 1-2 3-2s3 1 3 2-1 1.5-3 2-3 1-3 2 1 2 3 2 3-1 3-2"/></svg>,
@@ -48,6 +49,7 @@ export function SettingsRoot() {
   const user = useUser();
   const { signOut } = useAuth();
   const { push } = useSheetStack();
+  const { settingsInitialItem, setSettingsInitialItem } = useApp();
   const [hapticEnabled, setHapticEnabled] = useState<boolean>(true);
   const [appearance, setAppearance] = useState<Appearance>('System');
 
@@ -57,6 +59,35 @@ export function SettingsRoot() {
     if (stored === 'light') setAppearance('Hell');
     else if (stored === 'dark') setAppearance('Dunkel');
     else setAppearance('System');
+  }, []);
+
+  // WALK2-3 (Phase 3): honour the deep-link section on MOBILE too. The desktop
+  // modal reads the URL hash, but the mobile sheet always opened at the root — so
+  // the GitHub OAuth return (`?settings=connectors&github=connected`) landed on the
+  // settings root instead of the Konnektoren page showing "Verbunden". Push the
+  // deep-linked section onto the stack once on mount, then clear it.
+  useEffect(() => {
+    if (!settingsInitialItem) return;
+    const map: Record<string, [string, React.ReactNode, string]> = {
+      profile: ['profile', <ProfilePage key="p" />, 'Profil'],
+      billing: ['billing', <BillingPage key="b" />, 'Abrechnung'],
+      usage: ['usage', <UsagePage key="u" />, 'Nutzung'],
+      personalization: ['personalization', <PersonalizationPage key="pe" />, 'Personalisierung'],
+      features: ['features', <FeaturesPage key="f" />, 'Funktionen'],
+      connectors: ['connectors', <ConnectorsPage key="c" />, 'Konnektoren'],
+      models: ['models', <ModelsPage key="m" />, 'Modelle'],
+      language: ['language', <LanguagePage key="l" />, 'Eingabesprache'],
+      notifications: ['notifications', <NotificationsPage key="n" />, 'Benachrichtigungen'],
+      privacy: ['privacy', <PrivacyPage key="pr" />, 'Datenschutz'],
+      report: ['report', <ReportProblemPage key="r" />, 'Problem melden'],
+      help: ['help', <HelpCenterPage key="h" />, 'Hilfecenter'],
+      about: ['about', <AboutPage key="a" />, 'Über Goblin'],
+    };
+    const entry = map[settingsInitialItem];
+    setSettingsInitialItem(null);
+    if (entry) push(entry[0], entry[1], entry[2]);
+    // once on mount — the deep-link is a full navigation into the sheet
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleHapticChange = (v: boolean) => {

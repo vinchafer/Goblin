@@ -5,6 +5,7 @@ import { PROJECT_GENERATOR_SYSTEM_PROMPT } from '../prompts/project-generator';
 import { getActiveKey } from './byok-service';
 import { decryptData } from './encryption';
 import { saveFile } from './file-storage';
+import { reconcileBlockPaths } from '../lib/asset-reconcile';
 import { OPENAI_COMPATIBLE, PROVIDER_PRIORITY } from './model-router';
 import type { SSEStreamingApi } from 'hono/streaming';
 
@@ -142,6 +143,15 @@ export async function generateProject(
     }
 
     const result: GenerationResult = JSON.parse(jsonMatch[1] ?? '{}');
+
+    // WALK2-1: prevent the orphan at the source. The model sometimes names the
+    // stylesheet file differently from the `<link href>` it writes into the HTML
+    // (e.g. file `styles.css` but `<link href="style.css">`) — which 404s the
+    // stylesheet and ships an unstyled page. Align each css/js file path to the
+    // asset its HTML actually links before saving.
+    if (Array.isArray(result.files)) {
+      reconcileBlockPaths(result.files, result.files);
+    }
 
     // Save all files
     for (let i = 0; i < result.files.length; i++) {

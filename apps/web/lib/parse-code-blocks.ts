@@ -69,6 +69,37 @@ function resolveFromInfoAndBody(info: string, body: string): { path: string | nu
   return { path, body, lang, inferred };
 }
 
+/**
+ * WALK2-1 mirror of the API helper: the LOCAL stylesheet hrefs / script srcs an
+ * HTML document links, normalised project-relative. Used to reconcile where a
+ * css/js edit is written so the edit lands on the file the page actually loads.
+ */
+export function linkedLocalAssets(html: string): { css: Set<string>; js: Set<string> } {
+  const css = new Set<string>();
+  const js = new Set<string>();
+  const norm = (raw: string): string | null => {
+    let h = raw.trim();
+    if (!h || /^(https?:)?\/\//i.test(h) || h.startsWith('data:') || h.startsWith('#')) return null;
+    h = h.split(/[?#]/)[0]!.replace(/^\.?\//, '');
+    return h || null;
+  };
+  const linkRe = /<link\b[^>]*>/gi;
+  let m: RegExpExecArray | null;
+  while ((m = linkRe.exec(html)) !== null) {
+    const tag = m[0];
+    if (!/rel\s*=\s*["']?[^"'>]*stylesheet/i.test(tag)) continue;
+    const href = tag.match(/href\s*=\s*["']([^"']+)["']/i)?.[1];
+    const n = href ? norm(href) : null;
+    if (n && /\.s?css$/i.test(n)) css.add(n);
+  }
+  const scriptRe = /<script\b[^>]*\bsrc\s*=\s*["']([^"']+)["'][^>]*>/gi;
+  while ((m = scriptRe.exec(html)) !== null) {
+    const n = norm(m[1]!);
+    if (n && /\.m?js$/i.test(n)) js.add(n);
+  }
+  return { css, js };
+}
+
 export function parseCodeBlocks(text: string): ParsedBlock[] {
   if (!text) return [];
   const blocks: ParsedBlock[] = [];

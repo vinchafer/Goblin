@@ -87,10 +87,23 @@ export function SessionModelPicker({ value, onChange, variant = "compact" }: Pro
   const label = current?.name ?? (value ? value : "Modell wählen");
 
   return (
-    <div ref={ref} style={{ position: "relative" }}>
+    <div ref={ref} style={{ position: "relative" }} className="gb-model-picker">
+      {/* WALK2-4 (Phase 4): when the composer is constrained (split-screen / narrow
+          pane), collapse to an icon-only chip beside Send — the full-screen editor
+          (wide container) keeps the labelled button. Container-query driven so it
+          adapts to the editor PANE width, not just the viewport. */}
+      <style>{`
+        @container gb-composer (max-width: 360px) {
+          .gb-model-picker .gb-mp-label, .gb-model-picker .gb-mp-chev { display: none; }
+          .gb-model-picker .gb-mp-btn { padding: 6px 8px; }
+        }
+      `}</style>
       <button
         type="button"
         onClick={() => setOpen(o => !o)}
+        title={label}
+        aria-label={`Modell: ${label}`}
+        className="gb-mp-btn"
         style={{
           display: "inline-flex", alignItems: "center", gap: 6,
           background: "transparent", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-2)",
@@ -99,8 +112,8 @@ export function SessionModelPicker({ value, onChange, variant = "compact" }: Pro
         }}
       >
         <Icon name="model" size={13} />
-        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
-        <Icon name={open ? "collapse" : "expand"} size={11} />
+        <span className="gb-mp-label" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
+        <Icon name={open ? "collapse" : "expand"} size={11} className="gb-mp-chev" />
       </button>
 
       {open && (

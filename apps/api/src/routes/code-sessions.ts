@@ -7,6 +7,7 @@ import { streamCompletion } from '../services/model-router';
 import { uploadFile, listFiles, getFile } from '../services/file-storage';
 import { deployToVercel } from '../services/vercel-service';
 import { parseCodeBlocks } from '../lib/parse-code-blocks';
+import { reconcileBlockPaths } from '../lib/asset-reconcile';
 import logger from '../lib/logger';
 
 type Variables = { userId: string };
@@ -450,6 +451,15 @@ codeSessions.post('/:sessionId/messages', async (c) => {
           }
         }
       }
+
+      // WALK2-1 (P0, deploy-stale root cause): a css/js edit must land on the
+      // asset the page actually loads. The generator emitted `index.html` linking
+      // `style.css` while css blocks are named `styles.css` (LANG_EXT default) —
+      // so every css edit wrote to an UNLINKED sibling, the linked `style.css`
+      // 404'd, and the live page stayed unstyled (founder: "blau" never goes live;
+      // proven on real bytes, DEPLOY_TRACE_2). Reconcile the block path to the file
+      // the HTML links. Self-heals existing projects on the next edit.
+      reconcileBlockPaths(blocks, (existingFiles ?? []).map(f => ({ path: f.path, content: f.content })));
 
       const draftFiles: Array<{ path: string; content: string }> = [];
       if (blocks.length === 0 && full.trim()) {
