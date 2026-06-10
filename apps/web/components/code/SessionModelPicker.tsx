@@ -15,8 +15,9 @@ interface ModelOpt {
 interface Props {
   value: string | null;
   onChange: (slug: string) => void;
-  /** compact = chip in the composer; full = wider button */
-  variant?: "compact" | "full";
+  /** compact = chip in the composer; full = wider button; icon = icon-only (label
+   *  via title), for the constrained composer where it sits next to Send. */
+  variant?: "compact" | "full" | "icon";
 }
 
 let _cache: ModelOpt[] | null = null;
@@ -105,22 +106,29 @@ export function SessionModelPicker({ value, onChange, variant = "compact" }: Pro
         aria-label={`Modell: ${label}`}
         className="gb-mp-btn"
         style={{
-          display: "inline-flex", alignItems: "center", gap: 6,
+          display: "inline-flex", alignItems: "center", gap: variant === "icon" ? 0 : 6,
           background: "transparent", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-2)",
-          borderRadius: 8, padding: variant === "compact" ? "5px 9px" : "7px 12px",
+          borderRadius: 8,
+          padding: variant === "icon" ? "8px" : variant === "compact" ? "5px 9px" : "7px 12px",
           fontSize: 12, fontFamily: "var(--font-sans)", cursor: "pointer", maxWidth: 200,
+          flexShrink: 0,
         }}
       >
-        <Icon name="model" size={13} />
-        <span className="gb-mp-label" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
-        <Icon name={open ? "collapse" : "expand"} size={11} className="gb-mp-chev" />
+        <Icon name="model" size={variant === "icon" ? 16 : 13} />
+        {variant !== "icon" && (
+          <>
+            <span className="gb-mp-label" style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
+            <Icon name={open ? "collapse" : "expand"} size={11} className="gb-mp-chev" />
+          </>
+        )}
       </button>
 
       {open && (
         <div
           role="listbox"
           style={{
-            position: "absolute", bottom: "calc(100% + 6px)", left: 0, zIndex: 60,
+            position: "absolute", bottom: "calc(100% + 6px)", zIndex: 60,
+            ...(variant === "icon" ? { right: 0 } : { left: 0 }),
             minWidth: 240, maxHeight: "min(50vh, 340px)", overflowY: "auto",
             WebkitOverflowScrolling: "touch", overscrollBehavior: "contain",
             background: "var(--ed-chrome-2)", border: "1px solid var(--ed-rule)", borderRadius: 10,

@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   FileCode, FileJson, FileText, Image as ImageIcon, Palette, File as FileIcon,
   Folder, ChevronRight, Upload, Download, Trash2, ArrowLeft, X,
-  Pencil, FolderPlus, FilePlus,
+  Pencil, FolderPlus, FilePlus, MoreVertical, Copy, Share2, FolderInput, Code2,
 } from "lucide-react";
 import { API_URL, getToken } from "@/hooks/code/getToken";
 
@@ -62,7 +62,18 @@ export function FileExplorer({ projectId, projectName }: Props) {
   // Name prompt for rename / new file / new folder (Slice 6).
   const [namePrompt, setNamePrompt] = useState<{ kind: "rename" | "newfile" | "newfolder"; from?: string; value: string } | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [menuFor, setMenuFor] = useState<string | null>(null);   // WALK3-3.2: per-file ⋮ menu
   const fileInput = useRef<HTMLInputElement>(null);
+
+  // Close the ⋮ menu on any outside click / escape.
+  useEffect(() => {
+    if (!menuFor) return;
+    const close = () => setMenuFor(null);
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setMenuFor(null); };
+    document.addEventListener("click", close);
+    document.addEventListener("keydown", onKey);
+    return () => { document.removeEventListener("click", close); document.removeEventListener("keydown", onKey); };
+  }, [menuFor]);
 
   const authFetch = useCallback(async (path: string, init?: RequestInit) => {
     const t = await getToken();
@@ -140,6 +151,36 @@ export function FileExplorer({ projectId, projectName }: Props) {
       URL.revokeObjectURL(url);
     } catch { flash("Download fehlgeschlagen"); }
   }, [authFetch, projectId]);
+
+  // WALK3-3.2: fetch a text file's content (for copy / share). Returns null for
+  // non-text or on error.
+  const fetchText = useCallback(async (path: string): Promise<string | null> => {
+    if (!TEXT_EXT.has(ext(path))) return null;
+    try {
+      const r = await authFetch(`/api/projects/${projectId}/files/${path.split("/").map(encodeURIComponent).join("/")}`);
+      const d = await r.json();
+      return typeof d.content === "string" ? d.content : null;
+    } catch { return null; }
+  }, [authFetch, projectId]);
+
+  const copyContent = useCallback(async (path: string) => {
+    const text = await fetchText(path);
+    if (text == null) { flash("Nur Textdateien können kopiert werden"); return; }
+    try { await navigator.clipboard.writeText(text); flash("Inhalt kopiert"); }
+    catch { flash("Kopieren fehlgeschlagen"); }
+  }, [fetchText]);
+
+  const shareFile = useCallback(async (path: string) => {
+    const name = path.split("/").pop() ?? path;
+    const text = await fetchText(path);
+    // Prefer the native share sheet (mobile); fall back to clipboard.
+    const nav = navigator as Navigator & { share?: (d: { title?: string; text?: string }) => Promise<void> };
+    if (nav.share) {
+      try { await nav.share({ title: name, text: text ?? name }); return; } catch { /* cancelled */ return; }
+    }
+    if (text != null) { try { await navigator.clipboard.writeText(text); flash("Zum Teilen kopiert"); return; } catch { /* */ } }
+    flash("Teilen wird hier nicht unterstützt");
+  }, [fetchText]);
 
   const doDelete = useCallback(async (path: string) => {
     setConfirmDel(null); setBusy(true);
@@ -271,6 +312,19 @@ export function FileExplorer({ projectId, projectName }: Props) {
             </div>
           ) : (
             <div>
+              {/* WALK3-3.3: column header. Storage (S3) only exposes size + last-
+                  modified per object — "Erstellt" and "Zuletzt committed/gepusht"
+                  aren't tracked per file yet (would need a DB index), so we label
+                  the columns we can fill honestly rather than fake dates. */}
+              <div style={{ ...row, position: "sticky", top: 0, zIndex: 1, background: "var(--d-surface)", borderBottom: "1px solid var(--line)" }}>
+                <div style={{ ...rowInner, padding: "8px 0", cursor: "default" }}>
+                  <span style={{ width: 17, flexShrink: 0 }} />
+                  <span style={{ flex: 1, textAlign: "left", fontFamily: "JetBrains Mono, monospace", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-3)" }}>Name</span>
+                  <span style={{ width: 64, textAlign: "right", fontFamily: "JetBrains Mono, monospace", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-3)" }}>Grösse</span>
+                  <span style={{ width: 96, textAlign: "right", fontFamily: "JetBrains Mono, monospace", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-3)" }}>Bearbeitet</span>
+                </div>
+                <span style={{ width: 28, flexShrink: 0 }} />
+              </div>
               {folders.map((f) => (
                 <div key={"d" + f} style={row}>
                   <button onClick={() => { setCwd(cwd ? `${cwd}/${f}` : f); setSelected(null); setPreview(null); }} style={rowInner}>
@@ -286,16 +340,38 @@ export function FileExplorer({ projectId, projectName }: Props) {
                 const Ico = iconFor(name);
                 const isSel = selected === file.path;
                 return (
-                  <div key={file.path} style={{ ...row, background: isSel ? "var(--d-surface-elev)" : "transparent" }}>
+                  <div key={file.path} style={{ ...row, position: "relative", background: isSel ? "var(--d-surface-elev)" : "transparent" }}>
                     <button onClick={() => openFile(file.path)} style={{ ...rowInner }}>
                       <Ico size={17} style={{ color: "var(--ink-2)", flexShrink: 0 }} />
                       <span style={{ flex: 1, textAlign: "left", color: "var(--ink-1)", fontSize: 13.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
-                      <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 11, color: "var(--ink-3)", flexShrink: 0 }}>{fmtSize(file.size)}</span>
-                      <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 11, color: "var(--ink-3)", flexShrink: 0, minWidth: 64, textAlign: "right" }}>{ago(file.modified)}</span>
+                      <span className="gb-fx-col-size" style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 11, color: "var(--ink-3)", flexShrink: 0, width: 64, textAlign: "right" }}>{fmtSize(file.size)}</span>
+                      <span className="gb-fx-col-mod" style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 11, color: "var(--ink-3)", flexShrink: 0, width: 96, textAlign: "right" }}>{ago(file.modified)}</span>
                     </button>
-                    <button onClick={() => setNamePrompt({ kind: "rename", from: file.path, value: name })} title="Umbenennen / verschieben" style={iconBtn}><Pencil size={14} /></button>
-                    <button onClick={() => download(file.path)} title="Herunterladen" style={iconBtn}><Download size={14} /></button>
-                    <button onClick={() => setConfirmDel(file.path)} title="Löschen" style={{ ...iconBtn, color: "var(--danger)" }}><Trash2 size={14} /></button>
+                    {/* WALK3-3.2: per-file overflow menu (was: 3 fixed icons). */}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setMenuFor(menuFor === file.path ? null : file.path); }}
+                      title="Aktionen" aria-label="Datei-Aktionen" style={iconBtn}
+                    ><MoreVertical size={16} /></button>
+                    {menuFor === file.path && (
+                      <div
+                        onClick={(e) => e.stopPropagation()}
+                        role="menu"
+                        style={{
+                          position: "absolute", top: "100%", right: 12, zIndex: 70, minWidth: 210,
+                          background: "var(--d-surface-elev)", border: "1px solid var(--line)", borderRadius: 10,
+                          boxShadow: "0 12px 32px rgba(0,0,0,0.18)", padding: 5,
+                        }}
+                      >
+                        <Link href={`/dashboard/project/${projectId}/work?tab=code&file=${encodeURIComponent(file.path)}`} style={menuItem} role="menuitem"><Code2 size={14} /> Im Editor öffnen</Link>
+                        <button onClick={() => { setMenuFor(null); copyContent(file.path); }} style={menuItem} role="menuitem"><Copy size={14} /> Kopieren</button>
+                        <button onClick={() => { setMenuFor(null); shareFile(file.path); }} style={menuItem} role="menuitem"><Share2 size={14} /> Teilen</button>
+                        <button onClick={() => { setMenuFor(null); setNamePrompt({ kind: "rename", from: file.path, value: name }); }} style={menuItem} role="menuitem"><Pencil size={14} /> Umbenennen</button>
+                        <button onClick={() => { setMenuFor(null); setNamePrompt({ kind: "rename", from: file.path, value: file.path }); }} style={menuItem} role="menuitem" title="Pfad bearbeiten = in einen Ordner verschieben"><FolderInput size={14} /> Verschieben</button>
+                        <button onClick={() => { setMenuFor(null); download(file.path); }} style={menuItem} role="menuitem"><Download size={14} /> Download</button>
+                        <div style={{ height: 1, background: "var(--line)", margin: "4px 0" }} />
+                        <button onClick={() => { setMenuFor(null); setConfirmDel(file.path); }} style={{ ...menuItem, color: "var(--danger)" }} role="menuitem"><Trash2 size={14} /> Löschen</button>
+                      </div>
+                    )}
                   </div>
                 );
               })}
@@ -404,3 +480,4 @@ const crumbBtn: React.CSSProperties = { background: "transparent", border: "none
 const row: React.CSSProperties = { display: "flex", alignItems: "center", gap: 4, padding: "2px 12px 2px 18px", borderBottom: "1px solid var(--line)" };
 const rowInner: React.CSSProperties = { flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 12, padding: "10px 0", background: "transparent", border: "none", cursor: "pointer" };
 const iconBtn: React.CSSProperties = { display: "inline-flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", color: "var(--ink-2)", cursor: "pointer", padding: 6, flexShrink: 0 };
+const menuItem: React.CSSProperties = { display: "flex", alignItems: "center", gap: 9, width: "100%", textAlign: "left", background: "transparent", border: "none", color: "var(--ink-1)", cursor: "pointer", padding: "9px 11px", fontSize: 13, fontFamily: "var(--font-sans)", borderRadius: 7, textDecoration: "none", boxSizing: "border-box" };

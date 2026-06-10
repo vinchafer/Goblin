@@ -132,9 +132,12 @@ github.get('/callback', async (c) => {
     const sep = safeReturnTo.includes('?') ? '&' : '?';
     return c.redirect(`${process.env.NEXT_PUBLIC_APP_URL}${safeReturnTo}${sep}github=connected`);
   } catch (err) {
-    logger.warn({ stateValid: true, tokenExchanged: false, err: err instanceof Error ? err.message : String(err) }, 'github_callback');
+    // WALK3-1: surface WHY (GitHub's machine code) so a stale secret / missing env
+    // is diagnosable from the URL + logs, not a silent "settings reopened".
+    const reason = (err as { code?: string })?.code || 'unknown';
+    logger.warn({ stateValid: true, tokenExchanged: false, reason, err: err instanceof Error ? err.message : String(err) }, 'github_callback');
     const sep = safeReturnTo.includes('?') ? '&' : '?';
-    return c.redirect(`${process.env.NEXT_PUBLIC_APP_URL}${safeReturnTo}${sep}error=github_failed`);
+    return c.redirect(`${process.env.NEXT_PUBLIC_APP_URL}${safeReturnTo}${sep}error=github_failed&reason=${encodeURIComponent(reason)}`);
   }
 });
 

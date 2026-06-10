@@ -38,6 +38,7 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
   const [showTour, setShowTour] = useState(false);
   const [cmdPaletteOpen, setCmdPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
+  const [githubMsg, setGithubMsg] = useState<{ ok: boolean; text: string } | null>(null);
   const { activeTab, setActiveTab, injectionCount, showNewProjectModal, setShowNewProjectModal, newProjectIdea, setNewProjectIdea, previewUrl: contextPreviewUrl, setShowSettingsSheet, showSettingsSheet, settingsInitialItem, setSettingsInitialItem, chatProjectId } = useApp();
   const pathname = usePathname();
   const router = useRouter();
@@ -146,6 +147,37 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
     params.delete('settings');
     const qs = params.toString();
     window.history.replaceState(null, '', window.location.pathname + (qs ? `?${qs}` : '') + window.location.hash);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // WALK3-1: GitHub OAuth return — surface the outcome instead of silently
+  // reopening settings. `?github=connected` → success; `?error=github_failed
+  // &reason=…` → a real error the founder can act on (e.g. missing_server_
+  // credentials → set the Railway secret), not a mysterious "it just refreshed".
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const connected = params.get('github') === 'connected';
+    const err = params.get('error');
+    if (!connected && !(err && err.startsWith('github'))) return;
+    if (connected) {
+      setGithubMsg({ ok: true, text: 'GitHub verbunden ✓' });
+    } else {
+      const reason = params.get('reason') || '';
+      const human: Record<string, string> = {
+        missing_server_credentials: 'Server-Zugangsdaten fehlen (Railway-Env).',
+        incorrect_client_credentials: 'Falsches GitHub Client-Secret (Railway-Env).',
+        bad_verification_code: 'Code abgelaufen — bitte erneut verbinden.',
+        redirect_uri_mismatch: 'Callback-URL stimmt nicht mit der GitHub-App überein.',
+        github_oauth_expired: 'Sitzung abgelaufen — bitte erneut verbinden.',
+        user_lookup_failed: 'GitHub-Konto konnte nicht gelesen werden.',
+      };
+      setGithubMsg({ ok: false, text: `GitHub-Verbindung fehlgeschlagen${reason ? `: ${human[reason] ?? reason}` : ''}` });
+    }
+    params.delete('github'); params.delete('error'); params.delete('reason');
+    const qs = params.toString();
+    window.history.replaceState(null, '', window.location.pathname + (qs ? `?${qs}` : '') + window.location.hash);
+    const t = setTimeout(() => setGithubMsg(null), 7000);
+    return () => clearTimeout(t);
     // run once on mount — the OAuth redirect is a full navigation
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -237,6 +269,26 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
           onClose={() => { setShowNewProjectModal(false); setNewProjectIdea(''); }}
           initialIdea={newProjectIdea || undefined}
         />
+      )}
+
+      {/* WALK3-1: GitHub OAuth outcome toast — replaces the silent "settings just
+          reopened" with a legible success / actionable failure. */}
+      {githubMsg && (
+        <div
+          role="status"
+          onClick={() => setGithubMsg(null)}
+          style={{
+            position: "fixed", left: "50%", bottom: 24, transform: "translateX(-50%)",
+            zIndex: 1000, maxWidth: "min(92vw, 460px)", cursor: "pointer",
+            display: "flex", alignItems: "center", gap: 10,
+            padding: "12px 16px", borderRadius: 12,
+            background: githubMsg.ok ? "var(--brand-green, #1f5c3a)" : "var(--danger, #B0432A)",
+            color: "#fff", fontFamily: "var(--font-sans)", fontSize: 13.5, fontWeight: 500,
+            boxShadow: "0 10px 32px rgba(15,43,30,0.32)",
+          }}
+        >
+          {githubMsg.text}
+        </div>
       )}
     </div>
   );

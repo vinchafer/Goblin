@@ -109,17 +109,33 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
     deployUrlItems = [{ url: project.preview_url, ago: project.last_active ? timeAgoDe(project.last_active) : '', live: true }];
   }
 
-  // Unified activity feed — merge chat turns + deploys, newest first. (Code-session
-  // + file-save events fold in once migration 0055 is live; omitted gracefully now.)
-  type ActivityItem = { id: string; kind: 'chat' | 'deploy'; text: string; created_at: string };
+  // WALK3-4: real activity feed. The old feed read `chat_messages` (legacy table,
+  // empty for projects built via the new standalone/code chat) + `build_runs` (also
+  // empty — deploys live in `deployments`), so it always showed "nothing happened"
+  // even on busy projects. Rebuild from the tables that actually carry events:
+  // publishes (deployments / build_runs), code sessions, and chats — all real DB
+  // rows, nothing fabricated. Newest first, top 8.
+  type ActivityItem = { id: string; kind: 'chat' | 'deploy' | 'code'; text: string; created_at: string };
   const activity: ActivityItem[] = [
-    ...messages.map((m) => ({
-      id: 'm' + m.id, kind: 'chat' as const, created_at: m.created_at,
-      text: `${m.role === 'user' ? 'Du' : 'Goblin'}: ${m.content.replace(/```[\s\S]*?```/g, '[Code-Block]').slice(0, 140)}`,
+    ...(depRows ?? []).map((d) => ({
+      id: 'dep' + d.id, kind: 'deploy' as const, created_at: d.created_at,
+      text: 'Veröffentlicht — live aktualisiert',
     })),
     ...deploys.map((d) => ({
       id: 'd' + d.id, kind: 'deploy' as const, created_at: d.created_at,
       text: `Veröffentlicht${d.status ? ` · ${String(d.status).toUpperCase()}` : ''}`,
+    })),
+    ...((sessionsRes.data as Array<{ id: string; name: string | null; updated_at: string }> | null) ?? []).map((s) => ({
+      id: 's' + s.id, kind: 'code' as const, created_at: s.updated_at,
+      text: `Code-Session: ${s.name?.trim() || 'Session'}`,
+    })),
+    ...((chatsRes.data as Array<{ id: string; title: string | null; updated_at: string }> | null) ?? []).map((c) => ({
+      id: 'c' + c.id, kind: 'chat' as const, created_at: c.updated_at,
+      text: `Chat: ${c.title?.trim() || 'Unbenannter Chat'}`,
+    })),
+    ...messages.map((m) => ({
+      id: 'm' + m.id, kind: 'chat' as const, created_at: m.created_at,
+      text: `${m.role === 'user' ? 'Du' : 'Goblin'}: ${m.content.replace(/```[\s\S]*?```/g, '[Code-Block]').slice(0, 140)}`,
     })),
   ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 8);
 
@@ -281,13 +297,15 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                   }}>
                     Aktivität
                   </h2>
-                  <Link href={`/dashboard/project/${id}/work?tab=chat`} style={{
+                  {/* WALK3-4: the old "Chat öffnen" CTA didn't fit (chat is reached
+                      from the header / sessions card). A neutral recency hint instead. */}
+                  <span style={{
                     fontFamily: 'JetBrains Mono, monospace', fontSize: 10,
                     letterSpacing: '0.14em', textTransform: 'uppercase',
-                    color: 'var(--ink-3)', textDecoration: 'none',
+                    color: 'var(--ink-3)',
                   }}>
-                    CHAT ÖFFNEN →
-                  </Link>
+                    {activity.length > 0 ? 'ZULETZT' : ''}
+                  </span>
                 </div>
                 {activity.length === 0 ? (
                   <div style={{ padding: '20px 18px', fontSize: 13.5, color: 'var(--ink-3)' }}>
@@ -340,23 +358,22 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                   }}>
                     Dateien
                   </h2>
-                  <Link href={`/dashboard/project/${id}/files`} style={{
+                  {/* WALK3-3.1: Explorer is the primary action (big button below).
+                      The Editor is the small, secondary top-right link. */}
+                  <Link href={`/dashboard/project/${id}/work?tab=code`} style={{
                     fontFamily: 'JetBrains Mono, monospace', fontSize: 10,
                     letterSpacing: '0.14em', textTransform: 'uppercase',
                     color: 'var(--ink-3)', textDecoration: 'none',
                   }}>
-                    EXPLORER ÖFFNEN →
+                    EDITOR ÖFFNEN →
                   </Link>
                 </div>
                 <div style={{ padding: '16px 18px', display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'flex-start' }}>
                   <span style={{ fontSize: 13, color: 'var(--ink-3)', lineHeight: 1.5 }}>
                     Durchsuche, lade hoch und verwalte alle Projektdateien.
                   </span>
-                  {/* WALK3-B.2: the top-right "EXPLORER ÖFFNEN →" already opens the
-                      explorer — the bottom row duplicated it. One clear action each:
-                      keep the contextual "Editor öffnen" here, drop the dup explorer. */}
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    <Link href={`/dashboard/project/${id}/work?tab=code`} className="gobl-btn primary">Editor öffnen</Link>
+                    <Link href={`/dashboard/project/${id}/files`} className="gobl-btn primary lg">Explorer öffnen</Link>
                   </div>
                 </div>
               </div>

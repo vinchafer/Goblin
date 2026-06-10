@@ -607,6 +607,10 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
           }}
           style={{ flexShrink: 0, borderTop: "1px solid var(--ed-rule)", background: "var(--ed-chrome)", padding: "8px 12px", display: "flex", flexDirection: "column", gap: 8 }}
         >
+          {/* WALK3-2: this composer only renders ≤860px (the constrained / split /
+              mobile view; >860 uses the threaded SessionPromptInput). The model
+              picker used to eat a full row below the input — wasteful. Collapse it
+              to an icon sitting right next to Send; tapping it opens the same picker. */}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <input
               value={askText}
@@ -616,6 +620,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
               disabled={agent.streaming}
               style={{ flex: 1, minWidth: 0, background: "var(--ed-canvas)", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-1)", borderRadius: 9, padding: "10px 12px", fontSize: 14, fontFamily: "var(--font-sans)", outline: "none" }}
             />
+            <SessionModelPicker value={session.model_id} onChange={onModelChange} variant="icon" />
             <button
               type="submit"
               disabled={!askText.trim() || agent.streaming}
@@ -624,9 +629,6 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
             >
               {agent.streaming ? <GoblinLogo state="working" size={15} variant="gold" /> : <Icon name="send" size={16} />}
             </button>
-          </div>
-          <div style={{ display: "flex", alignItems: "center" }}>
-            <SessionModelPicker value={session.model_id} onChange={onModelChange} variant="compact" />
           </div>
         </form>
 

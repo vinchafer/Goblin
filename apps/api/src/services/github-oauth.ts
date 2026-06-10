@@ -10,17 +10,40 @@ export function getRedirectUri(): string {
   return `${apiBase}/api/github/callback`;
 }
 
+// Env names are suffixed `_RAILWAY` (the prod host), but a founder may set the
+// bare name — accept both so a name-mismatch can't silently break the exchange.
+function ghClientId(): string {
+  return process.env.GITHUB_CLIENT_ID_RAILWAY || process.env.GITHUB_CLIENT_ID || '';
+}
+function ghClientSecret(): string {
+  return process.env.GITHUB_CLIENT_SECRET_RAILWAY || process.env.GITHUB_CLIENT_SECRET || '';
+}
+
 export function getAuthUrl(state: string): string {
-  const clientId = process.env.GITHUB_CLIENT_ID_RAILWAY!;
+  const clientId = ghClientId();
   const redirectUri = getRedirectUri();
   const scope = 'repo user';
 
   return `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&state=${encodeURIComponent(state)}`;
 }
 
+/** A GitHub OAuth failure carries a short machine code so the callback can surface
+ *  WHY without leaking secrets (e.g. 'incorrect_client_credentials'). */
+export class GitHubOAuthError extends Error {
+  constructor(public code: string, message?: string) {
+    super(message || code);
+    this.name = 'GitHubOAuthError';
+  }
+}
+
 export async function exchangeCodeForToken(code: string): Promise<string> {
-  const clientId = process.env.GITHUB_CLIENT_ID_RAILWAY!;
-  const clientSecret = process.env.GITHUB_CLIENT_SECRET_RAILWAY!;
+  const clientId = ghClientId();
+  const clientSecret = ghClientSecret();
+  if (!clientId || !clientSecret) {
+    // WALK3-1: the most likely prod cause of "GitHub reopens settings" — the
+    // server has no client credentials, so the token exchange can never succeed.
+    throw new GitHubOAuthError('missing_server_credentials', 'GITHUB_CLIENT_ID_RAILWAY / GITHUB_CLIENT_SECRET_RAILWAY not set on the API');
+  }
 
   const response = await fetch('https://github.com/login/oauth/access_token', {
     method: 'POST',
@@ -37,10 +60,12 @@ export async function exchangeCodeForToken(code: string): Promise<string> {
     })
   });
 
-  const data = await response.json() as { access_token?: string; error?: string; error_description?: string };
+  const data = await response.json().catch(() => ({})) as { access_token?: string; error?: string; error_description?: string };
 
   if (!response.ok || data.error || !data.access_token) {
-    throw new Error(data.error_description || data.error || 'GitHub OAuth failed');
+    // data.error is GitHub's machine code, e.g. 'incorrect_client_credentials',
+    // 'bad_verification_code', 'redirect_uri_mismatch'.
+    throw new GitHubOAuthError(data.error || `http_${response.status}`, data.error_description || 'GitHub token exchange failed');
   }
 
   return data.access_token;
@@ -49,10 +74,15 @@ export async function exchangeCodeForToken(code: string): Promise<string> {
 export async function getUsername(accessToken: string): Promise<string> {
   const response = await fetch('https://api.github.com/user', {
     headers: {
-      'Authorization': `Bearer ${accessToken}`
+      'Authorization': `Bearer ${accessToken}`,
+      'Accept': 'application/vnd.github+json',
+      'User-Agent': 'goblin-app',
     }
   });
 
-  const data = await response.json();
+  const data = await response.json().catch(() => ({})) as { login?: string };
+  if (!data.login) {
+    throw new GitHubOAuthError('user_lookup_failed', 'GitHub /user returned no login');
+  }
   return data.login;
 }
