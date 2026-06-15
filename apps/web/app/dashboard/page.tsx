@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
@@ -174,10 +174,15 @@ export default function DashboardPage() {
   const activeCount = projects.filter(p => (p.status ?? 'idle') !== 'archived').length;
 
   // First name only, comma, name last — "Guten Morgen, Vincent" (not the old
-  // "Vincent Hafner Guten Morgen"). Computed once per name resolution so it
-  // stays stable across re-renders within a session.
+  // "Vincent Hafner Guten Morgen").
   const firstName = (displayName ?? 'Du').split(' ')[0]!;
-  const greeting = useMemo(() => buildGreeting(firstName), [firstName]);
+  // WS-C: buildGreeting uses new Date().getHours() + Math.random() — both differ
+  // between the SSR pass and the client, so computing it during render tripped a
+  // hydration mismatch (React #418). Compute it post-mount instead: first paint
+  // renders an empty span on both server and client (no mismatch), then the
+  // effect fills the time-of-day greeting in.
+  const [greeting, setGreeting] = useState('');
+  useEffect(() => { setGreeting(buildGreeting(firstName)); }, [firstName]);
 
   return (
     <div style={{ height: '100%', overflowY: 'auto', background: 'var(--d-surface)' }}>

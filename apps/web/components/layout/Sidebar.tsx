@@ -647,7 +647,7 @@ function RecentChats({ pathname, navigate }: { pathname: string; navigate: (path
                 onMouseEnter={e => (e.currentTarget.style.color = 'var(--brand-green)')}
                 onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-3)')}
               >
-                See all chats →
+                Alle Chats →
               </button>
             )}
           </>
