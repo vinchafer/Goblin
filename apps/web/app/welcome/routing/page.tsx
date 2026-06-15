@@ -3,7 +3,7 @@
 // Step 3 of 6 — "How Goblin works" (Sprint 10.5 A-S6).
 // Reframed around the THREE-LAYER model so a user who only brought a free
 // Groq key understands they DON'T need Claude+Gemini+Groq all at once, and
-// learns what actually differentiates Goblin (Layer 2, Goblin-Hosted, Q1 2027).
+// learns what actually differentiates Goblin (Layer 2, Goblin-bundled, API-first).
 //
 // Onboarding completion still seeds the server-side default fallback chain.
 // Routing can be tuned later in Settings → Routing; no in-flow detour here.

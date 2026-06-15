@@ -24,7 +24,11 @@ const PRICING: Record<string, ModelPrice> = {
 
   // Groq / Llama
   'llama-3.3-70b': { in_per_million: 0.59, out_per_million: 0.79 },
-  'goblin-hosted-llama-3.3-70b': { in_per_million: 0.59, out_per_million: 0.79 },
+
+  // Goblin-bundled (Layer 2, API-first) — wholesale per-token cost basis.
+  // Efficient = Flash-class default; premium = frontier-adjacent upsell.
+  'goblin/efficient': { in_per_million: 0.14, out_per_million: 0.28 },
+  'goblin/premium': { in_per_million: 0.95, out_per_million: 3.48 },
 
   default: { in_per_million: 5.0, out_per_million: 15.0 },
 };

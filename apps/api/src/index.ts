@@ -17,9 +17,11 @@ const REQUIRED_ENV = [
 // Remove GROQ_FREE_API_KEY, GOOGLE_FREE_API_KEY, CEREBRAS_FREE_API_KEY, OPENROUTER_FREE_API_KEY from Railway
 // Users must connect their own API keys (BYOK) — see Settings → API Keys for free-tier recommendations
 
-// Optional env vars for Goblin Hosted GPU (Phase 3)
-// GOBLIN_GPU_ENDPOINT=          # vLLM-compatible endpoint URL
-// GOBLIN_GPU_API_KEY=           # API key for GPU endpoint
+// Optional env vars for Goblin-bundled models (Layer 2, API-first — default off)
+// GOBLIN_HOSTED_API=true        # enable Layer 2
+// GOBLIN_HOSTED_BASE_URL=       # wholesale OpenAI-compatible endpoint
+// GOBLIN_HOSTED_API_KEY=        # server-side wholesale key (secret)
+// See infra/GOBLIN_HOSTED_ACTIVATION.md
 
 const missing = REQUIRED_ENV.filter(key => !process.env[key])
 if (missing.length > 0) {

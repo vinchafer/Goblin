@@ -15,7 +15,7 @@ const QUESTIONS = [
   },
   {
     q: 'What AI models can I use?',
-    a: 'Any model you want, via BYOK (bring your own key). Connect Anthropic, OpenAI, Google, Groq, Mistral, xAI, DeepSeek, and more. Many providers offer generous free tiers — Groq and Google AI Studio are great starting points. Goblin-hosted open-source models (Qwen Coder 14B, Llama 3.3 70B) are coming soon.',
+    a: 'Any model you want, via BYOK (bring your own key). Connect Anthropic, OpenAI, Google, Groq, Mistral, xAI, DeepSeek, and more. Many providers offer generous free tiers — Groq and Google AI Studio are great starting points. Goblin-bundled models — curated open-source-class intelligence, no key required — are coming soon.',
   },
   {
     q: 'What happens after my trial?',

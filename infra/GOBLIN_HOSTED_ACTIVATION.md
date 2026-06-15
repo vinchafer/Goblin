@@ -1,107 +1,104 @@
-# Goblin-Hosted Activation Guide
+# Goblin-bundled (Layer 2) Activation Guide — API-first (v6.1)
 
-**Estimated time: ~1 hour from decision to live**
+**Estimated time: ~30 min from decision to live.** No GPU buildout.
+
+This activates Layer 2 (the Goblin-bundled models) by pointing it at a **wholesale
+per-token inference API** (OpenAI-compatible). The inference key lives server-side —
+the inverse of BYOK. Routed through LiteLLM as a library; no proxy is deployed.
+
+> **Public-surface rule:** never name the wholesale provider on any user-facing
+> surface. Internally it is a swappable backend; to users it is "Goblin-bundled
+> models, no key." The two Goblin-named tiers (`goblin/efficient` default,
+> `goblin/premium` upsell) map to provider model IDs via env, so the provider
+> behind them can change with zero UI change.
+
+---
 
 ## Prerequisites
 
-- Vast.ai account with $30-50 credits
-- Access to Railway dashboard (API env vars)
-- Supabase migration 0035 already applied (goblin_hosted_usage table)
+- A wholesale per-token inference account (DeepInfra/Novita-class), efficient
+  model-class default. **See the founder setup checklist** in
+  `docs/L2_PIVOT_SESSION1_REPORT.md` (account, spend cap, EU endpoint, data policy).
+- Access to Railway dashboard (API env vars) and Vercel (frontend flag).
+- Supabase migration `0067_goblin_hosted_token_rollup.sql` applied (per-user
+  monthly token rollup for the fair-use cap).
 
 ---
 
-## Step 1: Vast.ai Instance Setup (~20 min)
+## Step 1: Provision the wholesale account (~15 min)
 
-1. Go to [vast.ai](https://vast.ai/console/create/) → Create new instance
-2. Select template: **vLLM** (search "vllm" in templates)
-3. Recommended GPU: **RTX 3060 (~$0.10-0.15/h, ~$80/mo max)** for Qwen 14B
-   - More power: **RTX 4090 (~$0.40/h, ~$290/mo max)** for Llama 70B
-4. Disk: 40 GB minimum
-5. Environment variables to set in Vast.ai instance:
-   ```
-   MODEL=Qwen/Qwen2.5-Coder-14B-Instruct
-   TENSOR_PARALLEL_SIZE=1
-   MAX_MODEL_LEN=8192
-   ```
-6. Click "Rent" — instance boots in ~5 minutes
-7. Once running, note the **Public IP + Port** from the instance dashboard
+1. Open the account, set a **hard $50 spend cap + $25 alert**.
+2. Pick the **EU endpoint** where offered.
+3. Confirm the data policy is **no-training / zero-retention**.
+4. Create an API key. Note the **base URL** (OpenAI-compatible `/v1`) and the
+   **model IDs** for an efficient-class coder and (optionally) a premium model.
 
 ---
 
-## Step 2: Verify vLLM is Running (~5 min)
-
-```bash
-# Replace with your Vast.ai public address
-curl http://<VAST_IP>:<PORT>/health
-# Expected: {"status":"ok"}
-
-curl http://<VAST_IP>:<PORT>/v1/models
-# Expected: list with Qwen model
-```
-
----
-
-## Step 3: Set Railway Environment Variables (~5 min)
+## Step 2: Set Railway environment variables (~5 min)
 
 In Railway dashboard → Goblin API service → Variables:
 
 ```
-GOBLIN_HOSTED_ENABLED=true
-GOBLIN_HOSTED_URL=http://<VAST_IP>:<PORT>
-GOBLIN_HOSTED_API_KEY=goblin-internal
+GOBLIN_HOSTED_API=true
+GOBLIN_HOSTED_BASE_URL=https://<wholesale-endpoint>/v1
+GOBLIN_HOSTED_API_KEY=<server-side wholesale key>      # secret
+GOBLIN_HOSTED_MODEL_EFFICIENT=<provider efficient model id>
+GOBLIN_HOSTED_MODEL_PREMIUM=<provider premium model id>   # optional
 ```
 
-Also set in Vercel (for frontend feature flag):
+Also set in Vercel (frontend feature flag):
+
 ```
-NEXT_PUBLIC_GOBLIN_HOSTED_ENABLED=true
+NEXT_PUBLIC_GOBLIN_HOSTED_API=true
 ```
+
+While `GOBLIN_HOSTED_API` is unset/false, `getGoblinHostedConfig()` returns null
+and the router never selects Layer 2 — the code path is unreachable.
 
 ---
 
-## Step 4: Verify Health Check (~2 min)
+## Step 3: Verify health (~2 min)
 
 ```bash
 curl https://goblinapi-production.up.railway.app/health/deep
 ```
 
-Expected: `goblin_hosted: { status: "active" }` (or similar)
+Expected: `goblin_hosted: { status: "active" }`. If `misconfigured`, the flag is on
+but `GOBLIN_HOSTED_BASE_URL` / `GOBLIN_HOSTED_API_KEY` is missing.
 
 ---
 
-## Step 5: Test a Chat Request (~5 min)
+## Step 4: Test a chat request (~5 min)
 
-In the Goblin dashboard:
-1. Log in as a test user
-2. Open chat — the model picker should now show Goblin-Hosted models (no "Coming Soon" badge)
-3. Select Qwen Coder 14B and send a message
+1. Log in as a test user.
+2. Open chat — the model picker shows Goblin-bundled models (no "Coming Soon").
+3. Select the efficient tier and send a message — generation should stream.
+4. Confirm a `completion_costs` row lands with `source_tier = 'goblin_hosted'`,
+   and the usage bar reflects the new monthly token total.
 
 ---
 
 ## Rollback
 
-If something goes wrong:
-1. Set `GOBLIN_HOSTED_ENABLED=false` in Railway → redeploy
-2. Set `NEXT_PUBLIC_GOBLIN_HOSTED_ENABLED=false` in Vercel → redeploy
-3. Stop the Vast.ai instance to stop billing
+1. Set `GOBLIN_HOSTED_API=false` in Railway → redeploy.
+2. Set `NEXT_PUBLIC_GOBLIN_HOSTED_API=false` in Vercel → redeploy.
+3. Disable the wholesale key. No GPU instance to stop.
 
 ---
 
-## Cost Estimates
+## Cost shape (API-first)
 
-| GPU | Model | $/hour | $/month (24/7) | Recommended for |
-|-----|-------|--------|----------------|-----------------|
-| RTX 3060 | Qwen 14B | ~$0.12 | ~$86 | Phase 1 launch |
-| RTX 4090 | Llama 70B | ~$0.40 | ~$288 | After 50+ paying users |
-| 2x RTX 4090 | Both models | ~$0.80 | ~$576 | After 100+ paying users |
-
-**Important:** Stop the instance when usage is < 5 requests/day to save costs.
-Use Vast.ai's "sleep" feature or set up auto-shutdown via their API.
+Linear, variable, per token — **no fixed GPU line**. ≈ $0.56 total variable cost
+per paying user/mo at base usage (efficient class), ~94% gross margin on variable
+COGS. The fair-use token cap (~40–60M tok/mo base plan, enforced via the rollup +
+`apps/api/src/lib/goblin-cap.ts`) protects against the heavy tail.
 
 ---
 
-## Trigger Conditions (from Strategy V1)
+## Self-host crossover (deferred decision)
 
-Activate Layer C when one of:
-- Vincent has received funding, OR
-- 30+ paying users request Goblin-Hosted, OR
-- BYOK adoption < 50% (users want models without their own keys)
+Stay API-first until steady demand clears ~10–30B tokens/mo (≈ 4,500–13,000 paying
+users at base usage) **and** peak-shaping lifts achieved utilization above ~55%.
+Revisit quarterly — GPU rental and open-model API prices are both falling. See
+`Architektur/GOBLIN_ARCH_v6.md` §6 ("GPU buildout — deferred decision").

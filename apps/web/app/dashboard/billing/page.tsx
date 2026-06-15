@@ -237,7 +237,7 @@ export default function BillingDashboardPage() {
             {[
               { label: 'BYOK', value: usage.breakdown.byok, desc: 'Your API keys' },
               { label: 'Free Pool', value: usage.breakdown.free_api, desc: 'Goblin free tier' },
-              { label: 'Hosted', value: usage.breakdown.goblin_hosted, desc: 'Goblin GPU (Phase 3)' },
+              { label: 'Hosted', value: usage.breakdown.goblin_hosted, desc: 'Goblin-bundled (coming soon)' },
             ].map(item => (
               <div key={item.label} style={{
                 background: 'var(--subtle)', borderRadius: 10, padding: '12px 14px',

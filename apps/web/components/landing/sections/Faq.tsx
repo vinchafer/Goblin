@@ -11,7 +11,7 @@ const ITEMS = [
   },
   {
     q: 'What AI models can I use?',
-    a: 'Any model you want, via BYOK. Anthropic, OpenAI, Google, Groq, Mistral, xAI, DeepSeek, and more. Goblin-hosted open-source models coming soon.',
+    a: 'Any model you want, via BYOK. Anthropic, OpenAI, Google, Groq, Mistral, xAI, DeepSeek, and more. Goblin-bundled models — curated, no key required — coming soon.',
   },
   {
     q: 'What happens after my trial?',

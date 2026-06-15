@@ -236,17 +236,20 @@ export async function resolveModel(
     };
   }
 
-  // Layer 1: Goblin Hosted (Phase 3)
+  // Layer 2 (canon): Goblin-bundled models — API-first, server-side key.
+  // Unreachable while GOBLIN_HOSTED_API is off (getGoblinHostedConfig → null).
   const hosted = getGoblinHostedConfig();
   if (hosted) {
+    const tier = hosted.defaultTier; // efficient tier is the default (cond. #2)
+    const providerModel = hosted.resolveModel(tier.id);
     return {
       layer: 'goblin_hosted',
-      provider: 'openai',
+      provider: 'openai', // OpenAI-compatible wholesale endpoint
       apiKey: hosted.apiKey,
-      baseURL: hosted.endpoint,
-      model: 'goblin-hosted-llama-3.3-70b',
-      modelSlug: 'goblin/llama-3.3-70b',
-      litellmModel: 'openai/goblin-hosted-llama-3.3-70b',
+      baseURL: hosted.baseURL,
+      model: tier.id,
+      modelSlug: tier.id,
+      litellmModel: `openai/${providerModel}`,
     };
   }
 
