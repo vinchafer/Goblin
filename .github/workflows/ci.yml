@@ -39,3 +39,24 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder' }}
           NEXT_PUBLIC_API_URL: http://localhost:3001
         run: pnpm --filter @goblin/web build
+
+  api-tests:
+    name: API unit tests (incl. build-loop net)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # No STORAGE_* env → file-storage uses its in-memory backend, which is the
+      # real deploy source the build-loop net asserts on (build-loop.test.ts).
+      - name: Run API vitest
+        run: pnpm --filter @goblin/api test
