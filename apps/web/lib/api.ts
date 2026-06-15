@@ -39,12 +39,23 @@ export async function getAuthHeaders(): Promise<HeadersInit> {
   }
 }
 
+// WS-C: friendlier German messages for the statuses users actually hit, instead
+// of a raw "API error 429". Server-provided messages still win.
+function friendlyError(status: number, serverMessage?: string): string {
+  // 429 / 5xx rarely carry a useful body — always use the friendly line.
+  if (status === 429) return 'Zu viele Anfragen – bitte einen Moment warten und neu laden.'
+  if (status >= 500) return 'Server kurz nicht erreichbar – bitte gleich nochmal versuchen.'
+  if (serverMessage && serverMessage !== 'Too Many Requests') return serverMessage
+  if (status === 401 || status === 403) return 'Sitzung abgelaufen – bitte neu anmelden.'
+  return `API-Fehler ${status}`
+}
+
 export async function apiGet<T>(path: string): Promise<T> {
   const headers = await getAuthHeaders()
   const res = await fetch(`${API_URL}${path}`, { headers })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: res.statusText }))
-    throw new Error(err.message || `API error ${res.status}`)
+    throw new Error(friendlyError(res.status, err.message))
   }
   return res.json()
 }
@@ -58,7 +69,7 @@ export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: res.statusText }))
-    throw new Error(err.message || `API error ${res.status}`)
+    throw new Error(friendlyError(res.status, err.message))
   }
   return res.json()
 }
@@ -72,7 +83,7 @@ export async function apiPut<T>(path: string, body?: unknown): Promise<T> {
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: res.statusText }))
-    throw new Error(err.message || `API error ${res.status}`)
+    throw new Error(friendlyError(res.status, err.message))
   }
   return res.json()
 }
@@ -82,7 +93,7 @@ export async function apiDelete(path: string): Promise<void> {
   const res = await fetch(`${API_URL}${path}`, { method: 'DELETE', headers })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: res.statusText }))
-    throw new Error(err.message || `API error ${res.status}`)
+    throw new Error(friendlyError(res.status, err.message))
   }
 }
 

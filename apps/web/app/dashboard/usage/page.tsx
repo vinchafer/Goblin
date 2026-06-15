@@ -93,11 +93,13 @@ export default function UsagePage() {
         </div>
 
         {/* 1. STATUS SENTENCE — answer first. */}
-        {loading || !data ? (
+        {/* WS-C: only show the loader while genuinely loading. On error with no
+            data, fall through to the error panel below instead of a stuck "Lade …". */}
+        {loading ? (
           <div className="gobl-panel" style={{ padding: 24, marginBottom: 28, color: 'var(--ink-3)' }}>
             Lade …
           </div>
-        ) : (
+        ) : !data ? null : (
           <div className="gobl-panel" style={{ padding: '22px 24px', marginBottom: 28 }}>
             <p style={{
               fontFamily: 'var(--font-dash-display), Manrope, sans-serif',
