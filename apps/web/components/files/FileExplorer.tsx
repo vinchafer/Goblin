@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   FileCode, FileJson, FileText, Image as ImageIcon, Palette, File as FileIcon,
   Folder, ChevronRight, Upload, Download, Trash2, ArrowLeft, X,
-  Pencil, FolderPlus, FilePlus, MoreVertical, Copy, Share2, FolderInput, Code2,
+  Pencil, FolderPlus, FilePlus, MoreVertical, Copy, Share2, FolderInput, FolderSymlink, Code2,
 } from "lucide-react";
 import { API_URL, getToken } from "@/hooks/code/getToken";
 
@@ -15,7 +15,12 @@ const CodeEditor = dynamic(
   { ssr: false, loading: () => <div style={{ padding: 24, color: "var(--ink-3)", fontFamily: "JetBrains Mono, monospace", fontSize: 13 }}>Vorschau lädt…</div> },
 );
 
-interface FileMeta { path: string; size: number; modified: string | null; }
+interface FileMeta {
+  path: string; size: number; modified: string | null;
+  // WS-B.2 — per-file timestamps from project_file_meta (migration 0066).
+  // null until the migration is applied / for files created before tracking.
+  createdAt?: string | null; lastPushedAt?: string | null;
+}
 interface Props { projectId: string; projectName: string; }
 
 const TEXT_EXT = new Set(["tsx","ts","js","jsx","mjs","cjs","css","scss","sass","less","html","htm","json","md","markdown","txt","csv","xml","svg","vue","svelte","py","rb","go","rs","java","c","h","cpp","yml","yaml","toml","env","sh","sql"]);
@@ -37,6 +42,14 @@ function fmtSize(n: number) {
   if (n < 1024) return `${n} B`;
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} kb`;
   return `${(n / 1024 / 1024).toFixed(1)} mb`;
+}
+// WS-B.2 — absolute short date for the Erstellt / Gepusht columns. Honest "—"
+// when the value isn't tracked (no faked dates).
+function fmtDate(iso: string | null | undefined) {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("de-CH", { day: "2-digit", month: "2-digit", year: "2-digit" });
 }
 function ago(iso: string | null) {
   if (!iso) return "";
@@ -63,6 +76,10 @@ export function FileExplorer({ projectId, projectName }: Props) {
   const [namePrompt, setNamePrompt] = useState<{ kind: "rename" | "newfile" | "newfolder"; from?: string; value: string } | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [menuFor, setMenuFor] = useState<string | null>(null);   // WALK3-3.2: per-file ⋮ menu
+  // WS-B.1: cross-project move picker — file path being moved + target list.
+  const [moveFor, setMoveFor] = useState<string | null>(null);
+  const [projectList, setProjectList] = useState<{ id: string; name: string }[]>([]);
+  const [moving, setMoving] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
 
   // Close the ⋮ menu on any outside click / escape.
@@ -137,6 +154,40 @@ export function FileExplorer({ projectId, projectName }: Props) {
       }
     } catch { setPreview({ kind: "binary" }); }
   }, [authFetch, projectId]);
+
+  // WS-B.1: open the cross-project move picker — load the user's OTHER projects.
+  const openMovePicker = useCallback(async (path: string) => {
+    setMoveFor(path);
+    setProjectList([]);
+    try {
+      const r = await authFetch(`/api/projects`);
+      const d = await r.json();
+      const list = Array.isArray(d) ? d : (d?.projects ?? []);
+      setProjectList(
+        list.map((p: { id: string; name: string }) => ({ id: p.id, name: p.name }))
+          .filter((p: { id: string }) => p.id !== projectId),
+      );
+    } catch { setProjectList([]); }
+  }, [authFetch, projectId]);
+
+  // WS-B.1: copy the file into the target project, then remove it here (server
+  // copies-then-deletes; 409 = name clash in the target).
+  const moveToProject = useCallback(async (toProjectId: string) => {
+    if (!moveFor) return;
+    setMoving(true);
+    try {
+      const r = await authFetch(`/api/projects/${projectId}/files/move-to-project`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ path: moveFor, toProjectId }),
+      });
+      if (r.status === 409) { flash("Zielprojekt hat schon eine Datei mit diesem Namen"); return; }
+      if (!r.ok) { flash("Verschieben fehlgeschlagen"); return; }
+      flash("Datei verschoben");
+      if (selected === moveFor) { setSelected(null); setPreview(null); }
+      setMoveFor(null);
+      load();
+    } catch { flash("Verschieben fehlgeschlagen"); } finally { setMoving(false); }
+  }, [authFetch, projectId, moveFor, selected, load]);
 
   const download = useCallback(async (path: string) => {
     try {
@@ -263,6 +314,10 @@ export function FileExplorer({ projectId, projectName }: Props) {
       <style>{`
         .gb-fx-body { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.1fr); gap: 0; flex: 1; min-height: 0; }
         .gb-fx-preview { border-left: 1px solid var(--line); }
+        /* WS-B.2: Erstellt + Gepusht columns are space-hungry — show them only
+           when the list pane is wide (desktop review), hide when cramped. */
+        @media (max-width: 1200px) { .gb-fx-col-created, .gb-fx-col-pushed { display: none !important; } }
+        @media (max-width: 560px) { .gb-fx-col-size { display: none !important; } }
         @media (max-width: 820px) {
           .gb-fx-body { grid-template-columns: 1fr; }
           .gb-fx-list { display: ${selected ? "none" : "block"}; }
@@ -312,16 +367,16 @@ export function FileExplorer({ projectId, projectName }: Props) {
             </div>
           ) : (
             <div>
-              {/* WALK3-3.3: column header. Storage (S3) only exposes size + last-
-                  modified per object — "Erstellt" and "Zuletzt committed/gepusht"
-                  aren't tracked per file yet (would need a DB index), so we label
-                  the columns we can fill honestly rather than fake dates. */}
+              {/* WS-B.2: real per-file Erstellt + Zuletzt gepusht columns, backed by
+                  project_file_meta (migration 0066). Untracked files show "—". */}
               <div style={{ ...row, position: "sticky", top: 0, zIndex: 1, background: "var(--d-surface)", borderBottom: "1px solid var(--line)" }}>
                 <div style={{ ...rowInner, padding: "8px 0", cursor: "default" }}>
                   <span style={{ width: 17, flexShrink: 0 }} />
-                  <span style={{ flex: 1, textAlign: "left", fontFamily: "JetBrains Mono, monospace", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-3)" }}>Name</span>
-                  <span style={{ width: 64, textAlign: "right", fontFamily: "JetBrains Mono, monospace", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-3)" }}>Grösse</span>
-                  <span style={{ width: 96, textAlign: "right", fontFamily: "JetBrains Mono, monospace", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-3)" }}>Bearbeitet</span>
+                  <span style={{ flex: 1, textAlign: "left", ...colHead }}>Name</span>
+                  <span className="gb-fx-col-created" style={{ width: 80, textAlign: "right", ...colHead }}>Erstellt</span>
+                  <span className="gb-fx-col-pushed" style={{ width: 84, textAlign: "right", ...colHead }}>Gepusht</span>
+                  <span className="gb-fx-col-size" style={{ width: 60, textAlign: "right", ...colHead }}>Grösse</span>
+                  <span style={{ width: 88, textAlign: "right", ...colHead }}>Bearbeitet</span>
                 </div>
                 <span style={{ width: 28, flexShrink: 0 }} />
               </div>
@@ -344,8 +399,10 @@ export function FileExplorer({ projectId, projectName }: Props) {
                     <button onClick={() => openFile(file.path)} style={{ ...rowInner }}>
                       <Ico size={17} style={{ color: "var(--ink-2)", flexShrink: 0 }} />
                       <span style={{ flex: 1, textAlign: "left", color: "var(--ink-1)", fontSize: 13.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
-                      <span className="gb-fx-col-size" style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 11, color: "var(--ink-3)", flexShrink: 0, width: 64, textAlign: "right" }}>{fmtSize(file.size)}</span>
-                      <span className="gb-fx-col-mod" style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 11, color: "var(--ink-3)", flexShrink: 0, width: 96, textAlign: "right" }}>{ago(file.modified)}</span>
+                      <span className="gb-fx-col-created" style={{ ...colCell, width: 80 }} title={file.createdAt ? new Date(file.createdAt).toLocaleString("de-CH") : "nicht erfasst"}>{fmtDate(file.createdAt)}</span>
+                      <span className="gb-fx-col-pushed" style={{ ...colCell, width: 84 }} title={file.lastPushedAt ? new Date(file.lastPushedAt).toLocaleString("de-CH") : "noch nicht gepusht"}>{fmtDate(file.lastPushedAt)}</span>
+                      <span className="gb-fx-col-size" style={{ ...colCell, width: 60 }}>{fmtSize(file.size)}</span>
+                      <span className="gb-fx-col-mod" style={{ ...colCell, width: 88 }}>{ago(file.modified)}</span>
                     </button>
                     {/* WALK3-3.2: per-file overflow menu (was: 3 fixed icons). */}
                     <button
@@ -367,6 +424,7 @@ export function FileExplorer({ projectId, projectName }: Props) {
                         <button onClick={() => { setMenuFor(null); shareFile(file.path); }} style={menuItem} role="menuitem"><Share2 size={14} /> Teilen</button>
                         <button onClick={() => { setMenuFor(null); setNamePrompt({ kind: "rename", from: file.path, value: name }); }} style={menuItem} role="menuitem"><Pencil size={14} /> Umbenennen</button>
                         <button onClick={() => { setMenuFor(null); setNamePrompt({ kind: "rename", from: file.path, value: file.path }); }} style={menuItem} role="menuitem" title="Pfad bearbeiten = in einen Ordner verschieben"><FolderInput size={14} /> Verschieben</button>
+                        <button onClick={() => { setMenuFor(null); openMovePicker(file.path); }} style={menuItem} role="menuitem" title="In ein anderes Projekt verschieben"><FolderSymlink size={14} /> In anderes Projekt</button>
                         <button onClick={() => { setMenuFor(null); download(file.path); }} style={menuItem} role="menuitem"><Download size={14} /> Download</button>
                         <div style={{ height: 1, background: "var(--line)", margin: "4px 0" }} />
                         <button onClick={() => { setMenuFor(null); setConfirmDel(file.path); }} style={{ ...menuItem, color: "var(--danger)" }} role="menuitem"><Trash2 size={14} /> Löschen</button>
@@ -413,6 +471,32 @@ export function FileExplorer({ projectId, projectName }: Props) {
           )}
         </div>
       </div>
+
+      {/* WS-B.1: cross-project move picker */}
+      {moveFor && (
+        <>
+          <div onClick={() => { if (!moving) setMoveFor(null); }} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 90 }} />
+          <div style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "var(--d-surface-elev)", border: "1px solid var(--line)", borderRadius: 14, padding: "22px 24px", zIndex: 91, minWidth: 320, maxWidth: 420, width: "90%" }}>
+            <div style={{ fontSize: 16, fontWeight: 600, color: "var(--ink-1)", marginBottom: 6, fontFamily: "var(--font-dash-display), Manrope, sans-serif" }}>In anderes Projekt verschieben</div>
+            <div style={{ fontSize: 12.5, color: "var(--ink-2)", marginBottom: 16, wordBreak: "break-all" }}>
+              <span style={{ fontFamily: "JetBrains Mono, monospace" }}>{moveFor}</span> in ein anderes Projekt verschieben. Die Datei wird zuerst kopiert und erst dann hier entfernt.
+            </div>
+            <div style={{ maxHeight: 280, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4, marginBottom: 16 }}>
+              {projectList.length === 0 ? (
+                <div style={{ padding: 16, textAlign: "center", color: "var(--ink-3)", fontSize: 13 }}>Kein anderes Projekt vorhanden.</div>
+              ) : projectList.map((p) => (
+                <button key={p.id} disabled={moving} onClick={() => moveToProject(p.id)}
+                  style={{ ...menuItem, padding: "11px 12px", border: "1px solid var(--line)", opacity: moving ? 0.5 : 1 }}>
+                  <FolderSymlink size={15} style={{ color: "var(--gold)" }} /> {p.name}
+                </button>
+              ))}
+            </div>
+            <div style={{ display: "flex", justifyContent: "flex-end" }}>
+              <button onClick={() => setMoveFor(null)} disabled={moving} style={btnGhost}>Abbrechen</button>
+            </div>
+          </div>
+        </>
+      )}
 
       {confirmDel && (
         <>
@@ -481,3 +565,6 @@ const row: React.CSSProperties = { display: "flex", alignItems: "center", gap: 4
 const rowInner: React.CSSProperties = { flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 12, padding: "10px 0", background: "transparent", border: "none", cursor: "pointer" };
 const iconBtn: React.CSSProperties = { display: "inline-flex", alignItems: "center", justifyContent: "center", background: "transparent", border: "none", color: "var(--ink-2)", cursor: "pointer", padding: 6, flexShrink: 0 };
 const menuItem: React.CSSProperties = { display: "flex", alignItems: "center", gap: 9, width: "100%", textAlign: "left", background: "transparent", border: "none", color: "var(--ink-1)", cursor: "pointer", padding: "9px 11px", fontSize: 13, fontFamily: "var(--font-sans)", borderRadius: 7, textDecoration: "none", boxSizing: "border-box" };
+// WS-B.2 explorer column styles.
+const colHead: React.CSSProperties = { fontFamily: "JetBrains Mono, monospace", fontSize: 10, letterSpacing: "0.12em", textTransform: "uppercase", color: "var(--ink-3)", flexShrink: 0 };
+const colCell: React.CSSProperties = { fontFamily: "JetBrains Mono, monospace", fontSize: 11, color: "var(--ink-3)", flexShrink: 0, textAlign: "right" };

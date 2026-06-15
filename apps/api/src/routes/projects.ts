@@ -406,8 +406,13 @@ projects.get('/:id/files-tree', async (c) => {
   const projectId = c.req.param('id');
   const sb = getSupabaseAdmin();
   if (!(await ownsProject(sb, projectId, userId))) return c.json({ error: 'Project not found' }, 404);
-  const entries = await listFilesWithMeta(projectId);
-  return c.json({ entries });
+  const [entries, meta] = await Promise.all([listFilesWithMeta(projectId), fileMetaMap(sb, projectId)]);
+  // WS-B.2: attach per-file created_at + last_pushed_at (null → explorer shows "—").
+  const enriched = entries.map((e) => {
+    const m = meta.get(e.path);
+    return { ...e, createdAt: m?.created_at ?? null, lastPushedAt: m?.last_pushed_at ?? null };
+  });
+  return c.json({ entries: enriched });
 });
 
 // GET /:id/files-raw/<path> — raw bytes (base64) + content-type for preview/download.
@@ -449,6 +454,7 @@ projects.post('/:id/files/upload', async (c) => {
   const relPath = targetDir ? `${targetDir}/${safeName}` : safeName;
   const bytes = Buffer.from(await file.arrayBuffer());
   await uploadProjectFileBytes(projectId, relPath, bytes, file.type || 'application/octet-stream');
+  await trackFileCreated(sb, projectId, userId, relPath).catch(() => {});
   return c.json({ ok: true, path: relPath, size: bytes.length });
 });
 
@@ -560,6 +566,7 @@ projects.put('/:id/files/*', async (c) => {
   }
 
   await uploadFile(projectId, filePath, content);
+  await trackFileCreated(supabase, projectId, userId, filePath).catch(() => {});
   return c.json({ success: true, path: filePath });
 });
 
@@ -594,6 +601,40 @@ async function verifyProjectOwnership(supabase: ReturnType<typeof getSupabaseAdm
   return error || !data ? null : data;
 }
 
+// WS-B.2 — per-file timestamp tracking (migration 0066). All best-effort: a
+// missing table (migration not yet applied) must never break a file write.
+
+/** Record a file's creation. Idempotent — keeps the FIRST created_at on conflict. */
+async function trackFileCreated(
+  supabase: ReturnType<typeof getSupabaseAdmin>, projectId: string, userId: string, path: string,
+): Promise<void> {
+  try {
+    const { data: existing } = await supabase.from('project_file_meta')
+      .select('id').eq('project_id', projectId).eq('path', path).maybeSingle();
+    if (existing) return; // don't overwrite the original created_at
+    await supabase.from('project_file_meta')
+      .insert({ project_id: projectId, user_id: userId, path });
+  } catch { /* table may predate migration 0066 — ignore */ }
+}
+
+/** Look up tracked timestamps for a project's files, keyed by path. */
+async function fileMetaMap(
+  supabase: ReturnType<typeof getSupabaseAdmin>, projectId: string,
+): Promise<Map<string, { created_at: string | null; last_pushed_at: string | null }>> {
+  const out = new Map<string, { created_at: string | null; last_pushed_at: string | null }>();
+  try {
+    const { data } = await supabase.from('project_file_meta')
+      .select('path, created_at, last_pushed_at').eq('project_id', projectId);
+    for (const r of data ?? []) {
+      out.set(r.path as string, {
+        created_at: (r.created_at as string) ?? null,
+        last_pushed_at: (r.last_pushed_at as string) ?? null,
+      });
+    }
+  } catch { /* table may predate migration 0066 — ignore */ }
+  return out;
+}
+
 // Create new file
 projects.post('/:id/files', async (c) => {
   const userId = c.get('userId');
@@ -615,6 +656,7 @@ projects.post('/:id/files', async (c) => {
   }
 
   await uploadFile(projectId, result.data.path, result.data.content);
+  await trackFileCreated(supabase, projectId, userId, result.data.path).catch(() => {});
   return c.json({ success: true, path: result.data.path }, 201);
 });
 
@@ -694,6 +736,62 @@ projects.post('/:id/files/move', async (c) => {
   await uploadFile(projectId, result.data.to, content);
   await deleteFile(projectId, result.data.from);
   return c.json({ success: true, from: result.data.from, to: result.data.to });
+});
+
+// WS-B.1 — move a file to ANOTHER project. Data-safe ordering: copy into the
+// target's storage FIRST, verify the bytes landed, only THEN delete the source.
+// If the copy fails the source is untouched. Does not touch the publish loop.
+projects.post('/:id/files/move-to-project', async (c) => {
+  const userId = c.get('userId');
+  const fromProjectId = c.req.param('id');
+  const body = await c.req.json().catch(() => ({}));
+
+  const schema = z.object({
+    path: z.string().min(1).max(500),
+    toProjectId: z.string().uuid(),
+    toPath: z.string().min(1).max(500).optional(),
+  });
+  const result = schema.safeParse(body);
+  if (!result.success) return c.json({ error: 'Invalid request' }, 400);
+
+  const { path, toProjectId } = result.data;
+  const toPath = result.data.toPath ?? path;
+  if (toProjectId === fromProjectId) return c.json({ error: 'Quell- und Zielprojekt sind identisch' }, 400);
+  if (!isSafePath(path) || !isSafePath(toPath)) return c.json({ error: 'Invalid file path' }, 400);
+
+  const supabase = getSupabaseAdmin();
+  // Caller must own BOTH projects.
+  if (!await verifyProjectOwnership(supabase, fromProjectId, userId)) {
+    return c.json({ error: 'Quellprojekt nicht gefunden' }, 404);
+  }
+  if (!await verifyProjectOwnership(supabase, toProjectId, userId)) {
+    return c.json({ error: 'Zielprojekt nicht gefunden' }, 404);
+  }
+
+  const content = await getFile(fromProjectId, path);
+  if (content === null) return c.json({ error: 'Source file not found' }, 404);
+
+  // Don't silently overwrite a file that already exists in the target.
+  const existingInTarget = await getFile(toProjectId, toPath);
+  if (existingInTarget !== null) {
+    return c.json({ error: 'Im Zielprojekt existiert bereits eine Datei mit diesem Namen', conflict: true }, 409);
+  }
+
+  // 1) Copy into target and verify the bytes actually landed.
+  await uploadFile(toProjectId, toPath, content);
+  const verify = await getFile(toProjectId, toPath);
+  if (verify === null || verify !== content) {
+    return c.json({ error: 'Kopieren ins Zielprojekt fehlgeschlagen — Quelle unverändert' }, 500);
+  }
+  // Track the new file's metadata in the target (best-effort; B.2 migration 0066).
+  await trackFileCreated(supabase, toProjectId, userId, toPath).catch(() => {});
+
+  // 2) Copy verified → safe to remove the source.
+  await deleteFile(fromProjectId, path);
+  await supabase.from('project_file_meta').delete()
+    .eq('project_id', fromProjectId).eq('path', path).then(() => {}, () => {});
+
+  return c.json({ success: true, from: { projectId: fromProjectId, path }, to: { projectId: toProjectId, path: toPath } });
 });
 
 // Folder ops (Slice 6). Folders are implicit in a path-keyed store:

@@ -256,6 +256,19 @@ github.post('/push', async (c) => {
         .eq('user_id', userId);
     }
 
+    // WS-B.2: stamp last_pushed_at for every file in this push (best-effort —
+    // table is migration 0066; ignore if absent). Powers the explorer column.
+    {
+      const now = new Date().toISOString();
+      const pushedPaths = Object.keys(fileMap);
+      await Promise.all(pushedPaths.map((path) =>
+        supabase.from('project_file_meta').upsert(
+          { project_id: result.data.projectId, user_id: userId, path, last_pushed_at: now },
+          { onConflict: 'project_id,path' },
+        ).then(() => {}, () => {}),
+      )).catch(() => {});
+    }
+
     sendToUser(userId, {
       title: `⬆ Pushed to GitHub`,
       body: `${repoName} → ${repoUrl}`,
