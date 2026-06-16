@@ -23,7 +23,7 @@ const QUESTIONS = [
   },
   {
     q: 'Is my code private?',
-    a: 'Yes. Your projects are only visible to you. All code is stored encrypted at rest on Hetzner servers in Frankfurt (GDPR). We never train on your data. Ever.',
+    a: 'Yes. Your projects are only visible to you. All code is stored encrypted at rest in the EU. We never train on your data. Ever.',
   },
   {
     q: 'What happens to my projects if I cancel?',

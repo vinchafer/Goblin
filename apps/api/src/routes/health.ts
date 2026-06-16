@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { checkStorageConnection } from '../services/file-storage';
+import { getGoblinHostedStatus } from '../services/goblin-hosted';
 
 const health = new Hono();
 const START_TIME = Date.now();
@@ -87,6 +88,19 @@ health.get('/deep', async (c) => {
 
   // Stripe (just check env var presence)
   checks.stripe = { status: process.env.STRIPE_SECRET_KEY ? 'ok' : 'skip' };
+
+  // Goblin-bundled (Layer 2) — flag + config state. Never echoes the key; only
+  // active/coming_soon/misconfigured. 'misconfigured' = flag on but key missing or
+  // a tier maps to a forbidden proprietary model (fail-closed).
+  {
+    const g = getGoblinHostedStatus();
+    (checks as Record<string, unknown>).goblin_hosted = {
+      status: g.status === 'active' ? 'ok' : 'skip',
+      state: g.status,
+      enabled: g.enabled,
+    };
+    if (g.status === 'misconfigured' && overallStatus === 'ok') overallStatus = 'degraded';
+  }
 
   return c.json(
     {

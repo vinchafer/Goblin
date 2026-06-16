@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { apiGet } from '@/lib/api';
 import { SettingsCard } from '../ui/SettingsCard';
 import { SettingsGroup } from '../ui/SettingsGroup';
+import GoblinUsageBar, { type CapStatus } from '../usage/GoblinUsageBar';
 
 // FIX2-3 (BUG-8): single source of truth. The old `/api/usage/summary` endpoint
 // did not exist on the API → this page always fell back to a fake "0 / 200",
@@ -17,6 +18,9 @@ interface UsageResp {
   totalInPeriod: number;
   byTier: { byok: number; free_api: number; goblin_hosted: number };
   byModel: { model: string; count: number }[];
+  // Layer-2 fair-use token cap (present only when the Goblin-hosted flag is on and
+  // migration 0067 is applied; null otherwise → the bar renders its neutral state).
+  goblinCap?: CapStatus | null;
 }
 
 function formatNum(n: number) {
@@ -55,6 +59,19 @@ export function UsagePage() {
 
   return (
     <div className="settings-section" style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
+      {/* Layer-2 fair-use token cap — the real Goblin-bundled consumption bar.
+          Renders only when the flag is on AND mig 0067 is applied (goblinCap set);
+          otherwise the component shows its own neutral coming-soon state. */}
+      {state?.goblinCap && (
+        <SettingsGroup label="Goblin-Modelle">
+          <SettingsCard>
+            <div style={{ padding: 16 }}>
+              <GoblinUsageBar status={state.goblinCap} />
+            </div>
+          </SettingsCard>
+        </SettingsGroup>
+      )}
+
       <SettingsGroup label="Diesen Monat">
         <SettingsCard>
           {/* Goblin-provided allowance — a real cap exists, so a percent is honest. */}

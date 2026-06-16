@@ -3,8 +3,15 @@
 **Estimated time: ~30 min from decision to live.** No GPU buildout.
 
 This activates Layer 2 (the Goblin-bundled models) by pointing it at a **wholesale
-per-token inference API** (OpenAI-compatible). The inference key lives server-side —
-the inverse of BYOK. Routed through LiteLLM as a library; no proxy is deployed.
+per-token inference API** (OpenAI-compatible). The provider is **DeepInfra** (US;
+SOC 2 / ISO 27001; zero-retention for the open-source models used). The inference
+key lives server-side — the inverse of BYOK. Routed through the OpenAI SDK as a
+library; no proxy is deployed.
+
+> **Compliance note:** inference runs in the US under EU Standard Contractual
+> Clauses (SCCs); storage stays EU (Backblaze B2, eu-central-003). The privacy
+> policy + sub-processor list already reflect this. DeepInfra is named ONLY on the
+> legal sub-processor surface — never in marketing copy.
 
 > **Public-surface rule:** never name the wholesale provider on any user-facing
 > surface. Internally it is a swappable backend; to users it is "Goblin-bundled
@@ -16,22 +23,20 @@ the inverse of BYOK. Routed through LiteLLM as a library; no proxy is deployed.
 
 ## Prerequisites
 
-- A wholesale per-token inference account (DeepInfra/Novita-class), efficient
-  model-class default. **See the founder setup checklist** in
-  `docs/L2_PIVOT_SESSION1_REPORT.md` (account, spend cap, EU endpoint, data policy).
+- A DeepInfra account with a small balance ($10) and a **monthly spend cap**.
 - Access to Railway dashboard (API env vars) and Vercel (frontend flag).
 - Supabase migration `0067_goblin_hosted_token_rollup.sql` applied (per-user
   monthly token rollup for the fair-use cap).
 
 ---
 
-## Step 1: Provision the wholesale account (~15 min)
+## Step 1: Provision the DeepInfra account (~15 min)
 
-1. Open the account, set a **hard $50 spend cap + $25 alert**.
-2. Pick the **EU endpoint** where offered.
-3. Confirm the data policy is **no-training / zero-retention**.
-4. Create an API key. Note the **base URL** (OpenAI-compatible `/v1`) and the
-   **model IDs** for an efficient-class coder and (optionally) a premium model.
+1. Open the account, set a **hard monthly spend cap** (matching the funded balance).
+2. Confirm the data policy is **no-training / zero-retention** for the open-source
+   models used (DeepSeek, Kimi).
+3. Create an API key. The endpoint is OpenAI-compatible at
+   `https://api.deepinfra.com/v1/openai` (this is the code default).
 
 ---
 
@@ -41,11 +46,16 @@ In Railway dashboard → Goblin API service → Variables:
 
 ```
 GOBLIN_HOSTED_API=true
-GOBLIN_HOSTED_BASE_URL=https://<wholesale-endpoint>/v1
-GOBLIN_HOSTED_API_KEY=<server-side wholesale key>      # secret
-GOBLIN_HOSTED_MODEL_EFFICIENT=<provider efficient model id>
-GOBLIN_HOSTED_MODEL_PREMIUM=<provider premium model id>   # optional
+DEEPINFRA_API_KEY=<server-side wholesale key>         # secret — Railway ONLY
+# GOBLIN_HOSTED_BASE_URL=https://api.deepinfra.com/v1/openai   # optional; this is the default
+# GOBLIN_HOSTED_MODEL_EFFICIENT=deepseek-ai/DeepSeek-V3.2      # optional; Goblin Swift default
+# GOBLIN_HOSTED_MODEL_PREMIUM=moonshotai/Kimi-K2.6            # optional; Goblin Forge default
 ```
+
+The model slugs default to DeepSeek V3.2 (Swift) and Kimi K2.6 (Forge) in code, so
+you only need to set them if a slug needs correcting against the live catalog. The
+fail-closed invariant refuses to route if a tier is ever pointed at a Google /
+Anthropic / OpenAI model.
 
 Also set in Vercel (frontend feature flag):
 
@@ -65,7 +75,7 @@ curl https://goblinapi-production.up.railway.app/health/deep
 ```
 
 Expected: `goblin_hosted: { status: "active" }`. If `misconfigured`, the flag is on
-but `GOBLIN_HOSTED_BASE_URL` / `GOBLIN_HOSTED_API_KEY` is missing.
+but `DEEPINFRA_API_KEY` is missing (or a tier maps to a forbidden proprietary model).
 
 ---
 

@@ -22,6 +22,7 @@
 import { getSupabaseAdmin } from '../lib/supabase';
 import { PROVIDERS, ALL_STATIC_MODELS, FREE_API_MODELS, type ProviderId } from '../config/providers';
 import { listKeys, getDiscoveredModelsByProvider } from './byok-service';
+import { isGoblinHostedEnabled, GOBLIN_HOSTED_TIERS, tierAllowedForPlan } from './goblin-hosted';
 
 // ── Provider derivation ──────────────────────────────────────────────────────
 // LiteLLM serves model ids either prefixed ("anthropic/claude-...", "gemini/...")
@@ -172,10 +173,15 @@ function isChatModel(id: string): boolean {
 export async function getCatalogForUser(userId: string): Promise<AnnotatedModel[]> {
   const supabase = getSupabaseAdmin();
 
-  const [userKeys, discoveredMap] = await Promise.all([
+  const [userKeys, discoveredMap, planRow] = await Promise.all([
     listKeys(userId).catch(() => []),
     getDiscoveredModelsByProvider(userId).catch(() => ({} as Record<string, string[]>)),
+    supabase.from('users').select('plan').eq('id', userId).single().then(
+      (r) => (r.data as { plan?: string } | null) ?? null,
+      () => null,
+    ),
   ]);
+  const userPlan = (planRow?.plan ?? '').toLowerCase();
   const connected = new Set(
     userKeys.filter((k) => k.status === 'active' && (k.provider as string) !== 'vercel').map((k) => k.provider as string),
   );
@@ -253,6 +259,22 @@ export async function getCatalogForUser(userId: string): Promise<AnnotatedModel[
       push({ id: s.id ?? s.slug, name: s.name, slug: s.slug, provider: s.provider, layer: 'goblin_hosted',
         description: s.description, tags: s.tags ?? [], requires_key: false, available: s.available, phase: s.phase,
         keyConnected: null, badge: 'GOBLIN_HOSTED', capabilities: s.capabilities });
+    }
+  }
+
+  // Goblin-bundled (Layer 2) tiers — only when the flag is on. Provider-agnostic:
+  // the public tier name is shown, never the wholesale provider. Forge is gated by
+  // plan (available=false → picker shows it but as upgrade-locked). `seen` dedups if
+  // a stale models-table row already pushed the same slug.
+  if (isGoblinHostedEnabled()) {
+    for (const tier of GOBLIN_HOSTED_TIERS) {
+      const allowed = tierAllowedForPlan(tier, userPlan);
+      push({
+        id: tier.id, name: tier.name, slug: tier.id, provider: 'goblin', layer: 'goblin_hosted',
+        description: tier.description, tags: tier.tierClass === 'premium' ? ['premium'] : ['fast', 'default'],
+        requires_key: false, available: allowed, phase: 1, keyConnected: null,
+        badge: 'GOBLIN_HOSTED', capabilities: { chat: true, function_calling: true, vision: false, reasoning: false },
+      });
     }
   }
 

@@ -19,40 +19,72 @@ export default function PrivacyPage() {
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--ink-1)' }}>2. Sub-processors</h2>
         <p className="mb-3" style={{ color: 'var(--ink-3)' }}>
-          We use the following trusted third party services:
+          We use the following trusted third-party services to operate Goblin:
         </p>
         <ul className="list-disc pl-5 space-y-1" style={{ color: 'var(--ink-3)' }}>
-          <li>Supabase (Database & Authentication)</li>
-          <li>Stripe (Payment Processing)</li>
-          <li>Anthropic (AI Models)</li>
-          <li>OpenAI (AI Models)</li>
-          <li>Hetzner (Hosting)</li>
-          <li>Vercel (Edge Hosting)</li>
+          <li>Supabase — database &amp; authentication</li>
+          <li>Stripe — payment processing</li>
+          <li>Backblaze B2 (EU, eu-central-003) — encrypted project &amp; file storage</li>
+          <li>Vercel — web application hosting</li>
+          <li>Railway — API hosting</li>
+          <li>Resend — transactional email</li>
+          <li>
+            DeepInfra (United States) — inference for the Goblin-bundled models.
+            SOC&nbsp;2 / ISO&nbsp;27001 certified; zero data retention for the
+            open-source models we use; international transfers covered by EU
+            Standard Contractual Clauses (SCCs).
+          </li>
+          <li>
+            Anthropic, OpenAI and other model providers — only when you connect
+            your own API key (BYOK). Your prompts are sent to the provider you
+            choose, under your own account and their terms.
+          </li>
         </ul>
       </section>
 
       <section className="mb-8">
-        <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--ink-1)' }}>3. Data Security</h2>
+        <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--ink-1)' }}>3. AI Processing &amp; International Transfers</h2>
+        <p className="mb-3" style={{ color: 'var(--ink-3)' }}>
+          When you use the Goblin-bundled models (no key required), your prompt and
+          the relevant code context are sent to our inference sub-processor for
+          processing. That provider operates in the United States. We rely on EU
+          Standard Contractual Clauses (SCCs) as the transfer mechanism, and use
+          only open-source models configured for zero data retention — your inputs
+          are not retained by the provider and are never used to train models.
+        </p>
+        <p className="mb-3" style={{ color: 'var(--ink-3)' }}>
+          When you bring your own API key (BYOK), your prompts go directly to the
+          provider you selected, under your own account and their terms.
+        </p>
+        <p className="mb-3" style={{ color: 'var(--ink-3)' }}>
+          Your stored projects and files remain encrypted at rest in the EU
+          (Backblaze B2, eu-central-003). Only the inference step may be processed
+          outside the EU, under the safeguards described above.
+        </p>
+      </section>
+
+      <section className="mb-8">
+        <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--ink-1)' }}>4. Data Security</h2>
         <p className="mb-3" style={{ color: 'var(--ink-3)' }}>
           All sensitive data is encrypted at rest. API keys are encrypted with AES-256-GCM before storage. We never train our models on user code.
         </p>
       </section>
 
       <section className="mb-8">
-        <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--ink-1)' }}>4. User Rights</h2>
+        <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--ink-1)' }}>5. User Rights</h2>
         <p className="mb-3" style={{ color: 'var(--ink-3)' }}>
           You may request export or deletion of your personal data at any time by contacting support.
         </p>
       </section>
 
       <section className="mb-8">
-        <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--ink-1)' }}>5. Cookies</h2>
+        <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--ink-1)' }}>6. Cookies</h2>
         <p className="mb-3" style={{ color: 'var(--ink-3)' }}>
           We only use strictly necessary cookies for authentication. No tracking, no analytics, no third party cookies.
         </p>
       </section>
 
-      <p className="text-sm" style={{ color: 'var(--ink-3)' }}>Last updated: April 2026</p>
+      <p className="text-sm" style={{ color: 'var(--ink-3)' }}>Last updated: June 2026</p>
     </main>
   );
 }

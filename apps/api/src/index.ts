@@ -19,8 +19,8 @@ const REQUIRED_ENV = [
 
 // Optional env vars for Goblin-bundled models (Layer 2, API-first — default off)
 // GOBLIN_HOSTED_API=true        # enable Layer 2
-// GOBLIN_HOSTED_BASE_URL=       # wholesale OpenAI-compatible endpoint
-// GOBLIN_HOSTED_API_KEY=        # server-side wholesale key (secret)
+// DEEPINFRA_API_KEY=            # server-side wholesale key (secret — Railway only)
+// GOBLIN_HOSTED_BASE_URL=       # optional; defaults to the DeepInfra OpenAI-compat endpoint
 // See infra/GOBLIN_HOSTED_ACTIVATION.md
 
 const missing = REQUIRED_ENV.filter(key => !process.env[key])

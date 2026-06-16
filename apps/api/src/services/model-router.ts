@@ -1,7 +1,18 @@
 import Anthropic from '@anthropic-ai/sdk';
 import OpenAI from 'openai';
 import { type SupabaseClient } from '@supabase/supabase-js';
-import { getGoblinHostedConfig } from './goblin-hosted';
+import {
+  getGoblinHostedConfig,
+  getGoblinClient,
+  parseGoblinTier,
+  tierAllowedForPlan,
+  isOverDailyTokenCeiling,
+  GOBLIN_HOSTED_TIERS,
+  GOBLIN_DEFAULT_TIER,
+  GOBLIN_MAX_TOKENS_PER_REQUEST,
+  type GoblinHostedConfig,
+  type GoblinTierId,
+} from './goblin-hosted';
 import { decryptData, decryptUserData } from './encryption';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { PROVIDERS, PROVIDER_BASE_URLS, type ProviderId } from '../config/providers';
@@ -25,8 +36,15 @@ export interface RouteResult {
   baseURL: string;
   model: string;
   modelSlug: string;
+  // Exact model string sent to the provider on the wire. For BYOK/free this equals
+  // `model`. For goblin_hosted it is the wholesale provider slug (e.g. a DeepInfra
+  // model id), while `model`/`modelSlug` stay the Goblin tier id — so the provider
+  // slug NEVER reaches the browser or the DB (two-level truth, HR-6).
+  apiModel: string;
   // LiteLLM-native model name for pass-through routing (provider/model format)
   litellmModel: string;
+  // The Goblin tier (only set for layer === 'goblin_hosted').
+  goblinTier?: GoblinTierId;
 }
 
 // ─── Free-API Pool ────────────────────────────────────────────────────────────
@@ -185,6 +203,56 @@ function slugToModelId(slug: string): string {
   return parts.slice(1).join('/');
 }
 
+// ─── Goblin-hosted route + plan lookup ──────────────────────────────────────────
+
+/** Build a goblin_hosted RouteResult for a tier. `model`/`modelSlug` are the public
+ *  tier id; `apiModel` is the wholesale provider slug (never surfaced). */
+function buildGoblinRoute(hosted: GoblinHostedConfig, tierId: GoblinTierId): RouteResult {
+  const providerModel = hosted.resolveModel(tierId); // throws if invariant violated (fail closed)
+  return {
+    layer: 'goblin_hosted',
+    provider: 'openai', // OpenAI-compatible wholesale endpoint
+    apiKey: hosted.apiKey,
+    baseURL: hosted.baseURL,
+    model: tierId,
+    modelSlug: tierId,
+    apiModel: providerModel,
+    litellmModel: `openai/${providerModel}`,
+    goblinTier: tierId,
+  };
+}
+
+/** Read the user's subscription plan for tier gating. Defaults to '' (no plan). */
+async function getUserPlan(userId: string, supabase?: SupabaseClient): Promise<string> {
+  try {
+    const sb = supabase ?? getSupabaseAdmin();
+    const { data } = await sb.from('users').select('plan').eq('id', userId).single();
+    return ((data as { plan?: string } | null)?.plan ?? '').toLowerCase();
+  } catch {
+    return '';
+  }
+}
+
+/** Sum the user's same-day goblin_hosted token usage (in + out) — the per-day drain
+ *  guard input. Best-effort: any read failure returns 0 (never blocks on a glitch). */
+async function goblinTokensUsedToday(userId: string, supabase?: SupabaseClient): Promise<number> {
+  try {
+    const sb = supabase ?? getSupabaseAdmin();
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const { data } = await sb
+      .from('completion_costs')
+      .select('tokens_in, tokens_out')
+      .eq('user_id', userId)
+      .eq('source_tier', 'goblin_hosted')
+      .gte('created_at', startOfDay.toISOString());
+    const rows = (data as Array<{ tokens_in: number; tokens_out: number }> | null) ?? [];
+    return rows.reduce((s, r) => s + (r.tokens_in ?? 0) + (r.tokens_out ?? 0), 0);
+  } catch {
+    return 0;
+  }
+}
+
 // ─── Route resolution ─────────────────────────────────────────────────────────
 
 export async function resolveModel(
@@ -198,6 +266,29 @@ export async function resolveModel(
   if (preferredModel) {
     preferredProvider = slugToProvider(preferredModel);
     modelId = slugToModelId(preferredModel);
+  }
+
+  // Layer 2 (canon) — EXPLICIT Goblin tier selection (Swift / Forge). A user who
+  // picks a goblin/* model is routed to the bundled server-side key AHEAD of any
+  // BYOK key. Plan-gating is enforced here: a plan that does not expose the tier is
+  // cleanly refused (a friendly GoblinError), never crashed. Unreachable while the
+  // flag is off (getGoblinHostedConfig → null) — selecting it then falls through to
+  // BYOK / the "no model" path.
+  const explicitTier = parseGoblinTier(preferredModel);
+  if (explicitTier) {
+    const hosted = getGoblinHostedConfig();
+    if (hosted) {
+      const tier = GOBLIN_HOSTED_TIERS.find((t) => t.id === explicitTier)!;
+      const plan = await getUserPlan(userId, supabase);
+      if (!tierAllowedForPlan(tier, plan)) {
+        throw new GoblinError(
+          'unknown',
+          `${tier.name} is available on the Pro and Power plans. Upgrade to use it, or pick Goblin Swift.`,
+        );
+      }
+      return buildGoblinRoute(hosted, explicitTier);
+    }
+    // Flag off → fall through to BYOK / free / error below.
   }
 
   // Layer 3: BYOK
@@ -218,6 +309,7 @@ export async function resolveModel(
       baseURL,
       model: resolvedModel,
       modelSlug: slug,
+      apiModel: resolvedModel,
       litellmModel,
     };
   }
@@ -232,25 +324,18 @@ export async function resolveModel(
       baseURL: free.baseURL,
       model: free.model,
       modelSlug: free.slug,
+      apiModel: free.model,
       litellmModel: free.litellmModel, // provider-prefixed for LiteLLM pass-through
     };
   }
 
   // Layer 2 (canon): Goblin-bundled models — API-first, server-side key.
   // Unreachable while GOBLIN_HOSTED_API is off (getGoblinHostedConfig → null).
+  // The default fallback uses the efficient tier (Swift); an EXPLICIT goblin/*
+  // selection is handled at the top of resolveModel (ahead of BYOK).
   const hosted = getGoblinHostedConfig();
   if (hosted) {
-    const tier = hosted.defaultTier; // efficient tier is the default (cond. #2)
-    const providerModel = hosted.resolveModel(tier.id);
-    return {
-      layer: 'goblin_hosted',
-      provider: 'openai', // OpenAI-compatible wholesale endpoint
-      apiKey: hosted.apiKey,
-      baseURL: hosted.baseURL,
-      model: tier.id,
-      modelSlug: tier.id,
-      litellmModel: `openai/${providerModel}`,
-    };
+    return buildGoblinRoute(hosted, GOBLIN_DEFAULT_TIER.id);
   }
 
   throw new GoblinError(
@@ -324,6 +409,19 @@ export async function* streamCompletion({
   let inputTokens = 0;
   let outputTokens = 0;
 
+  // HR-3 per-day drain guard — only for the Goblin-hosted (server-keyed) tier.
+  // A runaway can't exceed the daily token ceiling on Goblin's own dime.
+  if (route.layer === 'goblin_hosted') {
+    const usedToday = await goblinTokensUsedToday(userId, supabase);
+    if (isOverDailyTokenCeiling(usedToday)) {
+      yield JSON.stringify({
+        type: 'error',
+        message: 'Du hast das heutige Goblin-Modell-Limit erreicht. Bitte versuche es morgen erneut oder verbinde einen eigenen API-Key.',
+      });
+      return;
+    }
+  }
+
   if (reroutedFrom) {
     yield JSON.stringify({
       type: 'fallback_notice',
@@ -347,8 +445,10 @@ export async function* streamCompletion({
     .insert({ user_id: userId, project_id: projectId, model_used: route.model, source_tier: route.layer, status: 'running' })
     .select().single();
 
-  // Try LiteLLM first if configured
-  const litellmBase = process.env.LITELLM_BASE_URL;
+  // Try LiteLLM first if configured. The Goblin-hosted tier always uses its own
+  // injectable client (never the optional LiteLLM proxy) so the wholesale provider
+  // call path stays single-source and deterministically testable.
+  const litellmBase = route.layer === 'goblin_hosted' ? undefined : process.env.LITELLM_BASE_URL;
   if (litellmBase) {
     try {
       for await (const delta of litellmStream(route.litellmModel, messages, { apiKey: route.apiKey, timeout: timeoutMs, signal })) {
@@ -395,9 +495,29 @@ export async function* streamCompletion({
   // "model not found / invalid model" error is a slug failure: it must surface
   // (and feed the 10.9-3 circuit breaker), never be silently rewritten.
   try {
-    if (route.provider === 'anthropic') {
+    if (route.layer === 'goblin_hosted') {
+      // Goblin-bundled (server-side key) tier — routed through the injectable
+      // DeepInfra client (real in prod, deterministic mock in Stage-A tests). Sends
+      // the wholesale provider slug (route.apiModel), never the tier id.
+      const hosted = getGoblinHostedConfig();
+      if (!hosted) throw new GoblinError('unknown', 'Goblin model service is unavailable.');
+      const client = getGoblinClient(hosted);
+      for await (const part of client.stream({
+        model: route.apiModel,
+        messages,
+        maxTokens: GOBLIN_MAX_TOKENS_PER_REQUEST,
+        signal,
+      })) {
+        if (part.type === 'delta' && part.content) {
+          yield JSON.stringify({ type: 'delta', content: part.content });
+        } else if (part.type === 'usage') {
+          inputTokens = part.inputTokens ?? 0;
+          outputTokens = part.outputTokens ?? 0;
+        }
+      }
+    } else if (route.provider === 'anthropic') {
       const anthropic = new Anthropic({ apiKey: route.apiKey });
-      const model = route.model;
+      const model = route.apiModel;
       const stream = await anthropic.messages.create({ model, max_tokens: 8096, messages, stream: true });
 
       for await (const event of stream) {
@@ -411,7 +531,7 @@ export async function* streamCompletion({
       }
     } else {
       const openai = new OpenAI({ apiKey: route.apiKey, baseURL: route.baseURL });
-      const model = route.model;
+      const model = route.apiModel;
       const stream = await openai.chat.completions.create({ model, max_tokens: 8096, messages, stream: true, stream_options: { include_usage: true } });
 
       for await (const chunk of stream) {
@@ -436,10 +556,12 @@ export async function* streamCompletion({
       tokensIn: inputTokens,
       tokensOut: outputTokens,
     });
-    recordOutcome(route.provider, true);
+    // Goblin-hosted maps to provider 'openai'; don't let its health bleed into the
+    // real OpenAI BYOK breaker.
+    if (route.layer !== 'goblin_hosted') recordOutcome(route.provider, true);
     yield JSON.stringify({ type: 'done', input_tokens: inputTokens, output_tokens: outputTokens, token_display: tokenDisplay, source_tier: route.layer, model_used: route.model });
   } catch (err: unknown) {
-    recordOutcome(route.provider, false, { slug: route.modelSlug, modelNotFound: isModelNotFound(err) });
+    if (route.layer !== 'goblin_hosted') recordOutcome(route.provider, false, { slug: route.modelSlug, modelNotFound: isModelNotFound(err) });
     if (agentRun) {
       await sb.from('agent_runs').update({ status: 'failed', completed_at: new Date().toISOString() }).eq('id', agentRun.id);
     }

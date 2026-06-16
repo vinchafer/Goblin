@@ -4,6 +4,8 @@ import { authMiddleware } from '../middleware/auth';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { saveFallbackChain, getFallbackChain } from '../services/model-router';
 import { extendTrial } from '../middleware/trial-gate';
+import { computeCapStatus } from '../lib/goblin-cap';
+import { isGoblinHostedEnabled } from '../services/goblin-hosted';
 
 type Variables = { userId: string };
 const users = new Hono<{ Variables: Variables }>();
@@ -158,6 +160,25 @@ users.get('/me/usage', async (c) => {
     daysUntilReset = Math.max(0, Math.ceil((nextReset.getTime() - Date.now()) / 86400000));
   }
 
+  // Goblin-bundled (Layer 2) fair-use cap status. Only when the flag is on; reads
+  // the current-month token rollup (mig 0067). While the migration is unapplied the
+  // view query throws → null (the usage bar renders its neutral/zero state, never an
+  // error). Single source: cap logic lives in lib/goblin-cap.ts.
+  let goblinCap: ReturnType<typeof computeCapStatus> | null = null;
+  if (isGoblinHostedEnabled()) {
+    try {
+      const { data: rollup } = await supabase
+        .from('goblin_hosted_current_month_tokens')
+        .select('tokens_total')
+        .eq('user_id', userId)
+        .maybeSingle();
+      const usedTokens = (rollup as { tokens_total?: number } | null)?.tokens_total ?? 0;
+      goblinCap = computeCapStatus(usedTokens, (userRow?.plan as string) ?? null);
+    } catch {
+      goblinCap = null; // view missing (0067 unapplied) → neutral
+    }
+  }
+
   return c.json({
     plan: (userRow?.plan as string) ?? 'free',
     monthlyUsed: (userRow?.monthly_requests_used as number) ?? 0,
@@ -168,6 +189,7 @@ users.get('/me/usage', async (c) => {
     byTier: tierMap,
     byModel,
     byProject,
+    goblinCap,
   });
 });
 
