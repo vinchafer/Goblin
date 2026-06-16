@@ -160,22 +160,30 @@ users.get('/me/usage', async (c) => {
     daysUntilReset = Math.max(0, Math.ceil((nextReset.getTime() - Date.now()) / 86400000));
   }
 
-  // Goblin-bundled (Layer 2) fair-use cap status. Only when the flag is on; reads
-  // the current-month token rollup (mig 0067). While the migration is unapplied the
-  // view query throws → null (the usage bar renders its neutral/zero state, never an
-  // error). Single source: cap logic lives in lib/goblin-cap.ts.
+  // Goblin-bundled (Layer 2) WEIGHTED fair-use cap status (Session 3). Only when the
+  // flag is on. Reads the current calendar month's goblin_hosted completions split
+  // by tier (completion_costs.model = 'goblin/efficient' | 'goblin/premium'), so the
+  // cap logic can apply FORGE_WEIGHT — no schema change, same table the rollup view
+  // aggregates. Any read failure → null (bar renders its neutral/zero state, never an
+  // error). Single source: the weighting lives in lib/goblin-cap.ts.
   let goblinCap: ReturnType<typeof computeCapStatus> | null = null;
   if (isGoblinHostedEnabled()) {
     try {
-      const { data: rollup } = await supabase
-        .from('goblin_hosted_current_month_tokens')
-        .select('tokens_total')
+      const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+      const { data: rows } = await supabase
+        .from('completion_costs')
+        .select('model, tokens_in, tokens_out')
         .eq('user_id', userId)
-        .maybeSingle();
-      const usedTokens = (rollup as { tokens_total?: number } | null)?.tokens_total ?? 0;
-      goblinCap = computeCapStatus(usedTokens, (userRow?.plan as string) ?? null);
+        .eq('source_tier', 'goblin_hosted')
+        .gte('created_at', startOfMonth.toISOString());
+      let swift = 0, forge = 0;
+      for (const r of (rows as Array<{ model: string; tokens_in: number; tokens_out: number }> | null) ?? []) {
+        const tok = (r.tokens_in ?? 0) + (r.tokens_out ?? 0);
+        if (r.model === 'goblin/premium') forge += tok; else swift += tok;
+      }
+      goblinCap = computeCapStatus(swift, forge, (userRow?.plan as string) ?? null);
     } catch {
-      goblinCap = null; // view missing (0067 unapplied) → neutral
+      goblinCap = null;
     }
   }
 

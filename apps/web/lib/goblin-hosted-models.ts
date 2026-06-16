@@ -16,8 +16,10 @@ export const GOBLIN_HOSTED_MODELS = [
   {
     id: 'goblin/premium',
     name: 'Goblin Forge',
-    description: 'Goblin-bundled premium model — stronger, for heavier work. Pro and Power plans.',
-    plans: ['pro', 'power'] as string[],
+    // SESSION 3: Forge is available on every plan (trial included). Spend is
+    // governed by the weighted monthly allowance, not the model picker.
+    description: 'Goblin-bundled premium model — stronger, for heavier work. No key required.',
+    plans: ['trial', 'build', 'pro', 'power'] as string[],
   },
 ] as const;
 

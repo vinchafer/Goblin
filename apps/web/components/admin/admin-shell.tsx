@@ -8,6 +8,7 @@ const NAV = [
   { href: '/admin/users',  label: 'Users',         icon: 'U' },
   { href: '/admin/models', label: 'Models',        icon: 'M' },
   { href: '/admin/catalog', label: 'Catalog Ops',  icon: 'C' },
+  { href: '/admin/telemetry', label: 'Telemetry',  icon: 'T' },
   { href: '/admin/builds', label: 'Builds',        icon: 'B' },
   { href: '/admin/status', label: 'Status',        icon: 'S' },
 ];

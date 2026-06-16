@@ -25,10 +25,15 @@ const PRICING: Record<string, ModelPrice> = {
   // Groq / Llama
   'llama-3.3-70b': { in_per_million: 0.59, out_per_million: 0.79 },
 
-  // Goblin-bundled (Layer 2, API-first) — wholesale per-token cost basis.
-  // Efficient = Flash-class default; premium = frontier-adjacent upsell.
-  'goblin/efficient': { in_per_million: 0.14, out_per_million: 0.28 },
-  'goblin/premium': { in_per_million: 0.95, out_per_million: 3.48 },
+  // Goblin-bundled (Layer 2, API-first) — wholesale per-token cost basis (PROVISIONAL).
+  // Derived from the LOCKED blended COGS in the financial model (Session 3/4):
+  //   • Swift (DeepSeek V3.2, input caching) ≈ $0.162 / 1M blended @ 9:1 in:out
+  //   • Forge (Kimi K2.6)                    ≈ $0.715 / 1M blended @ 9:1 in:out
+  // Split assumes out ≈ 2× in (so blended(9:1) = (9·in + 1·out)/10 hits the target).
+  // These feed completion_costs.cost_usd → the founder telemetry $ estimate ONLY;
+  // they never reach a user surface (two-level truth). FORGE_WEIGHT 4.4 = 0.715/0.162.
+  'goblin/efficient': { in_per_million: 0.147, out_per_million: 0.294 },
+  'goblin/premium': { in_per_million: 0.650, out_per_million: 1.300 },
 
   default: { in_per_million: 5.0, out_per_million: 15.0 },
 };

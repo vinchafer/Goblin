@@ -6,13 +6,17 @@ import {
   getGoblinClient,
   parseGoblinTier,
   tierAllowedForPlan,
-  isOverDailyTokenCeiling,
   GOBLIN_HOSTED_TIERS,
   GOBLIN_DEFAULT_TIER,
   GOBLIN_MAX_TOKENS_PER_REQUEST,
   type GoblinHostedConfig,
   type GoblinTierId,
 } from './goblin-hosted';
+import {
+  isOverMonthlyAllowance,
+  isOverDailyGuard,
+  nextMonthlyResetISO,
+} from '../lib/goblin-cap';
 import { decryptData, decryptUserData } from './encryption';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { PROVIDERS, PROVIDER_BASE_URLS, type ProviderId } from '../config/providers';
@@ -233,24 +237,87 @@ async function getUserPlan(userId: string, supabase?: SupabaseClient): Promise<s
   }
 }
 
-/** Sum the user's same-day goblin_hosted token usage (in + out) — the per-day drain
- *  guard input. Best-effort: any read failure returns 0 (never blocks on a glitch). */
-async function goblinTokensUsedToday(userId: string, supabase?: SupabaseClient): Promise<number> {
+/** Read plan + preferred language together (one query) — used by the Goblin-hosted
+ *  cap/daily-guard enforcement for both the gating and the EN/DE refusal copy. */
+async function getUserPlanAndLang(
+  userId: string,
+  supabase?: SupabaseClient,
+): Promise<{ plan: string; lang: 'en' | 'de' }> {
   try {
     const sb = supabase ?? getSupabaseAdmin();
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
+    const { data } = await sb.from('users').select('plan, preferred_lang').eq('id', userId).single();
+    const row = data as { plan?: string; preferred_lang?: string } | null;
+    const lang = row?.preferred_lang === 'en' ? 'en' : 'de';
+    return { plan: (row?.plan ?? '').toLowerCase(), lang };
+  } catch {
+    return { plan: '', lang: 'de' };
+  }
+}
+
+interface GoblinWeightedUsage {
+  monthSwift: number; monthForge: number; daySwift: number; dayForge: number;
+}
+
+/** One month-scoped read of the user's goblin_hosted completions, split into
+ *  Swift vs Forge tokens for both the current calendar month and today. The
+ *  Swift/Forge split (by completion_costs.model = the tier id) is what the weighted
+ *  allowance needs — no schema change, same table the rollup view aggregates.
+ *  Best-effort: any read failure returns zeros (never blocks on a glitch). */
+async function goblinWeightedUsage(
+  userId: string,
+  supabase?: SupabaseClient,
+): Promise<GoblinWeightedUsage> {
+  const zero: GoblinWeightedUsage = { monthSwift: 0, monthForge: 0, daySwift: 0, dayForge: 0 };
+  try {
+    const sb = supabase ?? getSupabaseAdmin();
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfDay = new Date(); startOfDay.setHours(0, 0, 0, 0);
+    const dayStartMs = startOfDay.getTime();
     const { data } = await sb
       .from('completion_costs')
-      .select('tokens_in, tokens_out')
+      .select('model, tokens_in, tokens_out, created_at')
       .eq('user_id', userId)
       .eq('source_tier', 'goblin_hosted')
-      .gte('created_at', startOfDay.toISOString());
-    const rows = (data as Array<{ tokens_in: number; tokens_out: number }> | null) ?? [];
-    return rows.reduce((s, r) => s + (r.tokens_in ?? 0) + (r.tokens_out ?? 0), 0);
+      .gte('created_at', startOfMonth.toISOString());
+    const rows = (data as Array<{ model: string; tokens_in: number; tokens_out: number; created_at: string }> | null) ?? [];
+    const acc = { ...zero };
+    for (const r of rows) {
+      const tok = (r.tokens_in ?? 0) + (r.tokens_out ?? 0);
+      const isForge = r.model === 'goblin/premium';
+      if (isForge) acc.monthForge += tok; else acc.monthSwift += tok;
+      if (new Date(r.created_at).getTime() >= dayStartMs) {
+        if (isForge) acc.dayForge += tok; else acc.daySwift += tok;
+      }
+    }
+    return acc;
   } catch {
-    return 0;
+    return zero;
   }
+}
+
+/** Format an ISO reset date (YYYY-MM-DD) for the user's language. */
+function formatResetDate(iso: string, lang: 'en' | 'de'): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  return d.toLocaleDateString(lang === 'en' ? 'en-US' : 'de-DE', {
+    day: 'numeric', month: 'long', timeZone: 'UTC',
+  });
+}
+
+/** Calm, on-brand "monthly allowance reached" copy (HR-3 / HR-4 — no numbers, no
+ *  cost units, just the reset date + upgrade path). */
+function allowanceReachedMsg(lang: 'en' | 'de', resetDate: string): string {
+  const when = formatResetDate(resetDate, lang);
+  return lang === 'en'
+    ? `You've used your monthly Goblin allowance. It resets on ${when} — or upgrade your plan for more.`
+    : `Du hast dein monatliches Goblin-Kontingent aufgebraucht. Es setzt sich am ${when} zurück — oder hol dir mehr mit einem höheren Plan.`;
+}
+
+/** Calm "daily safety limit" copy (anti-abuse guard — framed as a daily pause). */
+function dailyGuardMsg(lang: 'en' | 'de'): string {
+  return lang === 'en'
+    ? "You've hit today's Goblin usage limit. It resets tomorrow — or connect your own API key to keep going."
+    : 'Du hast das heutige Goblin-Limit erreicht. Es setzt sich morgen zurück — oder verbinde einen eigenen API-Key, um weiterzumachen.';
 }
 
 // ─── Route resolution ─────────────────────────────────────────────────────────
@@ -281,14 +348,15 @@ export async function resolveModel(
       const tier = GOBLIN_HOSTED_TIERS.find((t) => t.id === explicitTier)!;
       const plan = await getUserPlan(userId, supabase);
       if (!tierAllowedForPlan(tier, plan)) {
-        // Tier-aware copy: Forge points at the upsell + the Swift fallback; the
-        // default tier (only reachable here for a free/expired account) explains it
-        // needs an active plan, and never tells the user to "pick Swift" when Swift
-        // is what was refused.
-        const message = tier.id === GOBLIN_DEFAULT_TIER.id
-          ? `${tier.name} is included with an active trial or paid plan.`
-          : `${tier.name} is available on the Pro and Power plans. Upgrade to use it, or pick ${GOBLIN_DEFAULT_TIER.name}.`;
-        throw new GoblinError('unknown', message);
+        // SESSION 3 (HR-2): BOTH tiers are available on EVERY plan (trial→power).
+        // There is no model plan-gating any more — this path is only reached by a
+        // free / expired / unknown account (no active plan at all), so the copy is
+        // the same for either tier: it needs an active trial or paid plan. (Spend is
+        // governed by the weighted allowance, enforced in streamCompletion.)
+        throw new GoblinError(
+          'unknown',
+          `${tier.name} is included with an active trial or paid plan.`,
+        );
       }
       return buildGoblinRoute(hosted, explicitTier);
     }
@@ -413,14 +481,30 @@ export async function* streamCompletion({
   let inputTokens = 0;
   let outputTokens = 0;
 
-  // HR-3 per-day drain guard — only for the Goblin-hosted (server-keyed) tier.
-  // A runaway can't exceed the daily token ceiling on Goblin's own dime.
+  // HR-3 fair-use enforcement — only for the Goblin-hosted (server-keyed) tier, and
+  // ALWAYS pre-stream so the current run is never cut mid-build. The run that pushes
+  // a user over the line still completes; THIS next run is what gets the calm
+  // refusal. Two checks, both in weighted cost units (Swift + Forge×4.4):
+  //   1. monthly allowance (user-facing fair use) → resets next month / upgrade
+  //   2. per-plan daily guard (anti-abuse firewall) → resets tomorrow
   if (route.layer === 'goblin_hosted') {
-    const usedToday = await goblinTokensUsedToday(userId, supabase);
-    if (isOverDailyTokenCeiling(usedToday)) {
+    const { plan, lang } = await getUserPlanAndLang(userId, supabase);
+    const usage = await goblinWeightedUsage(userId, supabase);
+
+    if (isOverMonthlyAllowance(usage.monthSwift, usage.monthForge, plan)) {
       yield JSON.stringify({
         type: 'error',
-        message: 'Du hast das heutige Goblin-Modell-Limit erreicht. Bitte versuche es morgen erneut oder verbinde einen eigenen API-Key.',
+        code: 'allowance_reached',
+        message: allowanceReachedMsg(lang, nextMonthlyResetISO()),
+      });
+      return;
+    }
+
+    if (isOverDailyGuard(usage.daySwift, usage.dayForge, plan)) {
+      yield JSON.stringify({
+        type: 'error',
+        code: 'daily_guard',
+        message: dailyGuardMsg(lang),
       });
       return;
     }

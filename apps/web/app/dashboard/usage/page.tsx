@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { apiGet } from '@/lib/api';
+import GoblinUsageBar, { type CapStatus } from '@/components/usage/GoblinUsageBar';
 
 interface UsageData {
   plan: string;
@@ -14,6 +15,8 @@ interface UsageData {
   byTier: { byok: number; free_api: number; goblin_hosted: number };
   byModel: Array<{ model: string; count: number }>;
   byProject: Array<{ projectId: string; name: string; count: number }>;
+  // Weighted Goblin allowance (present only when the Goblin-hosted flag is on).
+  goblinCap?: CapStatus | null;
 }
 
 type Period = '7d' | '30d' | '90d';
@@ -115,6 +118,14 @@ export default function UsagePage() {
             }}>
               BYOK · {data.byTier.byok} ANFRAGEN ÜBER DEINE KEYS · {data.byTier.free_api} ÜBER FREE-TIER
             </p>
+          </div>
+        )}
+
+        {/* WEIGHTED Goblin allowance — single bar, generous-feeling. Renders only
+            when the flag is on and the cap status is present. */}
+        {data?.goblinCap && (
+          <div style={{ marginBottom: 28, maxWidth: 520 }}>
+            <GoblinUsageBar status={data.goblinCap} />
           </div>
         )}
 

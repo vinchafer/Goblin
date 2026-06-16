@@ -1,40 +1,49 @@
 'use client';
 
-// Goblin-bundled (Layer 2) fair-use consumption bar — v6.1 API-first scaffold.
+// Goblin-bundled (Layer 2) WEIGHTED allowance bar — Session 3.
 //
-// Flag OFF (default): neutral "coming soon" state. Renders an empty track and a
-// provider-agnostic label — NO cap numbers, NO "limit" wording, nothing that
-// implies a live cap is enforced. (HR-8 / HR-9 discipline.)
+// ONE allowance, weighted automatically. The user sees a single monthly Goblin
+// allowance as "X% used" + the reset date — NEVER cost units, "$", the 4.4×
+// Forge weight, raw token counts, or the provider name (HR-4 two-level truth).
+// Forge simply moves the bar faster than Swift; that asymmetry lives in the
+// behavior, never in the copy.
 //
-// Flag ON (NEXT_PUBLIC_GOBLIN_HOSTED_API=true — manual local test only): renders the
-// real consumption bar from a CapStatus. The status is computed server-side by
-// apps/api/src/lib/goblin-cap.ts over the goblin_hosted_monthly_tokens rollup
-// (mig 0067); this component only renders it, so the cap logic stays single-source.
+// HR-5 — must read as HEADROOM, not scarcity. Default/empty + normal states say
+// "plenty left". Gold appears ONLY as a filled surface at warn/over; the normal
+// track fill is brand green. No gold borders, no emojis, mono numbers. Legible at
+// 390px in every state. The reset date is shown; no anxiety countdown.
 //
-// Design system locked (HR-13): brand green track fill, gold ONLY as a filled
-// surface (warn/over), no gold borders, no emojis. Numbers in JetBrains Mono.
+// Flag OFF (default): neutral "coming soon" state, no cap implied.
+// Status is computed server-side (apps/api/src/lib/goblin-cap.ts) over the
+// goblin_hosted completions split by tier; this component only renders it.
 
 import { GOBLIN_HOSTED_ENABLED } from '@/lib/goblin-hosted-models';
-import { useLang, t } from '@/lib/use-lang';
+import { useLang, t, type Lang } from '@/lib/use-lang';
 
 export type CapState = 'ok' | 'warn' | 'over';
 
 export interface CapStatus {
+  // Internal economics — present for completeness but NEVER rendered (HR-4).
   usedTokens: number;
   capTokens: number;
   remainingTokens: number;
-  percent: number; // 0-100, already clamped
+  percent: number; // 0-100, already clamped — the only number shown
   state: CapState;
-}
-
-function formatTokens(n: number): string {
-  if (!Number.isFinite(n) || n <= 0) return '0';
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(n >= 10_000_000 ? 0 : 1)}M`;
-  if (n >= 1_000) return `${Math.round(n / 1_000)}K`;
-  return String(Math.round(n));
+  /** ISO date (YYYY-MM-DD) the allowance resets — start of next calendar month. */
+  resetDate?: string;
 }
 
 const mono = "var(--font-mono, 'JetBrains Mono', monospace)";
+
+/** Localize the ISO reset date to a short, calm "1. Juli" / "July 1" form. */
+function formatReset(iso: string | undefined, lang: Lang): string | null {
+  if (!iso) return null;
+  const d = new Date(`${iso}T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return null;
+  return d.toLocaleDateString(lang === 'en' ? 'en-US' : 'de-DE', {
+    day: 'numeric', month: 'long', timeZone: 'UTC',
+  });
+}
 
 export default function GoblinUsageBar({ status }: { status?: CapStatus | null }) {
   const lang = useLang();
@@ -59,36 +68,47 @@ export default function GoblinUsageBar({ status }: { status?: CapStatus | null }
     );
   }
 
-  // ── Flag ON but no data yet — clean empty state ───────────────────────────
+  const reset = formatReset(status?.resetDate, lang);
+  const resetLine = reset ? t(lang, `Zurücksetzung am ${reset}.`, `Resets ${reset}.`) : null;
+
+  // ── Flag ON but no data yet — clean empty state that reads as headroom ─────
   if (!status) {
     return (
       <div style={wrap}>
         <div style={headRow}>
-          <span style={label}>{t(lang, 'Goblin-Modelle', 'Goblin-bundled models')}</span>
+          <span style={label}>{t(lang, 'Goblin-Kontingent · diesen Monat', 'Goblin allowance · this month')}</span>
           <span style={{ ...badge, fontFamily: mono }}>0%</span>
         </div>
         <div style={track} aria-hidden />
+        <p style={note}>
+          {t(lang, 'Viel Spielraum diesen Monat.', 'Plenty of headroom this month.')}
+          {resetLine ? ` ${resetLine}` : ''}
+        </p>
       </div>
     );
   }
 
-  const fill =
-    status.state === 'over' || status.state === 'warn'
-      ? 'var(--brand-gold)'
-      : 'var(--brand-green)';
+  const isHot = status.state === 'over' || status.state === 'warn';
+  const fill = isHot ? 'var(--brand-gold)' : 'var(--brand-green)';
 
-  const stateLabel =
+  // Copy is headroom-first for ok, calm-and-actionable for warn/over. No numbers
+  // beyond the percent; no scarcity framing.
+  const noteText =
     status.state === 'over'
-      ? t(lang, 'Fair-Use-Limit erreicht', 'Fair-use limit reached')
+      ? t(lang, 'Kontingent für diesen Monat erreicht.', 'Monthly allowance reached.')
       : status.state === 'warn'
-        ? t(lang, 'Limit nähert sich', 'Approaching limit')
-        : t(lang, 'Inklusive', 'Included');
+        ? t(lang, 'Du näherst dich deinem Kontingent.', 'Approaching your allowance.')
+        : status.percent <= 0
+          ? t(lang, 'Viel Spielraum diesen Monat.', 'Plenty of headroom this month.')
+          : t(lang, 'Alles entspannt — viel Spielraum.', 'Plenty left — all relaxed.');
 
   return (
     <div style={wrap}>
       <div style={headRow}>
-        <span style={label}>{t(lang, 'Goblin-Modelle · diesen Monat', 'Goblin-bundled · this month')}</span>
-        <span style={{ ...badge, fontFamily: mono }}>{status.percent}%</span>
+        <span style={label}>{t(lang, 'Goblin-Kontingent · diesen Monat', 'Goblin allowance · this month')}</span>
+        <span style={{ ...badge, fontFamily: mono, color: isHot ? 'var(--brand-gold-ink, #7A5A12)' : 'var(--brand-green, #1A3A2A)' }}>
+          {status.percent}%
+        </span>
       </div>
       <div
         style={track}
@@ -96,12 +116,13 @@ export default function GoblinUsageBar({ status }: { status?: CapStatus | null }
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={status.percent}
-        aria-label={t(lang, 'Goblin-Modell-Nutzung', 'Goblin-bundled usage')}
+        aria-label={t(lang, 'Goblin-Kontingent-Nutzung', 'Goblin allowance usage')}
       >
-        <div style={{ ...fillBase, width: `${status.percent}%`, background: fill }} />
+        <div style={{ ...fillBase, width: `${Math.max(status.percent, status.percent > 0 ? 2 : 0)}%`, background: fill }} />
       </div>
-      <p style={{ ...note, fontFamily: mono }}>
-        {formatTokens(status.usedTokens)} / {formatTokens(status.capTokens)} · {stateLabel}
+      <p style={note}>
+        {noteText}
+        {resetLine ? ` ${resetLine}` : ''}
       </p>
     </div>
   );
@@ -120,16 +141,22 @@ const headRow: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'space-between',
+  gap: 8,
 };
 const label: React.CSSProperties = {
   fontSize: 13,
   fontWeight: 600,
   color: 'var(--ink-1, #0F2B1E)',
+  minWidth: 0,
+  overflow: 'hidden',
+  textOverflow: 'ellipsis',
+  whiteSpace: 'nowrap',
 };
 const badge: React.CSSProperties = {
   fontSize: 12,
   fontWeight: 600,
   color: 'var(--brand-green, #1A3A2A)',
+  flexShrink: 0,
 };
 const track: React.CSSProperties = {
   position: 'relative',

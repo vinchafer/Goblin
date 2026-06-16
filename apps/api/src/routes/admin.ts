@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { getSupabaseAdmin } from '../lib/supabase';
+import { aggregateTelemetry, type CompletionRow } from '../lib/goblin-telemetry';
 
 const admin = new Hono();
 
@@ -417,6 +418,47 @@ admin.get('/cost-summary', async (c) => {
       completions: stats.completions,
     })),
   });
+});
+
+// ─── Session 4 — Goblin-hosted founder telemetry (read-only, founder-gated) ─────
+// GET /api/admin/telemetry — the founder's own Layer-2 operating data for the
+// current calendar month: Swift vs Forge token split, weighted cost units, active
+// users, per-plan distribution, the heavy tail (by user id, NO PII), and an
+// estimated wholesale $ (founder-only). Carries the HR-1 reconciliation proof so a
+// drift between what the cap counts and what the founder pays is visible, not
+// silent. READ-ONLY: no mutation, no provider name / slug ever leaves here.
+admin.get('/telemetry', async (c) => {
+  const supabase = getSupabaseAdmin();
+  const now = new Date();
+  const startOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
+
+  const { data, error } = await supabase
+    .from('completion_costs')
+    .select('user_id, model, tokens_in, tokens_out, cost_usd, created_at')
+    .eq('source_tier', 'goblin_hosted')
+    .gte('created_at', startOfMonth)
+    .limit(100000);
+
+  if (error) return c.json({ error: error.message }, 500);
+
+  const rows = (data ?? []) as CompletionRow[];
+
+  // Resolve plan per distinct user (one query) for the plan distribution.
+  const userIds = [...new Set(rows.map((r) => r.user_id))];
+  const planByUser: Record<string, string> = {};
+  if (userIds.length > 0) {
+    const { data: users } = await supabase
+      .from('users')
+      .select('id, plan')
+      .in('id', userIds);
+    for (const u of (users ?? []) as Array<{ id: string; plan: string | null }>) {
+      planByUser[u.id] = u.plan ?? '';
+    }
+  }
+
+  const summary = aggregateTelemetry(rows, planByUser, 10, now);
+  // "live, not yet calibrated" — the founder view labels the numbers accordingly.
+  return c.json({ calibrated: false, ...summary });
 });
 
 // ─── 9B eval endpoints removed in 9R-9 — superseded by /api/rankings (Model Intelligence Layer)

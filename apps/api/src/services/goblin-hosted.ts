@@ -93,8 +93,12 @@ export const GOBLIN_HOSTED_TIERS: GoblinHostedTier[] = [
   {
     id: 'goblin/premium',
     name: 'Goblin Forge',
-    description: 'Goblin-bundled premium model — stronger, for heavier work. Pro and Power plans.',
-    plans: ['pro', 'power'],
+    description: 'Goblin-bundled premium model — stronger, for heavier work. No key required.',
+    // SESSION 3 (HR-2): Forge is available on EVERY plan, trial included. The
+    // weighted monthly allowance governs spend, NOT the model picker — letting a
+    // trial user taste Forge is the acquisition wedge. (Forge just consumes the
+    // allowance ~4.4× faster than Swift; see goblin-cap.ts FORGE_WEIGHT.)
+    plans: ['trial', 'build', 'pro', 'power'],
     modelEnv: 'GOBLIN_HOSTED_MODEL_PREMIUM',
     defaultModel: DEFAULT_MODEL_PREMIUM,
     tierClass: 'premium',
@@ -112,21 +116,13 @@ export const GOBLIN_HOSTED_MODELS = GOBLIN_HOSTED_TIERS.map((t) => ({
   plans: t.plans,
 }));
 
-// ─── HR-3 defensive guards (no test or real loop can drain the $10 balance) ─────
+// ─── HR-3 defensive guard: per-request wire ceiling ─────────────────────────────
 
-/** Per-request OUTPUT token ceiling sent to the provider on every call. */
+/** Per-request OUTPUT token ceiling sent to the provider on every call. Kept here
+ *  (next to the streaming client) because it is a wire param, not a fair-use limit.
+ *  The fair-use config (FORGE_WEIGHT, monthly allowance, per-plan daily guard) lives
+ *  in the single config module lib/goblin-cap.ts. */
 export const GOBLIN_MAX_TOKENS_PER_REQUEST = 8096;
-
-/** Per-user PER-DAY token ceiling (in + out) for the Goblin-hosted tier. A runaway
- *  — test or real — trips this long before it can drain the balance. Enforced in
- *  the router via a same-day completion_costs sum (no migration needed). */
-export const GOBLIN_MAX_TOKENS_PER_DAY = 5_000_000;
-
-/** Pure threshold check (unit-testable; the DB sum is done by the caller). */
-export function isOverDailyTokenCeiling(tokensUsedToday: number): boolean {
-  if (!Number.isFinite(tokensUsedToday) || tokensUsedToday <= 0) return false;
-  return tokensUsedToday >= GOBLIN_MAX_TOKENS_PER_DAY;
-}
 
 // ─── Flag + config ──────────────────────────────────────────────────────────
 

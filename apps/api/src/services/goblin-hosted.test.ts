@@ -13,20 +13,19 @@ import {
   GOBLIN_DEFAULT_TIER,
   DEFAULT_MODEL_EFFICIENT,
   DEFAULT_MODEL_PREMIUM,
-  GOBLIN_MAX_TOKENS_PER_DAY,
   getGoblinHostedConfig,
   getGoblinHostedStatus,
   isGoblinHostedEnabled,
   parseGoblinTier,
   tierAllowedForPlan,
   assertOpenSourceModel,
-  isOverDailyTokenCeiling,
   mapProviderError,
   setGoblinClientFactory,
   resetGoblinClientFactory,
   type GoblinChatClient,
   type GoblinChatParams,
 } from './goblin-hosted';
+import { GOBLIN_DAILY_GUARD } from '../lib/goblin-cap';
 import { GoblinError } from './litellm-client';
 
 // ─── Deterministic mock of the wholesale provider ──────────────────────────────
@@ -215,14 +214,11 @@ describe('plan-gating', () => {
     for (const p of ['trial', 'build', 'pro', 'power']) expect(tierAllowedForPlan(swift, p)).toBe(true);
   });
 
-  it('Forge is gated to Pro and Power (trial excluded)', () => {
-    expect(tierAllowedForPlan(forge, 'trial')).toBe(false);
-    expect(tierAllowedForPlan(forge, 'build')).toBe(false);
-    expect(tierAllowedForPlan(forge, 'pro')).toBe(true);
-    expect(tierAllowedForPlan(forge, 'power')).toBe(true);
+  it('Forge is available on EVERY plan including trial (HR-2 — no model plan-gating)', () => {
+    for (const p of ['trial', 'build', 'pro', 'power']) expect(tierAllowedForPlan(forge, p)).toBe(true);
   });
 
-  it('a free / missing plan is excluded from both tiers (free pool, not Goblin-hosted)', () => {
+  it('a free / missing plan is excluded from both tiers (no active plan at all)', () => {
     expect(tierAllowedForPlan(forge, undefined)).toBe(false);
     expect(tierAllowedForPlan(forge, 'free')).toBe(false);
     expect(tierAllowedForPlan(swift, 'free')).toBe(false);
@@ -241,19 +237,9 @@ describe('plan-gating', () => {
 // 4. Guards
 // ════════════════════════════════════════════════════════════════════════════
 
-describe('defensive guards (HR-3)', () => {
-  it('per-day ceiling fires at/over the limit only', () => {
-    expect(isOverDailyTokenCeiling(0)).toBe(false);
-    expect(isOverDailyTokenCeiling(GOBLIN_MAX_TOKENS_PER_DAY - 1)).toBe(false);
-    expect(isOverDailyTokenCeiling(GOBLIN_MAX_TOKENS_PER_DAY)).toBe(true);
-    expect(isOverDailyTokenCeiling(GOBLIN_MAX_TOKENS_PER_DAY + 1)).toBe(true);
-  });
-
-  it('is defensive against malformed input', () => {
-    expect(isOverDailyTokenCeiling(Number.NaN)).toBe(false);
-    expect(isOverDailyTokenCeiling(-5)).toBe(false);
-  });
-});
+// (The per-day / monthly weighted guard math moved to lib/goblin-cap.ts and is
+// covered exhaustively in goblin-cap.test.ts. The router-level enforcement is
+// exercised end-to-end below.)
 
 // ════════════════════════════════════════════════════════════════════════════
 // 5. Provider-error mapping (calm, code-tagged — never a raw stack trace)
@@ -372,20 +358,43 @@ describe('streaming — happy path', () => {
   });
 });
 
-describe('streaming — plan-gating refusal', () => {
+describe('streaming — both models on every plan (HR-2)', () => {
   beforeEach(() => {
     enableFlag();
     h.stub = makeSupabaseStub({
-      users: { data: { plan: 'build' } }, // Forge not allowed
       byok_keys: { data: [] },
       completion_costs: { data: [] },
       agent_runs: { data: { id: 'run-1' } },
     });
   });
 
-  it('Forge on Build is cleanly refused (error event, not a crash)', async () => {
-    // Through the GUARDED wrapper — the path the chat route actually uses. A
-    // resolveModel refusal surfaces as a calm error event, never an unhandled throw.
+  for (const plan of ['trial', 'build', 'pro', 'power']) {
+    it(`Forge streams on a ${plan} plan (no model plan-gating)`, async () => {
+      h.stub = makeSupabaseStub({
+        users: { data: { plan } },
+        byok_keys: { data: [] },
+        completion_costs: { data: [] },
+        agent_runs: { data: { id: 'run-1' } },
+      });
+      setGoblinClientFactory(() => mockClient({ text: 'forged' }));
+      const { streamCompletion } = await import('./model-router');
+      const events = await collect(streamCompletion({
+        userId: 'u1', projectId: null, message: 'heavy task', chatHistory: [],
+        modelPreference: 'goblin/premium', supabase: h.stub as never,
+      }));
+      expect(events.find((e) => e.type === 'done')).toBeTruthy();
+      expect(events.find((e) => e.type === 'error')).toBeUndefined();
+      expect(lastParams!.model).toBe(DEFAULT_MODEL_PREMIUM);
+    });
+  }
+
+  it('an account with NO active plan is refused for either tier (calm error)', async () => {
+    h.stub = makeSupabaseStub({
+      users: { data: { plan: 'free' } }, // no active plan at all
+      byok_keys: { data: [] },
+      completion_costs: { data: [] },
+      agent_runs: { data: { id: 'run-1' } },
+    });
     setGoblinClientFactory(() => mockClient({}));
     const { streamCompletionGuarded } = await import('./model-router');
     const events = await collect(streamCompletionGuarded({
@@ -394,7 +403,8 @@ describe('streaming — plan-gating refusal', () => {
     }));
     const err = events.find((e) => e.type === 'error');
     expect(err).toBeTruthy();
-    expect(String(err!.message)).toMatch(/Pro and Power/i);
+    expect(String(err!.message)).toMatch(/active trial or paid plan/i);
+    expect(String(err!.message)).not.toMatch(/Pro and Power/i);
   });
 });
 
@@ -442,15 +452,17 @@ describe('streaming — injected error states (graceful degrade)', () => {
   });
 });
 
-describe('streaming — per-day drain guard', () => {
+describe('streaming — weighted fair-use enforcement (HR-3)', () => {
   beforeEach(enableFlag);
 
-  it('refuses cleanly once the daily token ceiling is exceeded', async () => {
+  const today = () => new Date().toISOString();
+
+  it('refuses the NEXT run once the per-plan DAILY guard is exceeded (resets tomorrow)', async () => {
     h.stub = makeSupabaseStub({
-      users: { data: { plan: 'pro' } },
+      users: { data: { plan: 'pro', preferred_lang: 'en' } },
       byok_keys: { data: [] },
-      // already over the daily ceiling today
-      completion_costs: { data: [{ tokens_in: GOBLIN_MAX_TOKENS_PER_DAY, tokens_out: 0 }] },
+      // pro daily guard = 6M cost units; one Swift row today at the guard.
+      completion_costs: { data: [{ model: 'goblin/efficient', tokens_in: GOBLIN_DAILY_GUARD.pro, tokens_out: 0, created_at: today() }] },
       agent_runs: { data: { id: 'run-1' } },
     });
     let called = false;
@@ -462,8 +474,71 @@ describe('streaming — per-day drain guard', () => {
     }));
     const err = events.find((e) => e.type === 'error');
     expect(err).toBeTruthy();
-    expect(String(err!.message)).toMatch(/Limit/i);
-    expect(called).toBe(false); // never reached the provider
+    expect(err!.code).toBe('daily_guard');
+    expect(String(err!.message)).toMatch(/today's Goblin usage limit/i);
+    expect(called).toBe(false); // never reached the provider — current run finished earlier, NEXT is refused
+  });
+
+  it('refuses the NEXT run once the MONTHLY allowance is reached (calm copy + reset date)', async () => {
+    h.stub = makeSupabaseStub({
+      users: { data: { plan: 'trial', preferred_lang: 'en' } },
+      byok_keys: { data: [] },
+      // trial allowance = 4.9M; 5M Swift this month → over.
+      completion_costs: { data: [{ model: 'goblin/efficient', tokens_in: 5_000_000, tokens_out: 0, created_at: today() }] },
+      agent_runs: { data: { id: 'run-1' } },
+    });
+    let called = false;
+    setGoblinClientFactory(() => ({ async *stream() { called = true; } }));
+    const { streamCompletion } = await import('./model-router');
+    const events = await collect(streamCompletion({
+      userId: 'u1', projectId: null, message: 'x', chatHistory: [],
+      modelPreference: 'goblin/efficient', supabase: h.stub as never,
+    }));
+    const err = events.find((e) => e.type === 'error');
+    expect(err).toBeTruthy();
+    expect(err!.code).toBe('allowance_reached');
+    expect(String(err!.message)).toMatch(/monthly Goblin allowance/i);
+    expect(String(err!.message)).toMatch(/resets on/i);
+    expect(called).toBe(false);
+  });
+
+  it('Forge usage trips the cap ~4.4× faster than the same Swift token count', async () => {
+    // 1.2M Forge tokens this month on trial = 5.28M cost units → over the 4.9M trial cap.
+    h.stub = makeSupabaseStub({
+      users: { data: { plan: 'trial', preferred_lang: 'de' } },
+      byok_keys: { data: [] },
+      completion_costs: { data: [{ model: 'goblin/premium', tokens_in: 1_200_000, tokens_out: 0, created_at: today() }] },
+      agent_runs: { data: { id: 'run-1' } },
+    });
+    setGoblinClientFactory(() => mockClient({ text: 'x' }));
+    const { streamCompletion } = await import('./model-router');
+    const events = await collect(streamCompletion({
+      userId: 'u1', projectId: null, message: 'x', chatHistory: [],
+      modelPreference: 'goblin/premium', supabase: h.stub as never,
+    }));
+    const err = events.find((e) => e.type === 'error');
+    expect(err!.code).toBe('allowance_reached');
+    // DE copy for a DE user
+    expect(String(err!.message)).toMatch(/Goblin-Kontingent/i);
+  });
+
+  it('modest Swift usage on trial streams fine (under both daily + monthly)', async () => {
+    // 1.2M Forge (above) tripped the trial cap; the same money in Swift goes ~4.4×
+    // further — 400K Swift is comfortably under the 1.0M daily and 4.9M monthly.
+    h.stub = makeSupabaseStub({
+      users: { data: { plan: 'trial', preferred_lang: 'de' } },
+      byok_keys: { data: [] },
+      completion_costs: { data: [{ model: 'goblin/efficient', tokens_in: 400_000, tokens_out: 0, created_at: today() }] },
+      agent_runs: { data: { id: 'run-1' } },
+    });
+    setGoblinClientFactory(() => mockClient({ text: 'ok', inputTokens: 5, outputTokens: 5 }));
+    const { streamCompletion } = await import('./model-router');
+    const events = await collect(streamCompletion({
+      userId: 'u1', projectId: null, message: 'x', chatHistory: [],
+      modelPreference: 'goblin/efficient', supabase: h.stub as never,
+    }));
+    expect(events.find((e) => e.type === 'done')).toBeTruthy();
+    expect(events.find((e) => e.type === 'error')).toBeUndefined();
   });
 });
 
