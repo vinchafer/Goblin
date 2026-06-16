@@ -82,7 +82,10 @@ export const GOBLIN_HOSTED_TIERS: GoblinHostedTier[] = [
     id: 'goblin/efficient',
     name: 'Goblin Swift',
     description: 'Goblin-bundled coding model — fast, light, no key required.',
-    plans: ['build', 'pro', 'power'],
+    // The default "no key, just build" tier — available during the trial and on
+    // every paid plan. Spend is bounded by the monthly cap + per-day guard, so
+    // there is no margin reason to lock trials out of the wedge experience.
+    plans: ['trial', 'build', 'pro', 'power'],
     modelEnv: 'GOBLIN_HOSTED_MODEL_EFFICIENT',
     defaultModel: DEFAULT_MODEL_EFFICIENT,
     tierClass: 'efficient',

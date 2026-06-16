@@ -281,10 +281,14 @@ export async function resolveModel(
       const tier = GOBLIN_HOSTED_TIERS.find((t) => t.id === explicitTier)!;
       const plan = await getUserPlan(userId, supabase);
       if (!tierAllowedForPlan(tier, plan)) {
-        throw new GoblinError(
-          'unknown',
-          `${tier.name} is available on the Pro and Power plans. Upgrade to use it, or pick Goblin Swift.`,
-        );
+        // Tier-aware copy: Forge points at the upsell + the Swift fallback; the
+        // default tier (only reachable here for a free/expired account) explains it
+        // needs an active plan, and never tells the user to "pick Swift" when Swift
+        // is what was refused.
+        const message = tier.id === GOBLIN_DEFAULT_TIER.id
+          ? `${tier.name} is included with an active trial or paid plan.`
+          : `${tier.name} is available on the Pro and Power plans. Upgrade to use it, or pick ${GOBLIN_DEFAULT_TIER.name}.`;
+        throw new GoblinError('unknown', message);
       }
       return buildGoblinRoute(hosted, explicitTier);
     }

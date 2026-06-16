@@ -211,20 +211,22 @@ describe('plan-gating', () => {
   const swift = GOBLIN_HOSTED_TIERS.find((t) => t.id === 'goblin/efficient')!;
   const forge = GOBLIN_HOSTED_TIERS.find((t) => t.id === 'goblin/premium')!;
 
-  it('Swift is available on every plan', () => {
-    for (const p of ['build', 'pro', 'power']) expect(tierAllowedForPlan(swift, p)).toBe(true);
+  it('Swift is available on the trial and every paid plan (the no-key wedge)', () => {
+    for (const p of ['trial', 'build', 'pro', 'power']) expect(tierAllowedForPlan(swift, p)).toBe(true);
   });
 
-  it('Forge is gated to Pro and Power', () => {
+  it('Forge is gated to Pro and Power (trial excluded)', () => {
+    expect(tierAllowedForPlan(forge, 'trial')).toBe(false);
     expect(tierAllowedForPlan(forge, 'build')).toBe(false);
     expect(tierAllowedForPlan(forge, 'pro')).toBe(true);
     expect(tierAllowedForPlan(forge, 'power')).toBe(true);
   });
 
-  it('unknown / missing plan refuses Forge (but not Swift)', () => {
+  it('a free / missing plan is excluded from both tiers (free pool, not Goblin-hosted)', () => {
     expect(tierAllowedForPlan(forge, undefined)).toBe(false);
     expect(tierAllowedForPlan(forge, 'free')).toBe(false);
-    expect(tierAllowedForPlan(swift, 'free')).toBe(false); // 'free' isn't in Swift's plans either
+    expect(tierAllowedForPlan(swift, 'free')).toBe(false);
+    expect(tierAllowedForPlan(swift, undefined)).toBe(false);
   });
 
   it('parseGoblinTier only recognizes the two tier slugs', () => {
@@ -336,6 +338,23 @@ describe('streaming — happy path', () => {
     const blob = JSON.stringify(events).toLowerCase();
     expect(blob).not.toContain('kimi');
     expect(blob).not.toContain('moonshot');
+  });
+
+  it('Swift works on a TRIAL plan (the no-key wedge — Stage-B regression)', async () => {
+    h.stub = makeSupabaseStub({
+      users: { data: { plan: 'trial' } },
+      byok_keys: { data: [] },
+      completion_costs: { data: [] },
+      agent_runs: { data: { id: 'run-1' } },
+    });
+    setGoblinClientFactory(() => mockClient({ text: 'a goblin is a small creature' }));
+    const { streamCompletion } = await import('./model-router');
+    const events = await collect(streamCompletion({
+      userId: 'u1', projectId: null, message: 'what is a goblin?', chatHistory: [],
+      modelPreference: 'goblin/efficient', supabase: h.stub as never,
+    }));
+    expect(events.find((e) => e.type === 'done')).toBeTruthy();
+    expect(events.find((e) => e.type === 'error')).toBeUndefined();
   });
 
   it('records a completion_costs row with source_tier goblin_hosted', async () => {
