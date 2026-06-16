@@ -24,16 +24,22 @@ shows %). **API tests green (162).**
 
 ---
 
-## WS2 — Push Live  *(GATED — awaiting founder go)*
+## WS2 — Push Live  ✅ DONE
 
-Session-3 + Session-4 work is committed locally on `master`. Pushing triggers the
-Railway (API) + Vercel (web) auto-deploys, which flips the trial allowance and the
-new telemetry surface into prod — i.e. a prod change beyond Session 2/3, so per
-checkpoint (b) it waits for an explicit founder reply. After push I will confirm
-`/health/deep` shows `goblin_hosted: active` and record the deploy SHAs here.
+Founder approved ("push it"). Pushed to `master`:
+- `6725c03` — trial $0.80 + telemetry hardening + founder view (+ Session-3 bundle)
+- `189f950` — policy re-audit + E2E root-cause fixes  ← **deployed HEAD**
 
-Local proof the deploy will be clean: `pnpm --filter @goblin/web build` exit 0
-(all routes incl. `/admin/telemetry`, `/privacy` compiled); API tsc + web tsc clean.
+`origin/master == HEAD == 189f950` (0 ahead / 0 behind).
+
+**Prod verified (Railway API):**
+- `GET /version` → `gitCommit: 189f9500…`, `env: production`, `apiReady: true` — the
+  deployed commit is exactly Session-4 HEAD.
+- `GET /health/deep` → `goblin_hosted: { status: "ok", state: "active", enabled: true }`;
+  supabase / storage / stripe all `ok`; fresh build (uptime ~166s, buildTime 19:37Z).
+
+Vercel (web) auto-deploys the same commit; local `pnpm --filter @goblin/web build`
+exit 0 (all routes incl. `/admin/telemetry`, `/privacy`).
 
 ---
 
