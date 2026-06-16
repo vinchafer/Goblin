@@ -10,13 +10,13 @@ export const GOBLIN_HOSTED_MODELS = [
   {
     id: 'goblin/efficient',
     name: 'Goblin Swift',
-    description: 'Goblin-bundled coding model — fast, efficient, no key required.',
-    plans: ['build', 'pro', 'power'] as string[],
+    description: 'Goblin-bundled coding model — fast, light, no key required.',
+    plans: ['trial', 'build', 'pro', 'power'] as string[],
   },
   {
     id: 'goblin/premium',
     name: 'Goblin Forge',
-    description: 'Goblin-bundled premium model — frontier-adjacent, Pro and Power plans.',
+    description: 'Goblin-bundled premium model — stronger, for heavier work. Pro and Power plans.',
     plans: ['pro', 'power'] as string[],
   },
 ] as const;
