@@ -27,11 +27,12 @@ test.describe('9C — Help cleanup (BUG-014, BUG-015)', { tag: '@auth' }, () => 
     await page.goto('/help');
     await page.waitForLoadState('domcontentloaded');
 
-    // /help was redesigned (now "Help & Support" + English FAQ). Assert the
-    // CONTRACT — a top heading, the FAQ accordion, and a real support contact —
-    // by structure/role so the next copy tweak does not re-break this.
+    // /help is bilingual (useLang); an unauthenticated visit defaults to German, so
+    // assert the CONTRACT — a top heading, the first FAQ question (either language),
+    // and a real support contact — by structure/role, language-agnostic, so neither
+    // a copy tweak nor the DE/EN default re-breaks this.
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-    await expect(page.getByText(/What is Goblin\?/i).first()).toBeVisible();
+    await expect(page.getByText(/Was ist Goblin\?|What is Goblin\?/i).first()).toBeVisible();
     await expect(page.getByRole('link', { name: /support@justgoblin\.com/i })).toBeVisible();
   });
 });

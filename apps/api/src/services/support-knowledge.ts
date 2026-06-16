@@ -147,11 +147,14 @@ Your account is at the 5GB storage limit. Delete old project files or contact su
 
 ## Data & Privacy
 
-**Where is code stored?**
-Hetzner Object Storage, Frankfurt, Germany. GDPR compliant. Encrypted at rest.
+**Where is my code stored?**
+Your projects and files are stored encrypted at rest in the EU (Backblaze B2, eu-central-003).
+
+**Where does AI processing happen?**
+When you use the Goblin-bundled models (no key required), your prompt and code context are sent to our inference provider in the United States for processing. We use only open-source models configured for zero data retention, and rely on EU Standard Contractual Clauses (SCCs) for the transfer. When you bring your own API key (BYOK), prompts go directly to the provider you chose, under your own account and their terms. Storage stays in the EU either way; only the inference step may run outside the EU.
 
 **Does Goblin train on my code?**
-No. Never. Your code is only used to fulfill your requests.
+No. Never. Your code is only used to fulfill your requests, and the bundled models are configured for zero retention.
 
 **Data deletion:**
 Contact support. Account deletion removes all projects and data within 30 days.

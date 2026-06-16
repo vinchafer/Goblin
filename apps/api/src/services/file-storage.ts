@@ -10,7 +10,7 @@ import {
 import type { S3ClientConfig } from '@aws-sdk/client-s3';
 import logger from '../lib/logger';
 
-// DEV ONLY — nicht für Production. Hetzner Keys in .env eintragen.
+// DEV ONLY — nicht für Production. Storage-Keys (Backblaze B2, S3-compatible) in .env eintragen.
 // Capped at 500 entries to prevent unbounded growth in long-running dev sessions.
 const MEMORY_STORAGE_MAX = 500;
 const memoryStorage = new Map<string, string>();

@@ -68,10 +68,16 @@ export function useUser(): UseUserResult {
 
     // FIX3-4: single canonical display name for pill + ProfileCard + everywhere.
     const resolvedName = resolveDisplayName(meta, u.email);
+    // The "Vollständiger Name" field is its own stored value (auth metadata
+    // `full_name`). Read it RAW so editing it round-trips on reload — the canonical
+    // resolver (display_name-priority) drives `displayName` only, otherwise an edit
+    // to full_name would be silently overwritten by display_name on the next load.
+    const rawFullName =
+      typeof meta.full_name === 'string' && meta.full_name.trim() ? meta.full_name.trim() : resolvedName;
     setProfile({
       id: u.id,
       email: u.email ?? '',
-      fullName: resolvedName,
+      fullName: rawFullName,
       displayName: resolvedName,
       avatarUrl: (meta.avatar_url as string) ?? undefined,
       plan: { name: planName },

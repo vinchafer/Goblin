@@ -64,14 +64,14 @@ Last updated: 2026-05-01
 | Privacy Policy | ✅ Done | `/privacy` |
 | Imprint | ✅ Done | `/imprint` (Swiss law requirement) |
 | Cookie banner | ⚠️ Pending | Only auth cookie used, minimal consent needed |
-| GDPR compliance | ⚠️ Verify | Data stored in EU (Hetzner Germany) ✅ |
+| GDPR mechanisms | ⚠️ Verify | Storage in EU (Backblaze B2, eu-central-003); Goblin-bundled inference in US under SCCs, zero-retention OSS models. State mechanisms, not "fully compliant". |
 
 ## Infrastructure
 
 | Item | Status | Notes |
 |------|--------|-------|
 | Supabase project in EU region | ✅ Confirm | Must be Frankfurt (eu-central-1) |
-| Hetzner storage bucket created | ⚠️ Pending | `goblin-projects` bucket, fsn1 region |
+| Storage bucket created | ✅ Live | Backblaze B2 `goblin-projects`, eu-central-003 (EU) |
 | GitHub OAuth App configured | ⚠️ Pending | Callback URL set to production API |
 | Stripe webhooks configured | ⚠️ Pending | Point to production API `/api/billing/webhook` |
 | VAPID keys generated | ⚠️ Pending | `npx web-push generate-vapid-keys` |
