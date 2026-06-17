@@ -20,6 +20,8 @@ import {
   tierAllowedForPlan,
   assertOpenSourceModel,
   mapProviderError,
+  modelDisplayName,
+  getInvestorModelMapping,
   setGoblinClientFactory,
   resetGoblinClientFactory,
   type GoblinChatClient,
@@ -567,5 +569,59 @@ describe('streaming — flag off: never selects Layer 2', () => {
     }));
     expect(events.find((e) => e.type === 'done')).toBeUndefined();
     expect(String(events.find((e) => e.type === 'error')?.message)).toMatch(/No AI model connected/i);
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// Investor model mapping (single source of truth — HR-2/HR-3)
+// ════════════════════════════════════════════════════════════════════════════
+
+describe('modelDisplayName', () => {
+  it('maps the known wholesale slugs to readable labels', () => {
+    expect(modelDisplayName('deepseek-ai/DeepSeek-V3.2')).toBe('DeepSeek V3.2');
+    expect(modelDisplayName('moonshotai/Kimi-K2.6')).toBe('Kimi K2.6');
+  });
+
+  it('degrades an unknown slug to its last path segment, humanized', () => {
+    expect(modelDisplayName('meta-llama/Llama-3.3-70B')).toBe('Llama 3.3 70B');
+    expect(modelDisplayName('bare-slug-name')).toBe('bare slug name');
+  });
+});
+
+describe('getInvestorModelMapping (single source of truth)', () => {
+  it('returns the real Swift/Forge → underlying-model mapping from config', () => {
+    const m = getInvestorModelMapping();
+    expect(m.swift.label).toBe('Goblin Swift');
+    expect(m.swift.slug).toBe(DEFAULT_MODEL_EFFICIENT);
+    expect(m.swift.model).toBe('DeepSeek V3.2');
+    expect(m.swift.tierClass).toBe('efficient');
+
+    expect(m.forge.label).toBe('Goblin Forge');
+    expect(m.forge.slug).toBe(DEFAULT_MODEL_PREMIUM);
+    expect(m.forge.model).toBe('Kimi K2.6');
+    expect(m.forge.tierClass).toBe('premium');
+  });
+
+  it('follows the env override — change the config, the mapping changes (no second copy)', () => {
+    process.env.GOBLIN_HOSTED_MODEL_PREMIUM = 'Qwen/Qwen2.5-Coder-32B-Instruct';
+    const m = getInvestorModelMapping();
+    expect(m.forge.slug).toBe('Qwen/Qwen2.5-Coder-32B-Instruct');
+    expect(m.forge.model).toBe('Qwen2.5 Coder 32B Instruct');
+  });
+
+  it('reports the mapping even with the user-facing flag OFF (it is config, not live routing)', () => {
+    delete process.env.GOBLIN_HOSTED_API;
+    delete process.env.DEEPINFRA_API_KEY;
+    const m = getInvestorModelMapping();
+    expect(m.swift.slug).toBe(DEFAULT_MODEL_EFFICIENT);
+    expect(m.forge.slug).toBe(DEFAULT_MODEL_PREMIUM);
+  });
+
+  it('NEVER returns the wholesale provider name or any key', () => {
+    process.env.DEEPINFRA_API_KEY = 'super-secret-key-value';
+    const blob = JSON.stringify(getInvestorModelMapping()).toLowerCase();
+    expect(blob).not.toContain('deepinfra');
+    expect(blob).not.toContain('super-secret-key-value');
+    expect(blob).not.toContain('apikey');
   });
 });

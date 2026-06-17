@@ -249,23 +249,28 @@ export async function getCatalogForUser(userId: string): Promise<AnnotatedModel[
     }
   }
 
-  // free_api + goblin_hosted: pass through from source.
+  // free_api: pass through from source.
+  //
+  // HR-1 (single-source-of-truth + no-leak): goblin_hosted rows are deliberately
+  // NOT passed through from the DB/static source. The ONLY source of a goblin_hosted
+  // entry is GOBLIN_HOSTED_TIERS below. A pre-pivot seed row (e.g. migration 0009's
+  // "Qwen Coder 32B", slug 'qwen-coder-32b') would otherwise reach the browser as a
+  // Goblin-tier model carrying an underlying open-source model name — leaking exactly
+  // what the two-level-truth invariant forbids. Filtering the layer here makes the
+  // leak impossible regardless of what stale rows live in the prod `models` table.
   for (const s of (hasDbCache ? dbModels : staticSource)) {
     if (s.layer === 'free_api') {
       push({ id: s.id ?? s.slug, name: s.name, slug: s.slug, provider: s.provider, layer: 'free_api',
         description: s.description, tags: s.tags ?? [], requires_key: false, available: s.available, phase: s.phase,
         keyConnected: null, badge: 'FREE', capabilities: s.capabilities });
-    } else if (s.layer === 'goblin_hosted') {
-      push({ id: s.id ?? s.slug, name: s.name, slug: s.slug, provider: s.provider, layer: 'goblin_hosted',
-        description: s.description, tags: s.tags ?? [], requires_key: false, available: s.available, phase: s.phase,
-        keyConnected: null, badge: 'GOBLIN_HOSTED', capabilities: s.capabilities });
     }
+    // goblin_hosted rows from the cache/static source are intentionally skipped — see above.
   }
 
-  // Goblin-bundled (Layer 2) tiers — only when the flag is on. Provider-agnostic:
-  // the public tier name is shown, never the wholesale provider. Forge is gated by
-  // plan (available=false → picker shows it but as upgrade-locked). `seen` dedups if
-  // a stale models-table row already pushed the same slug.
+  // Goblin-bundled (Layer 2) tiers — only when the flag is on. The SINGLE source of
+  // truth for these entries (HR-3). Provider-agnostic: the public tier name is shown,
+  // never the wholesale provider or the underlying model slug. `seen` still dedups if
+  // a stale models-table row somehow shares a canonical tier slug.
   if (isGoblinHostedEnabled()) {
     for (const tier of GOBLIN_HOSTED_TIERS) {
       const allowed = tierAllowedForPlan(tier, userPlan);

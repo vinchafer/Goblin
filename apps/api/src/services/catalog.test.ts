@@ -17,13 +17,16 @@ vi.mock('./byok-service', () => ({
 }));
 
 let userPlan: unknown = 'trial';
+// Rows the mocked `models` table returns. Tests can inject a stale goblin_hosted
+// row to prove it is never surfaced (HR-1 leak guard).
+let modelRows: unknown[] = [];
 vi.mock('../lib/supabase', () => ({
   getSupabaseAdmin: () => ({
     from(table: string) {
       const chain: Record<string, unknown> = {
         select: () => chain,
         eq: () => chain,
-        order: () => Promise.resolve({ data: [] }), // models table → no cache rows
+        order: () => Promise.resolve({ data: table === 'models' ? modelRows : [] }),
         single: () =>
           Promise.resolve(
             table === 'users' ? { data: { plan: userPlan } } : { data: null },
@@ -43,6 +46,7 @@ function disableFlag() { process.env.GOBLIN_HOSTED_API = 'false'; }
 afterEach(() => {
   if (ORIGINAL === undefined) delete process.env.GOBLIN_HOSTED_API;
   else process.env.GOBLIN_HOSTED_API = ORIGINAL;
+  modelRows = [];
   vi.clearAllMocks();
 });
 
@@ -71,6 +75,37 @@ describe('catalog — Goblin Layer 2 availability', () => {
       expect(blob).not.toContain('moonshot');
     });
   }
+
+  it('a stale goblin_hosted DB row (e.g. "Qwen Coder 32B") is NEVER surfaced — HR-1 leak guard', async () => {
+    userPlan = 'trial';
+    // The pre-pivot seed row from migration 0009. If it leaked through, the browser
+    // would see a Goblin-tier model carrying an underlying open-source model name.
+    modelRows = [
+      {
+        id: 'qwen-coder-32b', name: 'Qwen Coder 32B', slug: 'qwen-coder-32b',
+        provider: 'goblin', layer: 'goblin_hosted',
+        description: 'Goblin-hosted. No key required.', tags: ['coding', 'hosted'],
+        requires_key: false, available: false, phase: 3,
+      },
+    ];
+    const catalog = await getCatalogForUser('u1');
+
+    // The stale row is gone…
+    expect(catalog.find((m) => m.slug === 'qwen-coder-32b')).toBeUndefined();
+    expect(catalog.find((m) => m.name === 'Qwen Coder 32B')).toBeUndefined();
+    // …and only the two canonical tiers carry the goblin_hosted layer.
+    const hosted = catalog.filter((m) => m.layer === 'goblin_hosted');
+    expect(hosted.map((m) => m.slug).sort()).toEqual(['goblin/efficient', 'goblin/premium']);
+    // No underlying model name on the GOBLIN-TIER surface. (Scoped to goblin_hosted:
+    // BYOK DeepSeek is a separate, legitimate user-facing provider — banning the word
+    // globally would be wrong. HR-1 forbids the underlying name on the Goblin tier.)
+    const hostedBlob = JSON.stringify(hosted).toLowerCase();
+    expect(hostedBlob).not.toContain('qwen');
+    expect(hostedBlob).not.toContain('deepseek');
+    expect(hostedBlob).not.toContain('kimi');
+    expect(hostedBlob).not.toContain('moonshot');
+    expect(hostedBlob).not.toContain('deepinfra');
+  });
 
   it('neither tier appears when the flag is OFF (no "(soon)" stub possible)', async () => {
     disableFlag();

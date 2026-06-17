@@ -108,6 +108,59 @@ export const GOBLIN_HOSTED_TIERS: GoblinHostedTier[] = [
 /** The efficient tier is always the default (existential condition #2). */
 export const GOBLIN_DEFAULT_TIER = GOBLIN_HOSTED_TIERS[0]!;
 
+// ─── Investor mapping (single source of truth — HR-2/HR-3) ──────────────────────
+
+/**
+ * Readable label for a wholesale provider slug. Keeps the investor surface (and the
+ * pitch that consumes it) human-readable without the pitch hard-coding anything. A
+ * known slug maps to a curated label; an unknown slug degrades gracefully to its
+ * last path segment (so a future model swap still renders sensibly). NEVER includes
+ * the wholesale provider (DeepInfra) — only the open-source model name.
+ */
+export function modelDisplayName(slug: string): string {
+  const KNOWN: Record<string, string> = {
+    'deepseek-ai/DeepSeek-V3.2': 'DeepSeek V3.2',
+    'moonshotai/Kimi-K2.6': 'Kimi K2.6',
+  };
+  if (KNOWN[slug]) return KNOWN[slug]!;
+  const seg = slug.includes('/') ? slug.split('/').pop()! : slug;
+  const cleaned = seg.replace(/[-_]+/g, ' ').trim();
+  return cleaned || slug;
+}
+
+export interface InvestorTierInfo {
+  /** Goblin tier id (goblin/efficient | goblin/premium). */
+  id: GoblinTierId;
+  /** Public, user-facing Goblin name (Goblin Swift / Goblin Forge). */
+  label: string;
+  /** Underlying open-source model display name (e.g. "DeepSeek V3.2"). */
+  model: string;
+  /** Underlying provider model slug (e.g. "deepseek-ai/DeepSeek-V3.2"). */
+  slug: string;
+  /** Cost class — efficient (default) | premium (upsell). */
+  tierClass: 'efficient' | 'premium';
+}
+
+/**
+ * The real Swift/Forge → underlying-model mapping, read from the SAME env-overridable
+ * config the router sends to the provider (single source of truth — HR-3). Changing
+ * `DEFAULT_MODEL_*` or the `GOBLIN_HOSTED_MODEL_*` env var changes BOTH routing and
+ * this mapping with zero second copy. Returned ONLY by the investor-gated endpoint.
+ *
+ * Deliberately independent of the feature flag / secret key: it reports the configured
+ * mapping (model names), not live routing, so the pitch can render it even with the
+ * user-facing flag off. It NEVER returns the wholesale provider name or any API key.
+ */
+export function getInvestorModelMapping(): { swift: InvestorTierInfo; forge: InvestorTierInfo } {
+  const resolve = (tier: GoblinHostedTier): InvestorTierInfo => {
+    const slug = process.env[tier.modelEnv] ?? tier.defaultModel;
+    return { id: tier.id, label: tier.name, model: modelDisplayName(slug), slug, tierClass: tier.tierClass };
+  };
+  const swift = resolve(GOBLIN_HOSTED_TIERS.find((t) => t.tierClass === 'efficient')!);
+  const forge = resolve(GOBLIN_HOSTED_TIERS.find((t) => t.tierClass === 'premium')!);
+  return { swift, forge };
+}
+
 /** Back-compat shape for catalog/UI consumers (id/name/description/plans). */
 export const GOBLIN_HOSTED_MODELS = GOBLIN_HOSTED_TIERS.map((t) => ({
   id: t.id,

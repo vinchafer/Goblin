@@ -16,6 +16,7 @@ const SKIP_PATHS = [
   '/api/account',
   '/api/auth',
   '/api/shared',
+  '/api/investor', // investor-gated, server-to-server; has its own shared-secret auth
 ];
 
 // Read-only paths that should remain accessible even after trial expiry.
