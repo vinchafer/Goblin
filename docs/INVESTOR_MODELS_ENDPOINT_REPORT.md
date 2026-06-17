@@ -1,7 +1,12 @@
 # Investor-Gated Model Endpoint + Name Scrub — Report
 
-Date: 2026-06-17. Repo: Goblin (APP). Branch: master. Status: built, green, **NOT
-pushed** (awaiting founder approval + the new prod env var).
+Date: 2026-06-17. Repo: Goblin (APP). Branch: master. Status: **pushed + live**
+(master `b450bec`; prod `GET /api/investor/models` returns 401 = live + auth-gated;
+`/version` confirms live commit `b450bec`).
+
+- Founder set `INVESTOR_MODELS_TOKEN` on Railway. Authed path returns 200: [ ]
+  (check once verified with the real token — `curl -H "x-investor-token: <REAL>" …`
+  → 200 proves the token is set; 401 means set/fix it before the pitch goes live).
 
 ## 1. User-facing name audit (before → after)
 See `docs/MODEL_NAME_AUDIT.md` for the full grep-backed table.
@@ -23,6 +28,11 @@ See `docs/MODEL_NAME_AUDIT.md` for the full grep-backed table.
 that is an intended, separate feature, not a Goblin-tier leak.
 
 ## 2. The endpoint contract
+
+> **FINAL & UNCHANGED (pitch may rely on this verbatim).** Route
+> `GET /api/investor/models`; auth header `x-investor-token`; response shape
+> `{ swift, forge: { id, label, model, slug, tierClass } }`; server-to-server only.
+> Live on master `b450bec`. No further code changes planned.
 
 **Route:** `GET /api/investor/models`
 **Auth:** header `x-investor-token: <INVESTOR_MODELS_TOKEN>` (shared secret, same
