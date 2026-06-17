@@ -218,11 +218,15 @@ describe('plan-gating', () => {
     for (const p of ['trial', 'build', 'pro', 'power']) expect(tierAllowedForPlan(forge, p)).toBe(true);
   });
 
-  it('a free / missing plan is excluded from both tiers (no active plan at all)', () => {
-    expect(tierAllowedForPlan(forge, undefined)).toBe(false);
-    expect(tierAllowedForPlan(forge, 'free')).toBe(false);
-    expect(tierAllowedForPlan(swift, 'free')).toBe(false);
-    expect(tierAllowedForPlan(swift, undefined)).toBe(false);
+  // SESSION 5 (model-"(soon)" fix): the picker no longer gates on the plan string.
+  // An unset / null / legacy plan (comped or fresh accounts, or a failed single-row
+  // read) must NOT exclude the tier — that was the selectability blocker. The flag
+  // is the only gate; spend is governed by the monthly allowance + trial-gate.
+  it('an unset / null / unknown plan still gets both tiers (flag is the only gate)', () => {
+    expect(tierAllowedForPlan(forge, undefined)).toBe(true);
+    expect(tierAllowedForPlan(forge, null)).toBe(true);
+    expect(tierAllowedForPlan(swift, '')).toBe(true);
+    expect(tierAllowedForPlan(swift, 'comped')).toBe(true);
   });
 
   it('parseGoblinTier only recognizes the two tier slugs', () => {
@@ -388,24 +392,30 @@ describe('streaming — both models on every plan (HR-2)', () => {
     });
   }
 
-  it('an account with NO active plan is refused for either tier (calm error)', async () => {
-    h.stub = makeSupabaseStub({
-      users: { data: { plan: 'free' } }, // no active plan at all
-      byok_keys: { data: [] },
-      completion_costs: { data: [] },
-      agent_runs: { data: { id: 'run-1' } },
+  // SESSION 5 (model-"(soon)" fix): the picker/router no longer gate Goblin on the
+  // plan string. An account whose `plan` reads back null/unset/unknown (a fresh,
+  // comped, or anomalous row — the founder-walk blocker) must STILL be able to
+  // select and stream both tiers; real spend/expiry is enforced by the monthly
+  // allowance (goblin-cap) + trial-gate middleware, not by the model picker.
+  for (const plan of [null, undefined, '', 'comped']) {
+    it(`a ${JSON.stringify(plan)} plan still streams Goblin (no model plan-gating)`, async () => {
+      h.stub = makeSupabaseStub({
+        users: { data: { plan } },
+        byok_keys: { data: [] },
+        completion_costs: { data: [] },
+        agent_runs: { data: { id: 'run-1' } },
+      });
+      setGoblinClientFactory(() => mockClient({ text: 'forged' }));
+      const { streamCompletionGuarded } = await import('./model-router');
+      const events = await collect(streamCompletionGuarded({
+        userId: 'u1', projectId: null, message: 'x', chatHistory: [],
+        modelPreference: 'goblin/premium', supabase: h.stub as never, timeoutMs: 5000,
+      }));
+      expect(events.find((e) => e.type === 'done')).toBeTruthy();
+      expect(events.find((e) => e.type === 'error')).toBeUndefined();
+      expect(lastParams!.model).toBe(DEFAULT_MODEL_PREMIUM);
     });
-    setGoblinClientFactory(() => mockClient({}));
-    const { streamCompletionGuarded } = await import('./model-router');
-    const events = await collect(streamCompletionGuarded({
-      userId: 'u1', projectId: null, message: 'x', chatHistory: [],
-      modelPreference: 'goblin/premium', supabase: h.stub as never, timeoutMs: 5000,
-    }));
-    const err = events.find((e) => e.type === 'error');
-    expect(err).toBeTruthy();
-    expect(String(err!.message)).toMatch(/active trial or paid plan/i);
-    expect(String(err!.message)).not.toMatch(/Pro and Power/i);
-  });
+  }
 });
 
 describe('streaming — injected error states (graceful degrade)', () => {

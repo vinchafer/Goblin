@@ -246,7 +246,14 @@ export function ModelSwitcher() {
       return { text: 'FREE', color: 'var(--success)' }; // green
     }
     if (model.layer === 'goblin_hosted') {
-      return { text: 'SOON', color: '#6b6560' }; // gray
+      // SESSION 5: the badge follows the live `available` flag, never a hard-coded
+      // "SOON". A Goblin-bundled model is only returned by /api/models when the
+      // server flag is on, so an available one is live → show it as the included,
+      // no-key option. The neutral "soon" state is kept only as a defensive
+      // fallback for a genuinely unavailable entry (should not occur in practice).
+      return model.available
+        ? { text: 'INKLUSIVE · KEIN KEY', color: 'var(--success)' } // green — live
+        : { text: 'SOON', color: '#6b6560' }; // gray — defensive
     }
     return null;
   };
@@ -284,10 +291,14 @@ export function ModelSwitcher() {
     });
   }
 
+  // SESSION 5: the Goblin group header follows the live availability of its
+  // models. When the Goblin-bundled models are live (the normal case once the
+  // server flag is on) it reads as the included, no-key tier — never "COMING SOON".
+  const hostedLive = (groupedModels.hosted ?? []).some((m) => m.available);
   const TIER_LABELS: Record<string, string> = {
     byok: "BYOK — YOUR KEYS",
     free: "FREE — NO KEY NEEDED",
-    hosted: "GOBLIN HOSTED — COMING SOON"
+    hosted: hostedLive ? "GOBLIN — INKLUSIVE · KEIN KEY" : "GOBLIN — COMING SOON",
   };
 
   const TIER_ORDER = ['byok', 'hosted', 'free'];
@@ -302,7 +313,7 @@ export function ModelSwitcher() {
   }
 
   const isNoModel = activeModel.name === 'Add model →';
-  const tierLabel = activeModel.tier === 'byok' ? 'BYOK' : activeModel.tier === 'free' ? 'FREE' : 'HOSTED';
+  const tierLabel = activeModel.tier === 'byok' ? 'BYOK' : activeModel.tier === 'free' ? 'FREE' : 'INKLUSIVE';
 
   return (
     <div ref={dropdownRef} style={{ position: 'relative' }}>

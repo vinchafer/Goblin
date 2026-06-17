@@ -5,8 +5,6 @@ import {
   getGoblinHostedConfig,
   getGoblinClient,
   parseGoblinTier,
-  tierAllowedForPlan,
-  GOBLIN_HOSTED_TIERS,
   GOBLIN_DEFAULT_TIER,
   GOBLIN_MAX_TOKENS_PER_REQUEST,
   type GoblinHostedConfig,
@@ -227,16 +225,6 @@ function buildGoblinRoute(hosted: GoblinHostedConfig, tierId: GoblinTierId): Rou
 }
 
 /** Read the user's subscription plan for tier gating. Defaults to '' (no plan). */
-async function getUserPlan(userId: string, supabase?: SupabaseClient): Promise<string> {
-  try {
-    const sb = supabase ?? getSupabaseAdmin();
-    const { data } = await sb.from('users').select('plan').eq('id', userId).single();
-    return ((data as { plan?: string } | null)?.plan ?? '').toLowerCase();
-  } catch {
-    return '';
-  }
-}
-
 /** Read plan + preferred language together (one query) — used by the Goblin-hosted
  *  cap/daily-guard enforcement for both the gating and the EN/DE refusal copy. */
 async function getUserPlanAndLang(
@@ -345,19 +333,11 @@ export async function resolveModel(
   if (explicitTier) {
     const hosted = getGoblinHostedConfig();
     if (hosted) {
-      const tier = GOBLIN_HOSTED_TIERS.find((t) => t.id === explicitTier)!;
-      const plan = await getUserPlan(userId, supabase);
-      if (!tierAllowedForPlan(tier, plan)) {
-        // SESSION 3 (HR-2): BOTH tiers are available on EVERY plan (trial→power).
-        // There is no model plan-gating any more — this path is only reached by a
-        // free / expired / unknown account (no active plan at all), so the copy is
-        // the same for either tier: it needs an active trial or paid plan. (Spend is
-        // governed by the weighted allowance, enforced in streamCompletion.)
-        throw new GoblinError(
-          'unknown',
-          `${tier.name} is included with an active trial or paid plan.`,
-        );
-      }
+      // SESSION 3/5 (HR-2): BOTH tiers are available on EVERY plan (trial→power),
+      // gated only by the GOBLIN_HOSTED_API flag (getGoblinHostedConfig above). There
+      // is no model plan-gating — the weighted monthly allowance (goblin-cap.ts,
+      // enforced in streamCompletion) and the trial-gate middleware (expired trials)
+      // are the real spend/limit enforcers, not the picker.
       return buildGoblinRoute(hosted, explicitTier);
     }
     // Flag off → fall through to BYOK / free / error below.

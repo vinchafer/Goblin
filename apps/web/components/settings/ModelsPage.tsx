@@ -7,10 +7,11 @@ import { IOSToggle } from '../ui/IOSToggle';
 import { getModelAccess, ACCESS_COLORS } from '@/lib/model-access';
 import { useSheetStack } from '../ui/SheetStack';
 import { ProviderKeyForm } from './ProviderKeyForm';
+import { useLang, t } from '@/lib/use-lang';
 
 type HealthState = 'degraded' | 'down';
 
-type Tab = 'rankings' | 'keys' | 'advanced';
+type Tab = 'goblin' | 'rankings' | 'keys' | 'advanced';
 type TaskType = 'coding' | 'reasoning' | 'speed' | 'cost-efficiency' | 'general';
 
 interface RankingRow {
@@ -55,49 +56,141 @@ const ADV_KEY = 'goblin-model-advanced';
 const DEFAULT_KEY = 'goblin-default-model';
 
 export function ModelsPage() {
-  const [tab, setTab] = useState<Tab>('rankings');
+  const lang = useLang();
+  // SESSION 5: Goblin-bundled models are the default offering (no key needed), so
+  // the "Goblin-Modelle" tab leads. "Meine Keys" (BYOK) stays alongside, unchanged.
+  const [tab, setTab] = useState<Tab>('goblin');
+
+  const intro =
+    tab === 'goblin'
+      ? t(lang,
+          'Im Abo enthaltene Modelle — kein eigener Key nötig.',
+          'Models included with your plan — no key of your own needed.')
+      : t(lang,
+          'Rankings aus 5 öffentlichen Benchmarks. Alle 6 Stunden aktualisiert.',
+          'Rankings from 5 public benchmarks. Refreshed every 6 hours.');
+
+  const TABS: { id: Tab; label: string }[] = [
+    { id: 'goblin',   label: t(lang, 'Goblin-Modelle', 'Goblin models') },
+    { id: 'rankings', label: 'Rankings' },
+    { id: 'keys',     label: t(lang, 'Meine Keys', 'My keys') },
+    { id: 'advanced', label: t(lang, 'Erweitert', 'Advanced') },
+  ];
 
   return (
     <div className="settings-section" style={{ padding: '0 0 24px', fontFamily: 'var(--font-sans)' }}>
       <div style={{ padding: '4px 20px 12px' }}>
         <p style={{ fontSize: 13, color: 'var(--text-meta)', margin: 0, lineHeight: 1.5 }}>
-          Rankings aus 5 öffentlichen Benchmarks. Alle 6 Stunden aktualisiert.
+          {intro}
         </p>
       </div>
 
       <div style={{
         display: 'flex', gap: 4, padding: '0 16px',
         borderBottom: '1px solid var(--border-subtle)', marginBottom: 16,
+        overflowX: 'auto',
       }}>
-        {([
-          { id: 'rankings', label: 'Rankings' },
-          { id: 'keys', label: 'Meine Keys' },
-          { id: 'advanced', label: 'Erweitert' },
-        ] as { id: Tab; label: string }[]).map((t) => (
+        {TABS.map((tb) => (
           <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            data-testid={`models-tab-${t.id}`}
+            key={tb.id}
+            onClick={() => setTab(tb.id)}
+            data-testid={`models-tab-${tb.id}`}
             style={{
               padding: '10px 16px',
               background: 'transparent', border: 'none',
               borderBottom: '2px solid',
-              borderColor: tab === t.id ? 'var(--brand-green)' : 'transparent',
-              color: tab === t.id ? 'var(--text)' : 'var(--text-meta)',
-              fontSize: 'var(--t-small-fs)', fontWeight: tab === t.id ? 600 : 400,
+              borderColor: tab === tb.id ? 'var(--brand-green)' : 'transparent',
+              color: tab === tb.id ? 'var(--text)' : 'var(--text-meta)',
+              fontSize: 'var(--t-small-fs)', fontWeight: tab === tb.id ? 600 : 400,
               cursor: 'pointer', fontFamily: 'var(--font-sans)',
-              marginBottom: -1,
+              marginBottom: -1, whiteSpace: 'nowrap', flexShrink: 0,
             }}
-          >{t.label}</button>
+          >{tb.label}</button>
         ))}
       </div>
 
       <div style={{ padding: '0 16px' }}>
+        {tab === 'goblin' && <GoblinModelsTab />}
         {tab === 'rankings' && <RankingsTab />}
         {tab === 'keys' && <KeysTab />}
         {tab === 'advanced' && <AdvancedTab />}
       </div>
     </div>
+  );
+}
+
+// SESSION 5 — Goblin-bundled (Layer 2) models settings area. Plain-spoken, no
+// provider name, no $/cost-units/weight/token math (HR-3/HR-5). Sits alongside the
+// BYOK "Meine Keys" tab, clearly distinct (included models vs your own keys).
+function GoblinModelsTab() {
+  const lang = useLang();
+
+  const cardBase: React.CSSProperties = {
+    background: 'var(--panel)', border: '1px solid var(--border-subtle)',
+    borderRadius: 12, padding: 16, marginBottom: 10,
+  };
+  const cardTitle: React.CSSProperties = {
+    fontSize: 15, fontWeight: 600, color: 'var(--text)',
+    display: 'flex', alignItems: 'center', gap: 8,
+  };
+  const pill = (text: string): React.ReactNode => (
+    <span style={{
+      padding: '2px 8px', borderRadius: 999,
+      background: 'color-mix(in srgb, var(--brand-green) 10%, transparent)',
+      color: 'var(--brand-green)', fontSize: 10.5, fontWeight: 700,
+      letterSpacing: 0.4, textTransform: 'uppercase', flexShrink: 0,
+    }}>{text}</span>
+  );
+  const cardBody: React.CSSProperties = {
+    fontSize: 13, color: 'var(--text-meta)', lineHeight: 1.55, marginTop: 6,
+  };
+
+  return (
+    <>
+      {/* Goblin Swift */}
+      <div style={cardBase}>
+        <div style={cardTitle}>
+          <span>Goblin Swift</span>
+          {pill(t(lang, 'Standard', 'Default'))}
+        </div>
+        <p style={cardBody}>
+          {t(lang,
+            'Schnell und leicht — kein eigener Key nötig. Die richtige Wahl für die meisten Builds und das tägliche Bauen.',
+            'Fast and light — no key needed. The right pick for most builds and everyday work.')}
+        </p>
+      </div>
+
+      {/* Goblin Forge */}
+      <div style={cardBase}>
+        <div style={cardTitle}>
+          <span>Goblin Forge</span>
+          {pill(t(lang, 'Stärker', 'Stronger'))}
+        </div>
+        <p style={cardBody}>
+          {t(lang,
+            'Das stärkere Modell — für schwerere oder kniffligere Aufgaben. Forge verbraucht dein monatliches Kontingent schneller als Swift.',
+            'The stronger model — for heavier or trickier work. Forge uses your monthly allowance faster than Swift.')}
+        </p>
+      </div>
+
+      {/* Explainer */}
+      <div style={{
+        background: 'rgba(45,74,43,0.06)', border: '1px solid rgba(45,74,43,0.16)',
+        borderRadius: 10, padding: '12px 14px', marginTop: 4,
+      }}>
+        <p style={{ fontSize: 13, color: 'var(--text)', margin: 0, lineHeight: 1.55 }}>
+          {t(lang,
+            'Beide Modelle sind in jedem Tarif enthalten — ohne API-Key. Die Nutzung läuft über ein faires monatliches Kontingent, das sich jeden Monat zurücksetzt. Höhere Tarife bekommen mehr Kontingent.',
+            'Both models are included in every plan — no API key. Usage runs on a fair monthly allowance that resets each month. Higher plans get more allowance.')}
+        </p>
+        <a href="/dashboard?settings=usage" style={{
+          display: 'inline-block', marginTop: 10,
+          color: 'var(--brand-green)', fontWeight: 600, textDecoration: 'none', fontSize: 13,
+        }}>
+          {t(lang, 'Dein Kontingent ansehen →', 'See your allowance →')}
+        </a>
+      </div>
+    </>
   );
 }
 

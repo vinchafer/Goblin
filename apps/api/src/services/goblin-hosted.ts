@@ -136,10 +136,22 @@ export function parseGoblinTier(slug?: string | null): GoblinTierId | null {
   return null;
 }
 
-/** Is this tier exposed on the given subscription plan? (plan-gating, HR plans) */
-export function tierAllowedForPlan(tier: GoblinHostedTier, plan?: string | null): boolean {
-  const p = (plan ?? '').toLowerCase();
-  return tier.plans.includes(p);
+/**
+ * Is this tier exposed to a logged-in account?
+ *
+ * SESSION 5 (model-"(soon)" fix): Goblin-bundled models are offered on EVERY plan
+ * — the documented "no model plan-gating any more" intent (see the tier comments
+ * above + model-router). The model picker must NOT gate on the plan string: the
+ * real spend/limit enforcers are the weighted monthly allowance (lib/goblin-cap.ts)
+ * and the trial-gate middleware (expired trials). The previous exact-allowlist
+ * check (`tier.plans.includes(plan)`) wrongly returned false for any account whose
+ * `plan` reads back as null/empty/legacy (unset or comped accounts, or a failed
+ * single-row read) → `available:false` → the tier rendered greyed + unselectable.
+ * That was the selectability blocker. The feature flag (`GOBLIN_HOSTED_API`) is now
+ * the only gate; `tier.plans` is retained for documentation/telemetry only.
+ */
+export function tierAllowedForPlan(_tier: GoblinHostedTier, _plan?: string | null): boolean {
+  return true;
 }
 
 /**
