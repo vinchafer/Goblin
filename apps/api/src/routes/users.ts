@@ -6,6 +6,7 @@ import { saveFallbackChain, getFallbackChain } from '../services/model-router';
 import { extendTrial } from '../middleware/trial-gate';
 import { computeCapStatus } from '../lib/goblin-cap';
 import { isGoblinHostedEnabled } from '../services/goblin-hosted';
+import { usageModelLabel } from '../lib/model-label';
 
 type Variables = { userId: string };
 const users = new Hono<{ Variables: Variables }>();
@@ -118,11 +119,14 @@ users.get('/me/usage', async (c) => {
     if (t in tierMap) tierMap[t] = (tierMap[t] ?? 0) + 1;
   }
 
-  // By model (top 5)
+  // By model (top 5). HR-4 two-level truth: aggregate by the USER-FACING label, not
+  // the raw `model_used`. A Goblin run is shown as "Goblin Swift"/"Goblin Forge"
+  // (never the tier id `goblin/efficient`, never the underlying open-source slug);
+  // BYOK/free slugs are humanized (no raw `…/llama-3.3-70b-versatile`).
   const modelMap: Record<string, number> = {};
   for (const r of allRuns) {
-    const m = (r.model_used as string) ?? 'unknown';
-    modelMap[m] = (modelMap[m] ?? 0) + 1;
+    const label = usageModelLabel(r.model_used as string | null, r.source_tier as string | null);
+    modelMap[label] = (modelMap[label] ?? 0) + 1;
   }
   const byModel = Object.entries(modelMap)
     .sort((a, b) => b[1] - a[1])
