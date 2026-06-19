@@ -76,6 +76,20 @@ describe('catalog — Goblin Layer 2 availability', () => {
     });
   }
 
+  it('hosted tiers carry the GOBLIN_HOSTED badge, never COMING_SOON, when the flag is on (P0-2 data contract)', async () => {
+    // The web picker derives its selectability + badge from this annotated row.
+    // A COMING_SOON badge / available:false here is what a "(soon)" render keys off.
+    userPlan = 'trial';
+    const catalog = await getCatalogForUser('u1');
+    const hosted = catalog.filter((m) => m.layer === 'goblin_hosted');
+    expect(hosted.map((m) => m.slug).sort()).toEqual(['goblin/efficient', 'goblin/premium']);
+    for (const m of hosted) {
+      expect(m.badge).toBe('GOBLIN_HOSTED');
+      expect(m.badge).not.toBe('COMING_SOON');
+      expect(m.available).toBe(true);
+    }
+  });
+
   it('a stale goblin_hosted DB row (e.g. "Qwen Coder 32B") is NEVER surfaced — HR-1 leak guard', async () => {
     userPlan = 'trial';
     // The pre-pivot seed row from migration 0009. If it leaked through, the browser

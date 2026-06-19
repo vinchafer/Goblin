@@ -213,11 +213,16 @@ export default function DashboardPage() {
         `}</style>
 
         {/* Composer head (Variant B from mockup — dark card, prominent prompt entry). */}
+        {/* P0-1 (DD): NO `overflow: hidden` here. The hero hosts the shared
+            ChatInput whose model dropdown (ModelHub) opens downward and must escape
+            the card; `overflow: hidden` clipped it so the model list rendered cut
+            off / behind the card below. border-radius still rounds the dark fill
+            (background is clipped to the border-box), only the popover escapes. */}
         <section className="gobl-hero" style={{
           background: 'var(--ink-deep)', color: 'var(--bone)',
           borderRadius: 'var(--radius-lg)', padding: '28px 28px 22px',
           marginBottom: 36, border: '1px solid rgba(244,236,216,.12)',
-          position: 'relative', overflow: 'hidden',
+          position: 'relative',
         }}>
           <div className="gobl-eyebrow" style={{ color: 'rgba(244,236,216,.62)', marginBottom: 14 }}>
             <span className="tick" />
