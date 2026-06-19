@@ -54,10 +54,27 @@ Append-only. Newest at the bottom. If interrupted, resume from the last unchecke
   DD_RECOMMENDATIONS §A (+ migration per G-6). Findings F4-2/3/4 logged RECOMMENDED.
   This is the honest call (G-3/G-4): billing blast radius is unverifiable in-sandbox.
 
-## NEXT
-- [ ] Phase 2: per-route auth matrix (investor/admin/telemetry unforgeable), secret/PII
-  grep, injection/XSS surface, cap concurrency double-spend, Stripe webhook verify.
-- [ ] Phase 1: deps/dead-code/env/.env.example/TODO inventory.
-- [ ] Phase 3: route × {390/desktop, controls, copy, adversarial, EN/DE} coverage matrix.
-- [ ] Phase 5: free pool live-or-not; telemetry reconciliation re-proof; founder-gating.
-- [ ] Write DD_FIXED.md, DD_COVERAGE.md, DD_REWALK.md.
+## DONE (continued)
+- [x] Phase 2 security: admin/investor unforgeable (fail-closed secret + proxy isAdmin gate),
+  per-route authN consistent, IDOR-safe (user_id scoping), Stripe webhook sig+idempotent,
+  secret hygiene clean. 3 P2/P3 notes (test-auth origin-spoof, cap-concurrency TOCTOU,
+  share-token entropy). PASS verdicts logged with evidence.
+- [x] Phase 5: free pool = OFF by design (`FREE_API_POOL=[]`), coming-soon UI honest →
+  documented verdict. Side-bug F5-1 (picker still advertises free Gemini/Llama) → §C.
+  Telemetry reconciliation re-proven (`goblin-telemetry.test.ts` green, part of 190/0).
+- [x] Phase 1: TODO/FIXME inventory (4 minor TODOs, 0 FIXME/HACK); stack modern; env hygiene clean.
+- [x] All six DD docs written (FINDINGS/FIXED/RECOMMENDATIONS/COVERAGE/REWALK/PROGRESS).
+
+## FINAL STATE
+- Branch `dd-hardening-2026-06-20`, NOT merged to master. No migration applied. No real spend.
+- Commits: `93781cf` (P0 fixes), `1849cd0` (usage leak), `56b3904` (legacy-limit map docs),
+  + final docs commit.
+- Tests: api **190/0**; web typecheck PASS; web build PASS.
+- Fixed: P0-1, P0-2, P0-3, F4-1 (leak). Mapped+recommended: F4-2/3/4 (legacy limit),
+  F5-1 (free-pool advertising), §B (web test harness). Security: PASS + 3 minor notes.
+
+## NOT done (honest — for a future pass)
+- Phase 3 long-tail VISUAL walk at 390px (no browser this run) → DD_REWALK + DD_COVERAGE ▢ rows.
+- Deep injection/XSS fuzz of every input (spot-checked; markdown render + Supabase params
+  parameterized — no string-built SQL seen).
+- The legacy-limit + free-pool retirements (deliberately documented, not executed — coupling/billing).

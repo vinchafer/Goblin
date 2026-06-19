@@ -87,4 +87,35 @@ is not "SOON"). Small, isolated, high leverage for future render regressions.
 
 ---
 
+## §C — Stop advertising the disabled free pool in the model picker (F5-1)
+
+The free pool is intentionally off (`model-router.ts:67` `FREE_API_POOL = []`), but
+`config/providers.ts:213-214` still marks the two `free_api` models `available:true`,
+so the picker offers "Gemini 2.0 Flash · FREE" / "Llama 3.3 70B · FREE". Selecting one
+can't reach a free route — it silently falls through to Goblin Swift (flag on) or
+errors (flag off). It's a mislabel + silent substitution.
+
+**Coupling:** `components/app-shell/model-switcher.tsx:128-147` picks a keyless DEFAULT
+by looking for an available `free_api` model — so simply hiding free_api would drop the
+keyless default to "Add model →" even though Goblin Swift is available.
+
+**Safe change-set:**
+1. Add `export function isFreeApiPoolEnabled(){ return FREE_API_POOL.length > 0; }` to
+   `model-router.ts`.
+2. In `catalog.ts` (free_api push, ~line 262) gate on it — surface `free_api` only when
+   the pool is enabled (mirror the `isGoblinHostedEnabled()` gate for goblin_hosted).
+   Do it in the catalog (not the static `providers.ts` flag) so it holds even when the
+   prod `models` DB cache is the source.
+3. Update the keyless DEFAULT in `model-switcher.tsx` (and `ChatInput.DEFAULT_MODEL`)
+   to prefer an available `goblin_hosted` tier (Swift) before falling back.
+4. Re-test: keyless user sees Goblin Swift selected by default; no "FREE" Gemini/Llama
+   rows while the pool is off; flipping `FREE_API_POOL` back on restores them.
+
+Why not done here: the keyless default-selection change spans two composer components
+plus the catalog, and the prod `models`-table seed state (whether free_api rows exist)
+can't be verified in-sandbox — so the visible result depends on data I can't see. Small
+but worth one reviewed pass.
+
+---
+
 (Further recommendations appended as later phases complete.)
