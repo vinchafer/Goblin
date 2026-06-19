@@ -43,10 +43,21 @@ Append-only. Newest at the bottom. If interrupted, resume from the last unchecke
   tiers), (d) founder live re-walk (DD_REWALK). Logged as a real gap → DD_RECOMMENDATIONS
   (add Vitest + React Testing Library to apps/web).
 
-## NEXT (not yet done)
-- [ ] Confirm web build green → commit P0 as first atomic commit.
-- [ ] Phase 1: deps/dead-code/env/TODO inventory.
-- [ ] Phase 2: per-route auth matrix, secret/PII grep, abuse/cap/concurrency.
-- [ ] Phase 3: full route × {390/desktop, controls, copy, adversarial, EN/DE} matrix.
-- [ ] Phase 4: model-name scrub (usage view leak), legacy request-count limit retirement, terminology.
-- [ ] Phase 5: free pool live-or-not, telemetry reconciliation re-proof.
+## DONE since baseline
+- [x] P0-1 / P0-2 / P0-3 fixed + committed (`93781cf`). Web build PASS (exit 0).
+- [x] Phase 4 usage-view model-name leak → FIXED + committed (`1849cd0`, api 190/0).
+- [x] Phase 4 legacy request-count limit system → fully MAPPED. Decision: do NOT
+  execute unattended — it's one coupled unit (enforcement is the only incrementer of
+  `monthly_requests_used`, which billing/admin/support + 3 displays read; pricing
+  "BYOK unlimited" depends on the enforcement change). Removing pieces in isolation
+  yields STALE billing numbers. Documented as a single ordered change-set →
+  DD_RECOMMENDATIONS §A (+ migration per G-6). Findings F4-2/3/4 logged RECOMMENDED.
+  This is the honest call (G-3/G-4): billing blast radius is unverifiable in-sandbox.
+
+## NEXT
+- [ ] Phase 2: per-route auth matrix (investor/admin/telemetry unforgeable), secret/PII
+  grep, injection/XSS surface, cap concurrency double-spend, Stripe webhook verify.
+- [ ] Phase 1: deps/dead-code/env/.env.example/TODO inventory.
+- [ ] Phase 3: route × {390/desktop, controls, copy, adversarial, EN/DE} coverage matrix.
+- [ ] Phase 5: free pool live-or-not; telemetry reconciliation re-proof; founder-gating.
+- [ ] Write DD_FIXED.md, DD_COVERAGE.md, DD_REWALK.md.
