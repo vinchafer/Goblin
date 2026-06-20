@@ -53,8 +53,9 @@ function hasPII(text: string): boolean {
 
 interface UserContext {
   plan: string;
-  monthlyUsed: number;
-  monthlyLimit: number;
+  // DD §A: the legacy request-count is retired — context now carries the real
+  // BUILD count this calendar month (agent_runs), not a frozen counter / cap.
+  buildsThisMonth: number;
   providers: string[];
   projectCount: number;
   recentErrors: string[];
@@ -62,24 +63,26 @@ interface UserContext {
 
 async function loadUserContext(userId: string, supabase: SupabaseClient): Promise<UserContext> {
   try {
-    const [userRes, projectsRes, runsRes] = await Promise.all([
-      supabase.from('users').select('plan, monthly_requests_used, monthly_limit').eq('id', userId).single(),
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    const [userRes, projectsRes, runsRes, buildsRes] = await Promise.all([
+      supabase.from('users').select('plan').eq('id', userId).single(),
       supabase.from('projects').select('id', { count: 'exact', head: true }).eq('user_id', userId),
       supabase.from('agent_runs').select('model_used, status, error').eq('user_id', userId).eq('status', 'failed').order('created_at', { ascending: false }).limit(5),
+      supabase.from('agent_runs').select('id', { count: 'exact', head: true }).eq('user_id', userId).eq('status', 'success').gte('created_at', startOfMonth),
     ]);
 
     const keysRes = await supabase.from('byok_keys').select('provider').eq('user_id', userId).eq('status', 'active');
 
     return {
       plan: (userRes.data?.plan as string) ?? 'free',
-      monthlyUsed: (userRes.data?.monthly_requests_used as number) ?? 0,
-      monthlyLimit: (userRes.data?.monthly_limit as number) ?? 0,
+      buildsThisMonth: buildsRes.count ?? 0,
       providers: (keysRes.data ?? []).map(k => k.provider as string),
       projectCount: projectsRes.count ?? 0,
       recentErrors: (runsRes.data ?? []).map(r => r.error as string).filter(Boolean),
     };
   } catch {
-    return { plan: 'unknown', monthlyUsed: 0, monthlyLimit: 0, providers: [], projectCount: 0, recentErrors: [] };
+    return { plan: 'unknown', buildsThisMonth: 0, providers: [], projectCount: 0, recentErrors: [] };
   }
 }
 
@@ -135,7 +138,7 @@ export async function* streamSupportAgent({
   const systemPrompt = `${BASE_SYSTEM_PROMPT}
 
 ## User Context (read-only, use this to give personalized help)
-- Plan: ${ctx.plan} (${ctx.monthlyUsed}/${ctx.monthlyLimit} requests used this cycle)
+- Plan: ${ctx.plan} (${ctx.buildsThisMonth} builds this month)
 - Connected AI providers: ${ctx.providers.length > 0 ? ctx.providers.join(', ') : 'none'}
 - Number of projects: ${ctx.projectCount}
 - Recent errors: ${ctx.recentErrors.length > 0 ? ctx.recentErrors.slice(0, 3).join('; ') : 'none'}

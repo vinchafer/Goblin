@@ -2,11 +2,14 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { PLAN_BUILDS } from '@/lib/plan-builds';
 
-const PLAN_INFO: Record<string, { label: string; price: number; requests: number; color: string }> = {
-  build: { label: 'Build', price: 9,  requests: 200,  color: '#8B6914' },
-  pro:   { label: 'Pro',   price: 19, requests: 800,  color: 'var(--brand-green)' },
-  power: { label: 'Power', price: 39, requests: 3000, color: '#1a2d5a' },
+// HR-6: the per-plan figure is the Builds proxy (apps/web/lib/plan-builds.ts), not
+// the retired request count.
+const PLAN_INFO: Record<string, { label: string; price: number; builds: number; color: string }> = {
+  build: { label: 'Build', price: 9,  builds: PLAN_BUILDS.build, color: '#8B6914' },
+  pro:   { label: 'Pro',   price: 19, builds: PLAN_BUILDS.pro,   color: 'var(--brand-green)' },
+  power: { label: 'Power', price: 39, builds: PLAN_BUILDS.power, color: '#1a2d5a' },
 };
 
 interface Invoice {
@@ -29,7 +32,6 @@ interface PaymentMethod {
 interface UsageData {
   plan: string;
   used: number;
-  limit: number;
   reset_date: string | null;
   breakdown: { byok: number; free_api: number; goblin_hosted: number };
 }
@@ -132,8 +134,9 @@ export default function BillingDashboardPage() {
 
   const plan = usage?.plan ?? 'build';
   const planInfo = PLAN_INFO[plan] ?? PLAN_INFO['build']!;
-  const usedPct = usage ? Math.min(100, Math.round((usage.used / usage.limit) * 100)) : 0;
-  const isNearLimit = usedPct >= 80;
+  // DD §A: a plain BUILD count this month. The only cap is the weighted Goblin
+  // allowance, surfaced on the dedicated usage screen — not as a request percent here.
+  const buildsThisMonth = usage?.used ?? 0;
 
   const UPGRADE_PLANS = Object.entries(PLAN_INFO).filter(([k]) => k !== plan);
 
@@ -204,32 +207,9 @@ export default function BillingDashboardPage() {
           Usage This Month
         </h2>
         <p style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 20 }}>
-          {usage?.used ?? 0} / {usage?.limit ?? planInfo.requests} requests used
+          {buildsThisMonth} {buildsThisMonth === 1 ? 'build' : 'builds'} this month
           {usage?.reset_date ? ` · resets ${formatDate(usage.reset_date)}` : ''}
         </p>
-
-        {isNearLimit && (
-          <div style={{
-            background: 'rgba(212,169,74,0.12)', border: '1px solid rgba(212,169,74,0.4)',
-            borderRadius: 8, padding: '10px 14px', marginBottom: 16,
-            fontSize: 13, color: '#8B6914', fontFamily: 'var(--font-sans)',
-          }}>
-            ⚠️ You&apos;ve used {usedPct}% of your monthly limit.{' '}
-            <button onClick={() => handleUpgrade(plan === 'build' ? 'pro' : 'power')}
-              style={{ background: 'none', border: 'none', color: 'var(--brand-gold)', fontWeight: 600, cursor: 'pointer', padding: 0, fontSize: 13 }}>
-              Upgrade plan →
-            </button>
-          </div>
-        )}
-
-        {/* Progress bar */}
-        <div style={{ background: 'var(--subtle)', borderRadius: 4, height: 8, overflow: 'hidden', marginBottom: 20 }}>
-          <div style={{
-            width: `${usedPct}%`, height: '100%', borderRadius: 4,
-            background: isNearLimit ? 'var(--brand-gold)' : 'var(--brand-green)',
-            transition: 'width 0.5s ease',
-          }} />
-        </div>
 
         {/* Breakdown */}
         {usage && (
@@ -237,7 +217,7 @@ export default function BillingDashboardPage() {
             {[
               { label: 'BYOK', value: usage.breakdown.byok, desc: 'Your API keys' },
               { label: 'Free Pool', value: usage.breakdown.free_api, desc: 'Goblin free tier' },
-              { label: 'Hosted', value: usage.breakdown.goblin_hosted, desc: 'Goblin-bundled (coming soon)' },
+              { label: 'Goblin', value: usage.breakdown.goblin_hosted, desc: 'Goblin-bundled models' },
             ].map(item => (
               <div key={item.label} style={{
                 background: 'var(--subtle)', borderRadius: 10, padding: '12px 14px',

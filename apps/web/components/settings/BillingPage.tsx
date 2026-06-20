@@ -16,8 +16,6 @@ interface BillingStatus {
   cardBrand: string | null;
   isComped: boolean;
   compReason: string | null;
-  monthlyUsed: number;
-  monthlyLimit: number;
 }
 
 interface Invoice {
@@ -133,9 +131,10 @@ export function BillingPage() {
   const features = PLAN_FEATURES[planKey] ?? [];
   const monthName = new Date().toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
 
-  const used = status?.monthlyUsed ?? 0;
-  const limit = status?.monthlyLimit ?? 0;
-  const pct = isComped || limit === 0 ? 0 : Math.min(100, Math.round((used / limit) * 100));
+  // DD §A: usage here is a real BUILD count (sum of the agent_runs tier breakdown),
+  // not the retired request counter. The only cap — the weighted Goblin allowance —
+  // lives on the dedicated usage screen (Settings → Verbrauch).
+  const buildsThisMonth = (usage?.byok ?? 0) + (usage?.free_api ?? 0) + (usage?.goblin_hosted ?? 0);
 
   return (
     <div className="settings-section" style={{ padding: '0 16px 32px', fontFamily: 'var(--font-sans)' }}>
@@ -194,34 +193,25 @@ export function BillingPage() {
         </Card>
       </Section>
 
-      {/* Usage */}
+      {/* Usage — a plain BUILD count this month. The real limit (the weighted Goblin
+          allowance) lives on the Verbrauch screen, not here. */}
       <Section title={`Verbrauch — ${monthName}`}>
         <Card>
-          <div style={{ padding: 20 }}>
-            {isComped ? (
-              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
-                <div style={{ fontSize: 'var(--t-small-fs)', color: 'var(--text)' }}>Unbegrenzt</div>
-                <div style={{ fontSize: 13, color: 'var(--text-meta)', fontFamily: 'var(--font-mono, monospace)' }}>{used} Requests</div>
-              </div>
-            ) : (
-              <>
-                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10 }}>
-                  <div style={{ fontSize: 13, color: 'var(--text-meta)' }}>{pct}% genutzt</div>
-                  <div style={{ fontSize: 13, color: 'var(--text)', fontFamily: 'var(--font-mono, monospace)' }}>{used} / {limit}</div>
-                </div>
-                <div style={{ height: 8, borderRadius: 4, background: 'var(--rule, rgba(0,0,0,0.08))', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${pct}%`, background: 'var(--brand-green)', transition: 'width 0.3s ease' }} />
-                </div>
-              </>
-            )}
+          <div style={{ padding: 20, display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
+            <div style={{ fontSize: 'var(--t-small-fs)', color: 'var(--text)' }}>
+              {isComped ? 'Unbegrenzt' : 'Diesen Monat'}
+            </div>
+            <div style={{ fontSize: 15, color: 'var(--text)', fontFamily: 'var(--font-mono, monospace)' }}>
+              {buildsThisMonth} {buildsThisMonth === 1 ? 'Build' : 'Builds'}
+            </div>
           </div>
         </Card>
 
-        {/* Stat cards */}
+        {/* Stat cards — builds by source. */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginTop: 10 }}>
           <StatCard icon="apiKey" label="BYOK" value={usage?.byok ?? 0} />
           <StatCard icon="fast" label="Free" value={usage?.free_api ?? 0} />
-          <StatCard icon="rocket" label="Hosted" value={usage?.goblin_hosted ?? 0} />
+          <StatCard icon="rocket" label="Goblin" value={usage?.goblin_hosted ?? 0} />
         </div>
       </Section>
 

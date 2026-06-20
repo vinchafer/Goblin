@@ -13,8 +13,6 @@ interface User {
   id: string;
   email: string;
   plan: string;
-  monthly_requests_used: number;
-  monthly_limit: number;
   created_at: string;
   stripe_subscription_id: string | null;
   is_admin: boolean;
@@ -147,7 +145,7 @@ export default function AdminUsersPage() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, fontFamily: 'var(--font-sans)' }}>
               <thead>
                 <tr style={{ borderBottom: '2px solid var(--div)' }}>
-                  {['Email', 'Plan', 'Requests', 'Joined', 'Status', 'Actions'].map(h => (
+                  {['Email', 'Plan', 'Joined', 'Status', 'Actions'].map(h => (
                     <th key={h} style={{ textAlign: 'left', padding: '8px 12px', color: 'var(--meta)', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
                   ))}
                 </tr>
@@ -162,9 +160,6 @@ export default function AdminUsersPage() {
                         background: PLAN_BADGE[u.plan] || '#666', color: '#fff',
                         padding: '2px 7px', borderRadius: 4,
                       }}>{u.plan}</span>
-                    </td>
-                    <td style={{ padding: '10px 12px', color: 'var(--meta)' }}>
-                      {u.monthly_requests_used}/{u.monthly_limit}
                     </td>
                     <td style={{ padding: '10px 12px', color: 'var(--meta)' }}>
                       {new Date(u.created_at).toLocaleDateString()}
@@ -244,7 +239,6 @@ export default function AdminUsersPage() {
                 { label: 'ID',    value: selectedUser.id },
                 { label: 'Email', value: selectedUser.email },
                 { label: 'Plan',  value: selectedUser.plan },
-                { label: 'Usage', value: `${selectedUser.monthly_requests_used} / ${selectedUser.monthly_limit}` },
                 { label: 'Joined', value: new Date(selectedUser.created_at).toLocaleString() },
                 { label: 'Stripe', value: selectedUser.stripe_subscription_id || 'none' },
               ].map(f => (

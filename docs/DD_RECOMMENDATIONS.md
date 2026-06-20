@@ -1,0 +1,121 @@
+# DD_RECOMMENDATIONS — what to finish to reach "IPO-ready"
+
+Items I did NOT fix in the autonomous pass — because they need a product decision, a
+migration the founder must apply, a live check, or a refactor whose blast radius
+(billing) I could not verify without prod. Each has a concrete, ordered action.
+
+---
+
+## §A — Retire the legacy request-count limit system (unify on the weighted allowance)
+
+**Why it's here, not FIXED:** the decision (unify on the weighted token allowance) is
+made and correct, but the change is one tightly-coupled unit with a **billing blast
+radius I cannot verify in an unattended sandbox**, and a partial edit makes things
+*worse*, not better. Specifically:
+
+- `users.monthly_requests_used` is incremented in exactly ONE place:
+  `middleware/usage-limit.ts`. Remove that middleware and the counter FREEZES.
+- That same (now-frozen) counter is READ by `routes/billing.ts` (lines 103-104,
+  228-234), `routes/admin.ts`, `services/support-agent.ts`, and three web surfaces
+  (`SidebarUsage.tsx`, `app/dashboard/usage/page.tsx`, `settings/UsagePage.tsx`).
+- The pricing claim "BYOK unlimited" is only HONEST once the 200-cap stops hitting
+  BYOK (today `usage-limit.ts` caps every tier on `/api/chat/stream`).
+
+So enforcement, billing reads, three displays, and pricing copy must move together.
+Half of it (e.g. "just delete the middleware") leaves stale numbers in billing/admin.
+
+**The bug being retired (real, user-facing):** on `/api/chat/stream` (project chat)
+a BYOK or Goblin user is blocked at `monthly_limit` (200 default) — wrong on both
+counts (BYOK is the user's own key; Goblin is already governed by the weighted
+allowance). The standalone-chat path `/api/chat-sessions/*` has NO such cap, so the
+limit is also trivially bypassable — it only penalises the project-chat user.
+
+**Ordered, safe execution (review as ONE PR):**
+1. **API source of activity.** `GET /api/users/me/usage` already returns
+   `totalInPeriod` (real `agent_runs` count) + `byTier`. Switch every display off
+   `monthlyUsed`/`monthlyLimit` and onto `totalInPeriod`/`byTier` (activity) and
+   `goblinCap` (the weighted Goblin allowance, already computed there).
+2. **Displays** (German surfaces — keep the existing locale):
+   - `settings/UsagePage.tsx`: delete the "Goblin-Anfragen X/Y" block (lines ~75-91);
+     keep `GoblinUsageBar` (Goblin allowance) + the BYOK count row (`byTier.byok`).
+   - `app/dashboard/usage/page.tsx`: rewrite `statusSentence()` to read as activity
+     ("Du hast diesen Monat X Anfragen gestellt"), not "X von Y" cap; keep the
+     weighted `GoblinUsageBar`.
+   - `components/sidebar/SidebarUsage.tsx`: replace the `monthlyUsed/monthlyLimit`
+     percent bar with the `goblinCap.percent` bar (fetch `goblinCap` here too), or a
+     plain activity count when `goblinCap` is null. Comped path already correct.
+3. **Enforcement.** Remove `usageLimitMiddleware` from `routes/chat.ts:44` (keep
+   `chatStreamRateLimit` — the per-minute burst guard stays). Goblin spend remains
+   capped by the weighted allowance + daily guard in `model-router.ts` (tested:
+   "refuses NEXT run once daily guard / monthly allowance reached"). Delete
+   `middleware/usage-limit.ts` (now unused) — grep first to confirm no other import.
+4. **Pricing copy** (`geo-pricing-section.tsx` + `pricing-cards.tsx`): drop
+   "N AI requests / month". Honest replacement (no token economics — two-level
+   truth): "BYOK — all providers, no limits" + "Goblin-bundled models included"
+   (with a per-tier qualifier if a user-facing allowance unit is chosen — see the
+   open product question below). EN + the German surfaces in parity.
+5. **Billing/admin/support.** `billing.ts` (`used`/`limit`/`byok_count`), `admin.ts`
+   user table, and `support-agent.ts` context all read `monthly_requests_used`.
+   Repoint to `totalInPeriod` (or drop the figure from the founder/admin view if not
+   useful). Admin/support are internal — lower priority, but don't leave them
+   reading a frozen counter.
+6. **Migration (file only, founder applies — G-6).** Once nothing reads them, write
+   the next sequential migration to drop `users.monthly_requests_used` and
+   `users.monthly_limit` (and remove `monthlyRequests` from `config/plans.ts` +
+   `billing-service.ts` writes). Until applied, the columns are harmless dead weight.
+7. **Tests.** Add an api test that `/api/chat/stream` no longer 429s a BYOK user
+   under heavy count; keep the weighted-allowance refusal tests.
+
+**Open product question (needs founder):** how to express the per-plan Goblin
+allowance on the pricing page without leaking cost units/tokens/the 4.4 weight. The
+weighted numbers (Build 17.4M / Pro 30M / Power 61.7M cost units) cannot be shown
+verbatim. Options: a derived "≈ N builds/month" proxy, a qualitative ladder
+(included → larger → largest), or storage + "generous AI allowance". This wording
+is the only thing blocking step 4 from being purely mechanical.
+
+---
+
+## §B — Add a component-test harness to apps/web
+
+apps/web has **zero** unit/component tests (no vitest/RTL/jsdom). The P0-2 "SOON"
+regression lived in JSX and could not be caught by any automated test — only the
+data contract (api `catalog.test.ts`) and a build/typecheck are runnable today.
+Action: add `vitest` + `@testing-library/react` + `jsdom` + a `@/`-alias vitest
+config to apps/web, and port the P0-2 case (render `ModelHub` with an available
+goblin_hosted model → assert the row is a `<button>` (enabled) and the badge text
+is not "SOON"). Small, isolated, high leverage for future render regressions.
+
+---
+
+## §C — Stop advertising the disabled free pool in the model picker (F5-1)
+
+The free pool is intentionally off (`model-router.ts:67` `FREE_API_POOL = []`), but
+`config/providers.ts:213-214` still marks the two `free_api` models `available:true`,
+so the picker offers "Gemini 2.0 Flash · FREE" / "Llama 3.3 70B · FREE". Selecting one
+can't reach a free route — it silently falls through to Goblin Swift (flag on) or
+errors (flag off). It's a mislabel + silent substitution.
+
+**Coupling:** `components/app-shell/model-switcher.tsx:128-147` picks a keyless DEFAULT
+by looking for an available `free_api` model — so simply hiding free_api would drop the
+keyless default to "Add model →" even though Goblin Swift is available.
+
+**Safe change-set:**
+1. Add `export function isFreeApiPoolEnabled(){ return FREE_API_POOL.length > 0; }` to
+   `model-router.ts`.
+2. In `catalog.ts` (free_api push, ~line 262) gate on it — surface `free_api` only when
+   the pool is enabled (mirror the `isGoblinHostedEnabled()` gate for goblin_hosted).
+   Do it in the catalog (not the static `providers.ts` flag) so it holds even when the
+   prod `models` DB cache is the source.
+3. Update the keyless DEFAULT in `model-switcher.tsx` (and `ChatInput.DEFAULT_MODEL`)
+   to prefer an available `goblin_hosted` tier (Swift) before falling back.
+4. Re-test: keyless user sees Goblin Swift selected by default; no "FREE" Gemini/Llama
+   rows while the pool is off; flipping `FREE_API_POOL` back on restores them.
+
+Why not done here: the keyless default-selection change spans two composer components
+plus the catalog, and the prod `models`-table seed state (whether free_api rows exist)
+can't be verified in-sandbox — so the visible result depends on data I can't see. Small
+but worth one reviewed pass.
+
+---
+
+(Further recommendations appended as later phases complete.)

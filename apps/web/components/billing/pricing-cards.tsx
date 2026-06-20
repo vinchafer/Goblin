@@ -2,15 +2,18 @@
 
 import { Check } from "@phosphor-icons/react";
 import { createClient } from "@/lib/supabase/client";
+import { buildsPerMonth } from "@/lib/plan-builds";
 
+// HR-6: Goblin allowance shown as the honest "≈ N Builds / month" proxy, not the
+// retired "N monthly requests" metric. BYOK carries no Goblin limit (HR-3).
 const PLANS = {
   build: {
     name: "Build",
     price: 9,
     features: [
-      "200 monthly requests",
+      buildsPerMonth('build', 'en'),
       "Unlimited projects",
-      "BYOK — all AI providers",
+      "BYOK — all providers, no Goblin limits",
       "5 GB cloud storage",
       "GitHub push integration",
       "Community support"
@@ -20,9 +23,9 @@ const PLANS = {
     name: "Pro",
     price: 19,
     features: [
-      "800 monthly requests",
+      buildsPerMonth('pro', 'en'),
       "Unlimited projects",
-      "BYOK — all AI providers",
+      "BYOK — all providers, no Goblin limits",
       "20 GB cloud storage",
       "GitHub push integration",
       "Priority support"
@@ -32,9 +35,9 @@ const PLANS = {
     name: "Power",
     price: 39,
     features: [
-      "3,000 monthly requests",
+      buildsPerMonth('power', 'en'),
       "Unlimited projects",
-      "BYOK — all AI providers",
+      "BYOK — all providers, no Goblin limits",
       "100 GB cloud storage",
       "GitHub push integration",
       "Priority support",

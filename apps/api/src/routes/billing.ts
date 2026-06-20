@@ -7,8 +7,7 @@ import {
   createPortalSession,
   handleSubscriptionCreated,
   handleSubscriptionUpdated,
-  handleSubscriptionDeleted,
-  resetMonthlyUsage
+  handleSubscriptionDeleted
 } from '../services/billing-service';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { getGeoTier, PLAN_PRICES, TIER_LABELS } from '../config/geo-pricing';
@@ -68,7 +67,7 @@ billing.get('/status', authMiddleware, async (c) => {
 
   const { data: user } = await supabase
     .from('users')
-    .select('plan, monthly_requests_used, monthly_limit, subscription_status, subscription_current_period_end, trial_ends_at, cloud_trial_ends_at, is_comped, comp_reason, stripe_customer_id')
+    .select('plan, subscription_status, subscription_current_period_end, trial_ends_at, cloud_trial_ends_at, is_comped, comp_reason, stripe_customer_id')
     .eq('id', userId)
     .single();
 
@@ -100,8 +99,6 @@ billing.get('/status', authMiddleware, async (c) => {
     cardBrand,
     isComped: !!user.is_comped,
     compReason: user.comp_reason ?? null,
-    monthlyUsed: user.monthly_requests_used ?? 0,
-    monthlyLimit: user.monthly_limit ?? 0,
   });
 });
 
@@ -188,20 +185,24 @@ billing.get('/payment-method', authMiddleware, async (c) => {
   }
 });
 
-// GET /api/billing/usage — usage breakdown for current user
+// GET /api/billing/usage — activity breakdown for the current calendar month.
+// DD §A: reads the canonical `agent_runs` table (the same source the usage screen
+// uses), NOT the retired `monthly_requests_used` counter. `used` is the real BUILD
+// count this month; there is no legacy request `limit` (the only limit is the
+// weighted Goblin allowance surfaced on the usage screen / GoblinUsageBar).
 billing.get('/usage', authMiddleware, async (c) => {
   const userId = c.get('userId');
   const supabase = getSupabaseAdmin();
 
   const { data: user } = await supabase
     .from('users')
-    .select('plan, monthly_requests_used, monthly_limit, subscription_current_period_end')
+    .select('plan, subscription_current_period_end')
     .eq('id', userId)
     .single();
 
   if (!user) return c.json({ error: 'User not found' }, 404);
 
-  // Breakdown by source tier from chat_logs if available
+  // Build count by source tier for the current calendar month.
   let byok_count = 0;
   let free_count = 0;
   let hosted_count = 0;
@@ -210,28 +211,26 @@ billing.get('/usage', authMiddleware, async (c) => {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
-    const { data: logs } = await supabase
-      .from('chat_logs')
+    const { data: runs } = await supabase
+      .from('agent_runs')
       .select('source_tier')
       .eq('user_id', userId)
+      .eq('status', 'success')
       .gte('created_at', startOfMonth);
 
-    if (logs) {
-      for (const log of logs) {
-        if (log.source_tier === 'byok') byok_count++;
-        else if (log.source_tier === 'free_api') free_count++;
-        else if (log.source_tier === 'goblin_hosted') hosted_count++;
-      }
+    for (const r of runs ?? []) {
+      const t = (r as { source_tier?: string }).source_tier;
+      if (t === 'byok') byok_count++;
+      else if (t === 'free_api') free_count++;
+      else if (t === 'goblin_hosted') hosted_count++;
     }
   } catch {
-    // chat_logs may not exist — use total as byok estimate
-    byok_count = user.monthly_requests_used;
+    // Best-effort breakdown — on any read failure show zero, never a frozen counter.
   }
 
   return c.json({
     plan: user.plan,
-    used: user.monthly_requests_used,
-    limit: user.monthly_limit,
+    used: byok_count + free_count + hosted_count,
     reset_date: user.subscription_current_period_end,
     breakdown: {
       byok: byok_count,
@@ -285,15 +284,10 @@ billing.post('/webhook', async (c) => {
         await handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
         break;
 
-      case 'invoice.paid': {
-        const invoice = event.data.object as Stripe.Invoice;
-        if (invoice.subscription) {
-          const sub = await getStripe().subscriptions.retrieve(invoice.subscription as string);
-          const userId = sub.metadata.userId;
-          if (userId) await resetMonthlyUsage(userId);
-        }
-        break;
-      }
+      // invoice.paid previously reset the legacy monthly_requests_used counter.
+      // That counter is retired (DD §A) and the weighted Goblin allowance resets
+      // automatically at the start of each calendar month (lib/goblin-cap.ts), so
+      // there is nothing to reset here.
     }
 
     return c.json({ received: true });

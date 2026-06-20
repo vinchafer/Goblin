@@ -97,7 +97,6 @@ export async function POST(request: NextRequest) {
       id: userId,
       email: testEmail,
       plan,
-      monthly_requests_used: 0,
     }).then(() => {}, () => {});
 
     // Mark onboarding completed so dashboard doesn't redirect

@@ -1,4 +1,5 @@
 import { SectionHead } from '@/components/landing/ui/SectionHead';
+import { buildsPerMonth } from '@/lib/plan-builds';
 
 const CHECK_PATH = 'M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z';
 
@@ -18,9 +19,9 @@ const PLANS: Plan[] = [
     price: '$9',
     suffix: '/ month',
     features: [
-      '200 AI requests / month',
+      buildsPerMonth('build', 'en'),
       'Unlimited projects',
-      'BYOK — all AI providers',
+      'BYOK — all providers, no Goblin limits',
       '5 GB cloud storage',
       'GitHub push integration',
       'Build from any device',
@@ -33,9 +34,9 @@ const PLANS: Plan[] = [
     suffix: '/ month',
     recommended: true,
     features: [
-      '800 AI requests / month',
+      buildsPerMonth('pro', 'en'),
       'Unlimited projects',
-      'BYOK — all AI providers',
+      'BYOK — all providers, no Goblin limits',
       '20 GB cloud storage',
       'GitHub push integration',
       'Build from any device',
@@ -47,9 +48,9 @@ const PLANS: Plan[] = [
     price: '$39',
     suffix: '/ month',
     features: [
-      '3,000 AI requests / month',
+      buildsPerMonth('power', 'en'),
       'Unlimited projects',
-      'BYOK — all AI providers',
+      'BYOK — all providers, no Goblin limits',
       '100 GB cloud storage',
       'GitHub push integration',
       'Beta features access',

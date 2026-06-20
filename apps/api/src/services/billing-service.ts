@@ -79,13 +79,14 @@ export async function handleSubscriptionCreated(subscription: Stripe.Subscriptio
   const userId = subscription.metadata.userId;
   const priceId = subscription.items.data[0]?.price.id || '';
   const plan = getPlanFromPriceId(priceId) || 'build';
-  const planConfig = getPlans()[plan] ?? getPlans()['build']!;
 
+  // DD §A: the legacy `monthly_limit` request-count is retired — the only limit is
+  // the weighted Goblin allowance (lib/goblin-cap.ts), keyed off `plan`. Nothing to
+  // write here beyond the plan + subscription identifiers.
   await supabase
     .from('users')
     .update({
       plan,
-      monthly_limit: planConfig.monthlyRequests,
       stripe_customer_id: subscription.customer as string,
       stripe_subscription_id: subscription.id,
       subscription_current_period_end: new Date(subscription.current_period_end * 1000).toISOString()
@@ -97,13 +98,11 @@ export async function handleSubscriptionUpdated(subscription: Stripe.Subscriptio
   const supabase = getSupabaseAdmin();
   const priceId = subscription.items.data[0]?.price.id || '';
   const plan = getPlanFromPriceId(priceId) || 'build';
-  const planConfig = getPlans()[plan] ?? getPlans()['build']!;
 
   await supabase
     .from('users')
     .update({
       plan,
-      monthly_limit: planConfig.monthlyRequests,
       subscription_current_period_end: new Date(subscription.current_period_end * 1000).toISOString()
     })
     .eq('stripe_subscription_id', subscription.id);
@@ -116,17 +115,7 @@ export async function handleSubscriptionDeleted(subscription: Stripe.Subscriptio
     .from('users')
     .update({
       plan: 'build',
-      monthly_limit: getPlans()['build']!.monthlyRequests,
       stripe_subscription_id: null
     })
     .eq('stripe_subscription_id', subscription.id);
-}
-
-export async function resetMonthlyUsage(userId: string): Promise<void> {
-  const supabase = getSupabaseAdmin();
-
-  await supabase
-    .from('users')
-    .update({ monthly_requests_used: 0 })
-    .eq('id', userId);
 }
