@@ -28,7 +28,6 @@ export async function GET(request: Request) {
       id: user.id,
       email: user.email ?? '',
       plan: 'build',
-      monthly_requests_used: 0,
     })
     .then(() => {}, () => {
       // Ignore — user row already exists (subsequent logins)

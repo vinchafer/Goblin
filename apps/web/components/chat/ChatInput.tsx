@@ -6,6 +6,7 @@ import { apiGet } from '@/lib/api';
 import { createClient } from '@/lib/supabase/client';
 import { isDemoActive } from '@/lib/demo/demo-flag';
 import { useLang } from '@/lib/use-lang';
+import { GOBLIN_HOSTED_ENABLED } from '@/lib/goblin-hosted-models';
 import { ComposerPlusPopover, type PlusAction } from './ComposerPlusPopover';
 import { Icon } from '@/components/ui/icon';
 import { GoblinLogo } from '@/components/brand/GoblinLogo';
@@ -394,13 +395,24 @@ const MODEL_STORAGE_KEY = 'goblin:last-model';
 // is broken in the prod LiteLLM proxy; Groq Llama 3.3 70B works end-to-end and is
 // now the onboarding-recommended provider. The first-BYOK auto-select below still
 // applies once the user connects any key.
-export const DEFAULT_MODEL: SelectedModel = {
-  slug: 'groq/llama-3.3-70b-versatile',
-  name: 'Llama 3.3 70B',
-  provider: 'groq',
-  layer: 'byok',
-  displayName: 'Llama 3.3 70B',
-};
+// F5-1 (DD §C): when the Goblin-bundled pool is live, the keyless default is Goblin
+// Swift — a real, runnable no-key model — instead of a BYOK Groq slug a keyless user
+// can't reach. When the flag is off, fall back to the proven Groq Llama default.
+export const DEFAULT_MODEL: SelectedModel = GOBLIN_HOSTED_ENABLED
+  ? {
+      slug: 'goblin/efficient',
+      name: 'Goblin Swift',
+      provider: 'goblin',
+      layer: 'goblin_hosted',
+      displayName: 'Goblin Swift',
+    }
+  : {
+      slug: 'groq/llama-3.3-70b-versatile',
+      name: 'Llama 3.3 70B',
+      provider: 'groq',
+      layer: 'byok',
+      displayName: 'Llama 3.3 70B',
+    };
 
 export function useChatModel() {
   const [selectedModel, setSelectedModel] = useState<SelectedModel>(DEFAULT_MODEL);

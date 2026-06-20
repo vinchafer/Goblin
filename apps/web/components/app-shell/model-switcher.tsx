@@ -125,10 +125,21 @@ export function ModelSwitcher() {
           return;
         }
 
-        // 3. Gemini Flash (free_api)
-        const geminiFlash = modelsArray.find(m => 
-          m.layer === 'free_api' && 
-          m.available && 
+        // 3. Goblin Swift (goblin_hosted) — the keyless default once the pool is live.
+        // F5-1 (DD §C): prefer the available Goblin-bundled Swift tier (the live wedge)
+        // over the free_api fallback, which is gated off while the free pool is empty.
+        const goblinSwift =
+          modelsArray.find(m => m.layer === 'goblin_hosted' && m.available && m.id === 'goblin/efficient') ??
+          modelsArray.find(m => m.layer === 'goblin_hosted' && m.available);
+        if (goblinSwift) {
+          handleModelSelect(goblinSwift);
+          return;
+        }
+
+        // 4. Gemini Flash (free_api) — only reachable when the free pool is live.
+        const geminiFlash = modelsArray.find(m =>
+          m.layer === 'free_api' &&
+          m.available &&
           m.name.includes('Gemini')
         );
         if (geminiFlash) {
@@ -136,9 +147,9 @@ export function ModelSwitcher() {
           return;
         }
 
-        // 4. First free_api model
-        const firstFree = modelsArray.find(m => 
-          m.layer === 'free_api' && 
+        // 5. First free_api model
+        const firstFree = modelsArray.find(m =>
+          m.layer === 'free_api' &&
           m.available
         );
         if (firstFree) {
@@ -146,7 +157,7 @@ export function ModelSwitcher() {
           return;
         }
 
-        // 5. No model available
+        // 6. No model available
         setActiveModel({
           id: '',
           name: 'Add model →',

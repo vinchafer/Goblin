@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { getAuthHeaders, API_URL } from '@/lib/api';
+import { buildsPerMonth, PLAN_BUILDS } from '@/lib/plan-builds';
 
 type PlanId = 'build' | 'pro' | 'power';
 
@@ -10,7 +11,8 @@ interface PlanCardData {
   id: PlanId;
   name: string;
   price: number;
-  requests: number;
+  // HR-6: the user-facing allowance proxy in Builds (not the retired request count).
+  monthlyBuilds: number;
   meta: string;
   pitch: string;
   features: string[];
@@ -26,13 +28,13 @@ const PLANS: PlanCardData[] = [
     id: 'build',
     name: 'Build',
     price: 9,
-    requests: 200,
+    monthlyBuilds: PLAN_BUILDS.build,
     meta: 'FÜR DEN START',
-    pitch: 'Lern Goblin kennen. 200 Anfragen pro Monat, BYOK auf allen Providern.',
+    pitch: 'Lern Goblin kennen. Großzügiges Kontingent für deine Builds, BYOK auf allen Providern — ohne Goblin-Limit.',
     features: [
-      '200 AI-Anfragen / Monat',
+      buildsPerMonth('build', 'de'),
       '3 Projekte',
-      'BYOK — alle Provider',
+      'BYOK — alle Provider, kein Goblin-Limit',
       'Send to Code',
       '5 GB Cloud-Storage',
     ],
@@ -41,13 +43,13 @@ const PLANS: PlanCardData[] = [
     id: 'pro',
     name: 'Pro',
     price: 19,
-    requests: 800,
+    monthlyBuilds: PLAN_BUILDS.pro,
     meta: 'FÜR REGELMÄSSIGE BUILDER',
-    pitch: 'Vier Mal so viele Anfragen, Auto-Fallback wenn ein Key streikt.',
+    pitch: 'Mehr monatliches Kontingent, Auto-Fallback wenn ein Key streikt.',
     features: [
-      '800 AI-Anfragen / Monat',
+      buildsPerMonth('pro', 'de'),
       '50 Projekte',
-      'BYOK · Request-Cache',
+      'BYOK — kein Goblin-Limit',
       '20 GB Cloud-Storage',
       'GitHub + Vercel Auto-Deploy',
       'Auto-Fallback-Routing',
@@ -57,11 +59,11 @@ const PLANS: PlanCardData[] = [
     id: 'power',
     name: 'Power',
     price: 39,
-    requests: 3000,
-    meta: 'WENN DU MEHR ANFRAGEN BRAUCHST',
+    monthlyBuilds: PLAN_BUILDS.power,
+    meta: 'WENN DU MEHR KONTINGENT BRAUCHST',
     pitch: 'Mehr Durchsatz für Power-Builder. Priority-Routing, Unlimited Projekte.',
     features: [
-      '3.000 AI-Anfragen / Monat',
+      buildsPerMonth('power', 'de'),
       'Unlimitierte Projekte',
       'BYOK · Priority-Routing',
       '100 GB Cloud-Storage',
@@ -120,10 +122,10 @@ export default function UpgradePage() {
     }
   };
 
-  // If the user got here because of a limit hit, emphasise requests in the
+  // If the user got here because of a limit hit, emphasise the allowance in the
   // headline. Otherwise neutral.
   const reasonHeadline = reason === 'limit-hit'
-    ? 'Mehr Anfragen pro Monat — wenn du gerade an deine Grenze gestoßen bist.'
+    ? 'Mehr Kontingent pro Monat — wenn du gerade an deine Grenze gestoßen bist.'
     : 'Drei Pläne. BYOK auf jedem. Jederzeit kündbar.';
 
   return (
@@ -297,7 +299,7 @@ export default function UpgradePage() {
         {matrixOpen && (
           <div className="gobl-panel" style={{ overflow: 'hidden', marginBottom: 32 }}>
             {[
-              { label: 'AI-Anfragen / Monat', values: ['200', '800', '3.000'] },
+              { label: 'Builds / Monat (ca.)', values: [PLAN_BUILDS.build, PLAN_BUILDS.pro, PLAN_BUILDS.power].map(n => `≈ ${n.toLocaleString('de-DE')}`) },
               { label: 'Projekte', values: ['3', '50', '∞'] },
               { label: 'Cloud-Storage', values: ['5 GB', '20 GB', '100 GB'] },
               { label: 'BYOK (alle Provider)', values: ['✓', '✓', '✓'] },
@@ -372,7 +374,7 @@ export default function UpgradePage() {
                   </h2>
                   <p style={{ fontSize: 'var(--t-small-fs)', color: 'var(--ink-2)', margin: '0 0 16px', lineHeight: 1.5 }}>
                     Du wirst zu Stripe weitergeleitet, um die Zahlung zu bestätigen.
-                    ${plan.price}/Monat. {plan.requests.toLocaleString('de-DE')} Anfragen.
+                    ${plan.price}/Monat. {buildsPerMonth(plan.id, 'de')}.
                     Jederzeit kündbar.
                   </p>
                   <div style={{ display: 'flex', gap: 10 }}>

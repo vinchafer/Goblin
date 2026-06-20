@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Check } from '@phosphor-icons/react';
+import { buildsPerMonth } from '@/lib/plan-builds';
 
 type GeoTier = 1 | 2 | 3;
 
@@ -12,27 +13,31 @@ interface GeoData {
   prices: { build: number; pro: number; power: number };
 }
 
+// HR-6 (DD §A step 4): the Goblin allowance is expressed as an honest "≈ N Builds /
+// month" proxy (apps/web/lib/plan-builds.ts), NOT the retired "N AI requests" metric.
+// "BYOK — all providers, no Goblin limits" is now honest (the count cap on BYOK was
+// removed in HR-3). Public landing copy is English.
 const PLAN_FEATURES = {
   build: [
-    '200 AI requests / month',
+    buildsPerMonth('build', 'en'),
     'Unlimited projects',
-    'BYOK — all AI providers',
+    'BYOK — all providers, no Goblin limits',
     '5 GB cloud storage',
     'GitHub push integration',
     'Build from any device',
   ],
   pro: [
-    '800 AI requests / month',
+    buildsPerMonth('pro', 'en'),
     'Unlimited projects',
-    'BYOK — all AI providers',
+    'BYOK — all providers, no Goblin limits',
     '20 GB cloud storage',
     'GitHub push integration',
     'Build from any device',
   ],
   power: [
-    '3,000 AI requests / month',
+    buildsPerMonth('power', 'en'),
     'Unlimited projects',
-    'BYOK — all AI providers',
+    'BYOK — all providers, no Goblin limits',
     '100 GB cloud storage',
     'GitHub push integration',
     'Build from any device',
