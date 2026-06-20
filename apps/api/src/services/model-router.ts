@@ -66,6 +66,17 @@ interface FreePoolEntry {
 // Free-tier provider recommendations are shown in Settings → API Keys.
 const FREE_API_POOL: FreePoolEntry[] = [];
 
+/**
+ * Is the Goblin-owned free pool live? (DD §C / F5-1) Mirrors `isGoblinHostedEnabled`.
+ * The catalog gates `free_api` rows on this so the picker never advertises a "FREE"
+ * model that can't actually route (the pool is empty by design → `resolveFreeApi()`
+ * always returns null). Flipping `FREE_API_POOL` back to a non-empty list re-enables
+ * both routing AND the picker rows from this single source of truth.
+ */
+export function isFreeApiPoolEnabled(): boolean {
+  return FREE_API_POOL.length > 0;
+}
+
 // Provider priority for auto-selection
 export const PROVIDER_PRIORITY: ProviderName[] = ['anthropic', 'openai', 'deepseek', 'groq', 'mistral', 'google', 'xai', 'together'];
 

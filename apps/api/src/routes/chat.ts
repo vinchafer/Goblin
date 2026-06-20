@@ -3,7 +3,6 @@ import { streamSSE } from 'hono/streaming';
 import { createClient } from '@supabase/supabase-js';
 import { streamCompletionGuarded } from '../services/model-router';
 import { authMiddleware } from '../middleware/auth';
-import { usageLimitMiddleware } from '../middleware/usage-limit';
 import { chatStreamRateLimit } from '../middleware/rate-limit';
 
 type Variables = { userId: string }
@@ -41,7 +40,13 @@ chat.get('/:projectId/history', async (c) => {
   return c.json(data || []);
 });
 
-chat.post('/stream', chatStreamRateLimit, usageLimitMiddleware, async (c) => {
+// HR-3 (DD §A): the per-minute burst guard stays; the legacy monthly REQUEST-COUNT
+// cap (usageLimitMiddleware) is retired. It wrongly 200-capped BYOK (the user's own
+// key) and goblin_hosted (already governed by the weighted token allowance + daily
+// guard in model-router.ts), and only ever applied here — standalone chat had no
+// such cap, so it was bypassable theatre. Goblin spend stays capped by the weighted
+// allowance; BYOK has no Goblin-imposed limit, matching the UI promise.
+chat.post('/stream', chatStreamRateLimit, async (c) => {
   const userId = c.get('userId');
   const { projectId, message, modelSlug } = await c.req.json();
 

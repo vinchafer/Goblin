@@ -64,6 +64,20 @@ export const GOBLIN_MONTHLY_ALLOWANCE: Record<string, number> = {
 export const GOBLIN_DEFAULT_ALLOWANCE = 4_900_000;
 
 /**
+ * PUBLIC "Builds / month" proxy basis (HR-6, DD §A step 4). The pricing/plan copy may
+ * NOT show cost units / tokens / $ / the Forge weight (two-level truth), so each plan's
+ * allowance is translated into a tangible "≈ N Builds / month" figure using this single
+ * documented divisor. A "build" = one agent run / generation turn; 50,000 cost units is
+ * a deliberately CONSERVATIVE estimate of a typical mixed Swift/Forge build (≈50k Swift
+ * tokens, or ≈11k Forge tokens at FORGE_WEIGHT), so the public numbers under-count rather
+ * than over-promise. Adjust here if real telemetry shifts the average; the web copy
+ * (apps/web/lib/plan-builds.ts) carries the rounded result and points back to this.
+ *   trial  4.9M /50k ≈  98 → 100      build 17.4M /50k ≈ 348 → 350
+ *   pro   30.0M /50k = 600 → 600      power 61.7M /50k ≈ 1234 → 1,200 (rounded down)
+ */
+export const COST_UNITS_PER_BUILD = 50_000;
+
+/**
  * Per-user / per-day hard guard, in COST UNITS (≈ 1/5 of the monthly allowance).
  * Anti-abuse firewall only — a normal user never reaches it; it stops bots and
  * runaway agent loops from draining a month of allowance (or Goblin's balance) in

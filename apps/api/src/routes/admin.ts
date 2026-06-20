@@ -29,7 +29,7 @@ admin.get('/users', async (c) => {
   let query = supabase
     .from('users')
     .select(
-      'id, email, plan, monthly_requests_used, monthly_limit, created_at, ' +
+      'id, email, plan, created_at, ' +
       'stripe_customer_id, stripe_subscription_id, subscription_current_period_end, ' +
       'is_admin, is_suspended, deleted_at',
       { count: 'exact' }
@@ -62,7 +62,7 @@ admin.get('/users/:id', async (c) => {
   const { data: user, error: userError } = await supabase
     .from('users')
     .select(
-      'id, email, plan, monthly_requests_used, monthly_limit, created_at, ' +
+      'id, email, plan, created_at, ' +
       'stripe_customer_id, stripe_subscription_id, subscription_current_period_end, ' +
       'is_admin, is_suspended, deleted_at'
     )

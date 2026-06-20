@@ -93,10 +93,12 @@ users.get('/me/usage', async (c) => {
   const supabase = getSupabaseAdmin();
   const since = new Date(Date.now() - days * 86400000).toISOString();
 
-  // Fetch user plan info
+  // Fetch user plan info. The legacy request-count columns (monthly_requests_used /
+  // monthly_limit) are retired (DD §A) — activity is the real `agent_runs` count
+  // below, the limit is the weighted Goblin allowance (goblinCap).
   const { data: userRow } = await supabase
     .from('users')
-    .select('plan, monthly_requests_used, monthly_limit, billing_cycle_start')
+    .select('plan, billing_cycle_start')
     .eq('id', userId)
     .single();
 
@@ -112,11 +114,20 @@ users.get('/me/usage', async (c) => {
 
   const allRuns = runs ?? [];
 
-  // By tier
+  // By tier (activity BUILD counts — one row per agent run). D1: per-Goblin-tier
+  // build counts are split here too (Swift vs Forge). Two-level truth (HR-1): these
+  // are plain RUN COUNTS, never weighted/cost figures — the cost weighting lives only
+  // in goblinCap below. goblin/premium = Forge; any other goblin_hosted run = Swift.
   const tierMap: Record<string, number> = { byok: 0, free_api: 0, goblin_hosted: 0 };
+  let goblinSwiftBuilds = 0;
+  let goblinForgeBuilds = 0;
   for (const r of allRuns) {
     const t = (r.source_tier as string) ?? 'byok';
     if (t in tierMap) tierMap[t] = (tierMap[t] ?? 0) + 1;
+    if (t === 'goblin_hosted') {
+      if ((r.model_used as string) === 'goblin/premium') goblinForgeBuilds++;
+      else goblinSwiftBuilds++;
+    }
   }
 
   // By model (top 5). HR-4 two-level truth: aggregate by the USER-FACING label, not
@@ -193,12 +204,12 @@ users.get('/me/usage', async (c) => {
 
   return c.json({
     plan: (userRow?.plan as string) ?? 'free',
-    monthlyUsed: (userRow?.monthly_requests_used as number) ?? 0,
-    monthlyLimit: (userRow?.monthly_limit as number) ?? 0,
     daysUntilReset,
     period,
     totalInPeriod: allRuns.length,
     byTier: tierMap,
+    // D1: per-Goblin-model activity in BUILDS (run counts, never cost units).
+    goblinBuilds: { swift: goblinSwiftBuilds, forge: goblinForgeBuilds },
     byModel,
     byProject,
     goblinCap,

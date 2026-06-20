@@ -1,6 +1,8 @@
 interface Plan {
   price: number;
-  monthlyRequests: number;
+  // DD §A: the legacy per-plan request-count (`monthlyRequests`) is retired. The only
+  // limit is the weighted Goblin allowance (lib/goblin-cap.ts GOBLIN_MONTHLY_ALLOWANCE),
+  // keyed off `plan`. This config now carries only price + Stripe price ids.
   stripePriceId: string;        // Tier 1 (default, used for checkout)
   stripePriceIdTier2?: string;  // Geo-pricing Tier 2 (Phase Z5)
   stripePriceIdTier3?: string;  // Geo-pricing Tier 3 (Phase Z5)
@@ -26,21 +28,18 @@ function buildPlans(): Record<string, Plan> {
   return {
     build: {
       price: 9,
-      monthlyRequests: 200,
       stripePriceId: build,
       stripePriceIdTier2: process.env.STRIPE_PRICE_BUILD_TIER2,
       stripePriceIdTier3: process.env.STRIPE_PRICE_BUILD_TIER3,
     },
     pro: {
       price: 19,
-      monthlyRequests: 800,
       stripePriceId: pro,
       stripePriceIdTier2: process.env.STRIPE_PRICE_PRO_TIER2,
       stripePriceIdTier3: process.env.STRIPE_PRICE_PRO_TIER3,
     },
     power: {
       price: 39,
-      monthlyRequests: 3000,
       stripePriceId: power,
       stripePriceIdTier2: process.env.STRIPE_PRICE_POWER_TIER2,
       stripePriceIdTier3: process.env.STRIPE_PRICE_POWER_TIER3,

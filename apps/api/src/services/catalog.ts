@@ -23,6 +23,7 @@ import { getSupabaseAdmin } from '../lib/supabase';
 import { PROVIDERS, ALL_STATIC_MODELS, FREE_API_MODELS, type ProviderId } from '../config/providers';
 import { listKeys, getDiscoveredModelsByProvider } from './byok-service';
 import { isGoblinHostedEnabled, GOBLIN_HOSTED_TIERS, tierAllowedForPlan } from './goblin-hosted';
+import { isFreeApiPoolEnabled } from './model-router';
 
 // ── Provider derivation ──────────────────────────────────────────────────────
 // LiteLLM serves model ids either prefixed ("anthropic/claude-...", "gemini/...")
@@ -258,8 +259,15 @@ export async function getCatalogForUser(userId: string): Promise<AnnotatedModel[
   // Goblin-tier model carrying an underlying open-source model name — leaking exactly
   // what the two-level-truth invariant forbids. Filtering the layer here makes the
   // leak impossible regardless of what stale rows live in the prod `models` table.
+  // F5-1 (DD §C): only surface free_api rows when the free pool is actually LIVE.
+  // While the pool is off (default — `FREE_API_POOL = []`), advertising "Gemini · FREE"
+  // is a mislabel: selecting it can't route (`resolveFreeApi()` → null) and silently
+  // substitutes Goblin Swift or errors. Gating here in the catalog (not the static
+  // `providers.ts` flag) keeps the picker honest even when the prod `models` DB cache
+  // is the source. Single lever: flip `FREE_API_POOL` back on and these return.
+  const freePoolLive = isFreeApiPoolEnabled();
   for (const s of (hasDbCache ? dbModels : staticSource)) {
-    if (s.layer === 'free_api') {
+    if (freePoolLive && s.layer === 'free_api') {
       push({ id: s.id ?? s.slug, name: s.name, slug: s.slug, provider: s.provider, layer: 'free_api',
         description: s.description, tags: s.tags ?? [], requires_key: false, available: s.available, phase: s.phase,
         keyConnected: null, badge: 'FREE', capabilities: s.capabilities });
