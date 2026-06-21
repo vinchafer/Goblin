@@ -55,6 +55,13 @@ function hasCodeBlock(text: string) {
   return text.includes("```");
 }
 
+// F3: module-level guard so a given session's dashboard seed is auto-submitted
+// exactly once for the life of the page — even if StandaloneChat happens to mount
+// twice during the navigation settle. The old mount-effect + setTimeout(0) could
+// consume the seed on a doomed first mount and lose the submit, leaving an empty
+// chat. This survives that race.
+const consumedSeeds = new Set<string>();
+
 // ─── Code Action Dropdown ─────────────────────────────────────────────────────
 
 // FIX3-2: a sensible project name from the user's prompt so "Neues Projekt" needs
@@ -302,19 +309,33 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
     return () => { abortRef.current?.abort(); };
   }, []);
 
-  // Seed-on-mount: the dashboard home composer (screen 03) stashes the
-  // prompt in sessionStorage before navigating here. Pop it once and
-  // auto-submit so the user lands inside a streaming reply.
+  // Seed-on-mount: the dashboard home composer (and "Neues Projekt") stash the
+  // prompt — and now the picked model (F2) — in sessionStorage before navigating
+  // here. Pop them once and auto-submit so the user lands inside a streaming reply
+  // running THE MODEL THEY PICKED.
   useEffect(() => {
-    if (initialMessages.length > 0) return;
+    if (initialMessages.length > 0 || consumedSeeds.has(sessionId)) return;
     try {
-      const key = `goblin:seed:${sessionId}`;
-      const seed = sessionStorage.getItem(key);
-      if (seed) {
-        sessionStorage.removeItem(key);
-        // Defer to next tick so model state is initialised first.
-        setTimeout(() => handleSubmit(seed, selectedModel), 0);
-      }
+      const seed = sessionStorage.getItem(`goblin:seed:${sessionId}`);
+      if (!seed) return;
+      consumedSeeds.add(sessionId);
+      sessionStorage.removeItem(`goblin:seed:${sessionId}`);
+      // F2: prefer the model carried with the seed (the dashboard pick); fall back
+      // to the composer's current model. setSelectedModel keeps the composer pill
+      // in sync with what's actually running.
+      let model = selectedModel;
+      try {
+        const rawModel = sessionStorage.getItem(`goblin:seedModel:${sessionId}`);
+        if (rawModel) {
+          sessionStorage.removeItem(`goblin:seedModel:${sessionId}`);
+          const parsed = JSON.parse(rawModel) as SelectedModel;
+          if (parsed?.slug) { model = parsed; setSelectedModel(parsed); }
+        }
+      } catch { /* keep the fallback model */ }
+      // F3: submit synchronously (no setTimeout). The old macrotask deferral left a
+      // window where a remount could drop the auto-submit → empty chat. The model is
+      // explicit now, so there's no need to wait for useChatModel to hydrate.
+      handleSubmit(seed, model);
     } catch { /* sessionStorage unavailable — ignore */ }
     // intentionally only run on mount
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -6,6 +6,7 @@ import { GoblinLogo } from "@/components/brand/GoblinLogo";
 import type { EditorTheme } from "@/hooks/code/useEditorTheme";
 import type { SessionMessage } from "@/hooks/code/useCodeSessionDetail";
 import { parseCodeBlocks } from "@/lib/parse-code-blocks";
+import { chatModelLabel } from "@/lib/chat-model-label";
 
 interface Props {
   messages: SessionMessage[];
@@ -110,7 +111,9 @@ export function SessionThread({ messages, streaming, streamingText, streamingMod
             </div>
             <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }}>
               <span style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 11.5, color: "var(--ed-fg-3)", fontFamily: "var(--font-sans)", fontWeight: 600 }}>
-                Goblin{m.model_used ? <span style={{ fontWeight: 400 }}>· {m.model_used}</span> : null}
+                {/* Two-level truth (H-2/HR-4): humanize — never the raw tier id /
+                    slug (e.g. goblin/efficient). chatModelLabel → "Goblin Swift". */}
+                {m.model_used ? chatModelLabel(m.model_used) : "Goblin"}
                 {m.state === "error" && <span style={{ color: "var(--danger, #B0432A)" }}>· Fehler</span>}
               </span>
               {prose && <div style={{ fontSize: 13.5, lineHeight: 1.55, color: "var(--ed-fg-2)", fontFamily: "var(--font-sans)", whiteSpace: "pre-wrap" }}>{prose}</div>}
@@ -128,7 +131,7 @@ export function SessionThread({ messages, streaming, streamingText, streamingMod
           </div>
           <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }}>
             <span style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 11.5, color: "var(--ed-fg-3)", fontFamily: "var(--font-sans)", fontWeight: 600 }}>
-              Goblin{streamingModel ? <span style={{ fontWeight: 400 }}>· {streamingModel}</span> : null} <span style={{ fontWeight: 400, color: "var(--ed-accent)" }}>· schreibt …</span>
+              {streamingModel ? chatModelLabel(streamingModel) : "Goblin"} <span style={{ fontWeight: 400, color: "var(--ed-accent)" }}>· schreibt …</span>
             </span>
             {streamingSummary.prose && (
               <div style={{ fontSize: 13.5, lineHeight: 1.55, color: "var(--ed-fg-2)", fontFamily: "var(--font-sans)", whiteSpace: "pre-wrap" }}>{streamingSummary.prose}</div>

@@ -84,7 +84,7 @@ function buildGreeting(firstName: string): string {
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { showNewProjectModal, setShowNewProjectModal, setNewProjectIdea } = useApp();
+  const { showNewProjectModal, setShowNewProjectModal, setNewProjectIdea, setNewProjectModel } = useApp();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -166,10 +166,17 @@ export default function DashboardPage() {
       });
       if (!res.ok) return;
       const created = await res.json() as { id: string };
-      try { sessionStorage.setItem(`goblin:seed:${created.id}`, trimmed); } catch { /* ignore */ }
+      try {
+        sessionStorage.setItem(`goblin:seed:${created.id}`, trimmed);
+        // F2: carry the picked model so the new chat runs it (not the localStorage
+        // default). The dashboard composer's pick lives only in component state
+        // (onModelChange=setSelectedModel, which doesn't persist), so without this
+        // the chat's own useChatModel would fall back to the stored default.
+        sessionStorage.setItem(`goblin:seedModel:${created.id}`, JSON.stringify(selectedModel));
+      } catch { /* ignore */ }
       router.push(`/dashboard/chat/${created.id}`);
     } catch { /* network error → leave user on the page, do not crash */ }
-  }, [router]);
+  }, [router, selectedModel]);
 
   const activeCount = projects.filter(p => (p.status ?? 'idle') !== 'archived').length;
 
@@ -193,7 +200,7 @@ export default function DashboardPage() {
           prompt={choicePrompt}
           projects={projects}
           onClose={() => setChoicePrompt(null)}
-          onNewProject={() => { setNewProjectIdea(choicePrompt); setChoicePrompt(null); setShowNewProjectModal(true); }}
+          onNewProject={() => { setNewProjectIdea(choicePrompt); setNewProjectModel(JSON.stringify(selectedModel)); setChoicePrompt(null); setShowNewProjectModal(true); }}
           onExistingProject={(id) => { const p = choicePrompt; setChoicePrompt(null); sendComposer(p, id); }}
           onJustChat={() => { const p = choicePrompt; setChoicePrompt(null); sendComposer(p); }}
         />

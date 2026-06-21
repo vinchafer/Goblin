@@ -39,7 +39,7 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
   const [cmdPaletteOpen, setCmdPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [githubMsg, setGithubMsg] = useState<{ ok: boolean; text: string } | null>(null);
-  const { activeTab, setActiveTab, injectionCount, showNewProjectModal, setShowNewProjectModal, newProjectIdea, setNewProjectIdea, previewUrl: contextPreviewUrl, setShowSettingsSheet, showSettingsSheet, settingsInitialItem, setSettingsInitialItem, chatProjectId } = useApp();
+  const { activeTab, setActiveTab, injectionCount, showNewProjectModal, setShowNewProjectModal, newProjectIdea, setNewProjectIdea, newProjectModel, setNewProjectModel, previewUrl: contextPreviewUrl, setShowSettingsSheet, showSettingsSheet, settingsInitialItem, setSettingsInitialItem, chatProjectId } = useApp();
   const pathname = usePathname();
   const router = useRouter();
   const [isDesktop, setIsDesktop] = useState(false);
@@ -266,8 +266,9 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
           composer flow (B-S3) via context. */}
       {showNewProjectModal && (
         <NewProjectModal
-          onClose={() => { setShowNewProjectModal(false); setNewProjectIdea(''); }}
+          onClose={() => { setShowNewProjectModal(false); setNewProjectIdea(''); setNewProjectModel(null); }}
           initialIdea={newProjectIdea || undefined}
+          initialModel={newProjectModel || undefined}
         />
       )}
 

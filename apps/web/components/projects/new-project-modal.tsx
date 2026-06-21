@@ -45,11 +45,14 @@ interface NewProjectModalProps {
   /** Pre-fill the "What are you building?" field — e.g. the prompt the user
       typed into the dashboard "Sag Goblin" composer (B-S3). */
   initialIdea?: string;
+  /** F2: serialized SelectedModel the user picked on the dashboard composer.
+      Carried into the seeded chat so the new project runs the chosen model. */
+  initialModel?: string;
 }
 
 type Mode = 'blank' | 'gallery' | 'template-detail' | 'template-name';
 
-export function NewProjectModal({ onClose, initialMode, initialIdea }: NewProjectModalProps) {
+export function NewProjectModal({ onClose, initialMode, initialIdea, initialModel }: NewProjectModalProps) {
   const router = useRouter();
   const lang = useLang();
   const supabase = createClient();
@@ -142,7 +145,11 @@ export function NewProjectModal({ onClose, initialMode, initialIdea }: NewProjec
           });
           if (sres.ok) {
             const sess = await sres.json() as { id: string };
-            try { sessionStorage.setItem(`goblin:seed:${sess.id}`, seed); } catch { /* ignore */ }
+            try {
+              sessionStorage.setItem(`goblin:seed:${sess.id}`, seed);
+              // F2: carry the picked model into the seeded chat.
+              if (initialModel) sessionStorage.setItem(`goblin:seedModel:${sess.id}`, initialModel);
+            } catch { /* ignore */ }
             onClose();
             router.push(`/dashboard/chat/${sess.id}`);
             return;

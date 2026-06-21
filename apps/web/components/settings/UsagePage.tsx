@@ -111,13 +111,25 @@ export function UsagePage() {
         </SettingsGroup>
       )}
 
-      {state?.daysUntilReset != null && (
-        <p style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--text-meta)', marginTop: 16, padding: '0 4px' }}>
-          {t(lang,
-            `Goblin-Kontingent wird in ${state.daysUntilReset} ${state.daysUntilReset === 1 ? 'Tag' : 'Tagen'} zurückgesetzt.`,
-            `Goblin allowance resets in ${state.daysUntilReset} ${state.daysUntilReset === 1 ? 'day' : 'days'}.`)}
-        </p>
-      )}
+      {(() => {
+        // F5: count down to the real calendar-month allowance reset (goblinCap.resetDate),
+        // not the billing_cycle_start-based daysUntilReset (which read "0 Tagen" on a
+        // stale/zero cycle). Fall back to the legacy value only when no cap/resetDate.
+        const iso = state?.goblinCap?.resetDate;
+        let days: number | null = null;
+        if (iso) {
+          const d = new Date(`${iso}T00:00:00Z`);
+          if (!Number.isNaN(d.getTime())) days = Math.max(0, Math.ceil((d.getTime() - Date.now()) / 86400000));
+        }
+        if (days == null) days = state?.daysUntilReset ?? null;
+        return days != null ? (
+          <p style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--text-meta)', marginTop: 16, padding: '0 4px' }}>
+            {t(lang,
+              `Goblin-Kontingent wird in ${days} ${days === 1 ? 'Tag' : 'Tagen'} zurückgesetzt.`,
+              `Goblin allowance resets in ${days} ${days === 1 ? 'day' : 'days'}.`)}
+          </p>
+        ) : null;
+      })()}
     </div>
   );
 }

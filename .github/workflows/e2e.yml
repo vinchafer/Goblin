@@ -11,7 +11,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          # Pin to an explicit supported LTS (Node 22) so the runner can't silently
+          # drift the version under us (GitHub is migrating the Node-20 action runtime
+          # to Node 24 gradually — a moving floor that "randomly" breaks jobs ~weekly).
+          # App engines allow >=20; 22 is current LTS and reproducible here.
+          node-version: '22'
       - uses: pnpm/action-setup@v4
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @goblin/web build
