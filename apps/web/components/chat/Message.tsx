@@ -4,6 +4,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { GoblinLogo } from "@/components/brand/GoblinLogo";
 import { CodeBlock } from "./CodeBlock";
+import { chatModelLabel } from "@/lib/chat-model-label";
 
 export interface StandaloneMessage {
   id: string;
@@ -69,10 +70,11 @@ export default function Message({ msg, isStreaming }: { msg: StandaloneMessage &
           </>
         )}
 
-        {msg.model_used && !isStreaming && (
+        {msg.model_used && !isStreaming && chatModelLabel(msg.model_used) && (
+          // Two-level truth (H-2/HR-4): show ONLY the human label — never the raw
+          // tier id (goblin/efficient·premium) or the source_tier (goblin_hosted…).
           <div style={{ marginTop: 4, fontSize: "var(--t-caption-fs)", color: "var(--meta)", fontFamily: "var(--font-sans)" }}>
-            {msg.model_used.replace(/^(?:anthropic|openai|google)\//, "")}
-            {msg.source_tier ? ` · ${msg.source_tier}` : ""}
+            {chatModelLabel(msg.model_used)}
           </div>
         )}
       </div>
