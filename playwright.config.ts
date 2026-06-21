@@ -68,7 +68,16 @@ export default defineConfig({
         stderr: 'pipe',
       },
       {
-        command: 'cd apps/web && pnpm dev',
+        // CI runs the PRODUCTION server (next start over the pre-built .next) instead
+        // of `next dev`. Root cause of the weekly E2E flake: `next dev` lazy-COMPILES
+        // each route on its first request, so the first test to hit a heavy dynamic
+        // route (e.g. /dashboard/project/[id] in 19-mobile-create-project) raced the
+        // compile against waitForURL's 15s and timed out — passing on re-run only
+        // because the route was already compiled. The prod server serves precompiled
+        // routes, so first-hit latency is gone and the wait is deterministic. Local
+        // dev still uses `next dev` for hot-reload. (CI builds web before this — see
+        // .github/workflows/e2e.yml.)
+        command: process.env.CI ? 'pnpm --filter @goblin/web start' : 'cd apps/web && pnpm dev',
         url: 'http://localhost:3000',
         reuseExistingServer: !process.env.CI,
         timeout: 120000,
