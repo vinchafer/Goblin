@@ -67,31 +67,22 @@ export function SidebarUsage() {
     color: 'var(--ink-1, #0F2B1E)',
   };
 
-  // Comped users have no cap and no trial — a percent or countdown would be a lie.
-  // Show a calm "Vollzugriff" state + an honest Build count.
-  if (isComped) {
-    return (
-      <Link href="/dashboard/usage" style={labelStyle}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontSize: 'var(--t-caption-fs)', fontWeight: 600, color: 'var(--ink-2, #2c4538)' }}>
-            {t(lang, 'Verbrauch', 'Usage')}
-          </span>
-          <span style={{ fontSize: 'var(--t-caption-fs)', fontWeight: 600, color: 'var(--brand-green, #0F2B1E)' }}>
-            {planLabel(data.plan, true)}
-          </span>
-        </div>
-        <div style={{ marginTop: 6, fontSize: 'var(--t-caption-fs)', color: 'var(--ink-3, #5c6f64)' }}>
-          {t(lang, `${builds(data.totalInPeriod)} diesen Monat`, `${builds(data.totalInPeriod)} this month`)}
-        </div>
-      </Link>
-    );
-  }
-
-  // A weighted Goblin allowance exists → show its percent (the only honest cap).
+  // A weighted Goblin allowance exists → show the consumption BAR (W1). This is the
+  // same data source (goblinCap) and two-level-truth rules (% only, no tokens/cost/
+  // weight) as the full usage page's GoblinUsageBar — a compact version for the
+  // sidebar so consumption is visible at a glance. Comped accounts are shown the bar
+  // too: they are NOT cap-exempt (model-router enforces the weighted allowance with
+  // no comped bypass), so a bar is honest, not a lie — only the plan badge differs.
   if (data.goblinCap) {
     const pct = Math.min(100, Math.max(0, data.goblinCap.percent));
-    const near = pct >= 90;
-    const barColor = near ? 'var(--danger, #a04230)' : 'var(--green, #0F2B1E)';
+    // Match GoblinUsageBar semantics: gold (filled) at warn/over, brand green at ok
+    // (H-4 — gold is a filled surface only, never a border). State comes from the
+    // server cap logic, not an ad-hoc pct threshold.
+    const hot = data.goblinCap.state === 'warn' || data.goblinCap.state === 'over';
+    const barColor = hot ? 'var(--brand-gold, #D4A737)' : 'var(--brand-green, #1A3A2A)';
+    // Keep a sliver visible once any allowance is used, so low percentages still read
+    // as a bar rather than an empty track.
+    const fillWidth = pct > 0 ? Math.max(pct, 2) : 0;
     return (
       <Link href="/dashboard/usage" style={labelStyle}>
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 7 }}>
@@ -101,19 +92,26 @@ export function SidebarUsage() {
           <span style={{
             fontFamily: 'var(--font-mono, JetBrains Mono), monospace',
             fontSize: 'var(--t-mono-fs)', fontWeight: 600,
-            color: near ? 'var(--danger, #a04230)' : 'var(--ink-1, #0F2B1E)',
+            color: hot ? 'var(--brand-gold-ink, #7A5A12)' : 'var(--ink-1, #0F2B1E)',
           }}>
             {pct}&nbsp;%
           </span>
         </div>
-        <div style={{ height: 4, borderRadius: 2, overflow: 'hidden', background: 'rgba(15,43,30,0.10)' }}>
-          <div style={{ height: '100%', width: `${pct}%`, background: barColor, transition: 'width .3s' }} />
+        <div
+          style={{ height: 6, borderRadius: 999, overflow: 'hidden', background: 'rgba(15,43,30,0.10)' }}
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={pct}
+          aria-label={t(lang, 'Goblin-Kontingent-Nutzung', 'Goblin allowance usage')}
+        >
+          <div style={{ height: '100%', width: `${fillWidth}%`, borderRadius: 999, background: barColor, transition: 'width .24s ease' }} />
         </div>
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           marginTop: 7, fontSize: 'var(--t-caption-fs)', color: 'var(--ink-3, #5c6f64)',
         }}>
-          <span>{planLabel(data.plan)}</span>
+          <span>{planLabel(data.plan, isComped)}</span>
           {data.daysUntilReset != null && (
             <span>{t(lang, `Reset in ${data.daysUntilReset} ${data.daysUntilReset === 1 ? 'Tag' : 'Tagen'}`, `Resets in ${data.daysUntilReset} ${data.daysUntilReset === 1 ? 'day' : 'days'}`)}</span>
           )}
@@ -122,7 +120,8 @@ export function SidebarUsage() {
     );
   }
 
-  // No cap (no plan / flag off) → a plain, honest Build count, never a fake percent.
+  // No cap (flag off / no goblin usage) → a plain, honest Build count, never a fake
+  // percent. The plan badge still reflects comped ("Vollzugriff") when applicable.
   return (
     <Link href="/dashboard/usage" style={labelStyle}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -130,7 +129,7 @@ export function SidebarUsage() {
           {t(lang, 'Verbrauch', 'Usage')}
         </span>
         <span style={{ fontSize: 'var(--t-caption-fs)', fontWeight: 600, color: 'var(--brand-green, #0F2B1E)' }}>
-          {planLabel(data.plan)}
+          {planLabel(data.plan, isComped)}
         </span>
       </div>
       <div style={{ marginTop: 6, fontSize: 'var(--t-caption-fs)', color: 'var(--ink-3, #5c6f64)' }}>

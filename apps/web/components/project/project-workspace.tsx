@@ -28,13 +28,32 @@ export function ProjectWorkspace({ projectId, projectName, previewUrl }: Project
   }, [previewUrl, setPreviewUrl]);
 
   // Land on the tab requested via ?tab= (set by /dashboard/project/[id]
-  // overview screen "Open chat" / "Open code" actions). Falls back to chat.
+  // overview screen "Open chat" / "Open code" actions). When NO tab is requested
+  // (a bare return to the workspace, a soft-nav, or a re-render that drops the
+  // query), restore the LAST tab the user had in THIS project instead of snapping
+  // back to chat. W2: a build/preview window that "vanished" was usually this reset
+  // — the work persists server-side, but the view jumped off the code/preview tab
+  // with no way back short of re-opening it. Persisting the tab keeps the window in
+  // place across navigation; the per-session deep-link (?session=) still re-opens a
+  // specific build from the project hub.
   useEffect(() => {
     const requested = searchParams?.get('tab');
-    const next: 'chat' | 'code' | 'preview' =
-      requested === 'code' || requested === 'preview' ? requested : 'chat';
+    let next: 'chat' | 'code' | 'preview';
+    if (requested === 'code' || requested === 'preview' || requested === 'chat') {
+      next = requested;
+    } else {
+      let restored: string | null = null;
+      try { restored = sessionStorage.getItem(`goblin:wsTab:${projectId}`); } catch { /* ignore */ }
+      next = restored === 'code' || restored === 'preview' ? restored : 'chat';
+    }
     setActiveTab(next);
   }, [projectId, searchParams, setActiveTab]);
+
+  // Remember the active tab per project so a later return to the workspace lands on
+  // the same surface (the W2 recovery — the build/preview window stays reachable).
+  useEffect(() => {
+    try { sessionStorage.setItem(`goblin:wsTab:${projectId}`, activeTab); } catch { /* ignore */ }
+  }, [projectId, activeTab]);
 
   if (activeTab === "code") {
     return (
