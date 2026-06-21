@@ -10,6 +10,7 @@ import { apiGet } from '@/lib/api';
 import { Gear } from '@phosphor-icons/react';
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { RecentChatRow } from '@/components/sidebar/RecentChatRow';
+import { ProjectRowMenu } from '@/components/sidebar/ProjectRowMenu';
 import { SidebarUsage } from '@/components/sidebar/SidebarUsage';
 import { useUser } from '@/lib/hooks/useUser';
 
@@ -327,6 +328,7 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
                         <span style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--ink-3)', flexShrink: 0 }}>
                           {timeAgo(p.updated_at ?? p.last_active)}
                         </span>
+                        <ProjectRowMenu project={{ id: p.id, name: p.name }} />
                       </>
                     )}
                   </div>
@@ -340,7 +342,7 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
         {/* ── Recent Chats (fills remaining height, scrolls internally) ── */}
         {!collapsed && (
           <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
-            <RecentChats pathname={pathname} navigate={navigate} />
+            <RecentChats pathname={pathname} navigate={navigate} projects={projects} />
           </div>
         )}
 
@@ -492,6 +494,7 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
                   <span style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--ink-3)', flexShrink: 0 }}>
                     {timeAgo(p.updated_at ?? p.last_active)}
                   </span>
+                  <ProjectRowMenu project={{ id: p.id, name: p.name }} onChanged={onClose} />
                 </div>
               );
             })}
@@ -551,7 +554,7 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
 
 // ─── Recent Chats ─────────────────────────────────────────────────────────────
 
-function RecentChats({ pathname, navigate }: { pathname: string; navigate: (path: string) => void }) {
+function RecentChats({ pathname, navigate, projects = [] }: { pathname: string; navigate: (path: string) => void; projects?: Project[] }) {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [loading, setLoading] = useState(true);
   const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
@@ -651,6 +654,7 @@ function RecentChats({ pathname, navigate }: { pathname: string; navigate: (path
               <RecentChatRow
                 key={s.id}
                 chat={s}
+                projects={projects}
                 active={pathname.includes(s.id)}
                 onNavigate={(id) => navigate(`/dashboard/chat/${id}`)}
                 onUpdate={loadSessions}

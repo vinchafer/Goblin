@@ -6,6 +6,11 @@ import { BottomSheet, SheetCloseButton } from '../ui/BottomSheet';
 import { SettingsCard } from '../ui/SettingsCard';
 import { SettingsRow } from '../ui/SettingsRow';
 import { createClient } from '@/lib/supabase/client';
+import { apiPatch } from '@/lib/api';
+import { useLang } from '@/lib/use-lang';
+import { manageLabels } from '@/components/manage/labels';
+import { KebabMenu } from '@/components/manage/KebabMenu';
+import { MoveDialog } from '@/components/manage/ManageDialogs';
 
 interface RecentChatRowProps {
   chat: {
@@ -14,8 +19,10 @@ interface RecentChatRowProps {
     updated_at: string;
     pinned?: boolean;
     archived?: boolean;
+    project_id?: string | null;
     project_name?: string | null;
   };
+  projects?: { id: string; name: string }[];
   active?: boolean;
   onNavigate: (id: string) => void;
   onUpdate?: () => void;
@@ -40,6 +47,7 @@ const Pin20 = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" 
 const Edit20 = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>;
 const Share20 = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg>;
 const Folder20 = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>;
+const MoveRows20 = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/><polyline points="9 14 12 11 15 14"/><line x1="12" y1="11" x2="12" y2="17"/></svg>;
 const Archive20 = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="2" y="3" width="20" height="5"/><path d="M4 8v13h16V8M9 12h6"/></svg>;
 const Trash20 = ({ color = 'currentColor' }: { color?: string }) => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>;
 
@@ -52,11 +60,25 @@ function timeAgoShort(dateStr: string): string {
   return `vor ${d}d`;
 }
 
-export function RecentChatRow({ chat, active, onNavigate, onUpdate }: RecentChatRowProps) {
+export function RecentChatRow({ chat, projects = [], active, onNavigate, onUpdate }: RecentChatRowProps) {
+  const lang = useLang();
+  const L = manageLabels(lang);
   const [contextOpen, setContextOpen] = useState(false);
   const [pressing, setPressing] = useState(false);
   const [renaming, setRenaming] = useState(false);
+  const [moving, setMoving] = useState(false);
   const [renameValue, setRenameValue] = useState(chat.title ?? '');
+
+  const doMove = async (projectId: string | null) => {
+    setMoving(false);
+    try {
+      await apiPatch(`/api/chat-sessions/${chat.id}/move`, { projectId });
+      toast.success(L.moved);
+      onUpdate?.();
+    } catch {
+      toast.error(L.moveFailed);
+    }
+  };
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hintTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressFired = useRef(false);
@@ -175,6 +197,17 @@ export function RecentChatRow({ chat, active, onNavigate, onUpdate }: RecentChat
         <span style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--ink-3)', flexShrink: 0 }}>
           {timeAgoShort(chat.updated_at)}
         </span>
+        {/* Visible kebab affordance — opens the same context sheet that long-press
+            does, so desktop (no long-press) gets a click target. */}
+        <KebabMenu
+          ariaLabel={L.more}
+          testId="chat-kebab"
+          items={[
+            { label: L.rename, onClick: () => { setRenameValue(chat.title ?? ''); setRenaming(true); } },
+            { label: L.move, onClick: () => setMoving(true) },
+            { label: L.delete, danger: true, onClick: handleDelete },
+          ]}
+        />
       </div>
 
       <BottomSheet
@@ -213,6 +246,13 @@ export function RecentChatRow({ chat, active, onNavigate, onUpdate }: RecentChat
                 setRenaming(true);
                 setContextOpen(false);
               }}
+            />
+            <SettingsRow
+              icon={<MoveRows20 />}
+              label={L.move}
+              rightVariant="none"
+              testId="ctx-move"
+              onClick={() => { setContextOpen(false); setMoving(true); }}
             />
             <SettingsRow
               icon={<Share20 />}
@@ -390,6 +430,17 @@ export function RecentChatRow({ chat, active, onNavigate, onUpdate }: RecentChat
           </div>
         </div>
       )}
+
+      <MoveDialog
+        open={moving}
+        title={L.moveTitle}
+        projects={projects}
+        currentProjectId={chat.project_id ?? null}
+        noProjectLabel={L.noProject}
+        cancelLabel={L.cancel}
+        onSelect={doMove}
+        onClose={() => setMoving(false)}
+      />
     </>
   );
 }
