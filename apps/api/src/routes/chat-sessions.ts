@@ -231,6 +231,88 @@ chatSessions.patch('/:id', async (c) => {
   return c.json({ success: true });
 });
 
+// PATCH /api/chat-sessions/:id/move — set or clear the project link.
+// body { projectId: string | null } — null = "Kein Projekt" (standalone).
+// Ownership-scoped on the chat AND on the target project: you can only move your
+// own chat, and only into a project you own (else a forged target id would let a
+// chat reference a foreign project).
+chatSessions.patch('/:id/move', async (c) => {
+  const userId = c.get('userId');
+  const sessionId = c.req.param('id');
+  const body = await c.req.json().catch(() => ({})) as { projectId?: string | null };
+  const projectId = body.projectId ?? null;
+  const supabase = getSupabaseAdmin();
+
+  if (projectId !== null) {
+    const { data: proj } = await supabase
+      .from('projects')
+      .select('id')
+      .eq('id', projectId)
+      .eq('user_id', userId)
+      .single();
+    if (!proj) return c.json({ error: 'Target project not found' }, 404);
+  }
+
+  const { error } = await supabase
+    .from('chat_sessions')
+    .update({ project_id: projectId, updated_at: new Date().toISOString() })
+    .eq('id', sessionId)
+    .eq('user_id', userId);
+
+  if (error) return c.json({ error: 'Failed to move' }, 500);
+  return c.json({ success: true });
+});
+
+// POST /api/chat-sessions/bulk-delete — delete many chats. Ownership-scoped:
+// `.in('id', ids).eq('user_id', userId)` → WHERE id = ANY($ids) AND user_id = authed.
+// Non-owned ids are silent no-ops (no IDOR). standalone_messages cascade via FK.
+chatSessions.post('/bulk-delete', async (c) => {
+  const userId = c.get('userId');
+  const body = await c.req.json().catch(() => ({})) as { ids?: unknown };
+  const ids = Array.isArray(body.ids) ? body.ids.filter((x): x is string => typeof x === 'string') : [];
+  if (ids.length === 0) return c.json({ error: 'Invalid input' }, 400);
+  const supabase = getSupabaseAdmin();
+
+  const { error } = await supabase
+    .from('chat_sessions')
+    .delete()
+    .in('id', ids)
+    .eq('user_id', userId);
+
+  if (error) return c.json({ error: 'Failed to delete' }, 500);
+  return c.json({ success: true });
+});
+
+// POST /api/chat-sessions/bulk-move — move many chats to a project (or null).
+// Ownership-scoped on both the chats and the target project.
+chatSessions.post('/bulk-move', async (c) => {
+  const userId = c.get('userId');
+  const body = await c.req.json().catch(() => ({})) as { ids?: unknown; projectId?: string | null };
+  const ids = Array.isArray(body.ids) ? body.ids.filter((x): x is string => typeof x === 'string') : [];
+  if (ids.length === 0) return c.json({ error: 'Invalid input' }, 400);
+  const projectId = body.projectId ?? null;
+  const supabase = getSupabaseAdmin();
+
+  if (projectId !== null) {
+    const { data: proj } = await supabase
+      .from('projects')
+      .select('id')
+      .eq('id', projectId)
+      .eq('user_id', userId)
+      .single();
+    if (!proj) return c.json({ error: 'Target project not found' }, 404);
+  }
+
+  const { error } = await supabase
+    .from('chat_sessions')
+    .update({ project_id: projectId, updated_at: new Date().toISOString() })
+    .in('id', ids)
+    .eq('user_id', userId);
+
+  if (error) return c.json({ error: 'Failed to move' }, 500);
+  return c.json({ success: true });
+});
+
 // POST /api/chat-sessions/:id/pin
 chatSessions.post('/:id/pin', async (c) => {
   const userId = c.get('userId');

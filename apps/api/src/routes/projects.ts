@@ -176,14 +176,19 @@ projects.post('/', async (c) => {
   return c.json(data, 201);
 });
 
-// PATCH /:id — change project intent (the quiet "Layout wechseln"). Tolerant of a
-// pre-migration DB: returns ok:false (not 500) so the UI degrades gracefully.
+// PATCH /:id — rename (name) and/or change project intent (the quiet "Layout
+// wechseln"). Tolerant of a pre-migration DB on intent: returns ok:false (not 500)
+// so the UI degrades gracefully. Ownership-scoped on every write.
 projects.patch('/:id', async (c) => {
   const userId = c.get('userId');
   const projectId = c.req.param('id');
   const body = await c.req.json().catch(() => ({}));
 
-  const schema = z.object({ intent: z.enum(INTENTS) });
+  const schema = z
+    .object({ intent: z.enum(INTENTS).optional(), name: z.string().min(1).max(100).optional() })
+    .refine((v) => v.intent !== undefined || v.name !== undefined, {
+      message: 'Nothing to update',
+    });
   const parsed = schema.safeParse(body);
   if (!parsed.success) return c.json({ error: 'Invalid input' }, 400);
 
@@ -192,15 +197,70 @@ projects.patch('/:id', async (c) => {
     return c.json({ error: 'Not found' }, 404);
   }
 
+  // Rename first — `name` is a guaranteed column (used at create), so a failure
+  // here is a real error, unlike the pre-migration-tolerant `intent` write below.
+  if (parsed.data.name !== undefined) {
+    const { error: nameErr } = await supabase
+      .from('projects')
+      .update({ name: parsed.data.name })
+      .eq('id', projectId)
+      .eq('user_id', userId);
+    if (nameErr) return c.json({ error: 'Failed to rename' }, 500);
+  }
+
+  if (parsed.data.intent !== undefined) {
+    const { error } = await supabase
+      .from('projects')
+      .update({ intent: parsed.data.intent })
+      .eq('id', projectId)
+      .eq('user_id', userId);
+    // Column missing pre-migration → soft-fail; client keeps its localStorage hint.
+    if (error) return c.json({ ok: false, persisted: false, intent: parsed.data.intent });
+  }
+
+  return c.json({ ok: true, persisted: true, name: parsed.data.name, intent: parsed.data.intent });
+});
+
+// POST /bulk-delete — delete many projects in one call. Ownership-scoped: the
+// `.in('id', ids).eq('user_id', userId)` filter resolves to
+// `WHERE id = ANY($ids) AND user_id = <authed>`, so a forged/mixed id list can
+// only ever touch the caller's own rows; non-owned ids are silent no-ops (no IDOR).
+// Children (chat_sessions, code_sessions, deployments) cascade via FK. The live
+// Vercel deploy is NOT torn down here — the client confirm dialog warns the user.
+projects.post('/bulk-delete', async (c) => {
+  const userId = c.get('userId');
+  const body = await c.req.json().catch(() => ({}));
+  const parsed = z.object({ ids: z.array(z.string().uuid()).min(1).max(200) }).safeParse(body);
+  if (!parsed.success) return c.json({ error: 'Invalid input' }, 400);
+
+  const supabase = getSupabaseAdmin();
+
+  // Resolve which of the requested ids the caller actually owns (the only ones we touch).
+  const { data: owned, error: ownErr } = await supabase
+    .from('projects')
+    .select('id')
+    .in('id', parsed.data.ids)
+    .eq('user_id', userId);
+  if (ownErr) return c.json({ error: 'Failed to delete' }, 500);
+
+  const ownedIds = (owned ?? []).map((r: { id: string }) => r.id);
+  if (ownedIds.length === 0) return c.json({ success: true, deleted: 0 });
+
   const { error } = await supabase
     .from('projects')
-    .update({ intent: parsed.data.intent })
-    .eq('id', projectId)
+    .delete()
+    .in('id', ownedIds)
     .eq('user_id', userId);
+  if (error) return c.json({ error: 'Failed to delete' }, 500);
 
-  // Column missing pre-migration → soft-fail; client keeps its localStorage hint.
-  if (error) return c.json({ ok: false, persisted: false, intent: parsed.data.intent });
-  return c.json({ ok: true, persisted: true, intent: parsed.data.intent });
+  // Best-effort storage cleanup per project — never block the response.
+  for (const id of ownedIds) {
+    deleteProject(id).catch((err) =>
+      logger.error({ project_id: id, err: err instanceof Error ? err.message : String(err) }, 'storage_cleanup_failed')
+    );
+  }
+
+  return c.json({ success: true, deleted: ownedIds.length });
 });
 
 // POST /api/projects/from-template
