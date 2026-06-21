@@ -24,6 +24,17 @@ function builds(n: number): string {
   return `${n} ${n === 1 ? 'Build' : 'Builds'}`;
 }
 
+/** F5: whole days until an ISO (YYYY-MM-DD) reset date, clamped ≥ 0. The Goblin
+ *  allowance resets at the calendar-month boundary (goblinCap.resetDate) — NOT the
+ *  billing_cycle_start the legacy daysUntilReset used, which read "0 Tagen" on
+ *  accounts with a stale/zero cycle. */
+function daysUntilISO(iso?: string | null): number | null {
+  if (!iso) return null;
+  const d = new Date(`${iso}T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return null;
+  return Math.max(0, Math.ceil((d.getTime() - Date.now()) / 86400000));
+}
+
 export function SidebarUsage() {
   const lang = useLang();
   const [data, setData] = useState<UsageData | null>(null);
@@ -112,9 +123,14 @@ export function SidebarUsage() {
           marginTop: 7, fontSize: 'var(--t-caption-fs)', color: 'var(--ink-3, #5c6f64)',
         }}>
           <span>{planLabel(data.plan, isComped)}</span>
-          {data.daysUntilReset != null && (
-            <span>{t(lang, `Reset in ${data.daysUntilReset} ${data.daysUntilReset === 1 ? 'Tag' : 'Tagen'}`, `Resets in ${data.daysUntilReset} ${data.daysUntilReset === 1 ? 'day' : 'days'}`)}</span>
-          )}
+          {(() => {
+            // F5: prefer the calendar-month reset the cap actually uses; fall back
+            // to the legacy billing-cycle value only if no resetDate is present.
+            const days = daysUntilISO(data.goblinCap.resetDate) ?? data.daysUntilReset;
+            return days != null ? (
+              <span>{t(lang, `Reset in ${days} ${days === 1 ? 'Tag' : 'Tagen'}`, `Resets in ${days} ${days === 1 ? 'day' : 'days'}`)}</span>
+            ) : null;
+          })()}
         </div>
       </Link>
     );

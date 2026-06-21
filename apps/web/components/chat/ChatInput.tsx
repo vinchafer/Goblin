@@ -281,12 +281,19 @@ function ModelHub({
           ))}
         </Section>
 
-        {byokModels.length === 0 && freeModels.length === 0 && (
+        {/* F4: only the "add a key" empty-state if NOTHING matches — including the
+            Goblin-bundled tiers, which need no key. Previously this ignored
+            hostedModels, so searching "Forge"/"Swift" (or any keyless user) saw a
+            misleading "add an API key" prompt while a usable Goblin model existed.
+            When a query is active but matches nothing, say so instead. */}
+        {byokModels.length === 0 && freeModels.length === 0 && hostedModels.length === 0 && (
           <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-faint)', fontFamily: 'var(--font-sans)', fontSize: 'var(--t-small-fs)' }}>
             <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'center', color: 'var(--brand-green)' }}>
               <Icon name="apiKey" size={28} strokeWidth={1.5} />
             </div>
-            Add an API key in Settings → API Keys to unlock models.
+            {query
+              ? (lang === 'en' ? `No models match “${query}”.` : `Keine Modelle für „${query}".`)
+              : (lang === 'en' ? 'Add an API key in Settings → API Keys to unlock models.' : 'Füge in Einstellungen → API-Keys einen Key hinzu, um Modelle freizuschalten.')}
           </div>
         )}
       </div>
