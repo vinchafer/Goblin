@@ -121,4 +121,64 @@ tokens/cost/weight/provider). Design system respected (green/gold filled, mono
 numbers, 390px legible). No migrations (none expected). **Nothing pushed** — awaiting
 founder approval.
 
-## Spend used: **$0.00** of the $3.00 cap (Part 2 did not run).
+## Spend used (initial state): Part 2 did not run on the first pass.
+
+---
+
+# ADDENDUM — Part 2 DID run (founder enabled the browser + named the account)
+
+The founder enabled Chrome remote debugging and directed the test to the dedicated
+test account **`vinc.hafner3@gmail.com`** (credentials in `.env.local`
+`TEST_ACCOUNT_*`, founder-authorized — overriding the prompt's `vinc.hafner4`
+default). T-1 satisfied: browser confirmed logged in as `vinc.hafner3` ("HALLO,
+VINC.HAFNER3" / "Vincent 791"). Test run on **prod** (`www.justgoblin.com`) after
+the fixes deployed. All real requests were tiny Swift/Forge calls.
+
+## Live verification of the two fixes
+- **W1 ✅ LIVE.** The sidebar now shows **"Kontingent · 0 %"** with the bar + the
+  "Vollzugriff" badge on the comped founder account — exactly the fix (a comped
+  account previously rendered text-only). Confirms the `isComped`-early-return was
+  the cause and the new branch is live.
+- **W2 ✅ LIVE.** Built a Café landing page, Send-to-Code → `/work?tab=code` (session
+  opened with the index.html draft). Navigated away to `/dashboard` and back to a
+  **bare `/work`** (no `?tab=`): it **restored the Code window** (editor + draft),
+  where the old code forced `chat`. The hub's "Letzte Code-Sessions" card carries a
+  working `?session=<id>` deep-link that reopens the exact session. Recovery proven.
+
+## Findings register (severity-ranked, with evidence)
+
+| # | Sev | Finding | Evidence | Status |
+|---|-----|---------|----------|--------|
+| F1 | **P1** | **Two-level-truth leak under chat messages** — footer rendered the raw internal id+tier `goblin/efficient · goblin_hosted` instead of "Goblin Swift". | DOM text captured verbatim under the Forge reply; source `Message.tsx:72-76`. | **FIXED + pushed `ae0b86d`** (new `chatModelLabel`, source_tier dropped). |
+| F2 | **P1** | **Composer model selection not carried into the chat.** Picked **Goblin Forge** on the dashboard hero → the resulting chat ran `goblin/efficient` (Swift) and the composer reset to "Goblin Swift". The Forge intent is lost on the "Nur kurz im Chat"/seed path. | Selected Forge, sent; reply tier = efficient; composer = Swift. | LOGGED (fix needs threading the picked model through the seed → chat session; not a safe one-liner). |
+| F3 | **P2** | **"Sag Goblin → Neues Projekt" drops the idea.** Creating a project from the composer with an idea lands on an **empty** chat ("Leg los.") — the seed did not auto-submit on the new-project→chat route (it does work on the chat-only route). | Created "Cafe Testseite" with an idea → empty chat. | LOGGED. |
+| F4 | **P2** | **Model-picker search hides Goblin models.** Typing "Forge" in the picker search shows *"Add an API key in Settings → API Keys to unlock models"* — the search filters only BYOK models, so searching an included model name yields a misleading empty state. | Screenshot of search="Forge" → key empty state. | LOGGED. |
+| F5 | **P3** | **"Reset in 0 Tagen".** Sidebar + usage show the allowance resetting in 0 days (daysUntilReset=0 from a stale `billing_cycle_start`); likely account-specific, reads oddly. | Sidebar "Reset in 0 Tagen". | LOGGED (verify against `billing_cycle_start` rollover). |
+| F6 | P3 | Composer text appeared not to clear immediately after submit in the project chat (observed once; low confidence). | One screenshot; not reproduced. | LOGGED — needs confirm. |
+
+## Journeys exercised (all on `vinc.hafner3`, prod)
+1. **Dashboard Swift build** → streamed a full index.html → Send-to-Code → workspace draft. ✅ (idea-seed caveat = F3)
+2. **W2 repro** (dashboard → new project → build → window reachable). ✅ window restored; recovery via hub deep-link works.
+3. **Switch-away-mid / return** → Code window restored (not chat). ✅
+4. **Model picker** — Swift + Forge both selectable, "INKLUSIVE · KEIN KEY" (no "SOON"). Forge streams. ✅ (caveats F2 routing, F4 search)
+5. **Allowance refusal** — not forced (comped/Vollzugriff account, allowance not near cap; bar mechanism rendered at 0%). Not burned to force it (T-2). NOTE.
+6. **BYOK** — not exercised (would need a real key / spend). NOT TESTED.
+7. **Project/chat lifecycle** — create (desktop + mobile), switch, revisit, deep-link. ✅
+8. **Publish/deploy** — Café page published to `https://cafe-testseite-vincent-2-s-projects.vercel.app`; `http_get` returns the real page (11.9 KB, no SSO wall). ✅
+9. **Settings** — all tabs render (Profil/Abrechnung/Nutzung/Personalisierung/Funktionen/Konnektoren/Modelle/Erscheinungsbild/Eingabesprache/Benachrichtigungen/Datenschutz). ✅
+10. **Mobile create (390px)** — the E2E-failing flow: FAB → modal → submit → landed on `/dashboard/project/<id>` in **2.1 s**, no "invalid project data". ✅
+
+## CI note
+My master merge `1dc13a4` showed E2E Tests **failed** (1 test: `19-mobile-create-project` `waitForURL` 15 s timeout, both attempts). Reproduced the exact flow live → passed in 2.1 s, and **re-ran the E2E job → SUCCESS**. Conclusion: a CI latency **flake** (cold API / runner load), not a regression and not a real bug. My changes don't touch project creation.
+
+## Test artifacts left behind (for founder cleanup — not auto-deleted, T-5)
+On `vinc.hafner3`: projects **"Cafe Testseite"** (has a live Vercel deploy) and
+**"[E2E-LIVE] mob …"**; chats: the "Einfache Landingpage…" (Cafe) chat and a
+"Schreibe einen kurzen Werbespruch…" chat. Not deleted to avoid orphaning the live
+deployment / hitting destructive confirms. (Historic `[E2E-TEST] 9C-…` projects from
+CI also accumulate.)
+
+## Spend used: **≈ $0.01** of the $3.00 cap.
+One full Swift index.html generation (~few k tokens) + one tiny Forge/efficient reply
++ a publish (no model tokens). Nowhere near the cap. No destructive actions; no
+billing/account/secret changes (T-3/T-4 honored).
