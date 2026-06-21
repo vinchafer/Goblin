@@ -226,7 +226,7 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             }}>
               <button
-                onClick={() => navigate('/dashboard')}
+                onClick={() => navigate('/dashboard/projects')}
                 style={{
                   background: 'none', border: 'none', cursor: 'pointer', padding: 0,
                   fontSize: 'var(--t-eyebrow-fs)', fontWeight: 600, letterSpacing: '1.2px',
@@ -437,7 +437,7 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           }}>
             <button
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/dashboard/projects')}
               style={{
                 background: 'none', border: 'none', cursor: 'pointer', padding: 0,
                 fontSize: 'var(--t-eyebrow-fs)', fontWeight: 600, letterSpacing: '1.2px',
@@ -608,7 +608,7 @@ function RecentChats({ pathname, navigate, projects = [] }: { pathname: string; 
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '4px 12px 6px 16px' }}>
         <button
-          onClick={() => navigate('/dashboard/chat')}
+          onClick={() => navigate('/dashboard/chats')}
           style={{
             background: 'none', border: 'none', cursor: 'pointer', padding: 0,
             fontSize: 'var(--t-eyebrow-fs)', fontWeight: 600, letterSpacing: '1.2px',
@@ -662,7 +662,7 @@ function RecentChats({ pathname, navigate, projects = [] }: { pathname: string; 
             ))}
             {sessions.length === 5 && (
               <button
-                onClick={() => navigate('/dashboard/chat')}
+                onClick={() => navigate('/dashboard/chats')}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 'var(--t-caption-fs)', color: 'var(--ink-3)', padding: '4px 8px', fontFamily: 'var(--font-sans)', width: '100%', textAlign: 'left' }}
                 onMouseEnter={e => (e.currentTarget.style.color = 'var(--brand-green)')}
                 onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-3)')}
