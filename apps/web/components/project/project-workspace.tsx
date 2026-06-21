@@ -43,7 +43,13 @@ export function ProjectWorkspace({ projectId, projectName, previewUrl }: Project
       next = requested;
     } else {
       let restored: string | null = null;
+      // sessionStorage = same-tab restore (W2). localStorage mirror =
+      // cross-browser-restart resume (F-W2-a): "build today, reopen tomorrow"
+      // still lands on the build window, not chat.
       try { restored = sessionStorage.getItem(`goblin:wsTab:${projectId}`); } catch { /* ignore */ }
+      if (restored == null) {
+        try { restored = localStorage.getItem(`goblin:lastWsTab:${projectId}`); } catch { /* ignore */ }
+      }
       next = restored === 'code' || restored === 'preview' ? restored : 'chat';
     }
     setActiveTab(next);
@@ -53,6 +59,9 @@ export function ProjectWorkspace({ projectId, projectName, previewUrl }: Project
   // the same surface (the W2 recovery — the build/preview window stays reachable).
   useEffect(() => {
     try { sessionStorage.setItem(`goblin:wsTab:${projectId}`, activeTab); } catch { /* ignore */ }
+    // localStorage mirror survives a browser restart so the sidebar smart-resume
+    // (F-W2-a) and a later /work return can recover the build window cross-session.
+    try { localStorage.setItem(`goblin:lastWsTab:${projectId}`, activeTab); } catch { /* ignore */ }
   }, [projectId, activeTab]);
 
   if (activeTab === "code") {

@@ -75,6 +75,22 @@ function ChevronRight({ small }: { small?: boolean }) {
 
 const STORAGE_KEY = 'goblin:sidebar:collapsed';
 
+// F-W2-a smart-resume: clicking a project routes to the live build window when
+// this project has build view-state, else to the hub (unchanged default). Reads
+// only the keys project-workspace already writes — no fetch, no schema. wsTab is
+// same-tab; lastWsTab is the cross-restart mirror.
+function resolveProjectHref(id: string): string {
+  const hub = `/dashboard/project/${id}`;
+  let tab: string | null = null;
+  try { tab = sessionStorage.getItem(`goblin:wsTab:${id}`); } catch { /* ignore */ }
+  if (tab == null) {
+    try { tab = localStorage.getItem(`goblin:lastWsTab:${id}`); } catch { /* ignore */ }
+  }
+  return tab === 'code' || tab === 'preview'
+    ? `${hub}/work?tab=${tab}`
+    : hub;
+}
+
 export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClose }: SidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -277,7 +293,7 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
                 return (
                   <div
                     key={p.id}
-                    onClick={() => navigate(`/dashboard/project/${p.id}`)}
+                    onClick={() => navigate(resolveProjectHref(p.id))}
                     title={collapsed ? p.name : undefined}
                     style={{
                       // Matches RecentChatRow spec so both lists read as one
@@ -457,7 +473,7 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
               return (
                 <div
                   key={p.id}
-                  onClick={() => navigate(`/dashboard/project/${p.id}`)}
+                  onClick={() => navigate(resolveProjectHref(p.id))}
                   style={{
                     // Matches RecentChatRow / desktop project row spec so the
                     // project and chat lists read as one row type in the drawer.
