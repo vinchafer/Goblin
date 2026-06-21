@@ -41,6 +41,11 @@ interface AppContextType {
   setShowNewProjectModal: (show: boolean) => void;
   newProjectIdea: string;
   setNewProjectIdea: (idea: string) => void;
+  // F2: the model the user picked on the dashboard composer, serialized
+  // (JSON of SelectedModel), carried through "Neues Projekt" so the new chat
+  // runs the chosen model instead of the localStorage default.
+  newProjectModel: string | null;
+  setNewProjectModel: (model: string | null) => void;
   showSettingsSheet: boolean;
   setShowSettingsSheet: (show: boolean) => void;
   settingsInitialItem: string | null;
@@ -73,6 +78,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [pendingInjections, setPendingInjections] = useState<PendingInjection[]>([]);
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [newProjectIdea, setNewProjectIdea] = useState('');
+  const [newProjectModel, setNewProjectModel] = useState<string | null>(null);
   const [showSettingsSheet, setShowSettingsSheet] = useState(false);
   const [settingsInitialItem, setSettingsInitialItem] = useState<string | null>(null);
   const [pendingCodePayload, setPendingCodePayload] = useState<{ content: string; filename?: string; files?: { path: string; content: string }[] } | null>(null);
@@ -124,6 +130,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setShowNewProjectModal,
       newProjectIdea,
       setNewProjectIdea,
+      newProjectModel,
+      setNewProjectModel,
       showSettingsSheet,
       setShowSettingsSheet,
       settingsInitialItem,
