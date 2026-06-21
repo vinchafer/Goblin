@@ -6,6 +6,7 @@ import { RecentChatsCard, type RecentChatItem } from "@/components/project/Recen
 import { RecentSessionsCard, type RecentSessionItem } from "@/components/project/RecentSessionsCard";
 import { ProjectIntentControl } from "@/components/project/ProjectIntentControl";
 import { ProjectChatLaunch } from "@/components/project/ProjectChatLaunch";
+import { chatModelLabel } from "@/lib/chat-model-label";
 
 export const dynamic = 'force-dynamic';
 
@@ -264,7 +265,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
                           fontFamily: 'JetBrains Mono, monospace', fontSize: 10.5,
                           color: 'var(--ink-3)', letterSpacing: '0.04em', textTransform: 'uppercase',
                         }}>
-                          {(d.model_used || '—').toUpperCase()} · {(d.status || 'OK').toUpperCase()}
+                          {(chatModelLabel(d.model_used) || '—').toUpperCase()} · {(d.status || 'OK').toUpperCase()}
                         </div>
                       </div>
                       <span style={{
