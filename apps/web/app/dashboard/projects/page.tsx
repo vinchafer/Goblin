@@ -15,8 +15,8 @@ interface Project {
   id: string;
   name: string;
   color?: string | null;
-  updated_at?: string | null;
   last_active?: string | null;
+  created_at?: string | null;
 }
 
 function timeAgo(d?: string | null): string {
@@ -44,11 +44,12 @@ export default function ProjectsOverviewPage() {
     const supabase = createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) { router.push('/login'); return; }
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('projects')
-      .select('id, name, color, updated_at, last_active')
+      .select('id, name, color, last_active, created_at')
       .eq('user_id', user.id)
       .order('last_active', { ascending: false });
+    if (error) console.error('[projects-overview] load failed:', error.message);
     setProjects((data as Project[]) ?? []);
     setLoading(false);
   }, [router]);
@@ -128,7 +129,7 @@ export default function ProjectsOverviewPage() {
                     {p.name}
                   </span>
                   <span style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--ink-3)', fontFamily: 'var(--font-mono, monospace)', flexShrink: 0 }}>
-                    {timeAgo(p.updated_at ?? p.last_active)}
+                    {timeAgo(p.last_active ?? p.created_at)}
                   </span>
                   {!selecting && <ProjectRowMenu project={{ id: p.id, name: p.name }} onChanged={load} />}
                 </div>
