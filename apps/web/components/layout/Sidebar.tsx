@@ -12,7 +12,7 @@ import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { RecentChatRow } from '@/components/sidebar/RecentChatRow';
 import { ProjectRowMenu } from '@/components/sidebar/ProjectRowMenu';
 import { SidebarUsage } from '@/components/sidebar/SidebarUsage';
-import { useLang, t } from '@/lib/use-lang';
+import { useLang, t, readLang } from '@/lib/use-lang';
 import { useUser } from '@/lib/hooks/useUser';
 
 interface ChatSession {
@@ -46,10 +46,18 @@ const PROJECT_COLORS = [
 
 function timeAgo(dateStr?: string): string {
   if (!dateStr) return '';
+  const lang = readLang();
   const diff = Date.now() - new Date(dateStr).getTime();
   const m = Math.floor(diff / 60000);
   const h = Math.floor(diff / 3600000);
   const d = Math.floor(diff / 86400000);
+  if (lang === 'de') {
+    if (m < 2) return 'jetzt';
+    if (h < 1) return `${m}m`;
+    if (h < 24) return `${h}Std`;
+    if (d < 30) return `${d}T`;
+    return `${Math.floor(d / 30)}Mon`;
+  }
   if (m < 2) return 'now';
   if (h < 1) return `${m}m`;
   if (h < 24) return `${h}h`;
@@ -199,8 +207,8 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
           }}>
             <button
               onClick={toggle}
-              title="Sidebar ausklappen"
-              aria-label="Sidebar ausklappen"
+              title={t(lang, 'Sidebar ausklappen', 'Expand sidebar')}
+              aria-label={t(lang, 'Sidebar ausklappen', 'Expand sidebar')}
               style={{
                 width: 32, height: 32, borderRadius: 8,
                 background: 'rgba(45,74,43,0.08)',
@@ -236,13 +244,13 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
                   fontFamily: 'var(--font-dash-display), Manrope, sans-serif',
                 }}
               >
-                Projekte
+                {t(lang, 'Projekte', 'Projects')}
               </button>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 <button
                   onClick={(e) => { e.stopPropagation(); openNewProject(); }}
-                  title="Neues Projekt"
-                  aria-label="Neues Projekt"
+                  title={t(lang, 'Neues Projekt', 'New project')}
+                  aria-label={t(lang, 'Neues Projekt', 'New project')}
                   data-testid="sidebar-projects-plus"
                   style={{
                     background: 'var(--brand-header)', border: 'none', cursor: 'pointer',
@@ -260,8 +268,8 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
                 </button>
                 <button
                   onClick={toggle}
-                  title="Sidebar einklappen"
-                  aria-label="Sidebar einklappen"
+                  title={t(lang, 'Sidebar einklappen', 'Collapse sidebar')}
+                  aria-label={t(lang, 'Sidebar einklappen', 'Collapse sidebar')}
                   style={{
                     width: 22, height: 22, borderRadius: 6,
                     background: 'transparent',
@@ -360,7 +368,7 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
             <button
               onClick={openSettings}
               data-testid="user-pill-desktop"
-              aria-label="Profil & Einstellungen"
+              aria-label={t(lang, 'Profil & Einstellungen', 'Profile & settings')}
               style={{
                 display: 'flex', alignItems: 'center', gap: 10,
                 width: '100%',
@@ -423,7 +431,7 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
           display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
           padding: '12px 20px 8px 20px', flexShrink: 0,
         }}>
-          <button onClick={onClose} aria-label="Close sidebar" style={{
+          <button onClick={onClose} aria-label={t(lang, 'Seitenleiste schließen', 'Close sidebar')} style={{
             background: 'rgba(0,0,0,0.04)', border: 'none', fontSize: 'var(--t-h4-fs)',
             color: '#8C857A', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -447,12 +455,12 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
                 fontFamily: 'var(--font-dash-display), Manrope, sans-serif',
               }}
             >
-              Projekte
+              {t(lang, 'Projekte', 'Projects')}
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); setShowNewProjectModal(true); onClose?.(); }}
               data-testid="sidebar-new-project"
-              aria-label="Neues Projekt"
+              aria-label={t(lang, 'Neues Projekt', 'New project')}
               style={{
                 background: 'var(--brand-header)', border: 'none', cursor: 'pointer',
                 padding: 0, borderRadius: 7, color: 'var(--bone, #F4ECD8)',
@@ -601,6 +609,11 @@ function RecentChats({ pathname, navigate, projects = [] }: { pathname: string; 
     const diff = Date.now() - new Date(dateStr).getTime();
     const h = Math.floor(diff / 3600000);
     const d = Math.floor(diff / 86400000);
+    if (lang === 'de') {
+      if (h < 1) return 'jetzt';
+      if (h < 24) return `${h}Std`;
+      return `${d}T`;
+    }
     if (h < 1) return 'now';
     if (h < 24) return `${h}h`;
     return `${d}d`;
@@ -619,12 +632,12 @@ function RecentChats({ pathname, navigate, projects = [] }: { pathname: string; 
             fontFamily: 'var(--font-dash-display), Manrope, sans-serif',
           }}
         >
-          Chats
+          {t(lang, 'Chats', 'Chats')}
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); handleNewChat(); }}
-          title="Neuer Chat"
-          aria-label="Neuer Chat"
+          title={t(lang, 'Neuer Chat', 'New chat')}
+          aria-label={t(lang, 'Neuer Chat', 'New chat')}
           data-testid="sidebar-chats-plus"
           style={{
             background: 'var(--brand-header)', border: 'none', cursor: 'pointer',
@@ -670,7 +683,7 @@ function RecentChats({ pathname, navigate, projects = [] }: { pathname: string; 
                 onMouseEnter={e => (e.currentTarget.style.color = 'var(--brand-green)')}
                 onMouseLeave={e => (e.currentTarget.style.color = 'var(--ink-3)')}
               >
-                Alle Chats →
+                {t(lang, 'Alle Chats →', 'All chats →')}
               </button>
             )}
           </>
