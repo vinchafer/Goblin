@@ -69,6 +69,7 @@ export type SettingsGroupId = 'konto' | 'goblin' | 'design' | 'app' | 'hilfe';
 export interface SettingsSectionDef {
   id: string;
   label: string;
+  labelEn: string;
   icon: IconCmp;
   Component: ComponentType;
   group: SettingsGroupId;
@@ -82,21 +83,29 @@ export const GROUP_LABELS: Record<SettingsGroupId, string> = {
   hilfe: 'Hilfe',
 };
 
+export const GROUP_LABELS_EN: Record<SettingsGroupId, string> = {
+  konto: 'Account',
+  goblin: 'Goblin',
+  design: 'Design',
+  app: 'App',
+  hilfe: 'Help',
+};
+
 export const GROUP_ORDER: SettingsGroupId[] = ['konto', 'goblin', 'design', 'app', 'hilfe'];
 
 export const SETTINGS_SECTIONS: SettingsSectionDef[] = [
-  { id: 'profile',         label: 'Profil',             icon: Icons.User,     Component: ProfilePage,         group: 'konto' },
-  { id: 'billing',         label: 'Abrechnung',         icon: Icons.Dollar,   Component: BillingPage,         group: 'konto' },
-  { id: 'usage',           label: 'Nutzung',            icon: Icons.Chart,    Component: UsagePage,           group: 'konto' },
-  { id: 'personalization', label: 'Personalisierung',   icon: Icons.Sparkles, Component: PersonalizationPage, group: 'goblin' },
-  { id: 'features',        label: 'Funktionen',         icon: Icons.Sliders,  Component: FeaturesPage,        group: 'goblin' },
-  { id: 'connectors',      label: 'Konnektoren',        icon: Icons.Plug,     Component: ConnectorsPage,      group: 'goblin' },
-  { id: 'models',          label: 'Modelle',            icon: Icons.Key,      Component: ModelsPage,          group: 'goblin' },
-  { id: 'appearance',      label: 'Erscheinungsbild',   icon: Icons.Moon,     Component: AppearanceSection,   group: 'design' },
-  { id: 'language',        label: 'Eingabesprache',     icon: Icons.Globe,    Component: LanguagePage,        group: 'app' },
-  { id: 'notifications',   label: 'Benachrichtigungen', icon: Icons.Bell,     Component: NotificationsPage,   group: 'app' },
-  { id: 'privacy',         label: 'Datenschutz',        icon: Icons.Shield,   Component: PrivacyPage,         group: 'app' },
-  { id: 'report',          label: 'Problem melden',     icon: Icons.Flag,     Component: ReportProblemPage,   group: 'hilfe' },
-  { id: 'help',            label: 'Hilfecenter',        icon: Icons.Question, Component: HelpCenterPage,       group: 'hilfe' },
-  { id: 'about',           label: 'Über Goblin',        icon: Icons.Info,     Component: AboutPage,           group: 'hilfe' },
+  { id: 'profile',         label: 'Profil',             labelEn: 'Profile',          icon: Icons.User,     Component: ProfilePage,         group: 'konto' },
+  { id: 'billing',         label: 'Abrechnung',         labelEn: 'Billing',          icon: Icons.Dollar,   Component: BillingPage,         group: 'konto' },
+  { id: 'usage',           label: 'Nutzung',            labelEn: 'Usage',            icon: Icons.Chart,    Component: UsagePage,           group: 'konto' },
+  { id: 'personalization', label: 'Personalisierung',   labelEn: 'Personalization',  icon: Icons.Sparkles, Component: PersonalizationPage, group: 'goblin' },
+  { id: 'features',        label: 'Funktionen',         labelEn: 'Features',         icon: Icons.Sliders,  Component: FeaturesPage,        group: 'goblin' },
+  { id: 'connectors',      label: 'Konnektoren',        labelEn: 'Connectors',       icon: Icons.Plug,     Component: ConnectorsPage,      group: 'goblin' },
+  { id: 'models',          label: 'Modelle',            labelEn: 'Models',           icon: Icons.Key,      Component: ModelsPage,          group: 'goblin' },
+  { id: 'appearance',      label: 'Erscheinungsbild',   labelEn: 'Appearance',       icon: Icons.Moon,     Component: AppearanceSection,   group: 'design' },
+  { id: 'language',        label: 'Eingabesprache',     labelEn: 'Input language',   icon: Icons.Globe,    Component: LanguagePage,        group: 'app' },
+  { id: 'notifications',   label: 'Benachrichtigungen', labelEn: 'Notifications',    icon: Icons.Bell,     Component: NotificationsPage,   group: 'app' },
+  { id: 'privacy',         label: 'Datenschutz',        labelEn: 'Privacy',          icon: Icons.Shield,   Component: PrivacyPage,         group: 'app' },
+  { id: 'report',          label: 'Problem melden',     labelEn: 'Report a problem', icon: Icons.Flag,     Component: ReportProblemPage,   group: 'hilfe' },
+  { id: 'help',            label: 'Hilfecenter',        labelEn: 'Help center',      icon: Icons.Question, Component: HelpCenterPage,       group: 'hilfe' },
+  { id: 'about',           label: 'Über Goblin',        labelEn: 'About Goblin',     icon: Icons.Info,     Component: AboutPage,            group: 'hilfe' },
 ];

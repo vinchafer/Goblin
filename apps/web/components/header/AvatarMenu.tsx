@@ -11,6 +11,7 @@ import { useUser } from '@/lib/hooks/useUser';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useDemoMode } from '@/lib/demo/demo-mode-context';
 import { useRoutingMode } from '@/components/app-shell/local-cloud-switch';
+import { useLang, t } from '@/lib/use-lang';
 
 // Per v6 TASK 1: the primary nav rows carry NO leading icon (no settings cog,
 // no upgrade/help/logout glyphs) — they sit flush-left, label + chevron only,
@@ -102,6 +103,7 @@ export function AvatarMenu() {
   const { setShowSettingsSheet } = useApp();
   const router = useRouter();
   const [routingMode, setRoutingMode] = useRoutingMode();
+  const lang = useLang();
   const initial = (user.fullName?.[0] ?? user.email?.[0] ?? 'V').toUpperCase();
 
   useEffect(() => {
@@ -120,9 +122,9 @@ export function AvatarMenu() {
   const menuBody = (
     <div style={{ padding: isDesktop ? 0 : '8px 16px 16px', fontFamily: 'var(--font-sans)' }}>
       <SettingsCard flushDivider>
-        <SettingsRow dense testId="avatar-menu-settings" label="Einstellungen" onClick={() => { close(); setShowSettingsSheet(true); }} />
-        <SettingsRow dense label="Plan upgraden" onClick={() => { close(); router.push('/dashboard/billing'); }} />
-        <SettingsRow dense label="Hilfe" onClick={() => { close(); router.push('/help'); }} />
+        <SettingsRow dense testId="avatar-menu-settings" label={t(lang, 'Einstellungen', 'Settings')} onClick={() => { close(); setShowSettingsSheet(true); }} />
+        <SettingsRow dense label={t(lang, 'Plan upgraden', 'Upgrade plan')} onClick={() => { close(); router.push('/dashboard/billing'); }} />
+        <SettingsRow dense label={t(lang, 'Hilfe', 'Help')} onClick={() => { close(); router.push('/help'); }} />
       </SettingsCard>
 
       <div style={{ marginTop: 8 }}>
@@ -140,7 +142,7 @@ export function AvatarMenu() {
 
       <div style={{ marginTop: 8 }}>
         <SettingsCard>
-          <SettingsRow dense label="Abmelden" labelColor="var(--rust)" rightVariant="none" onClick={() => { close(); void signOut(); }} />
+          <SettingsRow dense label={t(lang, 'Abmelden', 'Sign out')} labelColor="var(--rust)" rightVariant="none" onClick={() => { close(); void signOut(); }} />
         </SettingsCard>
       </div>
     </div>
@@ -152,7 +154,7 @@ export function AvatarMenu() {
         ref={triggerRef}
         data-testid="header-avatar"
         onClick={() => { if (!demoMode) setOpen(o => !o); }}
-        aria-label="Konto-Menü"
+        aria-label={t(lang, 'Konto-Menü', 'Account menu')}
         aria-haspopup="menu"
         aria-expanded={open}
         style={{

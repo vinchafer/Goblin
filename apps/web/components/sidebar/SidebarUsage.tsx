@@ -122,7 +122,7 @@ export function SidebarUsage() {
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           marginTop: 7, fontSize: 'var(--t-caption-fs)', color: 'var(--ink-3, #5c6f64)',
         }}>
-          <span>{planLabel(data.plan, isComped)}</span>
+          <span>{planLabel(data.plan, isComped, lang)}</span>
           {(() => {
             // F5: prefer the calendar-month reset the cap actually uses; fall back
             // to the legacy billing-cycle value only if no resetDate is present.

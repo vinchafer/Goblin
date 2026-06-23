@@ -10,8 +10,8 @@ const PLAN_LABELS: Record<string, string> = {
   power: 'Power',
 };
 
-export function planLabel(plan?: string | null, isComped?: boolean): string {
-  if (isComped) return 'Vollzugriff';
+export function planLabel(plan?: string | null, isComped?: boolean, lang?: 'de' | 'en'): string {
+  if (isComped) return lang === 'en' ? 'Full access' : 'Vollzugriff';
   const key = (plan ?? '').toLowerCase();
   if (PLAN_LABELS[key]) return PLAN_LABELS[key];
   if (!key) return 'Trial';
