@@ -478,6 +478,12 @@ projects.get('/:id/download', async (c) => {
     return c.json({ error: 'Project not found' }, 404);
   }
 
+  // Don't hand back a silent empty ZIP when there is nothing to export.
+  const files = await listFiles(projectId);
+  if (files.length === 0) {
+    return c.json({ error: 'empty_project', message: 'This project has no files to export yet.' }, 422);
+  }
+
   const zipBuffer = await createZip(projectId);
 
   return new Response(new Uint8Array(zipBuffer), {

@@ -395,6 +395,12 @@ export default function ProjectSecretsPage() {
                 onChange={e => setNewName(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, '_'))}
                 placeholder="DATABASE_URL"
                 className="gobl-input"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                data-1p-ignore
+                data-lpignore="true"
                 style={{ fontFamily: 'JetBrains Mono, monospace', marginBottom: 14 }}
               />
               <label className="gobl-field-label" htmlFor="sec-val">Wert (wird beim Speichern verschlüsselt)</label>
@@ -405,6 +411,12 @@ export default function ProjectSecretsPage() {
                 onChange={e => setNewValue(e.target.value)}
                 placeholder="••••••••"
                 className="gobl-input"
+                autoComplete="new-password"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                data-1p-ignore
+                data-lpignore="true"
                 style={{ fontFamily: 'JetBrains Mono, monospace', marginBottom: 20 }}
               />
               <div style={{ display: 'flex', gap: 10 }}>
