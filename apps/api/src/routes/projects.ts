@@ -8,6 +8,7 @@ import { createZip, listFiles, getFile, uploadFile, deleteFile, deleteProject, l
 import { getSupabaseAdmin } from '../lib/supabase';
 import { createTwoFilesPatch } from 'diff';
 import { createProjectFromTemplate } from './templates';
+import { teardownVercelProject } from '../services/vercel-service';
 import logger from '../lib/logger';
 
 type Variables = { userId: string }
@@ -226,7 +227,9 @@ projects.patch('/:id', async (c) => {
 // `WHERE id = ANY($ids) AND user_id = <authed>`, so a forged/mixed id list can
 // only ever touch the caller's own rows; non-owned ids are silent no-ops (no IDOR).
 // Children (chat_sessions, code_sessions, deployments) cascade via FK. The live
-// Vercel deploy is NOT torn down here — the client confirm dialog warns the user.
+// Vercel site IS torn down per project here (best-effort, rule b): teardown is
+// attempted BEFORE the DB cascade so we still have the project name; a teardown
+// failure never blocks the delete — the orphaned URL is returned in `orphans`.
 projects.post('/bulk-delete', async (c) => {
   const userId = c.get('userId');
   const body = await c.req.json().catch(() => ({}));
@@ -238,13 +241,30 @@ projects.post('/bulk-delete', async (c) => {
   // Resolve which of the requested ids the caller actually owns (the only ones we touch).
   const { data: owned, error: ownErr } = await supabase
     .from('projects')
-    .select('id')
+    .select('id, name, preview_url')
     .in('id', parsed.data.ids)
     .eq('user_id', userId);
   if (ownErr) return c.json({ error: 'Failed to delete' }, 500);
 
-  const ownedIds = (owned ?? []).map((r: { id: string }) => r.id);
-  if (ownedIds.length === 0) return c.json({ success: true, deleted: 0 });
+  const ownedRows = (owned ?? []) as Array<{ id: string; name: string; preview_url: string | null }>;
+  if (ownedRows.length === 0) return c.json({ success: true, deleted: 0, orphans: [] });
+  const ownedIds = ownedRows.map((r) => r.id);
+
+  // Tear down each project's live Vercel site FIRST (need the name pre-cascade).
+  // Best-effort + isolated per project (rule b/c): one failure never blocks the rest.
+  const orphans: Array<{ id: string; url: string | null }> = [];
+  for (const row of ownedRows) {
+    try {
+      const t = await teardownVercelProject(userId, row.name);
+      if (!t.ok) {
+        orphans.push({ id: row.id, url: row.preview_url });
+        logger.warn({ project_id: row.id, status: t.status, err: t.error }, 'vercel_teardown_failed');
+      }
+    } catch (err) {
+      orphans.push({ id: row.id, url: row.preview_url });
+      logger.error({ project_id: row.id, err: err instanceof Error ? err.message : String(err) }, 'vercel_teardown_threw');
+    }
+  }
 
   const { error } = await supabase
     .from('projects')
@@ -260,7 +280,7 @@ projects.post('/bulk-delete', async (c) => {
     );
   }
 
-  return c.json({ success: true, deleted: ownedIds.length });
+  return c.json({ success: true, deleted: ownedIds.length, orphans });
 });
 
 // POST /api/projects/from-template
@@ -300,13 +320,28 @@ projects.delete('/:id', async (c) => {
   // Verify ownership
   const { data: project, error: checkError } = await supabase
     .from('projects')
-    .select('id')
+    .select('id, name, preview_url')
     .eq('id', projectId)
     .eq('user_id', userId)
-    .single();
+    .single() as { data: { id: string; name: string; preview_url: string | null } | null; error: unknown };
 
   if (checkError || !project) {
     return c.json({ error: 'Project not found' }, 404);
+  }
+
+  // Tear down the live Vercel site FIRST (need the name before the DB cascade).
+  // Best-effort (rule b): a teardown failure NEVER blocks the delete — the
+  // orphaned URL is returned so the client/caller can surface it.
+  let orphan: string | null = null;
+  try {
+    const t = await teardownVercelProject(userId, project.name);
+    if (!t.ok) {
+      orphan = project.preview_url;
+      logger.warn({ project_id: projectId, status: t.status, err: t.error }, 'vercel_teardown_failed');
+    }
+  } catch (err) {
+    orphan = project.preview_url;
+    logger.error({ project_id: projectId, err: err instanceof Error ? err.message : String(err) }, 'vercel_teardown_threw');
   }
 
   await supabase
@@ -319,7 +354,7 @@ projects.delete('/:id', async (c) => {
     logger.error({ project_id: projectId, err: err instanceof Error ? err.message : String(err) }, 'storage_cleanup_failed')
   );
 
-  return c.json({ success: true });
+  return c.json({ success: true, orphanUrl: orphan });
 });
 
 // Generate project

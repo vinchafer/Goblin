@@ -73,6 +73,87 @@ async function disableDeploymentProtection(
   return 'manual';
 }
 
+// The Vercel project name Goblin deploys under. A publish POSTs to
+// /v13/deployments with this `name`, so Vercel auto-creates/reuses a project
+// called <slug> whose public production alias is <slug>.vercel.app. Teardown
+// targets this same slug. Single source of truth — deployToVercel uses it too.
+export function vercelProjectName(projectName: string): string {
+  return projectName.toLowerCase().replace(/[^a-z0-9-]/g, '-').slice(0, 52);
+}
+
+export type TeardownResult = {
+  ok: boolean;          // true = site removed or already gone
+  status: number;       // last Vercel HTTP status seen (0 = network/guard)
+  alreadyGone: boolean; // Vercel returned 404 → nothing left to remove
+  error?: string;       // human-readable reason when ok === false
+};
+
+// Best-effort removal of a project's LIVE Vercel resource (rule b). Deleting the
+// Vercel *project* (not a single deployment) takes down ALL its deployments and
+// the public <slug>.vercel.app alias — a single-deployment delete would leave the
+// alias serving. NEVER throws: callers must always be able to proceed with the DB
+// delete. 404 = SUCCESS (resource already gone). Token stays server-side (rule e).
+export async function teardownVercelProject(
+  userId: string,
+  projectName: string,
+): Promise<TeardownResult> {
+  const slug = vercelProjectName(projectName);
+  if (!slug) return { ok: true, status: 0, alreadyGone: true };
+
+  const token = await getUserVercelToken(userId);
+  // No token = user never connected Vercel = nothing was ever deployed by us.
+  if (!token) return { ok: true, status: 0, alreadyGone: true };
+
+  // Dev-safety shield is a no-op in prod; in dev it throws for non-test names.
+  // Teardown must never block a delete, so swallow the guard throw → failure.
+  try {
+    guardVercelCall(slug, 'teardown');
+  } catch (err) {
+    return { ok: false, status: 0, alreadyGone: false, error: err instanceof Error ? err.message : 'guard blocked' };
+  }
+
+  const del = async (teamId?: string): Promise<number> => {
+    const url = `https://api.vercel.com/v9/projects/${encodeURIComponent(slug)}${teamId ? `?teamId=${encodeURIComponent(teamId)}` : ''}`;
+    try {
+      const res = await fetch(url, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return res.status;
+    } catch {
+      return 0; // network — treat as failure
+    }
+  };
+
+  // Personal scope first; on 403/404 try each team scope (mirrors deploy path).
+  let status = await del();
+  // 204/200 = deleted; 404 = already gone → both success.
+  if (status === 204 || status === 200 || status === 404) {
+    return { ok: true, status, alreadyGone: status === 404 };
+  }
+
+  if (status === 403 || status === 404) {
+    try {
+      const teamsRes = await fetch('https://api.vercel.com/v2/teams', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (teamsRes.ok) {
+        const body = (await teamsRes.json()) as { teams?: Array<{ id?: string }> };
+        for (const t of body.teams ?? []) {
+          if (!t.id) continue;
+          status = await del(t.id);
+          if (status === 204 || status === 200 || status === 404) {
+            return { ok: true, status, alreadyGone: status === 404 };
+          }
+        }
+      }
+    } catch { /* fall through to failure */ }
+  }
+
+  if (status === 401 || status === 403) clearTokenCache(userId);
+  return { ok: false, status, alreadyGone: false, error: `Vercel teardown failed (HTTP ${status})` };
+}
+
 export async function deployToVercel(
   userId: string,
   projectId: string,
@@ -119,7 +200,7 @@ export async function deployToVercel(
   }
 
   onProgress?.('Creating deployment…');
-  const deployName = projectName.toLowerCase().replace(/[^a-z0-9-]/g, '-').slice(0, 52);
+  const deployName = vercelProjectName(projectName);
   // Dev-safety shield: refuse to create/touch any Vercel project except synapse-platform
   // or test-* throwaways while GOBLIN_DEV_MODE=true. No-op in prod.
   guardVercelCall(deployName, 'deploy');
