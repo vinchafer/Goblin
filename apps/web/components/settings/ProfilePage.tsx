@@ -13,6 +13,7 @@ import { SessionsPage } from './SessionsPage';
 import { DecryptLogPage } from './DecryptLogPage';
 import { AvatarUploader } from '../profile/AvatarUploader';
 import { createClient } from '@/lib/supabase/client';
+import { useLang, t } from '@/lib/use-lang';
 
 const Edit14 = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -28,6 +29,7 @@ const DeviceIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="n
 const TrashIcon = ({ color = 'currentColor' }: { color?: string }) => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>;
 
 export function ProfilePage() {
+  const lang = useLang();
   const { user, updateProfile } = useUser();
   const { push } = useSheetStack();
   const [name, setName] = useState('');
@@ -99,18 +101,18 @@ export function ProfilePage() {
         <div style={{ marginTop: 12, fontSize: 18, fontWeight: 600, color: 'var(--text)' }}>{name || 'Vincent'}</div>
       </div>
 
-      <SettingsGroup label="Konto">
+      <SettingsGroup label={t(lang, 'Konto', 'Account')}>
         <SettingsCard>
-          <FormReadOnly label="E-Mail-Adresse" value={user.email} testId="form-email" />
-          <FormInput label="Vollständiger Name" value={name} onChange={setName} testId="form-name" />
-          <FormInput label="Anzeigename" value={displayName} onChange={setDisplayName} testId="form-displayname" />
+          <FormReadOnly label={t(lang, 'E-Mail-Adresse', 'Email address')} value={user.email} testId="form-email" />
+          <FormInput label={t(lang, 'Vollständiger Name', 'Full name')} value={name} onChange={setName} testId="form-name" />
+          <FormInput label={t(lang, 'Anzeigename', 'Display name')} value={displayName} onChange={setDisplayName} testId="form-displayname" />
         </SettingsCard>
       </SettingsGroup>
 
-      <SettingsGroup label="Region">
+      <SettingsGroup label={t(lang, 'Region', 'Region')}>
         <SettingsCard>
           <div style={{ padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <label style={{ fontSize: 13, color: 'var(--text-meta)' }}>Sprache</label>
+            <label style={{ fontSize: 13, color: 'var(--text-meta)' }}>{t(lang, 'Sprache', 'Language')}</label>
             <select
               value={locale}
               onChange={(e) => setLocale(e.target.value as 'de' | 'en')}
@@ -126,7 +128,7 @@ export function ProfilePage() {
             </select>
           </div>
           <div style={{ padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <label style={{ fontSize: 13, color: 'var(--text-meta)' }}>Zeitzone</label>
+            <label style={{ fontSize: 13, color: 'var(--text-meta)' }}>{t(lang, 'Zeitzone', 'Timezone')}</label>
             <input
               value={timezone}
               onChange={(e) => setTimezone(e.target.value)}
@@ -142,13 +144,13 @@ export function ProfilePage() {
         </SettingsCard>
       </SettingsGroup>
 
-      <SettingsGroup label="Sicherheit">
+      <SettingsGroup label={t(lang, 'Sicherheit', 'Security')}>
         <SettingsCard>
-          <SettingsRow icon={<KeyIcon />} label="Passwort ändern" onClick={() => push('security', <SecurityPage />, 'Passwort ändern')} />
-          <SettingsRow icon={<ShieldIcon />} label="Zwei-Faktor-Authentifizierung" onClick={() => push('2fa', <TwoFactorPage />, 'Zwei-Faktor-Authentifizierung')} />
-          <SettingsRow icon={<FingerprintIcon />} label="Passkeys" right="Bald" rightVariant="text" disabled />
-          <SettingsRow icon={<DeviceIcon />} label="Aktive Sitzungen" onClick={() => push('sessions', <SessionsPage />, 'Aktive Sitzungen')} />
-          <SettingsRow icon={<KeyIcon />} label="API-Key Aktivität" onClick={() => push('decrypt-log', <DecryptLogPage />, 'API-Key Aktivität')} />
+          <SettingsRow icon={<KeyIcon />} label={t(lang, 'Passwort ändern', 'Change password')} onClick={() => push('security', <SecurityPage />, t(lang, 'Passwort ändern', 'Change password'))} />
+          <SettingsRow icon={<ShieldIcon />} label={t(lang, 'Zwei-Faktor-Authentifizierung', 'Two-factor authentication')} onClick={() => push('2fa', <TwoFactorPage />, t(lang, 'Zwei-Faktor-Authentifizierung', 'Two-factor authentication'))} />
+          <SettingsRow icon={<FingerprintIcon />} label="Passkeys" right={t(lang, 'Bald', 'Soon')} rightVariant="text" disabled />
+          <SettingsRow icon={<DeviceIcon />} label={t(lang, 'Aktive Sitzungen', 'Active sessions')} onClick={() => push('sessions', <SessionsPage />, t(lang, 'Aktive Sitzungen', 'Active sessions'))} />
+          <SettingsRow icon={<KeyIcon />} label={t(lang, 'API-Key Aktivität', 'API key activity')} onClick={() => push('decrypt-log', <DecryptLogPage />, t(lang, 'API-Key Aktivität', 'API key activity'))} />
         </SettingsCard>
       </SettingsGroup>
 
@@ -174,14 +176,14 @@ export function ProfilePage() {
           cursor: !isDirty || saving ? 'not-allowed' : 'pointer',
         }}
       >
-        {saving ? 'Speichert...' : 'Profil aktualisieren'}
+        {saving ? t(lang, 'Speichert...', 'Saving...') : t(lang, 'Profil aktualisieren', 'Update profile')}
       </button>
 
-      <SettingsGroup label="Gefahrenzone">
+      <SettingsGroup label={t(lang, 'Gefahrenzone', 'Danger zone')}>
         <SettingsCard>
           <SettingsRow
             icon={<TrashIcon color="var(--rust)" />}
-            label="Konto löschen"
+            label={t(lang, 'Konto löschen', 'Delete account')}
             labelColor="var(--rust)"
             rightVariant="chevron"
             onClick={() => push('privacy', <PrivacyPage />, 'Datenschutz')}

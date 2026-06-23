@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { SettingsCard } from '../ui/SettingsCard';
 import { SettingsGroup } from '../ui/SettingsGroup';
+import { useLang, t } from '@/lib/use-lang';
 
 const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
 
@@ -18,6 +19,7 @@ interface GithubState { connected: boolean; username?: string }
 interface VercelState { connected: boolean; account?: { username: string; email?: string } }
 
 export function ConnectorsPage() {
+  const lang = useLang();
   const [github, setGithub] = useState<GithubState>({ connected: false });
   const [loading, setLoading] = useState(true);
 
@@ -61,29 +63,29 @@ export function ConnectorsPage() {
     }
   }, []);
 
-  if (loading) return <div style={{ padding: 24, color: 'var(--text-meta)', fontFamily: 'var(--font-sans)' }}>Lade Konnektoren...</div>;
+  if (loading) return <div style={{ padding: 24, color: 'var(--text-meta)', fontFamily: 'var(--font-sans)' }}>{t(lang, 'Lade Konnektoren...', 'Loading connectors...')}</div>;
 
   return (
     <div className="settings-section" style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
-      <SettingsGroup label="Versionskontrolle">
+      <SettingsGroup label={t(lang, 'Versionskontrolle', 'Version control')}>
         <SettingsCard>
           <ConnectorRow
             name="GitHub"
             initial="GH"
             connected={github.connected}
-            detail={github.connected ? `@${github.username}` : 'Repos pushen, deployen'}
+            detail={github.connected ? `@${github.username}` : t(lang, 'Repos pushen, deployen', 'Push repos, deploy')}
             onConnect={() => { void connectGithub(); }}
           />
         </SettingsCard>
       </SettingsGroup>
 
-      <SettingsGroup label="Deploy-Plattformen">
+      <SettingsGroup label={t(lang, 'Deploy-Plattformen', 'Deploy platforms')}>
         <SettingsCard>
           <VercelConnectorRow />
         </SettingsCard>
       </SettingsGroup>
 
-      <SettingsGroup label="Weitere Integrationen">
+      <SettingsGroup label={t(lang, 'Weitere Integrationen', 'More integrations')}>
         <SettingsCard>
           <MoreIntegrations />
         </SettingsCard>
@@ -95,6 +97,7 @@ export function ConnectorsPage() {
 // Compact, deliberate roll-up of the integrations still on the roadmap — one
 // element instead of ~20 muted "Bald verfügbar" rows that read like vapor.
 function MoreIntegrations() {
+  const lang = useLang();
   const upcoming = [
     'GitLab', 'Bitbucket', 'Netlify', 'Railway', 'Fly.io', 'Cloudflare',
     'Supabase', 'Firebase', 'PlanetScale', 'Neon', 'Slack', 'Discord',
@@ -103,7 +106,7 @@ function MoreIntegrations() {
   return (
     <div style={{ padding: 16 }}>
       <div style={{ fontSize: 13, color: 'var(--text-meta)', marginBottom: 12, lineHeight: 1.5 }}>
-        GitHub und Vercel funktionieren heute schon. Diese Integrationen folgen nach und nach:
+        {t(lang, 'GitHub und Vercel funktionieren heute schon. Diese Integrationen folgen nach und nach:', 'GitHub and Vercel work today. These integrations are coming:')}
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
         {upcoming.map((name) => (
@@ -118,6 +121,7 @@ function MoreIntegrations() {
 }
 
 function VercelConnectorRow() {
+  const lang = useLang();
   const [state, setState] = useState<VercelState>({ connected: false });
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -144,20 +148,20 @@ function VercelConnectorRow() {
 
   const connect = useCallback(async () => {
     setError(null);
-    if (!token.trim()) { setError('Bitte Token einfügen'); return; }
+    if (!token.trim()) { setError(t(lang, 'Bitte Token einfügen', 'Please paste a token')); return; }
     setBusy(true);
     try {
       const headers = await authHeaders();
-      if (!headers) { setError('Nicht angemeldet'); return; }
+      if (!headers) { setError(t(lang, 'Nicht angemeldet', 'Not signed in')); return; }
       const r = await fetch(`${apiBase}/api/integrations/vercel`, {
         method: 'POST', headers, body: JSON.stringify({ token: token.trim() }),
       });
       const data = await r.json().catch(() => ({}));
-      if (!r.ok) { setError(data.error ?? 'Verbindung fehlgeschlagen'); return; }
+      if (!r.ok) { setError(data.error ?? t(lang, 'Verbindung fehlgeschlagen', 'Connection failed')); return; }
       setState({ connected: true, account: data.account });
       setShowForm(false); setToken('');
     } catch {
-      setError('Verbindung fehlgeschlagen');
+      setError(t(lang, 'Verbindung fehlgeschlagen', 'Connection failed'));
     } finally {
       setBusy(false);
     }
@@ -176,10 +180,10 @@ function VercelConnectorRow() {
   }, []);
 
   const detail = loading
-    ? 'Lade…'
+    ? t(lang, 'Lade…', 'Loading…')
     : state.connected
-      ? (state.account?.username ?? 'verbunden')
-      : 'Automatisches Deploy mit deinem Vercel-Token';
+      ? (state.account?.username ?? t(lang, 'verbunden', 'connected'))
+      : t(lang, 'Automatisches Deploy mit deinem Vercel-Token', 'Automatic deploy with your Vercel token');
 
   return (
     <div style={{ borderBottom: '1px solid var(--border-hairline)' }}>
@@ -195,19 +199,19 @@ function VercelConnectorRow() {
         </div>
         {state.connected ? (
           <button onClick={disconnect} disabled={busy} style={ghostBtn('var(--text-meta)')}>
-            {busy ? '…' : 'Trennen'}
+            {busy ? '…' : t(lang, 'Trennen', 'Disconnect')}
           </button>
         ) : (
           <button onClick={() => { setShowForm((s) => !s); setError(null); }} disabled={loading} style={ghostBtn('var(--brand-green)')}>
-            {showForm ? 'Abbrechen' : 'Token einfügen'}
+            {showForm ? t(lang, 'Abbrechen', 'Cancel') : t(lang, 'Token einfügen', 'Add token')}
           </button>
         )}
       </div>
 
       <div style={{ padding: '0 16px 12px', marginTop: -4 }}>
         <span style={{ fontSize: 11.5, fontStyle: 'italic', color: 'var(--text-meta)', lineHeight: 1.45 }}>
-          Goblin pusht in deinen eigenen Vercel-Account. Deine Deployments, deine Kosten.
-          {state.connected && ' Dein veröffentlichtes Projekt ist öffentlich erreichbar.'}
+          {t(lang, 'Goblin pusht in deinen eigenen Vercel-Account. Deine Deployments, deine Kosten.', 'Goblin pushes to your own Vercel account. Your deployments, your cost.')}
+          {state.connected && ` ${t(lang, 'Dein veröffentlichtes Projekt ist öffentlich erreichbar.', 'Your published project is publicly reachable.')}`}
         </span>
       </div>
 
@@ -234,11 +238,11 @@ function VercelConnectorRow() {
               fontSize: 13, fontWeight: 600, cursor: busy ? 'wait' : 'pointer',
               fontFamily: 'var(--font-sans)', opacity: busy ? 0.7 : 1,
             }}>
-              {busy ? 'Prüfe…' : 'Verbinden'}
+              {busy ? t(lang, 'Prüfe…', 'Checking…') : t(lang, 'Verbinden', 'Connect')}
             </button>
           </div>
           <div style={{ fontSize: 11, color: 'var(--text-meta)' }}>
-            Wird gegen die Vercel-API geprüft und verschlüsselt gespeichert. Nur Account-Ebene.
+            {t(lang, 'Wird gegen die Vercel-API geprüft und verschlüsselt gespeichert. Nur Account-Ebene.', 'Validated against the Vercel API and stored encrypted. Account level only.')}
           </div>
         </div>
       )}
@@ -258,6 +262,7 @@ function ghostBtn(color: string): React.CSSProperties {
 function ConnectorRow({ name, initial, connected, detail, onConnect, disabled }: {
   name: string; initial: string; connected: boolean; detail: string; onConnect?: () => void; disabled?: boolean;
 }) {
+  const lang = useLang();
   return (
     <div className="list-item" style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 12, borderBottom: '1px solid var(--border-hairline)' }}>
       <span style={{
@@ -271,7 +276,7 @@ function ConnectorRow({ name, initial, connected, detail, onConnect, disabled }:
       </div>
       {connected ? (
         <span style={{ padding: '4px 10px', borderRadius: 12, background: 'color-mix(in srgb, var(--brand-green) 8%, transparent)', color: 'var(--brand-green)', fontSize: 'var(--t-caption-fs)', fontWeight: 600 }}>
-          Verbunden
+          {t(lang, 'Verbunden', 'Connected')}
         </span>
       ) : (
         <button onClick={onConnect} disabled={disabled} style={{
@@ -282,7 +287,7 @@ function ConnectorRow({ name, initial, connected, detail, onConnect, disabled }:
           opacity: disabled ? 0.5 : 1,
           fontFamily: 'var(--font-sans)',
         }}>
-          {disabled ? 'Bald' : 'Verbinden'}
+          {disabled ? t(lang, 'Bald', 'Soon') : t(lang, 'Verbinden', 'Connect')}
         </button>
       )}
     </div>
