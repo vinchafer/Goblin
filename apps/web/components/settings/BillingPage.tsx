@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Icon } from '@/components/ui/icon';
 import { planLabel } from '@/lib/plan-label';
+import { useLang, t } from '@/lib/use-lang';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '';
 
@@ -34,19 +35,6 @@ interface UsageBreakdown {
   goblin_hosted: number;
 }
 
-const PLAN_PRICE: Record<string, string> = {
-  trial: 'kostenlos',
-  build: '$9/Monat',
-  pro: '$19/Monat',
-  power: '$39/Monat',
-};
-
-const PLAN_FEATURES: Record<string, string[]> = {
-  trial: ['200 Hosted-Requests', 'Eigene API-Keys erlaubt', 'Limit endet automatisch'],
-  build: ['Unbegrenzte Projekte', 'Alle Provider via BYOK', '5 GB Speicher', 'GitHub-Push & Deploy'],
-  pro: ['Alles aus Build', 'Cloud-Credits inklusive', 'Priority Support', '20 GB Speicher'],
-  power: ['Alles aus Pro', 'Team-Features', 'SLA-Support', '100 GB Speicher'],
-};
 
 async function authHeader(): Promise<Record<string, string>> {
   const supabase = createClient();
@@ -56,6 +44,41 @@ async function authHeader(): Promise<Record<string, string>> {
 }
 
 export function BillingPage() {
+  const lang = useLang();
+
+  const PLAN_PRICE: Record<string, string> = {
+    trial: t(lang, 'kostenlos', 'free'),
+    build: t(lang, '$9/Monat', '$9/mo'),
+    pro: t(lang, '$19/Monat', '$19/mo'),
+    power: t(lang, '$39/Monat', '$39/mo'),
+  };
+
+  const PLAN_FEATURES: Record<string, string[]> = {
+    trial: [
+      t(lang, '200 Hosted-Requests', '200 hosted requests'),
+      t(lang, 'Eigene API-Keys erlaubt', 'Own API keys allowed'),
+      t(lang, 'Limit endet automatisch', 'Limit ends automatically'),
+    ],
+    build: [
+      t(lang, 'Unbegrenzte Projekte', 'Unlimited projects'),
+      t(lang, 'Alle Provider via BYOK', 'All providers via BYOK'),
+      t(lang, '5 GB Speicher', '5 GB storage'),
+      t(lang, 'GitHub-Push & Deploy', 'GitHub push & deploy'),
+    ],
+    pro: [
+      t(lang, 'Alles aus Build', 'Everything in Build'),
+      t(lang, 'Cloud-Credits inklusive', 'Cloud credits included'),
+      t(lang, 'Priority Support', 'Priority support'),
+      t(lang, '20 GB Speicher', '20 GB storage'),
+    ],
+    power: [
+      t(lang, 'Alles aus Pro', 'Everything in Pro'),
+      t(lang, 'Team-Features', 'Team features'),
+      t(lang, 'SLA-Support', 'SLA support'),
+      t(lang, '100 GB Speicher', '100 GB storage'),
+    ],
+  };
+
   const [status, setStatus] = useState<BillingStatus | null>(null);
   const [usage, setUsage] = useState<UsageBreakdown | null>(null);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -121,7 +144,7 @@ export function BillingPage() {
   }
 
   if (loading) {
-    return <div style={{ padding: 24, color: 'var(--text-meta)', fontFamily: 'var(--font-sans)' }}>Lade Abrechnung…</div>;
+    return <div style={{ padding: 24, color: 'var(--text-meta)', fontFamily: 'var(--font-sans)' }}>{t(lang, 'Lade Abrechnung…', 'Loading billing…')}</div>;
   }
 
   const planKey = status?.plan ?? 'trial';
@@ -129,7 +152,7 @@ export function BillingPage() {
   const planName = planLabel(planKey, isComped);
   const planPrice = PLAN_PRICE[planKey] ?? '';
   const features = PLAN_FEATURES[planKey] ?? [];
-  const monthName = new Date().toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+  const monthName = new Date().toLocaleDateString(lang === 'de' ? 'de-DE' : 'en-US', { month: 'long', year: 'numeric' });
 
   // DD §A: usage here is a real BUILD count (sum of the agent_runs tier breakdown),
   // not the retired request counter. The only cap — the weighted Goblin allowance —
@@ -140,17 +163,17 @@ export function BillingPage() {
     <div className="settings-section" style={{ padding: '0 16px 32px', fontFamily: 'var(--font-sans)' }}>
 
       {/* Current plan */}
-      <Section title="Dein Plan">
+      <Section title={t(lang, 'Dein Plan', 'Your plan')}>
         <Card>
           <div style={{ padding: 20 }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 14 }}>
               <div>
                 <div style={{ fontSize: 11, color: 'var(--text-meta)', textTransform: 'uppercase', letterSpacing: 1.2, marginBottom: 6, fontWeight: 600 }}>
-                  Aktuell
+                  {t(lang, 'Aktuell', 'Current')}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
                   <div style={{ fontSize: 26, fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-sans)', letterSpacing: '-0.3px' }}>
-                    {isComped ? 'Vollzugriff' : planName}
+                    {isComped ? t(lang, 'Vollzugriff', 'Full access') : planName}
                   </div>
                   <div style={{ fontSize: 'var(--t-small-fs)', color: 'var(--text-meta)' }}>
                     {isComped ? (status?.compReason?.startsWith('invite') ? 'Invite-Code' : 'Founder') : planPrice}
@@ -158,12 +181,12 @@ export function BillingPage() {
                 </div>
                 {!isComped && status?.trialEndsAt && (
                   <div style={{ marginTop: 8, fontSize: 13, color: 'var(--brand-gold)' }}>
-                    Trial endet {new Date(status.trialEndsAt).toLocaleDateString('de-DE')}
+                    {t(lang, 'Trial endet', 'Trial ends')} {new Date(status.trialEndsAt).toLocaleDateString(lang === 'de' ? 'de-DE' : 'en-US')}
                   </div>
                 )}
                 {!isComped && status?.currentPeriodEnd && !status?.trialEndsAt && (
                   <div style={{ marginTop: 8, fontSize: 13, color: 'var(--text-meta)' }}>
-                    Nächste Abbuchung {new Date(status.currentPeriodEnd).toLocaleDateString('de-DE')}
+                    {t(lang, 'Nächste Abbuchung', 'Next charge')} {new Date(status.currentPeriodEnd).toLocaleDateString(lang === 'de' ? 'de-DE' : 'en-US')}
                   </div>
                 )}
               </div>
@@ -171,7 +194,12 @@ export function BillingPage() {
 
             {/* Feature list */}
             <ul style={{ listStyle: 'none', padding: 0, margin: '12px 0 16px', display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {(isComped ? ['Unbegrenzte Projekte', 'Alle Provider', 'Voller Speicher', 'Alle Features'] : features).map(f => (
+              {(isComped ? [
+                t(lang, 'Unbegrenzte Projekte', 'Unlimited projects'),
+                t(lang, 'Alle Provider', 'All providers'),
+                t(lang, 'Voller Speicher', 'Full storage'),
+                t(lang, 'Alle Features', 'All features'),
+              ] : features).map(f => (
                 <li key={f} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--text)' }}>
                   <Icon name="check" size={14} color="var(--brand-green)" />
                   {f}
@@ -182,10 +210,10 @@ export function BillingPage() {
             {!isComped && (
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 <button onClick={openPortal} disabled={busy} style={primaryBtn(busy)}>
-                  {busy ? 'Lade Portal…' : 'Abo verwalten'}
+                  {busy ? t(lang, 'Lade Portal…', 'Loading portal…') : t(lang, 'Abo verwalten', 'Manage subscription')}
                 </button>
                 <button onClick={() => { window.location.href = '/dashboard/upgrade'; }} style={outlineBtn}>
-                  Plan ändern
+                  {t(lang, 'Plan ändern', 'Change plan')}
                 </button>
               </div>
             )}
@@ -195,11 +223,11 @@ export function BillingPage() {
 
       {/* Usage — a plain BUILD count this month. The real limit (the weighted Goblin
           allowance) lives on the Verbrauch screen, not here. */}
-      <Section title={`Verbrauch — ${monthName}`}>
+      <Section title={`${t(lang, 'Verbrauch', 'Usage')} — ${monthName}`}>
         <Card>
           <div style={{ padding: 20, display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
             <div style={{ fontSize: 'var(--t-small-fs)', color: 'var(--text)' }}>
-              {isComped ? 'Unbegrenzt' : 'Diesen Monat'}
+              {isComped ? t(lang, 'Unbegrenzt', 'Unlimited') : t(lang, 'Diesen Monat', 'This month')}
             </div>
             <div style={{ fontSize: 15, color: 'var(--text)', fontFamily: 'var(--font-mono, monospace)' }}>
               {buildsThisMonth} {buildsThisMonth === 1 ? 'Build' : 'Builds'}
@@ -216,11 +244,11 @@ export function BillingPage() {
       </Section>
 
       {/* Payment method */}
-      <Section title="Zahlungsmethode">
+      <Section title={t(lang, 'Zahlungsmethode', 'Payment method')}>
         <Card>
           <div style={{ padding: 20 }}>
             {isComped ? (
-              <div style={{ fontSize: 'var(--t-small-fs)', color: 'var(--text-meta)' }}>Nicht erforderlich</div>
+              <div style={{ fontSize: 'var(--t-small-fs)', color: 'var(--text-meta)' }}>{t(lang, 'Nicht erforderlich', 'Not required')}</div>
             ) : status?.cardLast4 ? (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -231,12 +259,12 @@ export function BillingPage() {
                     </div>
                   </div>
                 </div>
-                <button onClick={openPortal} disabled={busy} style={textBtn}>Ändern</button>
+                <button onClick={openPortal} disabled={busy} style={textBtn}>{t(lang, 'Ändern', 'Change')}</button>
               </div>
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-                <div style={{ fontSize: 'var(--t-small-fs)', color: 'var(--text-meta)' }}>Keine Zahlungsmethode</div>
-                <button onClick={openPortal} disabled={busy} style={outlineBtn}>Hinzufügen</button>
+                <div style={{ fontSize: 'var(--t-small-fs)', color: 'var(--text-meta)' }}>{t(lang, 'Keine Zahlungsmethode', 'No payment method')}</div>
+                <button onClick={openPortal} disabled={busy} style={outlineBtn}>{t(lang, 'Hinzufügen', 'Add')}</button>
               </div>
             )}
           </div>
@@ -244,10 +272,10 @@ export function BillingPage() {
       </Section>
 
       {/* Billing history */}
-      <Section title="Rechnungs-Historie">
+      <Section title={t(lang, 'Rechnungs-Historie', 'Billing history')}>
         <Card>
           {invoices.length === 0 ? (
-            <div style={{ padding: 20, fontSize: 'var(--t-small-fs)', color: 'var(--text-meta)' }}>Noch keine Rechnungen</div>
+            <div style={{ padding: 20, fontSize: 'var(--t-small-fs)', color: 'var(--text-meta)' }}>{t(lang, 'Noch keine Rechnungen', 'No invoices yet')}</div>
           ) : (
             <>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
@@ -255,10 +283,10 @@ export function BillingPage() {
                   <li key={inv.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 20px', borderBottom: '1px solid var(--rule, rgba(0,0,0,0.06))', gap: 12 }}>
                     <div>
                       <div style={{ fontSize: 'var(--t-small-fs)', color: 'var(--text)' }}>
-                        {new Date(inv.date).toLocaleDateString('de-DE', { day: '2-digit', month: 'short', year: 'numeric' })}
+                        {new Date(inv.date).toLocaleDateString(lang === 'de' ? 'de-DE' : 'en-US', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </div>
                       <div style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--text-meta)', marginTop: 2 }}>
-                        {inv.status === 'paid' ? 'Bezahlt' : inv.status ?? '—'}
+                        {inv.status === 'paid' ? t(lang, 'Bezahlt', 'Paid') : inv.status ?? '—'}
                       </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -266,7 +294,7 @@ export function BillingPage() {
                         {inv.amount.toFixed(2)} {inv.currency.toUpperCase()}
                       </div>
                       {inv.pdf_url && (
-                        <a href={inv.pdf_url} target="_blank" rel="noreferrer" style={{ color: 'var(--text-meta)', display: 'inline-flex', alignItems: 'center' }} aria-label="PDF öffnen">
+                        <a href={inv.pdf_url} target="_blank" rel="noreferrer" style={{ color: 'var(--text-meta)', display: 'inline-flex', alignItems: 'center' }} aria-label={t(lang, 'PDF öffnen', 'Open PDF')}>
                           <Icon name="download" size={16} />
                         </a>
                       )}
@@ -277,7 +305,7 @@ export function BillingPage() {
               {invoiceHasMore && (
                 <div style={{ padding: 12, textAlign: 'center' }}>
                   <button onClick={loadMoreInvoices} disabled={loadingMore} style={textBtn}>
-                    {loadingMore ? 'Lade…' : 'Mehr laden'}
+                    {loadingMore ? t(lang, 'Lade…', 'Loading…') : t(lang, 'Mehr laden', 'Load more')}
                   </button>
                 </div>
               )}
@@ -289,7 +317,7 @@ export function BillingPage() {
       {!isComped && <InviteCodeRedemption />}
 
       <p className="helper-text" style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--text-meta)', marginTop: 20, padding: '0 4px', lineHeight: 1.6 }}>
-        Sicheres Checkout & Rechnungen über Stripe. Kündigung jederzeit im Kundenportal.
+        {t(lang, 'Sicheres Checkout & Rechnungen über Stripe. Kündigung jederzeit im Kundenportal.', 'Secure checkout & invoices via Stripe. Cancel anytime in the customer portal.')}
       </p>
     </div>
   );
@@ -361,6 +389,7 @@ const textBtn: React.CSSProperties = {
 };
 
 function InviteCodeRedemption() {
+  const lang = useLang();
   const [open, setOpen] = useState(false);
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
@@ -378,13 +407,13 @@ function InviteCodeRedemption() {
       });
       const data = await r.json().catch(() => ({}));
       if (r.ok) {
-        setMsg({ kind: 'ok', text: 'Code eingelöst. Seite wird neu geladen…' });
+        setMsg({ kind: 'ok', text: t(lang, 'Code eingelöst. Seite wird neu geladen…', 'Code redeemed. Reloading…') });
         setTimeout(() => window.location.reload(), 1200);
       } else {
-        setMsg({ kind: 'err', text: data?.error ?? 'Einlösung fehlgeschlagen' });
+        setMsg({ kind: 'err', text: data?.error ?? t(lang, 'Einlösung fehlgeschlagen', 'Redemption failed') });
       }
     } catch {
-      setMsg({ kind: 'err', text: 'Netzwerkfehler' });
+      setMsg({ kind: 'err', text: t(lang, 'Netzwerkfehler', 'Network error') });
     } finally { setBusy(false); }
   }
 
@@ -404,14 +433,14 @@ function InviteCodeRedemption() {
           fontFamily: 'var(--font-sans)',
         }}
       >
-        Hast du einen Invite-Code?
+        {t(lang, 'Hast du einen Invite-Code?', 'Have an invite code?')}
       </button>
     );
   }
 
   return (
     <div style={{ marginTop: 8, padding: 16, border: '1px solid var(--rule, rgba(0,0,0,0.1))', borderRadius: 10, background: 'var(--surface)' }}>
-      <div style={{ fontSize: 13, color: 'var(--text)', marginBottom: 8, fontWeight: 600 }}>Invite-Code einlösen</div>
+      <div style={{ fontSize: 13, color: 'var(--text)', marginBottom: 8, fontWeight: 600 }}>{t(lang, 'Invite-Code einlösen', 'Redeem invite code')}</div>
       <div style={{ display: 'flex', gap: 8 }}>
         <input
           type="text"
@@ -432,7 +461,7 @@ function InviteCodeRedemption() {
           }}
         />
         <button onClick={redeem} disabled={busy || code.trim().length < 3} style={primaryBtn(busy)}>
-          {busy ? '…' : 'Einlösen'}
+          {busy ? '…' : t(lang, 'Einlösen', 'Redeem')}
         </button>
       </div>
       {msg && (

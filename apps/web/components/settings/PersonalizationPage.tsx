@@ -6,6 +6,7 @@ import { resolveDisplayName } from '@/lib/display-name';
 import { SettingsCard } from '../ui/SettingsCard';
 import { SettingsGroup } from '../ui/SettingsGroup';
 import { SettingsRow } from '../ui/SettingsRow';
+import { useLang, t } from '@/lib/use-lang';
 
 // Honesty sprint (F3): notification toggles moved out of here — they now live
 // solely on the Benachrichtigungen tab, backed by the same server fields. This
@@ -16,6 +17,7 @@ interface Prefs {
 }
 
 export function PersonalizationPage() {
+  const lang = useLang();
   const [displayName, setDisplayName] = useState('');
   const [username, setUsername] = useState('');
   const [bio, setBio] = useState('');
@@ -95,36 +97,39 @@ export function PersonalizationPage() {
 
   return (
     <div className="settings-section" style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
-      <SettingsGroup label="Profil">
+      <SettingsGroup label={t(lang, 'Profil', 'Profile')}>
         <SettingsCard>
           <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <Field label="Anzeigename">
+            <Field label={t(lang, 'Anzeigename', 'Display name')}>
               <input style={inputStyle} value={displayName} onChange={(e) => setDisplayName(e.target.value)} placeholder="Vincent Hafner" />
             </Field>
-            <Field label="Username">
+            <Field label={t(lang, 'Username', 'Username')}>
               <div style={{ display: 'flex', alignItems: 'center' }}>
                 <span style={{ color: 'var(--text-meta)', paddingLeft: 14, paddingRight: 4 }}>@</span>
                 <input style={{ ...inputStyle, paddingLeft: 0 }} value={username} onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))} placeholder="vincent" />
               </div>
             </Field>
-            <Field label="Bio (optional)">
-              <textarea style={{ ...inputStyle, minHeight: 80, resize: 'vertical' }} value={bio} onChange={(e) => setBio(e.target.value)} placeholder="Was baust du?" maxLength={200} />
+            <Field label={t(lang, 'Bio (optional)', 'Bio (optional)')}>
+              <textarea style={{ ...inputStyle, minHeight: 80, resize: 'vertical' }} value={bio} onChange={(e) => setBio(e.target.value)} placeholder={t(lang, 'Was baust du?', 'What are you building?')} maxLength={200} />
             </Field>
           </div>
         </SettingsCard>
       </SettingsGroup>
 
-      <SettingsGroup label="Anweisungen für Goblin">
+      <SettingsGroup label={t(lang, 'Anweisungen für Goblin', 'Instructions for Goblin')}>
         <SettingsCard>
           <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 8 }}>
             <p style={{ fontSize: 13, color: 'var(--text-meta)', marginBottom: 4, lineHeight: 1.5 }}>
-              Wie soll Goblin mit dir arbeiten? Diese Anweisungen werden bei jedem Chat mitgegeben (zusätzlich zu projektspezifischen Anweisungen).
+              {t(lang,
+                'Wie soll Goblin mit dir arbeiten? Diese Anweisungen werden bei jedem Chat mitgegeben (zusätzlich zu projektspezifischen Anweisungen).',
+                'How should Goblin work with you? These instructions are included in every chat (in addition to project-specific instructions).'
+              )}
             </p>
             <textarea
               style={{ ...inputStyle, minHeight: 120, resize: 'vertical', fontFamily: 'var(--font-sans)' }}
               value={prefs.custom_instructions ?? ''}
               onChange={(e) => setPrefs((p) => ({ ...p, custom_instructions: e.target.value }))}
-              placeholder="z.B. Antworte präzise, schreibe Code mit ausführlichen Kommentaren, bevorzuge TypeScript…"
+              placeholder={t(lang, 'z.B. Antworte präzise, schreibe Code mit ausführlichen Kommentaren, bevorzuge TypeScript…', 'e.g. Answer concisely, write code with detailed comments, prefer TypeScript…')}
               maxLength={4000}
             />
             <div style={{ fontSize: 11, color: 'var(--text-faint)', textAlign: 'right' }}>
@@ -134,17 +139,20 @@ export function PersonalizationPage() {
         </SettingsCard>
       </SettingsGroup>
 
-      <SettingsGroup label="Erinnerung">
+      <SettingsGroup label={t(lang, 'Erinnerung', 'Memory')}>
         <SettingsCard>
           <SettingsRow
-            label="Goblin darf sich Kontext aus Chats merken"
+            label={t(lang, 'Goblin darf sich Kontext aus Chats merken', 'Let Goblin remember context from chats')}
             rightVariant="toggle"
             value={prefs.memory_enabled}
             onChange={(v) => setPrefs((p) => ({ ...p, memory_enabled: v }))}
           />
         </SettingsCard>
         <p style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--text-meta)', marginTop: 8, padding: '0 4px', lineHeight: 1.5 }}>
-          Memory-Verwaltung (was gemerkt wurde, einzelne Einträge löschen) folgt in einem kommenden Update.
+          {t(lang,
+            'Memory-Verwaltung (was gemerkt wurde, einzelne Einträge löschen) folgt in einem kommenden Update.',
+            'Memory management (what was remembered, deleting individual entries) is coming in a future update.'
+          )}
         </p>
       </SettingsGroup>
 
@@ -155,7 +163,7 @@ export function PersonalizationPage() {
         cursor: saving ? 'wait' : 'pointer',
         fontFamily: 'var(--font-sans)',
       }}>
-        {saved ? 'Gespeichert ✓' : saving ? 'Speichere…' : 'Speichern'}
+        {saved ? t(lang, 'Gespeichert ✓', 'Saved ✓') : saving ? t(lang, 'Speichere…', 'Saving…') : t(lang, 'Speichern', 'Save')}
       </button>
     </div>
   );

@@ -8,6 +8,7 @@ import { useApp } from '@/contexts/app-context';
 import { ChatInput, useChatModel } from '@/components/chat/ChatInput';
 import { filterVisibleProjects } from '@/lib/project-visibility';
 import { friendlyError } from '@/lib/friendly-error';
+import { useLang, readLang, t } from '@/lib/use-lang';
 
 interface Project {
   id: string;
@@ -26,26 +27,77 @@ const DOT_COLORS = ['var(--gold)', '#6db97b', '#7A4A8A', '#3A6B8A', '#a04230', '
 
 // Plain-language updates (decision: rewrite quick-prompts + updates in user words).
 const UPDATES = [
-  { tag: 'NEU', tone: 'gold', title: 'Claude Sonnet 4.6 verfügbar', desc: 'Goblin nutzt dein eigenes Anthropic-Konto automatisch.', date: 'MAI 22' },
-  { tag: 'NEU', tone: 'gold', title: 'BYOK-Streaming stabilisiert', desc: 'Anthropic, OpenAI und Groq streamen wieder ohne Abbrüche.', date: 'MAI 20' },
-  { tag: 'UPDATE', tone: 'plain', title: 'Send to Code auf dem Handy', desc: 'Code aus dem Chat in den Editor schieben — funktioniert auch unterwegs.', date: 'APR 14' },
-  { tag: 'SICHERHEIT', tone: 'warn', title: 'CORS und Stream-Abbrüche gehärtet', desc: 'Stabilität und Abbruch-Verhalten in allen Routen verbessert.', date: 'APR 08' },
+  {
+    tag: 'NEU',
+    tone: 'gold',
+    titleDe: 'Claude Sonnet 4.6 verfügbar',
+    titleEn: 'Claude Sonnet 4.6 available',
+    descDe: 'Goblin nutzt dein eigenes Anthropic-Konto automatisch.',
+    descEn: 'Goblin automatically uses your own Anthropic account.',
+    dateDe: 'MAI 22',
+    dateEn: 'MAY 22',
+  },
+  {
+    tag: 'NEU',
+    tone: 'gold',
+    titleDe: 'BYOK-Streaming stabilisiert',
+    titleEn: 'BYOK streaming stabilized',
+    descDe: 'Anthropic, OpenAI und Groq streamen wieder ohne Abbrüche.',
+    descEn: 'Anthropic, OpenAI, and Groq stream again without interruptions.',
+    dateDe: 'MAI 20',
+    dateEn: 'MAY 20',
+  },
+  {
+    tag: 'UPDATE',
+    tone: 'plain',
+    titleDe: 'Send to Code auf dem Handy',
+    titleEn: 'Send to Code on mobile',
+    descDe: 'Code aus dem Chat in den Editor schieben — funktioniert auch unterwegs.',
+    descEn: 'Push code from chat into the editor — works on the go too.',
+    dateDe: 'APR 14',
+    dateEn: 'APR 14',
+  },
+  {
+    tag: 'SICHERHEIT',
+    tone: 'warn',
+    titleDe: 'CORS und Stream-Abbrüche gehärtet',
+    titleEn: 'CORS and stream interruptions hardened',
+    descDe: 'Stabilität und Abbruch-Verhalten in allen Routen verbessert.',
+    descEn: 'Stability and abort behaviour improved across all routes.',
+    dateDe: 'APR 08',
+    dateEn: 'APR 08',
+  },
 ] as const;
 
 // Quick prompts — plain user language, not dev jargon.
-const QUICK_PROMPTS = [
+const QUICK_PROMPTS_DE = [
   'Eine Landingpage mit Anmeldeformular',
   'Eine Aufgabenliste, die meine Einträge merkt',
   'Eine Seite, auf der Leute Termine buchen können',
   'Magic-Link-Login für meine Next.js-App',
 ];
+const QUICK_PROMPTS_EN = [
+  'A landing page with a sign-up form',
+  'A to-do list that remembers my entries',
+  'A page where people can book appointments',
+  'Magic-link login for my Next.js app',
+];
 
 function timeAgo(dateStr?: string | null): string {
   if (!dateStr) return '';
+  const lang = readLang();
   const diff = Date.now() - new Date(dateStr).getTime();
   const m = Math.floor(diff / 60000);
   const h = Math.floor(diff / 3600000);
   const d = Math.floor(diff / 86400000);
+  if (lang === 'en') {
+    if (m < 2) return 'JUST NOW';
+    if (h < 1) return `${m} MIN AGO`;
+    if (h < 24) return `${h} HR AGO`;
+    if (d < 30) return `${d} ${d === 1 ? 'DAY' : 'DAYS'} AGO`;
+    const mo = Math.floor(d / 30);
+    return `${mo} ${mo === 1 ? 'MONTH' : 'MONTHS'} AGO`;
+  }
   if (m < 2) return 'GERADE EBEN';
   if (h < 1) return `VOR ${m} MIN`;
   if (h < 24) return `VOR ${h} STD`;
@@ -55,28 +107,45 @@ function timeAgo(dateStr?: string | null): string {
 }
 
 function statusLabel(s?: string | null): { label: string; color: string } {
+  const lang = readLang();
   switch ((s ?? 'idle').toLowerCase()) {
-    case 'shipping': return { label: 'SHIPPING', color: 'var(--gold)' };
+    case 'shipping': return { label: lang === 'en' ? 'SHIPPING' : 'WIRD VERÖFFENTLICHT', color: 'var(--gold)' };
     case 'live':     return { label: 'LIVE', color: '#6db97b' };
-    case 'draft':    return { label: 'DRAFT', color: '#7A4A8A' };
-    case 'archived': return { label: 'ARCHIVIERT', color: '#3A6B8A' };
-    default:         return { label: 'AKTIV', color: 'var(--gold)' };
+    case 'draft':    return { label: lang === 'en' ? 'DRAFT' : 'ENTWURF', color: '#7A4A8A' };
+    case 'archived': return { label: lang === 'en' ? 'ARCHIVED' : 'ARCHIVIERT', color: '#3A6B8A' };
+    default:         return { label: lang === 'en' ? 'ACTIVE' : 'AKTIV', color: 'var(--gold)' };
   }
 }
 
 // Casual variants sprinkled in ~30% of loads so the greeting never reads like
 // a robotic elevator announcement. Time-of-day picks the default base.
-const GREETING_CASUAL = ['Hi', 'Servus', 'Schön dich zu sehen', 'Bereit zum Bauen', 'Aloha'];
+const GREETING_CASUAL_DE = ['Hi', 'Servus', 'Schön dich zu sehen', 'Bereit zum Bauen', 'Aloha'];
+const GREETING_CASUAL_EN = ['Hi', 'Hey', 'Good to see you', 'Ready to build', 'Aloha'];
 
 function buildGreeting(firstName: string): string {
+  const lang = readLang();
   const h = new Date().getHours();
+  if (lang === 'en') {
+    const base =
+      h < 5  ? 'Hello' :
+      h < 11 ? 'Good morning' :
+      h < 17 ? 'Hello' :
+      h < 23 ? 'Good evening' : 'Hello';
+    const casual = GREETING_CASUAL_EN;
+    const word = Math.random() < 0.3
+      ? casual[Math.floor(Math.random() * casual.length)]!
+      : base;
+    const suffix = word === 'Ready to build' ? '!' : '';
+    return `${word}, ${firstName}${suffix}`;
+  }
   const base =
     h < 5  ? 'Hallo' :
     h < 11 ? 'Guten Morgen' :
     h < 17 ? 'Hallo' :
     h < 23 ? 'Guten Abend' : 'Hallo';
+  const casual = GREETING_CASUAL_DE;
   const word = Math.random() < 0.3
-    ? GREETING_CASUAL[Math.floor(Math.random() * GREETING_CASUAL.length)]!
+    ? casual[Math.floor(Math.random() * casual.length)]!
     : base;
   const suffix = word === 'Bereit zum Bauen' ? '?' : '';
   return `${word}, ${firstName}${suffix}`;
@@ -84,6 +153,7 @@ function buildGreeting(firstName: string): string {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const lang = useLang();
   const { showNewProjectModal, setShowNewProjectModal, setNewProjectIdea, setNewProjectModel } = useApp();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
@@ -191,6 +261,8 @@ export default function DashboardPage() {
   const [greeting, setGreeting] = useState('');
   useEffect(() => { setGreeting(buildGreeting(firstName)); }, [firstName]);
 
+  const quickPrompts = t(lang, QUICK_PROMPTS_DE, QUICK_PROMPTS_EN);
+
   return (
     <div style={{ height: '100%', overflowY: 'auto', background: 'var(--d-surface)' }}>
       {/* New Project modal is rendered globally in dashboard-shell (B-S6). */}
@@ -241,7 +313,10 @@ export default function DashboardPage() {
             letterSpacing: 'var(--t-h1-ls)', lineHeight: 'var(--t-h1-lh)',
             color: 'var(--bone)', marginBottom: 18,
           }}>
-            Sag Goblin, was du <span className="gobl-serif">bauen willst.</span>
+            {t(lang,
+              <>Sag Goblin, was du <span className="gobl-serif">bauen willst.</span></>,
+              <>Tell Goblin what you want <span className="gobl-serif">to build.</span></>
+            )}
           </h1>
 
           {/* Real shared ChatInput in hero arrangement — same component as
@@ -249,15 +324,18 @@ export default function DashboardPage() {
               a new chat (create session → seed prompt → navigate). */}
           <ChatInput
             variant="hero"
-            placeholder="Eine Landingpage mit Stripe-Bezahlung in Next.js…"
+            placeholder={t(lang,
+              'Eine Landingpage mit Stripe-Bezahlung in Next.js…',
+              'A landing page with Stripe checkout in Next.js…'
+            )}
             selectedModel={selectedModel}
             onModelChange={setSelectedModel}
             prefill={prefill}
-            onSubmit={(message) => { const t = message.trim(); if (t) setChoicePrompt(t); }}
+            onSubmit={(message) => { const tVal = message.trim(); if (tVal) setChoicePrompt(tVal); }}
           />
 
           <div style={{ display: 'flex', gap: 8, marginTop: 14, flexWrap: 'wrap' }}>
-            {QUICK_PROMPTS.map(q => (
+            {quickPrompts.map(q => (
               <button
                 key={q}
                 onClick={() => setPrefill(p => (p === q ? q + ' ' : q))}
@@ -280,8 +358,8 @@ export default function DashboardPage() {
         {/* Projects (Variant A — cards). Stats row REMOVED per decision. */}
         <section style={{ marginBottom: 48 }}>
           <div className="gobl-section-title" style={{ marginTop: 0 }}>
-            <h2>Deine Projekte</h2>
-            <span className="label">{loading ? '…' : `${activeCount} AKTIV`}</span>
+            <h2>{t(lang, 'Deine Projekte', 'Your projects')}</h2>
+            <span className="label">{loading ? '…' : `${activeCount} ${t(lang, 'AKTIV', 'ACTIVE')}`}</span>
           </div>
 
           {loading && (
@@ -307,7 +385,7 @@ export default function DashboardPage() {
                 onClick={() => window.location.reload()}
                 style={{ background: 'none', border: 'none', color: 'var(--danger)', textDecoration: 'underline', cursor: 'pointer', fontSize: 'var(--t-small-fs)' }}
               >
-                erneut versuchen
+                {t(lang, 'erneut versuchen', 'try again')}
               </button>
             </div>
           )}
@@ -319,13 +397,16 @@ export default function DashboardPage() {
                 fontSize: 'var(--t-h3-fs)', lineHeight: 'var(--t-h3-lh)', fontWeight: 600, color: 'var(--ink-1)',
                 margin: '0 0 6px',
               }}>
-                Bau dein erstes Projekt
+                {t(lang, 'Bau dein erstes Projekt', 'Build your first project')}
               </h3>
               <p style={{ fontSize: 'var(--t-small-fs)', color: 'var(--ink-3)', margin: '0 0 20px', maxWidth: 360, marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.55 }}>
-                Sag Goblin oben, was du bauen willst — Goblin schreibt den Code, du deployst.
+                {t(lang,
+                  'Sag Goblin oben, was du bauen willst — Goblin schreibt den Code, du deployst.',
+                  'Tell Goblin above what you want to build — Goblin writes the code, you deploy.'
+                )}
               </p>
               <button type="button" className="gobl-btn primary" onClick={() => setShowNewProjectModal(true)}>
-                Neues Projekt
+                {t(lang, 'Neues Projekt', 'New project')}
               </button>
             </div>
           )}
@@ -403,7 +484,7 @@ export default function DashboardPage() {
                 onMouseEnter={e => { e.currentTarget.style.borderStyle = 'solid'; e.currentTarget.style.color = 'var(--ink-1)'; e.currentTarget.style.borderColor = 'var(--ink-1)'; }}
                 onMouseLeave={e => { e.currentTarget.style.borderStyle = 'dashed'; e.currentTarget.style.color = 'var(--ink-3)'; e.currentTarget.style.borderColor = 'var(--line-strong)'; }}
               >
-                + Neues Projekt
+                {t(lang, '+ Neues Projekt', '+ New project')}
               </button>
             </div>
           )}
@@ -454,7 +535,7 @@ export default function DashboardPage() {
                   fontWeight: 600, fontSize: 'var(--t-small-fs)',
                 }}
               >
-                + Neues Projekt
+                {t(lang, '+ Neues Projekt', '+ New project')}
               </button>
             </div>
           )}
@@ -463,11 +544,11 @@ export default function DashboardPage() {
         {/* What's new (Variant A list — kept). */}
         <section>
           <div className="gobl-section-title">
-            <h2>Was ist neu</h2>
+            <h2>{t(lang, 'Was ist neu', "What's new")}</h2>
             {/* TODO: point to a dedicated changelog route once it exists
                 (e.g. /dashboard/changelog). /help is the closest real
                 destination today — no dead href="#". */}
-            <Link href="/help">Alle Updates →</Link>
+            <Link href="/help">{t(lang, 'Alle Updates →', 'All updates →')}</Link>
           </div>
 
           <div className="gobl-panel" style={{ overflow: 'hidden' }}>
@@ -475,7 +556,7 @@ export default function DashboardPage() {
               const last = i === UPDATES.length - 1;
               const tagClass = u.tone === 'gold' ? 'gobl-tag gold' : u.tone === 'warn' ? 'gobl-tag warn' : 'gobl-tag';
               return (
-                <div key={u.title} style={{
+                <div key={u.titleDe} style={{
                   padding: '16px 18px',
                   borderBottom: last ? 'none' : '1px solid var(--line)',
                   display: 'flex', alignItems: 'flex-start', gap: 14,
@@ -487,10 +568,10 @@ export default function DashboardPage() {
                       fontWeight: 600, fontSize: 'var(--t-small-fs)', color: 'var(--ink-1)',
                       margin: '0 0 3px', letterSpacing: '-0.012em',
                     }}>
-                      {u.title}
+                      {t(lang, u.titleDe, u.titleEn)}
                     </h4>
                     <p style={{ fontSize: 'var(--t-small-fs)', color: 'var(--ink-2)', lineHeight: 1.5, margin: 0 }}>
-                      {u.desc}
+                      {t(lang, u.descDe, u.descEn)}
                     </p>
                   </div>
                   <span style={{
@@ -498,7 +579,7 @@ export default function DashboardPage() {
                     color: 'var(--ink-3)', letterSpacing: '0.08em',
                     flexShrink: 0, marginTop: 2,
                   }}>
-                    {u.date}
+                    {t(lang, u.dateDe, u.dateEn)}
                   </span>
                 </div>
               );
@@ -522,23 +603,24 @@ function SagGoblinChoice({
   onExistingProject: (projectId: string) => void;
   onJustChat: () => void;
 }) {
+  const lang = useLang();
   const [picking, setPicking] = useState(false);
   const active = projects.filter(p => (p.status ?? 'idle') !== 'archived');
 
   return (
     <>
       <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(4px)', zIndex: 300 }} />
-      <div role="dialog" aria-label="Was möchtest du tun?" style={{
+      <div role="dialog" aria-label={t(lang, 'Was möchtest du tun?', 'What do you want to do?')} style={{
         position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)',
         width: 'min(440px, calc(100vw - 32px))', maxHeight: 'calc(100dvh - 48px)', overflow: 'auto',
         background: 'var(--panel)', borderRadius: 16, zIndex: 301, boxShadow: 'var(--shadow-lg)',
         padding: 22,
       }}>
         <div style={{ fontFamily: 'JetBrains Mono, monospace', fontSize: 'var(--t-eyebrow-fs)', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--meta)', marginBottom: 8 }}>
-          Sag Goblin
+          {t(lang, 'Sag Goblin', 'Tell Goblin')}
         </div>
         <h3 style={{ fontFamily: 'var(--font-dash-display), Manrope, sans-serif', fontSize: 'var(--t-h4-fs)', fontWeight: 600, color: 'var(--ink-1)', margin: '0 0 4px' }}>
-          Womit fangen wir an?
+          {t(lang, 'Womit fangen wir an?', 'Where do we start?')}
         </h3>
         <p style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--ink-3)', margin: '0 0 16px', lineHeight: 1.5,
           overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
@@ -548,21 +630,29 @@ function SagGoblinChoice({
         {!picking ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             <button type="button" onClick={onNewProject} style={choiceBtn(true)}>
-              <span style={{ fontWeight: 600 }}>Neues Projekt erstellen</span>
-              <span style={choiceSub()}>Goblin baut es als richtiges Projekt — mit Code, Deploy und allem.</span>
+              <span style={{ fontWeight: 600 }}>{t(lang, 'Neues Projekt erstellen', 'Create new project')}</span>
+              <span style={choiceSub()}>{t(lang,
+                'Goblin baut es als richtiges Projekt — mit Code, Deploy und allem.',
+                'Goblin builds it as a real project — with code, deploy, and everything.'
+              )}</span>
             </button>
             <button type="button" onClick={() => active.length ? setPicking(true) : onNewProject()} style={choiceBtn(false)}>
-              <span style={{ fontWeight: 600 }}>Zu bestehendem Projekt hinzufügen</span>
-              <span style={choiceSub()}>{active.length ? 'Weiter an einem deiner Projekte arbeiten.' : 'Du hast noch kein Projekt — neues erstellen.'}</span>
+              <span style={{ fontWeight: 600 }}>{t(lang, 'Zu bestehendem Projekt hinzufügen', 'Add to an existing project')}</span>
+              <span style={choiceSub()}>{active.length
+                ? t(lang, 'Weiter an einem deiner Projekte arbeiten.', 'Keep working on one of your projects.')
+                : t(lang, 'Du hast noch kein Projekt — neues erstellen.', 'You have no project yet — create one.')
+              }</span>
             </button>
             <button type="button" onClick={onJustChat} style={choiceBtn(false)}>
-              <span style={{ fontWeight: 600 }}>Nur kurz im Chat probieren</span>
-              <span style={choiceSub()}>Schnell etwas ausprobieren, ohne Projekt.</span>
+              <span style={{ fontWeight: 600 }}>{t(lang, 'Nur kurz im Chat probieren', 'Just try it quickly in chat')}</span>
+              <span style={choiceSub()}>{t(lang, 'Schnell etwas ausprobieren, ohne Projekt.', 'Try something quickly, no project.')}</span>
             </button>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <button type="button" onClick={() => setPicking(false)} style={{ alignSelf: 'flex-start', background: 'none', border: 'none', color: 'var(--meta)', fontSize: 'var(--t-caption-fs)', cursor: 'pointer', padding: 0, marginBottom: 4 }}>← Zurück</button>
+            <button type="button" onClick={() => setPicking(false)} style={{ alignSelf: 'flex-start', background: 'none', border: 'none', color: 'var(--meta)', fontSize: 'var(--t-caption-fs)', cursor: 'pointer', padding: 0, marginBottom: 4 }}>
+              {t(lang, '← Zurück', '← Back')}
+            </button>
             {active.map(p => (
               <button key={p.id} type="button" onClick={() => onExistingProject(p.id)} style={choiceBtn(false)}>
                 <span style={{ fontWeight: 600 }}>{p.name}</span>

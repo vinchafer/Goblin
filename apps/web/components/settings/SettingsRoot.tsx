@@ -23,7 +23,7 @@ import { ModelsPage } from './ModelsPage';
 import { useUser } from '@/lib/hooks/useUser';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useApp } from '@/contexts/app-context';
-import { useLang } from '@/lib/use-lang';
+import { useLang, t } from '@/lib/use-lang';
 
 const I = {
   Dollar: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 9.5c0-1 1-2 3-2s3 1 3 2-1 1.5-3 2-3 1-3 2 1 2 3 2 3-1 3-2"/></svg>,
@@ -71,19 +71,19 @@ export function SettingsRoot() {
   useEffect(() => {
     if (!settingsInitialItem) return;
     const map: Record<string, [string, React.ReactNode, string]> = {
-      profile: ['profile', <ProfilePage key="p" />, 'Profil'],
-      billing: ['billing', <BillingPage key="b" />, 'Abrechnung'],
-      usage: ['usage', <UsagePage key="u" />, 'Nutzung'],
-      personalization: ['personalization', <PersonalizationPage key="pe" />, 'Personalisierung'],
-      features: ['features', <FeaturesPage key="f" />, 'Funktionen'],
-      connectors: ['connectors', <ConnectorsPage key="c" />, 'Konnektoren'],
-      models: ['models', <ModelsPage key="m" />, 'Modelle'],
-      language: ['language', <LanguagePage key="l" />, 'Eingabesprache'],
-      notifications: ['notifications', <NotificationsPage key="n" />, 'Benachrichtigungen'],
-      privacy: ['privacy', <PrivacyPage key="pr" />, 'Datenschutz'],
-      report: ['report', <ReportProblemPage key="r" />, 'Problem melden'],
-      help: ['help', <HelpCenterPage key="h" />, 'Hilfecenter'],
-      about: ['about', <AboutPage key="a" />, 'Über Goblin'],
+      profile: ['profile', <ProfilePage key="p" />, t(lang, 'Profil', 'Profile')],
+      billing: ['billing', <BillingPage key="b" />, t(lang, 'Abrechnung', 'Billing')],
+      usage: ['usage', <UsagePage key="u" />, t(lang, 'Nutzung', 'Usage')],
+      personalization: ['personalization', <PersonalizationPage key="pe" />, t(lang, 'Personalisierung', 'Personalization')],
+      features: ['features', <FeaturesPage key="f" />, t(lang, 'Funktionen', 'Features')],
+      connectors: ['connectors', <ConnectorsPage key="c" />, t(lang, 'Konnektoren', 'Connectors')],
+      models: ['models', <ModelsPage key="m" />, t(lang, 'Modelle', 'Models')],
+      language: ['language', <LanguagePage key="l" />, t(lang, 'Eingabesprache', 'Input language')],
+      notifications: ['notifications', <NotificationsPage key="n" />, t(lang, 'Benachrichtigungen', 'Notifications')],
+      privacy: ['privacy', <PrivacyPage key="pr" />, t(lang, 'Datenschutz', 'Privacy')],
+      report: ['report', <ReportProblemPage key="r" />, t(lang, 'Problem melden', 'Report a problem')],
+      help: ['help', <HelpCenterPage key="h" />, t(lang, 'Hilfecenter', 'Help center')],
+      about: ['about', <AboutPage key="a" />, t(lang, 'Über Goblin', 'About Goblin')],
     };
     const entry = map[settingsInitialItem];
     setSettingsInitialItem(null);
@@ -110,23 +110,23 @@ export function SettingsRoot() {
         name={user.fullName || 'Vincent'}
         email={user.email}
         plan={user.plan.name}
-        onClick={() => push('profile', <ProfilePage />, 'Profil')}
+        onClick={() => push('profile', <ProfilePage />, t(lang, 'Profil', 'Profile'))}
       />
 
-      <SettingsGroup label="Konto">
+      <SettingsGroup label={t(lang, 'Konto', 'Account')}>
         <SettingsCard>
           <SettingsRow
             testId="row-abrechnung"
             icon={<I.Dollar />}
-            label="Abrechnung"
+            label={t(lang, 'Abrechnung', 'Billing')}
             right={user.plan.name}
-            onClick={() => push('billing', <BillingPage />, 'Abrechnung')}
+            onClick={() => push('billing', <BillingPage />, t(lang, 'Abrechnung', 'Billing'))}
           />
           <SettingsRow
             testId="row-nutzung"
             icon={<I.Chart />}
-            label="Nutzung"
-            onClick={() => push('usage', <UsagePage />, 'Nutzung')}
+            label={t(lang, 'Nutzung', 'Usage')}
+            onClick={() => push('usage', <UsagePage />, t(lang, 'Nutzung', 'Usage'))}
           />
         </SettingsCard>
       </SettingsGroup>
@@ -136,26 +136,26 @@ export function SettingsRoot() {
           <SettingsRow
             testId="row-personalisierung"
             icon={<I.Sparkles />}
-            label="Personalisierung"
-            onClick={() => push('personalization', <PersonalizationPage />, 'Personalisierung')}
+            label={t(lang, 'Personalisierung', 'Personalization')}
+            onClick={() => push('personalization', <PersonalizationPage />, t(lang, 'Personalisierung', 'Personalization'))}
           />
           <SettingsRow
             testId="row-funktionen"
             icon={<I.Sliders />}
-            label="Funktionen"
-            onClick={() => push('features', <FeaturesPage />, 'Funktionen')}
+            label={t(lang, 'Funktionen', 'Features')}
+            onClick={() => push('features', <FeaturesPage />, t(lang, 'Funktionen', 'Features'))}
           />
           <SettingsRow
             testId="row-konnektoren"
             icon={<I.Plug />}
-            label="Konnektoren"
-            onClick={() => push('connectors', <ConnectorsPage />, 'Konnektoren')}
+            label={t(lang, 'Konnektoren', 'Connectors')}
+            onClick={() => push('connectors', <ConnectorsPage />, t(lang, 'Konnektoren', 'Connectors'))}
           />
           <SettingsRow
             testId="row-models"
             icon={<I.Key />}
-            label="Modelle"
-            onClick={() => push('models', <ModelsPage />, 'Modelle')}
+            label={t(lang, 'Modelle', 'Models')}
+            onClick={() => push('models', <ModelsPage />, t(lang, 'Modelle', 'Models'))}
           />
         </SettingsCard>
       </SettingsGroup>
@@ -165,16 +165,16 @@ export function SettingsRoot() {
           <SettingsRow
             testId="row-appearance"
             icon={<I.Moon />}
-            label="Erscheinungsbild"
-            right={appearance}
+            label={t(lang, 'Erscheinungsbild', 'Appearance')}
+            right={appearance === 'Hell' ? t(lang, 'Hell', 'Light') : appearance === 'Dunkel' ? t(lang, 'Dunkel', 'Dark') : appearance}
             rightVariant="dropdown"
-            onClick={() => push('appearance', <AppearancePage value={appearance} onChange={handleAppearanceChange} />, 'Erscheinungsbild')}
+            onClick={() => push('appearance', <AppearancePage value={appearance} onChange={handleAppearanceChange} />, t(lang, 'Erscheinungsbild', 'Appearance'))}
           />
           <SettingsRow
             testId="row-accent"
             icon={<I.Palette />}
-            label="Akzentfarbe"
-            right="Bald"
+            label={t(lang, 'Akzentfarbe', 'Accent color')}
+            right={t(lang, 'Bald', 'Soon')}
             rightVariant="text"
             disabled
           />
@@ -186,20 +186,20 @@ export function SettingsRoot() {
           <SettingsRow
             testId="row-language"
             icon={<I.Globe />}
-            label="Eingabesprache"
+            label={t(lang, 'Eingabesprache', 'Input language')}
             right={lang.toUpperCase()}
-            onClick={() => push('language', <LanguagePage />, 'Eingabesprache')}
+            onClick={() => push('language', <LanguagePage />, t(lang, 'Eingabesprache', 'Input language'))}
           />
           <SettingsRow
             testId="row-notifications"
             icon={<I.Bell />}
-            label="Benachrichtigungen"
-            onClick={() => push('notifications', <NotificationsPage />, 'Benachrichtigungen')}
+            label={t(lang, 'Benachrichtigungen', 'Notifications')}
+            onClick={() => push('notifications', <NotificationsPage />, t(lang, 'Benachrichtigungen', 'Notifications'))}
           />
           <SettingsRow
             testId="row-haptic"
             icon={<I.Vibrate />}
-            label="Haptisches Feedback"
+            label={t(lang, 'Haptisches Feedback', 'Haptic feedback')}
             rightVariant="toggle"
             value={hapticEnabled}
             onChange={handleHapticChange}
@@ -207,31 +207,31 @@ export function SettingsRoot() {
           <SettingsRow
             testId="row-privacy"
             icon={<I.Shield />}
-            label="Datenschutz"
-            onClick={() => push('privacy', <PrivacyPage />, 'Datenschutz')}
+            label={t(lang, 'Datenschutz', 'Privacy')}
+            onClick={() => push('privacy', <PrivacyPage />, t(lang, 'Datenschutz', 'Privacy'))}
           />
         </SettingsCard>
       </SettingsGroup>
 
-      <SettingsGroup label="Hilfe">
+      <SettingsGroup label={t(lang, 'Hilfe', 'Help')}>
         <SettingsCard>
           <SettingsRow
             testId="row-report"
             icon={<I.Flag />}
-            label="Problem melden"
-            onClick={() => push('report', <ReportProblemPage />, 'Problem melden')}
+            label={t(lang, 'Problem melden', 'Report a problem')}
+            onClick={() => push('report', <ReportProblemPage />, t(lang, 'Problem melden', 'Report a problem'))}
           />
           <SettingsRow
             testId="row-help"
             icon={<I.Question />}
-            label="Hilfecenter"
-            onClick={() => push('help', <HelpCenterPage />, 'Hilfecenter')}
+            label={t(lang, 'Hilfecenter', 'Help center')}
+            onClick={() => push('help', <HelpCenterPage />, t(lang, 'Hilfecenter', 'Help center'))}
           />
           <SettingsRow
             testId="row-about"
             icon={<I.Info />}
-            label="Über Goblin"
-            onClick={() => push('about', <AboutPage />, 'Über Goblin')}
+            label={t(lang, 'Über Goblin', 'About Goblin')}
+            onClick={() => push('about', <AboutPage />, t(lang, 'Über Goblin', 'About Goblin'))}
           />
         </SettingsCard>
       </SettingsGroup>
@@ -257,7 +257,7 @@ export function SettingsRoot() {
           justifyContent: 'center',
         }}
       >
-        <I.LogOut color="var(--rust)" /> Abmelden
+        <I.LogOut color="var(--rust)" /> {t(lang, 'Abmelden', 'Sign out')}
       </button>
     </div>
   );

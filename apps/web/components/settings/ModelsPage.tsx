@@ -58,9 +58,13 @@ export function ModelsPage() {
       ? t(lang,
           'Im Abo enthaltene Modelle — kein eigener Key nötig.',
           'Models included with your plan — no key of your own needed.')
-      : t(lang,
-          'Rankings aus 5 öffentlichen Benchmarks. Alle 6 Stunden aktualisiert.',
-          'Rankings from 5 public benchmarks. Refreshed every 6 hours.');
+      : tab === 'rankings'
+        ? t(lang,
+            'Rankings aus 5 öffentlichen Benchmarks. Alle 6 Stunden aktualisiert.',
+            'Rankings from 5 public benchmarks. Refreshed every 6 hours.')
+        : t(lang,
+            'Deine eigenen API-Keys — Goblin routet direkt über deinen Provider, ohne Aufschlag.',
+            'Your own API keys — Goblin routes directly through your provider, no markup.');
 
   const TABS: { id: Tab; label: string }[] = [
     { id: 'goblin',   label: t(lang, 'Goblin-Modelle', 'Goblin models') },

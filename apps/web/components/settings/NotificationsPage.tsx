@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { SettingsCard } from '../ui/SettingsCard';
 import { SettingsGroup } from '../ui/SettingsGroup';
 import { SettingsRow } from '../ui/SettingsRow';
+import { useLang, t } from '@/lib/use-lang';
 
 // Honesty sprint (F3): notifications used to live in TWO places over TWO stores —
 // here (localStorage `goblin-notif-prefs`) and Personalisierung (server
@@ -29,6 +30,7 @@ async function authHeaders(): Promise<Record<string, string> | null> {
 const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
 
 export function NotificationsPage() {
+  const lang = useLang();
   const [prefs, setPrefs] = useState<ServerNotif>({
     notify_build_complete: true,
     notify_important_updates: true,
@@ -79,31 +81,31 @@ export function NotificationsPage() {
 
   return (
     <div className="settings-section" style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
-      <SettingsGroup label="Benachrichtigungen">
+      <SettingsGroup label={t(lang, 'Benachrichtigungen', 'Notifications')}>
         <SettingsCard>
           <SettingsRow
-            label="Push-Benachrichtigungen"
+            label={t(lang, 'Push-Benachrichtigungen', 'Push notifications')}
             rightVariant="toggle"
             value={pushPermission === 'granted'}
             onChange={togglePush}
             disabled={pushPermission === 'denied'}
           />
           <SettingsRow
-            label="Build abgeschlossen"
+            label={t(lang, 'Build abgeschlossen', 'Build complete')}
             rightVariant="toggle"
             value={prefs.notify_build_complete}
             onChange={(v) => void patch({ notify_build_complete: v })}
             disabled={!loaded}
           />
           <SettingsRow
-            label="Wichtige Updates"
+            label={t(lang, 'Wichtige Updates', 'Important updates')}
             rightVariant="toggle"
             value={prefs.notify_important_updates}
             onChange={(v) => void patch({ notify_important_updates: v })}
             disabled={!loaded}
           />
           <SettingsRow
-            label="E-Mail (Account-Events)"
+            label={t(lang, 'E-Mail (Account-Events)', 'Email (account events)')}
             rightVariant="toggle"
             value={prefs.notify_email}
             onChange={(v) => void patch({ notify_email: v })}
@@ -114,7 +116,7 @@ export function NotificationsPage() {
 
       {pushPermission === 'denied' && (
         <p style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--rust)', marginTop: 12, padding: '0 4px' }}>
-          Push wurde im Browser blockiert. Aktiviere es in den Browser-Einstellungen.
+          {t(lang, 'Push wurde im Browser blockiert. Aktiviere es in den Browser-Einstellungen.', 'Push is blocked in your browser. Enable it in your browser settings.')}
         </p>
       )}
     </div>
