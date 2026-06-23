@@ -3,8 +3,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X, ChevronLeft } from 'lucide-react';
-import { SETTINGS_SECTIONS, GROUP_LABELS, GROUP_ORDER, type SettingsSectionDef } from './sections';
+import { SETTINGS_SECTIONS, GROUP_LABELS, GROUP_LABELS_EN, GROUP_ORDER, type SettingsSectionDef } from './sections';
 import { SheetStackProvider, useSheetStack } from '@/components/ui/SheetStack';
+import { useLang, t } from '@/lib/use-lang';
 
 interface SettingsModalProps {
   open: boolean;
@@ -17,6 +18,8 @@ const FIRST_ID = SETTINGS_SECTIONS[0]!.id;
 export function SettingsModal({ open, onClose, initialSectionId }: SettingsModalProps) {
   const [activeId, setActiveId] = useState(initialSectionId ?? FIRST_ID);
   const modalRef = useRef<HTMLDivElement>(null);
+  const lang = useLang();
+  const sectionLabel = (s: SettingsSectionDef) => (lang === 'en' ? s.labelEn : s.label);
 
   // Sync to URL hash on open (#profile etc.) and reset when reopened.
   useEffect(() => {
@@ -106,7 +109,7 @@ export function SettingsModal({ open, onClose, initialSectionId }: SettingsModal
             fontSize: 'var(--t-eyebrow-fs)', letterSpacing: '0.14em',
             textTransform: 'uppercase', color: 'var(--ink-3)',
           }}>
-            Einstellungen
+            {t(lang, 'Einstellungen', 'Settings')}
           </div>
 
           {GROUP_ORDER.map(group => {
@@ -119,7 +122,7 @@ export function SettingsModal({ open, onClose, initialSectionId }: SettingsModal
                   fontSize: 'var(--t-eyebrow-fs)', fontWeight: 600, letterSpacing: '0.12em',
                   textTransform: 'uppercase', color: 'var(--ink-3)',
                 }}>
-                  {GROUP_LABELS[group]}
+                  {(lang === 'en' ? GROUP_LABELS_EN : GROUP_LABELS)[group]}
                 </div>
                 {items.map(s => {
                   const isActive = s.id === active.id;
@@ -144,7 +147,7 @@ export function SettingsModal({ open, onClose, initialSectionId }: SettingsModal
                     >
                       {isActive && <span style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: 'var(--brand-gold)' }} />}
                       <span style={{ display: 'flex', flexShrink: 0 }}><Icon /></span>
-                      <span>{s.label}</span>
+                      <span>{sectionLabel(s)}</span>
                     </button>
                   );
                 })}
@@ -161,13 +164,13 @@ export function SettingsModal({ open, onClose, initialSectionId }: SettingsModal
           key={active.id}
           rootKey={active.id}
           rootNode={<ActiveComponent />}
-          rootTitle={active.label}
+          rootTitle={sectionLabel(active)}
         >
           {(current, depth) => (
             <SettingsModalPane
               current={current}
               depth={depth}
-              fallbackLabel={active.label}
+              fallbackLabel={sectionLabel(active)}
               onClose={onClose}
             />
           )}
@@ -198,6 +201,7 @@ function SettingsModalPane({
   onClose: () => void;
 }) {
   const { pop } = useSheetStack();
+  const lang = useLang();
   const isSub = depth > 1;
   const title = isSub ? (current.title ?? fallbackLabel) : fallbackLabel;
 
@@ -212,7 +216,7 @@ function SettingsModalPane({
           {isSub && (
             <button
               onClick={pop}
-              aria-label="Zurück"
+              aria-label={t(lang, 'Zurück', 'Back')}
               style={{
                 width: 32, height: 32, borderRadius: 8, border: 'none', background: 'transparent',
                 color: 'var(--ink-2)', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -231,7 +235,7 @@ function SettingsModalPane({
         </div>
         <button
           onClick={onClose}
-          aria-label="Schließen"
+          aria-label={t(lang, 'Schließen', 'Close')}
           style={{
             width: 32, height: 32, borderRadius: 8, border: 'none', background: 'transparent',
             color: 'var(--ink-2)', display: 'flex', alignItems: 'center', justifyContent: 'center',
