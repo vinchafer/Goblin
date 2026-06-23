@@ -23,6 +23,7 @@ import { ModelsPage } from './ModelsPage';
 import { useUser } from '@/lib/hooks/useUser';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useApp } from '@/contexts/app-context';
+import { useLang } from '@/lib/use-lang';
 
 const I = {
   Dollar: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 9.5c0-1 1-2 3-2s3 1 3 2-1 1.5-3 2-3 1-3 2 1 2 3 2 3-1 3-2"/></svg>,
@@ -47,6 +48,7 @@ type Appearance = 'System' | 'Hell' | 'Dunkel';
 
 export function SettingsRoot() {
   const user = useUser();
+  const lang = useLang();
   const { signOut } = useAuth();
   const { push } = useSheetStack();
   const { settingsInitialItem, setSettingsInitialItem } = useApp();
@@ -185,7 +187,7 @@ export function SettingsRoot() {
             testId="row-language"
             icon={<I.Globe />}
             label="Eingabesprache"
-            right="DE"
+            right={lang.toUpperCase()}
             onClick={() => push('language', <LanguagePage />, 'Eingabesprache')}
           />
           <SettingsRow
