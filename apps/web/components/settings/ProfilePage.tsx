@@ -25,7 +25,6 @@ const KeyIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none
 const ShieldIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 3l8 4v5a9 9 0 0 1-8 9 9 9 0 0 1-8-9V7l8-4z"/></svg>;
 const FingerprintIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 3a9 9 0 0 0-9 9c0 1 0 3 1 5M21 12a9 9 0 0 0-9-9M12 7a5 5 0 0 0-5 5c0 2 0 4 1 6M17 12a5 5 0 0 0-5-5M12 11v6M9 19h6"/></svg>;
 const DeviceIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="7" y="3" width="10" height="18" rx="2"/><line x1="11" y1="18" x2="13" y2="18"/></svg>;
-const GitHubIcon = () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3a3 3 0 0 0-1-2.3c3-.3 6-1.5 6-7a5.5 5.5 0 0 0-1.5-3.8 5 5 0 0 0-.1-3.8s-1.2-.3-4 1.5a14 14 0 0 0-7 0c-2.8-1.8-4-1.5-4-1.5a5 5 0 0 0-.1 3.8A5.5 5.5 0 0 0 2 10c0 5.5 3 6.7 6 7a3 3 0 0 0-1 2.3V22"/></svg>;
 const TrashIcon = ({ color = 'currentColor' }: { color?: string }) => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>;
 
 export function ProfilePage() {
@@ -153,17 +152,9 @@ export function ProfilePage() {
         </SettingsCard>
       </SettingsGroup>
 
-      <SettingsGroup label="Verknüpfte Konten">
-        <SettingsCard>
-          <SettingsRow
-            icon={<GitHubIcon />}
-            label="GitHub"
-            right={user.githubConnected ? 'Verbunden' : 'Verbinden'}
-            rightVariant="text"
-            onClick={() => alert('GitHub-Connect läuft über Sub-Page (9E)')}
-          />
-        </SettingsCard>
-      </SettingsGroup>
+      {/* Honesty sprint: removed the "Verknüpfte Konten → GitHub" row. Its
+          onClick was a dev placeholder `alert(...)`, not a real connect. GitHub
+          (and Vercel) connect for real on the dedicated Konnektoren tab. */}
 
       <button
         disabled={!isDirty || saving}
