@@ -19,7 +19,7 @@ export function manageLabels(lang: Lang) {
     // delete — project
     deleteProjectTitle: 'Projekt löschen?',
     deleteProjectBody:
-      'Das Projekt und alle seine Chats und Builds werden endgültig entfernt. Eine bereits veröffentlichte Seite bleibt unter Umständen weiter online und muss separat deaktiviert werden.',
+      'Das Projekt und alle seine Chats und Builds werden endgültig entfernt. Eine bereits veröffentlichte Live-Seite wird ebenfalls offline genommen.',
     deleteChatTitle: 'Chat löschen?',
     deleteChatBody: 'Dieser Chat und sein Verlauf werden endgültig entfernt.',
     deleted: 'Gelöscht',
@@ -28,7 +28,7 @@ export function manageLabels(lang: Lang) {
     bulkDeleteProjectsTitle: (n: number) => `${n} Projekte endgültig löschen?`,
     bulkDeleteChatsTitle: (n: number) => `${n} Chats endgültig löschen?`,
     bulkDeleteProjectsBody:
-      'Alle ausgewählten Projekte samt Chats und Builds werden endgültig entfernt. Veröffentlichte Seiten bleiben unter Umständen online.',
+      'Alle ausgewählten Projekte samt Chats und Builds werden endgültig entfernt. Bereits veröffentlichte Live-Seiten werden ebenfalls offline genommen.',
     bulkDeleteChatsBody: 'Alle ausgewählten Chats werden endgültig entfernt.',
     // move
     moveTitle: 'In Projekt verschieben',
@@ -61,7 +61,7 @@ export function manageLabels(lang: Lang) {
     renameFailed: 'Rename failed',
     deleteProjectTitle: 'Delete project?',
     deleteProjectBody:
-      'The project and all of its chats and builds will be permanently removed. An already-published site may stay online and has to be taken down separately.',
+      'The project and all of its chats and builds will be permanently removed. An already-published live site will be taken down too.',
     deleteChatTitle: 'Delete chat?',
     deleteChatBody: 'This chat and its history will be permanently removed.',
     deleted: 'Deleted',
@@ -69,7 +69,7 @@ export function manageLabels(lang: Lang) {
     bulkDeleteProjectsTitle: (n: number) => `Permanently delete ${n} projects?`,
     bulkDeleteChatsTitle: (n: number) => `Permanently delete ${n} chats?`,
     bulkDeleteProjectsBody:
-      'All selected projects, including their chats and builds, will be permanently removed. Published sites may stay online.',
+      'All selected projects, including their chats and builds, will be permanently removed. Any already-published live sites will be taken down too.',
     bulkDeleteChatsBody: 'All selected chats will be permanently removed.',
     moveTitle: 'Move to project',
     noProject: 'No project',
