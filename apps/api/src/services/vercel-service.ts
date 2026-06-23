@@ -125,14 +125,21 @@ export async function teardownVercelProject(
     }
   };
 
-  // Personal scope first; on 403/404 try each team scope (mirrors deploy path).
+  // Personal scope first. 204/200 = deleted → done. But a 404 here is NOT proof
+  // the project is gone: Goblin deploys into a TEAM scope, where a no-teamId
+  // DELETE returns 404 ("not in personal account") even though the team project
+  // is live. So 404 (and 403) must FALL THROUGH to the team-scope sweep — only
+  // after every team also 404s do we conclude it's truly already gone. (The old
+  // code returned on the first personal 404, leaving team projects standing
+  // whenever Vercel answered 404 instead of 403 — flaky, site-not-removed.)
   let status = await del();
-  // 204/200 = deleted; 404 = already gone → both success.
-  if (status === 204 || status === 200 || status === 404) {
-    return { ok: true, status, alreadyGone: status === 404 };
+  if (status === 204 || status === 200) {
+    return { ok: true, status, alreadyGone: false };
   }
 
   if (status === 403 || status === 404) {
+    // Track whether every attempt was a 404 → genuinely already gone everywhere.
+    let sawNon404 = status !== 404;
     try {
       const teamsRes = await fetch('https://api.vercel.com/v2/teams', {
         headers: { Authorization: `Bearer ${token}` },
@@ -142,12 +149,19 @@ export async function teardownVercelProject(
         for (const t of body.teams ?? []) {
           if (!t.id) continue;
           status = await del(t.id);
-          if (status === 204 || status === 200 || status === 404) {
-            return { ok: true, status, alreadyGone: status === 404 };
+          if (status === 204 || status === 200) {
+            return { ok: true, status, alreadyGone: false };
           }
+          if (status !== 404) sawNon404 = true;
         }
+      } else {
+        sawNon404 = true; // couldn't enumerate teams → can't claim "already gone"
       }
-    } catch { /* fall through to failure */ }
+    } catch {
+      sawNon404 = true; // network error enumerating/deleting → not a clean 404
+    }
+    // Personal + all teams returned 404 and nothing errored → truly gone.
+    if (!sawNon404) return { ok: true, status: 404, alreadyGone: true };
   }
 
   if (status === 401 || status === 403) clearTokenCache(userId);
