@@ -7,11 +7,11 @@ import { SettingsCard } from '../ui/SettingsCard';
 import { SettingsGroup } from '../ui/SettingsGroup';
 import { SettingsRow } from '../ui/SettingsRow';
 
+// Honesty sprint (F3): notification toggles moved out of here — they now live
+// solely on the Benachrichtigungen tab, backed by the same server fields. This
+// page owns only what's unique to it: custom instructions + memory.
 interface Prefs {
   custom_instructions: string | null;
-  notify_build_complete: boolean;
-  notify_important_updates: boolean;
-  notify_email: boolean;
   memory_enabled: boolean;
 }
 
@@ -21,9 +21,6 @@ export function PersonalizationPage() {
   const [bio, setBio] = useState('');
   const [prefs, setPrefs] = useState<Prefs>({
     custom_instructions: '',
-    notify_build_complete: true,
-    notify_important_updates: true,
-    notify_email: false,
     memory_enabled: false,
   });
   const [saving, setSaving] = useState(false);
@@ -50,9 +47,6 @@ export function PersonalizationPage() {
         const data = await r.json();
         setPrefs({
           custom_instructions: data.custom_instructions ?? '',
-          notify_build_complete: data.notify_build_complete ?? true,
-          notify_important_updates: data.notify_important_updates ?? true,
-          notify_email: data.notify_email ?? false,
           memory_enabled: data.memory_enabled ?? false,
         });
       }
@@ -152,29 +146,6 @@ export function PersonalizationPage() {
         <p style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--text-meta)', marginTop: 8, padding: '0 4px', lineHeight: 1.5 }}>
           Memory-Verwaltung (was gemerkt wurde, einzelne Einträge löschen) folgt in einem kommenden Update.
         </p>
-      </SettingsGroup>
-
-      <SettingsGroup label="Benachrichtigungen">
-        <SettingsCard>
-          <SettingsRow
-            label="Build abgeschlossen"
-            rightVariant="toggle"
-            value={prefs.notify_build_complete}
-            onChange={(v) => setPrefs((p) => ({ ...p, notify_build_complete: v }))}
-          />
-          <SettingsRow
-            label="Wichtige Updates"
-            rightVariant="toggle"
-            value={prefs.notify_important_updates}
-            onChange={(v) => setPrefs((p) => ({ ...p, notify_important_updates: v }))}
-          />
-          <SettingsRow
-            label="E-Mail-Benachrichtigungen"
-            rightVariant="toggle"
-            value={prefs.notify_email}
-            onChange={(v) => setPrefs((p) => ({ ...p, notify_email: v }))}
-          />
-        </SettingsCard>
       </SettingsGroup>
 
       <button onClick={save} disabled={saving} style={{
