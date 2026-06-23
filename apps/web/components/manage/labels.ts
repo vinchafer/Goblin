@@ -19,7 +19,7 @@ export function manageLabels(lang: Lang) {
     // delete — project
     deleteProjectTitle: 'Projekt löschen?',
     deleteProjectBody:
-      'Das Projekt und alle seine Chats und Builds werden endgültig entfernt. Eine bereits veröffentlichte Live-Seite wird ebenfalls offline genommen.',
+      'Das Projekt und alle seine Chats und Builds werden endgültig entfernt. Eine bereits veröffentlichte Live-Seite wird ebenfalls offline genommen. Die Löschung greift sofort — bis die Seite aus allen Regionen verschwindet, kann es aber ein paar Minuten dauern.',
     deleteChatTitle: 'Chat löschen?',
     deleteChatBody: 'Dieser Chat und sein Verlauf werden endgültig entfernt.',
     deleted: 'Gelöscht',
@@ -28,7 +28,7 @@ export function manageLabels(lang: Lang) {
     bulkDeleteProjectsTitle: (n: number) => `${n} Projekte endgültig löschen?`,
     bulkDeleteChatsTitle: (n: number) => `${n} Chats endgültig löschen?`,
     bulkDeleteProjectsBody:
-      'Alle ausgewählten Projekte samt Chats und Builds werden endgültig entfernt. Bereits veröffentlichte Live-Seiten werden ebenfalls offline genommen.',
+      'Alle ausgewählten Projekte samt Chats und Builds werden endgültig entfernt. Bereits veröffentlichte Live-Seiten werden ebenfalls offline genommen. Die Löschung greift sofort — bis die Seiten aus allen Regionen verschwinden, kann es aber ein paar Minuten dauern.',
     bulkDeleteChatsBody: 'Alle ausgewählten Chats werden endgültig entfernt.',
     // move
     moveTitle: 'In Projekt verschieben',
@@ -61,7 +61,7 @@ export function manageLabels(lang: Lang) {
     renameFailed: 'Rename failed',
     deleteProjectTitle: 'Delete project?',
     deleteProjectBody:
-      'The project and all of its chats and builds will be permanently removed. An already-published live site will be taken down too.',
+      'The project and all of its chats and builds will be permanently removed. An already-published live site will be taken down too. Removal is immediate, but the live site may take a few minutes to disappear from all regions.',
     deleteChatTitle: 'Delete chat?',
     deleteChatBody: 'This chat and its history will be permanently removed.',
     deleted: 'Deleted',
@@ -69,7 +69,7 @@ export function manageLabels(lang: Lang) {
     bulkDeleteProjectsTitle: (n: number) => `Permanently delete ${n} projects?`,
     bulkDeleteChatsTitle: (n: number) => `Permanently delete ${n} chats?`,
     bulkDeleteProjectsBody:
-      'All selected projects, including their chats and builds, will be permanently removed. Any already-published live sites will be taken down too.',
+      'All selected projects, including their chats and builds, will be permanently removed. Any already-published live sites will be taken down too. Removal is immediate, but the live sites may take a few minutes to disappear from all regions.',
     bulkDeleteChatsBody: 'All selected chats will be permanently removed.',
     moveTitle: 'Move to project',
     noProject: 'No project',
