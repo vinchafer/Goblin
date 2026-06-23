@@ -6,6 +6,16 @@ import { isDemoActive } from '@/lib/demo/demo-flag';
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let _ph: any = null;
 
+// Honesty sprint (F5): the Datenschutz "Anonyme Nutzungsdaten" opt-out used to
+// write `goblin-tracking-opt-out` and nothing read it — an inert privacy control
+// over a product that DOES run PostHog. This is the reader: opting out blocks
+// init entirely, and `setAnalyticsOptOut` flips a live session too.
+const OPT_OUT_KEY = 'goblin-tracking-opt-out';
+
+function isOptedOut(): boolean {
+  try { return localStorage.getItem(OPT_OUT_KEY) === 'true'; } catch { return false; }
+}
+
 export function initAnalytics(): void {
   if (typeof window === 'undefined') return;
   // Demo routes fire no analytics — not even a pageview (Sprint 10 §6/§7).
@@ -14,6 +24,8 @@ export function initAnalytics(): void {
 
   // Respect Do Not Track
   if (navigator.doNotTrack === '1') return;
+  // Respect the user's Datenschutz opt-out.
+  if (isOptedOut()) return;
 
   const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
   const host = process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://eu.i.posthog.com';
@@ -43,6 +55,19 @@ export function identifyUser(userId: string, props: { email?: string; plan?: str
 
 export function resetAnalyticsUser(): void {
   _ph?.reset();
+}
+
+// Live opt-out toggle for the Datenschutz setting. Persists the flag and applies
+// it to the current session: opting out stops capturing immediately (and inits
+// nothing if analytics wasn't loaded yet); opting back in resumes + (re)inits.
+export function setAnalyticsOptOut(optOut: boolean): void {
+  try { localStorage.setItem(OPT_OUT_KEY, optOut ? 'true' : 'false'); } catch { /* ignore */ }
+  if (optOut) {
+    _ph?.opt_out_capturing?.();
+  } else {
+    if (_ph) _ph.opt_in_capturing?.();
+    else initAnalytics();
+  }
 }
 
 // ─── Tracked events (only business-critical signals) ─────────────────────────

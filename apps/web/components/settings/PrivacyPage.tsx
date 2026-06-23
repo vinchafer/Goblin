@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { setAnalyticsOptOut } from '@/lib/analytics';
 import { SettingsCard } from '../ui/SettingsCard';
 import { SettingsGroup } from '../ui/SettingsGroup';
 import { SettingsRow } from '../ui/SettingsRow';
@@ -41,8 +42,10 @@ export function PrivacyPage() {
   }, []);
 
   function toggleTracking(v: boolean) {
+    // v = "anonymous usage data ON". Opt-out is the inverse. setAnalyticsOptOut
+    // persists the flag AND applies it live (stops/starts PostHog this session).
     setTracking(v);
-    localStorage.setItem('goblin-tracking-opt-out', v ? 'false' : 'true');
+    setAnalyticsOptOut(!v);
   }
 
   async function downloadData() {
