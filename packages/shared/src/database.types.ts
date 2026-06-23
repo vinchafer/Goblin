@@ -42,7 +42,6 @@ export interface Database {
           status: string
           last_active: string | null
           created_at: string
-          updated_at: string | null
         }
         Insert: Partial<Database['public']['Tables']['projects']['Row']>
         Update: Partial<Database['public']['Tables']['projects']['Row']>
