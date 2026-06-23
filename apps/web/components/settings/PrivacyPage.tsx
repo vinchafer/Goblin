@@ -6,6 +6,7 @@ import { setAnalyticsOptOut } from '@/lib/analytics';
 import { SettingsCard } from '../ui/SettingsCard';
 import { SettingsGroup } from '../ui/SettingsGroup';
 import { SettingsRow } from '../ui/SettingsRow';
+import { useLang, t } from '@/lib/use-lang';
 
 type DeletionStatus = {
   deletionRequested: boolean;
@@ -14,6 +15,7 @@ type DeletionStatus = {
 };
 
 export function PrivacyPage() {
+  const lang = useLang();
   const [tracking, setTracking] = useState<boolean>(() => {
     if (typeof window === 'undefined') return true;
     return localStorage.getItem('goblin-tracking-opt-out') !== 'true';
@@ -48,24 +50,6 @@ export function PrivacyPage() {
     setAnalyticsOptOut(!v);
   }
 
-  async function downloadData() {
-    const supabase = createClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
-    const r = await fetch(`${apiBase}/api/users/me/export`, {
-      headers: { Authorization: `Bearer ${session.access_token}` },
-    });
-    if (!r.ok) return;
-    const blob = await r.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `goblin-export-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
   async function requestDeletion() {
     if (confirmText !== 'DELETE') return;
     setSubmitting(true);
@@ -74,7 +58,7 @@ export function PrivacyPage() {
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
-        setErrorMsg('Nicht eingeloggt.');
+        setErrorMsg(t(lang, 'Nicht eingeloggt.', 'Not signed in.'));
         setSubmitting(false);
         return;
       }
@@ -89,7 +73,7 @@ export function PrivacyPage() {
       });
       const body = await r.json();
       if (!r.ok) {
-        setErrorMsg(body.error ?? 'Fehler beim Beantragen der Löschung.');
+        setErrorMsg(body.error ?? t(lang, 'Fehler beim Beantragen der Löschung.', 'Failed to request deletion.'));
         setSubmitting(false);
         return;
       }
@@ -97,7 +81,7 @@ export function PrivacyPage() {
       await supabase.auth.signOut();
       window.location.href = '/deletion-pending';
     } catch {
-      setErrorMsg('Netzwerk-Fehler.');
+      setErrorMsg(t(lang, 'Netzwerk-Fehler.', 'Network error.'));
       setSubmitting(false);
     }
   }
@@ -108,10 +92,10 @@ export function PrivacyPage() {
 
   return (
     <div className="settings-section" style={{ padding: '0 16px 24px', fontFamily: 'var(--font-sans)' }}>
-      <SettingsGroup label="Tracking">
+      <SettingsGroup label={t(lang, 'Tracking', 'Tracking')}>
         <SettingsCard>
           <SettingsRow
-            label="Anonyme Nutzungsdaten"
+            label={t(lang, 'Anonyme Nutzungsdaten', 'Anonymous usage data')}
             rightVariant="toggle"
             value={tracking}
             onChange={toggleTracking}
@@ -119,28 +103,27 @@ export function PrivacyPage() {
         </SettingsCard>
       </SettingsGroup>
 
-      <SettingsGroup label="Daten">
+      <SettingsGroup label={t(lang, 'Daten', 'Data')}>
         <SettingsCard>
-          <SettingsRow label="Meine Daten exportieren" onClick={downloadData} />
-          <SettingsRow label="Datenschutzerklärung" onClick={() => { window.location.href = '/privacy'; }} />
-          <SettingsRow label="Nutzungsbedingungen" onClick={() => { window.location.href = '/terms'; }} />
+          <SettingsRow label={t(lang, 'Datenschutzerklärung', 'Privacy policy')} onClick={() => { window.location.href = '/privacy'; }} />
+          <SettingsRow label={t(lang, 'Nutzungsbedingungen', 'Terms of service')} onClick={() => { window.location.href = '/terms'; }} />
         </SettingsCard>
       </SettingsGroup>
 
-      <SettingsGroup label="Konto">
+      <SettingsGroup label={t(lang, 'Konto', 'Account')}>
         <SettingsCard>
           {deletionStatus?.deletionRequested && scheduled ? (
             <div style={{ padding: '14px 20px', fontSize: 'var(--t-small-fs)', color: 'var(--text)' }}>
               <div style={{ color: 'var(--rust)', fontWeight: 600, marginBottom: 4 }}>
-                Löschung beantragt
+                {t(lang, 'Löschung beantragt', 'Deletion requested')}
               </div>
               <div className="helper-text" style={{ color: 'var(--meta)' }}>
-                Konto wird am {scheduled} unwiderruflich gelöscht. Check deine Email für den Abbruch-Link.
+                {t(lang, `Konto wird am ${scheduled} unwiderruflich gelöscht. Check deine Email für den Abbruch-Link.`, `Account will be permanently deleted on ${scheduled}. Check your email for the cancellation link.`)}
               </div>
             </div>
           ) : (
             <SettingsRow
-              label="Konto löschen"
+              label={t(lang, 'Konto löschen', 'Delete account')}
               labelColor="var(--rust)"
               rightVariant="chevron"
               onClick={() => { setShowConfirm(true); setConfirmText(''); setErrorMsg(''); }}
@@ -173,15 +156,16 @@ export function PrivacyPage() {
             fontFamily: 'var(--font-sans)',
           }}>
             <h3 style={{ fontFamily: 'var(--font-sans)', fontSize: 22, margin: '0 0 12px' }}>
-              Konto wirklich löschen?
+              {t(lang, 'Konto wirklich löschen?', 'Really delete account?')}
             </h3>
             <p style={{ color: 'var(--meta)', fontSize: 'var(--t-small-fs)', margin: '0 0 16px' }}>
-              Diese Aktion startet eine 30-Tage-Wartezeit. Während dieser Zeit kannst du dich nicht
-              einloggen. Nach 30 Tagen werden alle deine Daten unwiderruflich gelöscht. Du erhältst
-              eine Email mit einem Link zum Abbruch.
+              {t(lang,
+                'Diese Aktion startet eine 30-Tage-Wartezeit. Während dieser Zeit kannst du dich nicht einloggen. Nach 30 Tagen werden alle deine Daten unwiderruflich gelöscht. Du erhältst eine Email mit einem Link zum Abbruch.',
+                'This action starts a 30-day waiting period. During this time you cannot log in. After 30 days all your data will be permanently deleted. You will receive an email with a cancellation link.'
+              )}
             </p>
             <p style={{ fontSize: 'var(--t-small-fs)', fontWeight: 600, margin: '0 0 8px' }}>
-              Tippe <code>DELETE</code> zum Bestätigen:
+              {t(lang, 'Tippe ', 'Type ')}<code>DELETE</code>{t(lang, ' zum Bestätigen:', ' to confirm:')}
             </p>
             <input
               type="text"
@@ -219,7 +203,7 @@ export function PrivacyPage() {
                   fontFamily: 'var(--font-sans)',
                 }}
               >
-                Abbrechen
+                {t(lang, 'Abbrechen', 'Cancel')}
               </button>
               <button
                 onClick={requestDeletion}
@@ -235,7 +219,7 @@ export function PrivacyPage() {
                   fontFamily: 'var(--font-sans)',
                 }}
               >
-                {submitting ? 'Beantrage…' : 'Löschen beantragen'}
+                {submitting ? t(lang, 'Beantrage…', 'Requesting…') : t(lang, 'Löschen beantragen', 'Request deletion')}
               </button>
             </div>
           </div>
