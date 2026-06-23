@@ -31,12 +31,12 @@ interface RankingRow {
 
 interface ByokKeyRow { provider: string; key_hint?: string | null; status?: string }
 
-const TASK_LABELS: Record<TaskType, string> = {
-  'coding': 'Coding',
-  'reasoning': 'Reasoning',
-  'speed': 'Speed',
-  'cost-efficiency': 'Kosten',
-  'general': 'Allgemein',
+const TASK_LABELS: Record<TaskType, { de: string; en: string }> = {
+  'coding': { de: 'Code', en: 'Coding' },
+  'reasoning': { de: 'Logik', en: 'Reasoning' },
+  'speed': { de: 'Tempo', en: 'Speed' },
+  'cost-efficiency': { de: 'Kosten', en: 'Cost' },
+  'general': { de: 'Allgemein', en: 'General' },
 };
 
 const PROVIDERS = ['anthropic', 'openai', 'google', 'mistral', 'groq', 'together', 'deepseek', 'fireworks'] as const;
@@ -185,6 +185,7 @@ function GoblinModelsTab() {
 }
 
 function RankingsTab() {
+  const lang = useLang();
   const [task, setTask] = useState<TaskType>('coding');
   const [rows, setRows] = useState<RankingRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -317,21 +318,21 @@ function RankingsTab() {
       )}
 
       <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 12, paddingBottom: 4 }}>
-        {(Object.keys(TASK_LABELS) as TaskType[]).map((t) => (
+        {(Object.keys(TASK_LABELS) as TaskType[]).map((taskKey) => (
           <button
-            key={t}
-            onClick={() => setTask(t)}
-            data-testid={`task-${t}`}
+            key={taskKey}
+            onClick={() => setTask(taskKey)}
+            data-testid={`task-${taskKey}`}
             style={{
               padding: '8px 14px', borderRadius: 999,
-              background: task === t ? 'var(--brand-green)' : 'transparent',
-              border: '1px solid', borderColor: task === t ? 'var(--brand-green)' : 'var(--border-subtle)',
-              color: task === t ? '#fff' : 'var(--text-2)',
+              background: task === taskKey ? 'var(--brand-green)' : 'transparent',
+              border: '1px solid', borderColor: task === taskKey ? 'var(--brand-green)' : 'var(--border-subtle)',
+              color: task === taskKey ? '#fff' : 'var(--text-2)',
               fontSize: 13, fontWeight: 500, cursor: 'pointer',
               whiteSpace: 'nowrap', fontFamily: 'var(--font-sans)',
               flexShrink: 0,
             }}
-          >{TASK_LABELS[t]}</button>
+          >{t(lang, TASK_LABELS[taskKey].de, TASK_LABELS[taskKey].en)}</button>
         ))}
       </div>
 

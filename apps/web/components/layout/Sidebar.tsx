@@ -12,6 +12,7 @@ import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import { RecentChatRow } from '@/components/sidebar/RecentChatRow';
 import { ProjectRowMenu } from '@/components/sidebar/ProjectRowMenu';
 import { SidebarUsage } from '@/components/sidebar/SidebarUsage';
+import { useLang, t } from '@/lib/use-lang';
 import { useUser } from '@/lib/hooks/useUser';
 
 interface ChatSession {
@@ -95,6 +96,7 @@ function resolveProjectHref(id: string): string {
 export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClose }: SidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const lang = useLang();
   const demoMode = useDemoMode();
   const { setShowNewProjectModal, setShowSettingsSheet } = useApp();
   const { fullName, email, plan } = useUser();
@@ -283,7 +285,7 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
                 color: 'var(--text-faint)', fontStyle: 'italic',
                 fontFamily: 'var(--font-sans)',
               }}>
-                No projects yet
+                {t(lang, 'Noch keine Projekte', 'No projects yet')}
               </div>
             )
           ) : (
@@ -467,7 +469,7 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
           <div style={{ padding: '0 12px 8px' }}>
             {projects.length === 0 ? (
               <div style={{ padding: '8px 12px', fontSize: 'var(--t-small-fs)', color: 'var(--text-faint)', fontStyle: 'italic', fontFamily: 'var(--font-sans)' }}>
-                No projects yet
+                {t(lang, 'Noch keine Projekte', 'No projects yet')}
               </div>
             ) : projects.map((p, i) => {
               const active = activeProjectId === p.id;
@@ -557,6 +559,7 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
 function RecentChats({ pathname, navigate, projects = [] }: { pathname: string; navigate: (path: string) => void; projects?: Project[] }) {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [loading, setLoading] = useState(true);
+  const lang = useLang();
   const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
 
   const loadSessions = useCallback(async () => {
@@ -646,7 +649,7 @@ function RecentChats({ pathname, navigate, projects = [] }: { pathname: string; 
           ))
         ) : sessions.length === 0 ? (
           <div style={{ padding: '4px 8px', fontSize: 'var(--t-small-fs)', color: 'var(--text-faint)', fontStyle: 'italic', fontFamily: 'var(--font-sans)' }}>
-            No chats yet
+            {t(lang, 'Noch keine Chats', 'No chats yet')}
           </div>
         ) : (
           <>
