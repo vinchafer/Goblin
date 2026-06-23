@@ -11,7 +11,7 @@ import { useLang, t } from '@/lib/use-lang';
 
 type HealthState = 'degraded' | 'down';
 
-type Tab = 'goblin' | 'rankings' | 'keys' | 'advanced';
+type Tab = 'goblin' | 'rankings' | 'keys';
 type TaskType = 'coding' | 'reasoning' | 'speed' | 'cost-efficiency' | 'general';
 
 interface RankingRow {
@@ -31,13 +31,6 @@ interface RankingRow {
 
 interface ByokKeyRow { provider: string; key_hint?: string | null; status?: string }
 
-interface ModelAdvanced {
-  modelId: string;
-  temperature: number;
-  maxTokens: number;
-  systemPrompt: string;
-}
-
 const TASK_LABELS: Record<TaskType, string> = {
   'coding': 'Coding',
   'reasoning': 'Reasoning',
@@ -52,7 +45,6 @@ const PROVIDER_LABELS: Record<string, string> = {
   groq: 'Groq', together: 'Together AI', deepseek: 'DeepSeek', fireworks: 'Fireworks AI',
 };
 
-const ADV_KEY = 'goblin-model-advanced';
 const DEFAULT_KEY = 'goblin-default-model';
 
 export function ModelsPage() {
@@ -74,7 +66,6 @@ export function ModelsPage() {
     { id: 'goblin',   label: t(lang, 'Goblin-Modelle', 'Goblin models') },
     { id: 'rankings', label: 'Rankings' },
     { id: 'keys',     label: t(lang, 'Meine Keys', 'My keys') },
-    { id: 'advanced', label: t(lang, 'Erweitert', 'Advanced') },
   ];
 
   return (
@@ -113,7 +104,6 @@ export function ModelsPage() {
         {tab === 'goblin' && <GoblinModelsTab />}
         {tab === 'rankings' && <RankingsTab />}
         {tab === 'keys' && <KeysTab />}
-        {tab === 'advanced' && <AdvancedTab />}
       </div>
     </div>
   );
@@ -246,14 +236,28 @@ function RankingsTab() {
 
   // FIX4: probe the model with a tiny real generation before setting it as default.
   // On failure we refuse + explain, so the user can't one-tap into a dead default.
-  async function setDefault(model: { id: string; provider: string }) {
+  async function setDefault(model: { id: string; provider: string; display_name: string }) {
     setProbeError(null);
     setProbing(model.id);
     try {
       const r = await apiPost<{ ok: boolean; error?: string }>('/api/models/probe', { slug: `${model.provider}/${model.id}` });
       if (r?.ok) {
         setDefaultId(model.id);
+        // Per-task badge (which row shows "Standard" on this tab).
         localStorage.setItem(`${DEFAULT_KEY}-${task}`, model.id);
+        // F2: actually take effect. The new-chat composer reads its default model
+        // from `goblin:last-model` (ChatInput.useChatModel). Write a SelectedModel
+        // there so picking a default genuinely starts new chats on it. Rankings
+        // models route over the user's own keys → layer 'byok'.
+        try {
+          localStorage.setItem('goblin:last-model', JSON.stringify({
+            slug: `${model.provider}/${model.id}`,
+            name: model.display_name,
+            provider: model.provider,
+            layer: 'byok',
+            displayName: model.display_name,
+          }));
+        } catch { /* ignore */ }
       } else {
         setProbeError({ id: model.id, msg: 'Antwortet derzeit nicht — nicht als Standard gesetzt.' });
       }
@@ -407,7 +411,7 @@ function RankingsTab() {
               }}>Standard</span>
             ) : (
               <button
-                onClick={() => setDefault({ id: m.id, provider: m.provider })}
+                onClick={() => setDefault({ id: m.id, provider: m.provider, display_name: m.display_name })}
                 disabled={probing === m.id}
                 style={{
                   padding: '4px 10px', borderRadius: 8,
@@ -501,117 +505,6 @@ function KeysTab() {
           );
         })}
       </SettingsCard>
-    </>
-  );
-}
-
-function AdvancedTab() {
-  const [advanced, setAdvanced] = useState<Record<string, ModelAdvanced>>({});
-  const [models, setModels] = useState<{ id: string; display_name: string; provider: string }[]>([]);
-  const [openId, setOpenId] = useState<string | null>(null);
-
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(ADV_KEY);
-      if (raw) setAdvanced(JSON.parse(raw));
-    } catch {}
-    const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
-    fetch(`${apiBase}/api/rankings?task=coding&limit=10`)
-      .then(r => r.ok ? r.json() : { rankings: [] })
-      .then(d => setModels(((d.rankings as RankingRow[] | undefined) ?? []).map(r => ({
-        id: r.ranked_models.id,
-        display_name: r.ranked_models.display_name,
-        provider: r.ranked_models.provider,
-      }))))
-      .catch(() => {});
-  }, []);
-
-  function update(modelId: string, patch: Partial<ModelAdvanced>) {
-    const next = {
-      ...advanced,
-      [modelId]: {
-        modelId,
-        temperature: 0.7,
-        maxTokens: 4096,
-        systemPrompt: '',
-        ...(advanced[modelId] ?? {}),
-        ...patch,
-      },
-    };
-    setAdvanced(next);
-    try { localStorage.setItem(ADV_KEY, JSON.stringify(next)); } catch {}
-  }
-
-  const inputStyle: React.CSSProperties = {
-    width: '100%', padding: '10px 12px',
-    background: 'var(--subtle)', border: '1px solid var(--border-subtle)',
-    borderRadius: 8, color: 'var(--text)', fontSize: 'var(--t-small-fs)',
-    fontFamily: 'var(--font-sans)', outline: 'none',
-  };
-
-  return (
-    <>
-      <p style={{ fontSize: 13, color: 'var(--text-meta)', marginBottom: 12, lineHeight: 1.5 }}>
-        Standardwerte pro Modell. Gilt für neue Chats.
-      </p>
-      {models.length === 0 && (
-        <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-meta)', fontSize: 'var(--t-small-fs)' }}>
-          Lade Modelle…
-        </div>
-      )}
-      {models.map((m) => {
-        const cfg = advanced[m.id] ?? { modelId: m.id, temperature: 0.7, maxTokens: 4096, systemPrompt: '' };
-        const open = openId === m.id;
-        return (
-          <div key={m.id} style={{
-            background: 'var(--panel)', border: '1px solid var(--border-subtle)',
-            borderRadius: 12, marginBottom: 8, overflow: 'hidden',
-          }}>
-            <button onClick={() => setOpenId(open ? null : m.id)} style={{
-              width: '100%', padding: 14, background: 'transparent', border: 'none',
-              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-              cursor: 'pointer', textAlign: 'left',
-            }}>
-              <div>
-                <div style={{ fontWeight: 600, color: 'var(--text)', fontSize: 15 }}>{m.display_name}</div>
-                <div style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--text-meta)', marginTop: 2 }}>
-                  {m.provider} · temp {cfg.temperature.toFixed(1)} · {cfg.maxTokens} tok
-                </div>
-              </div>
-              <span style={{ color: 'var(--text-meta)', fontSize: 'var(--t-body-fs)', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>⌄</span>
-            </button>
-            {open && (
-              <div style={{ padding: '0 14px 14px', display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <span style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--text-meta)', display: 'flex', justifyContent: 'space-between' }}>
-                    <span>Temperature</span><span>{cfg.temperature.toFixed(1)}</span>
-                  </span>
-                  <input type="range" min={0} max={1} step={0.1} value={cfg.temperature}
-                    onChange={(e) => update(m.id, { temperature: parseFloat(e.target.value) })}
-                    style={{ accentColor: 'var(--brand-green)' }}
-                  />
-                </label>
-                <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <span style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--text-meta)' }}>Max Tokens</span>
-                  <input type="number" min={100} max={32000} step={100} value={cfg.maxTokens}
-                    onChange={(e) => update(m.id, { maxTokens: parseInt(e.target.value, 10) || 4096 })}
-                    style={inputStyle}
-                  />
-                </label>
-                <label style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  <span style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--text-meta)' }}>System Prompt (optional)</span>
-                  <textarea value={cfg.systemPrompt}
-                    onChange={(e) => update(m.id, { systemPrompt: e.target.value })}
-                    placeholder="z.B. Antworte immer auf Deutsch…"
-                    style={{ ...inputStyle, minHeight: 60, resize: 'vertical' }}
-                    maxLength={1000}
-                  />
-                </label>
-              </div>
-            )}
-          </div>
-        );
-      })}
     </>
   );
 }
