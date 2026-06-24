@@ -131,8 +131,10 @@ export default function BillingDashboardPage() {
     );
   }
 
-  const plan = usage?.plan ?? 'build';
-  const planInfo = PLAN_INFO[plan] ?? PLAN_INFO['build']!;
+  // Never fabricate a paid plan: if /usage didn't return one, show a neutral
+  // "no active plan" state rather than a phantom Build.
+  const plan = usage?.plan ?? null;
+  const planInfo = plan ? (PLAN_INFO[plan] ?? null) : null;
   // DD §A: a plain BUILD count this month. The only cap is the weighted Goblin
   // allowance, surfaced on the dedicated usage screen — not as a request percent here.
   const buildsThisMonth = usage?.used ?? 0;
@@ -150,13 +152,21 @@ export default function BillingDashboardPage() {
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 16 }}>
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-              <span style={{
-                fontSize: 'var(--t-caption-fs)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em',
-                background: planInfo.color, color: '#fff', padding: '2px 8px', borderRadius: 4,
-              }}>{planInfo.label}</span>
-              <span style={{ fontSize: 13, color: 'var(--meta)', fontFamily: 'var(--font-sans)' }}>
-                ${priceFor(plan)}/month
-              </span>
+              {planInfo ? (
+                <>
+                  <span style={{
+                    fontSize: 'var(--t-caption-fs)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em',
+                    background: planInfo.color, color: '#fff', padding: '2px 8px', borderRadius: 4,
+                  }}>{planInfo.label}</span>
+                  <span style={{ fontSize: 13, color: 'var(--meta)', fontFamily: 'var(--font-sans)' }}>
+                    ${priceFor(plan!)}/month
+                  </span>
+                </>
+              ) : (
+                <span style={{ fontSize: 13, color: 'var(--meta)', fontFamily: 'var(--font-sans)' }}>
+                  No active plan
+                </span>
+              )}
             </div>
             <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: 18, color: 'var(--brand-green)', fontWeight: 700, letterSpacing: '-0.3px' }}>
               Current Plan

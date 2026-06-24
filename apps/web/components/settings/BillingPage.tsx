@@ -87,6 +87,7 @@ export function BillingPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
+  const [portalErr, setPortalErr] = useState<string | null>(null);
 
   useEffect(() => { void loadAll(); }, []);
 
@@ -132,14 +133,18 @@ export function BillingPage() {
 
   async function openPortal() {
     setBusy(true);
+    setPortalErr(null);
     try {
       const headers = await authHeader();
       const r = await fetch(`${API_BASE}/api/billing/create-portal-session`, { method: 'POST', headers });
       if (r.ok) {
         const { portalUrl, url } = await r.json();
         const target = portalUrl ?? url;
-        if (target) window.location.href = target;
+        if (target) { window.location.href = target; return; }
       }
+      setPortalErr(t(lang, 'Kundenportal momentan nicht verfügbar. Bitte später erneut versuchen.', 'Customer portal temporarily unavailable. Please try again later.'));
+    } catch {
+      setPortalErr(t(lang, 'Kundenportal momentan nicht verfügbar. Bitte später erneut versuchen.', 'Customer portal temporarily unavailable. Please try again later.'));
     } finally { setBusy(false); }
   }
 
@@ -215,6 +220,11 @@ export function BillingPage() {
                 <button onClick={() => { window.location.href = '/dashboard/upgrade'; }} style={outlineBtn}>
                   {t(lang, 'Plan ändern', 'Change plan')}
                 </button>
+              </div>
+            )}
+            {portalErr && (
+              <div style={{ marginTop: 10, fontSize: 'var(--t-caption-fs)', color: 'var(--danger, #c64a4a)' }}>
+                {portalErr}
               </div>
             )}
           </div>
