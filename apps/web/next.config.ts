@@ -12,13 +12,19 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ||
 // Note: unsafe-inline required for Next.js inline styles; unsafe-eval required in dev.
 // In production builds, Next.js inlines a small script chunk — nonce-based CSP
 // would require a custom server; we accept unsafe-inline for now.
+// Stripe Elements/SetupIntent checkout (CheckoutPanel) loads js.stripe.com,
+// talks to api.stripe.com, and renders the card field inside js.stripe.com /
+// hooks.stripe.com iframes. Without these the publishable key is inlined fine
+// but Stripe.js is CSP-blocked → useStripe() stays null → the subscribe button
+// is permanently disabled and <PaymentElement> never mounts.
 const csp = [
   `default-src 'self'`,
-  `script-src 'self' 'unsafe-eval' 'unsafe-inline'`,
+  `script-src 'self' 'unsafe-eval' 'unsafe-inline' https://js.stripe.com`,
   `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
   `font-src 'self' https://fonts.gstatic.com data:`,
   `img-src 'self' data: blob: https:`,
-  `connect-src 'self' https://${SUPABASE_HOST} wss://${SUPABASE_HOST} ${API_URL} https://api.anthropic.com https://openrouter.ai`,
+  `connect-src 'self' https://${SUPABASE_HOST} wss://${SUPABASE_HOST} ${API_URL} https://api.anthropic.com https://openrouter.ai https://api.stripe.com`,
+  `frame-src https://js.stripe.com https://hooks.stripe.com`,
   `media-src 'self' blob:`,
   `worker-src 'self' blob:`,
   `frame-ancestors 'none'`,

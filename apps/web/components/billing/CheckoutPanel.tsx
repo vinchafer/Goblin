@@ -29,12 +29,22 @@ interface ResolvedPrice {
   note: { en: string; de: string } | null;
 }
 
+const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '';
+
 let _stripePromise: Promise<Stripe | null> | null = null;
 function stripePromise(): Promise<Stripe | null> {
   if (!_stripePromise) {
-    _stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '');
+    _stripePromise = loadStripe(PUBLISHABLE_KEY);
   }
   return _stripePromise;
+}
+
+function unavailableMsg(lang: Lang): string {
+  return t(
+    lang,
+    'Zahlung momentan nicht verfügbar. Bitte später erneut versuchen.',
+    'Payment temporarily unavailable. Please try again later.',
+  );
 }
 
 const appearance: Appearance = {
@@ -66,6 +76,12 @@ export function CheckoutPanel({
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
+    // No publishable key inlined at build time → Stripe.js can never initialise.
+    // Surface it explicitly instead of opening a modal with a dead form.
+    if (!PUBLISHABLE_KEY) {
+      setErr(unavailableMsg(lang));
+      return;
+    }
     (async () => {
       try {
         const headers = await getAuthHeaders();
@@ -148,6 +164,17 @@ function CheckoutForm({
   const [err, setErr] = useState<string | null>(null);
   const [resolved, setResolved] = useState<ResolvedPrice | null>(null);
   const pmRef = useRef<string | null>(null); // payment method, set once card is tokenized
+
+  // If Stripe.js never initialises (missing key, CSP-blocked js.stripe.com,
+  // network) `stripe` stays null and the pay button would sit silently disabled.
+  // After a grace period, surface the failure explicitly.
+  useEffect(() => {
+    if (stripe) return;
+    const id = setTimeout(() => {
+      if (!stripe) setErr(prev => prev ?? unavailableMsg(lang));
+    }, 8000);
+    return () => clearTimeout(id);
+  }, [stripe, lang]);
 
   // The button always shows the price that will be charged on the NEXT click.
   const shownAmount = resolved?.amount ?? displayPrice;
