@@ -1,7 +1,13 @@
 import Stripe from 'stripe';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { getPlans, getPlanFromPriceId } from '../config/plans';
-import { getGeoTier, getPriceForTier, type GeoTier } from '../config/geo-pricing';
+import { getGeoTier, getPriceForTier, authoritativeTier, type GeoTier } from '../config/geo-pricing';
+
+// Shown on the Stripe checkout page when the card-country tier is pricier than
+// the displayed (IP) tier, so an up-charge is never a silent bait-and-switch.
+const RETIER_NOTICE =
+  'Preis basiert auf dem Land deiner Zahlungsmethode. · ' +
+  "Pricing is based on your payment method's country.";
 
 let _stripe: Stripe | null = null;
 
@@ -32,24 +38,46 @@ export async function createCheckoutSession(
     throw new Error('User not found');
   }
 
-  const tier = getGeoTier(countryCode ?? null) as GeoTier;
+  const ipTier = getGeoTier(countryCode ?? null) as GeoTier;
+
+  // Card country is authoritative. If this is a returning customer with a saved
+  // payment method, we already know the card country → price the session at the
+  // card tier up front, so the very first invoice is correct (no proration).
+  // For new customers the card country is unknown until checkout completes; the
+  // webhook reconciles to the card tier on checkout.session.completed.
+  let cardCountry: string | null = null;
+  if (user.stripe_customer_id) {
+    try {
+      const customer = await stripe.customers.retrieve(user.stripe_customer_id, {
+        expand: ['invoice_settings.default_payment_method'],
+      }) as Stripe.Customer;
+      const pm = customer.invoice_settings?.default_payment_method as Stripe.PaymentMethod | null;
+      cardCountry = pm?.card?.country ?? pm?.billing_details?.address?.country ?? null;
+    } catch { /* unknown card country → fall back to IP tier */ }
+  }
+
+  const tier = authoritativeTier(cardCountry, ipTier);
   const priceId = getPriceForTier(targetPlan, tier) ?? getPlans()[targetPlan]?.stripePriceId;
 
   if (!priceId) {
     throw new Error(`No price configured for plan: ${targetPlan}`);
   }
 
+  // Pricier than what the user saw → show the transparency notice on checkout.
+  const reTieredUp = tier < ipTier;
+
   const session = await stripe.checkout.sessions.create({
     customer: user.stripe_customer_id ?? undefined,
     customer_email: !user.stripe_customer_id ? user.email : undefined,
     mode: 'subscription',
     line_items: [{ price: priceId, quantity: 1 }],
-    // Anti-VPN: collect billing address so the card/billing country tier can be
-    // reconciled against the IP-derived tier on checkout.session.completed.
+    // Anti-VPN: collect billing address so the card/billing country (authoritative)
+    // can be reconciled on checkout.session.completed for new customers.
     billing_address_collection: 'required',
     success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing?success=true`,
     cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing?canceled=true`,
-    metadata: { userId, plan: targetPlan, geo_tier: String(tier) },
+    metadata: { userId, plan: targetPlan, geo_tier: String(tier), ip_tier: String(ipTier) },
+    ...(reTieredUp ? { custom_text: { submit: { message: RETIER_NOTICE } } } : {}),
   });
 
   return session.url!;

@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import {
   getGeoTier,
-  pricierTier,
+  authoritativeTier,
   getPriceForTier,
   PLAN_PRICES,
-  type GeoTier,
 } from './geo-pricing';
+import { getPlanFromPriceId } from './plans';
 
 describe('getGeoTier — World Bank income classification', () => {
   it('US (high income) → Tier 1', () => {
@@ -28,6 +28,14 @@ describe('getGeoTier — World Bank income classification', () => {
     expect(getGeoTier('TW')).toBe(1);
   });
 
+  it('VE (override, WB-unclassified) → Tier 2', () => {
+    expect(getGeoTier('VE')).toBe(2);
+  });
+
+  it('ET (override, WB-unclassified) → Tier 3', () => {
+    expect(getGeoTier('ET')).toBe(3);
+  });
+
   it('lowercase input is normalised', () => {
     expect(getGeoTier('de')).toBe(1);
     expect(getGeoTier('in')).toBe(3);
@@ -38,26 +46,60 @@ describe('getGeoTier — World Bank income classification', () => {
     expect(getGeoTier('ZZ')).toBe(1);
   });
 
-  it('WB-unclassified (INX: ET, VE) falls through to Tier 1', () => {
-    expect(getGeoTier('ET')).toBe(1);
-    expect(getGeoTier('VE')).toBe(1);
+});
+
+describe('authoritativeTier — anti-VPN enforcement (card country wins)', () => {
+  // Mock matrix: country of the *card* drives the tier (B3).
+  it.each([
+    ['US', 1],
+    ['BR', 2],
+    ['IN', 3],
+    ['TW', 1],
+    ['VE', 2],
+    ['ET', 3],
+  ] as const)('card %s → Tier %i (regardless of IP)', (country, tier) => {
+    // IP claims Tier 1 (e.g. US) in every case; card must override it.
+    expect(authoritativeTier(country, 1)).toBe(tier);
+  });
+
+  it('VPN US-IP (T1) + IN card → IN tier T3 (card wins, even cheaper)', () => {
+    expect(authoritativeTier('IN', 1)).toBe(3);
+  });
+
+  it('cheap IP (T3) + US card → US tier T1 (card wins, defeats VPN)', () => {
+    expect(authoritativeTier('US', 3)).toBe(1);
+  });
+
+  it('unknown card → falls back to the IP tier (unknown IP → T1)', () => {
+    expect(authoritativeTier(null, 2)).toBe(2);
+    expect(authoritativeTier(null, 1)).toBe(1);
   });
 });
 
-describe('pricierTier — anti-VPN reconciliation', () => {
-  it('VPN US-IP (T1) with IN card (T3) — card wins → T3', () => {
-    const ipTier: GeoTier = 1;
-    const cardTier = getGeoTier('IN'); // 3
-    // checkout enforcement takes the pricier (lower number) of the two
-    expect(pricierTier(ipTier, cardTier)).toBe(1);
-  });
+describe('B4 entitlement chain — card country → tier → price-id → plan', () => {
+  // The webhook reconciles to the card tier, then maps the resulting price-id
+  // back to a plan. Prove the whole chain grants the correct plan for every tier.
+  it('each tier price-id maps back to its plan', () => {
+    process.env.STRIPE_PRICE_BUILD_TIER1 = 'price_build_t1';
+    process.env.STRIPE_PRICE_BUILD_TIER2 = 'price_build_t2';
+    process.env.STRIPE_PRICE_BUILD_TIER3 = 'price_build_t3';
+    process.env.STRIPE_PRICE_PRO_TIER1 = 'price_pro_t1';
+    process.env.STRIPE_PRICE_PRO_TIER2 = 'price_pro_t2';
+    process.env.STRIPE_PRICE_PRO_TIER3 = 'price_pro_t3';
+    process.env.STRIPE_PRICE_POWER_TIER1 = 'price_power_t1';
+    process.env.STRIPE_PRICE_POWER_TIER2 = 'price_power_t2';
+    process.env.STRIPE_PRICE_POWER_TIER3 = 'price_power_t3';
 
-  it('cheap-IP (T3) with expensive card (T1) — card wins → T1', () => {
-    expect(pricierTier(3, 1)).toBe(1);
-  });
+    // VPN-US-IP + IN card, plan=pro: authoritative tier = T3, price = pro_t3,
+    // which must still grant the 'pro' plan.
+    const tier = authoritativeTier('IN', 1);
+    const priceId = getPriceForTier('pro', tier);
+    expect(priceId).toBe('price_pro_t3');
+    expect(getPlanFromPriceId(priceId!)).toBe('pro');
 
-  it('equal tiers → same tier', () => {
-    expect(pricierTier(2, 2)).toBe(2);
+    // Spot-check the other plans at their pricier (card) tiers.
+    expect(getPlanFromPriceId(getPriceForTier('build', authoritativeTier('US', 3))!)).toBe('build');
+    expect(getPlanFromPriceId(getPriceForTier('power', authoritativeTier('BR', 1))!)).toBe('power');
   });
 });
 

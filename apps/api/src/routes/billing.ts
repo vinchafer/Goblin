@@ -10,7 +10,8 @@ import {
   handleSubscriptionDeleted
 } from '../services/billing-service';
 import { getSupabaseAdmin } from '../lib/supabase';
-import { getGeoTier, PLAN_PRICES, TIER_LABELS, type GeoTier } from '../config/geo-pricing';
+import { getGeoTier, getPriceForTier, authoritativeTier, PLAN_PRICES, TIER_LABELS, type GeoTier } from '../config/geo-pricing';
+import { getPlanFromPriceId } from '../config/plans';
 
 type Variables = { userId: string }
 const billing = new Hono<{ Variables: Variables }>();
@@ -270,25 +271,40 @@ billing.post('/webhook', async (c) => {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
-        // Anti-VPN reconciliation: if the billing/card country lands in a pricier
-        // tier than the tier the session was priced at (geo_tier metadata), flag it.
-        // The subscription is already created at the displayed price; repricing is a
-        // follow-up. For now we surface the mismatch so abuse is visible.
-        // TODO: auto-reprice the subscription to the card-country tier on mismatch.
-        try {
-          const cardCountry = session.customer_details?.address?.country ?? null;
-          const chargedTier = Number(session.metadata?.geo_tier ?? '1') as GeoTier;
-          if (cardCountry) {
-            const cardTier = getGeoTier(cardCountry);
-            if (cardTier < chargedTier) {
+        if (session.subscription) {
+          const stripe = getStripe();
+          const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
+
+          // Anti-VPN ENFORCEMENT (founder 2026-06-23: card country is authoritative).
+          // The card country is only fully known here (Stripe collects it during the
+          // hosted checkout). Reprice the just-created subscription to the card-country
+          // tier so the billed amount matches the payment method's country, not the
+          // VPN-spoofable IP the session was priced at.
+          try {
+            const cardCountry = session.customer_details?.address?.country ?? null;
+            const ipTier = Number(session.metadata?.ip_tier ?? session.metadata?.geo_tier ?? '1') as GeoTier;
+            const cardTier = authoritativeTier(cardCountry, ipTier);
+            const item = subscription.items.data[0];
+            const currentPriceId = item?.price.id ?? '';
+            const plan = getPlanFromPriceId(currentPriceId) || session.metadata?.plan || 'build';
+            const correctPriceId = getPriceForTier(plan, cardTier);
+            if (item && correctPriceId && correctPriceId !== currentPriceId) {
+              await stripe.subscriptions.update(subscription.id, {
+                items: [{ id: item.id, price: correctPriceId }],
+                proration_behavior: 'always_invoice',
+              });
               console.warn(
-                `[billing] geo-tier mismatch: charged T${chargedTier} but card country ${cardCountry} is T${cardTier} (possible VPN under-charge) — session ${session.id}`
+                `[billing] geo reconcile: repriced sub ${subscription.id} ${currentPriceId}→${correctPriceId} ` +
+                `(card ${cardCountry ?? 'unknown'} T${cardTier}, ip T${ipTier})`
               );
             }
+          } catch (e) {
+            // Never block entitlement on the reconciliation step — log and continue.
+            console.error(`[billing] geo reconcile failed for session ${session.id}:`, e);
           }
-        } catch { /* never block subscription creation on the reconciliation check */ }
-        if (session.subscription) {
-          const subscription = await getStripe().subscriptions.retrieve(session.subscription as string);
+
+          // plan name is tier-invariant, so the entitlement is correct whether or not
+          // the reprice above ran.
           await handleSubscriptionCreated(subscription);
         }
         break;

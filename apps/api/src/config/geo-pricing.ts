@@ -25,8 +25,9 @@ export type GeoTier = 1 | 2 | 3;
  *   Low income (LIC)          → Tier 3
  *
  * Keys are ISO-3166 alpha-2 (uppercase). WB-unclassified economies (INX,
- * currently ET + VE) are intentionally OMITTED — they fall through to the
- * default Tier 1 (never accidentally under-charge). Refresh annually.
+ * currently ET + VE) are not in this table — they are assigned explicit
+ * founder-confirmed overrides below (VE→T2, ET→T3) that restore what the
+ * income rule would otherwise assign. Refresh annually.
  */
 const WB_INCOME_TIER: Record<string, GeoTier> = {
   AD: 1, AE: 1, AF: 3, AG: 1, AL: 2, AM: 2, AO: 3, AR: 2, AS: 1, AT: 1, AU: 1, AW: 1, AZ: 2,
@@ -49,11 +50,16 @@ const WB_INCOME_TIER: Record<string, GeoTier> = {
 };
 
 /**
- * Manual overrides (founder-confirmed). TW is excluded from the WB list for
- * political reasons but is a high-income economy → Tier 1.
+ * Manual overrides (founder-confirmed).
+ *   TW — excluded from the WB list for political reasons, high-income → Tier 1.
+ *   VE — WB-unclassified (INX); was upper-middle pre-2021 → Tier 2.
+ *   ET — WB-unclassified (INX); is a low-income economy → Tier 3.
+ * Without VE/ET here they would fall to the unknown→Tier 1 default.
  */
 const TIER_OVERRIDES: Record<string, GeoTier> = {
   TW: 1,
+  VE: 2,
+  ET: 3,
 };
 
 export function getGeoTier(countryCode: string | null): GeoTier {
@@ -63,14 +69,22 @@ export function getGeoTier(countryCode: string | null): GeoTier {
 }
 
 /**
- * Anti-VPN enforcement helper. Returns the PRICIER of two tiers (lower tier
- * number = more expensive). Used at checkout to reconcile the IP-derived tier
- * with the billing/card-country tier: if the card country is in a pricier
- * tier than the displayed (IP) tier, the pricier tier wins so a VPN to a
- * cheap region cannot under-charge.
+ * Anti-VPN enforcement (founder decision 2026-06-23: CARD COUNTRY WINS).
+ * The payment-method's country is authoritative — it is the real economic
+ * signal and far harder to spoof than an IP. The IP-derived (displayed) tier
+ * is only a fallback for when no card country is known yet.
+ *
+ *   card country known   → tier of the card country (cheaper OR pricier).
+ *   card country unknown → the IP-derived tier (itself Tier 1 if IP unknown).
+ *
+ * This defeats the VPN-to-cheap-region vector: a user on a cheap-country IP
+ * paying with an expensive-country card is charged the expensive-country tier,
+ * while a genuine cheap-country cardholder behind an expensive IP still gets
+ * their real (cheaper) regional price.
  */
-export function pricierTier(a: GeoTier, b: GeoTier): GeoTier {
-  return Math.min(a, b) as GeoTier;
+export function authoritativeTier(cardCountry: string | null, ipTier: GeoTier): GeoTier {
+  if (cardCountry) return getGeoTier(cardCountry);
+  return ipTier;
 }
 
 export function getPriceForTier(plan: string, tier: GeoTier): string | undefined {
