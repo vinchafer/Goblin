@@ -122,7 +122,7 @@ export default function UpgradePage() {
         <header style={{ textAlign: 'center', marginBottom: 40 }}>
           <div className="gobl-eyebrow" style={{ justifyContent: 'center', marginBottom: 18 }}>
             <span className="tick" />
-            <span className="num">DEIN PLAN · {(currentPlan ?? 'BUILD').toUpperCase()}</span>
+            <span className="num">DEIN PLAN · {(currentPlan ?? '—').toUpperCase()}</span>
           </div>
           <h1 style={{
             fontFamily: 'var(--font-dash-display), Manrope, sans-serif',

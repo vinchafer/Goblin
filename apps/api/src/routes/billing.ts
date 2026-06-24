@@ -132,8 +132,17 @@ billing.get('/geo-pricing', async (c) => {
 
 billing.post('/create-portal-session', authMiddleware, async (c) => {
   const userId = c.get('userId');
-  const portalUrl = await createPortalSession(userId);
-  return c.json({ portalUrl });
+  try {
+    const portalUrl = await createPortalSession(userId);
+    return c.json({ portalUrl });
+  } catch (e) {
+    // Common cause in a freshly-live account: the Stripe Customer Portal has not
+    // been configured/published in the Dashboard (Billing → Customer portal) for
+    // this mode, so billingPortal.sessions.create throws. Surface it instead of a
+    // silently-dead "Abo verwalten" button.
+    const message = e instanceof Error ? e.message : 'Portal unavailable';
+    return c.json({ error: message }, 500);
+  }
 });
 
 // GET /api/billing/status — unified billing state for the BillingPage
@@ -141,13 +150,18 @@ billing.get('/status', authMiddleware, async (c) => {
   const userId = c.get('userId');
   const supabase = getSupabaseAdmin();
 
-  const { data: user } = await supabase
+  // Source of truth for the current plan is `users.plan` (written by
+  // handleSubscriptionCreated on every subscription create/update). There is no
+  // `subscription_status` or `trial_ends_at` column (neither exists in any
+  // migration) — selecting them made `.single()` error and /status 404 for every
+  // user, which is why a completed subscription never reflected in the UI.
+  const { data: user, error } = await supabase
     .from('users')
-    .select('plan, subscription_status, subscription_current_period_end, trial_ends_at, cloud_trial_ends_at, is_comped, comp_reason, stripe_customer_id')
+    .select('plan, subscription_current_period_end, cloud_trial_ends_at, is_comped, comp_reason, stripe_customer_id')
     .eq('id', userId)
     .single();
 
-  if (!user) return c.json({ error: 'User not found' }, 404);
+  if (error || !user) return c.json({ error: 'User not found' }, 404);
 
   // Card info (best-effort, don't fail status if Stripe is down)
   let cardLast4: string | null = null;
@@ -168,8 +182,8 @@ billing.get('/status', authMiddleware, async (c) => {
 
   return c.json({
     plan: user.plan,
-    status: user.subscription_status ?? null,
-    trialEndsAt: user.cloud_trial_ends_at ?? user.trial_ends_at ?? null,
+    status: null,
+    trialEndsAt: user.cloud_trial_ends_at ?? null,
     currentPeriodEnd: user.subscription_current_period_end ?? null,
     cardLast4,
     cardBrand,
