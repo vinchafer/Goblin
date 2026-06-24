@@ -87,6 +87,34 @@ export function authoritativeTier(cardCountry: string | null, ipTier: GeoTier): 
   return ipTier;
 }
 
+/**
+ * Fail-safe charge-tier resolver (Elements rebuild 2026-06-23).
+ * The single source of truth for which tier a checkout is CHARGED at, with the
+ * founder-mandated ordering:
+ *
+ *   1. card issuing country (BIN, `paymentMethod.card.country`) — authoritative.
+ *   2. only if the card country is unreadable → the IP-derived tier.
+ *   3. last resort (no card, no IP) → Tier 1 (standard, never cheaper).
+ *
+ * A cheaper-than-displayed tier is therefore only ever reached on POSITIVE
+ * card-issuing-country confirmation (case 1). Any uncertainty resolves UP toward
+ * Tier 1 — there is no path that grants a discount without a confirmed card
+ * country. `getGeoTier(null)` already returns Tier 1, so an unknown IP collapses
+ * case 2 into case 3 automatically.
+ */
+export function resolveChargeTier(
+  cardCountry: string | null,
+  ipCountry: string | null,
+): GeoTier {
+  if (cardCountry) return getGeoTier(cardCountry); // case 1 — authoritative
+  return getGeoTier(ipCountry);                    // case 2 → (null) collapses to case 3 = T1
+}
+
+/** Display/charged dollar amount for a plan at a tier (single source of truth). */
+export function tierAmount(plan: PlanName, tier: GeoTier): number {
+  return PLAN_PRICES[plan][tier];
+}
+
 export function getPriceForTier(plan: string, tier: GeoTier): string | undefined {
   const prices: Record<string, Record<GeoTier, string | undefined>> = {
     build: {

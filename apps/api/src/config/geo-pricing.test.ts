@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import {
   getGeoTier,
   authoritativeTier,
+  resolveChargeTier,
+  tierAmount,
   getPriceForTier,
   PLAN_PRICES,
 } from './geo-pricing';
@@ -73,6 +75,42 @@ describe('authoritativeTier — anti-VPN enforcement (card country wins)', () =>
   it('unknown card → falls back to the IP tier (unknown IP → T1)', () => {
     expect(authoritativeTier(null, 2)).toBe(2);
     expect(authoritativeTier(null, 1)).toBe(1);
+  });
+});
+
+describe('resolveChargeTier — fail-safe ordering (card → IP → T1)', () => {
+  it('card country present → card tier (authoritative, may be cheaper)', () => {
+    expect(resolveChargeTier('IN', 'US')).toBe(3); // IN card on US IP → IN tier (positive confirmation)
+    expect(resolveChargeTier('US', 'IN')).toBe(1); // US card on IN IP → US tier (defeats VPN)
+    expect(resolveChargeTier('CH', 'IN')).toBe(1); // CH card → T1
+  });
+
+  it('card country unreadable → IP tier', () => {
+    expect(resolveChargeTier(null, 'IN')).toBe(3);
+    expect(resolveChargeTier(null, 'BR')).toBe(2);
+    expect(resolveChargeTier(null, 'US')).toBe(1);
+  });
+
+  it('both card AND IP unresolvable → Tier 1 (last resort, never cheaper)', () => {
+    expect(resolveChargeTier(null, null)).toBe(1);
+    expect(resolveChargeTier(null, 'ZZ')).toBe(1);
+  });
+
+  it('uncertainty never grants a discount without a confirmed card', () => {
+    // No card + unknown IP must NOT land on a cheap tier — always T1.
+    expect(resolveChargeTier(null, null)).toBe(1);
+    // A cheaper tier (T3) is only ever reached via a positively-read card country.
+    expect(resolveChargeTier('IN', null)).toBe(3);
+  });
+});
+
+describe('tierAmount — charged dollars match the display matrix', () => {
+  it('returns PLAN_PRICES dollars per plan × tier', () => {
+    expect(tierAmount('build', 1)).toBe(11);
+    expect(tierAmount('build', 3)).toBe(4);
+    expect(tierAmount('pro', 2)).toBe(12);
+    expect(tierAmount('power', 1)).toBe(39);
+    expect(tierAmount('power', 3)).toBe(14);
   });
 });
 

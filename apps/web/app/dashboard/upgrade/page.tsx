@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { getAuthHeaders, API_URL } from '@/lib/api';
 import { buildsPerMonth, PLAN_BUILDS } from '@/lib/plan-builds';
+import { CheckoutPanel } from '@/components/billing/CheckoutPanel';
 
 type PlanId = 'build' | 'pro' | 'power';
 
@@ -77,11 +78,12 @@ const PLANS: PlanCardData[] = [
 export default function UpgradePage() {
   const search = useSearchParams();
   const reason = search?.get('reason'); // ?reason=limit-hit emphasises requests
-  const [loadingPlan, setLoadingPlan] = useState<PlanId | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [currentPlan, setCurrentPlan] = useState<string | null>(null);
-  const [confirmPlan, setConfirmPlan] = useState<PlanId | null>(null);
+  const [checkoutPlan, setCheckoutPlan] = useState<PlanId | null>(null);
   const [matrixOpen, setMatrixOpen] = useState(false);
+  // IP-based DISPLAY prices (geo-pricing). Display stays IP-based; the actual
+  // charge is resolved from the card BIN inside the Elements panel.
+  const [geoPrices, setGeoPrices] = useState<Record<PlanId, number> | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -94,33 +96,18 @@ export default function UpgradePage() {
         }
       } catch { /* ignore — page still works without current-plan info */ }
     })();
+    (async () => {
+      try {
+        const r = await fetch(`${API_URL}/api/billing/geo-pricing`);
+        if (r.ok) {
+          const d = await r.json();
+          if (d?.prices) setGeoPrices(d.prices as Record<PlanId, number>);
+        }
+      } catch { /* fall back to static Tier-1 prices */ }
+    })();
   }, []);
 
-  // Stripe Checkout. Per decision: NEVER charge directly — the button on
-  // each card opens the confirmation modal; Checkout starts only after
-  // explicit confirmation.
-  const startCheckout = async (targetPlan: PlanId) => {
-    setLoadingPlan(targetPlan);
-    setError(null);
-    try {
-      const headers = await getAuthHeaders();
-      const res = await fetch(`${API_URL}/api/billing/create-checkout-session`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({
-          targetPlan,
-          successUrl: `${window.location.origin}/dashboard/settings/billing/success`,
-          cancelUrl: `${window.location.origin}/dashboard/upgrade`,
-        }),
-      });
-      if (!res.ok) throw new Error('Checkout konnte nicht gestartet werden.');
-      const data = await res.json() as { url: string };
-      window.location.href = data.url;
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Etwas ist schiefgelaufen.');
-      setLoadingPlan(null);
-    }
-  };
+  const priceFor = (p: PlanCardData): number => geoPrices?.[p.id] ?? p.price;
 
   // If the user got here because of a limit hit, emphasise the allowance in the
   // headline. Otherwise neutral.
@@ -160,7 +147,6 @@ export default function UpgradePage() {
         }}>
           {PLANS.map(p => {
             const isCurrent = currentPlan === p.id;
-            const isLoading = loadingPlan === p.id;
             const featured = !!p.featured;
             return (
               <div
@@ -212,7 +198,7 @@ export default function UpgradePage() {
                     fontWeight: 600, fontSize: 48, letterSpacing: '-0.036em',
                     color: featured ? 'var(--bone)' : 'var(--ink-1)', lineHeight: 1,
                   }}>
-                    ${p.price}
+                    ${priceFor(p)}
                   </span>
                   <span style={{
                     fontFamily: 'JetBrains Mono, monospace', fontSize: 11,
@@ -261,12 +247,12 @@ export default function UpgradePage() {
                   ) : (
                     <button
                       type="button"
-                      onClick={() => setConfirmPlan(p.id)}
-                      disabled={!!loadingPlan}
+                      onClick={() => setCheckoutPlan(p.id)}
+                      disabled={!!checkoutPlan}
                       className={featured ? 'gobl-btn gold' : 'gobl-btn primary'}
                       style={{ width: '100%', justifyContent: 'center', padding: '12px 0' }}
                     >
-                      {isLoading ? 'Lade …' : `${p.name} wählen →`}
+                      {`${p.name} wählen →`}
                     </button>
                   )}
                 </div>
@@ -274,16 +260,6 @@ export default function UpgradePage() {
             );
           })}
         </div>
-
-        {error && (
-          <div style={{
-            background: 'var(--danger-soft)', border: '1px solid rgba(160,66,48,.30)',
-            borderRadius: 'var(--radius)', padding: 14, color: 'var(--danger)',
-            marginBottom: 24, fontSize: 13.5, textAlign: 'center',
-          }}>
-            {error}
-          </div>
-        )}
 
         {/* Comparison matrix — collapsed by default, expandable. */}
         <div style={{ textAlign: 'center', marginBottom: 12 }}>
@@ -352,50 +328,20 @@ export default function UpgradePage() {
         </div>
       </div>
 
-      {/* Confirmation modal — purchase requires explicit consent (decision). */}
-      {confirmPlan && (
-        <div role="dialog" aria-modal="true" style={{
-          position: 'fixed', inset: 0, background: 'rgba(15,43,30,0.55)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
-        }} onClick={() => setConfirmPlan(null)}>
-          <div onClick={e => e.stopPropagation()} style={{
-            background: 'var(--d-surface-elev)', borderRadius: 'var(--radius-lg)',
-            padding: 28, width: 440, maxWidth: '92vw', border: '1px solid var(--line)',
-          }}>
-            {(() => {
-              const plan = PLANS.find(x => x.id === confirmPlan)!;
-              return (
-                <>
-                  <h2 style={{
-                    fontFamily: 'var(--font-dash-display), Manrope, sans-serif',
-                    fontWeight: 600, fontSize: 20, color: 'var(--ink-1)', margin: '0 0 8px',
-                  }}>
-                    Plan wechseln zu {plan.name}
-                  </h2>
-                  <p style={{ fontSize: 'var(--t-small-fs)', color: 'var(--ink-2)', margin: '0 0 16px', lineHeight: 1.5 }}>
-                    Du wirst zu Stripe weitergeleitet, um die Zahlung zu bestätigen.
-                    ${plan.price}/Monat. {buildsPerMonth(plan.id, 'de')}.
-                    Jederzeit kündbar.
-                  </p>
-                  <div style={{ display: 'flex', gap: 10 }}>
-                    <button type="button" className="gobl-btn secondary" style={{ flex: 1 }} onClick={() => setConfirmPlan(null)}>
-                      Abbrechen
-                    </button>
-                    <button
-                      type="button"
-                      className="gobl-btn primary"
-                      style={{ flex: 1 }}
-                      onClick={() => { const id = confirmPlan; setConfirmPlan(null); if (id) startCheckout(id); }}
-                    >
-                      Zu Stripe →
-                    </button>
-                  </div>
-                </>
-              );
-            })()}
-          </div>
-        </div>
-      )}
+      {/* Elements / SetupIntent checkout — card collected here, the BIN-resolved
+          price shown on the pay button before any charge (no hosted redirect). */}
+      {checkoutPlan && (() => {
+        const plan = PLANS.find(x => x.id === checkoutPlan)!;
+        return (
+          <CheckoutPanel
+            plan={plan.id}
+            planName={plan.name}
+            displayPrice={priceFor(plan)}
+            onClose={() => setCheckoutPlan(null)}
+            onSuccess={() => { window.location.href = '/dashboard/settings/billing/success'; }}
+          />
+        );
+      })()}
     </div>
   );
 }

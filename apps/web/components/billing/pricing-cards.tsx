@@ -57,27 +57,17 @@ interface PricingCardsProps {
 export function PricingCards({ currentPlan, showUpgrade = true }: PricingCardsProps) {
   const supabase = createClient();
 
+  // Checkout now runs through the Elements/SetupIntent flow on the upgrade page
+  // (card BIN → authoritative price). Route there instead of the retired hosted
+  // checkout. (This component is currently unreferenced; kept import-safe.)
   const handleUpgrade = async (planId: string) => {
     if (!showUpgrade) {
       window.location.href = `/login?plan=${planId}`;
       return;
     }
     const { data } = await supabase.auth.getSession();
-    const token = data.session?.access_token;
-    if (!token) return;
-    const apiBase = process.env.NEXT_PUBLIC_API_URL || "";
-    const response = await fetch(`${apiBase}/api/billing/create-checkout-session`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`
-      },
-      body: JSON.stringify({ plan: planId })
-    });
-    if (response.ok) {
-      const result = await response.json();
-      window.location.href = result.url;
-    }
+    if (!data.session?.access_token) return;
+    window.location.href = `/dashboard/upgrade?plan=${planId}`;
   };
 
   return (

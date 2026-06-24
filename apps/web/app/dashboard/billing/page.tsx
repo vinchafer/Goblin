@@ -3,6 +3,9 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { PLAN_BUILDS } from '@/lib/plan-builds';
+import { CheckoutPanel } from '@/components/billing/CheckoutPanel';
+
+type PlanId = 'build' | 'pro' | 'power';
 
 // HR-6: the per-plan figure is the Builds proxy (apps/web/lib/plan-builds.ts), not
 // the retired request count.
@@ -59,7 +62,8 @@ export default function BillingDashboardPage() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
   const [loading, setLoading] = useState(true);
   const [portalLoading, setPortalLoading] = useState(false);
-  const [upgradeLoading, setUpgradeLoading] = useState<string | null>(null);
+  const [checkoutPlan, setCheckoutPlan] = useState<PlanId | null>(null);
+  const [geoPrices, setGeoPrices] = useState<Record<PlanId, number> | null>(null);
 
   const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -86,6 +90,14 @@ export default function BillingDashboardPage() {
         const d = await pmRes.json();
         setPaymentMethod(d.payment_method);
       }
+      // IP-based display prices (the charge is BIN-resolved in the panel).
+      try {
+        const gp = await fetch(`${apiBase}/api/billing/geo-pricing`);
+        if (gp.ok) {
+          const d = await gp.json();
+          if (d?.prices) setGeoPrices(d.prices as Record<PlanId, number>);
+        }
+      } catch { /* fall back to static prices */ }
       setLoading(false);
     };
     init();
@@ -106,21 +118,8 @@ export default function BillingDashboardPage() {
     }
   };
 
-  const handleUpgrade = async (plan: string) => {
-    if (!token) return;
-    setUpgradeLoading(plan);
-    try {
-      const res = await fetch(`${apiBase}/api/billing/create-checkout-session`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ targetPlan: plan }),
-      });
-      const d = await res.json();
-      if (d.checkoutUrl) window.location.href = d.checkoutUrl;
-    } finally {
-      setUpgradeLoading(null);
-    }
-  };
+  const priceFor = (id: string): number =>
+    geoPrices?.[id as PlanId] ?? PLAN_INFO[id]?.price ?? 0;
 
   if (loading) {
     return (
@@ -156,7 +155,7 @@ export default function BillingDashboardPage() {
                 background: planInfo.color, color: '#fff', padding: '2px 8px', borderRadius: 4,
               }}>{planInfo.label}</span>
               <span style={{ fontSize: 13, color: 'var(--meta)', fontFamily: 'var(--font-sans)' }}>
-                ${planInfo.price}/month
+                ${priceFor(plan)}/month
               </span>
             </div>
             <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: 18, color: 'var(--brand-green)', fontWeight: 700, letterSpacing: '-0.3px' }}>
@@ -185,16 +184,16 @@ export default function BillingDashboardPage() {
             {UPGRADE_PLANS.map(([key, info]) => (
               <button
                 key={key}
-                onClick={() => handleUpgrade(key)}
-                disabled={!!upgradeLoading}
+                onClick={() => setCheckoutPlan(key as PlanId)}
+                disabled={!!checkoutPlan}
                 style={{
                   background: 'var(--brand-gold)', color: '#fff', border: 'none',
                   borderRadius: 8, padding: '9px 18px', fontSize: 13, fontWeight: 600,
-                  cursor: upgradeLoading ? 'not-allowed' : 'pointer',
-                  fontFamily: 'var(--font-sans)', opacity: upgradeLoading === key ? 0.6 : 1,
+                  cursor: checkoutPlan ? 'not-allowed' : 'pointer',
+                  fontFamily: 'var(--font-sans)', opacity: checkoutPlan === key ? 0.6 : 1,
                 }}
               >
-                {upgradeLoading === key ? 'Loading…' : `Upgrade to ${info.label}`}
+                {`Upgrade to ${info.label}`}
               </button>
             ))}
           </div>
@@ -311,6 +310,16 @@ export default function BillingDashboardPage() {
           </div>
         )}
       </div>
+
+      {checkoutPlan && (
+        <CheckoutPanel
+          plan={checkoutPlan}
+          planName={PLAN_INFO[checkoutPlan]?.label ?? capitalize(checkoutPlan)}
+          displayPrice={priceFor(checkoutPlan)}
+          onClose={() => setCheckoutPlan(null)}
+          onSuccess={() => { window.location.href = '/dashboard/settings/billing/success'; }}
+        />
+      )}
     </div>
   );
 }
