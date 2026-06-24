@@ -44,6 +44,9 @@ export async function createCheckoutSession(
     customer_email: !user.stripe_customer_id ? user.email : undefined,
     mode: 'subscription',
     line_items: [{ price: priceId, quantity: 1 }],
+    // Anti-VPN: collect billing address so the card/billing country tier can be
+    // reconciled against the IP-derived tier on checkout.session.completed.
+    billing_address_collection: 'required',
     success_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing?success=true`,
     cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing?canceled=true`,
     metadata: { userId, plan: targetPlan, geo_tier: String(tier) },

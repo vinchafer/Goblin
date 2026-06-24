@@ -10,7 +10,7 @@ import {
   handleSubscriptionDeleted
 } from '../services/billing-service';
 import { getSupabaseAdmin } from '../lib/supabase';
-import { getGeoTier, PLAN_PRICES, TIER_LABELS } from '../config/geo-pricing';
+import { getGeoTier, PLAN_PRICES, TIER_LABELS, type GeoTier } from '../config/geo-pricing';
 
 type Variables = { userId: string }
 const billing = new Hono<{ Variables: Variables }>();
@@ -270,6 +270,23 @@ billing.post('/webhook', async (c) => {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session;
+        // Anti-VPN reconciliation: if the billing/card country lands in a pricier
+        // tier than the tier the session was priced at (geo_tier metadata), flag it.
+        // The subscription is already created at the displayed price; repricing is a
+        // follow-up. For now we surface the mismatch so abuse is visible.
+        // TODO: auto-reprice the subscription to the card-country tier on mismatch.
+        try {
+          const cardCountry = session.customer_details?.address?.country ?? null;
+          const chargedTier = Number(session.metadata?.geo_tier ?? '1') as GeoTier;
+          if (cardCountry) {
+            const cardTier = getGeoTier(cardCountry);
+            if (cardTier < chargedTier) {
+              console.warn(
+                `[billing] geo-tier mismatch: charged T${chargedTier} but card country ${cardCountry} is T${cardTier} (possible VPN under-charge) — session ${session.id}`
+              );
+            }
+          }
+        } catch { /* never block subscription creation on the reconciliation check */ }
         if (session.subscription) {
           const subscription = await getStripe().subscriptions.retrieve(session.subscription as string);
           await handleSubscriptionCreated(subscription);
