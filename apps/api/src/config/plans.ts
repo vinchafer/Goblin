@@ -27,7 +27,7 @@ function buildPlans(): Record<string, Plan> {
 
   return {
     build: {
-      price: 9,
+      price: 11,
       stripePriceId: build,
       stripePriceIdTier2: process.env.STRIPE_PRICE_BUILD_TIER2,
       stripePriceIdTier3: process.env.STRIPE_PRICE_BUILD_TIER3,

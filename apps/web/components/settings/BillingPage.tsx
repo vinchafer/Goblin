@@ -48,7 +48,7 @@ export function BillingPage() {
 
   const PLAN_PRICE: Record<string, string> = {
     trial: t(lang, 'kostenlos', 'free'),
-    build: t(lang, '$9/Monat', '$9/mo'),
+    build: t(lang, '$11/Monat', '$11/mo'),
     pro: t(lang, '$19/Monat', '$19/mo'),
     power: t(lang, '$39/Monat', '$39/mo'),
   };

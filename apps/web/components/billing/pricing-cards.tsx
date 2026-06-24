@@ -9,7 +9,7 @@ import { buildsPerMonth } from "@/lib/plan-builds";
 const PLANS = {
   build: {
     name: "Build",
-    price: 9,
+    price: 11,
     features: [
       buildsPerMonth('build', 'en'),
       "Unlimited projects",

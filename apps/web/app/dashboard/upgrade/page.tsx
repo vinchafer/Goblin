@@ -27,7 +27,7 @@ const PLANS: PlanCardData[] = [
   {
     id: 'build',
     name: 'Build',
-    price: 9,
+    price: 11,
     monthlyBuilds: PLAN_BUILDS.build,
     meta: 'FÜR DEN START',
     pitch: 'Lern Goblin kennen. Großzügiges Kontingent für deine Builds, BYOK auf allen Providern — ohne Goblin-Limit.',

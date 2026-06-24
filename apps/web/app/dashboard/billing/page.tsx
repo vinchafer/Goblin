@@ -7,7 +7,7 @@ import { PLAN_BUILDS } from '@/lib/plan-builds';
 // HR-6: the per-plan figure is the Builds proxy (apps/web/lib/plan-builds.ts), not
 // the retired request count.
 const PLAN_INFO: Record<string, { label: string; price: number; builds: number; color: string }> = {
-  build: { label: 'Build', price: 9,  builds: PLAN_BUILDS.build, color: '#8B6914' },
+  build: { label: 'Build', price: 11, builds: PLAN_BUILDS.build, color: '#8B6914' },
   pro:   { label: 'Pro',   price: 19, builds: PLAN_BUILDS.pro,   color: 'var(--brand-green)' },
   power: { label: 'Power', price: 39, builds: PLAN_BUILDS.power, color: '#1a2d5a' },
 };

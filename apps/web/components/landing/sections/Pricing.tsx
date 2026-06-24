@@ -16,7 +16,7 @@ const PLANS: Plan[] = [
   {
     label: 'Build',
     tagline: 'Start free, ship fast.',
-    price: '$9',
+    price: '$11',
     suffix: '/ month',
     features: [
       buildsPerMonth('build', 'en'),

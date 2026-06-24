@@ -45,7 +45,10 @@ const PLAN_FEATURES = {
   ],
 };
 
-const DEFAULT_PRICES = { build: 9, pro: 19, power: 39 };
+// Tier-1 default (single-visitor / pre-geo-fetch). Full geo matrix comes from
+// GET /api/billing/geo-pricing (api PLAN_PRICES = source of truth).
+// TODO: single source of truth for display price (share api PLAN_PRICES with web).
+const DEFAULT_PRICES = { build: 11, pro: 19, power: 39 };
 
 const PLAN_META = {
   build: { label: 'Build', tagline: 'Start free, ship fast.' },

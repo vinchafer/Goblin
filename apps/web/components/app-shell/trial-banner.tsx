@@ -61,7 +61,7 @@ export function TrialBanner() {
             cursor: 'pointer', fontFamily: 'var(--font-sans)',
           }}
         >
-          Upgrade — $9/mo →
+          Upgrade — $11/mo →
         </button>
       </div>
     );
