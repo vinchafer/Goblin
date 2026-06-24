@@ -5,13 +5,15 @@ import { authMiddleware } from '../middleware/auth';
 import {
   createCheckoutSession,
   createPortalSession,
+  createSetupIntent,
+  resolveCheckoutPrice,
+  createSubscriptionAtTier,
   handleSubscriptionCreated,
   handleSubscriptionUpdated,
   handleSubscriptionDeleted
 } from '../services/billing-service';
 import { getSupabaseAdmin } from '../lib/supabase';
-import { getGeoTier, getPriceForTier, authoritativeTier, PLAN_PRICES, TIER_LABELS, type GeoTier } from '../config/geo-pricing';
-import { getPlanFromPriceId } from '../config/plans';
+import { getGeoTier, PLAN_PRICES, TIER_LABELS } from '../config/geo-pricing';
 
 type Variables = { userId: string }
 const billing = new Hono<{ Variables: Variables }>();
@@ -37,6 +39,79 @@ billing.post('/create-checkout-session', authMiddleware, async (c) => {
 
   const checkoutUrl = await createCheckoutSession(userId, result.data.targetPlan, countryCode);
   return c.json({ checkoutUrl });
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// Elements / SetupIntent flow (2026-06-23). Three steps: create a SetupIntent
+// → resolve the card-country price → create the subscription at that price.
+// ──────────────────────────────────────────────────────────────────────────
+
+// POST /api/billing/setup-intent — start card collection (no charge yet).
+billing.post('/setup-intent', authMiddleware, async (c) => {
+  const userId = c.get('userId');
+  try {
+    const { clientSecret, customerId } = await createSetupIntent(userId);
+    return c.json({ clientSecret, customerId });
+  } catch (e) {
+    return c.json({ error: e instanceof Error ? e.message : 'Setup failed' }, 500);
+  }
+});
+
+// POST /api/billing/resolve-price — read the card BIN country, return the
+// authoritative price the pay button must show. Pure read, never charges.
+billing.post('/resolve-price', authMiddleware, async (c) => {
+  const body = await c.req.json().catch(() => ({}));
+  const schema = z.object({
+    targetPlan: z.enum(['build', 'pro', 'power']),
+    paymentMethodId: z.string().min(1),
+    countryCode: z.string().length(2).optional(),
+  });
+  const result = schema.safeParse(body);
+  if (!result.success) return c.json({ error: 'Invalid request' }, 400);
+
+  const ipCountry = c.req.header('CF-IPCountry') ?? result.data.countryCode ?? null;
+  try {
+    const resolved = await resolveCheckoutPrice(
+      result.data.targetPlan,
+      result.data.paymentMethodId,
+      ipCountry,
+    );
+    return c.json(resolved);
+  } catch (e) {
+    return c.json({ error: e instanceof Error ? e.message : 'Resolve failed' }, 500);
+  }
+});
+
+// POST /api/billing/create-subscription — create the subscription at the
+// authoritative tier, but only if the client-confirmed price still matches the
+// re-resolved one (never charge more than was shown). Returns 409 + the new
+// price when a re-confirm is needed.
+billing.post('/create-subscription', authMiddleware, async (c) => {
+  const userId = c.get('userId');
+  const body = await c.req.json().catch(() => ({}));
+  const schema = z.object({
+    targetPlan: z.enum(['build', 'pro', 'power']),
+    paymentMethodId: z.string().min(1),
+    confirmedPriceId: z.string().min(1),
+    countryCode: z.string().length(2).optional(),
+  });
+  const result = schema.safeParse(body);
+  if (!result.success) return c.json({ error: 'Invalid request' }, 400);
+
+  const ipCountry = c.req.header('CF-IPCountry') ?? result.data.countryCode ?? null;
+  try {
+    const r = await createSubscriptionAtTier(
+      userId,
+      result.data.targetPlan,
+      result.data.paymentMethodId,
+      ipCountry,
+      result.data.confirmedPriceId,
+    );
+    if (!r.ok) return c.json(r, 409); // price drifted → client must re-confirm
+    return c.json(r);
+  } catch (e) {
+    return c.json({ error: e instanceof Error ? e.message : 'Subscription failed' }, 500);
+  }
 });
 
 // GET /api/billing/geo-pricing — returns tier + prices for current user's region
@@ -270,41 +345,18 @@ billing.post('/webhook', async (c) => {
 
     switch (event.type) {
       case 'checkout.session.completed': {
+        // Legacy hosted-checkout path. The Elements/SetupIntent rebuild
+        // (2026-06-23) creates subscriptions server-side already AT the
+        // authoritative card-country tier, so the old "reprice to the typed
+        // billing-address country, never block entitlement" reconcile is RETIRED
+        // — it was a cheap-keep leak (a failed reprice left the cheaper tier in
+        // place) and it keyed off a spoofable typed address, not the card BIN.
+        // We keep only the entitlement write for any subscription created via
+        // this path; the tier is whatever the session was created with.
         const session = event.data.object as Stripe.Checkout.Session;
         if (session.subscription) {
           const stripe = getStripe();
           const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
-
-          // Anti-VPN ENFORCEMENT (founder 2026-06-23: card country is authoritative).
-          // The card country is only fully known here (Stripe collects it during the
-          // hosted checkout). Reprice the just-created subscription to the card-country
-          // tier so the billed amount matches the payment method's country, not the
-          // VPN-spoofable IP the session was priced at.
-          try {
-            const cardCountry = session.customer_details?.address?.country ?? null;
-            const ipTier = Number(session.metadata?.ip_tier ?? session.metadata?.geo_tier ?? '1') as GeoTier;
-            const cardTier = authoritativeTier(cardCountry, ipTier);
-            const item = subscription.items.data[0];
-            const currentPriceId = item?.price.id ?? '';
-            const plan = getPlanFromPriceId(currentPriceId) || session.metadata?.plan || 'build';
-            const correctPriceId = getPriceForTier(plan, cardTier);
-            if (item && correctPriceId && correctPriceId !== currentPriceId) {
-              await stripe.subscriptions.update(subscription.id, {
-                items: [{ id: item.id, price: correctPriceId }],
-                proration_behavior: 'always_invoice',
-              });
-              console.warn(
-                `[billing] geo reconcile: repriced sub ${subscription.id} ${currentPriceId}→${correctPriceId} ` +
-                `(card ${cardCountry ?? 'unknown'} T${cardTier}, ip T${ipTier})`
-              );
-            }
-          } catch (e) {
-            // Never block entitlement on the reconciliation step — log and continue.
-            console.error(`[billing] geo reconcile failed for session ${session.id}:`, e);
-          }
-
-          // plan name is tier-invariant, so the entitlement is correct whether or not
-          // the reprice above ran.
           await handleSubscriptionCreated(subscription);
         }
         break;
