@@ -7,6 +7,7 @@ import { Problem } from '@/components/landing/sections/Problem';
 import { HowItWorks } from '@/components/landing/sections/HowItWorks';
 import { SendToCode } from '@/components/landing/sections/SendToCode';
 import { IslandFlow } from '@/components/landing/sections/IslandFlow';
+import { Proof } from '@/components/landing/sections/Proof';
 import { Pricing } from '@/components/landing/sections/Pricing';
 import { Faq } from '@/components/landing/sections/Faq';
 import { Outro } from '@/components/landing/sections/Outro';
@@ -68,6 +69,7 @@ export default function Home() {
           <HowItWorks />
           <SendToCode />
           <IslandFlow />
+          <Proof />
           <Pricing />
           <Faq />
           <Outro />
