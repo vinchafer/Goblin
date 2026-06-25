@@ -1127,6 +1127,17 @@
   color: var(--ink-1);
   letter-spacing: -0.015em;
 }
+.landing-root .outro-why {
+  max-width: 52ch; margin: -8px 0 0;
+  font-family: var(--lp2-font-sans), sans-serif;
+  font-size: 15.5px; line-height: 1.6; color: var(--ink-2);
+}
+.landing-root .outro-why .outro-why-link {
+  color: var(--ink-1); font-weight: 600;
+  text-decoration: underline; text-underline-offset: 3px;
+  text-decoration-color: var(--line-strong);
+}
+.landing-root .outro-why .outro-why-link:hover { text-decoration-color: var(--ink-1); }
 .landing-root .outro-foot {
   margin-top: 12px;
   font-family: var(--lp2-font-mono), monospace;
