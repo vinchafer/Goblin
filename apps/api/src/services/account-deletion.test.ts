@@ -18,7 +18,7 @@ function loadTestEnv() {
   const raw = readFileSync(envPath, 'utf8');
   for (const line of raw.split('\n')) {
     const m = line.match(/^([A-Z_]+)=(.*)$/);
-    if (m) process.env[m[1]] = m[2].trim();
+    if (m && m[1]) process.env[m[1]] = (m[2] ?? '').trim();
   }
 }
 loadTestEnv();
@@ -31,7 +31,14 @@ if (STRIPE_KEY && !HAS_TEST_KEY) {
 
 // ── In-memory fake Supabase ──────────────────────────────────────────────────
 type Row = Record<string, any>;
-const tables: Record<string, Row[]> = {
+interface Tables {
+  users: Row[];
+  account_deletions: Row[];
+  deletion_audit_log: Row[];
+  build_runs: Row[];
+  goblin_hosted_waitlist: Row[];
+}
+const tables: Tables = {
   users: [],
   account_deletions: [],
   deletion_audit_log: [],
@@ -65,7 +72,7 @@ class Query {
   maybeSingle() { this._single = true; return this._run(); }
   then(res: any, rej: any) { return this._run().then(res, rej); }
   async _run(): Promise<any> {
-    const store = tables[this.table];
+    const store = tables[this.table as keyof Tables];
     if (this.op === 'select') {
       const rows = store.filter((r) => match(r, this.filters));
       if (this._single) return { data: rows[0] ?? null, error: null };
@@ -84,7 +91,7 @@ class Query {
       return { error: null };
     }
     if (this.op === 'delete') {
-      tables[this.table] = store.filter((r) => !match(r, this.filters));
+      tables[this.table as keyof Tables] = store.filter((r) => !match(r, this.filters));
       return { error: null };
     }
     return { error: null };
