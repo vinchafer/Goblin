@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { aggregateTelemetry, type CompletionRow } from '../lib/goblin-telemetry';
+import { requestAccountDeletion, reactivateByUserId } from '../services/account-deletion';
 
 const admin = new Hono();
 
@@ -110,16 +111,29 @@ admin.patch('/users/:id', async (c) => {
   return c.json(data);
 });
 
+// Routes through the canonical deletion service: cancels the Stripe sub at
+// period end + schedules the 10-day hard-delete. NEVER a bare deleted_at update
+// (that left a "deleted" user still billing). The cron purges after the grace
+// period, blocking the irreversible purge while a live subscription remains.
 admin.delete('/users/:id', async (c) => {
-  const supabase = getSupabaseAdmin();
   const { id } = c.req.param();
+  const result = await requestAccountDeletion(id);
+  if (!result.ok && !result.alreadyPending) {
+    return c.json({ error: result.error }, (result.status ?? 500) as 404 | 409 | 500);
+  }
+  return c.json({
+    success: true,
+    alreadyPending: result.alreadyPending ?? false,
+    scheduledHardDeleteAt: result.scheduledHardDeleteAt,
+    stripeCancelConfirmed: result.stripeCancelConfirmed,
+  });
+});
 
-  const { error } = await supabase
-    .from('users')
-    .update({ deleted_at: new Date().toISOString() })
-    .eq('id', id);
-
-  if (error) return c.json({ error: error.message }, 500);
+// Admin reactivation (undo a soft-delete within the grace window).
+admin.post('/users/:id/reactivate', async (c) => {
+  const { id } = c.req.param();
+  const result = await reactivateByUserId(id);
+  if (!result.ok) return c.json({ error: result.error }, (result.status ?? 500) as 404 | 500);
   return c.json({ success: true });
 });
 
