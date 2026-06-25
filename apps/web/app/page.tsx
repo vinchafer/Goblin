@@ -7,6 +7,7 @@ import { Problem } from '@/components/landing/sections/Problem';
 import { HowItWorks } from '@/components/landing/sections/HowItWorks';
 import { SendToCode } from '@/components/landing/sections/SendToCode';
 import { IslandFlow } from '@/components/landing/sections/IslandFlow';
+import { Proof } from '@/components/landing/sections/Proof';
 import { Pricing } from '@/components/landing/sections/Pricing';
 import { Faq } from '@/components/landing/sections/Faq';
 import { Outro } from '@/components/landing/sections/Outro';
@@ -44,7 +45,7 @@ const PRE_PAINT_SCRIPT = `(function(){
 export const metadata = {
   title: 'Goblin — The cloud workshop for builders',
   description:
-    "Tell it what you want. It ships. The cloud workshop for builders who don't wait for a laptop. Bring your own AI keys. Push to GitHub. Deploy to Vercel.",
+    "The AI is built in — no keys, no setup, no token counter. Tell it what you want, it ships. The cloud workshop for builders who don't wait for a laptop.",
 };
 
 export default function Home() {
@@ -68,6 +69,7 @@ export default function Home() {
           <HowItWorks />
           <SendToCode />
           <IslandFlow />
+          <Proof />
           <Pricing />
           <Faq />
           <Outro />

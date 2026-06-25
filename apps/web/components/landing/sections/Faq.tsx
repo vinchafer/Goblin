@@ -11,7 +11,7 @@ const ITEMS = [
   },
   {
     q: 'What AI models can I use?',
-    a: 'Any model you want, via BYOK. Anthropic, OpenAI, Google, Groq, Mistral, xAI, DeepSeek, and more. Goblin-bundled models — curated, no key required — coming soon.',
+    a: 'Two Goblin models are built into every plan — Goblin Swift (fast, efficient) and Goblin Forge (for heavier work). No API key, no per-token counter. Want the absolute frontier? Bring your own Anthropic, OpenAI, Google, xAI, Mistral, or DeepSeek key — Goblin takes no margin on it.',
   },
   {
     q: 'What happens after my trial?',

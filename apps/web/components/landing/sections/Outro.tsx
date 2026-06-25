@@ -11,6 +11,12 @@ export function Outro() {
           <br />
           <span className="serif-italic">Code anything.</span>
         </p>
+        <p className="outro-why">
+          Built by one person in Switzerland, for everyone who hit the same walls:
+          subscriptions priced for San Francisco, tools built for $3,000 laptops. Goblin is
+          for the rest of the planet.{' '}
+          <a href="/manifesto" className="outro-why-link">Read the manifesto</a>
+        </p>
         <Button href="/register" variant="primary" size="large">
           Start building free <span className="arrow" aria-hidden="true">→</span>
         </Button>
