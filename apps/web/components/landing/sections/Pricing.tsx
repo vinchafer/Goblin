@@ -77,14 +77,6 @@ export function Pricing() {
           lead="3-day free trial. No credit card required. Cancel anytime."
         />
 
-        {/* ITEM 5 — regional-fairness line. EXACT WORDING PENDING FOUNDER
-            pricing-comms sign-off. Real mechanic: card-country is authoritative
-            at checkout, so this is non-gameable. */}
-        <p className="pricing-fairness">
-          Prices shown are for higher-income regions — Goblin adjusts to yours
-          automatically. <span className="serif-italic">Same deal everywhere.</span>
-        </p>
-
         <div className="pricing-grid">
           {PLANS.map((p) => (
             <article key={p.label} className={`price-card${p.recommended ? ' recommended' : ''}`}>
