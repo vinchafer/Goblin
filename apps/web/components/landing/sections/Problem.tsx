@@ -7,7 +7,7 @@ const CARDS = [
     num: 'P · 01',
     title: 'Token panic',
     body: 'Claude Pro locks you out after two hours. You count tokens instead of shipping.',
-    fix: 'BYOK — pay providers direct',
+    fix: 'Bundled, not metered',
   },
   {
     num: 'P · 02',

@@ -6,7 +6,7 @@ export function TrustedBy() {
       <div className="trusted-inner">
         <div className="trusted-label">
           <span className="rule" aria-hidden="true" />
-          Bring your own keys from
+          Power users — bring your own frontier
           <span className="rule" aria-hidden="true" />
         </div>
         <div className="trusted-row">
