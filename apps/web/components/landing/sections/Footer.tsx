@@ -65,7 +65,7 @@ export function Footer() {
         <div className="footer-devices">
           <div className="footer-devices-head">
             <span className="rule" aria-hidden="true" />
-            On every device you build on
+            Runs in your browser — on every device
             <span className="rule" aria-hidden="true" />
           </div>
           <div className="footer-devices-row">
@@ -75,6 +75,9 @@ export function Footer() {
                 <span>{d.name}</span>
               </div>
             ))}
+          </div>
+          <div className="footer-devices-note">
+            Browser today, on everything. Native desktop apps coming in 2026.
           </div>
         </div>
 
