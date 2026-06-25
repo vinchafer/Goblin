@@ -332,10 +332,14 @@ export async function handleSubscriptionUpdated(subscription: Stripe.Subscriptio
 export async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Promise<void> {
   const supabase = getSupabaseAdmin();
 
+  // A cancelled subscriber must NOT be reset to 'build' (a real paid plan) — that
+  // made them indistinguishable from a never-payer AND handed them full Build quota
+  // for free. Set the neutral 'none'; the canonical derivation (plan-truth.ts) then
+  // routes them to the paywall. Requires migration 0070 (adds 'none' to the CHECK).
   await supabase
     .from('users')
     .update({
-      plan: 'build',
+      plan: 'none',
       stripe_subscription_id: null
     })
     .eq('stripe_subscription_id', subscription.id);

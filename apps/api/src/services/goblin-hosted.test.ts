@@ -471,7 +471,9 @@ describe('streaming — weighted fair-use enforcement (HR-3)', () => {
 
   it('refuses the NEXT run once the per-plan DAILY guard is exceeded (resets tomorrow)', async () => {
     h.stub = makeSupabaseStub({
-      users: { data: { plan: 'pro', preferred_lang: 'en' } },
+      // A Pro user has an active subscription — required for the canonical
+      // derivation (plan-truth.ts) to resolve 'pro' (no sub → 'none' → trial-level).
+      users: { data: { plan: 'pro', preferred_lang: 'en', stripe_subscription_id: 'sub_test' } },
       byok_keys: { data: [] },
       // pro daily guard = 6M cost units; one Swift row today at the guard.
       completion_costs: { data: [{ model: 'goblin/efficient', tokens_in: GOBLIN_DAILY_GUARD.pro, tokens_out: 0, created_at: today() }] },

@@ -1,5 +1,6 @@
 import { createMiddleware } from 'hono/factory';
 import { getSupabaseAdmin } from '../lib/supabase';
+import { derivePlanTruth } from '../lib/plan-truth';
 
 const TRIAL_DAYS = 3;
 
@@ -82,44 +83,60 @@ export const trialGate = createMiddleware(async (c, next) => {
 
   if (!user) return next();
 
-  // Comped users pass unconditionally
-  if ((user as { is_comped?: boolean }).is_comped) return next();
+  // Canonical entitlement (comped | paid | active-trial) — derived, never the raw
+  // `plan` column. 'build'-default users no longer pass (the old PAID_PLANS check
+  // counted 'build' and let every default user bypass the gate forever).
+  const truth = derivePlanTruth(user);
+  if (truth.hasAccess) return next();
 
-  const plan = user.plan as string | null;
-  const hasActiveSub = !!user.stripe_subscription_id;
-
-  // Active subscriber OR paid plan → always pass.
-  // 'trial' is NOT a paid plan — it means the user is on their free trial period.
-  // The previous check (plan !== 'free') was wrong: it let 'trial' users bypass forever.
-  const PAID_PLANS = ['build', 'pro', 'power'];
-  if (hasActiveSub || (plan !== null && PAID_PLANS.includes(plan))) return next();
-
-  // No trial started → start one
-  if (!user.cloud_trial_started_at) {
-    const now = new Date();
-    const trialEnd = new Date(now.getTime() + TRIAL_DAYS * 86400000);
-    await supabase
-      .from('users')
-      .update({
-        cloud_trial_started_at: now.toISOString(),
-        cloud_trial_ends_at: trialEnd.toISOString(),
-      })
-      .eq('id', userId);
-    return next();
-  }
-
-  // Trial active?
-  const trialEnd = new Date(user.cloud_trial_ends_at as string);
-  if (new Date() <= trialEnd) return next();
-
-  // Trial expired
+  // No access. The user must ACTIVELY choose a trial or subscribe (no silent
+  // auto-start anymore). Distinguish never-started vs expired for the message;
+  // the web gate (dashboard-shell) redirects to /dashboard/trial-gate on 402.
+  const started = !!user.cloud_trial_started_at;
   return c.json({
-    error: 'trial_expired',
-    message: 'Your free trial has ended. Upgrade to continue using Goblin Cloud.',
+    error: started ? 'trial_expired' : 'trial_required',
+    message: started
+      ? 'Your free trial has ended. Start a subscription to continue using Goblin Cloud.'
+      : 'Choose your free trial or a subscription to start using Goblin Cloud.',
     upgradeUrl: '/dashboard/upgrade',
-    code: 'trial_expired',
+    gateUrl: '/dashboard/trial-gate',
+    code: started ? 'trial_expired' : 'trial_required',
   }, 402);
 });
+
+// Start the free trial — the ACTIVE choice from the gate screen. Idempotent: if a
+// trial was already started it is NOT reset (no farming a fresh window). Returns the
+// trial end so the caller can show the countdown immediately.
+export async function startTrial(
+  userId: string,
+): Promise<{ success: boolean; endsAt: string | null; alreadyStarted: boolean }> {
+  const supabase = getSupabaseAdmin();
+
+  const { data: user } = await supabase
+    .from('users')
+    .select('cloud_trial_started_at, cloud_trial_ends_at, is_comped, stripe_subscription_id')
+    .eq('id', userId)
+    .single();
+
+  if (!user) return { success: false, endsAt: null, alreadyStarted: false };
+
+  // Already started (or already entitled) → don't reset the window.
+  if (user.cloud_trial_started_at) {
+    return { success: true, endsAt: (user.cloud_trial_ends_at as string) ?? null, alreadyStarted: true };
+  }
+
+  const now = new Date();
+  const trialEnd = new Date(now.getTime() + TRIAL_DAYS * 86400000);
+  await supabase
+    .from('users')
+    .update({
+      cloud_trial_started_at: now.toISOString(),
+      cloud_trial_ends_at: trialEnd.toISOString(),
+    })
+    .eq('id', userId);
+
+  return { success: true, endsAt: trialEnd.toISOString(), alreadyStarted: false };
+}
 
 // Extend trial by 2 days (one time)
 export async function extendTrial(userId: string): Promise<{ success: boolean; newEnd: string | null }> {

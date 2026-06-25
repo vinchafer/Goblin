@@ -3,8 +3,9 @@ import { z } from 'zod';
 import { authMiddleware } from '../middleware/auth';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { saveFallbackChain, getFallbackChain } from '../services/model-router';
-import { extendTrial } from '../middleware/trial-gate';
+import { extendTrial, startTrial } from '../middleware/trial-gate';
 import { computeCapStatus } from '../lib/goblin-cap';
+import { derivePlanTruth } from '../lib/plan-truth';
 import { isGoblinHostedEnabled } from '../services/goblin-hosted';
 import { usageModelLabel } from '../lib/model-label';
 
@@ -45,10 +46,14 @@ users.get('/me', async (c) => {
   const supabase = getSupabaseAdmin();
   const { data } = await supabase
     .from('users')
-    .select('default_chat_model, default_code_model, plan, advanced_mode, is_comped, preferred_lang')
+    .select('default_chat_model, default_code_model, plan, advanced_mode, is_comped, preferred_lang, stripe_subscription_id, cloud_trial_ends_at')
     .eq('id', userId)
     .single();
   if (!data) return c.json({ error: 'User not found' }, 404);
+
+  // The plan badge must reflect the DERIVED entitlement (a trial user's raw
+  // `plan` column is 'none' → badge should still read "Trial", not "Kein Abo").
+  const truth = derivePlanTruth(data);
 
   // Pull display name from auth metadata (best-effort)
   let displayName: string | null = null;
@@ -61,7 +66,7 @@ users.get('/me', async (c) => {
     }
   } catch { /* silent */ }
 
-  return c.json({ ...data, displayName });
+  return c.json({ ...data, plan: truth.planKey, planState: truth.state, displayName });
 });
 
 // GET /api/users/me/fallback-chain
@@ -98,9 +103,13 @@ users.get('/me/usage', async (c) => {
   // below, the limit is the weighted Goblin allowance (goblinCap).
   const { data: userRow } = await supabase
     .from('users')
-    .select('plan, billing_cycle_start')
+    .select('plan, billing_cycle_start, is_comped, stripe_subscription_id, cloud_trial_ends_at')
     .eq('id', userId)
     .single();
+
+  // Canonical entitlement — the usage bar/allowance must reflect the DERIVED plan,
+  // not the raw `plan` column (a default 'build' user is not a Build customer).
+  const truth = derivePlanTruth(userRow);
 
   // Fetch agent_runs for period
   const { data: runs } = await supabase
@@ -196,14 +205,15 @@ users.get('/me/usage', async (c) => {
         const tok = (r.tokens_in ?? 0) + (r.tokens_out ?? 0);
         if (r.model === 'goblin/premium') forge += tok; else swift += tok;
       }
-      goblinCap = computeCapStatus(swift, forge, (userRow?.plan as string) ?? null);
+      goblinCap = computeCapStatus(swift, forge, truth.allowanceKey);
     } catch {
       goblinCap = null;
     }
   }
 
   return c.json({
-    plan: (userRow?.plan as string) ?? 'free',
+    plan: truth.planKey,
+    planState: truth.state,
     daysUntilReset,
     period,
     totalInPeriod: allRuns.length,
@@ -246,6 +256,14 @@ users.get('/me/trial', async (c) => {
     daysLeft: Math.max(0, daysLeft),
     extensionUsed: user.trial_extension_used ?? false,
   });
+});
+
+// POST /api/users/me/trial/start — the ACTIVE choice from the gate screen.
+users.post('/me/trial/start', async (c) => {
+  const userId = c.get('userId');
+  const result = await startTrial(userId);
+  if (!result.success) return c.json({ error: 'Could not start trial' }, 400);
+  return c.json({ success: true, trialEndsAt: result.endsAt, alreadyStarted: result.alreadyStarted });
 });
 
 // POST /api/users/me/trial/extend

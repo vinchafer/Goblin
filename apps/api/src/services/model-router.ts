@@ -17,6 +17,7 @@ import {
 } from '../lib/goblin-cap';
 import { decryptData, decryptUserData } from './encryption';
 import { getSupabaseAdmin } from '../lib/supabase';
+import { derivePlanTruth } from '../lib/plan-truth';
 import { PROVIDERS, PROVIDER_BASE_URLS, type ProviderId } from '../config/providers';
 import { GoblinError, isGoblinError, litellmStream } from './litellm-client';
 import { formatTokenDisplay } from '../config/pricing';
@@ -244,10 +245,19 @@ async function getUserPlanAndLang(
 ): Promise<{ plan: string; lang: 'en' | 'de' }> {
   try {
     const sb = supabase ?? getSupabaseAdmin();
-    const { data } = await sb.from('users').select('plan, preferred_lang').eq('id', userId).single();
-    const row = data as { plan?: string; preferred_lang?: string } | null;
+    const { data } = await sb
+      .from('users')
+      .select('plan, preferred_lang, is_comped, stripe_subscription_id, cloud_trial_ends_at')
+      .eq('id', userId)
+      .single();
+    const row = data as
+      | { plan?: string; preferred_lang?: string; is_comped?: boolean; stripe_subscription_id?: string | null; cloud_trial_ends_at?: string | null }
+      | null;
     const lang = row?.preferred_lang === 'en' ? 'en' : 'de';
-    return { plan: (row?.plan ?? '').toLowerCase(), lang };
+    // Allowance must follow the DERIVED entitlement, not the raw `plan` column —
+    // a default user (plan='build', no sub) must resolve to trial-level, not 17.4M.
+    const plan = derivePlanTruth(row).allowanceKey;
+    return { plan, lang };
   } catch {
     return { plan: '', lang: 'de' };
   }

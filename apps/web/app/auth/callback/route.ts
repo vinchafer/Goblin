@@ -27,7 +27,10 @@ export async function GET(request: Request) {
     .insert({
       id: user.id,
       email: user.email ?? '',
-      plan: 'build',
+      // Neutral default — first login no longer grants 'build' (a real paid plan).
+      // The user actively chooses a trial or subscription at the gate. Requires
+      // migration 0070 (adds 'none' to the users_plan_check constraint).
+      plan: 'none',
     })
     .then(() => {}, () => {
       // Ignore — user row already exists (subsequent logins)

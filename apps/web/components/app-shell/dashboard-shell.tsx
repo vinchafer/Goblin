@@ -22,6 +22,8 @@ import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useApp } from "@/contexts/app-context";
 import { useDemoMode } from "@/lib/demo/demo-mode-context";
 import { createClient } from "@/lib/supabase/client";
+import { apiGet } from "@/lib/api";
+import { isDemoActive } from "@/lib/demo/demo-flag";
 import type { Project } from "@goblin/shared/src/schemas";
 
 interface DashboardShellProps {
@@ -123,6 +125,25 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
       setShowTour(true);
     }
   }, [isFirstLogin, demoMode]);
+
+  // Trial-Activation 2026-06-25 — the active-choice gate. A user with no active
+  // sub, no comp and no active trial must pick a trial or subscribe before using
+  // the product. Redirect them to /dashboard/trial-gate. Exclude the gate page
+  // itself + the upgrade page to avoid a redirect loop.
+  useEffect(() => {
+    if (demoMode || isDemoActive()) return;
+    if (pathname.startsWith('/dashboard/trial-gate') || pathname.startsWith('/dashboard/upgrade')) return;
+    let cancelled = false;
+    apiGet<{ trialStatus: string }>('/api/users/me/trial')
+      .then((info) => {
+        if (cancelled) return;
+        if (info.trialStatus === 'not_started' || info.trialStatus === 'expired' || info.trialStatus === 'none') {
+          router.replace('/dashboard/trial-gate');
+        }
+      })
+      .catch(() => { /* network glitch — don't trap the user */ });
+    return () => { cancelled = true; };
+  }, [pathname, demoMode, router]);
 
   const handleTourDone = useCallback(() => {
     setShowTour(false);

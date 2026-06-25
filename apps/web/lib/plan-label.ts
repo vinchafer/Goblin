@@ -13,6 +13,8 @@ const PLAN_LABELS: Record<string, string> = {
 export function planLabel(plan?: string | null, isComped?: boolean, lang?: 'de' | 'en'): string {
   if (isComped) return lang === 'en' ? 'Full access' : 'Vollzugriff';
   const key = (plan ?? '').toLowerCase();
+  // No active sub/trial → explicit "no plan" label, not a fake "Trial" badge.
+  if (key === 'none') return lang === 'en' ? 'No active plan' : 'Kein Abo';
   if (PLAN_LABELS[key]) return PLAN_LABELS[key];
   if (!key) return 'Trial';
   return key.charAt(0).toUpperCase() + key.slice(1);
