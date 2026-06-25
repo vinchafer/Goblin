@@ -13,6 +13,7 @@ import {
   handleSubscriptionDeleted
 } from '../services/billing-service';
 import { getSupabaseAdmin } from '../lib/supabase';
+import { derivePlanTruth } from '../lib/plan-truth';
 import { getGeoTier, PLAN_PRICES, TIER_LABELS } from '../config/geo-pricing';
 
 type Variables = { userId: string }
@@ -157,11 +158,15 @@ billing.get('/status', authMiddleware, async (c) => {
   // user, which is why a completed subscription never reflected in the UI.
   const { data: user, error } = await supabase
     .from('users')
-    .select('plan, subscription_current_period_end, cloud_trial_ends_at, is_comped, comp_reason, stripe_customer_id')
+    .select('plan, subscription_current_period_end, cloud_trial_ends_at, is_comped, comp_reason, stripe_customer_id, stripe_subscription_id')
     .eq('id', userId)
     .single();
 
   if (error || !user) return c.json({ error: 'User not found' }, 404);
+
+  // Derived entitlement — 'plan' returned here must be the real current plan, not
+  // the raw column (a default/cancelled user resolves to 'none' → paywall).
+  const truth = derivePlanTruth(user);
 
   // Card info (best-effort, don't fail status if Stripe is down)
   let cardLast4: string | null = null;
@@ -181,7 +186,8 @@ billing.get('/status', authMiddleware, async (c) => {
   }
 
   return c.json({
-    plan: user.plan,
+    plan: truth.planKey,
+    planState: truth.state,
     status: null,
     trialEndsAt: user.cloud_trial_ends_at ?? null,
     currentPeriodEnd: user.subscription_current_period_end ?? null,

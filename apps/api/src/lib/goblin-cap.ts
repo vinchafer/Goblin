@@ -53,6 +53,10 @@ export const FORGE_WEIGHT = 4.4;
  * any mix. See header for the margin rationale behind each number.
  */
 export const GOBLIN_MONTHLY_ALLOWANCE: Record<string, number> = {
+  // No active sub/trial → trial-level floor (NEVER full Build). These users are
+  // gated out of paid features upstream anyway; this is defense-in-depth so a
+  // 'none'/default user can never resolve to the 17.4M Build quota.
+  none: 4_900_000,
   trial: 4_900_000,
   build: 17_400_000,
   pro: 30_000_000,
@@ -84,6 +88,7 @@ export const COST_UNITS_PER_BUILD = 50_000;
  * a single day. Locked numbers, not allowance/5 at runtime.
  */
 export const GOBLIN_DAILY_GUARD: Record<string, number> = {
+  none: 1_000_000,
   trial: 1_000_000,
   build: 3_500_000,
   pro: 6_000_000,
