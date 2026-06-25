@@ -4,10 +4,10 @@
 // No "passing" claim on the E2E suite (it is not asserted green).
 
 const STATS: { value: string; label: string }[] = [
-  { value: '622', label: 'commits' },
+  { value: '633', label: 'commits' },
   { value: '65,000+', label: 'lines' },
   { value: '169', label: 'E2E tests' },
-  { value: '9', label: 'providers' },
+  { value: '10', label: 'providers' },
   { value: '1', label: 'founder' },
 ];
 
