@@ -138,6 +138,25 @@ export function getPriceForTier(plan: string, tier: GeoTier): string | undefined
   return prices[plan]?.[tier] ?? prices[plan]?.[1];
 }
 
+/**
+ * Reverse lookup: given a Stripe price id, return the tier it belongs to (across
+ * any plan). Used by the change-plan path to charge the new plan at the user's
+ * ALREADY-RESOLVED card-country tier (the tier their current subscription price
+ * encodes) — no card-country re-resolution. Returns null if the id matches none
+ * of the 9 configured tier prices.
+ */
+export function getTierFromPriceId(priceId: string | null | undefined): GeoTier | null {
+  if (!priceId) return null;
+  const plans: PlanName[] = ['build', 'pro', 'power'];
+  const tiers: GeoTier[] = [1, 2, 3];
+  for (const plan of plans) {
+    for (const tier of tiers) {
+      if (getPriceForTier(plan, tier) === priceId) return tier;
+    }
+  }
+  return null;
+}
+
 export type PlanName = 'build' | 'pro' | 'power';
 
 export const PLAN_PRICES: Record<PlanName, Record<GeoTier, number>> = {

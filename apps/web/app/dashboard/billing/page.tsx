@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { PLAN_BUILDS } from '@/lib/plan-builds';
 import { CheckoutPanel } from '@/components/billing/CheckoutPanel';
+import { ChangePlanPanel } from '@/components/billing/ChangePlanPanel';
 
 type PlanId = 'build' | 'pro' | 'power';
 
@@ -64,6 +65,9 @@ export default function BillingDashboardPage() {
   const [portalLoading, setPortalLoading] = useState(false);
   const [checkoutPlan, setCheckoutPlan] = useState<PlanId | null>(null);
   const [geoPrices, setGeoPrices] = useState<Record<PlanId, number> | null>(null);
+  // planState 'paid' = active Stripe sub → manage portal + change-plan path apply.
+  const [planState, setPlanState] = useState<string | null>(null);
+  const [portalMsg, setPortalMsg] = useState<string | null>(null);
 
   const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
 
@@ -75,12 +79,17 @@ export default function BillingDashboardPage() {
       setToken(session.access_token);
 
       const headers = { Authorization: `Bearer ${session.access_token}` };
-      const [usageRes, invoicesRes, pmRes] = await Promise.all([
+      const [usageRes, invoicesRes, pmRes, statusRes] = await Promise.all([
         fetch(`${apiBase}/api/billing/usage`, { headers }),
         fetch(`${apiBase}/api/billing/invoices`, { headers }),
         fetch(`${apiBase}/api/billing/payment-method`, { headers }),
+        fetch(`${apiBase}/api/billing/status`, { headers }),
       ]);
 
+      if (statusRes.ok) {
+        const d = await statusRes.json();
+        setPlanState(d.planState ?? null);
+      }
       if (usageRes.ok) setUsage(await usageRes.json());
       if (invoicesRes.ok) {
         const d = await invoicesRes.json();
@@ -105,14 +114,33 @@ export default function BillingDashboardPage() {
 
   const handlePortal = async () => {
     if (!token) return;
+    setPortalMsg(null);
+    // No active subscription → there is no Stripe customer/portal to manage. Tell
+    // the user that specifically instead of firing a request that 500s and dies
+    // silently (the real cause of the "portal unavailable" reports).
+    if (planState !== 'paid') {
+      setPortalMsg('No active subscription yet. Choose a plan above to subscribe.');
+      return;
+    }
     setPortalLoading(true);
     try {
       const res = await fetch(`${apiBase}/api/billing/create-portal-session`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });
-      const d = await res.json();
-      if (d.portalUrl) window.location.href = d.portalUrl;
+      const d = await res.json().catch(() => ({}));
+      if (res.ok && d.portalUrl) {
+        window.location.href = d.portalUrl;
+        return;
+      }
+      // No billing account / portal not configured → specific, not a dead button.
+      setPortalMsg(
+        /no billing account/i.test(d?.error ?? '')
+          ? 'No active subscription yet. Choose a plan above to subscribe.'
+          : 'Subscription management is temporarily unavailable. Please try again later.',
+      );
+    } catch {
+      setPortalMsg('Subscription management is temporarily unavailable. Please try again later.');
     } finally {
       setPortalLoading(false);
     }
@@ -208,6 +236,11 @@ export default function BillingDashboardPage() {
             ))}
           </div>
         </div>
+        {portalMsg && (
+          <p style={{ fontSize: 13, color: 'var(--meta)', marginTop: 12, lineHeight: 1.4 }}>
+            {portalMsg}
+          </p>
+        )}
       </div>
 
       {/* Usage */}
@@ -322,13 +355,22 @@ export default function BillingDashboardPage() {
       </div>
 
       {checkoutPlan && (
-        <CheckoutPanel
-          plan={checkoutPlan}
-          planName={PLAN_INFO[checkoutPlan]?.label ?? capitalize(checkoutPlan)}
-          displayPrice={priceFor(checkoutPlan)}
-          onClose={() => setCheckoutPlan(null)}
-          onSuccess={() => { window.location.href = '/dashboard/settings/billing/success'; }}
-        />
+        planState === 'paid' ? (
+          <ChangePlanPanel
+            plan={checkoutPlan}
+            planName={PLAN_INFO[checkoutPlan]?.label ?? capitalize(checkoutPlan)}
+            onClose={() => setCheckoutPlan(null)}
+            onSuccess={() => { window.location.href = '/dashboard/settings/billing/success'; }}
+          />
+        ) : (
+          <CheckoutPanel
+            plan={checkoutPlan}
+            planName={PLAN_INFO[checkoutPlan]?.label ?? capitalize(checkoutPlan)}
+            displayPrice={priceFor(checkoutPlan)}
+            onClose={() => setCheckoutPlan(null)}
+            onSuccess={() => { window.location.href = '/dashboard/settings/billing/success'; }}
+          />
+        )
       )}
     </div>
   );

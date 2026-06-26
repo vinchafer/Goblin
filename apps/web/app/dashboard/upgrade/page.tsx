@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { getAuthHeaders, API_URL } from '@/lib/api';
 import { buildsPerMonth, PLAN_BUILDS } from '@/lib/plan-builds';
 import { CheckoutPanel } from '@/components/billing/CheckoutPanel';
+import { ChangePlanPanel } from '@/components/billing/ChangePlanPanel';
 
 type PlanId = 'build' | 'pro' | 'power';
 
@@ -79,6 +80,10 @@ export default function UpgradePage() {
   const search = useSearchParams();
   const reason = search?.get('reason'); // ?reason=limit-hit emphasises requests
   const [currentPlan, setCurrentPlan] = useState<string | null>(null);
+  // planState 'paid' = active Stripe subscription → plan change goes through the
+  // change-plan (subscriptions.update) path, NOT a second create. trial/comped/none
+  // → the subscribe path (collect card, create the first subscription).
+  const [planState, setPlanState] = useState<string | null>(null);
   const [checkoutPlan, setCheckoutPlan] = useState<PlanId | null>(null);
   const [matrixOpen, setMatrixOpen] = useState(false);
   // IP-based DISPLAY prices (geo-pricing). Display stays IP-based; the actual
@@ -93,6 +98,7 @@ export default function UpgradePage() {
         if (r.ok) {
           const data = await r.json();
           setCurrentPlan(data.plan ?? null);
+          setPlanState(data.planState ?? null);
         }
       } catch { /* ignore — page still works without current-plan info */ }
     })();
@@ -332,6 +338,18 @@ export default function UpgradePage() {
           price shown on the pay button before any charge (no hosted redirect). */}
       {checkoutPlan && (() => {
         const plan = PLANS.find(x => x.id === checkoutPlan)!;
+        // Active subscriber → change-plan (subscriptions.update, saved card, no card
+        // entry). Everyone else (trial/comped/none) → subscribe (collect card).
+        if (planState === 'paid') {
+          return (
+            <ChangePlanPanel
+              plan={plan.id}
+              planName={plan.name}
+              onClose={() => setCheckoutPlan(null)}
+              onSuccess={() => { window.location.href = '/dashboard/settings/billing/success'; }}
+            />
+          );
+        }
         return (
           <CheckoutPanel
             plan={plan.id}
