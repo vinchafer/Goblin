@@ -15,7 +15,7 @@ test.describe('@auth 9D-3 IOSToggle', () => {
     await loginAsRealTestUser(page);
     await openFunktionen(page);
 
-    const toggle = page.locator('[data-testid="toggle-memory"]');
+    const toggle = page.locator('[data-testid="toggle-haptic"] [role="switch"]');
     await expect(toggle).toBeVisible();
     const before = await toggle.getAttribute('aria-checked');
     await toggle.click();
@@ -24,14 +24,14 @@ test.describe('@auth 9D-3 IOSToggle', () => {
 
     await page.reload();
     await openFunktionen(page);
-    await expect(page.locator('[data-testid="toggle-memory"]')).toHaveAttribute('aria-checked', after);
+    await expect(page.locator('[data-testid="toggle-haptic"] [role="switch"]')).toHaveAttribute('aria-checked', after);
   });
 
   test('Toggle uses a green (brand) background when on', async ({ page }) => {
     await loginAsRealTestUser(page);
     await openFunktionen(page);
 
-    const toggle = page.locator('[data-testid="toggle-web_search"]');
+    const toggle = page.locator('[data-testid="toggle-haptic"] [role="switch"]');
     await expect(toggle).toBeVisible();
     const checked = await toggle.getAttribute('aria-checked');
     if (checked !== 'true') await toggle.click();
