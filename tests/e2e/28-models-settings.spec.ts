@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 import { loginAsRealTestUser, dismissTour, openSettingsSection } from './helpers/auth';
 
 test.describe('@auth 9P Models Settings', () => {
-  test('Modelle row opens 3-tab page with Rankings/Meine Keys/Erweitert', async ({ page }) => {
+  test('Modelle row opens 3-tab page with Rankings/Meine Keys/Goblin-Modelle', async ({ page }) => {
     await loginAsRealTestUser(page);
     await page.waitForLoadState('networkidle');
     await dismissTour(page);
@@ -15,7 +15,7 @@ test.describe('@auth 9P Models Settings', () => {
     // 3 tabs visible
     await expect(page.locator('[data-testid="models-tab-rankings"]')).toBeVisible({ timeout: 5000 });
     await expect(page.locator('[data-testid="models-tab-keys"]')).toBeVisible();
-    await expect(page.locator('[data-testid="models-tab-advanced"]')).toBeVisible();
+    await expect(page.locator('[data-testid="models-tab-goblin"]')).toBeVisible();
 
     // Tab "Meine Keys" — at least 5 core providers
     await page.click('[data-testid="models-tab-keys"]');

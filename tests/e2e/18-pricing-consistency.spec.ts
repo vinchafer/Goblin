@@ -8,7 +8,7 @@ test.describe('9C — Pricing Consistency Landing↔Billing', { tag: '@public' }
     const pricingSection = page.locator('#pricing');
     await pricingSection.scrollIntoViewIfNeeded();
 
-    await expect(page.getByText(/\$9/).first()).toBeVisible();
+    await expect(page.getByText(/\$11/).first()).toBeVisible();
     await expect(page.getByText(/\$19/).first()).toBeVisible();
     await expect(page.getByText(/\$39/).first()).toBeVisible();
   });
