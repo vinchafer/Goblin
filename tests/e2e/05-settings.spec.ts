@@ -127,7 +127,8 @@ test.describe('Settings Pages', { tag: '@local-only' }, () => {
       '/dashboard/settings/local',
       '/dashboard/settings/integrations',
       '/dashboard/settings/billing',
-      '/dashboard/settings/routing',
+      // /dashboard/settings/routing removed — BYOK fallback-chain UI retired
+      // (backend circuit-breaker fallback remains).
     ];
 
     for (const path of pages) {

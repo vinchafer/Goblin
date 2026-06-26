@@ -1,3 +1,5 @@
+import { GRACE_PERIOD_DAYS } from '@/lib/account-deletion';
+
 export const metadata = { title: 'Konto wird gelöscht — Goblin' };
 
 export default function DeletionPendingPage() {
@@ -18,12 +20,12 @@ export default function DeletionPendingPage() {
           Dein Konto wird gelöscht
         </h1>
         <p style={{ color: 'var(--meta)', fontSize: 'var(--t-body-fs)', marginBottom: 16 }}>
-          Dein Goblin-Konto wird in 30 Tagen unwiderruflich gelöscht. Während dieser Zeit kannst
+          Dein Goblin-Konto wird in {GRACE_PERIOD_DAYS} Tagen unwiderruflich gelöscht. Während dieser Zeit kannst
           du dich nicht einloggen.
         </p>
         <p style={{ color: 'var(--meta)', fontSize: 'var(--t-small-fs)' }}>
           Wir haben dir eine Email geschickt — mit einem Link, mit dem du die Löschung innerhalb
-          dieser 30 Tage abbrechen kannst.
+          dieser {GRACE_PERIOD_DAYS} Tage abbrechen kannst.
         </p>
       </div>
     </main>

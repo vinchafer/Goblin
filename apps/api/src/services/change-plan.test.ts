@@ -243,4 +243,19 @@ skip('plan-change for existing subscribers (real test-mode Stripe)', () => {
     // Portal: no billing account → the specific message, not a generic crash.
     await expect(createPortalSession(uid)).rejects.toThrow(/no billing account/i);
   });
+
+  it('PROOF 7: portal path healthy — account WITH a customer gets a real portal session URL', async () => {
+    const uid = 'pc-portal-7';
+    const customer = await stripe.customers.create({
+      email: 'pcportal7@example.test',
+      payment_method: 'pm_card_visa',
+      invoice_settings: { default_payment_method: 'pm_card_visa' },
+      metadata: { plan_change_test: 'true' },
+    });
+    createdCustomers.push(customer.id);
+    users.push({ id: uid, email: 'pcportal7@example.test', plan: 'build', stripe_customer_id: customer.id, stripe_subscription_id: null });
+
+    const url = await createPortalSession(uid);
+    expect(url).toMatch(/^https:\/\/billing\.stripe\.com\//);
+  }, 30_000);
 });

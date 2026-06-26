@@ -82,7 +82,9 @@ test.describe('BYOK Key Management — real test account', { tag: '@local-only' 
     expect(true).toBe(true);
   });
 
-  test('routing settings page loads correctly', async ({ page }) => {
+  // Routing settings page removed — BYOK fallback-chain UI retired (backend
+  // circuit-breaker fallback in model-router.ts remains live). Test dropped.
+  test.skip('routing settings page loads correctly', async ({ page }) => {
     await loginAsRealTestUser(page);
     await page.goto(`${BASE_URL}/dashboard/settings/routing`);
     await page.waitForLoadState('networkidle');

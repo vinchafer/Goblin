@@ -7,6 +7,7 @@ import { SettingsCard } from '../ui/SettingsCard';
 import { SettingsGroup } from '../ui/SettingsGroup';
 import { SettingsRow } from '../ui/SettingsRow';
 import { useLang, t } from '@/lib/use-lang';
+import { GRACE_PERIOD_DAYS } from '@/lib/account-deletion';
 
 type DeletionStatus = {
   deletionRequested: boolean;
@@ -160,8 +161,8 @@ export function PrivacyPage() {
             </h3>
             <p style={{ color: 'var(--meta)', fontSize: 'var(--t-small-fs)', margin: '0 0 16px' }}>
               {t(lang,
-                'Diese Aktion startet eine 30-Tage-Wartezeit. Während dieser Zeit kannst du dich nicht einloggen. Nach 30 Tagen werden alle deine Daten unwiderruflich gelöscht. Du erhältst eine Email mit einem Link zum Abbruch.',
-                'This action starts a 30-day waiting period. During this time you cannot log in. After 30 days all your data will be permanently deleted. You will receive an email with a cancellation link.'
+                `Diese Aktion startet eine ${GRACE_PERIOD_DAYS}-Tage-Wartezeit. Während dieser Zeit kannst du dich nicht einloggen. Nach ${GRACE_PERIOD_DAYS} Tagen werden alle deine Daten unwiderruflich gelöscht. Du erhältst eine Email mit einem Link zum Abbruch.`,
+                `This action starts a ${GRACE_PERIOD_DAYS}-day waiting period. During this time you cannot log in. After ${GRACE_PERIOD_DAYS} days all your data will be permanently deleted. You will receive an email with a cancellation link.`
               )}
             </p>
             <p style={{ fontSize: 'var(--t-small-fs)', fontWeight: 600, margin: '0 0 8px' }}>

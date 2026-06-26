@@ -8,7 +8,6 @@ import {
   Link as LinkIcon,
   CreditCard,
   Desktop,
-  Shuffle,
   Robot,
   Sliders,
   Bell,
@@ -53,7 +52,6 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'Advanced',
     items: [
       { href: '/dashboard/settings/local',   label: 'Local Mode',      Icon: Desktop,  advanced: true },
-      { href: '/dashboard/settings/routing', label: 'Routing',         Icon: Shuffle,  advanced: true },
       { href: '/dashboard/settings?tab=developer', label: 'Developer Tools', Icon: Sliders, advanced: true },
     ],
   },
