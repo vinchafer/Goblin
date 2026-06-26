@@ -31,7 +31,13 @@ test.describe('9C — Mobile Create Project (BUG-010)', { tag: '@auth' }, () => 
     // CRITICAL: Should NOT see "invalid project data" error
     await expect(page.getByText(/invalid project data/i)).not.toBeVisible({ timeout: 3000 });
 
-    // Should redirect to project page
-    await page.waitForURL(/\/dashboard\/project\//, { timeout: 15000 });
+    // Should redirect to project page. The create always succeeds and the modal
+    // fires router.push(/dashboard/project/<id>) unconditionally (new-project-modal
+    // L160-163) — the redirect is correct, never swallowed. The only variability is
+    // cold first-hit compile of the heavy /dashboard/project/[id] route under
+    // `next dev` (see playwright.config.ts root-cause note), which can push the
+    // navigation past a tight 15s on a cold mobile lane. 30s matches the config's
+    // navigationTimeout and absorbs the cold compile without masking any product race.
+    await page.waitForURL(/\/dashboard\/project\//, { timeout: 30000 });
   });
 });
