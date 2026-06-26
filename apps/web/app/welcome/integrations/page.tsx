@@ -182,7 +182,7 @@ export default function IntegrationsStepPage() {
 
       <div className="footstrip">
         <span className="skip"><IShield size={11} />{t.footAdd}</span>
-        <span className="gobl-mono">/welcome/integrations · {STR[lang].chrome.step} 05 {STR[lang].chrome.of} 06</span>
+        <span className="gobl-mono">/welcome/integrations · {STR[lang].chrome.step} 06 {STR[lang].chrome.of} 06</span>
         <button type="button" className="finish" onClick={() => finish(true)}>{t.finish}</button>
       </div>
 
