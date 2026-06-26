@@ -6,7 +6,7 @@
     "dev": "next dev --turbo --port 3000",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
+    "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -55,6 +55,8 @@
     "@types/react-dom": "19.0.0",
     "@types/react-syntax-highlighter": "^15.5.13",
     "autoprefixer": "^10",
+    "eslint": "^9",
+    "eslint-config-next": "^16.2.6",
     "postcss": "^8",
     "tailwindcss": "^4.0.0"
   }
