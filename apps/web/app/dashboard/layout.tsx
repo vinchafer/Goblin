@@ -55,7 +55,14 @@ export default async function DashboardLayout({
   const createdAt = new Date(user.created_at);
   const isNewUser = (Date.now() - createdAt.getTime()) < 10 * 60 * 1000;
 
-  if (isNewUser) {
+  // Reactivated accounts (cancelled a pending deletion) are returning users, not
+  // fresh signups — but a throwaway test account is still < 10 min old, so the
+  // isNewUser heuristic wrongly classifies them as new and replays onboarding.
+  // reactivate() stamps user_metadata.deletion_status='cancelled'; route those
+  // users forward (dashboard → trial-gate guard) instead of into /welcome.
+  const isReactivated = user.user_metadata?.deletion_status === 'cancelled';
+
+  if (isNewUser && !isReactivated) {
     const { data: onboardingState } = await supabase
       .from('onboarding_steps')
       .select('completed')
