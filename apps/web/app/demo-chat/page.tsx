@@ -5,6 +5,11 @@
 
 import { DemoApp } from "@/components/demo/DemoApp";
 
+// Force dynamic rendering so this route is never statically prerendered at
+// build time (where NEXT_PUBLIC_* build env may be absent). See README build
+// env contract.
+export const dynamic = "force-dynamic";
+
 export default function DemoChatPage() {
   return <DemoApp view="chat" viewport="desktop" />;
 }
