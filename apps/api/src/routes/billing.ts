@@ -8,6 +8,8 @@ import {
   createSetupIntent,
   resolveCheckoutPrice,
   createSubscriptionAtTier,
+  previewPlanChange,
+  changePlan,
   handleSubscriptionCreated,
   handleSubscriptionUpdated,
   handleSubscriptionDeleted
@@ -112,6 +114,54 @@ billing.post('/create-subscription', authMiddleware, async (c) => {
     return c.json(r);
   } catch (e) {
     return c.json({ error: e instanceof Error ? e.message : 'Subscription failed' }, 500);
+  }
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// Change plan for an EXISTING subscriber — subscriptions.update (NOT a second
+// create). Two steps: preview the prorated amount, then apply at the previewed
+// price. No card re-entry, no new SetupIntent, no tier re-resolution.
+// ──────────────────────────────────────────────────────────────────────────
+
+// POST /api/billing/change-plan-preview — prorated amount due now (or credited)
+// for switching to targetPlan. Pure read (upcoming-invoice preview), no charge.
+billing.post('/change-plan-preview', authMiddleware, async (c) => {
+  const userId = c.get('userId');
+  const body = await c.req.json().catch(() => ({}));
+  const schema = z.object({ targetPlan: z.enum(['build', 'pro', 'power']) });
+  const result = schema.safeParse(body);
+  if (!result.success) return c.json({ error: 'Invalid plan' }, 400);
+
+  try {
+    const preview = await previewPlanChange(userId, result.data.targetPlan);
+    if (!preview.hasActiveSubscription) {
+      // No live sub → caller should use the subscribe path, not change-plan.
+      return c.json({ hasActiveSubscription: false }, 409);
+    }
+    return c.json(preview);
+  } catch (e) {
+    return c.json({ error: e instanceof Error ? e.message : 'Preview failed' }, 500);
+  }
+});
+
+// POST /api/billing/change-plan — apply the switch on the existing subscription
+// at the previewed price. 409 if the price drifted (re-confirm) or no live sub.
+billing.post('/change-plan', authMiddleware, async (c) => {
+  const userId = c.get('userId');
+  const body = await c.req.json().catch(() => ({}));
+  const schema = z.object({
+    targetPlan: z.enum(['build', 'pro', 'power']),
+    confirmedPriceId: z.string().min(1),
+  });
+  const result = schema.safeParse(body);
+  if (!result.success) return c.json({ error: 'Invalid request' }, 400);
+
+  try {
+    const r = await changePlan(userId, result.data.targetPlan, result.data.confirmedPriceId);
+    if (!r.ok) return c.json(r, 409); // price drifted or no active sub
+    return c.json(r);
+  } catch (e) {
+    return c.json({ error: e instanceof Error ? e.message : 'Plan change failed' }, 500);
   }
 });
 
