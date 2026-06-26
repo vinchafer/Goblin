@@ -18,6 +18,6 @@ test.describe('@public Deletion-Pending Page', () => {
   test('renders headline + CTA copy', async ({ page }) => {
     await page.goto('/deletion-pending');
     await expect(page.getByRole('heading', { name: 'Dein Konto wird gelöscht' })).toBeVisible();
-    await expect(page.getByText(/30 Tagen unwiderruflich/i)).toBeVisible();
+    await expect(page.getByText(/10 Tagen unwiderruflich/i)).toBeVisible();
   });
 });
