@@ -1,6 +1,7 @@
 {
   "name": "goblin-monorepo",
   "private": true,
+  "license": "UNLICENSED",
   "version": "0.2.0",
   "scripts": {
     "dev": "pnpm --filter \"./apps/**\" dev",

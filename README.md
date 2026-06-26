@@ -38,6 +38,21 @@ pnpm dev
 # API: http://localhost:3001
 ```
 
+## Build-time environment contract
+
+The web app (`apps/web`) reads these `NEXT_PUBLIC_*` variables at build time.
+They must be present in the build environment (e.g. Vercel project settings):
+
+| Variable | Purpose |
+|----------|---------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key (public) |
+| `NEXT_PUBLIC_API_URL` | Base URL of the Hono REST API |
+
+Routes that depend on these at request time (e.g. `/demo-chat`) set
+`export const dynamic = "force-dynamic"` to avoid static prerender when the
+build env is absent.
+
 ## Architecture
 
 ```

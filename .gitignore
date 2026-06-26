@@ -1,6 +1,7 @@
 node_modules
 *.txt
 supabase/.temp
+package-lock.json
 .next
 dist
 # Env files — never commit secrets
