@@ -8,13 +8,17 @@
  * touched and nothing real is deleted.
  */
 import { describe, it, expect, beforeAll, vi } from 'vitest';
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 import Stripe from 'stripe';
 
 // ── Load the test Stripe key from .env.test BEFORE importing the service ──────
 function loadTestEnv() {
   const envPath = resolve(__dirname, '../../.env.test');
+  // CI has no .env.test (gitignored) — skip loading rather than throwing ENOENT.
+  // The Stripe suite below self-skips when no sk_test_ key is present
+  // (HAS_TEST_KEY === false ⇒ describe.skip), so no live call is attempted.
+  if (!existsSync(envPath)) return;
   const raw = readFileSync(envPath, 'utf8');
   for (const line of raw.split('\n')) {
     const m = line.match(/^([A-Z_]+)=(.*)$/);
