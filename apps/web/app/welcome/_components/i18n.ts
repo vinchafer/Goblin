@@ -196,9 +196,9 @@ export const STR: Record<Lang, {
       waitlistIdle: 'Auf die Liste', waitlistBusy: 'Trag dich ein…',
       waitlistDone: 'Du bist auf der Liste',
       flow: { prompt: 'Prompt', l1: 'Ebene 1 · Standard', l2: 'Ebene 2 · bald', l3: 'Ebene 3 · wenn du willst' },
-      flowCap: 'Routing jederzeit änderbar in Einstellungen → Routing.',
+      flowCap: 'Standard funktioniert sofort — keine Konfiguration nötig.',
       continue: 'Weiter — Provider wählen', skip: 'Überspringen — Standard nutzen',
-      footChange: 'JEDERZEIT ÄNDERBAR · EINSTELLUNGEN / ROUTING',
+      footChange: 'STANDARD FUNKTIONIERT SOFORT',
       footNext: 'WEITER — PROVIDER →',
     },
     provider: {
@@ -392,9 +392,9 @@ export const STR: Record<Lang, {
       waitlistIdle: 'Get on the list', waitlistBusy: 'Adding you…',
       waitlistDone: "You're on the list",
       flow: { prompt: 'Prompt', l1: 'Layer 1 · default', l2: 'Layer 2 · soon', l3: 'Layer 3 · if you opt in' },
-      flowCap: 'You can change routing any time in Settings → Routing.',
+      flowCap: 'Defaults work out of the box — no setup needed.',
       continue: 'Continue — pick your provider', skip: 'Skip — use defaults',
-      footChange: 'CHANGE ANY TIME · SETTINGS / ROUTING',
+      footChange: 'DEFAULTS WORK OUT OF THE BOX',
       footNext: 'NEXT — PROVIDER →',
     },
     provider: {

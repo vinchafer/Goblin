@@ -36,7 +36,7 @@ const CancelDeletionSchema = z.object({
 
 /**
  * POST /api/account/request-deletion
- * Soft-delete the account + start 30-day grace period.
+ * Soft-delete the account + start the grace period (GRACE_PERIOD_DAYS).
  */
 account.post('/request-deletion', authMiddleware, async (c) => {
   const userId = c.get('userId');

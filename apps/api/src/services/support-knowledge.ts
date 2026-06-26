@@ -1,5 +1,6 @@
 // Static knowledge base — loaded at startup, no vector DB needed for MVP.
 // Future: replace with RAG + embeddings.
+import { GRACE_PERIOD_DAYS } from './account-deletion';
 
 export const KNOWLEDGE_BASE = `
 ## Goblin Features
@@ -157,7 +158,7 @@ When you use the Goblin-bundled models (no key required), your prompt and code c
 No. Never. Your code is only used to fulfill your requests, and the bundled models are configured for zero retention.
 
 **Data deletion:**
-Contact support. Account deletion removes all projects and data within 30 days.
+Contact support. Account deletion removes all projects and data within ${GRACE_PERIOD_DAYS} days.
 `;
 
 export function getKnowledgeBase(): string {
