@@ -458,9 +458,15 @@ export async function changePlan(
     return { ok: false, needsReconfirm: true, newPriceId, newAmount: tierAmount(targetPlan, tier) };
   }
 
+  // always_invoice: invoice AND charge the net proration NOW (Decision A — the user
+  // gets the higher limits today, so they pay today). Billing-cycle anchor is left
+  // untouched, so the next full invoice still lands on the original date; only the
+  // prorated difference is billed immediately. error_if_incomplete: if that immediate
+  // charge can't be paid (declined card), the update FAILS and the subscription is
+  // left UNCHANGED — never changed-but-unpaid.
   const updated = await stripe.subscriptions.update(sub.id, {
     items: [{ id: item.id, price: newPriceId }],
-    proration_behavior: 'create_prorations',
+    proration_behavior: 'always_invoice',
     payment_behavior: 'error_if_incomplete',
     expand: ['latest_invoice.payment_intent'],
   });
