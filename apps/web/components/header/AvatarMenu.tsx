@@ -10,14 +10,11 @@ import { SettingsRow } from '../ui/SettingsRow';
 import { useUser } from '@/lib/hooks/useUser';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useDemoMode } from '@/lib/demo/demo-mode-context';
-import { useRoutingMode } from '@/components/app-shell/local-cloud-switch';
 import { useLang, t } from '@/lib/use-lang';
 
 // Per v6 TASK 1: the primary nav rows carry NO leading icon (no settings cog,
 // no upgrade/help/logout glyphs) — they sit flush-left, label + chevron only,
-// uniform padding. Only Routing keeps an icon, because it is a control row
-// (not a nav row) and the GitBranch glyph anchors its toggle. §A6 geometry.
-const GitBranchIcon = () => <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>;
+// uniform padding.
 
 // Desktop anchored popover — same mechanism as ComposerPlusPopover
 // (fixed-position off the trigger rect, click-outside + Escape close, focus
@@ -102,7 +99,6 @@ export function AvatarMenu() {
   const { signOut } = useAuth();
   const { setShowSettingsSheet } = useApp();
   const router = useRouter();
-  const [routingMode, setRoutingMode] = useRoutingMode();
   const lang = useLang();
   const initial = (user.fullName?.[0] ?? user.email?.[0] ?? 'V').toUpperCase();
 
@@ -126,19 +122,6 @@ export function AvatarMenu() {
         <SettingsRow dense label={t(lang, 'Plan upgraden', 'Upgrade plan')} onClick={() => { close(); router.push('/dashboard/billing'); }} />
         <SettingsRow dense label={t(lang, 'Hilfe', 'Help')} onClick={() => { close(); router.push('/help'); }} />
       </SettingsCard>
-
-      <div style={{ marginTop: 8 }}>
-        <SettingsCard>
-          <SettingsRow
-            dense
-            icon={<GitBranchIcon />}
-            label="Routing"
-            rightVariant="toggle"
-            value={routingMode === 'local'}
-            onChange={(v) => setRoutingMode(v ? 'local' : 'cloud')}
-          />
-        </SettingsCard>
-      </div>
 
       <div style={{ marginTop: 8 }}>
         <SettingsCard>
