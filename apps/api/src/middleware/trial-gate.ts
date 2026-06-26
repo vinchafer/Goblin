@@ -11,6 +11,13 @@ const SKIP_PATHS = [
   '/api/users',
   '/health',
   '/version',
+  // Onboarding completion save MUST work before a user can reach the trial gate.
+  // Without this, PUT /api/onboarding/state 402'd for every no-sub/no-trial user,
+  // the completion flag never persisted, and the dashboard guard bounced them
+  // back into /welcome — an inescapable onboarding loop. Costs Goblin nothing (no
+  // AI). NOTE: precise path, NOT '/api/onboarding' — that would also exempt the
+  // billable '/api/onboarding-agent' setup-buddy stream, which must stay gated.
+  '/api/onboarding/state',
   '/api/github/callback',
   '/api/templates',
   '/api/rankings',

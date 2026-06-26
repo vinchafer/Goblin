@@ -86,7 +86,7 @@ export function OnboardingChrome({ children }: { children: React.ReactNode }) {
         </span>
         <div className="gobl-onb-top-right">
           <span className="gobl-onb-step">
-            <span className="gobl-onb-step-num">{tc.step} 0{step} / 0{TOTAL_STEPS}</span>
+            <span className="gobl-onb-step-num">{tc.step} 0{step + 1} / 0{TOTAL_STEPS}</span>
             <span className="gobl-onb-pips">
               {PIP_STEPS.map((n) => (
                 <span
@@ -106,7 +106,7 @@ export function OnboardingChrome({ children }: { children: React.ReactNode }) {
         <span className="gobl-mono">JUSTGOBLIN.COM</span>
         <span className="gobl-mono">
           <span className="gobl-onb-foot-dot" />
-          {tc.step} 0{step} {tc.of} 0{TOTAL_STEPS}
+          {tc.step} 0{step + 1} {tc.of} 0{TOTAL_STEPS}
         </span>
       </footer>
 
