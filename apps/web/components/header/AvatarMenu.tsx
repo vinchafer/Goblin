@@ -119,7 +119,7 @@ export function AvatarMenu() {
     <div style={{ padding: isDesktop ? 0 : '8px 16px 16px', fontFamily: 'var(--font-sans)' }}>
       <SettingsCard flushDivider>
         <SettingsRow dense testId="avatar-menu-settings" label={t(lang, 'Einstellungen', 'Settings')} onClick={() => { close(); setShowSettingsSheet(true); }} />
-        <SettingsRow dense label={t(lang, 'Plan upgraden', 'Upgrade plan')} onClick={() => { close(); router.push('/dashboard/billing'); }} />
+        <SettingsRow dense label={t(lang, 'Plan upgraden', 'Upgrade plan')} onClick={() => { close(); router.push('/dashboard/upgrade'); }} />
         <SettingsRow dense label={t(lang, 'Hilfe', 'Help')} onClick={() => { close(); router.push('/help'); }} />
       </SettingsCard>
 
