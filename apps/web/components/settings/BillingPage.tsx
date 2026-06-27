@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { Icon } from '@/components/ui/icon';
 import { planLabel } from '@/lib/plan-label';
+import { buildsPerMonth } from '@/lib/plan-builds';
 import { useLang, t } from '@/lib/use-lang';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '';
@@ -58,7 +59,7 @@ export function BillingPage() {
 
   const PLAN_FEATURES: Record<string, string[]> = {
     trial: [
-      t(lang, '200 Hosted-Requests', '200 hosted requests'),
+      buildsPerMonth('trial', lang),
       t(lang, 'Eigene API-Keys erlaubt', 'Own API keys allowed'),
       t(lang, 'Limit endet automatisch', 'Limit ends automatically'),
     ],

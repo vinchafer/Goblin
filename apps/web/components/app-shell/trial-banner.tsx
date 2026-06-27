@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { apiGet } from '@/lib/api';
 import { getAuthHeaders, API_URL } from '@/lib/api';
 import { isDemoActive } from '@/lib/demo/demo-flag';
+import { useLang, t } from '@/lib/use-lang';
 
 interface TrialInfo {
   trialStatus: 'not_started' | 'active' | 'expired' | 'subscribed' | 'none';
@@ -14,6 +15,7 @@ interface TrialInfo {
 
 export function TrialBanner() {
   const router = useRouter();
+  const lang = useLang();
   const [info, setInfo] = useState<TrialInfo | null>(null);
   const [extending, setExtending] = useState(false);
   const [dismissed, setDismissed] = useState(false);
@@ -51,7 +53,7 @@ export function TrialBanner() {
         gap: 12, flexShrink: 0, flexWrap: 'wrap',
       }}>
         <span style={{ fontSize: 'var(--t-small-fs)', color: 'var(--danger)', fontFamily: 'var(--font-sans)', fontWeight: 500 }}>
-          Your free trial has ended.
+          {t(lang, 'Deine kostenlose Testphase ist beendet.', 'Your free trial has ended.')}
         </span>
         <button
           onClick={() => router.push('/dashboard/upgrade')}
@@ -61,7 +63,7 @@ export function TrialBanner() {
             cursor: 'pointer', fontFamily: 'var(--font-sans)',
           }}
         >
-          Upgrade — $11/mo →
+          {t(lang, 'Upgrade — 11 $/Monat →', 'Upgrade — $11/mo →')}
         </button>
       </div>
     );
@@ -83,8 +85,12 @@ export function TrialBanner() {
           color: urgent ? '#b88a20' : 'var(--brand-green)', fontWeight: 500, flex: 1,
         }}>
           {days === 0
-            ? 'Trial ends today.'
-            : `Day ${3 - days + (info.extensionUsed ? 2 : 0) + 1} of ${info.extensionUsed ? 5 : 3} in your free trial.`}
+            ? t(lang, 'Testphase endet heute.', 'Trial ends today.')
+            : t(
+                lang,
+                `Tag ${3 - days + (info.extensionUsed ? 2 : 0) + 1} von ${info.extensionUsed ? 5 : 3} in deiner Testphase.`,
+                `Day ${3 - days + (info.extensionUsed ? 2 : 0) + 1} of ${info.extensionUsed ? 5 : 3} in your free trial.`,
+              )}
           {' '}
           <button
             onClick={() => router.push('/dashboard/upgrade')}
@@ -93,7 +99,7 @@ export function TrialBanner() {
               cursor: 'pointer', fontSize: 'var(--t-caption-fs)', fontFamily: 'var(--font-sans)', fontWeight: 600,
             }}
           >
-            Upgrade →
+            {t(lang, 'Upgrade →', 'Upgrade →')}
           </button>
         </span>
 
@@ -108,7 +114,7 @@ export function TrialBanner() {
               fontFamily: 'var(--font-sans)', fontWeight: 500, opacity: extending ? 0.6 : 1,
             }}
           >
-            {extending ? '...' : '+2 days'}
+            {extending ? '...' : t(lang, '+2 Tage', '+2 days')}
           </button>
         )}
 
