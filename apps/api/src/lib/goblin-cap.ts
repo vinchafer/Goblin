@@ -71,33 +71,44 @@ export const GOBLIN_DEFAULT_ALLOWANCE = 4_900_000;
  * PUBLIC "Builds / month" proxy basis (HR-6, DD §A step 4). The pricing/plan copy may
  * NOT show cost units / tokens / $ / the Forge weight (two-level truth), so each plan's
  * allowance is translated into a tangible "≈ N Builds / month" figure using this single
- * documented divisor. A "build" = one agent run / generation turn; 50,000 cost units is
- * a deliberately CONSERVATIVE estimate of a typical mixed Swift/Forge build (≈50k Swift
- * tokens, or ≈11k Forge tokens at FORGE_WEIGHT), so the public numbers under-count rather
- * than over-promise. Adjust here if real telemetry shifts the average; the web copy
- * (apps/web/lib/plan-builds.ts) carries the rounded result and points back to this.
- *   trial  4.9M /50k ≈  98 → 100      build 17.4M /50k ≈ 348 → 350
- *   pro   30.0M /50k = 600 → 600      power 61.7M /50k ≈ 1234 → 1,200 (rounded down)
+ * documented divisor. A "build" = one agent run / generation turn.
+ *
+ * RECONCILED 2026-06-27 to the CFO dashboard (the financial single source of truth):
+ * one build ≈ 0.15M cost units (≈150k Swift tokens, "reines Swift"; or ≈34k Forge
+ * tokens at FORGE_WEIGHT). The previous 50k under-counted ~3× and over-stated build
+ * counts. This is the ONE divisor; web mirrors the value (apps/web/lib/plan-builds.ts)
+ * and DERIVES its rounded figures from it (never hardcoded), so the two can't drift.
+ *   trial  4.9M /150k ≈  33      build 17.4M /150k ≈ 116
+ *   pro   30.0M /150k = 200      power 61.7M /150k ≈ 411
  */
-export const COST_UNITS_PER_BUILD = 50_000;
+export const COST_UNITS_PER_BUILD = 150_000;
 
 /**
- * Per-user / per-day hard guard, in COST UNITS (≈ 1/5 of the monthly allowance).
- * Anti-abuse firewall only — a normal user never reaches it; it stops bots and
- * runaway agent loops from draining a month of allowance (or Goblin's balance) in
- * a single day. Locked numbers, not allowance/5 at runtime.
+ * Per-user / per-day hard guard, in COST UNITS. Anti-abuse firewall only — a normal
+ * user never reaches it; it stops bots and runaway agent loops from draining a month
+ * of allowance (or Goblin's balance) in a single day. Locked numbers, not allowance/5.
+ *
+ * Paid plans ≈ 1/5 of the monthly allowance. TRIAL is sized differently (2026-06-27):
+ * at the reconciled 0.15M/build the full 4.9M trial cap is ~33 builds, but the trial
+ * runs only 3 days. The guard is set to TRIAL_BUILDS_PER_DAY (11) × COST_UNITS_PER_BUILD
+ * = 1.65M/day so a genuine trial user can reach the full ~33 builds across the 3 days,
+ * with the monthly 4.9M cap (not the daily guard) as the real ceiling. Worst-case trial
+ * inference cost at the daily guard stays ≈ $0.98.
  */
+export const TRIAL_BUILDS_PER_DAY = 11;
+export const TRIAL_DAILY_GUARD = TRIAL_BUILDS_PER_DAY * COST_UNITS_PER_BUILD; // 1_650_000
+
 export const GOBLIN_DAILY_GUARD: Record<string, number> = {
-  none: 1_000_000,
-  trial: 1_000_000,
+  none: TRIAL_DAILY_GUARD,
+  trial: TRIAL_DAILY_GUARD,
   build: 3_500_000,
   pro: 6_000_000,
   power: 12_000_000,
 };
 
-/** Fallback daily guard for an unknown/missing plan — the most conservative (trial,
- *  1.0M cost units; mirrors GOBLIN_DAILY_GUARD.trial). */
-export const GOBLIN_DEFAULT_DAILY_GUARD = 1_000_000;
+/** Fallback daily guard for an unknown/missing plan — the most conservative (trial;
+ *  mirrors GOBLIN_DAILY_GUARD.trial = TRIAL_DAILY_GUARD). */
+export const GOBLIN_DEFAULT_DAILY_GUARD = TRIAL_DAILY_GUARD;
 
 /** Show the "approaching allowance" warning at this fraction of the allowance. */
 export const GOBLIN_CAP_WARN_RATIO = 0.8;

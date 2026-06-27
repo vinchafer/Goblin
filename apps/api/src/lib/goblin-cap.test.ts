@@ -12,6 +12,9 @@ import {
   GOBLIN_DEFAULT_DAILY_GUARD,
   GOBLIN_MONTHLY_ALLOWANCE,
   GOBLIN_DAILY_GUARD,
+  COST_UNITS_PER_BUILD,
+  TRIAL_BUILDS_PER_DAY,
+  TRIAL_DAILY_GUARD,
 } from './goblin-cap';
 
 // ── Locked constants (Session 3 — must match the founder/financial model) ──────
@@ -25,11 +28,31 @@ describe('locked constants', () => {
     expect(GOBLIN_MONTHLY_ALLOWANCE.pro).toBe(30_000_000);
     expect(GOBLIN_MONTHLY_ALLOWANCE.power).toBe(61_700_000);
   });
-  it('per-plan daily guards (≈ 1/5 monthly)', () => {
-    expect(GOBLIN_DAILY_GUARD.trial).toBe(1_000_000);
+  it('per-plan daily guards (paid ≈ 1/5 monthly; trial raised for 3-day reachability)', () => {
+    expect(GOBLIN_DAILY_GUARD.trial).toBe(1_650_000);
+    expect(GOBLIN_DAILY_GUARD.none).toBe(1_650_000); // mirrors trial
     expect(GOBLIN_DAILY_GUARD.build).toBe(3_500_000);
     expect(GOBLIN_DAILY_GUARD.pro).toBe(6_000_000);
     expect(GOBLIN_DAILY_GUARD.power).toBe(12_000_000);
+  });
+
+  // ── Builds reconcile (CFO single source of truth, 2026-06-27) ─────────────────
+  it('COST_UNITS_PER_BUILD reconciled to the CFO 0.15M', () => {
+    expect(COST_UNITS_PER_BUILD).toBe(150_000);
+  });
+  it('displayed builds derive Trial 33 / Build 116 / Pro 200 / Power 411', () => {
+    const b = (plan: string) => Math.round(monthlyAllowanceForPlan(plan) / COST_UNITS_PER_BUILD);
+    expect(b('trial')).toBe(33);
+    expect(b('build')).toBe(116);
+    expect(b('pro')).toBe(200);
+    expect(b('power')).toBe(411);
+  });
+  it('trial daily guard = 11 builds/day, full ~33-build cap reachable in 3 days', () => {
+    expect(TRIAL_BUILDS_PER_DAY).toBe(11);
+    expect(TRIAL_DAILY_GUARD).toBe(1_650_000);
+    expect(GOBLIN_DAILY_GUARD.trial).toBe(TRIAL_DAILY_GUARD);
+    // 3 days × daily guard ≥ the full monthly trial cap (cap binds, not the guard)
+    expect(TRIAL_DAILY_GUARD * 3).toBeGreaterThanOrEqual(monthlyAllowanceForPlan('trial'));
   });
 });
 
@@ -75,7 +98,7 @@ describe('allowance / guard resolution', () => {
   it('daily guard resolves per plan, conservative fallback', () => {
     expect(dailyGuardForPlan('power')).toBe(12_000_000);
     expect(dailyGuardForPlan('nope')).toBe(GOBLIN_DEFAULT_DAILY_GUARD);
-    expect(GOBLIN_DEFAULT_DAILY_GUARD).toBe(1_000_000);
+    expect(GOBLIN_DEFAULT_DAILY_GUARD).toBe(1_650_000);
   });
 });
 
@@ -155,9 +178,9 @@ describe('isOverDailyGuard', () => {
   it('fires at/over the per-plan daily guard (weighted)', () => {
     expect(isOverDailyGuard(3_499_999, 0, 'build')).toBe(false);
     expect(isOverDailyGuard(3_500_000, 0, 'build')).toBe(true);
-    // a Forge runaway trips the trial guard fast: 1.0M / 4.4 ≈ 227K Forge tokens
-    expect(isOverDailyGuard(0, 230_000, 'trial')).toBe(true);
-    expect(isOverDailyGuard(0, 220_000, 'trial')).toBe(false);
+    // a Forge runaway trips the trial guard fast: 1.65M / 4.4 ≈ 375K Forge tokens
+    expect(isOverDailyGuard(0, 380_000, 'trial')).toBe(true);
+    expect(isOverDailyGuard(0, 370_000, 'trial')).toBe(false);
   });
 });
 
