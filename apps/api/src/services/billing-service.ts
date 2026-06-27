@@ -523,6 +523,23 @@ export async function createPortalSession(userId: string): Promise<string> {
   }
 }
 
+/**
+ * Read the current-period-end (unix secs → ISO) defensively across Stripe API
+ * versions. In 2024-06-20 `current_period_end` is a top-level field on the
+ * Subscription; in 2025-03-31.basil+ (the live webhook endpoint serializes
+ * ~2026-04-22.dahlia) it moved ONTO each subscription item. The old code read
+ * only the top-level field, so a dahlia-shaped webhook payload yielded
+ * `new Date(undefined * 1000).toISOString()` → RangeError → the whole handler
+ * threw and the cancel-at-period-end flag was never persisted. Returns null when
+ * neither shape carries a usable value, so callers never write an Invalid Date.
+ */
+function periodEndISO(subscription: Stripe.Subscription): string | null {
+  const top = (subscription as unknown as { current_period_end?: unknown }).current_period_end;
+  const item = (subscription.items?.data?.[0] as unknown as { current_period_end?: unknown })?.current_period_end;
+  const secs = typeof top === 'number' ? top : typeof item === 'number' ? item : null;
+  return secs ? new Date(secs * 1000).toISOString() : null;
+}
+
 export async function handleSubscriptionCreated(subscription: Stripe.Subscription): Promise<void> {
   const supabase = getSupabaseAdmin();
   const userId = subscription.metadata.userId;
@@ -532,21 +549,23 @@ export async function handleSubscriptionCreated(subscription: Stripe.Subscriptio
   // DD §A: the legacy `monthly_limit` request-count is retired — the only limit is
   // the weighted Goblin allowance (lib/goblin-cap.ts), keyed off `plan`. Nothing to
   // write here beyond the plan + subscription identifiers.
-  await supabase
-    .from('users')
-    .update({
-      plan,
-      stripe_customer_id: subscription.customer as string,
-      stripe_subscription_id: subscription.id,
-      subscription_current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-      // A fresh subscription clears any stale cancellation flag (re-subscribe after
-      // churn → clean paid state).
-      cancel_at_period_end: subscription.cancel_at_period_end === true,
-      // Consume the trial: once an account has ever subscribed the free trial is
-      // spent and must NEVER reappear (derivePlanTruth gates on this). Stamp once.
-      trial_consumed_at: new Date().toISOString(),
-    })
-    .eq('id', userId);
+  const patch: Record<string, unknown> = {
+    plan,
+    stripe_customer_id: subscription.customer as string,
+    stripe_subscription_id: subscription.id,
+    // A fresh subscription clears any stale cancellation flag (re-subscribe after
+    // churn → clean paid state).
+    cancel_at_period_end: subscription.cancel_at_period_end === true,
+    // Consume the trial: once an account has ever subscribed the free trial is
+    // spent and must NEVER reappear (derivePlanTruth gates on this). Stamp once.
+    trial_consumed_at: new Date().toISOString(),
+  };
+  // Only write the period end when we can read a real value — never clobber a
+  // previously-good date with null because a payload shape changed.
+  const pe = periodEndISO(subscription);
+  if (pe) patch.subscription_current_period_end = pe;
+
+  await supabase.from('users').update(patch).eq('id', userId);
 }
 
 export async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Promise<void> {
@@ -560,14 +579,20 @@ export async function handleSubscriptionUpdated(subscription: Stripe.Subscriptio
   // here. Nulling it mid-period would drop them straight to the paywall (and could
   // resurrect an old trial). The true end is handled by handleSubscriptionDeleted,
   // which Stripe fires at the period boundary.
-  await supabase
-    .from('users')
-    .update({
-      plan,
-      cancel_at_period_end: subscription.cancel_at_period_end === true,
-      subscription_current_period_end: new Date(subscription.current_period_end * 1000).toISOString()
-    })
-    .eq('stripe_subscription_id', subscription.id);
+  //
+  // The cancel flag is written UNCONDITIONALLY and is decoupled from the period-end
+  // date: even if the period end is unreadable on some payload shape, the
+  // "läuft aus am" flag still lands (the existing stored period end stays as the
+  // ending date). This is the exact bug behind "Nächste Abbuchung" persisting after
+  // a real cancel — see periodEndISO().
+  const patch: Record<string, unknown> = {
+    plan,
+    cancel_at_period_end: subscription.cancel_at_period_end === true,
+  };
+  const pe = periodEndISO(subscription);
+  if (pe) patch.subscription_current_period_end = pe;
+
+  await supabase.from('users').update(patch).eq('stripe_subscription_id', subscription.id);
 }
 
 export async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Promise<void> {
