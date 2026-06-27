@@ -57,4 +57,56 @@ describe('derivePlanTruth', () => {
     expect(t.allowanceKey).toBe('build');
     expect(t.hasAccess).toBe(true);
   });
+
+  // --- cancel-as-paid + trial-consumed (2026-06-26) ---
+
+  it('cancel-at-period-end sub → still PAID, exposes ending date (not trial)', () => {
+    const t = derivePlanTruth({
+      stripe_subscription_id: 'sub_1',
+      plan: 'pro',
+      cancel_at_period_end: true,
+      subscription_current_period_end: future,
+      // An old trial date lingering on the row must NOT pull this into trial.
+      cloud_trial_ends_at: future,
+    }, NOW);
+    expect(t.state).toBe('paid');
+    expect(t.planKey).toBe('pro');
+    expect(t.cancelAtPeriodEnd).toBe(true);
+    expect(t.endsAt).toBe(future);
+    expect(t.hasAccess).toBe(true);
+  });
+
+  it('active sub NOT cancelling → paid, no ending date', () => {
+    const t = derivePlanTruth({
+      stripe_subscription_id: 'sub_1',
+      plan: 'pro',
+      cancel_at_period_end: false,
+      subscription_current_period_end: future,
+    }, NOW);
+    expect(t.state).toBe('paid');
+    expect(t.cancelAtPeriodEnd).toBe(false);
+    expect(t.endsAt).toBeNull();
+  });
+
+  it('churned: trial consumed + sub gone + old trial date → none, NEVER trial', () => {
+    const t = derivePlanTruth({
+      plan: 'none',
+      stripe_subscription_id: null,
+      trial_consumed_at: past,        // has ever subscribed
+      cloud_trial_ends_at: future,    // stale trial date still in the future
+    }, NOW);
+    expect(t.state).toBe('none');
+    expect(t.hasAccess).toBe(false);
+  });
+
+  it('never-subscribed account with active trial → still trial (not broken), exposes endsAt', () => {
+    const t = derivePlanTruth({
+      plan: 'none',
+      trial_consumed_at: null,
+      cloud_trial_ends_at: future,
+    }, NOW);
+    expect(t.state).toBe('trial');
+    expect(t.hasAccess).toBe(true);
+    expect(t.endsAt).toBe(future);
+  });
 });

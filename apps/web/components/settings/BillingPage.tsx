@@ -10,9 +10,12 @@ const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '';
 
 interface BillingStatus {
   plan: string;
+  planState?: 'comped' | 'paid' | 'trial' | 'none';
   status: string | null;
   trialEndsAt: string | null;
   currentPeriodEnd: string | null;
+  cancelAtPeriodEnd?: boolean;
+  endsAt?: string | null;
   cardLast4: string | null;
   cardBrand: string | null;
   isComped: boolean;
@@ -184,14 +187,27 @@ export function BillingPage() {
                     {isComped ? (status?.compReason?.startsWith('invite') ? 'Invite-Code' : 'Founder') : planPrice}
                   </div>
                 </div>
-                {!isComped && status?.trialEndsAt && (
+                {/* Status line — driven by the DERIVED planState, never by a stray
+                    cloud_trial_ends_at. trial → "Trial endet"; paid+cancelling →
+                    "läuft aus am"; paid → "Nächste Abbuchung"; none → "Kein Abo". */}
+                {!isComped && status?.planState === 'trial' && status?.trialEndsAt && (
                   <div style={{ marginTop: 8, fontSize: 13, color: 'var(--brand-gold)' }}>
                     {t(lang, 'Trial endet', 'Trial ends')} {new Date(status.trialEndsAt).toLocaleDateString(lang === 'de' ? 'de-DE' : 'en-US')}
                   </div>
                 )}
-                {!isComped && status?.currentPeriodEnd && !status?.trialEndsAt && (
+                {!isComped && status?.planState === 'paid' && status?.cancelAtPeriodEnd && status?.endsAt && (
+                  <div style={{ marginTop: 8, fontSize: 13, color: 'var(--brand-gold)' }}>
+                    {t(lang, `${planName} — läuft aus am`, `${planName} — ends on`)} {new Date(status.endsAt).toLocaleDateString(lang === 'de' ? 'de-DE' : 'en-US')}
+                  </div>
+                )}
+                {!isComped && status?.planState === 'paid' && !status?.cancelAtPeriodEnd && status?.currentPeriodEnd && (
                   <div style={{ marginTop: 8, fontSize: 13, color: 'var(--text-meta)' }}>
                     {t(lang, 'Nächste Abbuchung', 'Next charge')} {new Date(status.currentPeriodEnd).toLocaleDateString(lang === 'de' ? 'de-DE' : 'en-US')}
+                  </div>
+                )}
+                {!isComped && status?.planState === 'none' && (
+                  <div style={{ marginTop: 8, fontSize: 13, color: 'var(--text-meta)' }}>
+                    {t(lang, 'Kein aktives Abo', 'No active subscription')}
                   </div>
                 )}
               </div>

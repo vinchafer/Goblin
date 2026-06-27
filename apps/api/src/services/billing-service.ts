@@ -538,7 +538,13 @@ export async function handleSubscriptionCreated(subscription: Stripe.Subscriptio
       plan,
       stripe_customer_id: subscription.customer as string,
       stripe_subscription_id: subscription.id,
-      subscription_current_period_end: new Date(subscription.current_period_end * 1000).toISOString()
+      subscription_current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+      // A fresh subscription clears any stale cancellation flag (re-subscribe after
+      // churn → clean paid state).
+      cancel_at_period_end: subscription.cancel_at_period_end === true,
+      // Consume the trial: once an account has ever subscribed the free trial is
+      // spent and must NEVER reappear (derivePlanTruth gates on this). Stamp once.
+      trial_consumed_at: new Date().toISOString(),
     })
     .eq('id', userId);
 }
@@ -548,10 +554,17 @@ export async function handleSubscriptionUpdated(subscription: Stripe.Subscriptio
   const priceId = subscription.items.data[0]?.price.id || '';
   const plan = getPlanFromPriceId(priceId) || 'build';
 
+  // Cancel-at-period-end: Stripe keeps the sub `active` until current_period_end and
+  // fires this event with cancel_at_period_end=true. The user KEEPS paid access until
+  // then — so we persist the flag + period end and NEVER null stripe_subscription_id
+  // here. Nulling it mid-period would drop them straight to the paywall (and could
+  // resurrect an old trial). The true end is handled by handleSubscriptionDeleted,
+  // which Stripe fires at the period boundary.
   await supabase
     .from('users')
     .update({
       plan,
+      cancel_at_period_end: subscription.cancel_at_period_end === true,
       subscription_current_period_end: new Date(subscription.current_period_end * 1000).toISOString()
     })
     .eq('stripe_subscription_id', subscription.id);
@@ -560,15 +573,20 @@ export async function handleSubscriptionUpdated(subscription: Stripe.Subscriptio
 export async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Promise<void> {
   const supabase = getSupabaseAdmin();
 
-  // A cancelled subscriber must NOT be reset to 'build' (a real paid plan) — that
-  // made them indistinguishable from a never-payer AND handed them full Build quota
-  // for free. Set the neutral 'none'; the canonical derivation (plan-truth.ts) then
-  // routes them to the paywall. Requires migration 0070 (adds 'none' to the CHECK).
+  // Fired at the TRUE end of the subscription (period boundary for a cancel-at-period-
+  // end sub, or immediately for an immediate cancel). Now access really ends.
+  //
+  // Reset to the neutral 'none' — NOT 'build' (a real paid plan; that made a churned
+  // user indistinguishable from a never-payer and handed them free Build quota) and
+  // NOT trial (the trial is consumed; trial_consumed_at stays set so derivePlanTruth
+  // routes them to the paywall / re-subscribe, never back to a trial). Requires
+  // migration 0070 (adds 'none' to the CHECK) + 0071 (cancel_at_period_end column).
   await supabase
     .from('users')
     .update({
       plan: 'none',
-      stripe_subscription_id: null
+      stripe_subscription_id: null,
+      cancel_at_period_end: false
     })
     .eq('stripe_subscription_id', subscription.id);
 }

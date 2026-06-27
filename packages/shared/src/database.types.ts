@@ -16,8 +16,14 @@ export interface Database {
         Row: {
           id: string
           email: string
-          plan: 'trial' | 'build' | 'pro' | 'power'
+          plan: 'none' | 'trial' | 'build' | 'pro' | 'power'
           stripe_customer_id: string | null
+          stripe_subscription_id: string | null
+          subscription_current_period_end: string | null
+          cancel_at_period_end: boolean | null
+          cloud_trial_ends_at: string | null
+          trial_consumed_at: string | null
+          is_comped: boolean | null
           monthly_requests_used: number
           billing_cycle_start: string | null
           github_username: string | null

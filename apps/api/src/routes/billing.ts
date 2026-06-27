@@ -208,7 +208,7 @@ billing.get('/status', authMiddleware, async (c) => {
   // user, which is why a completed subscription never reflected in the UI.
   const { data: user, error } = await supabase
     .from('users')
-    .select('plan, subscription_current_period_end, cloud_trial_ends_at, is_comped, comp_reason, stripe_customer_id, stripe_subscription_id')
+    .select('plan, subscription_current_period_end, cloud_trial_ends_at, is_comped, comp_reason, stripe_customer_id, stripe_subscription_id, cancel_at_period_end, trial_consumed_at')
     .eq('id', userId)
     .single();
 
@@ -239,8 +239,14 @@ billing.get('/status', authMiddleware, async (c) => {
     plan: truth.planKey,
     planState: truth.state,
     status: null,
-    trialEndsAt: user.cloud_trial_ends_at ?? null,
+    // Only surface trialEndsAt when the derived state is actually a trial — a paid
+    // (or cancelled-but-still-paid) account must never render "Trial endet …" just
+    // because an old cloud_trial_ends_at lingers on the row.
+    trialEndsAt: truth.state === 'trial' ? (user.cloud_trial_ends_at ?? null) : null,
     currentPeriodEnd: user.subscription_current_period_end ?? null,
+    // Cancel-at-period-end → paid until this date; UI shows "Pro — läuft aus am …".
+    cancelAtPeriodEnd: truth.cancelAtPeriodEnd,
+    endsAt: truth.endsAt,
     cardLast4,
     cardBrand,
     isComped: !!user.is_comped,
