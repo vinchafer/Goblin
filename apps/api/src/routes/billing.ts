@@ -413,12 +413,18 @@ billing.post('/webhook', async (c) => {
     if (existing) {
       return c.json({ received: true, duplicate: true });
     }
-    // Mark as processed before applying side effects. If the insert races
-    // (rare), the unique-pk constraint will reject the second attempt.
+    // Claim the event before applying side effects so a concurrent duplicate
+    // delivery can't double-process (the unique-pk constraint rejects the racer).
+    // BUT: if the handler below THROWS (e.g. a payload-shape/transient error), we
+    // roll this claim back in the catch — otherwise the event is permanently
+    // recorded as "processed" and Stripe's automatic retry is skipped as a
+    // duplicate, silently losing the side effect (this is how a failed
+    // cancel-at-period-end update was lost forever).
     await supabase
       .from('stripe_processed_events')
       .insert({ event_id: event.id, event_type: event.type });
 
+    try {
     switch (event.type) {
       case 'checkout.session.completed': {
         // Legacy hosted-checkout path. The Elements/SetupIntent rebuild
@@ -449,6 +455,15 @@ billing.post('/webhook', async (c) => {
       // That counter is retired (DD §A) and the weighted Goblin allowance resets
       // automatically at the start of each calendar month (lib/goblin-cap.ts), so
       // there is nothing to reset here.
+    }
+    } catch (handlerErr) {
+      // Side effect failed → release the idempotency claim so Stripe's retry is
+      // NOT short-circuited as a duplicate, then surface a 500 to trigger that retry.
+      await supabase
+        .from('stripe_processed_events')
+        .delete()
+        .eq('event_id', event.id);
+      throw handlerErr;
     }
 
     return c.json({ received: true });

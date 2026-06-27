@@ -128,4 +128,46 @@ describe('cancel-as-paid + trial-consumed', () => {
     expect(row.cancel_at_period_end).toBe(false);
     expect(derivePlanTruth(row).state).toBe('paid');
   });
+
+  // ── API-version robustness (the live cancel-flag-lost bug) ──────────────────
+  // The live webhook endpoint serializes a 2025+/dahlia payload where
+  // current_period_end is on the subscription ITEM, not the top level. The old
+  // handler read only the top-level field → new Date(undefined*1000).toISOString()
+  // threw → cancel_at_period_end was never persisted → UI kept "Nächste Abbuchung".
+
+  // A dahlia-shaped cancel event: NO top-level current_period_end; it lives on the item.
+  function dahliaSub(over: Record<string, any> = {}): Stripe.Subscription {
+    return {
+      id: 'sub_x',
+      customer: 'cus_x',
+      metadata: { userId: 'u1' },
+      items: { data: [{ price: { id: 'price_x' }, current_period_end: PERIOD_END } as any] } as any,
+      cancel_at_period_end: false,
+      // current_period_end intentionally ABSENT at the top level
+      ...over,
+    } as unknown as Stripe.Subscription;
+  }
+
+  it('PROOF 7: dahlia-shaped cancel (period_end on item) → handler does NOT throw, persists cancel flag + ending date', async () => {
+    users.push({ id: 'u1', plan: 'pro', stripe_subscription_id: 'sub_x', trial_consumed_at: new Date().toISOString() });
+    await handleSubscriptionUpdated(dahliaSub({ cancel_at_period_end: true }));
+    const row = users[0]!;
+    expect(row.cancel_at_period_end).toBe(true);                                   // flag landed
+    expect(row.subscription_current_period_end).toBe(new Date(PERIOD_END * 1000).toISOString()); // read off item
+    const t = derivePlanTruth(row);
+    expect(t.state).toBe('paid');
+    expect(t.cancelAtPeriodEnd).toBe(true);
+    expect(t.endsAt).toBe(new Date(PERIOD_END * 1000).toISOString());
+  });
+
+  it('PROOF 8: cancel event with period_end unreadable on EVERY shape → cancel flag STILL persists; prior date untouched', async () => {
+    const priorEnd = new Date((NOW + 10 * 86400) * 1000).toISOString();
+    users.push({ id: 'u1', plan: 'pro', stripe_subscription_id: 'sub_x', subscription_current_period_end: priorEnd, trial_consumed_at: new Date().toISOString() });
+    // No current_period_end anywhere (item has none, top has none).
+    await handleSubscriptionUpdated(dahliaSub({ cancel_at_period_end: true, items: { data: [{ price: { id: 'price_x' } } as any] } as any }));
+    const row = users[0]!;
+    expect(row.cancel_at_period_end).toBe(true);                       // the actual fix: flag still lands
+    expect(row.subscription_current_period_end).toBe(priorEnd);        // never clobbered with null/Invalid Date
+    expect(derivePlanTruth(row).cancelAtPeriodEnd).toBe(true);
+  });
 });
