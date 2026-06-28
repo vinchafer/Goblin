@@ -35,6 +35,14 @@ export interface PlanTruth {
   cancelAtPeriodEnd: boolean;
   /** ISO date access ends (paid+cancelling → period end; trial → trial end); else null. */
   endsAt: string | null;
+  /**
+   * A renewal charge failed and the sub is in Stripe's retry window (past_due).
+   * Access is RETAINED (still 'paid') but the UI must warn the user. Cleared on a
+   * successful retry; the final failure converts to 'none' via the deleted webhook.
+   */
+  paymentFailing: boolean;
+  /** ISO of the next Stripe retry attempt (banner deadline) when paymentFailing; else null. */
+  paymentDeadline: string | null;
 }
 
 export interface PlanTruthRow {
@@ -48,15 +56,19 @@ export interface PlanTruthRow {
   cancel_at_period_end?: boolean | null;
   /** End of the current paid period (also the cancel-at-period-end access cutoff). */
   subscription_current_period_end?: string | null;
+  /** 'past_due' while a renewal charge is failing (Stripe retry window); else null/healthy. */
+  payment_state?: string | null;
+  /** ISO of the next Stripe retry attempt — the banner deadline. */
+  next_payment_attempt?: string | null;
 }
 
 const PAID_PLAN_KEYS = new Set(['build', 'pro', 'power']);
 
 export function derivePlanTruth(row: PlanTruthRow | null | undefined, now: Date = new Date()): PlanTruth {
-  if (!row) return { state: 'none', allowanceKey: 'none', planKey: 'none', hasAccess: false, cancelAtPeriodEnd: false, endsAt: null };
+  if (!row) return { state: 'none', allowanceKey: 'none', planKey: 'none', hasAccess: false, cancelAtPeriodEnd: false, endsAt: null, paymentFailing: false, paymentDeadline: null };
 
   if (row.is_comped) {
-    return { state: 'comped', allowanceKey: 'power', planKey: 'comped', hasAccess: true, cancelAtPeriodEnd: false, endsAt: null };
+    return { state: 'comped', allowanceKey: 'power', planKey: 'comped', hasAccess: true, cancelAtPeriodEnd: false, endsAt: null, paymentFailing: false, paymentDeadline: null };
   }
 
   if (row.stripe_subscription_id) {
@@ -68,6 +80,10 @@ export function derivePlanTruth(row: PlanTruthRow | null | undefined, now: Date 
     const p = (row.plan ?? '').toLowerCase();
     const paid = PAID_PLAN_KEYS.has(p) ? p : 'build';
     const cancelling = row.cancel_at_period_end === true;
+    // A failing renewal keeps the user PAID (access retained) during Stripe's retry
+    // window — only the final cancel (deleted webhook) downgrades to 'none'. Expose
+    // the flag + next-attempt deadline so the UI can warn without locking access.
+    const paymentFailing = row.payment_state === 'past_due';
     return {
       state: 'paid',
       allowanceKey: paid,
@@ -75,13 +91,15 @@ export function derivePlanTruth(row: PlanTruthRow | null | undefined, now: Date 
       hasAccess: true,
       cancelAtPeriodEnd: cancelling,
       endsAt: cancelling ? (row.subscription_current_period_end ?? null) : null,
+      paymentFailing,
+      paymentDeadline: paymentFailing ? (row.next_payment_attempt ?? null) : null,
     };
   }
 
   // Trial only for an account that has NEVER subscribed (trial not consumed).
   if (!row.trial_consumed_at && row.cloud_trial_ends_at && new Date(row.cloud_trial_ends_at) > now) {
-    return { state: 'trial', allowanceKey: 'trial', planKey: 'trial', hasAccess: true, cancelAtPeriodEnd: false, endsAt: row.cloud_trial_ends_at };
+    return { state: 'trial', allowanceKey: 'trial', planKey: 'trial', hasAccess: true, cancelAtPeriodEnd: false, endsAt: row.cloud_trial_ends_at, paymentFailing: false, paymentDeadline: null };
   }
 
-  return { state: 'none', allowanceKey: 'none', planKey: 'none', hasAccess: false, cancelAtPeriodEnd: false, endsAt: null };
+  return { state: 'none', allowanceKey: 'none', planKey: 'none', hasAccess: false, cancelAtPeriodEnd: false, endsAt: null, paymentFailing: false, paymentDeadline: null };
 }
