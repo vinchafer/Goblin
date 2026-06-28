@@ -250,7 +250,10 @@ export async function createKey(
 ): Promise<ByokKey> {
   const supabase = getSupabaseAdmin();
 
-  // Check rate limit: max 5 keys per provider
+  // Per-provider key cap: max 2, uniform across all plans, unlimited providers.
+  // GRANDFATHER: this only blocks ADDING a new key once a provider is at/over the
+  // cap — it never deletes existing rows, so users who already hold >2 keys for a
+  // provider (created under the legacy cap of 5) keep them; they just can't add more.
   const { count } = await supabase
     .from('byok_keys')
     .select('*', { count: 'exact', head: true })
@@ -258,8 +261,10 @@ export async function createKey(
     .eq('provider', provider)
     .eq('status', 'active');
 
-  if (count && count >= 5) {
-    throw new Error('Maximum 5 keys per provider');
+  if (count && count >= 2) {
+    // Bilingual (EN + DE) so any surface can show it verbatim. The frontend keys off
+    // the 'Maximum'/'max.' marker to switch into the replace-offer UX.
+    throw new Error('Maximum 2 keys per provider (max. 2 Keys pro Anbieter)');
   }
 
   // Validate key before storing

@@ -74,13 +74,11 @@ export function BillingPage() {
     pro: [
       t(lang, 'Alles aus Build', 'Everything in Build'),
       t(lang, 'Cloud-Credits inklusive', 'Cloud credits included'),
-      t(lang, 'Priority Support', 'Priority support'),
       storageLabel('pro', lang),
     ],
     power: [
       t(lang, 'Alles aus Pro', 'Everything in Pro'),
-      t(lang, 'Team-Features', 'Team features'),
-      t(lang, 'SLA-Support', 'SLA support'),
+      t(lang, 'Priority Support', 'Priority support'),
       storageLabel('power', lang),
     ],
   };

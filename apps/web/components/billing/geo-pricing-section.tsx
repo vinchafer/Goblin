@@ -42,7 +42,6 @@ const PLAN_FEATURES = {
     storageLabelCloud('power', 'en'),
     'GitHub push integration',
     'Build from any device',
-    'Beta features access',
   ],
 };
 
