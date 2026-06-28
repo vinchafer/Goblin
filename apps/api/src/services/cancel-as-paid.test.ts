@@ -57,7 +57,10 @@ import {
 } from './billing-service';
 import { derivePlanTruth } from '../lib/plan-truth';
 
-const NOW = Math.floor(new Date('2026-06-26T12:00:00Z').getTime() / 1000);
+// Relative to the real clock so the "future" assumptions (FUTURE_ISO vs the live
+// `new Date()` inside derivePlanTruth) can never rot. Everything below is derived
+// from NOW, so internal consistency (sub period_end vs endsAt) is preserved.
+const NOW = Math.floor(Date.now() / 1000);
 const PERIOD_END = NOW + 30 * 86400; // 30 days out
 const FUTURE_ISO = new Date((NOW + 2 * 86400) * 1000).toISOString();
 
