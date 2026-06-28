@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Header } from "@/components/layout/Header";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { TrialBanner } from "@/components/app-shell/trial-banner";
+import { PaymentFailingBanner } from "@/components/app-shell/payment-failing-banner";
 // NOTE (SCREEN_03_V3 §TASK 4): BottomTabBar intentionally NOT rendered.
 // A bottom bar collides with the phone typing zone / swipe-up gesture area;
 // mobile mode-switching lives in the top header mode-tile instead. File kept
@@ -243,6 +244,7 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
         previewUrl={contextPreviewUrl ?? undefined}
       />
       <TrialBanner />
+      <PaymentFailingBanner />
 
       <div style={{ display: 'flex', flex: 1, overflow: 'hidden', position: 'relative' }}>
         <Sidebar

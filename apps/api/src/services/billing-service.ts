@@ -611,7 +611,101 @@ export async function handleSubscriptionDeleted(subscription: Stripe.Subscriptio
     .update({
       plan: 'none',
       stripe_subscription_id: null,
-      cancel_at_period_end: false
+      cancel_at_period_end: false,
+      // Churn → no live sub → no payment-failing state to carry. Clear it so a
+      // resubscribe never inherits a stale past_due banner.
+      payment_state: null,
+      payment_failing_since: null,
+      next_payment_attempt: null,
     })
     .eq('stripe_subscription_id', subscription.id);
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Dunning (failed-payment grace) 2026-06-27.
+//
+// CRITICAL SHAPE RULE: RAW webhook payloads (event.data.object) arrive in the
+// endpoint's 2026-05-27.dahlia shape — NOT the SDK-pinned 2024-06-20 shape. The
+// invoice fields MOVED in dahlia (confirmed against a real captured test-mode
+// payload):
+//   - subscription id: invoice.parent.subscription_details.subscription
+//     (invoice.subscription is GONE / undefined)
+//   - billing reason : invoice.billing_reason ('subscription_cycle' = a renewal)
+//   - retry deadline : invoice.next_payment_attempt (unix secs, nullable)
+// We read the dahlia path first and fall back to the legacy field defensively so a
+// future API-version flip can't silently null the lookup (the periodEndISO lesson).
+// ──────────────────────────────────────────────────────────────────────────
+
+/** Dahlia-aware subscription id from an invoice payload (legacy fallback). */
+function invoiceSubscriptionId(invoice: Stripe.Invoice): string | null {
+  const dahlia = (invoice as unknown as {
+    parent?: { subscription_details?: { subscription?: unknown } };
+  }).parent?.subscription_details?.subscription;
+  const legacy = (invoice as unknown as { subscription?: unknown }).subscription;
+  if (typeof dahlia === 'string' && dahlia) return dahlia;
+  if (typeof legacy === 'string' && legacy) return legacy;
+  return null;
+}
+
+/** Dahlia next_payment_attempt (unix secs) → ISO, or null. */
+function nextAttemptISO(invoice: Stripe.Invoice): string | null {
+  const secs = (invoice as unknown as { next_payment_attempt?: unknown }).next_payment_attempt;
+  return typeof secs === 'number' ? new Date(secs * 1000).toISOString() : null;
+}
+
+/**
+ * invoice.payment_failed — a renewal charge failed. KEEP the plan paid (access
+ * retained during Stripe's ~14-day Smart Retry window) but flag payment_state so
+ * the in-app banner shows. Only acts on RENEWAL failures (billing_reason =
+ * subscription_cycle) — a failed FIRST invoice (subscription_create) means the sub
+ * never activated and is handled by the create/incomplete path, not dunning.
+ * Idempotent: re-delivery re-sets the same state; payment_failing_since is stamped
+ * only once (first failure) so it reflects the true start.
+ */
+export async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<void> {
+  const billingReason = (invoice as unknown as { billing_reason?: string }).billing_reason;
+  if (billingReason !== 'subscription_cycle') return; // not a renewal → ignore
+
+  const subId = invoiceSubscriptionId(invoice);
+  if (!subId) return; // no subscription tied to this invoice → nothing to flag
+
+  const supabase = getSupabaseAdmin();
+
+  // Read the current failing-since so re-delivery doesn't reset the start time.
+  const { data: existing } = await supabase
+    .from('users')
+    .select('payment_failing_since')
+    .eq('stripe_subscription_id', subId)
+    .maybeSingle();
+
+  const patch: Record<string, unknown> = {
+    payment_state: 'past_due',
+    next_payment_attempt: nextAttemptISO(invoice),
+  };
+  if (!existing?.payment_failing_since) {
+    patch.payment_failing_since = new Date().toISOString();
+  }
+
+  await supabase.from('users').update(patch).eq('stripe_subscription_id', subId);
+}
+
+/**
+ * invoice.payment_succeeded — a charge cleared. Recovery: CLEAR the payment-failing
+ * state so the banner disappears and the plan reads healthy. Runs for any
+ * subscription-tied success (renewal retry that recovered, or a normal cycle); a
+ * first-payment success simply clears an already-null state (no-op). Idempotent.
+ */
+export async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice): Promise<void> {
+  const subId = invoiceSubscriptionId(invoice);
+  if (!subId) return;
+
+  const supabase = getSupabaseAdmin();
+  await supabase
+    .from('users')
+    .update({
+      payment_state: null,
+      payment_failing_since: null,
+      next_payment_attempt: null,
+    })
+    .eq('stripe_subscription_id', subId);
 }

@@ -12,7 +12,9 @@ import {
   changePlan,
   handleSubscriptionCreated,
   handleSubscriptionUpdated,
-  handleSubscriptionDeleted
+  handleSubscriptionDeleted,
+  handleInvoicePaymentFailed,
+  handleInvoicePaymentSucceeded
 } from '../services/billing-service';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { derivePlanTruth } from '../lib/plan-truth';
@@ -208,7 +210,7 @@ billing.get('/status', authMiddleware, async (c) => {
   // user, which is why a completed subscription never reflected in the UI.
   const { data: user, error } = await supabase
     .from('users')
-    .select('plan, subscription_current_period_end, cloud_trial_ends_at, is_comped, comp_reason, stripe_customer_id, stripe_subscription_id, cancel_at_period_end, trial_consumed_at')
+    .select('plan, subscription_current_period_end, cloud_trial_ends_at, is_comped, comp_reason, stripe_customer_id, stripe_subscription_id, cancel_at_period_end, trial_consumed_at, payment_state, next_payment_attempt')
     .eq('id', userId)
     .single();
 
@@ -247,6 +249,10 @@ billing.get('/status', authMiddleware, async (c) => {
     // Cancel-at-period-end → paid until this date; UI shows "Pro — läuft aus am …".
     cancelAtPeriodEnd: truth.cancelAtPeriodEnd,
     endsAt: truth.endsAt,
+    // Dunning: a failing renewal keeps state 'paid' (access retained) but flags this
+    // so the web shows the "update your payment method" banner until recovery.
+    paymentFailing: truth.paymentFailing,
+    paymentDeadline: truth.paymentDeadline,
     cardLast4,
     cardBrand,
     isComped: !!user.is_comped,
@@ -449,6 +455,18 @@ billing.post('/webhook', async (c) => {
 
       case 'customer.subscription.deleted':
         await handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
+        break;
+
+      // Dunning (2026-06-27): a renewal charge failed → flag past_due (access kept,
+      // banner shown); a charge cleared → clear the flag (recovery). Both are
+      // dahlia-shape-aware (invoice.parent.subscription_details.subscription). The
+      // idempotency rollback above covers a throwing handler → Stripe retries.
+      case 'invoice.payment_failed':
+        await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice);
+        break;
+
+      case 'invoice.payment_succeeded':
+        await handleInvoicePaymentSucceeded(event.data.object as Stripe.Invoice);
         break;
 
       // invoice.paid previously reset the legacy monthly_requests_used counter.

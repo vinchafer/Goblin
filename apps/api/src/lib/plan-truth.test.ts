@@ -99,6 +99,33 @@ describe('derivePlanTruth', () => {
     expect(t.hasAccess).toBe(false);
   });
 
+  // --- dunning / failed-payment grace (2026-06-27) ---
+
+  it('past_due renewal → still PAID (access kept) but paymentFailing flag + deadline', () => {
+    const t = derivePlanTruth({
+      stripe_subscription_id: 'sub_1',
+      plan: 'pro',
+      payment_state: 'past_due',
+      next_payment_attempt: future,
+    }, NOW);
+    expect(t.state).toBe('paid');
+    expect(t.hasAccess).toBe(true);
+    expect(t.paymentFailing).toBe(true);
+    expect(t.paymentDeadline).toBe(future);
+  });
+
+  it('healthy paid sub → paymentFailing false, no deadline', () => {
+    const t = derivePlanTruth({ stripe_subscription_id: 'sub_1', plan: 'pro' }, NOW);
+    expect(t.paymentFailing).toBe(false);
+    expect(t.paymentDeadline).toBeNull();
+  });
+
+  it('no-sub states never expose paymentFailing', () => {
+    expect(derivePlanTruth({ is_comped: true }, NOW).paymentFailing).toBe(false);
+    expect(derivePlanTruth({ plan: 'none', cloud_trial_ends_at: future }, NOW).paymentFailing).toBe(false);
+    expect(derivePlanTruth(null, NOW).paymentFailing).toBe(false);
+  });
+
   it('never-subscribed account with active trial → still trial (not broken), exposes endsAt', () => {
     const t = derivePlanTruth({
       plan: 'none',
