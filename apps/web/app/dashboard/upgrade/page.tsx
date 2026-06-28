@@ -35,7 +35,7 @@ const PLANS: PlanCardData[] = [
     pitch: 'Lern Goblin kennen. Großzügiges Kontingent für deine Builds, BYOK auf allen Providern — ohne Goblin-Limit.',
     features: [
       buildsPerMonth('build', 'de'),
-      '3 Projekte',
+      'Unbegrenzte Projekte',
       'BYOK — alle Provider, kein Goblin-Limit',
       'Send to Code',
       '5 GB Cloud-Storage',
@@ -50,8 +50,8 @@ const PLANS: PlanCardData[] = [
     pitch: 'Mehr monatliches Kontingent, Auto-Fallback wenn ein Key streikt.',
     features: [
       buildsPerMonth('pro', 'de'),
-      '50 Projekte',
-      'BYOK — kein Goblin-Limit',
+      'Unbegrenzte Projekte',
+      'BYOK — alle Provider, kein Goblin-Limit',
       '20 GB Cloud-Storage',
       'GitHub + Vercel Auto-Deploy',
       'Auto-Fallback bei Key-Ausfall',
@@ -63,11 +63,11 @@ const PLANS: PlanCardData[] = [
     price: 39,
     monthlyBuilds: PLAN_BUILDS.power,
     meta: 'WENN DU MEHR KONTINGENT BRAUCHST',
-    pitch: 'Mehr Durchsatz für Power-Builder. Unlimitierte Projekte.',
+    pitch: 'Mehr Durchsatz für Power-Builder.',
     features: [
       buildsPerMonth('power', 'de'),
-      'Unlimitierte Projekte',
-      'BYOK · Priority-Zugriff',
+      'Unbegrenzte Projekte',
+      'BYOK — alle Provider, kein Goblin-Limit',
       '100 GB Cloud-Storage',
       'Erweiterte Modell-Auswahl',
       'Beta-Features 30 Tage früher',
@@ -282,7 +282,7 @@ export default function UpgradePage() {
           <div className="gobl-panel" style={{ overflow: 'hidden', marginBottom: 32 }}>
             {[
               { label: 'Builds / Monat (ca.)', values: [PLAN_BUILDS.build, PLAN_BUILDS.pro, PLAN_BUILDS.power].map(n => `≈ ${n.toLocaleString('de-DE')}`) },
-              { label: 'Projekte', values: ['3', '50', '∞'] },
+              { label: 'Projekte', values: ['∞', '∞', '∞'] },
               { label: 'Cloud-Storage', values: ['5 GB', '20 GB', '100 GB'] },
               { label: 'BYOK (alle Provider)', values: ['✓', '✓', '✓'] },
               { label: 'Auto-Fallback bei Key-Ausfall', values: ['—', '✓', '✓'] },
