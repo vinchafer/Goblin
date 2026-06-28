@@ -67,6 +67,7 @@ import { serve } from '@hono/node-server';
 import { cors } from 'hono/cors';
 import { initSentry, captureError } from './lib/sentry';
 import logger, { logRequest } from './lib/logger';
+import { StorageCapError, StorageUnavailableError } from './lib/storage-cap';
 
 initSentry();
 import { generalRateLimit } from './middleware/rate-limit';
@@ -172,6 +173,16 @@ app.use('*', async (c, next) => {
 });
 
 app.onError((err, c) => {
+  // Storage cap: a write that would exceed the plan limit → 413 with a clear,
+  // localizable payload; an unverifiable cap (counter/plan unreadable) → 503 (fail safe).
+  if (err instanceof StorageCapError) {
+    logger.warn({ path: c.req.path, limitBytes: err.limitBytes, usedBytes: err.usedBytes }, 'storage_cap_exceeded');
+    return c.json({ error: err.message, code: err.code, limitBytes: err.limitBytes, usedBytes: err.usedBytes }, 413);
+  }
+  if (err instanceof StorageUnavailableError) {
+    logger.warn({ path: c.req.path }, 'storage_unavailable');
+    return c.json({ error: err.message, code: err.code }, 503);
+  }
   const status = err instanceof HTTPException ? err.status : 500;
   if (status >= 500) captureError(err, { path: c.req.path, method: c.req.method });
   else logger.warn({ path: c.req.path, status }, err.message);

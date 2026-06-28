@@ -4,7 +4,8 @@ import { getSupabaseAdmin } from '../lib/supabase';
 import { PROJECT_GENERATOR_SYSTEM_PROMPT } from '../prompts/project-generator';
 import { getActiveKey } from './byok-service';
 import { decryptData } from './encryption';
-import { saveFile } from './file-storage';
+import { saveFile, headBytes } from './file-storage';
+import { byteLen, assertStorageRoom } from './storage-usage';
 import { reconcileBlockPaths } from '../lib/asset-reconcile';
 import { OPENAI_COMPATIBLE, PROVIDER_PRIORITY } from './model-router';
 import type { SSEStreamingApi } from 'hono/streaming';
@@ -153,7 +154,16 @@ export async function generateProject(
       reconcileBlockPaths(result.files, result.files);
     }
 
-    // Save all files
+    // Storage cap — pre-check the whole generated batch's aggregate growth BEFORE any
+    // write so a generation never half-writes at the cap boundary. A StorageCapError
+    // here is caught by the outer try/catch → SSE 'error' + status 'generation_failed'.
+    let aggregateDelta = 0;
+    for (const file of result.files) {
+      aggregateDelta += byteLen(file.content) - await headBytes(projectId, file.path);
+    }
+    await assertStorageRoom(userId, aggregateDelta);
+
+    // Save all files (account-only — the aggregate is already cleared above).
     for (let i = 0; i < result.files.length; i++) {
       const file = result.files[i]!;
       await stream.writeSSE({
@@ -164,7 +174,7 @@ export async function generateProject(
         })
       });
 
-      await saveFile(projectId, file.path, file.content);
+      await saveFile(projectId, file.path, file.content, { userId, enforce: false });
     }
 
     // Update project status

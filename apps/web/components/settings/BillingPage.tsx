@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/client';
 import { Icon } from '@/components/ui/icon';
 import { planLabel } from '@/lib/plan-label';
 import { buildsPerMonth } from '@/lib/plan-builds';
+import { storageLabel } from '@/lib/plan-storage';
+import StorageUsageBar from '@/components/usage/StorageUsageBar';
 import { useLang, t } from '@/lib/use-lang';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '';
@@ -66,20 +68,20 @@ export function BillingPage() {
     build: [
       t(lang, 'Unbegrenzte Projekte', 'Unlimited projects'),
       t(lang, 'Alle Provider via BYOK', 'All providers via BYOK'),
-      t(lang, '5 GB Speicher', '5 GB storage'),
+      storageLabel('build', lang),
       t(lang, 'GitHub-Push & Deploy', 'GitHub push & deploy'),
     ],
     pro: [
       t(lang, 'Alles aus Build', 'Everything in Build'),
       t(lang, 'Cloud-Credits inklusive', 'Cloud credits included'),
       t(lang, 'Priority Support', 'Priority support'),
-      t(lang, '20 GB Speicher', '20 GB storage'),
+      storageLabel('pro', lang),
     ],
     power: [
       t(lang, 'Alles aus Pro', 'Everything in Pro'),
       t(lang, 'Team-Features', 'Team features'),
       t(lang, 'SLA-Support', 'SLA support'),
-      t(lang, '100 GB Speicher', '100 GB storage'),
+      storageLabel('power', lang),
     ],
   };
 
@@ -268,6 +270,15 @@ export function BillingPage() {
           <StatCard icon="fast" label="Free" value={usage?.free_api ?? 0} />
           <StatCard icon="rocket" label="Goblin" value={usage?.goblin_hosted ?? 0} />
         </div>
+      </Section>
+
+      {/* Storage — real per-user usage against the plan cap ("X.X / Y GB"). */}
+      <Section title={t(lang, 'Speicher', 'Storage')}>
+        <Card>
+          <div style={{ padding: 20 }}>
+            <StorageUsageBar />
+          </div>
+        </Card>
       </Section>
 
       {/* Payment method */}

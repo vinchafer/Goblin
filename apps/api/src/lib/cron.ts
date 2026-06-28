@@ -2,6 +2,7 @@ import logger from './logger';
 import { runRankingsAggregator } from './rankings/aggregator';
 import { hardDeletePendingAccounts } from '../jobs/hard-delete-pending-accounts';
 import { expireStaleSessions } from '../jobs/expire-stale-sessions';
+import { reconcileStorage } from '../jobs/reconcile-storage';
 
 let scheduled = false;
 
@@ -20,6 +21,7 @@ export function startCron(): void {
   let lastRankingsSlot = -1;
   let lastHardDeleteDay = -1;
   let lastSessionSweepHour = -1;
+  let lastStorageReconcileDay = -1;
 
   setInterval(() => {
     const now = new Date();
@@ -52,8 +54,20 @@ export function startCron(): void {
           logger.error({ error: (e as Error).message }, 'cron hard-delete failed'),
         );
     }
+
+    // Storage reconcile — daily 03:30 UTC (after hard-delete, so purged accounts'
+    // objects are already gone). Corrects users.storage_bytes drift against B2.
+    if (utcHour === 3 && utcMinute >= 30 && utcMinute < 32 && lastStorageReconcileDay !== utcDay) {
+      lastStorageReconcileDay = utcDay;
+      logger.info('cron tick — firing storage reconcile');
+      reconcileStorage()
+        .then((result) => logger.info(result, 'storage reconcile cron: completed'))
+        .catch((e) =>
+          logger.error({ error: (e as Error).message }, 'cron storage reconcile failed'),
+        );
+    }
   }, 60_000);
 
   scheduled = true;
-  logger.info('cron scheduled — rankings 6h, hard-delete daily 03:00 UTC, session sweep hourly');
+  logger.info('cron scheduled — rankings 6h, hard-delete daily 03:00 UTC, storage reconcile daily 03:30 UTC, session sweep hourly');
 }

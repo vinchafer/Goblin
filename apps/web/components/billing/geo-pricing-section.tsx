@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { Check } from '@phosphor-icons/react';
 import { buildsPerMonth } from '@/lib/plan-builds';
+import { storageLabelCloud } from '@/lib/plan-storage';
 
 type GeoTier = 1 | 2 | 3;
 
@@ -22,7 +23,7 @@ const PLAN_FEATURES = {
     buildsPerMonth('build', 'en'),
     'Unlimited projects',
     'BYOK — all providers, no Goblin limits',
-    '5 GB cloud storage',
+    storageLabelCloud('build', 'en'),
     'GitHub push integration',
     'Build from any device',
   ],
@@ -30,7 +31,7 @@ const PLAN_FEATURES = {
     buildsPerMonth('pro', 'en'),
     'Unlimited projects',
     'BYOK — all providers, no Goblin limits',
-    '20 GB cloud storage',
+    storageLabelCloud('pro', 'en'),
     'GitHub push integration',
     'Build from any device',
   ],
@@ -38,7 +39,7 @@ const PLAN_FEATURES = {
     buildsPerMonth('power', 'en'),
     'Unlimited projects',
     'BYOK — all providers, no Goblin limits',
-    '100 GB cloud storage',
+    storageLabelCloud('power', 'en'),
     'GitHub push integration',
     'Build from any device',
     'Beta features access',

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { getAuthHeaders, API_URL } from '@/lib/api';
 import { buildsPerMonth, PLAN_BUILDS } from '@/lib/plan-builds';
+import { storageLabelCloud, storageGbLabel } from '@/lib/plan-storage';
 import { CheckoutPanel } from '@/components/billing/CheckoutPanel';
 import { ChangePlanPanel } from '@/components/billing/ChangePlanPanel';
 
@@ -38,7 +39,7 @@ const PLANS: PlanCardData[] = [
       'Unbegrenzte Projekte',
       'BYOK — alle Provider, kein Goblin-Limit',
       'Send to Code',
-      '5 GB Cloud-Storage',
+      storageLabelCloud('build', 'de'),
     ],
   },
   {
@@ -52,7 +53,7 @@ const PLANS: PlanCardData[] = [
       buildsPerMonth('pro', 'de'),
       'Unbegrenzte Projekte',
       'BYOK — alle Provider, kein Goblin-Limit',
-      '20 GB Cloud-Storage',
+      storageLabelCloud('pro', 'de'),
       'GitHub + Vercel Auto-Deploy',
       'Auto-Fallback bei Key-Ausfall',
     ],
@@ -68,7 +69,7 @@ const PLANS: PlanCardData[] = [
       buildsPerMonth('power', 'de'),
       'Unbegrenzte Projekte',
       'BYOK — alle Provider, kein Goblin-Limit',
-      '100 GB Cloud-Storage',
+      storageLabelCloud('power', 'de'),
       'Erweiterte Modell-Auswahl',
       'Beta-Features 30 Tage früher',
     ],
@@ -283,7 +284,7 @@ export default function UpgradePage() {
             {[
               { label: 'Builds / Monat (ca.)', values: [PLAN_BUILDS.build, PLAN_BUILDS.pro, PLAN_BUILDS.power].map(n => `≈ ${n.toLocaleString('de-DE')}`) },
               { label: 'Projekte', values: ['∞', '∞', '∞'] },
-              { label: 'Cloud-Storage', values: ['5 GB', '20 GB', '100 GB'] },
+              { label: 'Cloud-Storage', values: [storageGbLabel('build'), storageGbLabel('pro'), storageGbLabel('power')] },
               { label: 'BYOK (alle Provider)', values: ['✓', '✓', '✓'] },
               { label: 'Auto-Fallback bei Key-Ausfall', values: ['—', '✓', '✓'] },
               { label: 'GitHub + Vercel Auto-Deploy', values: ['—', '✓', '✓'] },
