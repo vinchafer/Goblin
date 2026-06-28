@@ -6,6 +6,7 @@ import { useLang, t } from '@/lib/use-lang';
 import { SettingsCard } from '../ui/SettingsCard';
 import { SettingsGroup } from '../ui/SettingsGroup';
 import GoblinUsageBar, { type CapStatus } from '../usage/GoblinUsageBar';
+import StorageUsageBar from '../usage/StorageUsageBar';
 
 // Reads the single authoritative endpoint (GET /api/users/me/usage) — the same one
 // the sidebar + dashboard usage screen use, so all three agree. DD §A: the legacy
@@ -59,6 +60,14 @@ export function UsagePage() {
           </SettingsCard>
         </SettingsGroup>
       )}
+
+      <SettingsGroup label={t(lang, 'Speicher', 'Storage')}>
+        <SettingsCard>
+          <div style={{ padding: 16 }}>
+            <StorageUsageBar />
+          </div>
+        </SettingsCard>
+      </SettingsGroup>
 
       <SettingsGroup label={t(lang, 'Diesen Monat', 'This month')}>
         <SettingsCard>

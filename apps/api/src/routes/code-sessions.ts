@@ -4,7 +4,8 @@ import { z } from 'zod';
 import { authMiddleware } from '../middleware/auth';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { streamCompletion } from '../services/model-router';
-import { uploadFile, listFiles, getFile } from '../services/file-storage';
+import { uploadFile, listFiles, getFile, headBytes } from '../services/file-storage';
+import { byteLen, assertStorageRoom } from '../services/storage-usage';
 import { deployToVercel } from '../services/vercel-service';
 import { parseCodeBlocks } from '../lib/parse-code-blocks';
 import { reconcileBlockPaths } from '../lib/asset-reconcile';
@@ -288,10 +289,20 @@ codeSessions.post('/:sessionId/save', async (c) => {
 
   if (!drafts || drafts.length === 0) return c.json({ saved: 0, message: 'Keine Entwürfe zu sichern' });
 
+  // Storage cap — pre-check the ENTIRE batch's aggregate growth before any write so a
+  // build never half-writes at the cap boundary. delta = Σ(new bytes − existing bytes);
+  // assertStorageRoom throws (→413 cap / →503 unverifiable) BEFORE the loop. Writes
+  // below are account-only (enforce:false) since the aggregate is already cleared.
+  let aggregateDelta = 0;
+  for (const f of drafts) {
+    aggregateDelta += byteLen(f.content) - await headBytes(session.project_id, f.path);
+  }
+  await assertStorageRoom(userId, aggregateDelta);
+
   const saved: string[] = [];
   for (const f of drafts) {
     try {
-      await uploadFile(session.project_id, f.path, f.content);   // → project storage (the real file)
+      await uploadFile(session.project_id, f.path, f.content, { userId, enforce: false });   // → project storage (the real file)
       await sb.from('code_session_files')
         .update({ change_state: 'saved', updated_at: new Date().toISOString() }).eq('id', f.id);
       saved.push(f.path);

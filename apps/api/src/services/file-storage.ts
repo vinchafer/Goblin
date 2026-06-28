@@ -3,12 +3,29 @@ import {
   S3Client,
   PutObjectCommand,
   GetObjectCommand,
+  HeadObjectCommand,
   ListObjectsV2Command,
   DeleteObjectCommand,
   DeleteObjectsCommand,
 } from '@aws-sdk/client-s3';
 import type { S3ClientConfig } from '@aws-sdk/client-s3';
 import logger from '../lib/logger';
+import { byteLen, assertStorageRoom, applyStorageDelta } from './storage-usage';
+
+/**
+ * Storage-accounting options threaded into every write/delete. When `userId` is set
+ * AND object storage is live, the write is metered against the user's plan cap and
+ * the running counter (users.storage_bytes) is updated by the exact byte delta.
+ *   • enforce (default true): block the write if it would exceed the cap. Pass
+ *     enforce:false for NET-ZERO moves (rename/move/trash copy) and for multi-file
+ *     batches already pre-checked in aggregate — they must account but never block.
+ * Omitting userId (tests, scripts, the in-memory dev fallback) skips both — the
+ * nightly reconcile is the backstop for any unmetered path.
+ */
+export interface WriteOpts {
+  userId?: string;
+  enforce?: boolean;
+}
 
 // DEV ONLY — nicht für Production. Storage-Keys (Backblaze B2, S3-compatible) in .env eintragen.
 // Capped at 500 entries to prevent unbounded growth in long-running dev sessions.
@@ -75,13 +92,129 @@ function projectPrefix(projectId: string): string {
   return `projects/${projectId}/`;
 }
 
+// ── Storage accounting helpers ──────────────────────────────────────────────
+
+/** ContentLength of an existing object, or null if it doesn't exist (404). */
+async function headSize(s3: S3Client, key: string): Promise<number | null> {
+  try {
+    const r = await s3.send(new HeadObjectCommand({ Bucket: getBucket(), Key: key }));
+    return r.ContentLength ?? 0;
+  } catch (err: unknown) {
+    const code = (err as { $metadata?: { httpStatusCode?: number } })?.$metadata?.httpStatusCode;
+    if (code === 404) return null;
+    throw err;
+  }
+}
+
+/**
+ * Put an object, metering it against the user's storage cap. Computes the true byte
+ * DELTA (incoming − existing, so an overwrite is accounted correctly), enforces the
+ * cap when asked, writes, then updates the counter. The single choke-point all
+ * footprint writes pass through.
+ */
+async function guardedPut(
+  s3: S3Client,
+  key: string,
+  body: string | Buffer,
+  contentType: string,
+  incoming: number,
+  opts: WriteOpts,
+  cacheControl?: string,
+): Promise<void> {
+  const { userId } = opts;
+  const enforce = opts.enforce ?? true;
+
+  let delta = incoming;
+  if (userId) {
+    const existing = await headSize(s3, key);
+    delta = incoming - (existing ?? 0);
+    if (enforce) await assertStorageRoom(userId, delta); // throws → 413/503 BEFORE the write
+  }
+
+  await s3.send(
+    new PutObjectCommand({
+      Bucket: getBucket(),
+      Key: key,
+      Body: body,
+      ContentType: contentType,
+      ...(cacheControl ? { CacheControl: cacheControl } : {}),
+    }),
+  );
+
+  if (userId) await applyStorageDelta(userId, delta);
+}
+
+/**
+ * Byte size of a project file in storage (0 if absent). Used by multi-file callers
+ * to pre-check an ENTIRE batch's aggregate delta against the cap before any write,
+ * so a build/generation never half-writes at the boundary.
+ */
+export async function headBytes(projectId: string, filePath: string): Promise<number> {
+  const s3 = getS3Client();
+  if (!s3) {
+    const v = memoryStorage.get(storageKey(projectId, filePath));
+    return v == null ? 0 : Buffer.byteLength(v, 'utf8');
+  }
+  return (await headSize(s3, storageKey(projectId, filePath))) ?? 0;
+}
+
+/**
+ * Visit every object under a raw key prefix with its key + size (reconcile job).
+ * One paginated list walk; callback accumulates per-user totals.
+ */
+export async function walkPrefixObjects(
+  prefix: string, cb: (key: string, size: number) => void,
+): Promise<void> {
+  const s3 = getS3Client();
+  if (!s3) {
+    for (const [key, val] of memoryStorage.entries()) {
+      if (key.startsWith(prefix)) cb(key, Buffer.byteLength(val, 'utf8'));
+    }
+    return;
+  }
+  let continuationToken: string | undefined;
+  do {
+    const response = await s3.send(new ListObjectsV2Command({
+      Bucket: getBucket(), Prefix: prefix, ContinuationToken: continuationToken,
+    }));
+    for (const obj of response.Contents ?? []) {
+      if (obj.Key) cb(obj.Key, obj.Size ?? 0);
+    }
+    continuationToken = response.NextContinuationToken;
+  } while (continuationToken);
+}
+
+/** Sum the byte sizes of every object under a raw key prefix (reconcile job). */
+export async function sumPrefixBytes(prefix: string): Promise<number> {
+  const s3 = getS3Client();
+  if (!s3) {
+    let total = 0;
+    for (const [key, val] of memoryStorage.entries()) {
+      if (key.startsWith(prefix)) total += Buffer.byteLength(val, 'utf8');
+    }
+    return total;
+  }
+  let total = 0;
+  let continuationToken: string | undefined;
+  do {
+    const response = await s3.send(new ListObjectsV2Command({
+      Bucket: getBucket(), Prefix: prefix, ContinuationToken: continuationToken,
+    }));
+    for (const obj of response.Contents ?? []) total += obj.Size ?? 0;
+    continuationToken = response.NextContinuationToken;
+  } while (continuationToken);
+  return total;
+}
+
 // ── Public API ─────────────────────────────────────────────────────────────
 
 /**
  * Upload a single file to storage.
  * Returns the storage key.
  */
-export async function uploadFile(projectId: string, filePath: string, content: string): Promise<string> {
+export async function uploadFile(
+  projectId: string, filePath: string, content: string, opts: WriteOpts = {},
+): Promise<string> {
   const key = storageKey(projectId, filePath);
   const s3 = getS3Client();
 
@@ -90,23 +223,17 @@ export async function uploadFile(projectId: string, filePath: string, content: s
     return key;
   }
 
-  await s3.send(
-    new PutObjectCommand({
-      Bucket: getBucket(),
-      Key: key,
-      Body: content,
-      ContentType: 'text/plain',
-    })
-  );
-
+  await guardedPut(s3, key, content, 'text/plain', byteLen(content), opts);
   return key;
 }
 
 /**
- * Alias for uploadFile — used by project-generator.ts.
+ * Alias for uploadFile — used by project-generator.ts / templates.ts.
  */
-export async function saveFile(projectId: string, filePath: string, content: string): Promise<void> {
-  await uploadFile(projectId, filePath, content);
+export async function saveFile(
+  projectId: string, filePath: string, content: string, opts: WriteOpts = {},
+): Promise<void> {
+  await uploadFile(projectId, filePath, content, opts);
 }
 
 /**
@@ -254,15 +381,18 @@ export async function getFileBytes(
  * Upload raw bytes to a project-relative path (file explorer upload, any type).
  */
 export async function uploadProjectFileBytes(
-  projectId: string, filePath: string, body: Buffer, contentType: string,
+  projectId: string, filePath: string, body: Buffer, contentType: string, opts: WriteOpts = {},
 ): Promise<string> {
-  return (await uploadBytes(storageKey(projectId, filePath), body, contentType)).key;
+  return (await uploadBytes(storageKey(projectId, filePath), body, contentType, opts)).key;
 }
 
 /**
- * Delete a single file from storage.
+ * Delete a single file from storage. When `userId` is set, the freed bytes are
+ * subtracted from the user's counter (delete always frees — never enforced/blocked).
  */
-export async function deleteFile(projectId: string, filePath: string): Promise<void> {
+export async function deleteFile(
+  projectId: string, filePath: string, opts: { userId?: string } = {},
+): Promise<void> {
   const key = storageKey(projectId, filePath);
   const s3 = getS3Client();
 
@@ -271,18 +401,26 @@ export async function deleteFile(projectId: string, filePath: string): Promise<v
     return;
   }
 
+  let removed = 0;
+  if (opts.userId) removed = (await headSize(s3, key)) ?? 0;
+
   await s3.send(
     new DeleteObjectCommand({
       Bucket: getBucket(),
       Key: key,
     })
   );
+
+  if (opts.userId && removed) await applyStorageDelta(opts.userId, -removed);
 }
 
 /**
- * Delete all files belonging to a project.
+ * Delete all files belonging to a project. When `userId` is set, the project's total
+ * bytes are subtracted from the user's counter.
  */
-export async function deleteProject(projectId: string): Promise<void> {
+export async function deleteProject(
+  projectId: string, opts: { userId?: string } = {},
+): Promise<void> {
   const prefix = projectPrefix(projectId);
   const s3 = getS3Client();
 
@@ -295,8 +433,9 @@ export async function deleteProject(projectId: string): Promise<void> {
     return;
   }
 
-  // List all objects with the project prefix
+  // List all objects with the project prefix (summing sizes for counter accounting).
   const keys: { Key: string }[] = [];
+  let freed = 0;
   let continuationToken: string | undefined;
 
   do {
@@ -312,6 +451,7 @@ export async function deleteProject(projectId: string): Promise<void> {
       for (const obj of response.Contents) {
         if (obj.Key) {
           keys.push({ Key: obj.Key });
+          freed += obj.Size ?? 0;
         }
       }
     }
@@ -328,6 +468,8 @@ export async function deleteProject(projectId: string): Promise<void> {
       })
     );
   }
+
+  if (opts.userId && freed) await applyStorageDelta(opts.userId, -freed);
 }
 
 /**
@@ -340,21 +482,15 @@ export async function uploadBytes(
   key: string,
   body: Buffer,
   contentType: string,
+  opts: WriteOpts = {},
 ): Promise<{ key: string; publicUrl: string | null }> {
   const s3 = getS3Client();
   if (!s3) {
     memoryStorageSet(key, body.toString('base64'));
     return { key, publicUrl: null };
   }
-  await s3.send(
-    new PutObjectCommand({
-      Bucket: getBucket(),
-      Key: key,
-      Body: body,
-      ContentType: contentType,
-      CacheControl: 'public, max-age=31536000, immutable',
-    }),
-  );
+
+  await guardedPut(s3, key, body, contentType, body.length, opts, 'public, max-age=31536000, immutable');
 
   const base = process.env.STORAGE_PUBLIC_URL;
   return {

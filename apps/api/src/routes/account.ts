@@ -8,6 +8,8 @@ import { sendEmail } from '../lib/email';
 import logger from '../lib/logger';
 import { getSoftLimitStatus } from '../middleware/soft-limits';
 import { requestAccountDeletion, reactivateByToken } from '../services/account-deletion';
+import { resolveUserPlanKey, getUserStorageBytes } from '../services/storage-usage';
+import { computeStorageStatus } from '../lib/storage-cap';
 
 type Variables = { userId: string };
 
@@ -185,6 +187,21 @@ account.post('/change-password', authMiddleware, async (c) => {
  * the file client-side via canvas to 512x512, so we just persist the blob and
  * write the resulting URL into user_metadata.avatar_url.
  */
+/**
+ * GET /api/account/storage — real per-user storage usage for the billing/usage bar.
+ * Reads the incremental counter (instant — no B2 call) + the plan limit. Returns
+ * raw bytes so the web formats "X.X / Y GB" from the single mirrored source.
+ */
+account.get('/storage', authMiddleware, async (c) => {
+  const userId = c.get('userId');
+  const [planKey, usedBytes] = await Promise.all([
+    resolveUserPlanKey(userId),
+    getUserStorageBytes(userId),
+  ]);
+  const status = computeStorageStatus(usedBytes, planKey);
+  return c.json({ usedBytes: status.usedBytes, limitBytes: status.limitBytes, percent: status.percent });
+});
+
 account.post('/avatar', authMiddleware, async (c) => {
   const userId = c.get('userId');
   const body = await c.req.parseBody().catch(() => ({}));
@@ -202,7 +219,7 @@ account.post('/avatar', authMiddleware, async (c) => {
   const contentType = file.type && file.type.startsWith('image/') ? file.type : 'image/webp';
 
   try {
-    const result = await uploadBytes(key, buffer, contentType);
+    const result = await uploadBytes(key, buffer, contentType, { userId });
     const supabase = getSupabaseAdmin();
     const { data: userResp } = await supabase.auth.admin.getUserById(userId);
     const newMeta = {

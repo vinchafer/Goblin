@@ -3,6 +3,7 @@
 import { Check } from "@phosphor-icons/react";
 import { createClient } from "@/lib/supabase/client";
 import { buildsPerMonth } from "@/lib/plan-builds";
+import { storageLabelCloud } from "@/lib/plan-storage";
 
 // HR-6: Goblin allowance shown as the honest "≈ N Builds / month" proxy, not the
 // retired "N monthly requests" metric. BYOK carries no Goblin limit (HR-3).
@@ -14,7 +15,7 @@ const PLANS = {
       buildsPerMonth('build', 'en'),
       "Unlimited projects",
       "BYOK — all providers, no Goblin limits",
-      "5 GB cloud storage",
+      storageLabelCloud('build', 'en'),
       "GitHub push integration",
       "Community support"
     ]
@@ -26,7 +27,7 @@ const PLANS = {
       buildsPerMonth('pro', 'en'),
       "Unlimited projects",
       "BYOK — all providers, no Goblin limits",
-      "20 GB cloud storage",
+      storageLabelCloud('pro', 'en'),
       "GitHub push integration",
       "Priority support"
     ]
@@ -38,7 +39,7 @@ const PLANS = {
       buildsPerMonth('power', 'en'),
       "Unlimited projects",
       "BYOK — all providers, no Goblin limits",
-      "100 GB cloud storage",
+      storageLabelCloud('power', 'en'),
       "GitHub push integration",
       "Priority support",
       "Beta features access"

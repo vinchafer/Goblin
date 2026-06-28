@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { authMiddleware } from '../middleware/auth';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { uploadFile } from '../services/file-storage';
+import { byteLen, assertStorageRoom } from '../services/storage-usage';
 import { randomUUID } from 'crypto';
 
 type Variables = { userId: string };
@@ -83,11 +84,25 @@ export async function createProjectFromTemplate(
 
   if (projectError || !project) throw new Error('Failed to create project');
 
-  // Upload template files to storage
+  // Upload template files to storage. Fresh project → all files new, so the aggregate
+  // delta = Σ byte sizes. Pre-check against the storage cap BEFORE any write; a
+  // StorageCapError (→413) / StorageUnavailableError (→503) propagates to the caller
+  // and the empty project can be cleaned up — never a half-populated template.
   const files = template.files as Record<string, string>;
   if (files && typeof files === 'object') {
-    const uploadPromises = Object.entries(files).map(([path, content]) =>
-      uploadFile(projectId, path, content as string).catch(() => null)
+    const entries = Object.entries(files);
+    const aggregateDelta = entries.reduce((sum, [, content]) => sum + byteLen(content as string), 0);
+    try {
+      await assertStorageRoom(userId, aggregateDelta);
+    } catch (err) {
+      // Over cap (or unverifiable) — roll back the empty project row so we never
+      // leave a half-created template, then surface the clear message.
+      await supabase.from('projects').delete().eq('id', projectId);
+      throw err;
+    }
+
+    const uploadPromises = entries.map(([path, content]) =>
+      uploadFile(projectId, path, content as string, { userId, enforce: false }).catch(() => null)
     );
     await Promise.allSettled(uploadPromises);
   }

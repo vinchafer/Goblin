@@ -275,7 +275,7 @@ projects.post('/bulk-delete', async (c) => {
 
   // Best-effort storage cleanup per project — never block the response.
   for (const id of ownedIds) {
-    deleteProject(id).catch((err) =>
+    deleteProject(id, { userId }).catch((err) =>
       logger.error({ project_id: id, err: err instanceof Error ? err.message : String(err) }, 'storage_cleanup_failed')
     );
   }
@@ -350,7 +350,7 @@ projects.delete('/:id', async (c) => {
     .eq('id', projectId);
 
   // Best-effort storage cleanup — don't block response on failure
-  deleteProject(projectId).catch((err) =>
+  deleteProject(projectId, { userId }).catch((err) =>
     logger.error({ project_id: projectId, err: err instanceof Error ? err.message : String(err) }, 'storage_cleanup_failed')
   );
 
@@ -554,7 +554,7 @@ projects.post('/:id/files/upload', async (c) => {
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
   const relPath = targetDir ? `${targetDir}/${safeName}` : safeName;
   const bytes = Buffer.from(await file.arrayBuffer());
-  await uploadProjectFileBytes(projectId, relPath, bytes, file.type || 'application/octet-stream');
+  await uploadProjectFileBytes(projectId, relPath, bytes, file.type || 'application/octet-stream', { userId });
   await trackFileCreated(sb, projectId, userId, relPath).catch(() => {});
   return c.json({ ok: true, path: relPath, size: bytes.length });
 });
@@ -666,7 +666,7 @@ projects.put('/:id/files/*', async (c) => {
     return c.json({ error: 'Not found' }, 404);
   }
 
-  await uploadFile(projectId, filePath, content);
+  await uploadFile(projectId, filePath, content, { userId });
   await trackFileCreated(supabase, projectId, userId, filePath).catch(() => {});
   return c.json({ success: true, path: filePath });
 });
@@ -756,7 +756,7 @@ projects.post('/:id/files', async (c) => {
     return c.json({ error: 'Not found' }, 404);
   }
 
-  await uploadFile(projectId, result.data.path, result.data.content);
+  await uploadFile(projectId, result.data.path, result.data.content, { userId });
   await trackFileCreated(supabase, projectId, userId, result.data.path).catch(() => {});
   return c.json({ success: true, path: result.data.path }, 201);
 });
@@ -774,13 +774,16 @@ projects.delete('/:id/files/*', async (c) => {
     return c.json({ error: 'Not found' }, 404);
   }
 
-  // Soft delete: move to .trash/
+  // Soft delete: move to .trash/. Net-zero for the cap (copy then remove original),
+  // so the trash write is account-only (enforce:false) — a delete must never be
+  // blocked by the cap, even for an over-cap user. .trash bytes still count until
+  // purged (see POST /:id/files/purge-trash).
   const trashPath = `.trash/${Date.now()}_${filePath.replace(/\//g, '_')}`;
   const content = await getFile(projectId, filePath);
   if (content !== null) {
-    await uploadFile(projectId, trashPath, content);
+    await uploadFile(projectId, trashPath, content, { userId, enforce: false });
   }
-  await deleteFile(projectId, filePath);
+  await deleteFile(projectId, filePath, { userId });
   return c.json({ success: true, trashedAs: trashPath });
 });
 
@@ -808,8 +811,9 @@ projects.post('/:id/files/rename', async (c) => {
   const content = await getFile(projectId, result.data.from);
   if (content === null) return c.json({ error: 'Source file not found' }, 404);
 
-  await uploadFile(projectId, result.data.to, content);
-  await deleteFile(projectId, result.data.from);
+  // Net-zero move: account both sides, never block (enforce:false on the write).
+  await uploadFile(projectId, result.data.to, content, { userId, enforce: false });
+  await deleteFile(projectId, result.data.from, { userId });
   return c.json({ success: true, from: result.data.from, to: result.data.to });
 });
 
@@ -834,8 +838,9 @@ projects.post('/:id/files/move', async (c) => {
 
   const content = await getFile(projectId, result.data.from);
   if (content === null) return c.json({ error: 'Source file not found' }, 404);
-  await uploadFile(projectId, result.data.to, content);
-  await deleteFile(projectId, result.data.from);
+  // Net-zero move: account both sides, never block (enforce:false on the write).
+  await uploadFile(projectId, result.data.to, content, { userId, enforce: false });
+  await deleteFile(projectId, result.data.from, { userId });
   return c.json({ success: true, from: result.data.from, to: result.data.to });
 });
 
@@ -878,8 +883,9 @@ projects.post('/:id/files/move-to-project', async (c) => {
     return c.json({ error: 'Im Zielprojekt existiert bereits eine Datei mit diesem Namen', conflict: true }, 409);
   }
 
-  // 1) Copy into target and verify the bytes actually landed.
-  await uploadFile(toProjectId, toPath, content);
+  // 1) Copy into target and verify the bytes actually landed. Same user owns both
+  // projects (checked above) → net-zero for the cap, so account-only (enforce:false).
+  await uploadFile(toProjectId, toPath, content, { userId, enforce: false });
   const verify = await getFile(toProjectId, toPath);
   if (verify === null || verify !== content) {
     return c.json({ error: 'Kopieren ins Zielprojekt fehlgeschlagen — Quelle unverändert' }, 500);
@@ -888,7 +894,7 @@ projects.post('/:id/files/move-to-project', async (c) => {
   await trackFileCreated(supabase, toProjectId, userId, toPath).catch(() => {});
 
   // 2) Copy verified → safe to remove the source.
-  await deleteFile(fromProjectId, path);
+  await deleteFile(fromProjectId, path, { userId });
   await supabase.from('project_file_meta').delete()
     .eq('project_id', fromProjectId).eq('path', path).then(() => {}, () => {});
 
@@ -915,7 +921,7 @@ projects.post('/:id/files/folder', async (c) => {
   }
 
   if (result.data.action === 'create') {
-    await uploadFile(projectId, `${folder}/.gitkeep`, '');
+    await uploadFile(projectId, `${folder}/.gitkeep`, '', { userId, enforce: false });
     return c.json({ success: true, path: folder });
   }
 
@@ -929,12 +935,35 @@ projects.post('/:id/files/folder', async (c) => {
   for (const path of victims) {
     const content = await getFile(projectId, path);
     if (content !== null) {
-      await uploadFile(projectId, `.trash/${Date.now()}_${path.replace(/\//g, '_')}`, content);
-      await deleteFile(projectId, path);
+      await uploadFile(projectId, `.trash/${Date.now()}_${path.replace(/\//g, '_')}`, content, { userId, enforce: false });
+      await deleteFile(projectId, path, { userId });
       deleted++;
     }
   }
   return c.json({ success: true, path: folder, deleted });
+});
+
+// Permanently purge a project's .trash/ — the REAL "free space" action. Soft-delete
+// only moves files to .trash/ (still real bytes that count toward the cap); this
+// removes those B2 objects for good and decrements the user's storage counter. The
+// only way deleting actually frees cap space.
+projects.post('/:id/files/purge-trash', async (c) => {
+  const userId = c.get('userId');
+  const projectId = c.req.param('id');
+
+  const supabase = getSupabaseAdmin();
+  if (!await verifyProjectOwnership(supabase, projectId, userId)) {
+    return c.json({ error: 'Not found' }, 404);
+  }
+
+  const all = await listFiles(projectId);
+  const trashed = all.filter((p) => p === '.trash' || p.startsWith('.trash/'));
+  let purged = 0;
+  for (const path of trashed) {
+    await deleteFile(projectId, path, { userId }); // frees B2 + decrements the counter
+    purged++;
+  }
+  return c.json({ success: true, purged });
 });
 
 // Diff endpoint — compute unified diff between current and proposed content

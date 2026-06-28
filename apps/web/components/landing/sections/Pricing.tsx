@@ -1,5 +1,6 @@
 import { SectionHead } from '@/components/landing/ui/SectionHead';
 import { buildsPerMonth } from '@/lib/plan-builds';
+import { storageLabelCloud } from '@/lib/plan-storage';
 
 const CHECK_PATH = 'M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z';
 
@@ -23,7 +24,7 @@ const PLANS: Plan[] = [
       buildsPerMonth('build', 'en'),
       'Unlimited projects',
       'Bring your own keys too — every major provider, $0 Goblin margin',
-      '5 GB cloud storage',
+      storageLabelCloud('build', 'en'),
       'GitHub push integration',
       'Build from any device',
     ],
@@ -39,7 +40,7 @@ const PLANS: Plan[] = [
       buildsPerMonth('pro', 'en'),
       'Unlimited projects',
       'Bring your own keys too — every major provider, $0 Goblin margin',
-      '20 GB cloud storage',
+      storageLabelCloud('pro', 'en'),
       'GitHub push integration',
       'Build from any device',
     ],
@@ -54,7 +55,7 @@ const PLANS: Plan[] = [
       buildsPerMonth('power', 'en'),
       'Unlimited projects',
       'Bring your own keys too — every major provider, $0 Goblin margin',
-      '100 GB cloud storage',
+      storageLabelCloud('power', 'en'),
       'GitHub push integration',
       'Beta features access',
     ],
