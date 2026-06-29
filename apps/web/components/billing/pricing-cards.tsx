@@ -29,7 +29,7 @@ const PLANS = {
       "BYOK — all providers, no Goblin limits",
       storageLabelCloud('pro', 'en'),
       "GitHub push integration",
-      "Priority support"
+      "Community support"
     ]
   },
   power: {
@@ -41,8 +41,7 @@ const PLANS = {
       "BYOK — all providers, no Goblin limits",
       storageLabelCloud('power', 'en'),
       "GitHub push integration",
-      "Priority support",
-      "Beta features access"
+      "Priority support"
     ]
   }
 } as const;

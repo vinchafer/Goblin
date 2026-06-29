@@ -57,7 +57,7 @@ const PLANS: Plan[] = [
       'Bring your own keys too — every major provider, $0 Goblin margin',
       storageLabelCloud('power', 'en'),
       'GitHub push integration',
-      'Beta features access',
+      'Build from any device',
     ],
   },
 ];

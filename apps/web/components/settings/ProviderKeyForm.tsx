@@ -32,9 +32,16 @@ function friendly(raw: string): string {
   const m = raw.toLowerCase();
   if (m.includes('invalid')) return 'Der Key wurde vom Provider abgelehnt. Prüfe, ob du ihn vollständig kopiert hast.';
   if (m.includes('timed out') || m.includes('timeout')) return 'Provider antwortet nicht (Timeout). Key ist evtl. gültig — bitte gleich nochmal versuchen.';
-  if (m.includes('maximum')) return 'Maximal 5 Keys pro Provider erreicht.';
+  if (m.includes('maximum') || m.includes('max.')) return 'Maximal 2 Keys pro Anbieter erreicht. Du kannst den ältesten ersetzen.';
   if (m.includes('validate')) return 'Konnte den Key nicht beim Provider prüfen. Netzwerkproblem — bitte nochmal versuchen.';
   return raw;
+}
+
+// The backend cap is 2 keys per provider. Its limit error carries this marker in
+// both languages; we key off it to switch the form into the replace-offer mode.
+function isLimitError(raw: string): boolean {
+  const m = raw.toLowerCase();
+  return m.includes('maximum') || m.includes('max.');
 }
 
 export function ProviderKeyForm({ provider, providerLabel, existingHint, onSaved, onBack }: Props) {
@@ -43,7 +50,11 @@ export function ProviderKeyForm({ provider, providerLabel, existingHint, onSaved
   const [showKey, setShowKey] = useState(false);
   const [loading, setLoading] = useState(false);
   const [removing, setRemoving] = useState(false);
+  const [replacing, setReplacing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Set when the backend rejects the add because the provider is at its 2-key cap.
+  // Switches the form into "replace the oldest key" mode instead of a dead-end error.
+  const [atLimit, setAtLimit] = useState(false);
   // 10.8-4: after a successful connect we show the models THIS key unlocked
   // (discovered live from the provider) instead of bouncing straight back.
   const [discovered, setDiscovered] = useState<string[] | null>(null);
@@ -57,42 +68,85 @@ export function ProviderKeyForm({ provider, providerLabel, existingHint, onSaved
     return session?.access_token ?? null;
   }
 
+  // Core add — POSTs the key and handles the success/discovered-models path.
+  // Returns true on success, false on a handled error (error state already set).
+  // On the 2-key cap it flips atLimit so the caller can offer a replace.
+  async function postKey(token: string): Promise<boolean> {
+    const res = await fetch(`${apiBase}/api/byok-keys`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ provider, label: label.trim() || providerLabel, key: key.trim() }),
+    });
+
+    if (!res.ok) {
+      let msg = 'Key konnte nicht gespeichert werden';
+      try { const d = await res.json(); msg = d.error || msg; } catch { /* non-JSON */ }
+      if (isLimitError(msg)) setAtLimit(true);
+      setError(friendly(msg));
+      return false;
+    }
+    // Parse the discovered model list off the created key (10.8-2 backend).
+    let models: string[] = [];
+    try {
+      const created = await res.json();
+      if (Array.isArray(created?.discovered_models)) models = created.discovered_models as string[];
+    } catch { /* non-JSON — fine, fall through with empty list */ }
+    onSaved(); // let the parent list refetch immediately
+    if (models.length > 0) {
+      setDiscovered(models); // show the unlocked-models panel; user dismisses
+    } else {
+      onBack();
+    }
+    return true;
+  }
+
+  // Revoke the OLDEST active key for this provider so the new one fits under the cap.
+  // listKeys returns newest-first → the last active row is the oldest.
+  async function revokeOldestForProvider(token: string): Promise<boolean> {
+    const listRes = await fetch(`${apiBase}/api/byok-keys`, { headers: { Authorization: `Bearer ${token}` } });
+    const rows = listRes.ok ? await listRes.json() : [];
+    const active = (rows as { id: string; provider: string; status?: string }[])
+      .filter(r => r.provider === provider && r.status !== 'revoked');
+    const oldest = active[active.length - 1];
+    if (!oldest) return false;
+    const del = await fetch(`${apiBase}/api/byok-keys/${oldest.id}`, {
+      method: 'DELETE', headers: { Authorization: `Bearer ${token}` },
+    });
+    return del.ok;
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setAtLimit(false);
     try {
       const token = await authToken();
       if (!token) { setError('Nicht angemeldet. Bitte neu einloggen.'); return; }
-
-      const res = await fetch(`${apiBase}/api/byok-keys`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ provider, label: label.trim() || providerLabel, key: key.trim() }),
-      });
-
-      if (!res.ok) {
-        let msg = 'Key konnte nicht gespeichert werden';
-        try { const d = await res.json(); msg = d.error || msg; } catch { /* non-JSON */ }
-        setError(friendly(msg));
-        return;
-      }
-      // Parse the discovered model list off the created key (10.8-2 backend).
-      let models: string[] = [];
-      try {
-        const created = await res.json();
-        if (Array.isArray(created?.discovered_models)) models = created.discovered_models as string[];
-      } catch { /* non-JSON — fine, fall through with empty list */ }
-      onSaved(); // let the parent list refetch immediately
-      if (models.length > 0) {
-        setDiscovered(models); // show the unlocked-models panel; user dismisses
-      } else {
-        onBack();
-      }
+      await postKey(token);
     } catch {
       setError('Netzwerkfehler. Bitte nochmal versuchen.');
     } finally {
       setLoading(false);
+    }
+  }
+
+  // Replace-offer: drop the oldest key for this provider, then retry the add.
+  async function handleReplace() {
+    setReplacing(true);
+    setError(null);
+    try {
+      const token = await authToken();
+      if (!token) { setError('Nicht angemeldet. Bitte neu einloggen.'); return; }
+      const ok = await revokeOldestForProvider(token);
+      if (!ok) { setError('Konnte den bestehenden Key nicht ersetzen.'); return; }
+      onSaved(); // list changed — let parent refetch
+      setAtLimit(false);
+      await postKey(token);
+    } catch {
+      setError('Netzwerkfehler. Bitte nochmal versuchen.');
+    } finally {
+      setReplacing(false);
     }
   }
 
@@ -249,9 +303,25 @@ export function ProviderKeyForm({ provider, providerLabel, existingHint, onSaved
           }}>{error}</div>
         )}
 
+        {atLimit && (
+          <button
+            type="button"
+            onClick={handleReplace}
+            disabled={loading || replacing || !key.trim()}
+            data-testid="provider-key-replace"
+            style={{
+              width: '100%', padding: '12px', borderRadius: 10, border: 'none',
+              background: 'var(--brand-green)', color: '#fff', fontSize: 14, fontWeight: 600,
+              cursor: replacing || !key.trim() ? 'not-allowed' : 'pointer',
+              opacity: replacing || !key.trim() ? 0.55 : 1,
+              fontFamily: 'var(--font-sans)',
+            }}
+          >{replacing ? 'Ersetze…' : 'Ältesten Key durch diesen ersetzen'}</button>
+        )}
+
         <button
           type="submit"
-          disabled={loading || removing || !key.trim()}
+          disabled={loading || removing || replacing || !key.trim()}
           data-testid="provider-key-submit"
           style={{
             width: '100%', padding: '13px', borderRadius: 10, border: 'none',
