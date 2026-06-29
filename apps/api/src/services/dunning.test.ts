@@ -82,7 +82,7 @@ describe('dunning: invoice.payment_failed / payment_succeeded (dahlia)', () => {
 
   it('PROOF 2: renewal fails → past_due flagged, deadline set; derive stays PAID + paymentFailing', async () => {
     await handleInvoicePaymentFailed(dahliaInvoice());
-    const row = users[0];
+    const row = users[0]!;
     expect(row.payment_state).toBe('past_due');
     expect(row.next_payment_attempt).toBe(new Date(NEXT_ATTEMPT * 1000).toISOString());
     expect(row.payment_failing_since).toBeTruthy();
@@ -99,7 +99,7 @@ describe('dunning: invoice.payment_failed / payment_succeeded (dahlia)', () => {
   it('PROOF 3: retry succeeds → state cleared; derive healthy (no flag)', async () => {
     await handleInvoicePaymentFailed(dahliaInvoice());
     await handleInvoicePaymentSucceeded(dahliaInvoice({ billing_reason: 'subscription_cycle' }));
-    const row = users[0];
+    const row = users[0]!;
     expect(row.payment_state).toBeNull();
     expect(row.payment_failing_since).toBeNull();
     expect(row.next_payment_attempt).toBeNull();
@@ -111,7 +111,7 @@ describe('dunning: invoice.payment_failed / payment_succeeded (dahlia)', () => {
   it('PROOF 4: final cancel → deleted → none/locked (not trial), failing state cleared', async () => {
     await handleInvoicePaymentFailed(dahliaInvoice());
     await handleSubscriptionDeleted({ id: SUB } as any);
-    const row = users[0];
+    const row = users[0]!;
     expect(row.plan).toBe('none');
     expect(row.stripe_subscription_id).toBeNull();
     expect(row.payment_state).toBeNull();
@@ -122,19 +122,19 @@ describe('dunning: invoice.payment_failed / payment_succeeded (dahlia)', () => {
 
   it('PROOF 5: idempotent re-delivery — failing_since stamped ONCE, no double-apply', async () => {
     await handleInvoicePaymentFailed(dahliaInvoice());
-    const firstSince = users[0].payment_failing_since;
+    const firstSince = users[0]!.payment_failing_since;
     await handleInvoicePaymentFailed(dahliaInvoice()); // re-delivery
-    expect(users[0].payment_failing_since).toBe(firstSince); // unchanged
-    expect(users[0].payment_state).toBe('past_due');
+    expect(users[0]!.payment_failing_since).toBe(firstSince); // unchanged
+    expect(users[0]!.payment_state).toBe('past_due');
     // succeeded twice → still cleanly cleared
     await handleInvoicePaymentSucceeded(dahliaInvoice());
     await handleInvoicePaymentSucceeded(dahliaInvoice());
-    expect(users[0].payment_state).toBeNull();
+    expect(users[0]!.payment_state).toBeNull();
   });
 
   it('PROOF 6: a FIRST payment (subscription_create) is NOT treated as a failed renewal', async () => {
     await handleInvoicePaymentFailed(dahliaInvoice({ billing_reason: 'subscription_create' }));
-    const row = users[0];
+    const row = users[0]!;
     expect(row.payment_state).toBeUndefined(); // never flagged
     expect(derivePlanTruth(row).paymentFailing).toBe(false);
   });
@@ -143,6 +143,6 @@ describe('dunning: invoice.payment_failed / payment_succeeded (dahlia)', () => {
     const orphan = dahliaInvoice();
     orphan.parent = { type: 'manual_details' };
     await handleInvoicePaymentFailed(orphan);
-    expect(users[0].payment_state).toBeUndefined();
+    expect(users[0]!.payment_state).toBeUndefined();
   });
 });
