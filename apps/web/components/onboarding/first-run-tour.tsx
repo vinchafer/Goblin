@@ -1,36 +1,67 @@
 'use client';
 import { useState } from 'react';
+import { useOnbLang } from '@/app/welcome/_components/i18n';
 
-const STEPS = [
-  {
-    title: 'Your projects live here',
-    body: 'Create new projects from the sidebar. Each project has its own chat, code, and preview.',
-    icon: '📁',
-    position: 'sidebar',
-  },
-  {
-    title: 'Vom Chat in den Code',
-    body: 'Bitte Goblin, etwas zu bauen. Gibt es Code aus, bringt [An Code senden] ihn als Entwurf in den Code-Tab — du sicherst und veröffentlichst, wenn du bereit bist.',
-    icon: '✦',
-    position: 'chat',
-  },
-  {
-    title: 'Track your usage here',
-    body: 'See how many requests you\'ve used this month. Upgrade or add a BYOK key anytime.',
-    icon: '📊',
-    position: 'topbar',
-  },
-];
+// Honest, fully-localised first-run tour (Sprint 11 onboarding follow-up).
+// Previously the steps were hard-coded with MIXED languages (steps 1+3 and the
+// buttons English, step 2 German) → a DE user saw an English tour and an EN
+// user saw a German step. Every string now lives in both languages and is
+// keyed off the same goblin:preferred-lang the rest of the app uses.
+
+const STEPS = {
+  de: [
+    {
+      title: 'Hier leben deine Projekte',
+      body: 'Erstelle neue Projekte über die Seitenleiste. Jedes Projekt hat eigenen Chat, Code und eine Vorschau.',
+      icon: '📁',
+    },
+    {
+      title: 'Vom Chat in den Code',
+      body: 'Bitte Goblin, etwas zu bauen. Gibt es Code aus, bringt [An Code senden] ihn als Entwurf in den Code-Tab — du sicherst und veröffentlichst, wenn du bereit bist.',
+      icon: '✦',
+    },
+    {
+      title: 'Behalte deinen Verbrauch im Blick',
+      body: 'Sieh, wie viele Anfragen du diesen Monat genutzt hast. Upgrade oder eigener BYOK-Key jederzeit.',
+      icon: '📊',
+    },
+  ],
+  en: [
+    {
+      title: 'Your projects live here',
+      body: 'Create new projects from the sidebar. Each project has its own chat, code, and preview.',
+      icon: '📁',
+    },
+    {
+      title: 'From chat to code',
+      body: 'Ask Goblin to build something. When it outputs code, [Send to Code] brings it into the Code tab as a draft — you save and publish when you are ready.',
+      icon: '✦',
+    },
+    {
+      title: 'Track your usage here',
+      body: "See how many requests you've used this month. Upgrade or add a BYOK key anytime.",
+      icon: '📊',
+    },
+  ],
+} as const;
+
+const TOUR_COPY = {
+  de: { close: 'Tour schließen', skip: 'Tour überspringen', next: 'Weiter →', last: 'Los geht’s →' },
+  en: { close: 'Close tour', skip: 'Skip tour', next: 'Next →', last: "Let's build →" },
+} as const;
 
 interface FirstRunTourProps {
   onDone: () => void;
 }
 
 export function FirstRunTour({ onDone }: FirstRunTourProps) {
+  const lang = useOnbLang();
+  const steps = STEPS[lang];
+  const tc = TOUR_COPY[lang];
   const [step, setStep] = useState(0);
 
-  const current = STEPS[step]!;
-  const isLast = step === STEPS.length - 1;
+  const current = steps[step]!;
+  const isLast = step === steps.length - 1;
 
   return (
     <>
@@ -62,7 +93,7 @@ export function FirstRunTour({ onDone }: FirstRunTourProps) {
         {/* Close button — top right */}
         <button
           onClick={onDone}
-          aria-label="Close tour"
+          aria-label={tc.close}
           style={{
             position: 'absolute', top: 12, right: 12,
             width: 28, height: 28, borderRadius: '50%',
@@ -79,7 +110,7 @@ export function FirstRunTour({ onDone }: FirstRunTourProps) {
 
         {/* Step dots */}
         <div style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
-          {STEPS.map((_, i) => (
+          {steps.map((_, i) => (
             <div key={i} style={{
               height: 4, flex: 1, borderRadius: 2,
               background: i <= step ? 'var(--brand-green)' : 'var(--div)',
@@ -105,7 +136,7 @@ export function FirstRunTour({ onDone }: FirstRunTourProps) {
               textDecoration: 'underline', textDecorationColor: 'rgba(0,0,0,0.15)',
             }}
           >
-            Skip tour
+            {tc.skip}
           </button>
 
           <button
@@ -118,7 +149,7 @@ export function FirstRunTour({ onDone }: FirstRunTourProps) {
               cursor: 'pointer',
             }}
           >
-            {isLast ? "Let's build →" : 'Next →'}
+            {isLast ? tc.last : tc.next}
           </button>
         </div>
       </div>
