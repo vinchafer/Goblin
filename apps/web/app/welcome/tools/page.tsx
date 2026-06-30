@@ -10,10 +10,12 @@
 // consumes `tools_selection`. Acting on the preference is future work.
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { IArrowL, IArrowR, IChat, ICheck, ICode, ICpu, IEye, IFolder, IGithub, ISearch, IShield, ISpark, IBolt, IChart, IVercel } from '../_components/icons';
 import { patchOnboardingState, getOnboardingState } from '../_components/onboarding-state';
 import { useOnbLang, STR, TOOL_COPY, type Lang } from '../_components/i18n';
+import { TOOLS_STEP_ENABLED } from '../_components/flow';
 import { IOSToggle } from '@/components/ui/IOSToggle';
 
 const LS_KEY = 'goblin:onboarding:tools';
@@ -123,13 +125,22 @@ function usePersistedTools(): [Set<ToolId>, Preset, (next: Set<ToolId>) => void,
 }
 
 export default function ToolsStepPage() {
+  const router = useRouter();
   const [selected, preset, setSelected, setPreset] = usePersistedTools();
   const lang = useOnbLang();
   const t = STR[lang].tools;
 
+  // Sprint 11: tools step is feature-flagged off. While off, this route is not
+  // part of the flow — redirect anyone who lands here straight to the build step.
   useEffect(() => {
-    patchOnboardingState({ current_step: 4 });
+    if (!TOOLS_STEP_ENABLED) router.replace('/welcome/build');
+  }, [router]);
+
+  useEffect(() => {
+    if (TOOLS_STEP_ENABLED) patchOnboardingState({ current_step: 4 });
   }, []);
+
+  if (!TOOLS_STEP_ENABLED) return null;
 
   function toggle(id: ToolId) {
     const next = new Set(selected);

@@ -14,6 +14,7 @@ import { AboutPage } from './AboutPage';
 import { BillingPage } from './BillingPage';
 import { UsagePage } from './UsagePage';
 import { PersonalizationPage } from './PersonalizationPage';
+import { SetupTourPage } from './SetupTourPage';
 import { ConnectorsPage } from './ConnectorsPage';
 import { NotificationsPage } from './NotificationsPage';
 import { PrivacyPage } from './PrivacyPage';
@@ -35,6 +36,7 @@ const I = {
   Moon: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>,
   Palette: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="9"/><circle cx="7" cy="10" r="1.5" fill="currentColor"/><circle cx="12" cy="7" r="1.5" fill="currentColor"/><circle cx="17" cy="10" r="1.5" fill="currentColor"/><circle cx="15" cy="15" r="1.5" fill="currentColor"/></svg>,
   Globe: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>,
+  Compass: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="12" r="9"/><path d="M16 8l-2.5 5.5L8 16l2.5-5.5L16 8z"/></svg>,
   Bell: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10 21a2 2 0 0 0 4 0"/></svg>,
   Vibrate: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><rect x="8" y="4" width="8" height="16" rx="1"/><line x1="4" y1="9" x2="4" y2="15"/><line x1="20" y1="9" x2="20" y2="15"/></svg>,
   Shield: () => <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M12 3l8 4v5a9 9 0 0 1-8 9 9 9 0 0 1-8-9V7l8-4z"/><path d="M9 12l2 2 4-4"/></svg>,
@@ -75,6 +77,7 @@ export function SettingsRoot() {
       billing: ['billing', <BillingPage key="b" />, t(lang, 'Abrechnung', 'Billing')],
       usage: ['usage', <UsagePage key="u" />, t(lang, 'Nutzung', 'Usage')],
       personalization: ['personalization', <PersonalizationPage key="pe" />, t(lang, 'Personalisierung', 'Personalization')],
+      'setup-tour': ['setup-tour', <SetupTourPage key="st" />, t(lang, 'Einrichtung & Tour', 'Setup & Tour')],
       features: ['features', <FeaturesPage key="f" />, t(lang, 'Funktionen', 'Features')],
       connectors: ['connectors', <ConnectorsPage key="c" />, t(lang, 'Konnektoren', 'Connectors')],
       models: ['models', <ModelsPage key="m" />, t(lang, 'Modelle', 'Models')],
@@ -138,6 +141,12 @@ export function SettingsRoot() {
             icon={<I.Sparkles />}
             label={t(lang, 'Personalisierung', 'Personalization')}
             onClick={() => push('personalization', <PersonalizationPage />, t(lang, 'Personalisierung', 'Personalization'))}
+          />
+          <SettingsRow
+            testId="row-setup-tour"
+            icon={<I.Compass />}
+            label={t(lang, 'Einrichtung & Tour', 'Setup & Tour')}
+            onClick={() => push('setup-tour', <SetupTourPage />, t(lang, 'Einrichtung & Tour', 'Setup & Tour'))}
           />
           <SettingsRow
             testId="row-funktionen"

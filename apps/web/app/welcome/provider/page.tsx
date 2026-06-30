@@ -221,10 +221,11 @@ function Step2Inner() {
     patchCard(id, { saved: true, open: false });
   }
 
-  // Advance to the tools step. Available once at least one key is saved.
+  // BYOK is optional (Sprint 11). After saving/skipping, return to the first-
+  // build step — Goblin Swift works with no key, so this never blocks building.
   async function goNext() {
-    await patchOnboardingState({ ai_provider_choice: 'byok', current_step: 4 });
-    router.push('/welcome/tools');
+    await patchOnboardingState({ ai_provider_choice: 'byok' });
+    router.push('/welcome/build');
   }
 
   const anySaved = Object.values(cards).some((c) => c.saved);
@@ -316,8 +317,7 @@ function Step2Inner() {
 
       <div className="footstrip">
         <span className="skip"><IShield size={11} />{t.footKeys}</span>
-        <span className="gobl-mono">/welcome/provider · {STR[lang].chrome.step} 03 {STR[lang].chrome.of} 06</span>
-        <Link href="/welcome/tools">{t.footSkip}</Link>
+        <Link href="/welcome/build">{t.footSkip}</Link>
       </div>
 
       <style jsx>{`

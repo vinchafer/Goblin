@@ -28,6 +28,7 @@ import { PersonalizationPage } from './PersonalizationPage';
 import { FeaturesPage } from './FeaturesPage';
 import { ConnectorsPage } from './ConnectorsPage';
 import { ModelsPage } from './ModelsPage';
+import { SetupTourPage } from './SetupTourPage';
 import { AppearanceSection } from './AppearanceSection';
 import { LanguagePage } from './LanguagePage';
 import { NotificationsPage } from './NotificationsPage';
@@ -57,6 +58,7 @@ export const Icons = {
   Key:      (() => svg(h('circle', { cx: 8, cy: 15, r: 4, key: 'a' }), h('path', { d: 'M11 12l9-9M16 7l3 3', key: 'b' }))) as IconCmp,
   Moon:     (() => svg(h('path', { d: 'M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z', key: 'a' }))) as IconCmp,
   Globe:    (() => svg(h('circle', { cx: 12, cy: 12, r: 9, key: 'a' }), h('path', { d: 'M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18', key: 'b' }))) as IconCmp,
+  Compass:  (() => svg(h('circle', { cx: 12, cy: 12, r: 9, key: 'a' }), h('path', { d: 'M16 8l-2.5 5.5L8 16l2.5-5.5L16 8z', key: 'b' }))) as IconCmp,
   Bell:     (() => svg(h('path', { d: 'M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9', key: 'a' }), h('path', { d: 'M10 21a2 2 0 0 0 4 0', key: 'b' }))) as IconCmp,
   Shield:   (() => svg(h('path', { d: 'M12 3l8 4v5a9 9 0 0 1-8 9 9 9 0 0 1-8-9V7l8-4z', key: 'a' }), h('path', { d: 'M9 12l2 2 4-4', key: 'b' }))) as IconCmp,
   Flag:     (() => svg(h('path', { d: 'M4 21V4h12l-2 4 2 4H4', key: 'a' }))) as IconCmp,
@@ -98,6 +100,7 @@ export const SETTINGS_SECTIONS: SettingsSectionDef[] = [
   { id: 'billing',         label: 'Abrechnung',         labelEn: 'Billing',          icon: Icons.Dollar,   Component: BillingPage,         group: 'konto' },
   { id: 'usage',           label: 'Nutzung',            labelEn: 'Usage',            icon: Icons.Chart,    Component: UsagePage,           group: 'konto' },
   { id: 'personalization', label: 'Personalisierung',   labelEn: 'Personalization',  icon: Icons.Sparkles, Component: PersonalizationPage, group: 'goblin' },
+  { id: 'setup-tour',      label: 'Einrichtung & Tour', labelEn: 'Setup & Tour',     icon: Icons.Compass,  Component: SetupTourPage,       group: 'goblin' },
   { id: 'features',        label: 'Funktionen',         labelEn: 'Features',         icon: Icons.Sliders,  Component: FeaturesPage,        group: 'goblin' },
   { id: 'connectors',      label: 'Konnektoren',        labelEn: 'Connectors',       icon: Icons.Plug,     Component: ConnectorsPage,      group: 'goblin' },
   { id: 'models',          label: 'Modelle',            labelEn: 'Models',           icon: Icons.Key,      Component: ModelsPage,          group: 'goblin' },

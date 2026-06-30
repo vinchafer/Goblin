@@ -45,6 +45,10 @@ const stateSchema = z.object({
   deploy_choice: z.enum(['vercel', 'preview_only', 'skip']).nullable().optional(),
   skipped_steps: z.array(z.number()).optional(),
   tools_selection: toolsSelectionSchema.optional(),
+  // Experience fork (Sprint 11) — persists to onboarding_steps.experience_level
+  // (migration 0074). Until that migration is applied the upsert simply ignores
+  // the unknown column at the DB layer; the API contract is forward-compatible.
+  experience_level: z.enum(['new', 'experienced']).nullable().optional(),
 });
 
 // GET /api/onboarding/state
