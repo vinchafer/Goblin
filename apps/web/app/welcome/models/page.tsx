@@ -56,8 +56,8 @@ export default function ModelsStepPage() {
           </div>
           <p>{t.forgeDesc}</p>
           <div className="weight">
-            <span className="wlabel">~3×</span>
-            <span className="wbar"><span className="wfill wfill-power" style={{ width: '60%' }} /></span>
+            <span className="wlabel">~4.4×</span>
+            <span className="wbar"><span className="wfill wfill-power" style={{ width: '88%' }} /></span>
           </div>
         </div>
       </div>

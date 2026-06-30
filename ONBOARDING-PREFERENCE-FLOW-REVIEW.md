@@ -46,7 +46,7 @@ Linearer Pfad (Reihenfolge wie im Brief):
 - Ebene 3 **OPTIONAL**: BYOK, bis zu 2 Keys/Provider, beliebig viele Provider.
 - **Kein „BALD"/„COMING SOON"/Waitlist mehr.**
 
-**4 · Modelle & Verbrauch** (neu): „Zwei Modelle. Ein Budget." — **Goblin Swift** (STANDARD, 1×) vs **Goblin Forge** (MEHR POWER, ~3×). Echte Zahlen aus `plan-builds.ts`: „In deiner Testphase: **33 Builds**" · „Bezahlte Pläne: Build 116, Pro 200, Power 411." Nur Zwei-Ebenen-Namen, **nie** eine rohe Provider-Model-ID.
+**4 · Modelle & Verbrauch** (neu): „Zwei Modelle. Ein Budget." — **Goblin Swift** (STANDARD, 1×) vs **Goblin Forge** (MEHR POWER, ~4.4× — echte Gewichtung). Echte Zahlen aus `plan-builds.ts`: „In deiner Testphase: **33 Builds**" · „Bezahlte Pläne: Build 116, Pro 200, Power 411." Nur Zwei-Ebenen-Namen, **nie** eine rohe Provider-Model-ID.
 
 **5 · Erster Build** (neu): „Goblin Swift ist startklar — kein Key, keine Karte." Primär: **„Ersten Build starten"** → Dashboard. Sekundär (klar optional): „Eigene Keys? Optional, jederzeit später → Key hinzufügen (optional)".
 
@@ -114,7 +114,7 @@ Getestet gegen lokalen `next dev` mit echter Session (Test-Account „Vincent Ha
 
 ## 7 · AUTONOME ENTSCHEIDUNGEN — bitte bestätigen
 1. **User-facing Name** „Einrichtung & Tour / Setup & Tour" (intern „Preference Flow"). Alternativen: „Geführte Einrichtung", „Tour & Setup", „Erste Schritte".
-2. **Forge-Verbrauch „~3×"** als illustrative Gewichtung im Models-Step. Die echte Gewichtung lebt server-seitig (`goblin-cap.ts`, ein Build ≈ 0,15M Units „reines Swift"). „~3×" ist eine ehrliche, runde Annäherung — falls du eine präzise Zahl willst, nenn sie, ich verdrahte sie.
+2. **Forge-Verbrauch „~4.4×"** im Models-Step — vom Founder als echte Gewichtung bestätigt (war zuerst illustrativ ~3×, korrigiert).
 3. **Integrations aus dem Pflicht-Flow genommen** (nur noch optional/Settings). Der Brief listete sie nicht im neuen Pfad; GitHub/Vercel bleiben unter Settings→Konnektoren erreichbar. Falls du sie als optionalen letzten Schritt zurück willst, sag Bescheap.
 4. **Provider/BYOK** als optionaler, sekundärer Pfad vom Build-Step + Ebene-3-Link — nie erzwungen.
 5. **Swift-„live"-Framing** gekoppelt an `NEXT_PUBLIC_GOBLIN_HOSTED_API` (siehe Risiko unten).
