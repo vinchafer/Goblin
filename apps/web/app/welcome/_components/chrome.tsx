@@ -7,31 +7,29 @@ import { getAuthHeaders, API_URL } from '@/lib/api';
 import { GMark } from './icons';
 import { useOnbLang, STR } from './i18n';
 import { getOnboardingState } from './onboarding-state';
+import { readVibeKnown, stepInfo, type VibeKnown } from './flow';
 
-// Single source of truth for the header step chip. Order matches the actual
-// visit order after the 10.7-6 swap: language → welcome → routing → provider →
-// tools → integrations. The in-page eyebrow + footer on each step already read
-// these numbers (routing="02", provider="03"); this map now agrees (10.10 C.4).
-const STEP_BY_PATH: Record<string, number> = {
-  '/welcome/language': 0,
-  '/welcome': 1,
-  '/welcome/routing': 2,
-  '/welcome/provider': 3,
-  '/welcome/tools': 4,
-  '/welcome/integrations': 5,
-};
-
-// Six steps: 0 (language) … 5 (integrations). Header shows "STEP 0n / 06".
-const TOTAL_STEPS = 6;
-const PIP_STEPS = [0, 1, 2, 3, 4, 5];
+// Numbering is owned by flow.ts (single source of truth). The header chip +
+// footer read {step,total} for the CURRENT branch; off-flow optional pages
+// (provider / tools / integrations) return null → no chip. This removes the
+// old off-by-one (pages no longer embed their own "Schritt 0X von 06").
 
 export function OnboardingChrome({ children }: { children: React.ReactNode }) {
   const pathname = usePathname() ?? '/welcome';
-  const step = STEP_BY_PATH[pathname] ?? 1;
   const router = useRouter();
   const lang = useOnbLang();
   const tc = STR[lang].chrome;
   const [checking, setChecking] = useState(true);
+
+  // Experience branch drives the honest per-branch total. Read on mount and on
+  // every path change (the experience step writes it just before navigating).
+  const [vibe, setVibe] = useState<VibeKnown | null>(null);
+  useEffect(() => { setVibe(readVibeKnown()); }, [pathname]);
+
+  const info = stepInfo(pathname, vibe);
+  const step = info ? info.step - 1 : 0; // 0-indexed for pip styling
+  const total = info?.total ?? 0;
+  const pipSteps = Array.from({ length: total }, (_, i) => i);
 
   // Returning-user guard: skip onboarding only for users who have ALREADY
   // COMPLETED it. 10.10 C.2 fix: previously this fired whenever ANY key
@@ -85,17 +83,19 @@ export function OnboardingChrome({ children }: { children: React.ReactNode }) {
           <span className="gobl-onb-wordmark">GOBLIN</span>
         </span>
         <div className="gobl-onb-top-right">
-          <span className="gobl-onb-step">
-            <span className="gobl-onb-step-num">{tc.step} 0{step + 1} / 0{TOTAL_STEPS}</span>
-            <span className="gobl-onb-pips">
-              {PIP_STEPS.map((n) => (
-                <span
-                  key={n}
-                  className={`gobl-onb-pip ${n < step ? 'done' : n === step ? 'active' : ''}`}
-                />
-              ))}
+          {info && (
+            <span className="gobl-onb-step">
+              <span className="gobl-onb-step-num">{tc.step} 0{info.step} / 0{total}</span>
+              <span className="gobl-onb-pips">
+                {pipSteps.map((n) => (
+                  <span
+                    key={n}
+                    className={`gobl-onb-pip ${n < step ? 'done' : n === step ? 'active' : ''}`}
+                  />
+                ))}
+              </span>
             </span>
-          </span>
+          )}
           <Link href="/help" className="gobl-onb-help">{tc.help}</Link>
         </div>
       </header>
@@ -104,10 +104,12 @@ export function OnboardingChrome({ children }: { children: React.ReactNode }) {
 
       <footer className="gobl-onb-footstrip">
         <span className="gobl-mono">JUSTGOBLIN.COM</span>
-        <span className="gobl-mono">
-          <span className="gobl-onb-foot-dot" />
-          {tc.step} 0{step + 1} {tc.of} 0{TOTAL_STEPS}
-        </span>
+        {info && (
+          <span className="gobl-mono">
+            <span className="gobl-onb-foot-dot" />
+            {tc.step} 0{info.step} {tc.of} 0{total}
+          </span>
+        )}
       </footer>
 
       <style jsx global>{`

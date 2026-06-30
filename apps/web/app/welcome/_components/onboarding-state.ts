@@ -7,6 +7,10 @@ import { getAuthHeaders, API_URL } from '@/lib/api';
 
 export type AiProviderChoice = 'byok' | 'no_key' | 'free_tier';
 export type ToolsPreset = 'indie' | 'starter' | 'all_on';
+// Experience fork (Sprint 11): whether the user already knows "vibe coding".
+// 'new' shows the explainer step; 'experienced' skips it. Persisted best-effort
+// to onboarding_steps.experience_level (migration 0074 — apply before merge).
+export type ExperienceLevel = 'new' | 'experienced';
 
 export interface ToolsSelection {
   preset: ToolsPreset;
@@ -21,6 +25,7 @@ export interface OnboardingStatePatch {
   deploy_choice?: 'vercel' | 'preview_only' | 'skip' | null;
   skipped_steps?: number[];
   tools_selection?: ToolsSelection | null;
+  experience_level?: ExperienceLevel | null;
 }
 
 export interface OnboardingState extends OnboardingStatePatch {

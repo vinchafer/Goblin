@@ -53,19 +53,31 @@ export const STR: Record<Lang, {
   chrome: { step: string; of: string; help: string };
   // Step 0 — language
   lang: { eyebrow: string; title: string; hint: string; cta: string };
-  // Step 1 — hero (HERO-B)
-  step1: {
+  // Step 2 — experience fork (do you know "vibe coding"? yes / no)
+  experience: {
     eyebrow: string; titleA: string; titleB: string; lead: string;
-    bullets: string[];
-    pathBBadge: string; pathBNum: string; pathBTime: string;
-    pathBTitle: string; pathBBody: string; pathBTags: string[]; pathBArr: string;
-    pathANum: string; pathATime: string; pathATitle: string; pathABody: string;
-    pathATag: string; pathAArr: string;
-    // 10.11-B — option A: Goblin's own hosted model (Coming Soon teaser, the moat).
-    freeBadge: string; freeNum: string; freeTitle: string; freeBody: string; freeTags: string[];
-    explore: string; exploreLink: string; exploreTail: string;
+    yesLabel: string; yesDesc: string; noLabel: string; noDesc: string; cta: string;
   };
-  // Step 2 — layers / how Goblin works
+  // Conditional (NO branch only) — encouraging vibe-coding explainer
+  explainer: {
+    eyebrow: string; titleA: string; titleB: string; lead: string;
+    points: { title: string; body: string }[]; cta: string;
+  };
+  // Models + consumption (Goblin Swift vs Goblin Forge, builds budget)
+  models: {
+    back: string; eyebrow: string; titleA: string; titleB: string; lead: string;
+    swiftName: string; swiftBadge: string; swiftDesc: string;
+    forgeName: string; forgeBadge: string; forgeDesc: string;
+    budgetTitle: string; budgetBody: string; trialNote: string; plansNote: string;
+    continue: string; footChange: string; footNext: string;
+  };
+  // First build with Goblin Swift (BYOK optional, secondary)
+  build: {
+    back: string; eyebrow: string; titleA: string; titleB: string; lead: string;
+    primaryCta: string; byokTitle: string; byokBody: string; byokCta: string;
+    footNote: string; finish: string;
+  };
+  // Step 3 — layers / how Goblin works
   layers: {
     back: string; eyebrow: string; titleA: string; titleB: string; lead: string;
     items: { tag: string; badge: string; title: string; body: string }[];
@@ -128,86 +140,134 @@ export const STR: Record<Lang, {
       hint: 'Du kannst das jederzeit in den Einstellungen ändern.',
       cta: 'Weiter',
     },
-    step1: {
-      eyebrow: 'Werkstatt einrichten',
-      titleA: 'Wie soll Goblin',
-      titleB: 'mit der KI sprechen?',
+    experience: {
+      eyebrow: 'Kurz zu dir',
+      titleA: 'Kennst du dich mit',
+      titleB: 'Vibe Coding aus?',
       lead:
-        'Du wählst, wie weit du gehst. Die meisten starten kostenlos mit einem '
-        + 'Free-Key und legen später drauf — wenn überhaupt.',
-      bullets: [
-        'BYOK — Anthropic, OpenAI, Google, Groq',
-        'Keine Karte nötig. Jederzeit kündbar.',
-        'Deine Keys liegen verschlüsselt in deinem Account.',
+        'Damit wir dich richtig abholen: Hast du schon mal per KI gebaut, '
+        + 'indem du einfach beschreibst, was du willst?',
+      yesLabel: 'Ja, kenne ich',
+      yesDesc: 'Bring mich direkt rein.',
+      noLabel: 'Noch nicht',
+      noDesc: 'Zeig mir kurz, wie es funktioniert.',
+      cta: 'Weiter',
+    },
+    explainer: {
+      eyebrow: 'Vibe Coding',
+      titleA: 'Du sagst, was du willst.',
+      titleB: 'Goblin baut es.',
+      lead: 'Kein Setup, kein Laptop, kein Code-Wissen nötig. So einfach läuft es:',
+      points: [
+        {
+          title: 'Beschreib es in normaler Sprache',
+          body:
+            'Kein Fachjargon, keine Konfiguration. Sag „Eine Landingpage mit '
+            + 'Anmeldeformular“ — das reicht.',
+        },
+        {
+          title: 'Die KI schreibt den Code',
+          body:
+            'Goblins eingebautes Modell baut echte, lauffähige Dateien — '
+            + 'und du siehst jede Zeile.',
+        },
+        {
+          title: 'Du shipst',
+          body: 'Ansehen, anpassen, live stellen. Auf jedem Gerät, von überall.',
+        },
       ],
-      pathBBadge: 'EMPFOHLEN',
-      pathBNum: 'WEG B', pathBTime: '~ 2 MIN',
-      pathBTitle: 'Ich bin neu hier.',
-      pathBBody:
-        'Noch kein Key? Wir holen mit dir einen kostenlosen — keine Karte, kein Fachjargon.',
-      pathBTags: ['GEFÜHRT', 'KOSTENLOS'],
-      pathBArr: 'Zeig mir, wie',
-      pathANum: 'WEG A', pathATime: '~ 60 SEK',
-      pathATitle: 'Ich habe schon einen Key.',
-      pathABody:
-        'Anthropic, OpenAI, Google, Groq und mehr — einfügen, testen, loslegen.',
-      pathATag: 'EINFÜGEN & LOS',
-      pathAArr: 'Weiter',
-      freeBadge: 'COMING SOON', freeNum: 'GOBLIN',
-      freeTitle: 'Ohne Key starten.',
-      freeBody:
-        'Goblins eigenes Modell — kein Key nötig. Wir bringen es gerade online; '
-        + 'dann baust du hier ganz ohne eigenen Schlüssel.',
-      freeTags: ['KEIN KEY', 'BALD'],
-      explore: 'Nur schauen? ', exploreLink: 'Erst erkunden',
-      exploreTail: ' — Key fürs Bauen, jederzeit nachträglich.',
+      cta: 'Verstanden — weiter',
+    },
+    models: {
+      back: 'Zurück',
+      eyebrow: 'Modelle & Verbrauch',
+      titleA: 'Zwei Modelle.', titleB: 'Ein Budget.',
+      lead:
+        'Beide sind eingebaut — kein Key nötig. Du wählst pro Build, wie viel '
+        + 'Power du brauchst.',
+      swiftName: 'Goblin Swift', swiftBadge: 'STANDARD',
+      swiftDesc:
+        'Schnell und effizient — dein Alltags-Default. Ein Swift-Build zählt als '
+        + 'ein Build deines Monatsbudgets.',
+      forgeName: 'Goblin Forge', forgeBadge: 'MEHR POWER',
+      forgeDesc:
+        'Stärker, für härtere Builds. Zieht mehr aus deinem Monatsbudget — '
+        + 'nimm ihn, wenn Swift nicht reicht.',
+      budgetTitle: 'Dein Monatsbudget',
+      budgetBody:
+        'Kein Token-Zähler, keine Überraschungen: ein Budget pro Monat. '
+        + 'Swift-Builds zählen einfach, Forge-Builds ziehen mehr.',
+      trialNote: 'In deiner Testphase: {trial} gratis, keine Karte.',
+      plansNote: 'Bezahlte Pläne: {build}, {pro}, {power}.',
+      continue: 'Weiter — Loslegen',
+      footChange: 'MODELL JEDERZEIT PRO BUILD WÄHLBAR',
+      footNext: 'WEITER — ERSTER BUILD →',
+    },
+    build: {
+      back: 'Zurück',
+      eyebrow: 'Erster Build',
+      titleA: 'Bereit?', titleB: 'Bau dein erstes Projekt.',
+      lead:
+        'Goblin Swift ist startklar — kein Key, keine Karte. Beschreib, was du '
+        + 'willst, und Goblin baut es.',
+      primaryCta: 'Ersten Build starten',
+      byokTitle: 'Eigene Keys?',
+      byokBody:
+        'Optional, jederzeit später. Bring deine eigenen Provider mit, wenn du '
+        + 'willst — nötig ist es nie.',
+      byokCta: 'Key hinzufügen (optional)',
+      footNote: 'START MIT GOBLIN SWIFT · KEYS JEDERZEIT IN DEN EINSTELLUNGEN',
+      finish: 'LOSLEGEN →',
     },
     layers: {
       back: 'Zurück',
-      eyebrow: 'Schritt 02 von 06 — Wie Goblin deine Prompts routet',
+      eyebrow: 'Wie Goblin arbeitet',
       titleA: 'Wie Goblin', titleB: 'arbeitet.',
       lead:
-        'Drei Ebenen. Du entscheidest, wie weit nach oben du willst. Die meisten '
-        + 'starten auf Ebene 1 und bleiben dort.',
+        'Drei Ebenen. Die unterste ist der Standard und läuft sofort — die '
+        + 'anderen zwei sind optional, wenn du mehr willst.',
       items: [
         {
-          tag: 'Ebene 1', badge: 'AKTIV',
-          title: 'Kostenlos starten',
+          tag: 'Ebene 1', badge: 'STANDARD',
+          title: 'Goblins eigene Modelle — kein Key',
           body:
-            'Verbinde einen kostenlosen Key (z.B. Groq) — Goblin macht den Rest. '
-            + 'In unter einer Minute startklar. Hier starten die meisten und bleiben.',
+            'Goblin Swift und Goblin Forge sind eingebaut und laufen in der Cloud. '
+            + 'Kein Schlüssel, kein Setup, kein Laptop nötig — das ist der Standard '
+            + 'und funktioniert sofort.',
         },
         {
-          tag: 'Ebene 2', badge: 'BALD',
-          title: 'Größere Modelle, ohne eigenen Key',
+          tag: 'Ebene 2', badge: 'OPTIONAL',
+          title: 'Kostenlose Drittanbieter-Modelle',
           body:
-            'Bald laufen Goblins eigene Modelle direkt — kein Key, kein Token-Stress, '
-            + 'keine Limits. Genau das macht Goblin mehr als einen Key-Manager.',
+            'Du kannst zusätzlich einen kostenlosen Key eines Anbieters (z.B. Groq '
+            + 'oder Gemini) verbinden — gratis Kontingent, keine Karte. Rein optional.',
         },
         {
           tag: 'Ebene 3', badge: 'OPTIONAL',
-          title: 'Premium, dein eigener Key',
+          title: 'Eigene Keys (BYOK)',
           body:
-            'Für die härtesten Builds: deine bezahlten Provider. Goblin routet '
-            + 'dorthin, wenn du willst — oder immer, wenn du es als Standard setzt.',
+            'Für die härtesten Builds bringst du deine eigenen bezahlten Provider '
+            + 'mit — bis zu 2 Keys pro Provider, beliebig viele Provider. Jederzeit, '
+            + 'komplett optional.',
         },
       ],
-      l3cta: 'Premium-Provider hinzufügen',
-      waitlistIdle: 'Auf die Liste', waitlistBusy: 'Trag dich ein…',
-      waitlistDone: 'Du bist auf der Liste',
-      flow: { prompt: 'Prompt', l1: 'Ebene 1 · Standard', l2: 'Ebene 2 · bald', l3: 'Ebene 3 · wenn du willst' },
-      flowCap: 'Standard funktioniert sofort — keine Konfiguration nötig.',
-      continue: 'Weiter — Provider wählen', skip: 'Überspringen — Standard nutzen',
-      footChange: 'STANDARD FUNKTIONIERT SOFORT',
-      footNext: 'WEITER — PROVIDER →',
+      l3cta: 'Eigenen Key hinzufügen',
+      waitlistIdle: 'Mehr erfahren', waitlistBusy: '…',
+      waitlistDone: 'Alles klar',
+      flow: { prompt: 'Prompt', l1: 'Ebene 1 · Standard', l2: 'Ebene 2 · optional', l3: 'Ebene 3 · optional' },
+      flowCap: 'Der Standard funktioniert sofort — kein Key, keine Konfiguration.',
+      continue: 'Weiter — Modelle ansehen', skip: 'Überspringen',
+      footChange: 'STANDARD FUNKTIONIERT SOFORT — KEIN KEY',
+      footNext: 'WEITER — MODELLE →',
     },
     provider: {
-      back: '← Zurück zu „Wie Goblin arbeitet“',
-      eyebrow: 'Schritt 03 von 06 — Provider wählen',
+      back: '← Zurück',
+      eyebrow: 'Eigene Keys (optional)',
       titleA: 'Wähl deinen KI-', titleB: 'Provider.',
       lead:
-        'Sechs Provider, drei Muster: kostenloser Tarif, nutzungsbasiert und '
-        + 'schnelle Inferenz. Starte mit Groq — Goblin macht den Rest.',
+        'BYOK ist optional — Goblin Swift läuft schon ohne Key. Wenn du willst: '
+        + 'verbinde einen kostenlosen Key (z.B. Groq) oder deine bezahlten Provider. '
+        + 'Bis zu 2 Keys pro Provider, beliebig viele Provider.',
       fallbackTitle: 'Einen wählen. Alle sechs bekommen.',
       fallbackBody:
         'Wenn dein Provider ein Limit erreicht oder Fehler wirft, wechselt Goblin '
@@ -247,15 +307,15 @@ export const STR: Record<Lang, {
       footSkip: 'ÜBERSPRINGEN — SPÄTER ENTSCHEIDEN →',
     },
     tools: {
-      back: 'Zurück zu den Providern',
-      eyebrow: 'Schritt 04 von 06 — Werkzeuge',
+      back: 'Zurück',
+      eyebrow: 'Werkzeuge',
       titleA: 'Gib Goblin die richtigen', titleB: 'Werkzeuge.',
       lead:
         'Zwei Werkzeugkästen, getrennt abgestimmt. Chat & Architektur fürs Denken '
         + '— Websuche, Docs, dein eigenes Repo. Coding & Shipping fürs Machen — Lint, '
         + 'Type-Check, Tests, Deploy. Wähl ein Preset oder kurier von Hand.',
-      presetIndieL: 'EMPFOHLEN · AM BELIEBTESTEN', presetIndieName: 'Indie-Builder',
-      presetIndieDesc: 'Die 8 Werkzeuge, die 84% der Goblin-Nutzer anlassen. Balance aus Kosten und Können.',
+      presetIndieL: 'EMPFOHLEN · AUSGEWOGEN', presetIndieName: 'Indie-Builder',
+      presetIndieDesc: 'Eine ausgewogene Auswahl fürs schnelle Bauen — Balance aus Kosten und Können.',
       presetStarterL: 'MIN · FREE-TIER-FREUNDLICH', presetStarterName: 'Starter',
       presetStarterDesc: 'Nur Docs-Lookup + Lint. Keine Web-Aufrufe.',
       presetAllL: 'MAX · POWER-USER', presetAllName: 'Alles an, immer',
@@ -272,8 +332,8 @@ export const STR: Record<Lang, {
       beta: 'BETA', soon: 'BALD',
     },
     integ: {
-      back: 'Zurück zu den Werkzeugen',
-      eyebrow: 'Schritt 05 von 06 — Integrationen',
+      back: 'Zurück',
+      eyebrow: 'Integrationen',
       titleA: 'Verbinde Goblin mit deinem', titleB: 'Stack.',
       lead:
         'Goblin pusht Code, baut Builds und pingt die richtigen Leute — überall, wo '
@@ -324,86 +384,133 @@ export const STR: Record<Lang, {
       hint: 'You can change this any time in Settings.',
       cta: 'Continue',
     },
-    step1: {
-      eyebrow: 'Set up your workshop',
-      titleA: 'How should Goblin',
-      titleB: 'talk to AI?',
+    experience: {
+      eyebrow: 'Quick question',
+      titleA: 'Are you familiar with',
+      titleB: 'vibe coding?',
       lead:
-        'You choose how far you go. Most start free with one key and add more '
-        + 'later — if ever.',
-      bullets: [
-        'BYOK — Anthropic, OpenAI, Google, Groq',
-        'No card on file. Cancel anytime.',
-        'Your keys live in your account, encrypted.',
+        "So we pitch this at the right level: have you built with AI before, "
+        + 'just by describing what you want?',
+      yesLabel: "Yes, I am",
+      yesDesc: 'Take me straight in.',
+      noLabel: 'Not yet',
+      noDesc: 'Show me how it works first.',
+      cta: 'Continue',
+    },
+    explainer: {
+      eyebrow: 'Vibe coding',
+      titleA: 'You say what you want.',
+      titleB: 'Goblin builds it.',
+      lead: 'No setup, no laptop, no coding knowledge needed. Here is how it works:',
+      points: [
+        {
+          title: 'Describe it in plain language',
+          body:
+            'No jargon, no configuration. Say "a landing page with a signup form" — '
+            + "that's enough.",
+        },
+        {
+          title: 'The AI writes the code',
+          body:
+            "Goblin's built-in model produces real, runnable files — and you see "
+            + 'every line.',
+        },
+        {
+          title: 'You ship',
+          body: 'Preview, tweak, go live. On any device, from anywhere.',
+        },
       ],
-      pathBBadge: 'RECOMMENDED',
-      pathBNum: 'PATH B', pathBTime: '~ 2 MIN',
-      pathBTitle: "I'm new to this.",
-      pathBBody:
-        "No key yet? We'll walk you through getting a free one — no card, no jargon.",
-      pathBTags: ['GUIDED', 'FREE'],
-      pathBArr: 'Walk me through it',
-      pathANum: 'PATH A', pathATime: '~ 60 SEC',
-      pathATitle: 'I already have a key.',
-      pathABody:
-        "Anthropic, OpenAI, Google, Groq and more — paste it, test it, you're building.",
-      pathATag: 'PASTE & GO',
-      pathAArr: 'Continue',
-      freeBadge: 'COMING SOON', freeNum: 'GOBLIN',
-      freeTitle: 'Start without a key.',
-      freeBody:
-        "Goblin's own hosted model — no key needed. We're bringing it online now; "
-        + 'then you build here with no key of your own.',
-      freeTags: ['NO KEY', 'SOON'],
-      explore: 'Just looking? ', exploreLink: 'Explore first',
-      exploreTail: ' — a key to build, add it anytime.',
+      cta: 'Got it — continue',
+    },
+    models: {
+      back: 'Back',
+      eyebrow: 'Models & consumption',
+      titleA: 'Two models.', titleB: 'One budget.',
+      lead:
+        'Both are built in — no key needed. You choose per build how much power '
+        + 'you want.',
+      swiftName: 'Goblin Swift', swiftBadge: 'DEFAULT',
+      swiftDesc:
+        'Fast and efficient — your everyday default. One Swift build counts as one '
+        + 'build of your monthly budget.',
+      forgeName: 'Goblin Forge', forgeBadge: 'MORE POWER',
+      forgeDesc:
+        'Stronger, for harder builds. Draws more from your monthly budget — reach '
+        + "for it when Swift isn't enough.",
+      budgetTitle: 'Your monthly budget',
+      budgetBody:
+        'No token counter, no surprises: one budget per month. Swift builds count '
+        + 'simply, Forge builds draw more.',
+      trialNote: 'On your trial: {trial} free, no card.',
+      plansNote: 'Paid plans: {build}, {pro}, {power}.',
+      continue: 'Continue — let’s build',
+      footChange: 'PICK THE MODEL PER BUILD, ANY TIME',
+      footNext: 'NEXT — FIRST BUILD →',
+    },
+    build: {
+      back: 'Back',
+      eyebrow: 'First build',
+      titleA: 'Ready?', titleB: 'Build your first project.',
+      lead:
+        'Goblin Swift is ready to go — no key, no card. Describe what you want and '
+        + 'Goblin builds it.',
+      primaryCta: 'Start your first build',
+      byokTitle: 'Your own keys?',
+      byokBody:
+        "Optional, any time later. Bring your own providers if you want — you never "
+        + 'have to.',
+      byokCta: 'Add a key (optional)',
+      footNote: 'START WITH GOBLIN SWIFT · ADD KEYS ANY TIME IN SETTINGS',
+      finish: "LET'S GO →",
     },
     layers: {
       back: 'Back',
-      eyebrow: 'Step 02 of 06 — How Goblin routes your prompts',
+      eyebrow: 'How Goblin works',
       titleA: 'How Goblin', titleB: 'works.',
       lead:
-        'Three layers. You choose how far up you want to go. Most people start at '
-        + 'Layer 1 and never leave.',
+        'Three layers. The bottom one is the default and works right now — the '
+        + 'other two are optional, for when you want more.',
       items: [
         {
-          tag: 'Layer 1', badge: 'ACTIVE',
-          title: 'Start free',
+          tag: 'Layer 1', badge: 'DEFAULT',
+          title: "Goblin's own models — no key",
           body:
-            'Connect a free key (e.g. Groq) — Goblin does the rest. Ready to build '
-            + 'in under a minute. This is where most people start and stay.',
+            'Goblin Swift and Goblin Forge are built in and run in the cloud. No '
+            + 'key, no setup, no laptop needed — this is the default and it works '
+            + 'right now.',
         },
         {
-          tag: 'Layer 2', badge: 'SOON',
-          title: 'Bigger models, no key of your own',
+          tag: 'Layer 2', badge: 'OPTIONAL',
+          title: 'Free third-party models',
           body:
-            "Soon Goblin's own models run straight through — no key, no token panic, "
-            + 'no limits. This is exactly what makes Goblin more than a key manager.',
+            'You can also connect a free provider key (e.g. Groq or Gemini) — free '
+            + 'tier, no card. Entirely optional.',
         },
         {
           tag: 'Layer 3', badge: 'OPTIONAL',
-          title: 'Premium, your own key',
+          title: 'Bring your own keys (BYOK)',
           body:
-            'For your hardest builds: your paid providers. Goblin routes there when '
-            + 'you ask — or always, if you set it as the default.',
+            'For your hardest builds, bring your own paid providers — up to 2 keys '
+            + 'per provider, unlimited providers. Any time, fully optional.',
         },
       ],
-      l3cta: 'Add a premium provider',
-      waitlistIdle: 'Get on the list', waitlistBusy: 'Adding you…',
-      waitlistDone: "You're on the list",
-      flow: { prompt: 'Prompt', l1: 'Layer 1 · default', l2: 'Layer 2 · soon', l3: 'Layer 3 · if you opt in' },
-      flowCap: 'Defaults work out of the box — no setup needed.',
-      continue: 'Continue — pick your provider', skip: 'Skip — use defaults',
-      footChange: 'DEFAULTS WORK OUT OF THE BOX',
-      footNext: 'NEXT — PROVIDER →',
+      l3cta: 'Add your own key',
+      waitlistIdle: 'Learn more', waitlistBusy: '…',
+      waitlistDone: 'Got it',
+      flow: { prompt: 'Prompt', l1: 'Layer 1 · default', l2: 'Layer 2 · optional', l3: 'Layer 3 · optional' },
+      flowCap: 'The default works out of the box — no key, no setup.',
+      continue: 'Continue — see the models', skip: 'Skip',
+      footChange: 'THE DEFAULT WORKS OUT OF THE BOX — NO KEY',
+      footNext: 'NEXT — MODELS →',
     },
     provider: {
-      back: '← Back to how Goblin works',
-      eyebrow: 'Step 03 of 06 — Pick a provider',
+      back: '← Back',
+      eyebrow: 'Bring your own keys (optional)',
       titleA: 'Pick your AI', titleB: 'provider.',
       lead:
-        'Six providers, three patterns: free tier, pay-as-you-go, and fast '
-        + 'inference. Start with Groq — Goblin handles the rest.',
+        'BYOK is optional — Goblin Swift already runs with no key. If you want: '
+        + 'connect a free key (e.g. Groq) or your paid providers. Up to 2 keys per '
+        + 'provider, unlimited providers.',
       fallbackTitle: 'Pick one. Get all six.',
       fallbackBody:
         'When your provider hits a rate limit or errors, Goblin swaps to the next '
@@ -443,15 +550,15 @@ export const STR: Record<Lang, {
       footSkip: 'SKIP — DECIDE LATER →',
     },
     tools: {
-      back: 'Back to providers',
-      eyebrow: 'Step 04 of 06 — Tools',
+      back: 'Back',
+      eyebrow: 'Tools',
       titleA: 'Give Goblin the right', titleB: 'tools.',
       lead:
         'Two toolkits, separately tuned. Chat & architecture for the thinking — web '
         + 'search, docs, your own repo. Coding & shipping for the doing — lint, '
         + 'type-check, tests, deploy. Pick a preset or curate by hand.',
-      presetIndieL: 'RECOMMENDED · MOST POPULAR', presetIndieName: 'Indie builder',
-      presetIndieDesc: 'The 8 tools 84% of Goblin users keep on. Balanced cost vs. capability.',
+      presetIndieL: 'RECOMMENDED · BALANCED', presetIndieName: 'Indie builder',
+      presetIndieDesc: 'A balanced set for fast building — balanced cost vs. capability.',
       presetStarterL: 'MIN · FREE TIER FRIENDLY', presetStarterName: 'Starter',
       presetStarterDesc: 'Only docs lookup + lint. No web calls.',
       presetAllL: 'MAX · POWER USER', presetAllName: 'All on, all the time',
@@ -468,8 +575,8 @@ export const STR: Record<Lang, {
       beta: 'BETA', soon: 'SOON',
     },
     integ: {
-      back: 'Back to tools',
-      eyebrow: 'Step 05 of 06 — Integrations',
+      back: 'Back',
+      eyebrow: 'Integrations',
       titleA: 'Plug Goblin into your', titleB: 'stack.',
       lead:
         "Goblin pushes code, runs builds, and pings the right people — everywhere you "
@@ -579,7 +686,7 @@ export const PROV_COPY: Record<Lang, Record<ProvCopyId, ProvCopy>> = {
     },
     anthropic: {
       sub: 'Claude · Premium', pillLabel: 'NUTZUNG',
-      pros: ['Spitzenklasse-Code-Generierung', 'Riesiger Kontext, lange Edits', 'Wo die meisten Goblin-Nutzer landen'],
+      pros: ['Spitzenklasse-Code-Generierung', 'Riesiger Kontext, lange Edits', 'Beste Qualität für komplexe Builds'],
       price: 'AB ~$0,02 / CHAT',
       guide: [
         'Geh auf console.anthropic.com',
@@ -648,7 +755,7 @@ export const PROV_COPY: Record<Lang, Record<ProvCopyId, ProvCopy>> = {
     },
     anthropic: {
       sub: 'Claude · Premium', pillLabel: 'USAGE',
-      pros: ['Best-in-class code generation', 'Huge context, long-running edits', 'What most Goblin users end on'],
+      pros: ['Best-in-class code generation', 'Huge context, long-running edits', 'Best quality for complex builds'],
       price: 'FROM ~$0.02 / CHAT',
       guide: [
         'Go to console.anthropic.com',

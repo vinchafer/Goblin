@@ -1,61 +1,41 @@
 'use client';
 
-// Step 3 of 6 — "How Goblin works" (Sprint 10.5 A-S6).
-// Reframed around the THREE-LAYER model so a user who only brought a free
-// Groq key understands they DON'T need Claude+Gemini+Groq all at once, and
-// learns what actually differentiates Goblin (Layer 2, Goblin-bundled, API-first).
-//
-// Onboarding completion still seeds the server-side default fallback chain.
-// Routing can be tuned later in Settings → Routing; no in-flow detour here.
+// "How Goblin works" (Sprint 11 honest restructure).
+// THREE LAYERS, honestly ordered:
+//   Layer 1 (DEFAULT, live now) — Goblin's own built-in models (Swift/Forge),
+//     no key, cloud-run. This is the default and works today.
+//   Layer 2 (OPTIONAL) — free third-party keys (Groq/Gemini).
+//   Layer 3 (OPTIONAL) — BYOK, your own paid providers.
+// No "coming soon"/waitlist anywhere: the no-key path is the live default, per
+// the Phase-2 truth-test (Goblin Swift built a real page with no key, no card).
+// Continues into the models step. Numbering is owned by chrome/flow.ts.
 
 import Link from 'next/link';
-import { Suspense, useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
-import { getAuthHeaders, API_URL } from '@/lib/api';
-import { IArrowL, IArrowR, ICheck, IShield } from '../_components/icons';
+import { usePathname } from 'next/navigation';
+import { useEffect } from 'react';
+import { IArrowL, IArrowR, IShield } from '../_components/icons';
 import { patchOnboardingState } from '../_components/onboarding-state';
 import { useOnbLang, STR } from '../_components/i18n';
+import { prevStep, readVibeKnown } from '../_components/flow';
 
-// Tone per layer index (0 active, 1 soon, 2 optional) — drives card styling.
-// Copy itself lives in i18n.ts; speak PROVIDERS + tiers, never model versions.
-const TONES = ['active', 'soon', 'optional'] as const;
+// Tone per layer index: layer 1 is the live default; 2 and 3 are optional.
+const TONES = ['active', 'optional', 'optional'] as const;
 
-function RoutingInner() {
+export default function RoutingStepPage() {
   const lang = useOnbLang();
   const t = STR[lang].layers;
-  const [waitlist, setWaitlist] = useState<'idle' | 'busy' | 'done'>('idle');
-  const search = useSearchParams();
-  const path = search?.get('path') === 'a' ? 'a' : 'b';
-  // After the 10.7-6 swap the layer-story is Step 2 and the provider step
-  // follows it. Carry the path choice forward so the provider step still
-  // pre-expands the right hero card.
-  const nextHref = `/welcome/provider?path=${path}`;
+  const pathname = usePathname() ?? '/welcome/routing';
+  const nextHref = '/welcome/models';
+  const backHref = prevStep(pathname, readVibeKnown()) ?? '/welcome';
 
   useEffect(() => {
     patchOnboardingState({ current_step: 2 });
   }, []);
 
-  async function joinWaitlist() {
-    if (waitlist !== 'idle') return;
-    setWaitlist('busy');
-    try {
-      const headers = await getAuthHeaders();
-      await fetch(`${API_URL}/api/waitlist/goblin-hosted`, {
-        method: 'POST',
-        headers,
-        credentials: 'include',
-        body: JSON.stringify({}),
-      });
-    } catch {
-      // Best-effort — still confirm to the user; founder can reconcile later.
-    }
-    setWaitlist('done');
-  }
-
   return (
     <div className="step3">
       <header className="head">
-        <Link href="/welcome" className="back">
+        <Link href={backHref} className="back">
           <IArrowL size={12} /> <span>{t.back}</span>
         </Link>
         <div className="eyebrow"><span className="tick" /><span>{t.eyebrow}</span></div>
@@ -77,10 +57,6 @@ function RoutingInner() {
                 </div>
                 <h3>{layer.title}</h3>
                 <p>{layer.body}</p>
-                {/* 10.11-C.4 — every layer now carries one consistent CTA.
-                    Layer 1 (active) = the working path → continue; Layer 2
-                    (soon) = filled green waitlist; Layer 3 (optional) =
-                    outline "add premium". No more faint text. */}
                 {tone === 'active' && (
                   <Link
                     href={nextHref}
@@ -90,26 +66,8 @@ function RoutingInner() {
                     {t.continue} <IArrowR size={13} />
                   </Link>
                 )}
-                {tone === 'soon' && (
-                  <button
-                    type="button"
-                    className={`waitlist ${waitlist === 'done' ? 'joined' : ''}`}
-                    onClick={joinWaitlist}
-                    disabled={waitlist !== 'idle'}
-                  >
-                    {waitlist === 'done'
-                      ? <><ICheck size={13} /> {t.waitlistDone}</>
-                      : waitlist === 'busy'
-                        ? t.waitlistBusy
-                        : <>{t.waitlistIdle} <IArrowR size={13} /></>}
-                  </button>
-                )}
                 {n === '3' && (
-                  <Link
-                    href={nextHref}
-                    className="layer-cta"
-                    onClick={() => patchOnboardingState({ current_step: 3 })}
-                  >
+                  <Link href="/welcome/provider" className="layer-cta">
                     {t.l3cta} <IArrowR size={13} />
                   </Link>
                 )}
@@ -124,7 +82,7 @@ function RoutingInner() {
         <IArrowR size={13} />
         <span className="fstep on">{t.flow.l1}</span>
         <IArrowR size={13} />
-        <span className="fstep soon">{t.flow.l2}</span>
+        <span className="fstep">{t.flow.l2}</span>
         <IArrowR size={13} />
         <span className="fstep">{t.flow.l3}</span>
       </div>
@@ -151,7 +109,6 @@ function RoutingInner() {
 
       <div className="footstrip">
         <span className="skip"><IShield size={11} />{t.footChange}</span>
-        <span className="gobl-mono">/welcome/routing · {STR[lang].chrome.step} 02 {STR[lang].chrome.of} 06</span>
         <Link href={nextHref}>{t.footNext}</Link>
       </div>
 
@@ -197,12 +154,6 @@ function RoutingInner() {
           padding: 20px 22px;
         }
         .layer-active { border-color: var(--green); box-shadow: 0 0 0 1px var(--green); }
-        .layer-soon {
-          background:
-            radial-gradient(120% 140% at 100% 0%, var(--accent-soft) 0%, transparent 55%),
-            var(--surface-elev);
-          border-color: var(--accent-rule);
-        }
         .lnum {
           width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
           display: inline-flex; align-items: center; justify-content: center;
@@ -212,7 +163,6 @@ function RoutingInner() {
           border: 1px solid var(--line-strong);
         }
         .layer-active .lnum { background: var(--green); color: var(--bone); border-color: var(--green); }
-        .layer-soon .lnum { background: var(--accent-bright); color: var(--green); border-color: var(--accent-bright); }
         .lbody { min-width: 0; }
         .lhead { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 6px; }
         .ltag {
@@ -225,7 +175,6 @@ function RoutingInner() {
           padding: 3px 8px; border-radius: var(--radius-xs);
         }
         .badge-active { background: var(--ok-soft); color: var(--ok); border: 1px solid rgba(47,106,71,.32); }
-        .badge-soon { background: var(--accent-soft); color: var(--gold-deep); border: 1px solid var(--accent-rule); }
         .badge-optional { background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line-strong); }
         .layer h3 {
           font-family: var(--font-onb-display), Manrope, sans-serif;
@@ -236,25 +185,7 @@ function RoutingInner() {
           font-size: 14px; color: var(--ink-2); line-height: 1.55;
           margin-top: 6px; max-width: 66ch;
         }
-        .waitlist {
-          margin-top: 12px;
-          display: inline-flex; align-items: center; gap: 7px;
-          font-family: var(--font-onb-display), Manrope, sans-serif;
-          font-weight: 600; font-size: 13px;
-          padding: 9px 14px; border-radius: var(--radius);
-          background: var(--green); color: var(--bone);
-          border: 1px solid var(--green); cursor: pointer;
-        }
-        .waitlist:hover { background: #081710; }
-        .waitlist.joined { background: var(--ok-soft); color: var(--ok); border-color: rgba(47,106,71,.32); cursor: default; }
-        .waitlist:disabled { cursor: default; }
 
-        /* 10.11-C.4 — shared layer CTA: a real bordered button, not faint text.
-           Used by Layer 1 (active, green-emphasis) and Layer 3 (optional).
-           MUST be :global — these render on a Next <Link>, which does NOT
-           receive styled-jsx's scope class here, so a scoped selector never
-           matches (that was the original "faint text" bug: .layer3-link was
-           scoped and silently never applied). */
         :global(.layer-cta) {
           margin-top: 14px;
           display: inline-flex; align-items: center; gap: 7px;
@@ -284,7 +215,6 @@ function RoutingInner() {
           background: var(--surface-elev); border: 1px solid var(--line);
         }
         .fstep.on { color: var(--green); border-color: var(--green); font-weight: 600; }
-        .fstep.soon { color: var(--gold-deep); border-color: var(--accent-rule); }
         .flow-cap {
           display: inline-flex; align-items: center; gap: 7px;
           font-size: 12.5px; color: var(--ink-2); margin-bottom: 22px;
@@ -292,17 +222,6 @@ function RoutingInner() {
         .flow-cap :global(svg) { color: var(--accent); flex-shrink: 0; }
 
         .actions { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
-        .btn-primary, .btn-ghost {
-          display: inline-flex; align-items: center; gap: 8px;
-          font-family: var(--font-onb-display), Manrope, sans-serif;
-          font-weight: 600; font-size: 14.5px;
-          padding: 14px 22px; border-radius: var(--radius);
-          border: 1px solid transparent; cursor: pointer; text-decoration: none;
-        }
-        .btn-primary { background: var(--green); color: var(--bone); border-color: var(--green); }
-        .btn-primary:hover { background: #081710; }
-        .btn-ghost { background: transparent; color: var(--ink-2); border-color: var(--line-strong); }
-        .btn-ghost:hover { color: var(--ink-1); border-color: var(--ink-1); }
 
         .footstrip {
           margin-top: 24px;
@@ -323,13 +242,5 @@ function RoutingInner() {
         }
       `}</style>
     </div>
-  );
-}
-
-export default function RoutingStepPage() {
-  return (
-    <Suspense fallback={<div style={{ padding: 32 }} />}>
-      <RoutingInner />
-    </Suspense>
   );
 }
