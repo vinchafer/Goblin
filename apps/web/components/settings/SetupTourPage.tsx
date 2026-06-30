@@ -8,11 +8,11 @@
 // Re-running NEVER resets the account: it only re-shows the steps. We set a
 // one-shot localStorage flag the onboarding chrome honors to allow re-entry for
 // an already-completed user, then navigate to the first step.
-import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { SettingsCard } from '../ui/SettingsCard';
 import { SettingsRow } from '../ui/SettingsRow';
 import { SettingsGroup } from '../ui/SettingsGroup';
+import { useOnbLang } from '../../app/welcome/_components/i18n';
 
 type Lang = 'de' | 'en';
 
@@ -44,13 +44,8 @@ const COPY: Record<Lang, {
 
 export function SetupTourPage() {
   const router = useRouter();
-  const [lang, setLang] = useState<Lang>('de');
-  useEffect(() => {
-    try {
-      const v = window.localStorage.getItem('goblin:preferred-lang');
-      if (v === 'en' || v === 'de') setLang(v);
-    } catch { /* keep default */ }
-  }, []);
+  // Reuse the onboarding language hook (reads goblin:preferred-lang, SSR-safe).
+  const lang: Lang = useOnbLang();
   const t = COPY[lang];
 
   function runGuided() {

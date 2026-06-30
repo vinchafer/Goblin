@@ -28,7 +28,7 @@ export default function ExplainerStep() {
   return (
     <div className="explainer">
       <header className="head">
-        <Link href="/welcome" className="back"><IArrowL size={12} /> <span>{STR[lang].experience.cta}</span></Link>
+        <Link href="/welcome" className="back"><IArrowL size={12} /> <span>{STR[lang].layers.back}</span></Link>
         <div className="eyebrow"><span className="tick" /><span>{t.eyebrow}</span></div>
         <h1>{t.titleA} <span className="gobl-serif">{t.titleB}</span></h1>
         <p className="lead">{t.lead}</p>
