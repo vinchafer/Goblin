@@ -49,6 +49,18 @@ export function OnboardingChrome({ children }: { children: React.ReactNode }) {
       setChecking(false);
       return;
     }
+    // Re-run from Settings (Sprint 11 "Preference Flow"): a completed user can
+    // replay the guided flow on demand. The settings entry sets this flag; we
+    // honor it in production too (unlike the dev preview flag above), clear it
+    // immediately, and DO NOT touch any account data — only the steps re-show.
+    if (
+      typeof window !== 'undefined' &&
+      window.localStorage.getItem('goblin:rerun-flow') === '1'
+    ) {
+      try { window.localStorage.removeItem('goblin:rerun-flow'); } catch { /* ignore */ }
+      setChecking(false);
+      return;
+    }
     (async () => {
       try {
         const state = await getOnboardingState();
