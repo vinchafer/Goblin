@@ -250,9 +250,19 @@ export default async function StatusPage() {
               )}
             </div>
           ))}
-          {webVersion && apiVersion && webVersion.gitCommit !== 'unknown' && apiVersion.gitCommit !== 'unknown' && (
-            <div style={{ padding: '10px 20px', fontSize: 'var(--t-caption-fs)', color: webVersion.gitCommit === apiVersion.gitCommit ? 'var(--success)' : 'var(--brand-gold)', fontWeight: 600 }}>
-              {webVersion.gitCommit === apiVersion.gitCommit ? '✓ Web and API on same commit' : '⚠ Web and API on different commits'}
+          {/*
+            Web (Vercel) and API (Railway) deploy INDEPENDENTLY: Vercel ships on
+            every push, Railway only when its watch paths (apps/api + the bundled
+            @goblin/shared) change. So their commits routinely differ while BOTH
+            are current — a plain SHA-equality check false-alarmed on that normal
+            drift. Staleness that actually matters surfaces through /health (the
+            overall banner + per-service dots) and each service's own commit shown
+            above; cross-service SHA equality has no diagnostic value here, so we
+            show the commits for debugging without claiming a mismatch is a fault.
+          */}
+          {(webVersion || apiVersion) && (
+            <div style={{ padding: '10px 20px', fontSize: 'var(--t-caption-fs)', color: 'var(--meta)', lineHeight: 1.5 }}>
+              Web and API deploy independently, so their commits can differ while both are current.
             </div>
           )}
         </div>
