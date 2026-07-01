@@ -20,7 +20,7 @@ import { Suspense, useEffect, useRef, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { getAuthHeaders, API_URL } from '@/lib/api';
 import {
-  IArrowR, ICheck, IEye, IEyeOff, ILink, IShield,
+  IArrowL, IArrowR, ICheck, IEye, IEyeOff, ILink, IShield,
 } from '../_components/icons';
 import { ProviderLogo } from '@/components/onboarding/ProviderLogo';
 import { patchOnboardingState } from '../_components/onboarding-state';
@@ -230,14 +230,18 @@ function Step2Inner() {
 
   const anySaved = Object.values(cards).some((c) => c.saved);
 
-  const heroOnly = PROVIDERS.filter((p) => p.hero);
-  const rest = PROVIDERS.filter((p) => !p.hero);
+  // §4 — group providers so a brand-new user instantly sees free vs paid.
+  // FREE (no card): Groq (hero) + Google Gemini. PAID/FRONTIER (usage-based):
+  // OpenAI, Anthropic, DeepSeek, Mistral — plus the custom "one key, every
+  // model" endpoint card, which is also paid/frontier.
+  const freeProviders = PROVIDERS.filter((p) => p.pill === 'free' || p.pill === 'fast');
+  const paidProviders = PROVIDERS.filter((p) => p.pill === 'paid');
 
   return (
     <div className="step2" data-path={path}>
       <header className="head">
-        <Link href="/welcome/routing" className="back-link">
-          {t.back}
+        <Link href="/welcome/routing" className="back">
+          <IArrowL size={12} /> <span>{t.back}</span>
         </Link>
         <div className="eyebrow"><span className="tick" />{t.eyebrow}</div>
         <h1>{t.titleA} <span className="gobl-serif">{t.titleB}</span></h1>
@@ -253,8 +257,13 @@ function Step2Inner() {
         <span className="tag">{t.fallbackTag}</span>
       </div>
 
-      <div className="hero-row">
-        {heroOnly.map((p) => (
+      <div className="group-head group-free">
+        <span className="gh-dot" />
+        <span className="gh-label">{t.freeGroupLabel}</span>
+        <span className="gh-sub">{t.freeGroupSub}</span>
+      </div>
+      <div className="free-grid">
+        {freeProviders.map((p) => (
           <ProviderCard
             key={p.id}
             p={p}
@@ -271,8 +280,13 @@ function Step2Inner() {
         ))}
       </div>
 
-      <div className="rest-grid">
-        {rest.map((p) => (
+      <div className="group-head group-paid">
+        <span className="gh-dot" />
+        <span className="gh-label">{t.paidGroupLabel}</span>
+        <span className="gh-sub">{t.paidGroupSub}</span>
+      </div>
+      <div className="paid-grid">
+        {paidProviders.map((p) => (
           <ProviderCard
             key={p.id}
             p={p}
@@ -324,13 +338,14 @@ function Step2Inner() {
         .step2 { padding: 28px 80px 40px; max-width: 1280px; margin: 0 auto; }
         @media (max-width: 880px) { .step2 { padding: 22px 18px 32px; } }
         .head { margin-bottom: 24px; max-width: 720px; }
-        .back-link {
-          display: inline-block;
+        .back {
+          display: inline-flex; align-items: center; gap: 8px;
           font-family: var(--font-mono), monospace; font-size: 10.5px;
           letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3);
-          margin-bottom: 16px; text-decoration: none;
+          margin-bottom: 18px; text-decoration: none;
         }
-        .back-link:hover { color: var(--ink-1); }
+        .back :global(svg) { flex-shrink: 0; }
+        .back:hover { color: var(--ink-1); }
         .eyebrow {
           font-family: var(--font-mono), monospace; font-size: 10.5px;
           letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-3);
@@ -388,21 +403,43 @@ function Step2Inner() {
           color: rgba(244,236,216,.88);
         }
 
-        .hero-row {
+        /* §4 — group headers make free-vs-paid legible at a glance. */
+        .group-head {
+          display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px 12px;
+          margin: 4px 0 12px;
+          padding-bottom: 10px;
+          border-bottom: 1px solid var(--line);
+        }
+        .group-head .gh-dot {
+          width: 7px; height: 7px; border-radius: 50%;
+          transform: translateY(-1px); flex-shrink: 0;
+        }
+        .group-free .gh-dot { background: var(--ok); }
+        .group-paid .gh-dot { background: var(--gold-deep); }
+        .group-head .gh-label {
+          font-family: var(--font-mono), monospace;
+          font-size: 11px; font-weight: 600;
+          letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-1);
+        }
+        .group-head .gh-sub {
+          font-size: 12.5px; color: var(--ink-3); line-height: 1.4;
+        }
+        .free-grid {
           display: grid;
-          grid-template-columns: 1.5fr 1fr 1fr;
+          grid-template-columns: 1.5fr 1fr;
+          align-items: start;
+          gap: 14px; margin-bottom: 22px;
+        }
+        @media (max-width: 880px) {
+          .free-grid { grid-template-columns: 1fr; }
+        }
+        .paid-grid {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
           gap: 14px; margin-bottom: 14px;
         }
         @media (max-width: 880px) {
-          .hero-row { grid-template-columns: 1fr; }
-        }
-        .rest-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 14px; margin-bottom: 14px;
-        }
-        @media (max-width: 880px) {
-          .rest-grid { grid-template-columns: 1fr; }
+          .paid-grid { grid-template-columns: 1fr; }
         }
 
         .footstrip {
