@@ -1,6 +1,6 @@
 'use client';
 
-// Goblin-bundled (Layer 2) WEIGHTED allowance bar — Session 3.
+// Goblin-bundled (Layer 1) WEIGHTED allowance bar — Session 3.
 //
 // ONE allowance, weighted automatically. The user sees a single monthly Goblin
 // allowance as "X% used" + the reset date — NEVER cost units, "$", the 4.4×

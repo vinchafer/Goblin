@@ -1,4 +1,4 @@
-// Goblin-bundled models — Layer 2 (canon), API-first (v6.1 pivot).
+// Goblin-bundled models — Layer 1 (canon, Scheme A: Goblin's own models = the default), API-first.
 // Provider-agnostic, server-side-keyed. Mirrors apps/api/src/services/goblin-hosted.ts
 // tier shape. Display names are placeholders the founder can rename without code
 // changes — the wholesale provider behind them is never named on a public surface.

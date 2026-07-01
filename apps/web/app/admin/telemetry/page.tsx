@@ -1,6 +1,6 @@
 'use client';
 
-// Session 4 — /admin/telemetry: the FOUNDER's read-only Layer-2 operating view.
+// Session 4 — /admin/telemetry: the FOUNDER's read-only Layer-1 operating view.
 // Gated by the admin layout (session is_admin / ADMIN_EMAIL) + the /api/admin proxy
 // (injects the admin key server-side). Reads GET /api/admin/telemetry only — no
 // mutation. NEVER renders a provider name or model slug; the estimated $ shown here
