@@ -113,7 +113,7 @@ export function ModelsPage() {
   );
 }
 
-// SESSION 5 — Goblin-bundled (Layer 2) models settings area. Plain-spoken, no
+// SESSION 5 — Goblin-bundled (Layer 1) models settings area. Plain-spoken, no
 // provider name, no $/cost-units/weight/token math (HR-3/HR-5). Sits alongside the
 // BYOK "Meine Keys" tab, clearly distinct (included models vs your own keys).
 function GoblinModelsTab() {
