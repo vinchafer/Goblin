@@ -262,11 +262,12 @@ export function BillingPage() {
           </div>
         </Card>
 
-        {/* Stat cards — builds by source. */}
+        {/* Stat cards — builds by source. Canonical layer order:
+            Goblin (default) → Free third-party → BYOK. */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginTop: 10 }}>
-          <StatCard icon="apiKey" label="BYOK" value={usage?.byok ?? 0} />
-          <StatCard icon="fast" label="Free" value={usage?.free_api ?? 0} />
           <StatCard icon="rocket" label="Goblin" value={usage?.goblin_hosted ?? 0} />
+          <StatCard icon="fast" label="Free" value={usage?.free_api ?? 0} />
+          <StatCard icon="apiKey" label="BYOK" value={usage?.byok ?? 0} />
         </div>
       </Section>
 

@@ -81,6 +81,7 @@ export const STR: Record<Lang, {
   layers: {
     back: string; eyebrow: string; titleA: string; titleB: string; lead: string;
     items: { tag: string; badge: string; title: string; body: string }[];
+    l2cta: string;
     l3cta: string; waitlistIdle: string; waitlistBusy: string; waitlistDone: string;
     flow: { prompt: string; l1: string; l2: string; l3: string };
     flowCap: string;
@@ -91,6 +92,8 @@ export const STR: Record<Lang, {
   provider: {
     back: string; eyebrow: string; titleA: string; titleB: string; lead: string;
     fallbackTitle: string; fallbackBody: string; fallbackTag: string;
+    freeGroupLabel: string; freeGroupSub: string;
+    paidGroupLabel: string; paidGroupSub: string;
     recommended: string; startSetup: string; connect: string;
     proNoteTitle: string; proNoteBody: string;
     powerBadge: string; customTitle: string; customBody: string; customPrice: string;
@@ -187,12 +190,13 @@ export const STR: Record<Lang, {
         + 'Power du brauchst.',
       swiftName: 'Goblin Swift', swiftBadge: 'STANDARD',
       swiftDesc:
-        'Schnell und effizient — dein Alltags-Default. Ein Swift-Build zählt als '
+        'Schnell und effizient — dein Alltags-Default. Ideal für direkte '
+        + 'Coding-Aufgaben und schnelle Iterationen. Ein Swift-Build zählt als '
         + 'ein Build deines Monatsbudgets.',
       forgeName: 'Goblin Forge', forgeBadge: 'MEHR POWER',
       forgeDesc:
-        'Stärker, für härtere Builds. Zieht mehr aus deinem Monatsbudget — '
-        + 'nimm ihn, wenn Swift nicht reicht.',
+        'Stärkeres Reasoning — für Architektur und komplexe, härtere Builds. '
+        + 'Nimm ihn, wenn Swift nicht reicht. Zieht mehr aus deinem Monatsbudget.',
       budgetTitle: 'Dein Monatsbudget',
       budgetBody:
         'Kein Token-Zähler, keine Überraschungen: ein Budget pro Monat. '
@@ -211,11 +215,11 @@ export const STR: Record<Lang, {
         'Goblin Swift ist startklar — kein Key, keine Karte. Beschreib, was du '
         + 'willst, und Goblin baut es.',
       primaryCta: 'Ersten Build starten',
-      byokTitle: 'Eigene Keys?',
+      byokTitle: 'Mehr Modelle entdecken?',
       byokBody:
-        'Optional, jederzeit später. Bring deine eigenen Provider mit, wenn du '
-        + 'willst — nötig ist es nie.',
-      byokCta: 'Key hinzufügen (optional)',
+        'Optional, jederzeit später. Verbinde kostenlose Modelle (Groq, Gemini) '
+        + 'oder deine eigenen bezahlten Provider — nötig ist es nie.',
+      byokCta: 'Modelle ansehen (optional)',
       footNote: 'START MIT GOBLIN SWIFT · KEYS JEDERZEIT IN DEN EINSTELLUNGEN',
       finish: 'LOSLEGEN →',
     },
@@ -224,7 +228,7 @@ export const STR: Record<Lang, {
       eyebrow: 'Wie Goblin arbeitet',
       titleA: 'Wie Goblin', titleB: 'arbeitet.',
       lead:
-        'Drei Ebenen. Die unterste ist der Standard und läuft sofort — die '
+        'Drei Ebenen. Die erste ist der Standard und läuft sofort — die '
         + 'anderen zwei sind optional, wenn du mehr willst.',
       items: [
         {
@@ -251,6 +255,7 @@ export const STR: Record<Lang, {
             + 'komplett optional.',
         },
       ],
+      l2cta: 'Kostenlose Modelle ansehen',
       l3cta: 'Eigenen Key hinzufügen',
       waitlistIdle: 'Mehr erfahren', waitlistBusy: '…',
       waitlistDone: 'Alles klar',
@@ -261,18 +266,22 @@ export const STR: Record<Lang, {
       footNext: 'WEITER — MODELLE →',
     },
     provider: {
-      back: '← Zurück',
+      back: 'Zurück',
       eyebrow: 'Eigene Keys (optional)',
       titleA: 'Wähl deinen KI-', titleB: 'Provider.',
       lead:
         'BYOK ist optional — Goblin Swift läuft schon ohne Key. Wenn du willst: '
         + 'verbinde einen kostenlosen Key (z.B. Groq) oder deine bezahlten Provider. '
         + 'Bis zu 2 Keys pro Provider, beliebig viele Provider.',
-      fallbackTitle: 'Einen wählen. Alle sechs bekommen.',
+      fallbackTitle: 'Mehrere verbinden. Abgesichert bleiben.',
       fallbackBody:
-        'Wenn dein Provider ein Limit erreicht oder Fehler wirft, wechselt Goblin '
-        + 'still zum nächsten in deiner Kette — sofort, ohne verlorene Nachrichten.',
-      fallbackTag: 'AUTO-FALLBACK · IN EINSTELLUNGEN ANPASSEN',
+        'Wenn einer deiner Provider unzuverlässig wird, leitet Goblin neue Anfragen '
+        + 'automatisch an einen anderen verbundenen Provider weiter — du baust einfach weiter.',
+      fallbackTag: 'AUTO-ROUTING · ÜBER DEINE PROVIDER',
+      freeGroupLabel: 'Kostenlos · keine Karte',
+      freeGroupSub: 'Gratis-Kontingent, in ~60 Sek verbunden. Ideal zum Ausprobieren.',
+      paidGroupLabel: 'Bezahlt · Frontier · nutzungsbasiert',
+      paidGroupSub: 'Deine eigenen Provider für die stärksten Modelle. Zahlst nur, was du nutzt.',
       recommended: 'EMPFOHLEN · KOSTENLOS', startSetup: 'Einrichten', connect: 'Verbinden',
       proNoteTitle: 'Claude Pro oder ChatGPT Plus?',
       proNoteBody:
@@ -431,12 +440,13 @@ export const STR: Record<Lang, {
         + 'you want.',
       swiftName: 'Goblin Swift', swiftBadge: 'DEFAULT',
       swiftDesc:
-        'Fast and efficient — your everyday default. One Swift build counts as one '
+        'Fast and efficient — your everyday default. Great for straightforward '
+        + 'coding tasks and quick iterations. One Swift build counts as one '
         + 'build of your monthly budget.',
       forgeName: 'Goblin Forge', forgeBadge: 'MORE POWER',
       forgeDesc:
-        'Stronger, for harder builds. Draws more from your monthly budget — reach '
-        + "for it when Swift isn't enough.",
+        'Stronger reasoning — for architecture and complex, harder builds. Reach '
+        + "for it when Swift isn't enough. Draws more from your monthly budget.",
       budgetTitle: 'Your monthly budget',
       budgetBody:
         'No token counter, no surprises: one budget per month. Swift builds count '
@@ -455,11 +465,11 @@ export const STR: Record<Lang, {
         'Goblin Swift is ready to go — no key, no card. Describe what you want and '
         + 'Goblin builds it.',
       primaryCta: 'Start your first build',
-      byokTitle: 'Your own keys?',
+      byokTitle: 'Explore more models?',
       byokBody:
-        "Optional, any time later. Bring your own providers if you want — you never "
-        + 'have to.',
-      byokCta: 'Add a key (optional)',
+        'Optional, any time later. Connect free models (Groq, Gemini) or your own '
+        + 'paid providers — you never have to.',
+      byokCta: 'Explore models (optional)',
       footNote: 'START WITH GOBLIN SWIFT · ADD KEYS ANY TIME IN SETTINGS',
       finish: "LET'S GO →",
     },
@@ -468,7 +478,7 @@ export const STR: Record<Lang, {
       eyebrow: 'How Goblin works',
       titleA: 'How Goblin', titleB: 'works.',
       lead:
-        'Three layers. The bottom one is the default and works right now — the '
+        'Three layers. The first is the default and works right now — the '
         + 'other two are optional, for when you want more.',
       items: [
         {
@@ -494,6 +504,7 @@ export const STR: Record<Lang, {
             + 'per provider, unlimited providers. Any time, fully optional.',
         },
       ],
+      l2cta: 'See the free models',
       l3cta: 'Add your own key',
       waitlistIdle: 'Learn more', waitlistBusy: '…',
       waitlistDone: 'Got it',
@@ -504,18 +515,22 @@ export const STR: Record<Lang, {
       footNext: 'NEXT — MODELS →',
     },
     provider: {
-      back: '← Back',
+      back: 'Back',
       eyebrow: 'Bring your own keys (optional)',
       titleA: 'Pick your AI', titleB: 'provider.',
       lead:
         'BYOK is optional — Goblin Swift already runs with no key. If you want: '
         + 'connect a free key (e.g. Groq) or your paid providers. Up to 2 keys per '
         + 'provider, unlimited providers.',
-      fallbackTitle: 'Pick one. Get all six.',
+      fallbackTitle: 'Connect a few. Stay covered.',
       fallbackBody:
-        'When your provider hits a rate limit or errors, Goblin swaps to the next '
-        + 'one in your chain — silently, instantly, no dropped messages.',
-      fallbackTag: 'AUTO-FALLBACK · TUNE IN SETTINGS',
+        'If one of your providers becomes unreliable, Goblin automatically routes new '
+        + "requests to another provider you've connected — so you keep building.",
+      fallbackTag: 'AUTO-ROUTING · ACROSS YOUR PROVIDERS',
+      freeGroupLabel: 'Free · no card',
+      freeGroupSub: 'Free tier, connected in ~60 sec. Great for trying things out.',
+      paidGroupLabel: 'Paid · frontier · usage-based',
+      paidGroupSub: 'Your own providers for the strongest models. Pay only for what you use.',
       recommended: 'RECOMMENDED · FREE', startSetup: 'Start setup', connect: 'Connect',
       proNoteTitle: 'Claude Pro or ChatGPT Plus?',
       proNoteBody:

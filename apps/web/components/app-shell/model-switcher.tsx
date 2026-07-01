@@ -312,7 +312,9 @@ export function ModelSwitcher() {
     hosted: hostedLive ? "GOBLIN — INKLUSIVE · KEIN KEY" : "GOBLIN — COMING SOON",
   };
 
-  const TIER_ORDER = ['byok', 'hosted', 'free'];
+  // Canonical layer order (user-facing): Goblin's own models (default) → free
+  // third-party → BYOK. Matches the onboarding "How Goblin works" layers.
+  const TIER_ORDER = ['hosted', 'free', 'byok'];
 
   if (loading) {
     return (
