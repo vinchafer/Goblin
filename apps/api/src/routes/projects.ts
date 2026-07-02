@@ -19,6 +19,10 @@ projects.use('*', authMiddleware);
 const INTENTS = ["landing_page", "web_app", "import_repo", "exploring"] as const;
 
 const CreateProjectSchema = z.object({
+  // Client-generated id doubles as an idempotency key: a retry after a lost
+  // response reuses the same id, and the PK conflict resolves to the row the
+  // first attempt already created — no duplicate projects (P0.4).
+  id: z.string().uuid().optional(),
   name: z.string().min(1).max(100),
   description: z.string().max(500).optional(),
   color: z.string().regex(/^#[0-9A-Fa-f]{6}$/).optional(),
@@ -130,7 +134,7 @@ projects.post('/', async (c) => {
 
   const supabase = getSupabaseAdmin();
 
-  const projectId = randomUUID();
+  const projectId = result.data.id ?? randomUUID();
 
   const { data, error } = await supabase
     .from('projects')
@@ -144,6 +148,20 @@ projects.post('/', async (c) => {
     })
     .select()
     .single();
+
+  // Idempotent replay: the id already exists. If it is this user's project the
+  // original create succeeded and the client just never saw the response —
+  // return that row instead of a duplicate/error.
+  if (error && error.code === '23505' && result.data.id) {
+    const { data: existing } = await supabase
+      .from('projects')
+      .select('*')
+      .eq('id', projectId)
+      .eq('user_id', userId)
+      .single();
+    if (existing) return c.json(existing, 200);
+    return c.json({ error: 'Project id conflict' }, 409);
+  }
 
   if (error) {
     logger.error({ user_id: userId, db_code: error.code, db_message: error.message }, 'project_create_failed');
