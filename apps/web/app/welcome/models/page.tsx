@@ -71,6 +71,21 @@ export default function ModelsStepPage() {
         </div>
       </div>
 
+      {/* D2: frame free (Layer 2) + frontier/BYOK (Layer 3) as exciting choices. */}
+      <div className="more">
+        <div className="mtitle">{t.moreTitle}</div>
+        <Link href="/welcome/provider#free" className="more-row">
+          <span className="mr-dot mr-free" />
+          <span>{t.moreFree}</span>
+          <IArrowR size={13} />
+        </Link>
+        <Link href="/welcome/provider#frontier" className="more-row">
+          <span className="mr-dot mr-frontier" />
+          <span>{t.moreFrontier}</span>
+          <IArrowR size={13} />
+        </Link>
+      </div>
+
       <div className="actions">
         <Link
           href={nextHref}
@@ -156,6 +171,29 @@ export default function ModelsStepPage() {
           background: var(--surface-elev); border: 1px solid var(--line);
         }
         .note-trial { color: var(--ok); border-color: rgba(47,106,71,.32); background: var(--ok-soft); }
+
+        .more {
+          background: var(--surface-elev); border: 1px solid var(--line);
+          border-radius: var(--radius-lg); padding: 16px 18px; margin-bottom: 22px;
+          display: flex; flex-direction: column; gap: 8px;
+        }
+        .mtitle {
+          font-family: var(--font-onb-display), Manrope, sans-serif;
+          font-weight: 600; font-size: 15px; color: var(--ink-1); margin-bottom: 2px;
+        }
+        .more-row {
+          display: flex; align-items: center; gap: 10px;
+          font-size: 13.5px; color: var(--ink-2); line-height: 1.45;
+          padding: 8px 10px; border-radius: var(--radius);
+          border: 1px solid var(--line); background: var(--surface-2);
+          transition: border-color .15s, color .15s;
+        }
+        .more-row:hover { border-color: var(--ink-1); color: var(--ink-1); }
+        .more-row span:nth-child(2) { flex: 1; }
+        .more-row :global(svg) { color: var(--ink-3); flex-shrink: 0; }
+        .mr-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+        .mr-free { background: var(--ok); }
+        .mr-frontier { background: var(--accent-bright); }
 
         .actions { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
         .footstrip {

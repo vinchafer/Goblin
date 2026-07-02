@@ -61,7 +61,9 @@ export const STR: Record<Lang, {
   // Conditional (NO branch only) — encouraging vibe-coding explainer
   explainer: {
     eyebrow: string; titleA: string; titleB: string; lead: string;
-    points: { title: string; body: string }[]; cta: string;
+    points: { title: string; body: string }[];
+    close: string; // D2: warm "why this is for you" closing beat
+    cta: string;
   };
   // Models + consumption (Goblin Swift vs Goblin Forge, builds budget)
   models: {
@@ -69,6 +71,8 @@ export const STR: Record<Lang, {
     swiftName: string; swiftBadge: string; swiftDesc: string;
     forgeName: string; forgeBadge: string; forgeDesc: string;
     budgetTitle: string; budgetBody: string; trialNote: string; plansNote: string;
+    // D2: frame L2 free + L3 frontier as exciting optional choices
+    moreTitle: string; moreFree: string; moreFrontier: string;
     continue: string; footChange: string; footNext: string;
   };
   // First build with Goblin Swift (BYOK optional, secondary)
@@ -85,6 +89,7 @@ export const STR: Record<Lang, {
     l3cta: string; waitlistIdle: string; waitlistBusy: string; waitlistDone: string;
     flow: { prompt: string; l1: string; l2: string; l3: string };
     flowCap: string;
+    shipNote: string; // D1(a): GitHub + Vercel are built in
     continue: string; skip: string;
     footChange: string; footNext: string;
   };
@@ -179,6 +184,8 @@ export const STR: Record<Lang, {
           body: 'Ansehen, anpassen, live stellen. Auf jedem Gerät, von überall.',
         },
       ],
+      // D2 copy — DRAFT (Gate 3): warm "why this is for you" closing beat.
+      close: 'Genau dafür ist Goblin gemacht: Du brauchst keine Erfahrung — nur eine Idee. Lass sie uns bauen.',
       cta: 'Verstanden — weiter',
     },
     models: {
@@ -203,6 +210,10 @@ export const STR: Record<Lang, {
         + 'Swift-Builds zählen einfach, Forge-Builds ziehen mehr.',
       trialNote: 'In deiner Testphase: {trial} gratis, keine Karte.',
       plansNote: 'Bezahlte Pläne: {build}, {pro}, {power}.',
+      // D2 copy — DRAFT (Gate 3): free + frontier as exciting optional choices.
+      moreTitle: 'Willst du mehr?',
+      moreFree: 'Kostenlos: schalte stärkere Drittanbieter-Modelle frei (Groq, Gemini) — keine Karte.',
+      moreFrontier: 'Frontier: bring deinen eigenen Key für Spitzenqualität, wann du willst — dein Key, kein Aufschlag.',
       continue: 'Weiter — Loslegen',
       footChange: 'MODELL JEDERZEIT PRO BUILD WÄHLBAR',
       footNext: 'WEITER — ERSTER BUILD →',
@@ -261,6 +272,8 @@ export const STR: Record<Lang, {
       waitlistDone: 'Alles klar',
       flow: { prompt: 'Prompt', l1: 'Ebene 1 · Standard', l2: 'Ebene 2 · optional', l3: 'Ebene 3 · optional' },
       flowCap: 'Der Standard funktioniert sofort — kein Key, keine Konfiguration.',
+      // D1(a) copy — DRAFT (Gate 3): GitHub + Vercel are built in.
+      shipNote: 'Und wenn du live gehen willst: GitHub und Vercel sind eingebaut — ein Klick vom Chat zum Commit zur Live-Vorschau.',
       continue: 'Weiter — Modelle ansehen', skip: 'Überspringen',
       footChange: 'STANDARD FUNKTIONIERT SOFORT — KEIN KEY',
       footNext: 'WEITER — MODELLE →',
@@ -430,6 +443,8 @@ export const STR: Record<Lang, {
           body: 'Preview, tweak, go live. On any device, from anywhere.',
         },
       ],
+      // D2 copy — DRAFT (Gate 3): warm "why this is for you" closing beat.
+      close: 'That’s exactly what Goblin is for: you need no experience — just an idea. Let’s build it.',
       cta: 'Got it — continue',
     },
     models: {
@@ -454,6 +469,10 @@ export const STR: Record<Lang, {
         + 'simply, Forge builds draw more.',
       trialNote: 'On your trial: {trial} free, no card.',
       plansNote: 'Paid plans: {build}, {pro}, {power}.',
+      // D2 copy — DRAFT (Gate 3): free + frontier as exciting optional choices.
+      moreTitle: 'Want more?',
+      moreFree: 'Free: unlock more capable third-party models (Groq, Gemini) — no card.',
+      moreFrontier: 'Frontier: bring your own key for top-tier quality when you want it — your key, no markup.',
       continue: 'Continue — let’s build',
       footChange: 'PICK THE MODEL PER BUILD, ANY TIME',
       footNext: 'NEXT — FIRST BUILD →',
@@ -511,6 +530,8 @@ export const STR: Record<Lang, {
       waitlistDone: 'Got it',
       flow: { prompt: 'Prompt', l1: 'Layer 1 · default', l2: 'Layer 2 · optional', l3: 'Layer 3 · optional' },
       flowCap: 'The default works out of the box — no key, no setup.',
+      // D1(a) copy — DRAFT (Gate 3): GitHub + Vercel are built in.
+      shipNote: 'And when you want to go live: GitHub and Vercel are built in — one click from chat to commit to live preview.',
       continue: 'Continue — see the models', skip: 'Skip',
       footChange: 'THE DEFAULT WORKS OUT OF THE BOX — NO KEY',
       footNext: 'NEXT — MODELS →',

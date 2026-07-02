@@ -46,6 +46,8 @@ export default function ExplainerStep() {
         ))}
       </ol>
 
+      <p className="close">{t.close}</p>
+
       <button type="button" className="cta" onClick={go} disabled={busy}>
         {t.cta} <IArrowR size={14} />
       </button>
@@ -96,6 +98,11 @@ export default function ExplainerStep() {
           color: var(--ink-1); line-height: 1.25;
         }
         .pbody p { font-size: 14px; color: var(--ink-2); line-height: 1.55; margin-top: 5px; max-width: 60ch; }
+        .close {
+          font-family: var(--font-onb-serif), Georgia, serif; font-style: italic;
+          font-size: 18px; color: var(--ink-1); line-height: 1.45;
+          margin: 0 0 26px; max-width: 56ch;
+        }
         .cta {
           display: inline-flex; align-items: center; gap: 8px;
           background: var(--green); color: var(--bone);

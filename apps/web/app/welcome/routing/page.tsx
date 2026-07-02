@@ -94,6 +94,10 @@ export default function RoutingStepPage() {
       <p className="flow-cap">
         <IShield size={11} /> {t.flowCap}
       </p>
+      {/* D1(a): make it explicit that shipping (GitHub + Vercel) is built in. */}
+      <p className="ship-note">
+        <span className="sn-dot" /> {t.shipNote}
+      </p>
 
       <div className="actions">
         <Link
@@ -225,6 +229,18 @@ export default function RoutingStepPage() {
           font-size: 12.5px; color: var(--ink-2); margin-bottom: 22px;
         }
         .flow-cap :global(svg) { color: var(--accent); flex-shrink: 0; }
+
+        .ship-note {
+          display: flex; align-items: baseline; gap: 9px;
+          font-size: 13.5px; color: var(--ink-2); line-height: 1.5;
+          max-width: 68ch; margin: 0 0 22px;
+          padding: 12px 14px; border-radius: var(--radius);
+          background: var(--surface-2); border: 1px solid var(--line);
+        }
+        .ship-note .sn-dot {
+          width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0;
+          background: var(--accent); transform: translateY(-1px);
+        }
 
         .actions { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
 
