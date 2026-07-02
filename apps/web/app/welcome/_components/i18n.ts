@@ -278,10 +278,11 @@ export const STR: Record<Lang, {
         'Wenn einer deiner Provider unzuverlässig wird, leitet Goblin neue Anfragen '
         + 'automatisch an einen anderen verbundenen Provider weiter — du baust einfach weiter.',
       fallbackTag: 'AUTO-ROUTING · ÜBER DEINE PROVIDER',
+      // 1D value copy — DRAFT (Gate 3): both tiers framed as exciting choices, not homework.
       freeGroupLabel: 'Kostenlos · keine Karte',
-      freeGroupSub: 'Gratis-Kontingent, in ~60 Sek verbunden. Ideal zum Ausprobieren.',
+      freeGroupSub: 'Schalte kostenlos stärkere Modelle frei — weiterhin keine Karte, in ~60 Sek verbunden.',
       paidGroupLabel: 'Bezahlt · Frontier · nutzungsbasiert',
-      paidGroupSub: 'Deine eigenen Provider für die stärksten Modelle. Zahlst nur, was du nutzt.',
+      paidGroupSub: 'Bring deinen eigenen Key für Spitzenqualität, wann du willst — dein Key, kein Aufschlag, du zahlst nur, was du nutzt.',
       recommended: 'EMPFOHLEN · KOSTENLOS', startSetup: 'Einrichten', connect: 'Verbinden',
       proNoteTitle: 'Claude Pro oder ChatGPT Plus?',
       proNoteBody:
@@ -527,10 +528,11 @@ export const STR: Record<Lang, {
         'If one of your providers becomes unreliable, Goblin automatically routes new '
         + "requests to another provider you've connected — so you keep building.",
       fallbackTag: 'AUTO-ROUTING · ACROSS YOUR PROVIDERS',
+      // 1D value copy — DRAFT (Gate 3): both tiers framed as exciting choices, not homework.
       freeGroupLabel: 'Free · no card',
-      freeGroupSub: 'Free tier, connected in ~60 sec. Great for trying things out.',
+      freeGroupSub: 'Add more capable models for free — still no card, connected in ~60 sec.',
       paidGroupLabel: 'Paid · frontier · usage-based',
-      paidGroupSub: 'Your own providers for the strongest models. Pay only for what you use.',
+      paidGroupSub: 'Bring your own key for top-tier quality when you want it — your key, no markup, pay only for what you use.',
       recommended: 'RECOMMENDED · FREE', startSetup: 'Start setup', connect: 'Connect',
       proNoteTitle: 'Claude Pro or ChatGPT Plus?',
       proNoteBody:

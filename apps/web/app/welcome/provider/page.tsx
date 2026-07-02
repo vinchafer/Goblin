@@ -257,7 +257,7 @@ function Step2Inner() {
         <span className="tag">{t.fallbackTag}</span>
       </div>
 
-      <div className="group-head group-free">
+      <div id="free" className="group-head group-free">
         <span className="gh-dot" />
         <span className="gh-label">{t.freeGroupLabel}</span>
         <span className="gh-sub">{t.freeGroupSub}</span>
@@ -280,7 +280,7 @@ function Step2Inner() {
         ))}
       </div>
 
-      <div className="group-head group-paid">
+      <div id="frontier" className="group-head group-paid">
         <span className="gh-dot" />
         <span className="gh-label">{t.paidGroupLabel}</span>
         <span className="gh-sub">{t.paidGroupSub}</span>
@@ -409,6 +409,9 @@ function Step2Inner() {
           margin: 4px 0 12px;
           padding-bottom: 10px;
           border-bottom: 1px solid var(--line);
+          /* 1D: deep-linked from the routing CTAs (#free / #frontier) — leave
+             breathing room so the heading isn't flush to the viewport top. */
+          scroll-margin-top: 90px;
         }
         .group-head .gh-dot {
           width: 7px; height: 7px; border-radius: 50%;

@@ -67,12 +67,12 @@ export default function RoutingStepPage() {
                   </Link>
                 )}
                 {n === '2' && (
-                  <Link href="/welcome/provider" className="layer-cta">
+                  <Link href="/welcome/provider#free" className="layer-cta">
                     {t.l2cta} <IArrowR size={13} />
                   </Link>
                 )}
                 {n === '3' && (
-                  <Link href="/welcome/provider" className="layer-cta">
+                  <Link href="/welcome/provider#frontier" className="layer-cta">
                     {t.l3cta} <IArrowR size={13} />
                   </Link>
                 )}
