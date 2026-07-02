@@ -90,10 +90,10 @@ export function OnboardingChrome({ children }: { children: React.ReactNode }) {
   return (
     <div className="gobl-onb-shell">
       <header className="gobl-onb-top">
-        <span className="gobl-onb-lockup" role="img" aria-label="Goblin">
+        <Link href="/dashboard" className="gobl-onb-lockup" aria-label="Goblin — zum Dashboard">
           <GMark size={22} />
           <span className="gobl-onb-wordmark">GOBLIN</span>
-        </span>
+        </Link>
         <div className="gobl-onb-top-right">
           {info && (
             <span className="gobl-onb-step">
@@ -140,7 +140,10 @@ export function OnboardingChrome({ children }: { children: React.ReactNode }) {
         }
         .gobl-onb-lockup {
           display: inline-flex; align-items: center; gap: 10px;
+          text-decoration: none; cursor: pointer;
+          transition: opacity .15s;
         }
+        .gobl-onb-lockup:hover { opacity: 0.72; }
         .gobl-onb-wordmark {
           font-family: var(--font-onb-display), Manrope, sans-serif;
           font-weight: 800; font-size: 13px;
