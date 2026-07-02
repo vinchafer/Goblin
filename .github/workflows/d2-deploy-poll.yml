@@ -5,23 +5,13 @@
 # and content hash. Temporary diagnostic — remove after FEEL-1 sprint.
 name: d2-deploy-poll
 
+# push-trigger because workflow_dispatch requires the file on the default
+# branch, which this diagnostic never merges to. JWT comes from the D2_JWT
+# repo secret (short-lived test-account token).
 on:
-  workflow_dispatch:
-    inputs:
-      jwt:
-        description: Test-account JWT (vinc.hafner3, short-lived)
-        required: true
-      project_id:
-        description: Goblin project id to deploy
-        required: true
-      api_url:
-        description: API base URL
-        required: true
-        default: https://goblinapi-production.up.railway.app
-      iterations:
-        description: Number of deploy+poll cycles
-        required: true
-        default: "3"
+  push:
+    branches: [feel-sprint-1-2026-07-02]
+    paths: ['.github/workflows/d2-deploy-poll.yml']
 
 jobs:
   deploy-poll:
@@ -30,10 +20,10 @@ jobs:
     steps:
       - name: deploy and poll
         env:
-          JWT: ${{ inputs.jwt }}
-          PROJECT_ID: ${{ inputs.project_id }}
-          API_URL: ${{ inputs.api_url }}
-          ITERATIONS: ${{ inputs.iterations }}
+          JWT: ${{ secrets.D2_JWT }}
+          PROJECT_ID: 7b8408d5-ccb8-49a7-86b9-071c20e7c177
+          API_URL: https://goblinapi-production.up.railway.app
+          ITERATIONS: "3"
         run: |
           set -uo pipefail
           for i in $(seq 1 "$ITERATIONS"); do
