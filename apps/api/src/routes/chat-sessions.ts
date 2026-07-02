@@ -3,6 +3,8 @@ import { streamSSE } from 'hono/streaming';
 import { authMiddleware } from '../middleware/auth.js';
 import { getSupabaseAdmin } from '../lib/supabase.js';
 import { streamCompletionGuarded } from '../services/model-router.js';
+import { buildGoblinChatSystemPrompt } from '../prompts/goblin-chat-system.js';
+import { listFilesWithMeta } from '../services/file-storage.js';
 
 type Variables = { userId: string };
 const chatSessions = new Hono<{ Variables: Variables }>();
@@ -77,33 +79,69 @@ chatSessions.get('/:id', async (c) => {
 chatSessions.post('/:id/stream', async (c) => {
   const userId = c.get('userId');
   const sessionId = c.req.param('id');
-  const { message, modelSlug } = await c.req.json() as { message: string; modelSlug?: string };
+  const { message, modelSlug, clientMessageId } = await c.req.json() as {
+    message: string; modelSlug?: string; clientMessageId?: string;
+  };
 
   if (!message?.trim()) return c.json({ error: 'Missing message' }, 400);
+  // Optional idempotency key (P0.5) — UUID-validated so it can't smuggle
+  // arbitrary strings into the DB filter.
+  const clientMsgId =
+    typeof clientMessageId === 'string' &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clientMessageId)
+      ? clientMessageId
+      : null;
 
   const supabase = getSupabaseAdmin();
 
   const { data: session } = await supabase
     .from('chat_sessions')
-    .select('id')
+    .select('id, project_id')
     .eq('id', sessionId)
     .eq('user_id', userId)
     .single();
 
   if (!session) return c.json({ error: 'Session not found' }, 404);
 
+  // Idempotent replay (P0.5): a retry of a send whose response the client never
+  // saw carries the same clientMessageId — never insert (and never let the model
+  // see) the same message twice. Tolerant of a pre-migration DB (0075): a
+  // missing column errors the SELECT → treated as "no duplicate".
+  let alreadyPersisted = false;
+  if (clientMsgId) {
+    try {
+      const { data: dup, error: dupErr } = await supabase
+        .from('standalone_messages')
+        .select('id')
+        .eq('session_id', sessionId)
+        .eq('client_msg_id', clientMsgId)
+        .limit(1);
+      alreadyPersisted = !dupErr && Array.isArray(dup) && dup.length > 0;
+    } catch { /* pre-migration — proceed without dedupe */ }
+  }
+
   // Save user message. A failure here (e.g. the standalone_messages table
   // missing — the Sprint 10.11 root cause) silently breaks conversation memory:
   // the history fetch below returns nothing and every turn looks like turn 1.
   // Never swallow it.
-  const { error: userMsgErr } = await supabase.from('standalone_messages').insert({
-    session_id: sessionId,
-    role: 'user',
-    content: message,
-  });
-  if (userMsgErr) {
-    console.error('[chat-sessions] failed to persist user message:', userMsgErr.message);
-    return c.json({ error: 'Chat-Speicher nicht verfügbar — bitte später erneut versuchen.' }, 503);
+  if (!alreadyPersisted) {
+    const baseRow = { session_id: sessionId, role: 'user', content: message };
+    let userMsgErr = clientMsgId
+      ? (await supabase.from('standalone_messages').insert({ ...baseRow, client_msg_id: clientMsgId })).error
+      : (await supabase.from('standalone_messages').insert(baseRow)).error;
+    if (userMsgErr && clientMsgId) {
+      if (userMsgErr.code === '23505') {
+        // Concurrent duplicate retry — the first insert won; not an error.
+        userMsgErr = null;
+      } else {
+        // Column may not exist pre-migration — retry without the id.
+        userMsgErr = (await supabase.from('standalone_messages').insert(baseRow)).error;
+      }
+    }
+    if (userMsgErr) {
+      console.error('[chat-sessions] failed to persist user message:', userMsgErr.message);
+      return c.json({ error: 'Chat-Speicher nicht verfügbar — bitte später erneut versuchen.' }, 503);
+    }
   }
 
   // Auto-title from first user message
@@ -137,6 +175,35 @@ chatSessions.post('/:id/stream', async (c) => {
     .slice(0, -1) // exclude the message we just inserted
     .map(m => ({ role: m.role, content: m.content }));
 
+  // F1.1 — Goblin identity + real project context (name, file list, last
+  // deploy). All lookups best-effort: a storage hiccup must never block chat.
+  const projectId: string | null = (session as { project_id?: string | null }).project_id ?? null;
+  let projectName: string | null = null;
+  let projectFiles: Array<{ path: string; size: number }> | undefined;
+  let lastDeploy: { url: string | null; deployedAt: string | null } | null = null;
+  if (projectId) {
+    try {
+      const { data: proj } = await supabase
+        .from('projects')
+        .select('name, preview_url, last_deployed_at')
+        .eq('id', projectId)
+        .eq('user_id', userId)
+        .single();
+      if (proj) {
+        projectName = (proj as { name: string }).name;
+        const p = proj as { preview_url: string | null; last_deployed_at: string | null };
+        lastDeploy = { url: p.preview_url, deployedAt: p.last_deployed_at?.slice(0, 10) ?? null };
+      }
+      const meta = await listFilesWithMeta(projectId);
+      projectFiles = meta.map((f) => ({ path: f.path, size: f.size }));
+    } catch { /* context stays minimal */ }
+  }
+  const systemPrompt = buildGoblinChatSystemPrompt({
+    projectName,
+    files: projectFiles,
+    lastDeploy,
+  });
+
   return streamSSE(c, async (stream) => {
     let fullResponse = '';
     let currentModel = modelSlug ?? '';
@@ -148,12 +215,13 @@ chatSessions.post('/:id/stream', async (c) => {
     try {
       for await (const jsonToken of streamCompletionGuarded({
         userId,
-        projectId: null,
+        projectId,
         message,
         chatHistory,
         modelPreference: modelSlug,
         supabase,
         signal: abortController.signal,
+        systemPrompt,
       })) {
         if (abortController.signal.aborted) break;
 
