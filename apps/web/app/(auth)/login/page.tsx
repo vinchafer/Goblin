@@ -265,7 +265,14 @@ export default function LoginPage() {
       const supabase = createClient();
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
-        options: { redirectTo: `${window.location.origin}/auth/callback` },
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+          // Force the provider's account chooser so a user signed into ONE
+          // Google account still gets to pick (or add) an account instead of
+          // being silently reused. Covers both "Continue with Google" and
+          // "Create account" — they share this single call.
+          queryParams: { prompt: 'select_account' },
+        },
       });
       if (error) throw error;
     } catch (err) {
