@@ -14,6 +14,14 @@ import {
   type ProjectState,
 } from '../prompts/project-state-summarizer';
 
+// B1 (feel-sprint-2b): the summarizer is pinned to the Goblin-hosted efficient
+// tier — without an explicit model the router's default slug may not resolve in
+// every environment (local free-key routing 404'd on 'llama-3.3-70b'), silently
+// never populating state. Where hosted routing is unavailable the router falls
+// through and the call fails silently as before (no user impact) — the error
+// log below names the attempted model so the miss is diagnosable.
+const SUMMARIZER_MODEL = 'goblin/efficient';
+
 // Hard caps so a runaway model can't grow the state or the request unbounded.
 const MAX_RAW_OUTPUT_CHARS = 4000; // ~300 output tokens of JSON, generously
 const MAX_USER_MSG_CHARS = 2000;
@@ -80,13 +88,14 @@ async function updateProjectState(opts: {
     projectId,
     message,
     chatHistory: [],
+    modelPreference: SUMMARIZER_MODEL,
     supabase,
     systemPrompt,
   })) {
     const parsed = JSON.parse(jsonToken) as { type?: string; content?: string; message?: string };
     if (parsed.type === 'delta') raw += parsed.content ?? '';
     if (parsed.type === 'error') {
-      console.warn('[project-state] summarizer errored:', parsed.message);
+      console.warn(`[project-state] summarizer errored (model ${SUMMARIZER_MODEL}):`, parsed.message);
       return;
     }
     if (raw.length > MAX_RAW_OUTPUT_CHARS) break; // budget guard
