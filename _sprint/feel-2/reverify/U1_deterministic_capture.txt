@@ -1,0 +1,17 @@
+{"level":30,"time":1783106188709,"pid":30824,"hostname":"VincentHafner26","msg":"s3_client_initialized"}
+=== U1 loader result (habit-tracker project) ===
+daten.json  size=60021  loaded=false  notLoaded=too-large  contentChars=0
+index.html  size=5471  loaded=true  notLoaded=-  contentChars=5460
+script-1.js  size=1808  loaded=true  notLoaded=-  contentChars=1803
+script.js  size=3879  loaded=true  notLoaded=-  contentChars=3873
+
+=== byte-compare index.html (injected vs stored) ===
+storedChars= 5460 injectedChars= 5460 identical= true
+
+=== prompt size (chars) ===
+with injection   : 18733 (~4683 tokens)
+without injection: 7456 (~1864 tokens)
+delta            : 11277 (~2819 tokens)
+
+=== over-budget files (must carry honest marker in prompt) ===
+daten.json markerPresent= true

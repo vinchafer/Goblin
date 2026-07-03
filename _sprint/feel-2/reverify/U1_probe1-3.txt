@@ -1,0 +1,43 @@
+U1 — Swift probes 1–3 (file-content injection)  ·  2026-07-04 resume session
+=============================================================================
+
+STATUS: Swift-gated probes BLOCKED — DEEPINFRA_API_KEY is absent from all env
+files (founder revoked the scoped key after the FEEL-1 run, as instructed by
+the FEEL-1 report). Per sprint rule 4 no BYOK model substitutes for Swift
+gates. Deterministic (non-model) verification of every mechanical claim was
+captured instead; see below and U1_deterministic_capture.txt.
+
+Probe 1 — "Zeig mir bitte den Inhalt von index.html." (Swift)
+  BLOCKED (no Swift). Deterministic substrate verified:
+  - loadProjectContextFiles('99e9238c… habit tracker') loads index.html
+    content byte-identical to the stored copy (identical=true, 5460 chars).
+  - The prompt embeds it under "Dateiinhalte (der ECHTE aktuelle Stand …)".
+
+Probe 2 — "Ändere nur die Überschrift …" (Swift)
+  BLOCKED (no Swift). Supplementary NON-SWIFT evidence (llama-3.3-70b-versatile,
+  free Groq routing, mini project): asked to change only the heading in
+  index.html; the model returned the real project file with exactly the
+  heading changed — Send-to-Code diff shows a single-hunk +1 −1
+  (- <h1>Meine Mini App</h1> / + <h1>Meine Gewohnheiten</h1>), everything else
+  untouched. Screenshot U2_06_diff_mobile.png. This exercises the same U1
+  injection path (model can only preserve a file it actually sees) but is NOT
+  a Swift gate result.
+
+Probe 3 — over-budget file honest answer (Swift)
+  BLOCKED (no Swift). Deterministic substrate verified:
+  - daten.json (60,021 B > 48,000 char budget) is NOT loaded
+    (notLoaded=too-large) and the built prompt carries the honest marker
+    "(Inhalt nicht geladen — zu gross)" for it (markerPresent=true).
+  - E7 rescope in goblin-chat-system.ts: loaded/in-chat files may be shown &
+    quoted; ban remains only for not-loaded/binary/unlisted files
+    (prompt lines ~63–69).
+
+Token counts for founder cost review (deterministic, habit project):
+  system prompt WITH injection   : 18,733 chars (~4,683 tokens)
+  system prompt WITHOUT injection:  7,456 chars (~1,864 tokens)
+  injection delta                : 11,277 chars (~2,819 tokens)
+  Live corroboration: Groq free tier rejected the habit-project chat request
+  with "TPM: Limit 12000, Requested 12975" — i.e. the injected prompt is real
+  and its size matches the measurement (12,975 total incl. identity prompt,
+  memory & history). Done-event token fields could not be captured (no
+  completed Swift run).
