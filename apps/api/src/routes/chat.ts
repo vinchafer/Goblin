@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { createClient } from '@supabase/supabase-js';
-import { streamCompletionGuarded } from '../services/model-router';
-import { buildGoblinChatSystemPrompt } from '../prompts/goblin-chat-system';
+import { streamWithReducedContextRetry } from '../services/token-limit-retry';
+import { buildGoblinChatSystemPrompt, REDUCED_CONTEXT_NOTE } from '../prompts/goblin-chat-system';
 import { listFilesWithMeta } from '../services/file-storage';
 import { loadProjectContextFiles } from '../services/project-context';
 import { loadProjectState, scheduleProjectStateUpdate } from '../services/project-state';
@@ -135,6 +135,9 @@ chat.post('/stream', chatStreamRateLimit, async (c) => {
 
   // F1.1 — Goblin identity + real project context. Best-effort lookups.
   let systemPrompt: string;
+  // B2: fallback prompt (names+sizes only) for the token-limit retry; only set
+  // when file contents were actually injected.
+  let reducedSystemPrompt: string | undefined;
   try {
     const { data: proj } = await supabase
       .from('projects')
@@ -148,13 +151,21 @@ chat.post('/stream', chatStreamRateLimit, async (c) => {
       (await listFilesWithMeta(projectId).catch(() => [])).map((f) => ({ path: f.path, size: f.size })),
     );
     const p = proj as { name?: string; preview_url?: string | null; last_deployed_at?: string | null } | null;
-    systemPrompt = buildGoblinChatSystemPrompt({
+    const promptCtx = {
       projectName: p?.name ?? null,
       files,
       lastDeploy: p ? { url: p.preview_url ?? null, deployedAt: p.last_deployed_at?.slice(0, 10) ?? null } : null,
       // U3: rolling memory — null pre-migration / when nothing stored yet.
       projectState: await loadProjectState(supabase, projectId),
-    });
+    };
+    systemPrompt = buildGoblinChatSystemPrompt(promptCtx);
+    if (files.some((f) => 'content' in f && f.content != null)) {
+      reducedSystemPrompt = buildGoblinChatSystemPrompt({
+        ...promptCtx,
+        files: files.map((f) => ({ path: f.path, size: f.size, notLoaded: 'notLoaded' in f ? f.notLoaded : undefined })),
+        contextNote: REDUCED_CONTEXT_NOTE,
+      });
+    }
   } catch {
     systemPrompt = buildGoblinChatSystemPrompt();
   }
@@ -170,15 +181,18 @@ chat.post('/stream', chatStreamRateLimit, async (c) => {
     });
 
     try {
-      for await (const jsonToken of streamCompletionGuarded({
-        userId,
-        projectId,
-        message,
-        chatHistory: chatHistory || [],
-        modelPreference: modelSlug,
-        supabase,
-        signal: abortController.signal,
+      for await (const jsonToken of streamWithReducedContextRetry({
+        params: {
+          userId,
+          projectId,
+          message,
+          chatHistory: chatHistory || [],
+          modelPreference: modelSlug,
+          supabase,
+          signal: abortController.signal,
+        },
         systemPrompt,
+        reducedSystemPrompt,
       })) {
         if (abortController.signal.aborted) break;
 

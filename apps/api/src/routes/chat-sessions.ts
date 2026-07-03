@@ -2,8 +2,8 @@ import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { authMiddleware } from '../middleware/auth.js';
 import { getSupabaseAdmin } from '../lib/supabase.js';
-import { streamCompletionGuarded } from '../services/model-router.js';
-import { buildGoblinChatSystemPrompt } from '../prompts/goblin-chat-system.js';
+import { streamWithReducedContextRetry } from '../services/token-limit-retry.js';
+import { buildGoblinChatSystemPrompt, REDUCED_CONTEXT_NOTE } from '../prompts/goblin-chat-system.js';
 import { listFilesWithMeta } from '../services/file-storage.js';
 import { loadProjectContextFiles, type ContextFile } from '../services/project-context.js';
 import { loadProjectState, scheduleProjectStateUpdate } from '../services/project-state.js';
@@ -203,13 +203,23 @@ chatSessions.post('/:id/stream', async (c) => {
       );
     } catch { /* context stays minimal */ }
   }
-  const systemPrompt = buildGoblinChatSystemPrompt({
+  const promptCtx = {
     projectName,
     files: projectFiles,
     lastDeploy,
     // U3: rolling memory — null pre-migration / when nothing stored yet.
     projectState: projectId ? await loadProjectState(supabase, projectId) : null,
-  });
+  };
+  const systemPrompt = buildGoblinChatSystemPrompt(promptCtx);
+  // B2: fallback prompt (names+sizes only) for the token-limit retry; only set
+  // when file contents were actually injected.
+  const reducedSystemPrompt = projectFiles?.some((f) => f.content != null)
+    ? buildGoblinChatSystemPrompt({
+        ...promptCtx,
+        files: projectFiles.map((f) => ({ path: f.path, size: f.size, notLoaded: f.notLoaded })),
+        contextNote: REDUCED_CONTEXT_NOTE,
+      })
+    : undefined;
 
   return streamSSE(c, async (stream) => {
     let fullResponse = '';
@@ -220,15 +230,18 @@ chatSessions.post('/:id/stream', async (c) => {
     c.req.raw.signal.addEventListener('abort', () => abortController.abort());
 
     try {
-      for await (const jsonToken of streamCompletionGuarded({
-        userId,
-        projectId,
-        message,
-        chatHistory,
-        modelPreference: modelSlug,
-        supabase,
-        signal: abortController.signal,
+      for await (const jsonToken of streamWithReducedContextRetry({
+        params: {
+          userId,
+          projectId,
+          message,
+          chatHistory,
+          modelPreference: modelSlug,
+          supabase,
+          signal: abortController.signal,
+        },
         systemPrompt,
+        reducedSystemPrompt,
       })) {
         if (abortController.signal.aborted) break;
 

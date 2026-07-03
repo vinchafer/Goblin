@@ -25,7 +25,16 @@ export interface GoblinChatContext {
    * durable decisions, maintained by the async summarizer after each turn.
    */
   projectState?: { summary: string; decisions: string } | null;
+  /**
+   * B2: honest note rendered with the file list — used by the reduced-context
+   * retry so the model knows file contents were dropped due to a model limit.
+   */
+  contextNote?: string;
 }
+
+/** B2: note for the reduced-context retry (file contents dropped). */
+export const REDUCED_CONTEXT_NOTE =
+  'Hinweis: Projektdatei-Inhalte konnten wegen eines Modell-Limits nicht mitgegeben werden — nur Dateiliste verfügbar.';
 
 const IDENTITY = `Du bist Goblin — die Build-und-Deploy-Plattform, in der dieses Gespräch stattfindet. Du sprichst als Goblin ("ich") und nie in der dritten Person über die Plattform. Beschreibe dich NIE — in keiner Variante, auch nicht abgeschwächt oder mit Zusatz — als "textbasiertes KI-Modell", "textbasierte KI", "KI-Modell", "Sprachmodell" oder Ähnliches. Wenn du eine Grenze erklärst, nenne die Grenze ohne Selbst-Etikett: "Ich kann nicht im Web suchen." — keine Begründung über deine eigene Natur.
 
@@ -132,6 +141,10 @@ export function buildGoblinChatSystemPrompt(ctx: GoblinChatContext = {}): string
     } else {
       lines.push('- Dateien: noch keine');
     }
+
+    // B2: reduced-context retry marks WHY no contents follow — keeps the model
+    // honest (E7: these files count as not loaded) without a hard error.
+    if (ctx.contextNote) lines.push(`- ${ctx.contextNote}`);
 
     // U3: rolling memory — lets a NEW chat answer "Wo waren wir?" truthfully.
     if (ctx.projectState && (ctx.projectState.summary || ctx.projectState.decisions)) {
