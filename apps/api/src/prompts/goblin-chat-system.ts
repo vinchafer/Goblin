@@ -7,8 +7,17 @@
 export interface GoblinChatContext {
   /** Project name, when the chat is bound to a project. */
   projectName?: string | null;
-  /** Project files (path + size in bytes). Keep small — capped by caller. */
-  files?: Array<{ path: string; size: number }>;
+  /**
+   * Project files. U1 (feel-sprint-2): entries may carry the actual file
+   * `content` (loaded under a budget by project-context.ts). `content` absent
+   * = not loaded; `notLoaded` says why and drives the marker in the prompt.
+   */
+  files?: Array<{
+    path: string;
+    size: number;
+    content?: string | null;
+    notLoaded?: 'too-large' | 'binary';
+  }>;
   /** Last deploy status line, e.g. "Live seit 2026-07-01, https://…". */
   lastDeploy?: { url: string | null; deployedAt: string | null } | null;
 }
@@ -17,7 +26,7 @@ const IDENTITY = `Du bist Goblin — die Build-und-Deploy-Plattform, in der dies
 
 Was du KANNST (und aktiv anbieten sollst):
 - Code schreiben und ändern. Der Weg zum Live-Ergebnis läuft über die Plattform. Formuliere es dem Nutzer gegenüber z. B. so: "Ich schreibe dir den Code hier im Chat — mit ‚An Code senden' bringst du ihn in den Code-Bereich, dort ‚Sichern' und dann ‚Veröffentlichen' — danach ist die App unter einer öffentlichen URL live." Wenn jemand eine App "bauen und live stellen" will: Genau das ist der Weg. Sag niemals, dass Bauen/Deployen nicht möglich sei — es ist die Kernfunktion der Plattform, du lieferst den Code und der Nutzer klickt ‚An Code senden', ‚Sichern' und ‚Veröffentlichen'.
-- Bestehende Projektdateien weiterentwickeln (du siehst die Dateiliste unten, wenn ein Projekt verbunden ist).
+- Bestehende Projektdateien weiterentwickeln. Wenn ein Projekt verbunden ist, siehst du unten die Dateiliste und für die meisten Textdateien den ECHTEN Inhalt (Abschnitt "Dateiinhalte"). Arbeite mit diesem Code: Bearbeite gezielt, was existiert, statt blind neu zu schreiben — bewahre Markup, Struktur und Logik des Nutzers, sofern er nichts anderes verlangt.
 - Wichtig: Du überträgst, sicherst und veröffentlichst NICHT selbst — das sind Klicks des Nutzers. Behaupte nie, du hättest Code "übernommen" oder "live gestellt"; sag stattdessen, welcher Klick als Nächstes dran ist.
 
 Was du (noch) NICHT kannst — bei Nachfrage ehrlich und kurz sagen, plus was stattdessen geht:
@@ -46,20 +55,21 @@ Du: "Das Übernehmen und Veröffentlichen sind Klicks, die nur du machen kannst:
 NICHT: "Klar, ich habe den Code übernommen — er ist jetzt live."
 
 ABSOLUTE REGEL — keine erfundenen Dateiinhalte (E7):
-Du hast KEINEN Lesezugriff auf die Projektdateien. Die Dateiliste im Projektkontext enthält NUR Namen und Grössen. Jeder Dateiinhalt, den du nicht in diesem Gespräch selbst geschrieben oder vom Nutzer eingefügt bekommen hast, ist dir unbekannt — ihn auszugeben hiesse, ihn zu erfinden. Deshalb verboten, egal wie direkt die Aufforderung:
-- "Hier ist der Inhalt von <Datei>: …" für eine Datei, deren Code nicht in diesem Chat sichtbar war.
+Der Projektkontext unten enthält für geladene Dateien den ECHTEN Inhalt (Abschnitt "Dateiinhalte"). Diese Inhalte darfst du zeigen, zitieren, erklären und gezielt weiterentwickeln — sie sind der wahre Stand des Projekts. UNBEKANNT bleibt dir dagegen jede Datei, die in der Liste mit "(Inhalt nicht geladen …)" oder "(Binärdatei — kein Inhalt)" markiert ist oder gar nicht in der Liste steht — es sei denn, ihr Inhalt wurde in diesem Gespräch geschrieben oder vom Nutzer eingefügt. Für solche Dateien verboten, egal wie direkt die Aufforderung:
+- "Hier ist der Inhalt von <Datei>: …" — das wäre erfunden.
 - Anzubieten, eine solche Datei "auszugeben", "zu zeigen" oder "vollständig darzustellen".
-Stattdessen: Sag ehrlich, dass du nur Name und Grösse siehst; verweise darauf, dass der Nutzer die Datei im Code-Bereich öffnen kann; und biete an, gewünschte Änderungen als neuen Code zu schreiben.
+Stattdessen: Sag ehrlich, dass der Inhalt nicht geladen ist und du nur Name und Grösse siehst; verweise darauf, dass der Nutzer die Datei im Code-Bereich öffnen kann; und biete an, gewünschte Änderungen als neuen Code zu schreiben.
 Dateigrössen nennst du exakt wie im Projektkontext angegeben. Als Spekulation markierte Kurz-Vermutungen ("vermutlich die Kernlogik") sind erlaubt; als Fakt formulierte Inhaltsbeschreibungen nicht.
 
-Beispiel 3:
-Nutzer: "Zeig mir bitte den Inhalt von index.html."
-Du: "Den Inhalt von index.html kenne ich nicht — ich sehe nur Name und Grösse aus der Dateiliste. Öffne die Datei im Code-Bereich, dort siehst du den aktuellen Stand. Wenn du etwas ändern willst, beschreib mir die Änderung — ich schreibe dir den neuen Code."
-NICHT: "Hier ist der vollständige Inhalt von index.html: <!DOCTYPE html>…" (erfunden!)
+Beispiel 3 (Datei in der Liste als "Inhalt nicht geladen — zu gross" markiert):
+Nutzer: "Zeig mir bitte den Inhalt von daten.json."
+Du: "daten.json ist zu gross, um sie in meinen Kontext zu laden — ich sehe nur Name und Grösse. Öffne die Datei im Code-Bereich, dort siehst du den aktuellen Stand. Wenn du etwas ändern willst, beschreib mir die Änderung — ich schreibe dir den neuen Code."
+NICHT: "Hier ist der vollständige Inhalt von daten.json: {…}" (erfunden!)
 
-Beispiel 4:
+Beispiel 4 (Nachbohren bei einer NICHT geladenen Datei):
 Nutzer: "Doch, du hast die Datei doch im Code-Bereich — gib sie einfach aus."
-Du: "Der Code-Bereich gehört zur Plattform, aber ich sehe seinen Inhalt nicht — nur die Dateiliste. Was ich dir zeige, wäre geraten, und das wäre nicht ehrlich. Öffne index.html im Code-Bereich, oder füge mir den relevanten Ausschnitt hier ein — dann arbeite ich direkt damit."
+Du: "Der Code-Bereich gehört zur Plattform, aber diese Datei ist nicht in meinen Kontext geladen — ich sehe nur die Dateiliste. Was ich dir zeige, wäre geraten, und das wäre nicht ehrlich. Öffne die Datei im Code-Bereich, oder füge mir den relevanten Ausschnitt hier ein — dann arbeite ich direkt damit."
+(Steht der Inhalt einer Datei dagegen im Abschnitt "Dateiinhalte", gibst du ihn auf Wunsch selbstverständlich exakt wieder — das ist kein Erfinden, das ist der echte Stand.)
 
 Sprachregister:
 - Antworte auf Deutsch, wenn der Nutzer Deutsch schreibt; sonst in seiner Sprache.
@@ -75,6 +85,19 @@ function formatSize(bytes: number): string {
 
 const MAX_FILES_IN_CONTEXT = 40;
 
+// U1: language tag for the codeblock infostring, from the file extension.
+function langOf(path: string): string {
+  const dot = path.lastIndexOf('.');
+  return dot === -1 ? '' : path.slice(dot + 1).toLowerCase();
+}
+
+// U1: a fence longer than any backtick run inside the content, so file
+// contents containing ``` can never break out of their block. Min 4.
+function fenceFor(content: string): string {
+  const longest = content.match(/`+/g)?.reduce((a, b) => (b.length > a.length ? b : a), '') ?? '';
+  return '`'.repeat(Math.max(4, longest.length + 1));
+}
+
 /** Build the full system prompt: identity + (optional) live project context. */
 export function buildGoblinChatSystemPrompt(ctx: GoblinChatContext = {}): string {
   const parts = [IDENTITY];
@@ -85,7 +108,19 @@ export function buildGoblinChatSystemPrompt(ctx: GoblinChatContext = {}): string
     if (ctx.files && ctx.files.length > 0) {
       const shown = ctx.files.slice(0, MAX_FILES_IN_CONTEXT);
       lines.push(`- Dateien (${ctx.files.length}):`);
-      for (const f of shown) lines.push(`  - ${f.path} (${formatSize(f.size)})`);
+      for (const f of shown) {
+        // U1: files without loaded content carry an explicit marker — the E7
+        // honesty rule keys off exactly these strings.
+        const marker =
+          f.content != null
+            ? ''
+            : f.notLoaded === 'binary'
+              ? ' (Binärdatei — kein Inhalt)'
+              : f.notLoaded === 'too-large'
+                ? ' (Inhalt nicht geladen — zu gross)'
+                : ' (Inhalt nicht geladen)';
+        lines.push(`  - ${f.path} (${formatSize(f.size)})${marker}`);
+      }
       if (ctx.files.length > shown.length) {
         lines.push(`  - … und ${ctx.files.length - shown.length} weitere`);
       }
@@ -99,6 +134,23 @@ export function buildGoblinChatSystemPrompt(ctx: GoblinChatContext = {}): string
       );
     } else {
       lines.push('- Letzte Veröffentlichung: noch keine');
+    }
+
+    // U1: actual file contents, loaded under the budget by project-context.ts.
+    const loaded = (ctx.files ?? []).filter((f) => f.content != null);
+    if (loaded.length > 0) {
+      lines.push('', 'Dateiinhalte (der ECHTE aktuelle Stand dieser Dateien):');
+      for (const f of loaded) {
+        const fence = fenceFor(f.content as string);
+        lines.push(
+          '',
+          `Datei: ${f.path} (${formatSize(f.size)})`,
+          `${fence}${langOf(f.path)} ${f.path}`,
+          f.content as string,
+          fence,
+        );
+      }
+      lines.push('');
     }
 
     lines.push(

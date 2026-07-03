@@ -5,6 +5,7 @@ import { getSupabaseAdmin } from '../lib/supabase.js';
 import { streamCompletionGuarded } from '../services/model-router.js';
 import { buildGoblinChatSystemPrompt } from '../prompts/goblin-chat-system.js';
 import { listFilesWithMeta } from '../services/file-storage.js';
+import { loadProjectContextFiles, type ContextFile } from '../services/project-context.js';
 import { truncateTitle } from '../lib/truncate-title.js';
 
 type Variables = { userId: string };
@@ -180,7 +181,7 @@ chatSessions.post('/:id/stream', async (c) => {
   // deploy). All lookups best-effort: a storage hiccup must never block chat.
   const projectId: string | null = (session as { project_id?: string | null }).project_id ?? null;
   let projectName: string | null = null;
-  let projectFiles: Array<{ path: string; size: number }> | undefined;
+  let projectFiles: ContextFile[] | undefined;
   let lastDeploy: { url: string | null; deployedAt: string | null } | null = null;
   if (projectId) {
     try {
@@ -195,8 +196,10 @@ chatSessions.post('/:id/stream', async (c) => {
         const p = proj as { preview_url: string | null; last_deployed_at: string | null };
         lastDeploy = { url: p.preview_url, deployedAt: p.last_deployed_at?.slice(0, 10) ?? null };
       }
-      const meta = await listFilesWithMeta(projectId);
-      projectFiles = meta.map((f) => ({ path: f.path, size: f.size }));
+      // U1: file CONTENTS (budget-capped) — falls back to name+size only.
+      projectFiles = await loadProjectContextFiles(projectId).catch(async () =>
+        (await listFilesWithMeta(projectId)).map((f) => ({ path: f.path, size: f.size })),
+      );
     } catch { /* context stays minimal */ }
   }
   const systemPrompt = buildGoblinChatSystemPrompt({

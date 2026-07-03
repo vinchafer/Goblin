@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { streamCompletionGuarded } from '../services/model-router';
 import { buildGoblinChatSystemPrompt } from '../prompts/goblin-chat-system';
 import { listFilesWithMeta } from '../services/file-storage';
+import { loadProjectContextFiles } from '../services/project-context';
 import { authMiddleware } from '../middleware/auth';
 import { chatStreamRateLimit } from '../middleware/rate-limit';
 
@@ -140,11 +141,15 @@ chat.post('/stream', chatStreamRateLimit, async (c) => {
       .eq('id', projectId)
       .eq('user_id', userId)
       .single();
-    const meta = await listFilesWithMeta(projectId).catch(() => []);
+    // U1: file CONTENTS (budget-capped) — falls back to the bare name+size
+    // list if the content loader hiccups.
+    const files = await loadProjectContextFiles(projectId).catch(async () =>
+      (await listFilesWithMeta(projectId).catch(() => [])).map((f) => ({ path: f.path, size: f.size })),
+    );
     const p = proj as { name?: string; preview_url?: string | null; last_deployed_at?: string | null } | null;
     systemPrompt = buildGoblinChatSystemPrompt({
       projectName: p?.name ?? null,
-      files: meta.map((f) => ({ path: f.path, size: f.size })),
+      files,
       lastDeploy: p ? { url: p.preview_url ?? null, deployedAt: p.last_deployed_at?.slice(0, 10) ?? null } : null,
     });
   } catch {
