@@ -60,3 +60,17 @@ The chat model (Llama 3.3 70B, the test account's BYOK) still occasionally narra
 ## HALT
 
 All units committed as isolated, revert-ready commits (SHAs in the table). Branch `feel-sprint-1-2026-07-02` pushed to origin. No merge, no production deploy performed — awaiting founder authorization.
+
+---
+
+# Addendum (pre-merge gate, 2026-07-03)
+
+| Unit | Commit | Evidence | Status |
+|------|--------|----------|--------|
+| **A1** Prompt rule: never claim platform actions | `c51e456` | `reverify/SYSTEM_PROMPT_CURRENT.md` (full post-A1 text) | **Done.** Dedicated "ABSOLUTE REGEL" block in `goblin-chat-system.ts`: forbids claimed/announced/promised platform actions in every tense, forbids standalone UI-imitating lines, prescribes the one-sentence handoff ("Übernimm den Code mit ‚An Code senden', dann ‚Sichern' und ‚Veröffentlichen'…"), plus 2 few-shot exchanges (correct closing vs. forbidden closing). Typecheck clean. |
+| **A2** Swift re-probe | — | `reverify/A2_BLOCKED_model-selector-offering.txt` | **BLOCKED — no Goblin-hosted access in this environment.** `GOBLIN_HOSTED_API` + `DEEPINFRA_API_KEY` are Railway-only secrets; the local `.env.local` has neither, so the local catalog offers **27 models, all BYOK, zero GOBLIN_HOSTED entries** (authenticated `GET /api/models` capture in evidence file). Probing prod instead would test the *pre-A1* prompt (no deploy allowed) — pointless. **Founder decides how to provide access** (e.g. a scoped DeepInfra key for local dev, or authorize a branch deploy to a staging API). The 5 probe messages are ready to run as specified. |
+| **A3** System prompt delivered | (in A2-evidence commit) | `reverify/SYSTEM_PROMPT_CURRENT.md` | **Done.** Full post-A1 prompt (static block verbatim + dynamic project-context template). Secrets check: file contains only prompt text — no keys/tokens/credentials. |
+| **A4.1** SSE sequencing | `09ab990` | code | **Done.** Vercel `READY` now streams `Bereitstellung abgeschlossen — wird geprüft…` instead of `Fertig…`; the P0.2 truth-gate (`wird geprüft, n/6`) runs after READY, so nothing claims completion before checks. No test asserted the old string (grepped repo-wide). |
+| **A4.2** UTF-8-safe title truncation | `3780c75` | code + 3 unit tests (green) | **Done, with a root-cause correction.** New `truncateTitle()` truncates at code-point boundaries (a naive `slice` can split a surrogate pair → lone surrogate → U+FFFD); wired into the auto-title path; tests cover umlaut-leading title + emoji at the cut boundary. **However:** the observed `F�ge` was reproduced from the prod DB — U+FFFD sits at code point 2 of the stored *user message itself* (`standalone_messages.content`), while the next probe message is clean. `slice(0, 60)` cannot corrupt position 2 (and 'ü' is a single UTF-16 code unit). The corruption entered **at send time from the scripted probe harness** (encoding artifact of the prior session's probe script), not from title truncation. This commit is honest defensive hardening; there is no reproducible product-side truncation bug. Recommendation: A2 probe scripts must send UTF-8 JSON bodies (verified umlauts) — noted for the probe run. |
+
+**HALT.** No merge, no deploy. A2 awaits founder decision on Goblin-hosted access.
