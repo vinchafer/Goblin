@@ -59,12 +59,21 @@ function langOf(path: string): string {
 export function StcPreviewSheet({
   files, projects, targetName, existingPaths, existingFiles, busy, onConfirm, onCancel,
 }: Props) {
+  // P0.3 — filename integrity: user-applied renames (original path → new path)
+  // live here; selection stays keyed by the original path.
+  const [renames, setRenames] = useState<Record<string, string>>({});
+
   // U2: per-file change status against the target project. Without
   // existingFiles everything stays 'new' (legacy behavior via existingPaths).
+  // B3: classification follows the EFFECTIVE path — after an integrity
+  // auto-rename the file is compared against the renamed target, so the badge
+  // flips to IDENTISCH/GEÄNDERT per the target file's reality instead of
+  // staying NEU on the stale original path.
   const statuses = useMemo(() => {
     const map = new Map<string, { status: FileStatus; delta: LineDelta | null }>();
     for (const f of files) {
-      const prev = existingFiles?.[f.path];
+      const effectivePath = renames[f.path] ?? f.path;
+      const prev = existingFiles?.[effectivePath];
       const status = classifyFile(prev, f.content);
       map.set(f.path, {
         status,
@@ -72,7 +81,7 @@ export function StcPreviewSheet({
       });
     }
     return map;
-  }, [files, existingFiles]);
+  }, [files, existingFiles, renames]);
 
   // IDENTISCH files start unchecked — re-sending an unchanged file is noise.
   const [selected, setSelected] = useState<Set<string>>(
@@ -91,10 +100,6 @@ export function StcPreviewSheet({
       return next;
     });
   };
-
-  // P0.3 — filename integrity: user-applied renames (original path → new path)
-  // live here; selection stays keyed by the original path.
-  const [renames, setRenames] = useState<Record<string, string>>({});
 
   const chosen = useMemo(
     () => applyRenames(files.filter((f) => selected.has(f.path)), renames),
@@ -173,7 +178,8 @@ export function StcPreviewSheet({
             const status = st?.status ?? 'new';
             const delta = st?.delta ?? null;
             const diffOpen = openDiffs.has(f.path);
-            const prevContent = existingFiles?.[f.path];
+            // B3: diff against the effective (possibly renamed) target path.
+            const prevContent = existingFiles?.[shownPath];
             return (
               <div key={f.path}>
               <button
