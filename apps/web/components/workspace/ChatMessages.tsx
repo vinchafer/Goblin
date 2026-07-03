@@ -1,9 +1,11 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useEffect } from "react";
 import { ChatMessageItem } from "./ChatMessage";
 import type { ChatMessage } from "@goblin/shared/src/schemas";
 import { GoblinLogo } from "@/components/brand/GoblinLogo";
+import { useStickToBottom } from "@/hooks/useStickToBottom";
+import { ScrollToEndChip } from "@/components/chat/ScrollToEndChip";
 
 // ─── Pricing ──────────────────────────────────────────────────────────────────
 
@@ -131,11 +133,14 @@ export function ChatMessages({
   messages, isStreaming, error, tokenInfo,
   onSendToCode, onSuggestion, onDismissError,
 }: ChatMessagesProps) {
-  const endRef = useRef<HTMLDivElement>(null);
+  // U0: auto-follow only while the user is at the bottom; scroll-up during
+  // streaming releases the pin, the chip below brings them back.
+  const { containerRef: scrollRef, atBottom, handleScroll, onContentChange, scrollToBottom } =
+    useStickToBottom<HTMLDivElement>();
 
   useEffect(() => {
-    endRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    onContentChange();
+  }, [messages, onContentChange]);
 
   const isNoModel = error ? /no model|no key|api key|not connected|no provider/i.test(error) : false;
 
@@ -149,12 +154,16 @@ export function ChatMessages({
         .goblin-ai-text em { font-style:italic; }
       `}</style>
 
-      {/* Message list */}
-      <div style={{
-        flex: 1, overflowY: 'auto',
-        padding: '20px 16px 8px',
-        display: 'flex', flexDirection: 'column', gap: 18,
-      }}>
+      {/* Message list — relative wrapper anchors the U0 scroll chip */}
+      <div style={{ flex: 1, position: 'relative', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+      <div
+        ref={scrollRef}
+        onScroll={handleScroll}
+        style={{
+          flex: 1, overflowY: 'auto',
+          padding: '20px 16px 8px',
+          display: 'flex', flexDirection: 'column', gap: 18,
+        }}>
         {messages.length === 0
           ? <EmptyState onSuggestion={onSuggestion} />
           : messages.map(m => (
@@ -195,7 +204,12 @@ export function ChatMessages({
           </div>
         )}
 
-        <div ref={endRef} />
+      </div>
+
+      {/* U0: back-to-live chip when the user scrolled away from the bottom */}
+      {!atBottom && messages.length > 0 && (
+        <ScrollToEndChip onClick={() => scrollToBottom('smooth')} />
+      )}
       </div>
 
       {/* Token bar */}

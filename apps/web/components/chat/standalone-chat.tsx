@@ -15,6 +15,8 @@ import { StcPreviewSheet, type StcFile } from "@/components/code/StcPreviewSheet
 import { useApp } from "@/contexts/app-context";
 import { useDemoMode } from "@/lib/demo/demo-mode-context";
 import { useLang } from "@/lib/use-lang";
+import { useStickToBottom } from "@/hooks/useStickToBottom";
+import { ScrollToEndChip } from "@/components/chat/ScrollToEndChip";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -298,7 +300,10 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
     return () => setChatProjectId(null);
   }, [projectId, setChatProjectId]);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  // U0: auto-follow only while the user is at the bottom; scroll-up releases
+  // the pin so reading during generation works (founder-reported iPhone bug).
+  const { containerRef: scrollRef, atBottom, handleScroll, onContentChange, scrollToBottom } =
+    useStickToBottom<HTMLDivElement>();
   const streamingContentRef = useRef("");
   const baseMessagesRef = useRef<typeof messages>([]);
   const streamingMsgRef = useRef<(typeof messages)[0] | null>(null);
@@ -307,8 +312,8 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
   const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "";
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    onContentChange();
+  }, [messages, onContentChange]);
 
   useEffect(() => {
     return () => { abortRef.current?.abort(); };
@@ -516,6 +521,8 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
 
       {/* Messages */}
       <div
+        ref={scrollRef}
+        onScroll={handleScroll}
         className={`chat-scroll${messages.length === 0 ? " chat-scroll--empty" : ""}`}
         style={{ gap: 16 }}
       >
@@ -564,13 +571,18 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
           </div>
         )}
 
-        <div ref={messagesEndRef} />
       </div>
 
       {/* Input area — sticky bottom of the flex column. Clears the iOS
           bottom safe area (gesture zone) so the composer stays thumb-reachable. */}
       <div style={{ borderTop: "1px solid var(--rule)", background: "var(--bone)", paddingBottom: "env(safe-area-inset-bottom)" }}>
         <div style={{ position: "relative" }}>
+          {/* U0: shown when the user scrolled away from the bottom; tap → back
+              to live-follow. Sits centered above the composer, clear of the
+              right-aligned code action button. */}
+          {!atBottom && messages.length > 0 && (
+            <ScrollToEndChip bottom="calc(100% + 12px)" onClick={() => scrollToBottom("smooth")} />
+          )}
           {/* Code action button — sits above the input. Hidden in demo (its
               actions fetch projects / deep-link out of the iframe). */}
           {!demoMode && lastAssistantMsg?.has_code && (
