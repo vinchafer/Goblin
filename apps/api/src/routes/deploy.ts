@@ -80,7 +80,8 @@ deploy.post('/vercel', deployRateLimit, async (c) => {
         // leaking "Status: BUILDING…" to a German UI.
         const stateDe: Record<string, string> = {
           QUEUED: 'Warteschlange…', BUILDING: 'Build läuft…', INITIALIZING: 'Build läuft…',
-          UPLOADING: 'Dateien werden hochgeladen…', DEPLOYING: 'Wird veröffentlicht…', READY: 'Fertig…',
+          // A4.1: READY must not read as done — verification (truth-gate below) has not run yet.
+          UPLOADING: 'Dateien werden hochgeladen…', DEPLOYING: 'Wird veröffentlicht…', READY: 'Bereitstellung abgeschlossen — wird geprüft…',
         };
         await stream.writeSSE({ data: JSON.stringify({ type: 'progress', message: stateDe[status.state] ?? 'Wird veröffentlicht…' }) });
         if (status.state === 'READY') break;
