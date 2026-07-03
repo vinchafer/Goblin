@@ -177,18 +177,18 @@ export async function deployToVercel(
   const token = await getUserVercelToken(userId);
   if (!token) throw new Error('NO_VERCEL_TOKEN — Du brauchst einen eigenen Vercel-Account (gratis). Token unter vercel.com/account/tokens erstellen und in Einstellungen → Konnektoren → Vercel einfügen.');
 
-  onProgress?.('Preparing files…');
+  onProgress?.('Dateien werden vorbereitet…');
   const files = await listFiles(projectId);
 
   if (files.length === 0) {
-    throw new Error('Project has no files to deploy. Generate some code first.');
+    throw new Error('Das Projekt hat noch keine Dateien zum Veröffentlichen. Erstelle zuerst etwas Code.');
   }
 
   const filesToDeploy = files.slice(0, 100);
   if (files.length > 100) {
-    onProgress?.(`⚠️ Project has ${files.length} files — deploying first 100 only (Vercel API limit)`);
+    onProgress?.(`⚠️ Das Projekt hat ${files.length} Dateien — nur die ersten 100 werden veröffentlicht (Vercel-Limit)`);
   } else {
-    onProgress?.(`Uploading ${filesToDeploy.length} files to Vercel…`);
+    onProgress?.(`${filesToDeploy.length} Dateien werden hochgeladen…`);
   }
 
   const vercelFilesSettled = await Promise.allSettled(
@@ -210,10 +210,10 @@ export async function deployToVercel(
     .map(r => r.value as { file: string; data: string; encoding: 'base64' });
 
   if (vercelFiles.length === 0) {
-    throw new Error('Failed to read any project files from storage.');
+    throw new Error('Die Projektdateien konnten nicht gelesen werden. Bitte versuch es erneut.');
   }
 
-  onProgress?.('Creating deployment…');
+  onProgress?.('Veröffentlichung wird erstellt…');
   const deployName = vercelProjectName(projectName);
   // Dev-safety shield: refuse to create/touch any Vercel project except synapse-platform
   // or test-* throwaways while GOBLIN_DEV_MODE=true. No-op in prod.
@@ -236,13 +236,13 @@ export async function deployToVercel(
     // Clear cached token on auth failure so next attempt re-fetches from DB
     if (res.status === 401 || res.status === 403) {
       clearTokenCache(userId);
-      throw new Error('Vercel token rejected (401/403). Please update your Vercel token in Settings → API Keys.');
+      throw new Error('Dein Vercel-Token wurde abgelehnt. Bitte aktualisiere ihn unter Einstellungen → API-Schlüssel.');
     }
     if (res.status === 429) {
-      throw new Error('Vercel API rate limit reached. Wait a few minutes and try again.');
+      throw new Error('Vercel-Limit erreicht. Warte ein paar Minuten und versuch es erneut.');
     }
     const err = await res.json().catch(() => ({})) as { error?: { message?: string } };
-    throw new Error(`Vercel deploy failed: ${err.error?.message ?? res.statusText}`);
+    throw new Error(`Veröffentlichung fehlgeschlagen: ${err.error?.message ?? res.statusText}`);
   }
 
   const data = await res.json() as { id: string; url: string; alias?: string[] };

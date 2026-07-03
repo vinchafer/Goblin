@@ -16,15 +16,15 @@ export function useCodeVercel(projectId: string, token: string | null) {
   const handleDeploy = useCallback(async () => {
     if (deploying || !token) return;
     setDeploying(true);
-    setDeployMessage('Deploying to Vercel…');
-    await startBuild('vercel_deploy', 'Deploying to Vercel…');
+    setDeployMessage('Veröffentliche…');
+    await startBuild('vercel_deploy', 'Veröffentliche…');
     try {
       const res = await fetch(`${API_URL}/api/deploy/vercel`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ projectId }),
       });
-      if (!res.ok || !res.body) throw new Error('Deploy failed');
+      if (!res.ok || !res.body) throw new Error('Veröffentlichung fehlgeschlagen.');
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       while (true) {
@@ -40,8 +40,8 @@ export function useCodeVercel(projectId: string, token: string | null) {
               setProtection(mode);
               setDeployMessage(
                 mode === 'manual'
-                  ? `Deployed ✓ ${event.url} — Hinweis: Dein Vercel-Team schützt Deployments. Einmalig: Vercel → Settings → Deployment Protection → „Only Preview Deployments".`
-                  : `Deployed ✓ ${event.url} · öffentlich erreichbar`,
+                  ? `Veröffentlicht ✓ ${event.url} — Hinweis: Dein Vercel-Team schützt Deployments. Einmalig: Vercel → Settings → Deployment Protection → „Only Preview Deployments".`
+                  : `Veröffentlicht ✓ ${event.url} · öffentlich erreichbar`,
               );
               setTimeout(() => setDeployMessage(null), mode === 'manual' ? 15000 : 6000);
             }
@@ -50,14 +50,14 @@ export function useCodeVercel(projectId: string, token: string | null) {
                 setNeedsVercel(true);
                 setDeployMessage(null);
               } else {
-                setDeployMessage(`Error: ${event.message}`);
+                setDeployMessage(`Fehler: ${event.message}`);
               }
             }
           } catch { /* ignore */ }
         }
       }
     } catch (err) {
-      setDeployMessage(err instanceof Error ? err.message : 'Deploy failed');
+      setDeployMessage(err instanceof Error ? err.message : 'Veröffentlichung fehlgeschlagen.');
       setTimeout(() => setDeployMessage(null), 6000);
     } finally { setDeploying(false); }
   }, [deploying, projectId, token, startBuild]);
