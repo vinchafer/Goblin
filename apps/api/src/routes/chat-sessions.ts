@@ -5,6 +5,7 @@ import { getSupabaseAdmin } from '../lib/supabase.js';
 import { streamCompletionGuarded } from '../services/model-router.js';
 import { buildGoblinChatSystemPrompt } from '../prompts/goblin-chat-system.js';
 import { listFilesWithMeta } from '../services/file-storage.js';
+import { truncateTitle } from '../lib/truncate-title.js';
 
 type Variables = { userId: string };
 const chatSessions = new Hono<{ Variables: Variables }>();
@@ -152,7 +153,7 @@ chatSessions.post('/:id/stream', async (c) => {
     .eq('role', 'user');
 
   if ((count ?? 0) <= 1) {
-    const title = message.trim().slice(0, 60);
+    const title = truncateTitle(message, 60);
     await supabase.from('chat_sessions')
       .update({ title, updated_at: new Date().toISOString() })
       .eq('id', sessionId);
