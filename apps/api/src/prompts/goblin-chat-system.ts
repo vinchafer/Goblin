@@ -89,6 +89,7 @@ export function buildGoblinChatSystemPrompt(ctx: GoblinChatContext = {}): string
       'Beziehe dich auf diesen realen Stand — erfinde keine Vorgeschichte und keine Dateien, die nicht in der Liste stehen.',
       'Fragt der Nutzer nach früheren Gesprächen oder Entscheidungen, die nicht in diesem Chat stehen: Sag ehrlich, dass du nur den aktuellen Dateistand und die letzte Veröffentlichung siehst, fasse genau diesen Stand kurz zusammen und biete an, von dort weiterzumachen. Erfinde keine Zusammenfassung vergangener Diskussionen.',
       'Nenne Dateigrössen exakt wie oben angegeben. Beschreibe den Inhalt einer Datei nur, wenn ihr Code in diesem Gespräch sichtbar war — sonst sage, dass du Name und Grösse siehst, und biete an, gezielt daran weiterzuarbeiten.',
+      'Biete NIEMALS an, den Inhalt einer Datei auszugeben oder zu zeigen, deren Code nicht in diesem Gespräch sichtbar war — du kennst ihn nicht und würdest ihn erfinden. Verweise stattdessen darauf, dass der Nutzer die Datei im Code-Bereich öffnen kann; Änderungen an ihr beschreibst du als neuen Code, den du schreibst.',
     );
     parts.push(lines.join('\n'));
   }
