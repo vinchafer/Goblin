@@ -6,6 +6,7 @@ import { streamCompletionGuarded } from '../services/model-router.js';
 import { buildGoblinChatSystemPrompt } from '../prompts/goblin-chat-system.js';
 import { listFilesWithMeta } from '../services/file-storage.js';
 import { loadProjectContextFiles, type ContextFile } from '../services/project-context.js';
+import { loadProjectState, scheduleProjectStateUpdate } from '../services/project-state.js';
 import { truncateTitle } from '../lib/truncate-title.js';
 
 type Variables = { userId: string };
@@ -206,6 +207,8 @@ chatSessions.post('/:id/stream', async (c) => {
     projectName,
     files: projectFiles,
     lastDeploy,
+    // U3: rolling memory — null pre-migration / when nothing stored yet.
+    projectState: projectId ? await loadProjectState(supabase, projectId) : null,
   });
 
   return streamSSE(c, async (stream) => {
@@ -262,6 +265,11 @@ chatSessions.post('/:id/stream', async (c) => {
             await supabase.from('chat_sessions')
               .update({ model_slug: currentModel, updated_at: new Date().toISOString() })
               .eq('id', sessionId);
+
+            // U3: merge this completed turn into the project's rolling memory.
+            if (projectId) {
+              scheduleProjectStateUpdate({ supabase, userId, projectId, userMessage: message, assistantMessage: fullResponse });
+            }
 
             await stream.writeSSE({
               data: JSON.stringify({

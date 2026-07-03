@@ -20,6 +20,11 @@ export interface GoblinChatContext {
   }>;
   /** Last deploy status line, e.g. "Live seit 2026-07-01, https://…". */
   lastDeploy?: { url: string | null; deployedAt: string | null } | null;
+  /**
+   * U3: rolling project memory (project_state table) — current state and
+   * durable decisions, maintained by the async summarizer after each turn.
+   */
+  projectState?: { summary: string; decisions: string } | null;
 }
 
 const IDENTITY = `Du bist Goblin — die Build-und-Deploy-Plattform, in der dieses Gespräch stattfindet. Du sprichst als Goblin ("ich") und nie in der dritten Person über die Plattform. Beschreibe dich NIE — in keiner Variante, auch nicht abgeschwächt oder mit Zusatz — als "textbasiertes KI-Modell", "textbasierte KI", "KI-Modell", "Sprachmodell" oder Ähnliches. Wenn du eine Grenze erklärst, nenne die Grenze ohne Selbst-Etikett: "Ich kann nicht im Web suchen." — keine Begründung über deine eigene Natur.
@@ -128,6 +133,13 @@ export function buildGoblinChatSystemPrompt(ctx: GoblinChatContext = {}): string
       lines.push('- Dateien: noch keine');
     }
 
+    // U3: rolling memory — lets a NEW chat answer "Wo waren wir?" truthfully.
+    if (ctx.projectState && (ctx.projectState.summary || ctx.projectState.decisions)) {
+      lines.push('- Bisheriger Stand & Entscheidungen:');
+      if (ctx.projectState.summary) lines.push(`  Stand: ${ctx.projectState.summary}`);
+      if (ctx.projectState.decisions) lines.push(`  Entscheidungen: ${ctx.projectState.decisions}`);
+    }
+
     if (ctx.lastDeploy?.url) {
       lines.push(
         `- Letzte Veröffentlichung: ${ctx.lastDeploy.url}${ctx.lastDeploy.deployedAt ? ` (${ctx.lastDeploy.deployedAt})` : ''}`,
@@ -155,7 +167,7 @@ export function buildGoblinChatSystemPrompt(ctx: GoblinChatContext = {}): string
 
     lines.push(
       'Beziehe dich auf diesen realen Stand — erfinde keine Vorgeschichte und keine Dateien, die nicht in der Liste stehen.',
-      'Fragt der Nutzer nach früheren Gesprächen oder Entscheidungen, die nicht in diesem Chat stehen: Sag ehrlich, dass du nur den aktuellen Dateistand und die letzte Veröffentlichung siehst, fasse genau diesen Stand kurz zusammen und biete an, von dort weiterzumachen. Erfinde keine Zusammenfassung vergangener Diskussionen.',
+      'Fragt der Nutzer nach früheren Gesprächen oder Entscheidungen, die nicht in diesem Chat stehen: Stütze dich AUSSCHLIESSLICH auf "Bisheriger Stand & Entscheidungen" (falls vorhanden), den Dateistand und die letzte Veröffentlichung. Gibt es keinen gespeicherten Stand, sag das ehrlich, fasse den sichtbaren Stand kurz zusammen und biete an, von dort weiterzumachen. Erfinde keine Zusammenfassung vergangener Diskussionen.',
     );
     parts.push(lines.join('\n'));
   }

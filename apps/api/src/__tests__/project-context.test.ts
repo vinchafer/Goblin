@@ -23,15 +23,15 @@ beforeAll(async () => {
 describe('loadProjectContextFiles', () => {
   it('loads text files within budget, marks binary and over-budget files', async () => {
     const files = await loadProjectContextFiles(PID);
-    const byPath = Object.fromEntries(files.map((f) => [f.path, f]));
+    const byPath = new Map(files.map((f) => [f.path, f]));
 
-    expect(byPath['index.html'].content).toBe(INDEX_HTML);
-    expect(byPath['styles.css'].content).toContain('margin');
-    expect(byPath['app.js'].content).toContain('console.log');
-    expect(byPath['logo.png'].content).toBeUndefined();
-    expect(byPath['logo.png'].notLoaded).toBe('binary');
-    expect(byPath['huge.json'].content).toBeUndefined();
-    expect(byPath['huge.json'].notLoaded).toBe('too-large');
+    expect(byPath.get('index.html')?.content).toBe(INDEX_HTML);
+    expect(byPath.get('styles.css')?.content).toContain('margin');
+    expect(byPath.get('app.js')?.content).toContain('console.log');
+    expect(byPath.get('logo.png')?.content).toBeUndefined();
+    expect(byPath.get('logo.png')?.notLoaded).toBe('binary');
+    expect(byPath.get('huge.json')?.content).toBeUndefined();
+    expect(byPath.get('huge.json')?.notLoaded).toBe('too-large');
   });
 
   it('stays under the total character budget', async () => {

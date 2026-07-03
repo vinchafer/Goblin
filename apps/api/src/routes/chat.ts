@@ -5,6 +5,7 @@ import { streamCompletionGuarded } from '../services/model-router';
 import { buildGoblinChatSystemPrompt } from '../prompts/goblin-chat-system';
 import { listFilesWithMeta } from '../services/file-storage';
 import { loadProjectContextFiles } from '../services/project-context';
+import { loadProjectState, scheduleProjectStateUpdate } from '../services/project-state';
 import { authMiddleware } from '../middleware/auth';
 import { chatStreamRateLimit } from '../middleware/rate-limit';
 
@@ -151,6 +152,8 @@ chat.post('/stream', chatStreamRateLimit, async (c) => {
       projectName: p?.name ?? null,
       files,
       lastDeploy: p ? { url: p.preview_url ?? null, deployedAt: p.last_deployed_at?.slice(0, 10) ?? null } : null,
+      // U3: rolling memory — null pre-migration / when nothing stored yet.
+      projectState: await loadProjectState(supabase, projectId),
     });
   } catch {
     systemPrompt = buildGoblinChatSystemPrompt();
@@ -226,6 +229,9 @@ chat.post('/stream', chatStreamRateLimit, async (c) => {
             .select()
             .single();
 
+          // U3: merge this completed turn into the project's rolling memory.
+          scheduleProjectStateUpdate({ supabase, userId, projectId, userMessage: message, assistantMessage: fullResponse });
+
           await stream.writeSSE({
             data: JSON.stringify({
               type: 'done',
@@ -239,6 +245,8 @@ chat.post('/stream', chatStreamRateLimit, async (c) => {
       }
 
       // Fallback done if generator ends without explicit 'done'
+      // U3: same rolling-memory update on the fallback completion path.
+      scheduleProjectStateUpdate({ supabase, userId, projectId, userMessage: message, assistantMessage: fullResponse });
       const { data: assistantMessage } = await supabase
         .from('chat_messages')
         .insert({
