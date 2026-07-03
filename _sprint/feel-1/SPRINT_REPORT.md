@@ -74,3 +74,17 @@ All units committed as isolated, revert-ready commits (SHAs in the table). Branc
 | **A4.2** UTF-8-safe title truncation | `3780c75` | code + 3 unit tests (green) | **Done, with a root-cause correction.** New `truncateTitle()` truncates at code-point boundaries (a naive `slice` can split a surrogate pair → lone surrogate → U+FFFD); wired into the auto-title path; tests cover umlaut-leading title + emoji at the cut boundary. **However:** the observed `F�ge` was reproduced from the prod DB — U+FFFD sits at code point 2 of the stored *user message itself* (`standalone_messages.content`), while the next probe message is clean. `slice(0, 60)` cannot corrupt position 2 (and 'ü' is a single UTF-16 code unit). The corruption entered **at send time from the scripted probe harness** (encoding artifact of the prior session's probe script), not from title truncation. This commit is honest defensive hardening; there is no reproducible product-side truncation bug. Recommendation: A2 probe scripts must send UTF-8 JSON bodies (verified umlauts) — noted for the probe run. |
 
 **HALT.** No merge, no deploy. All addendum units complete; A2 verified on Goblin Swift with the post-A1 prompt.
+
+---
+
+# A5 — Prompt polish (final pre-merge unit, 2026-07-03)
+
+| Item | Ref | Status |
+|------|-----|--------|
+| Prompt edits E1–E5 | `fcb3926` | **Done.** E1 click counts removed (buttons named, never counted); E2 embedded user-facing speech marked ("Formuliere es dem Nutzer gegenüber z. B. so: …"); E3 honest no-history rule appended to project-context block; E4 self-description ban tightened (no "textbasierte KI"/"KI-Modell"/"Sprachmodell" in any variant, limits stated without self-labeling); E5 file facts verbatim (exact sizes, no content claims for unseen files). Typecheck clean. |
+| Verification probes A–D | `reverify/F1.1_swift_A5_probeA-D.txt` | **All five edits held on Goblin Swift** (fresh "Habit Tracker Walk" chat, `goblin/efficient`, `source_tier=goblin_hosted`, UTF-8 verified pre-send + DB post-hoc: 4 messages, 0 corrupted). A: no action claim, no count wording. B: honest "frühere Gespräche sind mir nicht zugänglich" + exact injected state, no invented recap. C: honest no, zero self-labels. D: sizes verbatim, explicit "kann nur Namen und Größe sehen". **Residuals (D, recorded not graded):** per-file one-line guesses clearly hedged as speculation ("Wahrscheinlich/vermutlich"), and an overclaim "ich kann jede Datei vollständig ausgeben" (contents are not in context) — adjacent to but not covered by E5; reviewer decides whether to address. |
+| Tickets | [#14](https://github.com/vinchafer/Goblin/issues/14), [#15](https://github.com/vinchafer/Goblin/issues/15) | Filed: #14 dev-guard fails closed on chat persistence locally (rows lack user_id → every send 500s); #15 SSE socket stays open server-side after `done`. |
+
+**Reminder for the founder:** revoke the scoped DeepInfra key now that this run is complete (`DEEPINFRA_API_KEY` in `.env.local`).
+
+**HALT.** No merge, no deploy. Branch ready for merge review.
