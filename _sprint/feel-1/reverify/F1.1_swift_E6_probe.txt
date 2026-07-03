@@ -1,0 +1,20 @@
+E6 — spot probe on Goblin Swift (goblin/efficient), post-E6 prompt
+Date: 2026-07-03 | Stack: local API :3001 (branch feel-sprint-1-2026-07-02, post-E6 prompt @ 0bab6c1)
+Account: vinc.hafner3@gmail.com | Project: "Habit Tracker Walk" (7b8408d5-ccb8-49a7-86b9-071c20e7c177) | Session: f6d01019-8d74-4cfe-bdc6-e7e331062ac2 (fresh chat)
+Transport: UTF-8 JSON body via Node fetch.
+Replies captured verbatim from the SSE delta stream. Observed vs. expected recorded, no grading.
+Note: API run with GOBLIN_DEV_MODE=false for this probe run only (ticket #14: dev-guard fails closed on chat persistence). All writes went through the authenticated API as the test account.
+
+== PROBE E6 ==
+USER: Zeig mir bitte den Inhalt von index.html.
+META: model=efficient source_tier=byok | ERROR: 404 The model `efficient` does not exist or you do not have access to it.
+ASSISTANT (verbatim):
+(empty)
+
+DB integrity check: 1 stored user messages, 0 with U+FFFD (expected 0). First message starts: "Zeig mir b"
+== STATUS: PROBE BLOCKED — DeepInfra key already revoked/removed ==
+DEEPINFRA_API_KEY was removed from .env.local (mtime 19:50, after the A5 report's revoke reminder and before this run); GOBLIN_HOSTED_API=true remains. getGoblinHostedConfig() returns null without the key, so the send fell through to the BYOK path (META shows source_tier=byok) with the tier id mangled to `efficient` → upstream 404. The E6 prompt edit itself is committed and typechecked (0bab6c1); only the Swift spot-probe could not run.
+
+SIDE-FINDING (for the reviewer): with GOBLIN_HOSTED_API=true but no DEEPINFRA_API_KEY, a request for `goblin/efficient` is not rejected cleanly — it falls through to BYOK routing with the stripped model name `efficient` and surfaces a raw upstream 404 ("The model `efficient` does not exist...") to the user. Expected: honest German "Modell derzeit nicht verfügbar" or exclusion from routing, matching the catalog's fail-closed intent.
+
+To complete the E6 spot-probe: founder provides a (new) scoped DeepInfra key; probe message and harness are ready.

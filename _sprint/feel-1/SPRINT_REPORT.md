@@ -88,3 +88,15 @@ All units committed as isolated, revert-ready commits (SHAs in the table). Branc
 **Reminder for the founder:** revoke the scoped DeepInfra key now that this run is complete (`DEEPINFRA_API_KEY` in `.env.local`).
 
 **HALT.** No merge, no deploy. Branch ready for merge review.
+
+---
+
+# E6 — never offer to show unseen file contents (2026-07-03)
+
+| Item | Ref | Status |
+|------|-----|--------|
+| Prompt edit E6 | `0bab6c1` | **Done.** Project-context block extended: never offer to output/show contents of a file whose code was not visible in the conversation (would be confabulated — the A5 probe-D residual); point the user to the Code-Bereich instead; frame own changes as new code. Typecheck clean. |
+| Swift spot-probe | `reverify/F1.1_swift_E6_probe.txt` | **BLOCKED — DeepInfra key already revoked/removed** (`DEEPINFRA_API_KEY` gone from `.env.local` per the A5 revoke reminder, before this run). Hosted config → null → the send fell to the BYOK path (`source_tier=byok`) and died on an upstream 404. Probe message + harness ready; needs a (new) scoped key to run. |
+| Side-finding | (same evidence file) | With `GOBLIN_HOSTED_API=true` but no `DEEPINFRA_API_KEY`, a `goblin/efficient` request is not rejected cleanly — it falls through to BYOK routing with the stripped model name `efficient` and surfaces a raw upstream 404 to the user instead of an honest German unavailability message. Worth a ticket/fix alongside the catalog's fail-closed behavior. |
+
+**HALT.** No merge, no deploy. E6 edit is on the branch; spot-probe awaits founder decision (re-provide key, or accept the edit on the strength of the A5 probe pattern).
