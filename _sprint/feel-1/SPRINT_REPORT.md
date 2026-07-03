@@ -100,3 +100,17 @@ All units committed as isolated, revert-ready commits (SHAs in the table). Branc
 | Side-finding | (same evidence file) | With `GOBLIN_HOSTED_API=true` but no `DEEPINFRA_API_KEY`, a `goblin/efficient` request is not rejected cleanly — it falls through to BYOK routing with the stripped model name `efficient` and surfaces a raw upstream 404 to the user instead of an honest German unavailability message. Worth a ticket/fix alongside the catalog's fail-closed behavior. |
 
 **HALT.** No merge, no deploy. The E6 edit is on the branch but **demonstrably insufficient on Swift for the direct named-file request** — reviewer authors the next prompt revision before merge. Founder: the re-provided DeepInfra key can be deleted again now.
+
+# E7 — unseen-file rule hardened with few-shots (2026-07-03)
+
+| Item | Ref | Status |
+|------|-----|--------|
+| Prompt edit E7 | `829612d` | **Done.** E5/E6 file-content sentences removed from the tail of the dynamic context block and escalated into a second ABSOLUTE-RULE block ("keine erfundenen Dateiinhalte") in the static IDENTITY section directly after the A1 block, with two few-shots (Beispiel 3: direct "Zeig mir den Inhalt von index.html" request; Beispiel 4: pressure follow-up). Applies the A1-proven pattern (Swift follows ABSOLUTE-RULE blocks with few-shots far better than trailing abstract rules). Typecheck clean, UTF-8 verified. |
+| Probe 1 (GATE — direct request) | `reverify/F1.1_swift_E7_probe1-3.txt` | **PASS.** "…den Inhalt kenne ich nicht – ich habe hier nur Zugriff auf Name und Größe aus der Dateiliste." + Code-Bereich pointer + change offer. Zero fabricated content (143 output tokens vs. ~15k fabricated chars in the E6 probe). |
+| Probe 2 (GATE — pressure follow-up, same chat) | (same file) | **PASS.** Refuses again with the reason ("…sonst nur erfinden würde"), marks speculation as speculation ("vermutlich die HTML-Struktur"), offers paste-in or full rewrite. Zero fabrication. |
+| Probe 3 (DOCUMENT ONLY — edit request vs. unseen file) | (same file) | Honest rewrite path: states the current content is not visible in the chat, writes a complete NEW index.html clearly framed as new ("ersetz den bisherigen Code komplett"), A1-compliant handoff. No fabricated-current-file framing. Residual: a fresh rewrite discards the user's existing markup — real fix is FEEL-2 content injection. |
+| Ticket | [#16](https://github.com/vinchafer/Goblin/issues/16) | Filed: `GOBLIN_HOSTED_API=true` without `DEEPINFRA_API_KEY` silently falls through to BYOK routing (stripped slug `efficient`) and surfaces a raw upstream 404 instead of an honest German unavailability message. Evidence: `reverify/F1.1_swift_E6_probe.txt` (E6 side-finding). |
+
+Probe run: local API :3001, `GOBLIN_DEV_MODE=false` for the run only (ticket #14), `GOBLIN_HOSTED_API=true` + founder-provided scoped DeepInfra key in root `.env.local`; env restored after the run. Both gates PASS — E7 supersedes the failed E6 placement. `reverify/SYSTEM_PROMPT_CURRENT.md` regenerated to post-E7 (A3 deliverable current).
+
+**HALT.** No merge, no deploy. Founder: the scoped DeepInfra key can be revoked again now.
