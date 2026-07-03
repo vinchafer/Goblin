@@ -4,6 +4,8 @@ import type { Context, Next } from 'hono';
 import { authMiddleware } from '../middleware/auth';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { deployToVercel, getDeployStatus } from '../services/vercel-service';
+import { verifyDeployment } from '../services/deploy-verification';
+import { listFiles } from '../services/file-storage';
 
 type Variables = { userId: string };
 const deploy = new Hono<{ Variables: Variables }>();
@@ -79,6 +81,17 @@ deploy.post('/vercel', deployRateLimit, async (c) => {
         if (status.state === 'ERROR' || status.state === 'CANCELED') {
           throw new Error(`Vercel deployment ${status.state.toLowerCase()}`);
         }
+      }
+
+      // P0.2 — truth-gate: verify the URL serves the deployed artifact and all
+      // referenced assets before any success is claimed.
+      const deployedPaths = await listFiles(projectId).catch(() => [] as string[]);
+      const verdict = await verifyDeployment(finalUrl, projectId, deployedPaths, async (msg) => {
+        await stream.writeSSE({ data: JSON.stringify({ type: 'progress', message: msg }) });
+      });
+      if (!verdict.ok) {
+        await stream.writeSSE({ data: JSON.stringify({ type: 'error', message: verdict.reason ?? 'Veröffentlichung konnte nicht bestätigt werden.' }) });
+        return;
       }
 
       await supabase

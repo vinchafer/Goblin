@@ -7,6 +7,7 @@ import { streamCompletion } from '../services/model-router';
 import { uploadFile, listFiles, getFile, headBytes } from '../services/file-storage';
 import { byteLen, assertStorageRoom } from '../services/storage-usage';
 import { deployToVercel } from '../services/vercel-service';
+import { verifyDeployment } from '../services/deploy-verification';
 import { parseCodeBlocks } from '../lib/parse-code-blocks';
 import { reconcileBlockPaths } from '../lib/asset-reconcile';
 import logger from '../lib/logger';
@@ -338,6 +339,19 @@ codeSessions.post('/:sessionId/deploy', async (c) => {
       const result = await deployToVercel(userId, session.project_id, project.name, async (msg) => {
         await stream.writeSSE({ data: JSON.stringify({ type: 'progress', message: msg }) });
       });
+
+      // P0.2 — truth-gate: never claim "Veröffentlicht" until the URL provably
+      // serves the deployed artifact and every referenced asset answers 200.
+      const deployedPaths = await listFiles(session.project_id).catch(() => [] as string[]);
+      const verdict = await verifyDeployment(result.url, session.project_id, deployedPaths, async (msg) => {
+        await stream.writeSSE({ data: JSON.stringify({ type: 'progress', message: msg }) });
+      });
+      if (!verdict.ok) {
+        logger.warn({ project_id: session.project_id, url: result.url, failed_assets: verdict.failedAssets }, 'deploy_verification_failed');
+        await stream.writeSSE({ data: JSON.stringify({ type: 'error', message: verdict.reason ?? 'Veröffentlichung konnte nicht bestätigt werden.' }) });
+        return;
+      }
+
       await sb.from('projects')
         .update({ preview_url: result.url, last_deployed_at: new Date().toISOString() })
         .eq('id', session.project_id);

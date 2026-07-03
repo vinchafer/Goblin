@@ -18,6 +18,7 @@
   },
   "exports": {
     ".": "./src/index.ts",
-    "./src/schemas": "./src/schemas.ts"
+    "./src/schemas": "./src/schemas.ts",
+    "./src/html-refs": "./src/html-refs.ts"
   }
 }
