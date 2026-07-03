@@ -33,3 +33,40 @@ export function friendlyError(raw: unknown, fallback = 'Etwas ist schiefgelaufen
   // No rule matched: only surface the raw text if it's clean of internal jargon.
   return JARGON.test(text) ? fallback : text;
 }
+
+// ─── P0.4 (feel-sprint-1): connection-class failures, honestly diagnosed ─────
+// "Failed to fetch" tells the user nothing. Distinguish the two realities:
+// their own connection is down (navigator.onLine / no network at all) vs. our
+// server not answering (network fine, health ping fails). Reused by project
+// creation and chat sends.
+
+export const OFFLINE_MSG =
+  'Deine Internetverbindung ist unterbrochen — bitte prüfe dein Netzwerk und versuch es erneut.';
+export const SERVER_DOWN_MSG =
+  'Unser Server antwortet gerade nicht. Deine Eingabe ist nicht verloren — bitte versuch es gleich nochmal.';
+
+/** Is this error a connection-class failure (as opposed to an app error)? */
+export function isConnectionError(raw: unknown): boolean {
+  const text = raw instanceof Error ? raw.message : typeof raw === 'string' ? raw : '';
+  return /failed to fetch|network|econn|timeout|fetch failed|load failed|abgebrochen|503|502|gateway/i.test(text);
+}
+
+/**
+ * German copy for a connection-class failure. Fast: navigator.onLine answers
+ * "offline" immediately; otherwise a 3s health ping decides between "server
+ * down" and (ping ok ⇒ transient blip) "try again".
+ */
+export async function connectionErrorMessage(): Promise<string> {
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) return OFFLINE_MSG;
+  try {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
+    const res = await fetch(`${apiUrl}/health`, { signal: AbortSignal.timeout(3000), cache: 'no-store' });
+    if (res.ok) return 'Die Verbindung hat kurz gehakt — bitte versuch es erneut.';
+    return SERVER_DOWN_MSG;
+  } catch {
+    // Health ping also failed: without onLine=false we can't be sure whose
+    // side it is — server-down copy is the honest default (their network
+    // reached us for the page itself).
+    return SERVER_DOWN_MSG;
+  }
+}

@@ -6,6 +6,7 @@ import { X, CircleNotch } from "@phosphor-icons/react";
 import { createClient } from "@/lib/supabase/client";
 import type { Project } from "@goblin/shared/src/schemas";
 import { pendingStcTab } from "@/lib/stc-pending";
+import { friendlyError, isConnectionError, connectionErrorMessage } from "@/lib/friendly-error";
 
 const COLOR_PRESETS = [
   { hex: 'var(--brand-gold)', label: 'Ochre' },
@@ -30,6 +31,9 @@ export function NewProjectModal({ onClose, onProjectCreated }: NewProjectModalPr
   const [selectedColor, setSelectedColor] = useState(COLOR_PRESETS[0]!.hex);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // P0.4 — idempotency key: minted once per modal, reused across retries so a
+  // create whose response got lost never produces a duplicate project.
+  const createIdRef = useRef<string | null>(null);
 
   const supabase = createClient();
 
@@ -65,11 +69,14 @@ export function NewProjectModal({ onClose, onProjectCreated }: NewProjectModalPr
       const token = data.session?.access_token;
       if (!token) throw new Error('Not authenticated');
 
+      if (!createIdRef.current) createIdRef.current = crypto.randomUUID();
+
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
       const response = await fetch(`${apiUrl}/api/projects`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
         body: JSON.stringify({
+          id: createIdRef.current,
           name: name.trim(),
           description: description.trim() || undefined,
           color: selectedColor,
@@ -78,7 +85,7 @@ export function NewProjectModal({ onClose, onProjectCreated }: NewProjectModalPr
 
       if (!response.ok) {
         const err = await response.json();
-        throw new Error(err.error || 'Failed to create project');
+        throw new Error(err.error || 'Projekt konnte nicht erstellt werden.');
       }
 
       const project = await response.json();
@@ -87,12 +94,14 @@ export function NewProjectModal({ onClose, onProjectCreated }: NewProjectModalPr
       // B-S4 / 10.6-4: deep-link to the Code tab if a Send-to-Code payload is waiting.
       router.push(`/dashboard/project/${project.id}${pendingStcTab()}`);
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to create project';
+      const raw = err instanceof Error ? err.message : 'Projekt konnte nicht erstellt werden.';
       console.error('Project creation failed:', {
-        message: msg,
+        message: raw,
         apiUrl: process.env.NEXT_PUBLIC_API_URL,
       });
-      setError(msg);
+      // P0.4 — honest German copy: offline vs. server-down instead of the raw
+      // English "Failed to fetch".
+      setError(isConnectionError(err) ? await connectionErrorMessage() : friendlyError(raw));
       setLoading(false);
     }
   };
