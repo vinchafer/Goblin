@@ -5,7 +5,9 @@ import { Copy, Check, ChevronDown, ChevronRight, FileCode2 } from 'lucide-react'
 import { highlight } from '@/lib/syntax/highlighter';
 import { useLang } from '@/lib/use-lang';
 import { useExistingFiles } from '@/contexts/existing-files-context';
+import { useMessageId } from '@/contexts/message-id-context';
 import { classifyFile, lineDelta, type LineDelta } from '@/lib/file-compare';
+import { saveChangeNote, loadChangeNote } from '@/lib/change-note-store';
 
 interface CodeBlockProps {
   code: string;
@@ -28,16 +30,25 @@ export function CodeBlock({ code, lang, filename, asCard }: CodeBlockProps) {
   // U2: change summary vs. the bound project's current files — "ändert
   // index.html · +12 −3" under the card. Debounced so token-by-token streaming
   // doesn't diff on every render; null = new file / identical / no project.
+  // B4: the live delta is persisted per message id at completion; on reload
+  // (or once the file was saved and live diffing yields nothing) the stored
+  // delta keeps the line rendered.
   const existingFiles = useExistingFiles();
+  const messageId = useMessageId();
+  const persistedId = messageId && messageId !== 'streaming' ? messageId : null;
   const [change, setChange] = useState<LineDelta | null>(null);
   useEffect(() => {
-    const prev = filename ? existingFiles?.[filename] : undefined;
-    if (prev == null) { setChange(null); return; }
+    if (!filename) { setChange(null); return; }
+    const stored = persistedId ? loadChangeNote(persistedId, filename) : null;
+    const prev = existingFiles?.[filename];
+    if (prev == null) { setChange(stored); return; }
     const t = setTimeout(() => {
-      setChange(classifyFile(prev, code) === 'changed' ? lineDelta(prev, code) : null);
+      const live = classifyFile(prev, code) === 'changed' ? lineDelta(prev, code) : null;
+      if (live && persistedId) saveChangeNote(persistedId, filename, live);
+      setChange(live ?? stored);
     }, 300);
     return () => clearTimeout(t);
-  }, [filename, code, existingFiles]);
+  }, [filename, code, existingFiles, persistedId]);
 
   const changeNote = change && filename ? (
     <div

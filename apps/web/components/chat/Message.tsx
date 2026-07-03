@@ -5,6 +5,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { GoblinLogo } from "@/components/brand/GoblinLogo";
 import { CodeBlock } from "./CodeBlock";
+import { MessageIdContext } from "@/contexts/message-id-context";
 import { chatModelLabel } from "@/lib/chat-model-label";
 import { useLang } from "@/lib/use-lang";
 
@@ -111,11 +112,13 @@ export default function Message({ msg, isStreaming }: { msg: StandaloneMessage &
         {isThinking ? (
           <WorkingIndicator since={msg.created_at} />
         ) : (
-          <>
+          // B4: message id reaches nested CodeBlocks so the change line can be
+          // persisted per message and re-rendered from storage after a reload.
+          <MessageIdContext.Provider value={msg.id}>
             <ReactMarkdown remarkPlugins={[remarkGfm]} components={MD_COMPONENTS}>
               {msg.content}
             </ReactMarkdown>
-          </>
+          </MessageIdContext.Provider>
         )}
 
         {msg.model_used && !isStreaming && chatModelLabel(msg.model_used) && (
