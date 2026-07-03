@@ -143,9 +143,11 @@ function CodeActionButton({ lastMessage, lastUserPrompt, hasProject, projectId, 
     // BEFORE the sheet opens so badges/diffs are correct from the first paint.
     if (hasProject && projectId) {
       try {
-        const { fetchExistingFiles } = await import("@/lib/project-files");
-        const paths = (previewFiles.length > 0 ? previewFiles : [{ path: "generated-code.js", content: lastCodeBlock }]).map((f) => f.path);
-        setExistingFiles(await fetchExistingFiles(projectId, paths));
+        // B3: load ALL text files (capped), not just the outgoing paths — the
+        // integrity auto-rename can point a file at a target path that isn't
+        // in the outgoing set, and reclassification needs its content.
+        const { fetchAllTextFiles } = await import("@/lib/project-files");
+        setExistingFiles(await fetchAllTextFiles(projectId));
       } catch { setExistingFiles(null); }
     } else {
       setExistingFiles(null);
