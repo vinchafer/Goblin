@@ -9,7 +9,7 @@ import type { SelectedModel } from "@/components/chat/ChatInput";
 import { EmptyChat } from "@/components/chat/EmptyChat";
 import Message from "./Message";
 import { useUser } from "@/lib/hooks/useUser";
-import { friendlyError } from "@/lib/friendly-error";
+import { friendlyError, isConnectionError, connectionErrorMessage } from "@/lib/friendly-error";
 import { parseCodeBlocks } from "@/lib/parse-code-blocks";
 import { StcPreviewSheet, type StcFile } from "@/components/code/StcPreviewSheet";
 import { useApp } from "@/contexts/app-context";
@@ -26,6 +26,11 @@ interface StandaloneMessage {
   created_at: string;
   model_used?: string;
   source_tier?: string;
+  // P0.5 — connection-resilient sends: the idempotency key travels with the
+  // message so a retry can never double-submit; `sendFailed` renders the
+  // "wartet auf Verbindung — erneut senden" state.
+  clientMessageId?: string;
+  sendFailed?: boolean;
 }
 
 interface StreamChunk {
@@ -349,14 +354,24 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
   // Project-bound chat (10.7-14): same component, project context via props.
   const hasProject = !!projectId;
 
-  const handleSubmit = async (text: string, model: SelectedModel) => {
-    const tempId = `temp-${Date.now()}`;
-    const userMsg: typeof messages[0] = {
-      id: tempId, role: "user", content: text,
-      has_code: false, created_at: new Date().toISOString(),
-    };
+  // P0.5 — `retry` re-sends an existing failed message: same clientMessageId
+  // (server dedupes → no double-submit), no new user bubble.
+  const handleSubmit = async (text: string, model: SelectedModel, retry?: { id: string; clientMessageId: string }) => {
+    if (retry && isStreaming) return; // one in-flight send at a time
+    const clientMessageId = retry?.clientMessageId ?? crypto.randomUUID();
+    const tempId = retry?.id ?? `temp-${Date.now()}`;
 
-    const withUser = [...messages, userMsg];
+    let withUser: typeof messages;
+    if (retry) {
+      withUser = messages.map(m => m.id === retry.id ? { ...m, sendFailed: false } : m);
+    } else {
+      const userMsg: typeof messages[0] = {
+        id: tempId, role: "user", content: text,
+        has_code: false, created_at: new Date().toISOString(),
+        clientMessageId,
+      };
+      withUser = [...messages, userMsg];
+    }
     setMessages(withUser);
     baseMessagesRef.current = withUser;
     setIsStreaming(true);
@@ -379,7 +394,7 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
       abortRef.current = new AbortController();
       await apiStream(
         `/api/chat-sessions/${sessionId}/stream`,
-        { message: text, modelSlug: model.slug },
+        { message: text, modelSlug: model.slug, clientMessageId },
         (raw: unknown) => {
           const d = raw as StreamChunk;
 
@@ -424,8 +439,19 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
         setIsStreaming(false);
         return;
       }
-      setError(friendlyError(err, "Senden fehlgeschlagen — bitte nochmal versuchen."));
-      setMessages(baseMessagesRef.current);
+      // P0.5 — connection-class failure: the message enters a visible
+      // "wartet auf Verbindung" state with a safe retry (same id, server-side
+      // dedupe) instead of a bare toast. Honest copy distinguishes offline
+      // from server-down (P0.4 classifier).
+      if (isConnectionError(err)) {
+        setMessages(baseMessagesRef.current.map(m =>
+          m.id === tempId ? { ...m, sendFailed: true } : m
+        ));
+        setError(await connectionErrorMessage());
+      } else {
+        setError(friendlyError(err, "Senden fehlgeschlagen — bitte nochmal versuchen."));
+        setMessages(baseMessagesRef.current);
+      }
       streamingMsgRef.current = null;
       setIsStreaming(false);
     }
@@ -496,7 +522,31 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
         {messages.length === 0
           ? <EmptyChatBound onSuggestion={p => handleSubmit(p, selectedModel)} />
           : messages.map(m => (
-            <Message key={m.id} msg={m} isStreaming={isStreaming} />
+            <div key={m.id}>
+              <Message msg={m} isStreaming={isStreaming} />
+              {m.sendFailed && m.clientMessageId && (
+                // P0.5 — the failed send stays visible and retryable; the retry
+                // reuses the same clientMessageId so it can never double-submit.
+                <div style={{
+                  display: "flex", justifyContent: "flex-end", alignItems: "center",
+                  gap: 8, marginTop: 4, fontSize: 12, color: "var(--meta)",
+                  fontFamily: "var(--font-sans)",
+                }}>
+                  <span>wartet auf Verbindung</span>
+                  <button
+                    onClick={() => handleSubmit(m.content, selectedModel, { id: m.id, clientMessageId: m.clientMessageId! })}
+                    disabled={isStreaming}
+                    style={{
+                      background: "none", border: "1px solid var(--div)", borderRadius: 6,
+                      padding: "2px 10px", fontSize: 12, color: "var(--brand-green)",
+                      cursor: isStreaming ? "default" : "pointer", fontFamily: "var(--font-sans)",
+                    }}
+                  >
+                    erneut senden
+                  </button>
+                </div>
+              )}
+            </div>
           ))
         }
 
