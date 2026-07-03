@@ -1,0 +1,36 @@
+A2 — BLOCKED: no Goblin-hosted model access in this environment (2026-07-03, local stack web:3100 → api:3001, test account vinc.hafner3@gmail.com)
+
+Why: GOBLIN_HOSTED_API + DEEPINFRA_API_KEY are Railway-only secrets (apps/api/src/index.ts:21-23); root .env.local (loaded by src/load-env.ts) contains neither. isGoblinHostedEnabled() => false; the catalog omits goblin/* tiers entirely.
+Probing against prod instead was rejected: prod runs the PRE-A1 prompt (no deploy allowed in this addendum), so a prod probe would not test the A1 fix.
+
+What the model selector offers locally (GET /api/models, authenticated as test account) — 27 models, all BYOK, no GOBLIN_HOSTED entries:
+
+  gemini/gemini-2.5-pro | Gemini 2.5 Pro | BYOK
+  groq/allam-2-7b | Allam 2 7b | BYOK
+  canopylabs/orpheus-arabic-saudi | Orpheus Arabic Saudi | BYOK
+  canopylabs/orpheus-v1-english | Orpheus V1 English | BYOK
+  groq/compound | Compound | BYOK
+  groq/compound-mini | Compound Mini | BYOK
+  groq/llama-3.1-8b-instant | Llama 3.1 8b Instant | BYOK
+  groq/llama-3.3-70b-versatile | Llama 3.3 70B (Groq) | BYOK
+  meta-llama/llama-4-scout-17b-16e-instruct | Llama 4 Scout 17b 16e Instruct | BYOK
+  openai/gpt-oss-120b | Gpt Oss 120b | BYOK
+  openai/gpt-oss-20b | Gpt Oss 20b | BYOK
+  qwen/qwen3-32b | Qwen3 32b | BYOK
+  anthropic/claude-opus-4-5 | Claude Opus 4.5 | BYOK
+  anthropic/claude-sonnet-4-6 | Claude Sonnet 4.6 | BYOK
+  anthropic/claude-haiku-4-5 | Claude Haiku 4.5 | BYOK
+  openai/gpt-4o | GPT-4o | BYOK
+  openai/gpt-4o-mini | GPT-4o Mini | BYOK
+  openai/o1 | o1 | BYOK
+  openai/o3-mini | o3-mini | BYOK
+  mistral/mistral-large-latest | Mistral Large | BYOK
+  mistral/mistral-small-latest | Mistral Small | BYOK
+  xai/grok-3 | Grok 3 | BYOK
+  xai/grok-3-mini | Grok 3 Mini | BYOK
+  deepseek/deepseek-chat | DeepSeek V3 | BYOK
+  deepseek/deepseek-reasoner | DeepSeek R1 | BYOK
+  together_ai/meta-llama/Llama-3.3-70B-Instruct-Turbo | Llama 3.3 70B (Together) | BYOK
+  fireworks_ai/accounts/fireworks/models/llama-v3p3-70b-instruct | Llama 3.3 70B (Fireworks) | BYOK
+
+Total: 27 | badges: BYOK

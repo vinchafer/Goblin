@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { INTENTS, setStoredIntent, type Intent } from '@/lib/intent';
 import { pendingStcTab } from '@/lib/stc-pending';
 import { useLang } from '@/lib/use-lang';
+import { friendlyError, isConnectionError, connectionErrorMessage } from '@/lib/friendly-error';
 
 const COLORS = [
   { name: 'Gold',   hex: '#D4A737' },
@@ -64,6 +65,9 @@ export function NewProjectModal({ onClose, initialMode, initialIdea, initialMode
   const [selectedColor, setSelectedColor] = useState(COLORS[0]?.hex ?? '#D4A737');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // P0.4 — idempotency key: minted once per modal, reused across retries so a
+  // create whose response got lost never produces a duplicate project.
+  const createIdRef = useRef<string | null>(null);
 
   // Template gallery state
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -120,12 +124,13 @@ export function NewProjectModal({ onClose, initialMode, initialIdea, initialMode
       const token = data.session?.access_token;
       if (!token) throw new Error('Not authenticated');
 
+      if (!createIdRef.current) createIdRef.current = crypto.randomUUID();
       const res = await fetch(`${apiBase}/api/projects`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ name: name.trim(), description: description.trim() || undefined, color: selectedColor, intent }),
+        body: JSON.stringify({ id: createIdRef.current, name: name.trim(), description: description.trim() || undefined, color: selectedColor, intent }),
       });
-      if (!res.ok) throw new Error((await res.json()).error || 'Failed to create project');
+      if (!res.ok) throw new Error((await res.json()).error || 'Projekt konnte nicht erstellt werden.');
       const project = await res.json();
       // Local hint so the Code-Tab foreground is correct immediately, even if the
       // DB has no `intent` column yet (migration 0057 may be unapplied). DB wins later.
@@ -162,7 +167,9 @@ export function NewProjectModal({ onClose, initialMode, initialIdea, initialMode
       // tab so CodeWorkspace rehydrates the stashed payload (the hub never mounts it).
       router.push(`/dashboard/project/${project.id}${pendingStcTab()}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create project');
+      // P0.4 — honest German copy: offline vs. server-down instead of the raw
+      // English "Failed to fetch".
+      setError(isConnectionError(err) ? await connectionErrorMessage() : friendlyError(err, 'Projekt konnte nicht erstellt werden.'));
     } finally {
       setLoading(false);
     }
@@ -182,12 +189,12 @@ export function NewProjectModal({ onClose, initialMode, initialIdea, initialMode
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ templateId: selectedTemplate.id, projectName: templateName.trim(), description: selectedTemplate.description }),
       });
-      if (!res.ok) throw new Error((await res.json()).error || 'Failed to create project');
+      if (!res.ok) throw new Error((await res.json()).error || 'Projekt konnte nicht erstellt werden.');
       const project = await res.json();
       onClose();
       router.push(`/dashboard/project/${project.id}${pendingStcTab()}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create project');
+      setError(isConnectionError(err) ? await connectionErrorMessage() : friendlyError(err, 'Projekt konnte nicht erstellt werden.'));
     } finally {
       setLoading(false);
     }

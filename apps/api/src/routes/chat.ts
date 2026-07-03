@@ -2,6 +2,8 @@ import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { createClient } from '@supabase/supabase-js';
 import { streamCompletionGuarded } from '../services/model-router';
+import { buildGoblinChatSystemPrompt } from '../prompts/goblin-chat-system';
+import { listFilesWithMeta } from '../services/file-storage';
 import { authMiddleware } from '../middleware/auth';
 import { chatStreamRateLimit } from '../middleware/rate-limit';
 
@@ -48,11 +50,18 @@ chat.get('/:projectId/history', async (c) => {
 // allowance; BYOK has no Goblin-imposed limit, matching the UI promise.
 chat.post('/stream', chatStreamRateLimit, async (c) => {
   const userId = c.get('userId');
-  const { projectId, message, modelSlug } = await c.req.json();
+  const { projectId, message, modelSlug, clientMessageId } = await c.req.json();
 
   if (!projectId || !message) {
     return c.json({ error: 'Missing parameters' }, 400);
   }
+  // Optional idempotency key (P0.5). Validated as a UUID so it can't smuggle
+  // arbitrary strings into the DB filter below.
+  const clientMsgId: string | null =
+    typeof clientMessageId === 'string' &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(clientMessageId)
+      ? clientMessageId
+      : null;
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -69,16 +78,45 @@ chat.post('/stream', chatStreamRateLimit, async (c) => {
 
   if (!projectCheck) return c.json({ error: 'Project not found' }, 404);
 
+  // Idempotent replay (P0.5): a retry of a send whose response the client never
+  // saw carries the same clientMessageId. If that message is already persisted,
+  // do NOT insert it again — the model must never receive one send twice.
+  // Tolerant of a pre-migration DB (0075): a missing column errors the SELECT,
+  // which we treat as "no duplicate found".
+  let alreadyPersisted = false;
+  if (clientMsgId) {
+    try {
+      const { data: dup, error: dupErr } = await supabase
+        .from('chat_messages')
+        .select('id')
+        .eq('project_id', projectId)
+        .eq('client_msg_id', clientMsgId)
+        .limit(1);
+      alreadyPersisted = !dupErr && Array.isArray(dup) && dup.length > 0;
+    } catch { /* pre-migration — proceed without dedupe */ }
+  }
+
   // Save user message
-  const { error: userInsertErr } = await supabase.from('chat_messages').insert({
-    project_id: projectId,
-    role: 'user',
-    content: message
-  });
-  if (userInsertErr) {
-    // Persistence failure here means the next turn loses this message → broken
-    // conversation memory. Surface it loudly instead of failing silently.
-    console.error('[chat] failed to persist user message:', userInsertErr.message);
+  if (!alreadyPersisted) {
+    const baseRow = { project_id: projectId, role: 'user', content: message };
+    // Insert with client_msg_id when provided; retry without it if the column
+    // doesn't exist yet (migration 0075 not applied).
+    let userInsertErr = clientMsgId
+      ? (await supabase.from('chat_messages').insert({ ...baseRow, client_msg_id: clientMsgId })).error
+      : (await supabase.from('chat_messages').insert(baseRow)).error;
+    if (userInsertErr && clientMsgId) {
+      // 23505 = concurrent duplicate retry — treat as already persisted, not an error.
+      if (userInsertErr.code === '23505') {
+        userInsertErr = null;
+      } else {
+        userInsertErr = (await supabase.from('chat_messages').insert(baseRow)).error;
+      }
+    }
+    if (userInsertErr) {
+      // Persistence failure here means the next turn loses this message → broken
+      // conversation memory. Surface it loudly instead of failing silently.
+      console.error('[chat] failed to persist user message:', userInsertErr.message);
+    }
   }
 
   // Get chat history. We just inserted the user message above, so the most
@@ -92,6 +130,26 @@ chat.post('/stream', chatStreamRateLimit, async (c) => {
     .limit(50);
   if (historyErr) console.error('[chat] failed to load history:', historyErr.message);
   const chatHistory = (chatHistoryRows ?? []).slice(0, -1);
+
+  // F1.1 — Goblin identity + real project context. Best-effort lookups.
+  let systemPrompt: string;
+  try {
+    const { data: proj } = await supabase
+      .from('projects')
+      .select('name, preview_url, last_deployed_at')
+      .eq('id', projectId)
+      .eq('user_id', userId)
+      .single();
+    const meta = await listFilesWithMeta(projectId).catch(() => []);
+    const p = proj as { name?: string; preview_url?: string | null; last_deployed_at?: string | null } | null;
+    systemPrompt = buildGoblinChatSystemPrompt({
+      projectName: p?.name ?? null,
+      files: meta.map((f) => ({ path: f.path, size: f.size })),
+      lastDeploy: p ? { url: p.preview_url ?? null, deployedAt: p.last_deployed_at?.slice(0, 10) ?? null } : null,
+    });
+  } catch {
+    systemPrompt = buildGoblinChatSystemPrompt();
+  }
 
   return streamSSE(c, async (stream) => {
     let fullResponse = '';
@@ -112,6 +170,7 @@ chat.post('/stream', chatStreamRateLimit, async (c) => {
         modelPreference: modelSlug,
         supabase,
         signal: abortController.signal,
+        systemPrompt,
       })) {
         if (abortController.signal.aborted) break;
 

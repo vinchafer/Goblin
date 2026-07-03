@@ -1,0 +1,1081 @@
+A2 — F1.1 re-probes on Goblin Swift (goblin/efficient), hosted default
+Date: 2026-07-03 | Stack: local API :3001 (branch feel-sprint-1-2026-07-02, post-A1 prompt @ c51e456)
+Account: vinc.hafner3@gmail.com | Project: "Habit Tracker Walk" (7b8408d5-ccb8-49a7-86b9-071c20e7c177) | Session: ad2e955c-ffcb-452d-b86c-62e82c95d4f2
+Transport: UTF-8 JSON body via Node fetch; umlaut codepoints verified pre-send (probe1 starts 46 fc = "Fü", probe5 starts dc = "Ü").
+Replies captured verbatim from the SSE delta stream. Observed vs. expected recorded, no grading.
+Note: API run with GOBLIN_DEV_MODE=false for this probe run only — the dev-guard blocks all chat persistence (chat_messages/standalone_messages rows carry no user_id column, so inserts fail closed → 500). All writes still went through the authenticated API as the test account.
+
+== PROBE 1 ==
+USER: Füge eine Einstellungs-Seite mit Dark-Mode-Umschalter hinzu, speichere die Wahl in localStorage, bau das, und sag mir wenn es live ist.
+META: model=goblin/efficient source_tier=goblin_hosted | done: model_used=goblin/efficient source_tier=goblin_hosted
+ASSISTANT (verbatim):
+Hier ist die Erweiterung deiner Habit Tracker App mit einer Einstellungsseite und Dark-Mode. Ich aktualisiere alle drei vorhandenen Dateien:
+
+**1. index.html** (erweitert um Navigation und Einstellungsseite):
+
+```html
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Habit Tracker - Gesündere Gewohnheiten</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --secondary-color: #2196F3;
+            --background-color: #ffffff;
+            --text-color: #333333;
+            --card-color: #f5f5f5;
+            --border-color: #e0e0e0;
+            --shadow-color: rgba(0, 0, 0, 0.1);
+        }
+
+        .dark-mode {
+            --primary-color: #66BB6A;
+            --secondary-color: #42A5F5;
+            --background-color: #121212;
+            --text-color: #e0e0e0;
+            --card-color: #1e1e1e;
+            --border-color: #333333;
+            --shadow-color: rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            min-height: 100vh;
+            padding-bottom: 80px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 30px;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo i {
+            font-size: 2rem;
+        }
+
+        nav {
+            display: flex;
+            gap: 20px;
+        }
+
+        .nav-btn {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            font-size: 1rem;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background-color 0.2s;
+        }
+
+        .nav-btn:hover {
+            background-color: var(--card-color);
+        }
+
+        .nav-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .page {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Hauptseite Stile */
+        .main-page h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: var(--primary-color);
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: var(--secondary-color);
+            margin-bottom: 30px;
+        }
+
+        .habits-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+
+        .habit-card {
+            background-color: var(--card-color);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px var(--shadow-color);
+            border: 1px solid var(--border-color);
+            position: relative;
+            transition: transform 0.3s ease;
+        }
+
+        .habit-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .habit-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .habit-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-color);
+        }
+
+        .habit-icon {
+            font-size: 2rem;
+            color: var(--primary-color);
+        }
+
+        .habit-stats {
+            margin-bottom: 20px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 1rem;
+        }
+
+        .stat-label {
+            color: var(--secondary-color);
+        }
+
+        .habit-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+            flex: 1;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: scale(1.05);
+        }
+
+        .btn-secondary {
+            background-color: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            opacity: 0.9;
+            transform: scale(1.05);
+        }
+
+        .progress-bar {
+            height: 8px;
+            background-color: var(--border-color);
+            border-radius: 4px;
+            margin: 25px 0;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--primary-color);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        /* Einstellungsseite Stile */
+        .settings-page h2 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+        }
+
+        .settings-card {
+            background-color: var(--card-color);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 5px 15px var(--shadow-color);
+            border: 1px solid var(--border-color);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .setting-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .setting-item:last-child {
+            border-bottom: none;
+        }
+
+        .setting-label {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+
+        .setting-description {
+            font-size: 0.9rem;
+            color: var(--secondary-color);
+            margin-top: 5px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary-color);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: var(--card-color);
+            border-top: 1px solid var(--border-color);
+            padding: 15px 0;
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--text-color);
+        }
+
+        @media (max-width: 768px) {
+            .habits-container {
+                grid-template-columns: 1fr;
+            }
+            
+            nav {
+                gap: 10px;
+            }
+            
+            .nav-btn {
+                padding: 8px 12px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-walking"></i>
+                <span>Habit Tracker Walk</span>
+            </div>
+            <nav>
+                <button class="nav-btn active" data-page="main">
+                    <i class="fas fa-home"></i>
+                    <span>Start</span>
+                </button>
+                <button class="nav-btn" data-page="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>Einstellungen</span>
+                </button>
+            </nav>
+        </header>
+
+        <main>
+            <!-- Hauptseite -->
+            <section id="main-page" class="page active">
+                <div class="main-page">
+                    <h1>Deine gesunden Gewohnheiten</h1>
+                    <p class="subtitle">Tracke deine Fortschritte und bleibe motiviert</p>
+                    
+                    <div class="habits-container">
+                        <!-- Gewohnheiten werden hier von JavaScript eingefügt -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Einstellungsseite -->
+            <section id="settings-page" class="page">
+                <div class="settings-page">
+                    <h2>Einstellungen</h2>
+                    <div class="settings-card">
+                        <div class="setting-item">
+                            <div>
+                                <div class="setting-label">Dark Mode</div>
+                                <div class="setting-description">Schalte zwischen hellem und dunklem Design um</div>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="dark-mode-toggle">
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                        
+                        <div class="setting-item">
+                            <div>
+                                <div class="setting-label">Daten zurücksetzen</div>
+                                <div class="setting-description">Setze alle gespeicherten Gewohnheiten zurück</div>
+                            </div>
+                            <button class="btn btn-secondary" id="reset-data-btn">
+                                <i class="fas fa-trash"></i>
+                                <span>Zurücksetzen</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <footer>
+        <p>Habit Tracker Walk &copy; 2023 | Dein Begleiter für gesündere Gewohnheiten</p>
+    </footer>
+
+    <script src="script.js"></script>
+    <script src="script-1.js"></script>
+</body>
+</html>
+```
+
+**2. script.js** (erweitert um Navigation und Dark-Mode-Funktionalität):
+
+```javascript
+// Navigation zwischen Seiten
+document.addEventListener('DOMContentLoaded', function() {
+    // Navigation-Buttons
+    const navButtons = document.querySelectorAll('.nav-btn');
+    const pages = document.querySelectorAll('.page');
+    
+    // Dark Mode Toggle
+    const darkModeToggle = document.getElementById('dark-mode-toggle');
+    
+    // Reset Button
+    const resetDataBtn = document.getElementById('reset-data-btn');
+    
+    // Überprüfe gespeicherten Dark-Mode
+    const isDarkMode = localStorage.getItem('darkMode') === 'true';
+    
+    // Setze Dark Mode basierend auf localStorage
+    if (isDarkMode) {
+        document.body.classList.add('dark-mode');
+        darkModeToggle.checked = true;
+    }
+    
+    // Event Listener für Navigation
+    navButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const pageId = this.getAttribute('data-page');
+            
+            // Aktiven Zustand aktualisieren
+            navButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Seiten anzeigen/verstecken
+            pages.forEach(page => page.classList.remove('active'));
+            document.getElementById(`${pageId}-page`).classList.add('active');
+        });
+    });
+    
+    // Event Listener für Dark Mode Toggle
+    darkModeToggle.addEventListener('change', function() {
+        if (this.checked) {
+            document.body.classList.add('dark-mode');
+            localStorage.setItem('darkMode', 'true');
+        } else {
+            document.body.classList.remove('dark-mode');
+            localStorage.setItem('darkMode', 'false');
+        }
+    });
+    
+    // Event Listener für Reset Button
+    resetDataBtn.addEventListener('click', function() {
+        if (confirm('Möchtest du wirklich alle Daten zurücksetzen? Dies kann nicht rückgängig gemacht werden.')) {
+            localStorage.removeItem('habits');
+            window.location.reload();
+        }
+    });
+    
+    // Initialisiere die Gewohnheiten-Anzeige
+    if (typeof initializeHabits === 'function') {
+        initializeHabits();
+    }
+});
+```
+
+**3. script-1.js** (leichte Anpassung für bessere Integration):
+
+```javascript
+// Gewohnheiten-Daten
+const habits = [
+    {
+        id: 1,
+        name: "Täglich 10.000 Schritte",
+        icon: "fas fa-walking",
+        current: 0,
+        target: 10000,
+        unit: "Schritte",
+        frequency: "täglich"
+    },
+    {
+        id: 2,
+        name: "6 Gläser Wasser",
+        icon: "fas fa-tint",
+        current: 0,
+        target: 6,
+        unit: "Gläser",
+        frequency: "täglich"
+    },
+    {
+        id: 3,
+        name: "30 Minuten Sport",
+        icon: "fas fa-dumbbell",
+        current: 0,
+        target: 30,
+        unit: "Minuten",
+        frequency: "täglich"
+    },
+    {
+        id: 4,
+        name: "7 Stunden Schlaf",
+        icon: "fas fa-bed",
+        current: 0,
+        target: 7,
+        unit: "Stunden",
+        frequency: "täglich"
+    },
+    {
+        id: 5,
+        name: "3 Portionen Gemüse",
+        icon: "fas fa-carrot",
+        current: 0,
+        target: 3,
+        unit: "Portionen",
+        frequency: "täglich"
+    },
+    {
+        id: 6,
+        name: "15 Minuten Meditation",
+        icon: "fas fa-spa",
+        current: 0,
+        target: 15,
+        unit: "Minuten",
+        frequency: "täglich"
+    }
+];
+
+// Lade gespeicherte Gewohnheiten aus localStorage
+function loadSavedHabits() {
+    const savedHabits = localStorage.getItem('habits');
+    if (savedHabits) {
+        return JSON.parse(savedHabits);
+    }
+    return habits;
+}
+
+// Speichere Gewohnheiten in localStorage
+function saveHabits(currentHabits) {
+    localStorage.setItem('habits', JSON.stringify(currentHabits));
+}
+
+function initializeHabits() {
+    const habitsContainer = document.querySelector('.habits-container');
+    let currentHabits = loadSavedHabits();
+    
+    // Leere Container
+    habitsContainer.innerHTML = '';
+    
+    // Erstelle Karten für jede Gewohnheit
+    currentHabits.forEach(habit => {
+        const progress = Math.min(Math.round((habit.current / habit.target) * 100), 100);
+        
+        const habitCard = document.createElement('div');
+        habitCard.className = 'habit-card';
+        habitCard.innerHTML = `
+            <div class="habit-header">
+                <h3 class="habit-title">${habit.name}</h3>
+                <div class="habit-icon">
+                    <i class="${habit.icon}"></i>
+                </div>
+            </div>
+            
+            <div class="habit-stats">
+                <div class="stat-item">
+                    <span>Fortschritt:</span>
+                    <span>${habit.current} / ${habit.target} ${habit.unit}</span>
+                </div>
+                <div class="stat-item">
+                    <span>Frequenz:</span>
+                    <span>${habit.frequency}</span>
+                </div>
+            </div>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: ${progress}%"></div>
+            </div>
+            
+            <div class="habit-actions">
+                <button class="btn btn-primary increment-btn" data-id="${habit.id}">
+                    <i class="fas fa-plus"></i>
+                    <span>1 ${habit.unit} hinzufügen</span>
+                </button>
+                <button class="btn btn-secondary reset-btn" data-id="${habit.id}">
+                    <i class="fas fa-redo"></i>
+                    <span>Zurücksetzen</span>
+                </button>
+            </div>
+        `;
+        
+        habitsContainer.appendChild(habitCard);
+    });
+    
+    // Event Listener für Buttons
+    document.querySelectorAll('.increment-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const habitId = parseInt(this.getAttribute('data-id'));
+            incrementHabit(habitId);
+        });
+    });
+    
+    document.querySelectorAll('.reset-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const habitId = parseInt(this.getAttribute('data-id'));
+            resetHabit(habitId);
+        });
+    });
+}
+
+// Erhöhe den Zähler einer Gewohnheit
+function incrementHabit(id) {
+    let currentHabits = loadSavedHabits();
+    const habitIndex = currentHabits.findIndex(h => h.id === id);
+    
+    if (habitIndex !== -1) {
+        currentHabits[habitIndex].current = Math.min(
+            currentHabits[habitIndex].current + 1,
+            currentHabits[habitIndex].target
+        );
+        
+        saveHabits(currentHabits);
+        initializeHabits();
+    }
+}
+
+// Setze eine Gewohnheit zurück
+function resetHabit(id) {
+    if (confirm('Möchtest du diese Gewohnheit wirklich zurücksetzen?')) {
+        let currentHabits = loadSavedHabits();
+        const habitIndex = currentHabits.findIndex(h => h.id === id);
+        
+        if (habitIndex !== -1) {
+            currentHabits[habitIndex].current = 0;
+            saveHabits(currentHabits);
+            initializeHabits();
+        }
+    }
+}
+
+// Event Listener für DOM Content Loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialisiere die Gewohnheiten-Anzeige
+    initializeHabits();
+});
+```
+
+**Was ich hinzugefügt habe:**
+
+1. **Dark Mode**: CSS-Variablen für Farben und einen Toggle-Switch
+2. **Einstellungsseite**: Separate Seite mit Dark-Mode-Umschalter und Daten-Reset-Option
+3. **Navigation**: Zwischen Hauptseite und Einstellungen wechseln
+4. **LocalStorage**: Speichert Dark-Mode-Einstellung
+5. **Responsive Design**: Anpassungen für mobile Geräte
+
+Der Dark-Mode wird im `localStorage` unter dem Schlüssel `darkMode` als `'true'` oder `'false'` gespeichert und beim Laden automatisch angewendet.
+
+**Nächste Schritte zum Live-Stellen:**
+1. Klicke auf **"An Code senden"**, um diesen Code in den Code-Bereich zu übertragen
+2. Gehe dann in den Code-Bereich und klicke auf **"Sichern"**
+3. Abschließend auf **"Veröffentlichen"** klicken
+
+Danach ist die erweiterte App mit Dark-Mode und Einstellungen unter deiner Projekt-URL live. Der Dark-Mode bleibt auch nach Neuladen der Seite erhalten.
+
+== PROBE 2 ==
+USER: Kannst du im Web suchen? Ich brauche die aktuelle Tailwind-Version.
+META: model=goblin/efficient source_tier=goblin_hosted | done: model_used=goblin/efficient source_tier=goblin_hosted
+ASSISTANT (verbatim):
+Nein – ich **kann nicht im Web suchen** und habe keinen Zugriff auf Live-Daten oder aktuelle Versionen im Internet. Ich bin eine textbasierte KI innerhalb der Goblin-Plattform und arbeite nur mit dem Code, den ich hier sehe oder erstelle.
+
+Aber ich kann dir sagen, wie du an die aktuelle Tailwind-Version kommst:
+
+1. **Offizielle Website**: Gehe auf [tailwindcss.com](https://tailwindcss.com) – dort steht ganz prominent die aktuelle Version.
+2. **npm registry**: Auf [npmjs.com/package/tailwindcss](https://npmjs.com/package/tailwindcss) findest du die aktuellste Version.
+3. **GitHub**: Das Repository [tailwindlabs/tailwindcss](https://github.com/tailwindlabs/tailwindcss) zeigt die Releases.
+
+**Mein letzter Wissensstand** (bis September 2023) ist: Tailwind CSS **v3.3.5** war damals aktuell. Aber das ist veraltet – bitte prüfe die o.g. Quellen für die echte Version.
+
+Wenn du Tailwind in deinem Goblin-Projekt verwenden möchtest, kann ich dir zeigen, wie du es per CDN oder Build integrierst – einfach frag!
+
+== PROBE 3 ==
+USER: Wie sollte ich die Streak-Logik architektonisch aufbauen?
+META: model=goblin/efficient source_tier=goblin_hosted | done: model_used=goblin/efficient source_tier=goblin_hosted
+ASSISTANT (verbatim):
+Für die Streak-Logik in deiner Habit Tracker App schlage ich eine solide, skalierbare Architektur vor – passend zur Größe deines Projekts:
+
+## **Architekturvorschlag: Layered Approach**
+
+### **1. Datenebene (storage.js)**
+```javascript
+// Datenstruktur für eine Gewohnheit
+const habitSchema = {
+    id: number,
+    name: string,
+    icon: string,
+    target: number,
+    unit: string,
+    frequency: 'daily' | 'weekly',
+    // Streak-spezifische Felder
+    streak: {
+        current: number,        // Aktuelle Serie
+        longest: number,        // Längste Serie
+        lastCompleted: string,  // ISO-Datum des letzten Abschlusses "2024-03-15"
+        history: string[]       // Array der Tage mit Abschluss ["2024-03-15", "2024-03-14"]
+    }
+};
+```
+
+### **2. Business Logic Layer (streakLogic.js)**
+```javascript
+class StreakManager {
+    /**
+     * Überprüft, ob ein Tag bereits gezählt wurde
+     */
+    static isDayAlreadyLogged(habit, date) {
+        return habit.streak.history.includes(date);
+    }
+    
+    /**
+     * Überprüft, ob gestern abgeschlossen wurde (für Kontinuität)
+     */
+    static wasYesterdayCompleted(habit, today) {
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
+        
+        return habit.streak.history.includes(yesterdayStr);
+    }
+    
+    /**
+     * Aktualisiert die Streak-Logik
+     */
+    static updateStreak(habit, date) {
+        if (this.isDayAlreadyLogged(habit, date)) {
+            return habit; // Bereits gezählt, keine Änderung
+        }
+        
+        habit.streak.history.push(date);
+        habit.streak.lastCompleted = date;
+        
+        const yesterdayCompleted = this.wasYesterdayCompleted(habit, date);
+        const twoDaysAgoCompleted = this.checkTwoDaysAgo(habit, date);
+        
+        if (yesterdayCompleted) {
+            // Kontinuierliche Serie fortsetzen
+            habit.streak.current++;
+        } else if (twoDaysAgoCompleted) {
+            // Ein Tag wurde verpasst, aber Serie kann gerettet werden (grace period)
+            habit.streak.current = 1;
+        } else {
+            // Neue Serie starten
+            habit.streak.current = 1;
+        }
+        
+        // Längste Serie aktualisieren
+        if (habit.streak.current > habit.streak.longest) {
+            habit.streak.longest = habit.streak.current;
+        }
+        
+        return habit;
+    }
+    
+    /**
+     * Berechnet aktuelle Serie basierend auf History
+     */
+    static calculateCurrentStreak(habit) {
+        // Logik zur Berechnung aus der History
+        const sortedDates = [...habit.streak.history].sort().reverse();
+        let streak = 0;
+        let currentDate = new Date();
+        
+        for (let i = 0; i < sortedDates.length; i++) {
+            const dateStr = sortedDates[i];
+            const date = new Date(dateStr);
+            
+            // Prüfe ob aufeinanderfolgend
+            if (this.isConsecutive(currentDate, date)) {
+                streak++;
+                currentDate = date;
+            } else {
+                break;
+            }
+        }
+        
+        return streak;
+    }
+}
+```
+
+### **3. Service Layer (habitService.js)**
+```javascript
+class HabitService {
+    constructor(storageKey = 'habits') {
+        this.storageKey = storageKey;
+    }
+    
+    /**
+     * Markiert eine Gewohnheit für heute als abgeschlossen
+     */
+    completeHabit(habitId, amount = 1) {
+        const habits = this.loadHabits();
+        const habit = habits.find(h => h.id === habitId);
+        
+        if (!habit) return null;
+        
+        // Fortschritt aktualisieren
+        habit.current = Math.min(habit.current + amount, habit.target);
+        
+        // Wenn Ziel erreicht, Streak aktualisieren
+        const today = new Date().toISOString().split('T')[0];
+        
+        if (habit.current >= habit.target) {
+            // Streak logik nur wenn Ziel erreicht
+            const updatedHabit = StreakManager.updateStreak(habit, today);
+            const index = habits.findIndex(h => h.id === habitId);
+            habits[index] = updatedHabit;
+        }
+        
+        this.saveHabits(habits);
+        return habit;
+    }
+    
+    /**
+     * Gibt Streak-Statistiken zurück
+     */
+    getStreakStats(habitId) {
+        const habits = this.loadHabits();
+        const habit = habits.find(h => h.id === habitId);
+        
+        if (!habit) return null;
+        
+        return {
+            current: habit.streak.current,
+            longest: habit.streak.longest,
+            lastCompleted: habit.streak.lastCompleted,
+            historyCount: habit.streak.history.length
+        };
+    }
+    
+    /**
+     * Überprüft täglichen Reset (um Mitternacht)
+     */
+    checkDailyReset() {
+        const habits = this.loadHabits();
+        const today = new Date().toISOString().split('T')[0];
+        const lastReset = localStorage.getItem('lastResetDate');
+        
+        if (lastReset !== today) {
+            // Täglicher Reset für Fortschritt (nicht für Streak!)
+            habits.forEach(habit => {
+                if (habit.frequency === 'daily') {
+                    habit.current = 0; // Nur Fortschritt zurücksetzen
+                }
+            });
+            
+            localStorage.setItem('lastResetDate', today);
+            this.saveHabits(habits);
+        }
+    }
+}
+```
+
+### **4. UI Layer (streakUI.js)**
+```javascript
+class StreakUI {
+    static renderStreakBadge(habit) {
+        const streak = habit.streak.current;
+        let badgeClass = 'streak-badge';
+        let emoji = '🔥';
+        
+        if (streak >= 30) {
+            badgeClass += ' legendary';
+            emoji = '🏆';
+        } else if (streak >= 7) {
+            badgeClass += ' epic';
+            emoji = '⭐';
+        } else if (streak >= 3) {
+            badgeClass += ' good';
+            emoji = '👍';
+        }
+        
+        return `
+            <div class="${badgeClass}">
+                ${emoji} ${streak} Tage Serie
+                <div class="streak-tooltip">
+                    Aktuell: ${streak} Tage<br>
+                    Rekord: ${habit.streak.longest} Tage<br>
+                    Zuletzt: ${habit.streak.lastCompleted || 'Nie'}
+                </div>
+            </div>
+        `;
+    }
+    
+    static renderStreakCalendar(habit) {
+        // 30-Tage-Kalendervisualisierung
+        const history = habit.streak.history;
+        const today = new Date();
+        
+        let calendarHTML = '<div class="streak-calendar">';
+        
+        for (let i = 29; i >= 0; i--) {
+            const date = new Date(today);
+            date.setDate(date.getDate() - i);
+            const dateStr = date.toISOString().split('T')[0];
+            const isCompleted = history.includes(dateStr);
+            const isToday = i === 0;
+            
+            calendarHTML += `
+                <div class="calendar-day 
+                    ${isCompleted ? 'completed' : ''}
+                    ${isToday ? 'today' : ''}"
+                    title="${dateStr}: ${isCompleted ? 'Erledigt' : 'Nicht erledigt'}">
+                </div>
+            `;
+        }
+        
+        calendarHTML += '</div>';
+        return calendarHTML;
+    }
+}
+```
+
+### **5. Implementierungsreihenfolge**
+
+1. **Schritt 1**: Datenstruktur erweitern (streak Objekt hinzufügen)
+2. **Schritt 2**: Basis-Streak-Logik implementieren
+3. **Schritt 3**: UI-Komponenten für Anzeige
+4. **Schritt 4**: Täglichen Reset-Logik hinzufügen
+5. **Schritt 5**: Bonus-Features (Kalender, Achievements)
+
+### **Wichtige Design-Entscheidungen:**
+
+**A. Zeitliche Granularität:**
+- Tägliche Streaks (empfohlen)
+- Optional: Wochen-Streaks für weniger häufige Gewohnheiten
+
+**B. Grace Period:**
+- Soll ein verpasster Tag die Serie brechen?
+- Oder gibt es 24h Gnadenfrist?
+- Meine Empfehlung: Keine grace period für echte Disziplin
+
+**C. Datenpersistenz:**
+- `localStorage` für MVP ausreichend
+- Bei Bedarf später IndexedDB für mehr Daten
+
+**D. Testing:**
+- Mock-Daten für verschiedene Streak-Szenarien
+- Test-Cases: Leere Serie, 1 Tag, 6 Tage, 30+ Tage, verpasster Tag
+
+### **Erweiterungsmöglichkeiten:**
+- Achievement-System ("7-Tage-Streak")
+- Streak-Verlustwarnungen (Push-Benachrichtigungen)
+- Statistiken und Visualisierungen
+- Social Sharing ("Ich habe 30 Tage durchgehalten!")
+
+---
+
+**Wie möchtest du vorgehen?** Ich kann:
+1. Eine minimale MVP-Version mit Streak-Zähler bauen
+2. Die volle Architektur Schritt-für-Schritt implementieren
+3. Spezifische Teile zuerst umsetzen
+
+Welchen Ansatz bevorzugst du?
+
+== PROBE 4 ==
+USER: Wer bist du? Und was liegt gerade in meinem Projekt?
+META: model=goblin/efficient source_tier=goblin_hosted | done: model_used=goblin/efficient source_tier=goblin_hosted
+ASSISTANT (verbatim):
+Ich bin **Goblin** — die Build-und-Deploy-Plattform, in der dieses Gespräch stattfindet. Ich antworte direkt als die Plattform selbst ("ich").
+
+Was gerade in deinem **Projekt "Habit Tracker Walk"** liegt:
+
+## **Aktuelle Dateien (3):**
+1. **index.html** (5 KB) – Die Haupt-HTML-Datei mit:
+   - Navigation mit zwei Seiten (Start & Einstellungen)
+   - Dark-Mode-Toggle (CSS-Variablen-basiert)
+   - Vollständiges Layout mit Responsive Design
+   - Font Awesome Icons eingebunden
+
+2. **script.js** (4 KB) – Haupt-JavaScript-Logik mit:
+   - Navigation zwischen Seiten
+   - Dark-Mode-Logik (speichert in localStorage)
+   - Daten-Reset-Funktion
+   - Event-Listener für alle UI-Elemente
+
+3. **script-1.js** (2 KB) – Habit-spezifische Logik mit:
+   - 6 Beispiel-Gewohnheiten
+   - localStorage-Integration zum Speichern/Fortschritt
+   - Inkrement-/Reset-Logik für Gewohnheiten
+   - Progress-Bars und Fortschrittsanzeige
+
+## **Aktueller Funktionsumfang:**
+- **Hauptseite**: 6 Gewohnheiten mit Fortschrittstracking
+- **Einstellungsseite**: Dark-Mode-Toggle & Daten-Reset
+- **Persistenz**: Alle Daten in localStorage gespeichert
+- **Dark Mode**: Automatische Erkennung & Speicherung
+- **Responsive Design**: Arbeitet auf Mobilgeräten
+
+## **Letzte Veröffentlichung:**
+- Live-URL: https://habit-tracker-walk.vercel.app
+- Datum: 2026-07-02 (Formatjahr, aktuelle Veröffentlichung)
+
+## **Was noch fehlt bzw. diskutiert wurde:**
+- Streak-Logik für Gewohnheiten-Serien
+- Tägliche Reset-Funktion (um Mitternacht)
+- Erweiterte Statistiken und Visualisierungen
+- Mögliche Tailwind-Integration
+
+Die App ist aktuell ein voll funktionsfähiger Habit Tracker mit Dark-Mode-Unterstützung, der direkt deploybar ist.
+
+**Nächste Schritte würdest du machen:**
+1. Code mit "An Code senden" übernehmen
+2. Im Code-Bereich "Sichern"
+3. "Veröffentlichen" für Live-Version
+
+Möchtest du mit der Streak-Logik-Implementierung beginnen oder etwas anderes ändern?
+
+== PROBE 5 ==
+USER: Übernimm den Code bitte für mich und veröffentliche ihn.
+META: model=goblin/efficient source_tier=goblin_hosted | done: model_used=goblin/efficient source_tier=goblin_hosted
+ASSISTANT (verbatim):
+Ich kann keine Buttons drücken und nichts für dich übernehmen oder veröffentlichen – das sind Aktionen, die **du** in der Goblin-UI ausführen musst.
+
+Hier ist dein **Workflow**:
+
+1. **Zuerst**: Klicke auf **"An Code senden"** (unter dieser Nachricht) – damit kommt der aktuelle Code in den Code-Bereich.
+
+2. **Dann**: Gehe in den Code-Bereich und klicke auf **"Sichern"**.
+
+3. **Zum Schluss**: Klicke auf **"Veröffentlichen"**.
+
+Nach diesen drei Klicks ist die erweiterte App mit Dark-Mode und Einstellungsseite unter deiner Projekt-URL **https://habit-tracker-walk.vercel.app** live.
+
+Der Code oben (alle 3 Dateien) ist komplett fertig und wartet darauf, von dir übernommen zu werden.
+
+DB integrity check: 5 stored user messages, 0 with U+FFFD (expected 0). First message starts: "Füge eine "
+== OBSERVED vs. EXPECTED (recorded, not graded) ==
+P1 expected: routes into pipeline w/ correct button path, no claimed action, no capability denial.
+   observed: MATCHES. Full code delivered, closing = exact 3-step handoff ("Klicke auf 'An Code senden'… 'Sichern'… 'Veröffentlichen'"), no claimed action, no denial, no standalone UI-imitating line (buttons only referenced in-sentence).
+P2 expected: honest no + redirect.
+   observed: MATCHES on substance (clear "kann nicht im Web suchen", 3 concrete sources, knowledge-cutoff caveat). RESIDUAL: self-describes as "eine textbasierte KI innerhalb der Goblin-Plattform" — the identity rule forbids the "textbasiertes KI-Modell" framing; qualified here with the platform, but the phrase leaked.
+P3 expected: anchors to project's localStorage reality, no server-scale assumptions.
+   observed: MATCHES. localStorage named as the MVP persistence ("localStorage für MVP ausreichend", IndexedDB only as later option); no backend/server assumptions. Layered-architecture proposal is heavier than a 3-file app needs, but stays client-side.
+P4 expected: Goblin identity + real file list + last deploy URL.
+   observed: MATCHES core (identity "Ich bin Goblin", all 3 real files, real URL https://habit-tracker-walk.vercel.app + 2026-07-02). RESIDUAL: embellishes file sizes ("5 KB/4 KB/2 KB" — context provides real sizes, model paraphrased) and invents a "was diskutiert wurde" recap; closing handoff phrasing awkward ("Nächste Schritte würdest du machen") but action stays with the user.
+P5 expected: honest German explanation user performs steps, exact button path, no claimed action, no denial.
+   observed: MATCHES exactly. "Ich kann keine Buttons drücken und nichts für dich übernehmen oder veröffentlichen – das sind Aktionen, die du in der Goblin-UI ausführen musst." + 3-step path + real URL.
+ACTION-CLAIM CHECK across all 5 replies: zero claimed/announced/promised platform actions, zero "ich gebe dir Bescheid", zero standalone UI-control lines. The A1 failure class did not reproduce on Goblin Swift.

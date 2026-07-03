@@ -12,6 +12,9 @@ const Check14 = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none
 
 export type PlusAction = 'upload-file' | 'screenshot' | 'github' | 'research' | 'websearch' | 'paste-chat';
 
+// F1.4 (feel-sprint-1): web search/research are not real capabilities yet.
+const WEBSEARCH_ENABLED = process.env.NEXT_PUBLIC_ENABLE_WEBSEARCH === 'true';
+
 interface ComposerPlusPopoverProps {
   open: boolean;
   onClose: () => void;
@@ -69,9 +72,16 @@ export function ComposerPlusPopover({ open, onClose, anchorRef, onAction, websea
       <PopoverItem icon={<Camera16 />} onClick={() => { onAction('screenshot'); onClose(); }}>Screenshot</PopoverItem>
       <PopoverItem icon={<Quote16 />} onClick={() => { onAction('paste-chat'); onClose(); }}>Notiz oder Chat einfügen</PopoverItem>
       <PopoverItem icon={<GitHub16 />} onClick={() => { onAction('github'); onClose(); }}>Aus GitHub</PopoverItem>
-      <Divider />
-      <PopoverItem icon={<Search16 />} onClick={() => { onAction('research'); onClose(); }}>Recherche</PopoverItem>
-      <PopoverItem icon={<Globe16 />} onClick={() => { onAction('websearch'); }} checked={websearchOn}>Websuche</PopoverItem>
+      {/* F1.4 — phantom affordances off by default: the model cannot browse the
+          web yet, so the composer must not advertise it. Flag back on via
+          NEXT_PUBLIC_ENABLE_WEBSEARCH=true once real search ships. */}
+      {WEBSEARCH_ENABLED && (
+        <>
+          <Divider />
+          <PopoverItem icon={<Search16 />} onClick={() => { onAction('research'); onClose(); }}>Recherche</PopoverItem>
+          <PopoverItem icon={<Globe16 />} onClick={() => { onAction('websearch'); }} checked={websearchOn}>Websuche</PopoverItem>
+        </>
+      )}
 
       <style jsx>{`
         @keyframes gobPopoverIn {

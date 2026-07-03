@@ -457,6 +457,9 @@ interface StreamCompletionParams {
   supabase?: SupabaseClient;
   timeoutMs?: number;
   signal?: AbortSignal;
+  // F1.1 — platform identity + project context. Sent as the `system` param on
+  // Anthropic and as a leading system message on OpenAI-compatible providers.
+  systemPrompt?: string;
 }
 
 export async function* streamCompletion({
@@ -468,6 +471,7 @@ export async function* streamCompletion({
   supabase,
   timeoutMs = 120_000,
   signal,
+  systemPrompt,
 }: StreamCompletionParams): AsyncGenerator<string, void, unknown> {
   const resolved = await resolveModel(userId, modelPreference, supabase);
   // 10.9-3 — if the resolved provider is degraded, transparently re-route to a
@@ -478,6 +482,12 @@ export async function* streamCompletion({
     ...chatHistory.map(m => ({ role: m.role as 'user' | 'assistant', content: m.content })),
     { role: 'user' as const, content: message },
   ];
+  // OpenAI-compatible providers (incl. LiteLLM + the Goblin-hosted wholesale
+  // endpoint) take the system prompt as a leading system message; Anthropic
+  // takes it as the dedicated `system` param below.
+  const oaiMessages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = systemPrompt
+    ? [{ role: 'system' as const, content: systemPrompt }, ...messages]
+    : messages;
 
   let inputTokens = 0;
   let outputTokens = 0;
@@ -540,7 +550,7 @@ export async function* streamCompletion({
   const litellmBase = route.layer === 'goblin_hosted' ? undefined : process.env.LITELLM_BASE_URL;
   if (litellmBase) {
     try {
-      for await (const delta of litellmStream(route.litellmModel, messages, { apiKey: route.apiKey, timeout: timeoutMs, signal })) {
+      for await (const delta of litellmStream(route.litellmModel, oaiMessages, { apiKey: route.apiKey, timeout: timeoutMs, signal })) {
         if (delta.type === 'delta' && delta.content) {
           yield JSON.stringify({ type: 'delta', content: delta.content });
         } else if (delta.type === 'usage') {
@@ -593,7 +603,7 @@ export async function* streamCompletion({
       const client = getGoblinClient(hosted);
       for await (const part of client.stream({
         model: route.apiModel,
-        messages,
+        messages: oaiMessages,
         maxTokens: GOBLIN_MAX_TOKENS_PER_REQUEST,
         signal,
       })) {
@@ -607,7 +617,7 @@ export async function* streamCompletion({
     } else if (route.provider === 'anthropic') {
       const anthropic = new Anthropic({ apiKey: route.apiKey });
       const model = route.apiModel;
-      const stream = await anthropic.messages.create({ model, max_tokens: 8096, messages, stream: true });
+      const stream = await anthropic.messages.create({ model, max_tokens: 8096, messages, stream: true, ...(systemPrompt ? { system: systemPrompt } : {}) });
 
       for await (const event of stream) {
         if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
@@ -621,7 +631,7 @@ export async function* streamCompletion({
     } else {
       const openai = new OpenAI({ apiKey: route.apiKey, baseURL: route.baseURL });
       const model = route.apiModel;
-      const stream = await openai.chat.completions.create({ model, max_tokens: 8096, messages, stream: true, stream_options: { include_usage: true } });
+      const stream = await openai.chat.completions.create({ model, max_tokens: 8096, messages: oaiMessages, stream: true, stream_options: { include_usage: true } });
 
       for await (const chunk of stream) {
         const text = chunk.choices[0]?.delta?.content ?? '';
