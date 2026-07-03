@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import { Copy, Check, ChevronDown, ChevronRight, FileCode2 } from 'lucide-react';
 import { highlight } from '@/lib/syntax/highlighter';
 import { useLang } from '@/lib/use-lang';
+import { useExistingFiles } from '@/contexts/existing-files-context';
+import { classifyFile, lineDelta, type LineDelta } from '@/lib/file-compare';
 
 interface CodeBlockProps {
   code: string;
@@ -22,6 +24,29 @@ export function CodeBlock({ code, lang, filename, asCard }: CodeBlockProps) {
   const [html, setHtml] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [expanded, setExpanded] = useState(!asCard);
+
+  // U2: change summary vs. the bound project's current files — "ändert
+  // index.html · +12 −3" under the card. Debounced so token-by-token streaming
+  // doesn't diff on every render; null = new file / identical / no project.
+  const existingFiles = useExistingFiles();
+  const [change, setChange] = useState<LineDelta | null>(null);
+  useEffect(() => {
+    const prev = filename ? existingFiles?.[filename] : undefined;
+    if (prev == null) { setChange(null); return; }
+    const t = setTimeout(() => {
+      setChange(classifyFile(prev, code) === 'changed' ? lineDelta(prev, code) : null);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [filename, code, existingFiles]);
+
+  const changeNote = change && filename ? (
+    <div
+      data-testid="cb-change-note"
+      style={{ margin: '3px 0 0 6px', fontSize: 11.5, color: 'var(--meta)', fontFamily: 'var(--font-sans)' }}
+    >
+      ändert {filename} · <span style={{ fontFamily: 'var(--font-mono)' }}>+{change.added} −{change.removed}</span>
+    </div>
+  ) : null;
 
   useEffect(() => {
     // Only pay for highlighting when the code is actually visible.
@@ -45,6 +70,7 @@ export function CodeBlock({ code, lang, filename, asCard }: CodeBlockProps) {
 
   if (asCard && !expanded) {
     return (
+      <>
       <div className="codeblock cb-a" style={{ overflow: 'hidden' }}>
         <button
           onClick={() => setExpanded(true)}
@@ -77,10 +103,13 @@ export function CodeBlock({ code, lang, filename, asCard }: CodeBlockProps) {
           </span>
         </button>
       </div>
+      {changeNote}
+      </>
     );
   }
 
   return (
+    <>
     <div className="codeblock cb-a">
       <div className="cb-head">
         {asCard ? (
@@ -112,5 +141,7 @@ export function CodeBlock({ code, lang, filename, asCard }: CodeBlockProps) {
           : <pre><code>{code}</code></pre>}
       </div>
     </div>
+    {changeNote}
+    </>
   );
 }

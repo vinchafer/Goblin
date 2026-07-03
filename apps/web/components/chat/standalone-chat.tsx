@@ -17,6 +17,7 @@ import { useDemoMode } from "@/lib/demo/demo-mode-context";
 import { useLang } from "@/lib/use-lang";
 import { useStickToBottom } from "@/hooks/useStickToBottom";
 import { ScrollToEndChip } from "@/components/chat/ScrollToEndChip";
+import { ExistingFilesContext } from "@/contexts/existing-files-context";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -94,6 +95,9 @@ function CodeActionButton({ lastMessage, lastUserPrompt, hasProject, projectId, 
   const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
   // 10.8-5: preview the files before they land (no more black box).
   const [preview, setPreview] = useState<StcFile[] | null>(null);
+  // U2: current contents of the target project's matching files — drives the
+  // GEÄNDERT/NEU/IDENTISCH badges + diff preview in the sheet.
+  const [existingFiles, setExistingFiles] = useState<Record<string, string> | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -135,6 +139,17 @@ function CodeActionButton({ lastMessage, lastUserPrompt, hasProject, projectId, 
   // user's projects so the sheet can offer a target dropdown.
   const handleSendToCode = async () => {
     setOpen(false);
+    // U2: for a project-bound chat, load the target's current file contents
+    // BEFORE the sheet opens so badges/diffs are correct from the first paint.
+    if (hasProject && projectId) {
+      try {
+        const { fetchExistingFiles } = await import("@/lib/project-files");
+        const paths = (previewFiles.length > 0 ? previewFiles : [{ path: "generated-code.js", content: lastCodeBlock }]).map((f) => f.path);
+        setExistingFiles(await fetchExistingFiles(projectId, paths));
+      } catch { setExistingFiles(null); }
+    } else {
+      setExistingFiles(null);
+    }
     if (!hasProject) {
       try {
         const { createClient } = await import("@/lib/supabase/client");
@@ -243,6 +258,7 @@ function CodeActionButton({ lastMessage, lastUserPrompt, hasProject, projectId, 
           files={preview}
           projects={hasProject ? undefined : projects}
           targetName={hasProject ? (projectName ?? undefined) : undefined}
+          existingFiles={existingFiles}
           onConfirm={confirmSend}
           onCancel={() => setPreview(null)}
         />
@@ -314,6 +330,22 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
   useEffect(() => {
     onContentChange();
   }, [messages, onContentChange]);
+
+  // U2: current contents of the bound project's text files, for the file-card
+  // change summaries. Refreshed on mount and after each finished stream.
+  const [projectFilesMap, setProjectFilesMap] = useState<Record<string, string> | null>(null);
+  useEffect(() => {
+    if (!projectId || isStreaming) return;
+    let live = true;
+    (async () => {
+      try {
+        const { fetchAllTextFiles } = await import("@/lib/project-files");
+        const map = await fetchAllTextFiles(projectId);
+        if (live) setProjectFilesMap(map);
+      } catch { /* cards simply render without a change line */ }
+    })();
+    return () => { live = false; };
+  }, [projectId, isStreaming]);
 
   useEffect(() => {
     return () => { abortRef.current?.abort(); };
@@ -487,6 +519,7 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
   };
 
   return (
+    <ExistingFilesContext.Provider value={projectFilesMap}>
     <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--bone)" }}>
       {/* Project context bar — only when this chat belongs to a project.
           Keeps the body identical to a top-level chat (10.7-14 parity). */}
@@ -601,6 +634,7 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
         </div>
       </div>
     </div>
+    </ExistingFilesContext.Provider>
   );
 }
 
