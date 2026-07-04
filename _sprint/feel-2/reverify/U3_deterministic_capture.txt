@@ -1,0 +1,14 @@
+U3 injection present: true
+B. ```html index.html).
+
+Aktueller Projektkontext:
+- Projekt: Habit Tracker
+- Dateien: noch keine
+- Bisheriger Stand & Entscheidungen:
+  Stand: Habit-Tracker mit index.html und script.js; Streak-Anzeige eingebaut.
+  Entscheidungen: Speicherung in localStorage (kein Backend); Design dunkelgruen.
+- Letzte Veröffentlichung: noch keine
+Beziehe dich auf diesen realen Stand — erfinde keine Vorgeschichte und keine Dateien, 
+
+no-state prompt contains section: true
+no-state prompt renders SECTION line: false

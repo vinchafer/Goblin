@@ -4,6 +4,10 @@ import { useEffect, useState } from 'react';
 import { Copy, Check, ChevronDown, ChevronRight, FileCode2 } from 'lucide-react';
 import { highlight } from '@/lib/syntax/highlighter';
 import { useLang } from '@/lib/use-lang';
+import { useExistingFiles } from '@/contexts/existing-files-context';
+import { useMessageId } from '@/contexts/message-id-context';
+import { classifyFile, lineDelta, type LineDelta } from '@/lib/file-compare';
+import { saveChangeNote, loadChangeNote } from '@/lib/change-note-store';
 
 interface CodeBlockProps {
   code: string;
@@ -22,6 +26,38 @@ export function CodeBlock({ code, lang, filename, asCard }: CodeBlockProps) {
   const [html, setHtml] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [expanded, setExpanded] = useState(!asCard);
+
+  // U2: change summary vs. the bound project's current files — "ändert
+  // index.html · +12 −3" under the card. Debounced so token-by-token streaming
+  // doesn't diff on every render; null = new file / identical / no project.
+  // B4: the live delta is persisted per message id at completion; on reload
+  // (or once the file was saved and live diffing yields nothing) the stored
+  // delta keeps the line rendered.
+  const existingFiles = useExistingFiles();
+  const messageId = useMessageId();
+  const persistedId = messageId && messageId !== 'streaming' ? messageId : null;
+  const [change, setChange] = useState<LineDelta | null>(null);
+  useEffect(() => {
+    if (!filename) { setChange(null); return; }
+    const stored = persistedId ? loadChangeNote(persistedId, filename) : null;
+    const prev = existingFiles?.[filename];
+    if (prev == null) { setChange(stored); return; }
+    const t = setTimeout(() => {
+      const live = classifyFile(prev, code) === 'changed' ? lineDelta(prev, code) : null;
+      if (live && persistedId) saveChangeNote(persistedId, filename, live);
+      setChange(live ?? stored);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [filename, code, existingFiles, persistedId]);
+
+  const changeNote = change && filename ? (
+    <div
+      data-testid="cb-change-note"
+      style={{ margin: '3px 0 0 6px', fontSize: 11.5, color: 'var(--meta)', fontFamily: 'var(--font-sans)' }}
+    >
+      ändert {filename} · <span style={{ fontFamily: 'var(--font-mono)' }}>+{change.added} −{change.removed}</span>
+    </div>
+  ) : null;
 
   useEffect(() => {
     // Only pay for highlighting when the code is actually visible.
@@ -45,6 +81,7 @@ export function CodeBlock({ code, lang, filename, asCard }: CodeBlockProps) {
 
   if (asCard && !expanded) {
     return (
+      <>
       <div className="codeblock cb-a" style={{ overflow: 'hidden' }}>
         <button
           onClick={() => setExpanded(true)}
@@ -77,10 +114,13 @@ export function CodeBlock({ code, lang, filename, asCard }: CodeBlockProps) {
           </span>
         </button>
       </div>
+      {changeNote}
+      </>
     );
   }
 
   return (
+    <>
     <div className="codeblock cb-a">
       <div className="cb-head">
         {asCard ? (
@@ -112,5 +152,7 @@ export function CodeBlock({ code, lang, filename, asCard }: CodeBlockProps) {
           : <pre><code>{code}</code></pre>}
       </div>
     </div>
+    {changeNote}
+    </>
   );
 }

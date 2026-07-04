@@ -15,6 +15,9 @@ import { StcPreviewSheet, type StcFile } from "@/components/code/StcPreviewSheet
 import { useApp } from "@/contexts/app-context";
 import { useDemoMode } from "@/lib/demo/demo-mode-context";
 import { useLang } from "@/lib/use-lang";
+import { useStickToBottom } from "@/hooks/useStickToBottom";
+import { ScrollToEndChip } from "@/components/chat/ScrollToEndChip";
+import { ExistingFilesContext } from "@/contexts/existing-files-context";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -92,6 +95,9 @@ function CodeActionButton({ lastMessage, lastUserPrompt, hasProject, projectId, 
   const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
   // 10.8-5: preview the files before they land (no more black box).
   const [preview, setPreview] = useState<StcFile[] | null>(null);
+  // U2: current contents of the target project's matching files — drives the
+  // GEÄNDERT/NEU/IDENTISCH badges + diff preview in the sheet.
+  const [existingFiles, setExistingFiles] = useState<Record<string, string> | null>(null);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -133,6 +139,19 @@ function CodeActionButton({ lastMessage, lastUserPrompt, hasProject, projectId, 
   // user's projects so the sheet can offer a target dropdown.
   const handleSendToCode = async () => {
     setOpen(false);
+    // U2: for a project-bound chat, load the target's current file contents
+    // BEFORE the sheet opens so badges/diffs are correct from the first paint.
+    if (hasProject && projectId) {
+      try {
+        // B3: load ALL text files (capped), not just the outgoing paths — the
+        // integrity auto-rename can point a file at a target path that isn't
+        // in the outgoing set, and reclassification needs its content.
+        const { fetchAllTextFiles } = await import("@/lib/project-files");
+        setExistingFiles(await fetchAllTextFiles(projectId));
+      } catch { setExistingFiles(null); }
+    } else {
+      setExistingFiles(null);
+    }
     if (!hasProject) {
       try {
         const { createClient } = await import("@/lib/supabase/client");
@@ -241,6 +260,7 @@ function CodeActionButton({ lastMessage, lastUserPrompt, hasProject, projectId, 
           files={preview}
           projects={hasProject ? undefined : projects}
           targetName={hasProject ? (projectName ?? undefined) : undefined}
+          existingFiles={existingFiles}
           onConfirm={confirmSend}
           onCancel={() => setPreview(null)}
         />
@@ -298,7 +318,10 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
     return () => setChatProjectId(null);
   }, [projectId, setChatProjectId]);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  // U0: auto-follow only while the user is at the bottom; scroll-up releases
+  // the pin so reading during generation works (founder-reported iPhone bug).
+  const { containerRef: scrollRef, atBottom, handleScroll, onContentChange, scrollToBottom } =
+    useStickToBottom<HTMLDivElement>();
   const streamingContentRef = useRef("");
   const baseMessagesRef = useRef<typeof messages>([]);
   const streamingMsgRef = useRef<(typeof messages)[0] | null>(null);
@@ -307,8 +330,24 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
   const apiBase = process.env.NEXT_PUBLIC_API_URL ?? "";
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    onContentChange();
+  }, [messages, onContentChange]);
+
+  // U2: current contents of the bound project's text files, for the file-card
+  // change summaries. Refreshed on mount and after each finished stream.
+  const [projectFilesMap, setProjectFilesMap] = useState<Record<string, string> | null>(null);
+  useEffect(() => {
+    if (!projectId || isStreaming) return;
+    let live = true;
+    (async () => {
+      try {
+        const { fetchAllTextFiles } = await import("@/lib/project-files");
+        const map = await fetchAllTextFiles(projectId);
+        if (live) setProjectFilesMap(map);
+      } catch { /* cards simply render without a change line */ }
+    })();
+    return () => { live = false; };
+  }, [projectId, isStreaming]);
 
   useEffect(() => {
     return () => { abortRef.current?.abort(); };
@@ -482,6 +521,7 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
   };
 
   return (
+    <ExistingFilesContext.Provider value={projectFilesMap}>
     <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--bone)" }}>
       {/* Project context bar — only when this chat belongs to a project.
           Keeps the body identical to a top-level chat (10.7-14 parity). */}
@@ -516,6 +556,8 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
 
       {/* Messages */}
       <div
+        ref={scrollRef}
+        onScroll={handleScroll}
         className={`chat-scroll${messages.length === 0 ? " chat-scroll--empty" : ""}`}
         style={{ gap: 16 }}
       >
@@ -564,13 +606,18 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
           </div>
         )}
 
-        <div ref={messagesEndRef} />
       </div>
 
       {/* Input area — sticky bottom of the flex column. Clears the iOS
           bottom safe area (gesture zone) so the composer stays thumb-reachable. */}
       <div style={{ borderTop: "1px solid var(--rule)", background: "var(--bone)", paddingBottom: "env(safe-area-inset-bottom)" }}>
         <div style={{ position: "relative" }}>
+          {/* U0: shown when the user scrolled away from the bottom; tap → back
+              to live-follow. Sits centered above the composer, clear of the
+              right-aligned code action button. */}
+          {!atBottom && messages.length > 0 && (
+            <ScrollToEndChip bottom="calc(100% + 12px)" onClick={() => scrollToBottom("smooth")} />
+          )}
           {/* Code action button — sits above the input. Hidden in demo (its
               actions fetch projects / deep-link out of the iframe). */}
           {!demoMode && lastAssistantMsg?.has_code && (
@@ -589,6 +636,7 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
         </div>
       </div>
     </div>
+    </ExistingFilesContext.Provider>
   );
 }
 

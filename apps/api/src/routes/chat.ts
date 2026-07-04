@@ -1,9 +1,11 @@
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { createClient } from '@supabase/supabase-js';
-import { streamCompletionGuarded } from '../services/model-router';
-import { buildGoblinChatSystemPrompt } from '../prompts/goblin-chat-system';
+import { streamWithReducedContextRetry } from '../services/token-limit-retry';
+import { buildGoblinChatSystemPrompt, REDUCED_CONTEXT_NOTE } from '../prompts/goblin-chat-system';
 import { listFilesWithMeta } from '../services/file-storage';
+import { loadProjectContextFiles, isSoftDeletedPath } from '../services/project-context';
+import { loadProjectState, scheduleProjectStateUpdate } from '../services/project-state';
 import { authMiddleware } from '../middleware/auth';
 import { chatStreamRateLimit } from '../middleware/rate-limit';
 
@@ -133,6 +135,9 @@ chat.post('/stream', chatStreamRateLimit, async (c) => {
 
   // F1.1 — Goblin identity + real project context. Best-effort lookups.
   let systemPrompt: string;
+  // B2: fallback prompt (names+sizes only) for the token-limit retry; only set
+  // when file contents were actually injected.
+  let reducedSystemPrompt: string | undefined;
   try {
     const { data: proj } = await supabase
       .from('projects')
@@ -140,13 +145,30 @@ chat.post('/stream', chatStreamRateLimit, async (c) => {
       .eq('id', projectId)
       .eq('user_id', userId)
       .single();
-    const meta = await listFilesWithMeta(projectId).catch(() => []);
+    // U1: file CONTENTS (budget-capped) — falls back to the bare name+size
+    // list if the content loader hiccups.
+    const files = await loadProjectContextFiles(projectId).catch(async () =>
+      // B6: mirror the soft-delete exclusion on the degraded fallback path too.
+      (await listFilesWithMeta(projectId).catch(() => []))
+        .filter((f) => !isSoftDeletedPath(f.path))
+        .map((f) => ({ path: f.path, size: f.size })),
+    );
     const p = proj as { name?: string; preview_url?: string | null; last_deployed_at?: string | null } | null;
-    systemPrompt = buildGoblinChatSystemPrompt({
+    const promptCtx = {
       projectName: p?.name ?? null,
-      files: meta.map((f) => ({ path: f.path, size: f.size })),
+      files,
       lastDeploy: p ? { url: p.preview_url ?? null, deployedAt: p.last_deployed_at?.slice(0, 10) ?? null } : null,
-    });
+      // U3: rolling memory — null pre-migration / when nothing stored yet.
+      projectState: await loadProjectState(supabase, projectId),
+    };
+    systemPrompt = buildGoblinChatSystemPrompt(promptCtx);
+    if (files.some((f) => 'content' in f && f.content != null)) {
+      reducedSystemPrompt = buildGoblinChatSystemPrompt({
+        ...promptCtx,
+        files: files.map((f) => ({ path: f.path, size: f.size, notLoaded: 'notLoaded' in f ? f.notLoaded : undefined })),
+        contextNote: REDUCED_CONTEXT_NOTE,
+      });
+    }
   } catch {
     systemPrompt = buildGoblinChatSystemPrompt();
   }
@@ -162,15 +184,18 @@ chat.post('/stream', chatStreamRateLimit, async (c) => {
     });
 
     try {
-      for await (const jsonToken of streamCompletionGuarded({
-        userId,
-        projectId,
-        message,
-        chatHistory: chatHistory || [],
-        modelPreference: modelSlug,
-        supabase,
-        signal: abortController.signal,
+      for await (const jsonToken of streamWithReducedContextRetry({
+        params: {
+          userId,
+          projectId,
+          message,
+          chatHistory: chatHistory || [],
+          modelPreference: modelSlug,
+          supabase,
+          signal: abortController.signal,
+        },
         systemPrompt,
+        reducedSystemPrompt,
       })) {
         if (abortController.signal.aborted) break;
 
@@ -221,6 +246,9 @@ chat.post('/stream', chatStreamRateLimit, async (c) => {
             .select()
             .single();
 
+          // U3: merge this completed turn into the project's rolling memory.
+          scheduleProjectStateUpdate({ supabase, userId, projectId, userMessage: message, assistantMessage: fullResponse });
+
           await stream.writeSSE({
             data: JSON.stringify({
               type: 'done',
@@ -234,6 +262,8 @@ chat.post('/stream', chatStreamRateLimit, async (c) => {
       }
 
       // Fallback done if generator ends without explicit 'done'
+      // U3: same rolling-memory update on the fallback completion path.
+      scheduleProjectStateUpdate({ supabase, userId, projectId, userMessage: message, assistantMessage: fullResponse });
       const { data: assistantMessage } = await supabase
         .from('chat_messages')
         .insert({

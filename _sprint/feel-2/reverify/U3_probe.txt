@@ -1,0 +1,42 @@
+U3 — rolling project memory probe  ·  2026-07-04 resume session
+================================================================
+
+STATUS: live "Wo waren wir?" probe BLOCKED, twice over:
+  1. Migration 0076 (supabase/migrations/0076_project_state.sql) is authored
+     but NOT applied — prod Supabase has no project_state table (founder
+     applies via SQL Editor). No safe local/test Supabase carries the table.
+  2. Even with the table, the async summarizer cannot complete locally: it
+     routes through streamCompletionGuarded's default model and the local
+     free-key routing 404s ("The model `llama-3.3-70b` does not exist …",
+     see api log) — and the intended hosted path needs the revoked
+     DEEPINFRA key. → finding F3 in SPRINT_REPORT.md.
+
+What WAS verified:
+
+A. Pre-migration clean no-op — VERIFIED LIVE.
+   Every chat in this session (U0/U2 E2E runs, multiple sends across three
+   chat sessions) ran against prod Supabase WITHOUT the project_state table.
+   Chats streamed and completed normally; zero user-visible errors. The only
+   traces are internal console.warn lines "[project-state] summarizer
+   errored: …" — exactly the designed silent-failure path.
+   Code guards: loadProjectState returns null on any error/missing table
+   (project-state.ts:31-44); updateProjectState warns and returns on error
+   events; upsert failure is logged, never thrown.
+
+B. Prompt injection — VERIFIED DETERMINISTICALLY (U3_deterministic_capture.txt).
+   With a ProjectState present, buildGoblinChatSystemPrompt renders:
+     - Bisheriger Stand & Entscheidungen:
+       Stand: …
+       Entscheidungen: …
+   Without state, the section line is absent (exact-match check false), and
+   the prompt instructs the model to say honestly that no stored state exists
+   and to not invent history (goblin-chat-system.ts:168-171).
+
+C. Unit tests: API suite 320/320 green includes the U3-adjusted
+   project-context tests (commit 65f95cd touches
+   apps/api/src/__tests__/project-context.test.ts).
+
+NOT verified: end-to-end "decision in chat 1 → recalled in chat 2" with a
+real model and applied migration. Requires founder to (a) apply 0076,
+(b) provide a scoped DeepInfra key (or verify on Railway prod where hosted
+Swift routing exists).

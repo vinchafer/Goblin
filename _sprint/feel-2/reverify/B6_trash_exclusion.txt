@@ -1,0 +1,29 @@
+ ✓ src/__tests__/project-context.test.ts > B6 — soft-deleted (.trash/) files are excluded from model context > isSoftDeletedPath flags .trash/ paths only
+ ✓ src/__tests__/project-context.test.ts > B6 — soft-deleted (.trash/) files are excluded from model context > loadProjectContextFiles returns no .trash path and no trashed content
+ ✓ src/__tests__/project-context.test.ts > B6 — soft-deleted (.trash/) files are excluded from model context > built system prompt contains no .trash path and no trashed content
+
+════════════════════════════════════════════════════════════════════════
+B6 GATE — soft-deleted (.trash/) files excluded from model context
+Captured 2026-07-05 (FEEL-2 merge prep). Deterministic — in-memory storage.
+
+Setup: project with index.html, keep.js, and .trash/1699999999_old.json
+(a text-extension soft-deleted file containing the marker string
+"SECRET_TRASHED_MARKER_should_never_reach_the_model").
+
+ASSERTIONS (all PASS):
+  • isSoftDeletedPath: flags '.trash' and '.trash/*' only; a filename that
+    merely contains ".trash-" is NOT treated as trashed.
+  • loadProjectContextFiles(project): returns NO path starting with '.trash'
+    and NO file whose content includes the trashed marker; keep.js survives.
+  • buildGoblinChatSystemPrompt(files): the rendered system prompt contains
+    NO '.trash' substring and NO trashed content; keep.js still listed.
+
+Coverage of the exclusion (code):
+  • Injection + model file-list: isSoftDeletedPath() filters listFilesWithMeta
+    in loadProjectContextFiles (project-context.ts) AND on both chat-route
+    degraded fallbacks (chat.ts, chat-sessions.ts).
+  • STC existing-files map (U2/B3): fetchAllTextFiles (apps/web/lib/
+    project-files.ts) filters '.trash/' so deleted files are not
+    GEÄNDERT/IDENTISCH candidates.
+
+RESULT: PASS. Deleted content never re-enters model context or injection budget.

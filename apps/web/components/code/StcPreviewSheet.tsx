@@ -10,8 +10,10 @@
 // Renders as a centred dialog on desktop and a bottom sheet on mobile.
 
 import { useMemo, useState } from 'react';
-import { X, FileCode, Warning, ArrowRight } from '@phosphor-icons/react';
+import { X, FileCode, Warning, ArrowRight, CaretDown, CaretRight } from '@phosphor-icons/react';
 import { checkStcIntegrity, applyRenames } from '@goblin/shared/src/stc-integrity';
+import { classifyFile, lineDelta, type FileStatus, type LineDelta } from '@/lib/file-compare';
+import { DiffView } from './DiffView';
 
 export interface StcFile {
   path: string;
@@ -26,6 +28,13 @@ interface Props {
   targetName?: string;
   /** Paths that already exist in the target — shown with an overwrite badge. */
   existingPaths?: string[];
+  /**
+   * U2: current contents of target-project files, keyed by path. When present,
+   * files badge GEÄNDERT (+n −m) / NEU / IDENTISCH instead of the blunt
+   * overwrite warning, IDENTISCH files start unchecked, and GEÄNDERT files
+   * offer a per-file before/after diff.
+   */
+  existingFiles?: Record<string, string> | null;
   busy?: boolean;
   onConfirm: (selected: StcFile[], targetProjectId: string | null) => void;
   onCancel: () => void;
@@ -48,10 +57,39 @@ function langOf(path: string): string {
 }
 
 export function StcPreviewSheet({
-  files, projects, targetName, existingPaths, busy, onConfirm, onCancel,
+  files, projects, targetName, existingPaths, existingFiles, busy, onConfirm, onCancel,
 }: Props) {
-  const [selected, setSelected] = useState<Set<string>>(() => new Set(files.map((f) => f.path)));
+  // P0.3 — filename integrity: user-applied renames (original path → new path)
+  // live here; selection stays keyed by the original path.
+  const [renames, setRenames] = useState<Record<string, string>>({});
+
+  // U2: per-file change status against the target project. Without
+  // existingFiles everything stays 'new' (legacy behavior via existingPaths).
+  // B3: classification follows the EFFECTIVE path — after an integrity
+  // auto-rename the file is compared against the renamed target, so the badge
+  // flips to IDENTISCH/GEÄNDERT per the target file's reality instead of
+  // staying NEU on the stale original path.
+  const statuses = useMemo(() => {
+    const map = new Map<string, { status: FileStatus; delta: LineDelta | null }>();
+    for (const f of files) {
+      const effectivePath = renames[f.path] ?? f.path;
+      const prev = existingFiles?.[effectivePath];
+      const status = classifyFile(prev, f.content);
+      map.set(f.path, {
+        status,
+        delta: status === 'changed' && prev != null ? lineDelta(prev, f.content) : null,
+      });
+    }
+    return map;
+  }, [files, existingFiles, renames]);
+
+  // IDENTISCH files start unchecked — re-sending an unchanged file is noise.
+  const [selected, setSelected] = useState<Set<string>>(
+    () => new Set(files.filter((f) => statuses.get(f.path)?.status !== 'identical').map((f) => f.path)),
+  );
   const [projectId, setProjectId] = useState<string | null>(projects && projects.length > 0 ? null : null);
+  // U2: which GEÄNDERT files have their diff preview open.
+  const [openDiffs, setOpenDiffs] = useState<Set<string>>(() => new Set());
   const existing = useMemo(() => new Set(existingPaths ?? []), [existingPaths]);
 
   const toggle = (path: string) => {
@@ -62,10 +100,6 @@ export function StcPreviewSheet({
       return next;
     });
   };
-
-  // P0.3 — filename integrity: user-applied renames (original path → new path)
-  // live here; selection stays keyed by the original path.
-  const [renames, setRenames] = useState<Record<string, string>>({});
 
   const chosen = useMemo(
     () => applyRenames(files.filter((f) => selected.has(f.path)), renames),
@@ -139,9 +173,16 @@ export function StcPreviewSheet({
             const isOn = selected.has(f.path);
             const shownPath = renames[f.path] ?? f.path;
             const willOverwrite = existing.has(shownPath);
+            // U2: change status vs. the target project (when contents known).
+            const st = statuses.get(f.path);
+            const status = st?.status ?? 'new';
+            const delta = st?.delta ?? null;
+            const diffOpen = openDiffs.has(f.path);
+            // B3: diff against the effective (possibly renamed) target path.
+            const prevContent = existingFiles?.[shownPath];
             return (
+              <div key={f.path}>
               <button
-                key={f.path}
                 type="button"
                 onClick={() => toggle(f.path)}
                 data-testid="stc-preview-file"
@@ -169,10 +210,47 @@ export function StcPreviewSheet({
                     {langOf(shownPath)} · {lineCount(f.content)} Zeilen
                   </span>
                 </span>
-                {willOverwrite
-                  ? <span style={{ fontSize: 10.5, fontWeight: 700, color: '#B85C3C', background: 'rgba(184,92,60,0.12)', padding: '2px 7px', borderRadius: 5, display: 'inline-flex', alignItems: 'center', gap: 3 }}><Warning size={11} /> Überschreibt</span>
-                  : <span style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--brand-green, #2D4A2B)', background: 'color-mix(in srgb, var(--brand-green, #2D4A2B) 12%, transparent)', padding: '2px 7px', borderRadius: 5 }}>NEU</span>}
+                {/* U2: content-aware badge. Falls back to the blunt overwrite
+                    warning only when the target's contents are unknown. */}
+                {status === 'changed' ? (
+                  <span data-testid="stc-badge-changed" style={{ fontSize: 10.5, fontWeight: 700, color: '#8A6D1F', background: 'rgba(212,169,74,0.16)', padding: '2px 7px', borderRadius: 5, display: 'inline-flex', flexDirection: 'column', alignItems: 'center', lineHeight: 1.35 }}>
+                    GEÄNDERT
+                    {delta && <span style={{ fontWeight: 600, fontFamily: 'var(--font-mono)' }}>+{delta.added} −{delta.removed}</span>}
+                  </span>
+                ) : status === 'identical' ? (
+                  <span data-testid="stc-badge-identical" style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--meta, #888)', background: 'rgba(128,128,128,0.10)', padding: '2px 7px', borderRadius: 5 }}>IDENTISCH</span>
+                ) : willOverwrite && !existingFiles ? (
+                  <span style={{ fontSize: 10.5, fontWeight: 700, color: '#B85C3C', background: 'rgba(184,92,60,0.12)', padding: '2px 7px', borderRadius: 5, display: 'inline-flex', alignItems: 'center', gap: 3 }}><Warning size={11} /> Überschreibt</span>
+                ) : (
+                  <span data-testid="stc-badge-new" style={{ fontSize: 10.5, fontWeight: 700, color: 'var(--brand-green, #2D4A2B)', background: 'color-mix(in srgb, var(--brand-green, #2D4A2B) 12%, transparent)', padding: '2px 7px', borderRadius: 5 }}>NEU</span>
+                )}
+                {status === 'changed' && prevContent != null && (
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    data-testid="stc-diff-toggle"
+                    aria-label={diffOpen ? 'Diff ausblenden' : 'Diff anzeigen'}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setOpenDiffs((prev) => {
+                        const next = new Set(prev);
+                        if (next.has(f.path)) next.delete(f.path);
+                        else next.add(f.path);
+                        return next;
+                      });
+                    }}
+                    onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLElement).click(); }}
+                    style={{ display: 'inline-flex', padding: 4, color: 'var(--meta)', flexShrink: 0 }}
+                  >
+                    {diffOpen ? <CaretDown size={14} /> : <CaretRight size={14} />}
+                  </span>
+                )}
               </button>
+              {/* U2: per-file before/after diff (compact unified view) */}
+              {status === 'changed' && diffOpen && prevContent != null && (
+                <DiffView path={shownPath} oldContent={prevContent} newContent={f.content} />
+              )}
+              </div>
             );
           })}
         </div>

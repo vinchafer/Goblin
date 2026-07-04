@@ -2,9 +2,11 @@ import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { authMiddleware } from '../middleware/auth.js';
 import { getSupabaseAdmin } from '../lib/supabase.js';
-import { streamCompletionGuarded } from '../services/model-router.js';
-import { buildGoblinChatSystemPrompt } from '../prompts/goblin-chat-system.js';
+import { streamWithReducedContextRetry } from '../services/token-limit-retry.js';
+import { buildGoblinChatSystemPrompt, REDUCED_CONTEXT_NOTE } from '../prompts/goblin-chat-system.js';
 import { listFilesWithMeta } from '../services/file-storage.js';
+import { loadProjectContextFiles, isSoftDeletedPath, type ContextFile } from '../services/project-context.js';
+import { loadProjectState, scheduleProjectStateUpdate } from '../services/project-state.js';
 import { truncateTitle } from '../lib/truncate-title.js';
 
 type Variables = { userId: string };
@@ -180,7 +182,7 @@ chatSessions.post('/:id/stream', async (c) => {
   // deploy). All lookups best-effort: a storage hiccup must never block chat.
   const projectId: string | null = (session as { project_id?: string | null }).project_id ?? null;
   let projectName: string | null = null;
-  let projectFiles: Array<{ path: string; size: number }> | undefined;
+  let projectFiles: ContextFile[] | undefined;
   let lastDeploy: { url: string | null; deployedAt: string | null } | null = null;
   if (projectId) {
     try {
@@ -195,15 +197,32 @@ chatSessions.post('/:id/stream', async (c) => {
         const p = proj as { preview_url: string | null; last_deployed_at: string | null };
         lastDeploy = { url: p.preview_url, deployedAt: p.last_deployed_at?.slice(0, 10) ?? null };
       }
-      const meta = await listFilesWithMeta(projectId);
-      projectFiles = meta.map((f) => ({ path: f.path, size: f.size }));
+      // U1: file CONTENTS (budget-capped) — falls back to name+size only.
+      projectFiles = await loadProjectContextFiles(projectId).catch(async () =>
+        // B6: mirror the soft-delete exclusion on the degraded fallback path too.
+        (await listFilesWithMeta(projectId))
+          .filter((f) => !isSoftDeletedPath(f.path))
+          .map((f) => ({ path: f.path, size: f.size })),
+      );
     } catch { /* context stays minimal */ }
   }
-  const systemPrompt = buildGoblinChatSystemPrompt({
+  const promptCtx = {
     projectName,
     files: projectFiles,
     lastDeploy,
-  });
+    // U3: rolling memory — null pre-migration / when nothing stored yet.
+    projectState: projectId ? await loadProjectState(supabase, projectId) : null,
+  };
+  const systemPrompt = buildGoblinChatSystemPrompt(promptCtx);
+  // B2: fallback prompt (names+sizes only) for the token-limit retry; only set
+  // when file contents were actually injected.
+  const reducedSystemPrompt = projectFiles?.some((f) => f.content != null)
+    ? buildGoblinChatSystemPrompt({
+        ...promptCtx,
+        files: projectFiles.map((f) => ({ path: f.path, size: f.size, notLoaded: f.notLoaded })),
+        contextNote: REDUCED_CONTEXT_NOTE,
+      })
+    : undefined;
 
   return streamSSE(c, async (stream) => {
     let fullResponse = '';
@@ -214,15 +233,18 @@ chatSessions.post('/:id/stream', async (c) => {
     c.req.raw.signal.addEventListener('abort', () => abortController.abort());
 
     try {
-      for await (const jsonToken of streamCompletionGuarded({
-        userId,
-        projectId,
-        message,
-        chatHistory,
-        modelPreference: modelSlug,
-        supabase,
-        signal: abortController.signal,
+      for await (const jsonToken of streamWithReducedContextRetry({
+        params: {
+          userId,
+          projectId,
+          message,
+          chatHistory,
+          modelPreference: modelSlug,
+          supabase,
+          signal: abortController.signal,
+        },
         systemPrompt,
+        reducedSystemPrompt,
       })) {
         if (abortController.signal.aborted) break;
 
@@ -259,6 +281,11 @@ chatSessions.post('/:id/stream', async (c) => {
             await supabase.from('chat_sessions')
               .update({ model_slug: currentModel, updated_at: new Date().toISOString() })
               .eq('id', sessionId);
+
+            // U3: merge this completed turn into the project's rolling memory.
+            if (projectId) {
+              scheduleProjectStateUpdate({ supabase, userId, projectId, userMessage: message, assistantMessage: fullResponse });
+            }
 
             await stream.writeSSE({
               data: JSON.stringify({

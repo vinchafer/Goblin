@@ -23,6 +23,7 @@ import { GoblinError, isGoblinError, litellmStream } from './litellm-client';
 import { formatTokenDisplay } from '../config/pricing';
 import { trackCompletion } from '../lib/track-completion';
 import { recordOutcome, getHealth, isModelNotFound } from './provider-health';
+import logger from '../lib/logger';
 
 export type { GoblinError };
 export { isGoblinError };
@@ -460,6 +461,17 @@ interface StreamCompletionParams {
   // F1.1 — platform identity + project context. Sent as the `system` param on
   // Anthropic and as a leading system message on OpenAI-compatible providers.
   systemPrompt?: string;
+  // B5 (feel-sprint-2): platform-internal accounting. When true this completion is
+  // a SERVER-INITIATED platform feature (the project-state summarizer) whose tokens
+  // are platform COGS, NOT user allowance. Effect: (1) the goblin_hosted monthly/
+  // daily allowance gate is skipped — a user at their cap still gets summarization;
+  // (2) the per-completion `completion_costs` write (the row goblinWeightedUsage sums
+  // into the user's monthly usage) is suppressed, so it never touches the user's
+  // allowance/unit counters or any user-visible usage display; instead the tokens are
+  // logged server-side as measurable platform COGS. This flag is only ever set as a
+  // code literal by the summarizer path (project-state.ts) — NO HTTP route reads or
+  // forwards it, so the exemption is unreachable from any user-controlled request.
+  internalBilling?: boolean;
 }
 
 export async function* streamCompletion({
@@ -472,6 +484,7 @@ export async function* streamCompletion({
   timeoutMs = 120_000,
   signal,
   systemPrompt,
+  internalBilling = false,
 }: StreamCompletionParams): AsyncGenerator<string, void, unknown> {
   const resolved = await resolveModel(userId, modelPreference, supabase);
   // 10.9-3 — if the resolved provider is degraded, transparently re-route to a
@@ -498,7 +511,10 @@ export async function* streamCompletion({
   // refusal. Two checks, both in weighted cost units (Swift + Forge×4.4):
   //   1. monthly allowance (user-facing fair use) → resets next month / upgrade
   //   2. per-plan daily guard (anti-abuse firewall) → resets tomorrow
-  if (route.layer === 'goblin_hosted') {
+  // B5: the platform-internal summarizer is exempt from the user allowance gate —
+  // its tokens are platform COGS, so a user at their cap must NOT have background
+  // summarization silently rejected (and it must not read as user spend).
+  if (route.layer === 'goblin_hosted' && !internalBilling) {
     const { plan, lang } = await getUserPlanAndLang(userId, supabase);
     const usage = await goblinWeightedUsage(userId, supabase);
 
@@ -563,14 +579,24 @@ export async function* streamCompletion({
       if (agentRun) {
         await sb.from('agent_runs').update({ status: 'success', input_tokens: inputTokens, output_tokens: outputTokens, completed_at: new Date().toISOString() }).eq('id', agentRun.id);
       }
-      await trackCompletion({
-        userId,
-        provider: route.provider,
-        model: route.model,
-        sourceTier: route.layer,
-        tokensIn: inputTokens,
-        tokensOut: outputTokens,
-      });
+      // B5: internal (summarizer) completions are platform COGS — log the tokens
+      // server-side for measurability, but DO NOT write completion_costs (that row
+      // is what counts against the user's monthly allowance via goblinWeightedUsage).
+      if (internalBilling) {
+        logger.info(
+          { feature: 'project-state-summarizer', userId, provider: route.provider, model: route.model, sourceTier: route.layer, tokensIn: inputTokens, tokensOut: outputTokens, billing: 'platform_cogs' },
+          'platform COGS (internal, not user-billed)',
+        );
+      } else {
+        await trackCompletion({
+          userId,
+          provider: route.provider,
+          model: route.model,
+          sourceTier: route.layer,
+          tokensIn: inputTokens,
+          tokensOut: outputTokens,
+        });
+      }
       recordOutcome(route.provider, true);
       yield JSON.stringify({ type: 'done', input_tokens: inputTokens, output_tokens: outputTokens, token_display: tokenDisplay, source_tier: route.layer, model_used: route.model });
       return;
@@ -647,14 +673,23 @@ export async function* streamCompletion({
     if (agentRun) {
       await sb.from('agent_runs').update({ status: 'success', input_tokens: inputTokens, output_tokens: outputTokens, completed_at: new Date().toISOString() }).eq('id', agentRun.id);
     }
-    await trackCompletion({
-      userId,
-      provider: route.provider,
-      model: route.model,
-      sourceTier: route.layer,
-      tokensIn: inputTokens,
-      tokensOut: outputTokens,
-    });
+    // B5: internal (summarizer) completions are platform COGS — log for
+    // measurability but suppress the user-allowance completion_costs write.
+    if (internalBilling) {
+      logger.info(
+        { feature: 'project-state-summarizer', userId, provider: route.provider, model: route.model, sourceTier: route.layer, tokensIn: inputTokens, tokensOut: outputTokens, billing: 'platform_cogs' },
+        'platform COGS (internal, not user-billed)',
+      );
+    } else {
+      await trackCompletion({
+        userId,
+        provider: route.provider,
+        model: route.model,
+        sourceTier: route.layer,
+        tokensIn: inputTokens,
+        tokensOut: outputTokens,
+      });
+    }
     // Goblin-hosted maps to provider 'openai'; don't let its health bleed into the
     // real OpenAI BYOK breaker.
     if (route.layer !== 'goblin_hosted') recordOutcome(route.provider, true);
