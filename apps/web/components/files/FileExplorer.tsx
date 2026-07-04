@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   FileCode, FileJson, FileText, Image as ImageIcon, Palette, File as FileIcon,
   Folder, ChevronRight, Upload, Download, Trash2, ArrowLeft, X,
-  Pencil, FolderPlus, FilePlus, MoreVertical, Copy, Share2, FolderInput, FolderSymlink, Code2,
+  Pencil, FolderPlus, FilePlus, MoreVertical, Copy, Share2, FolderInput, FolderSymlink, Code2, FileArchive,
 } from "lucide-react";
 import { API_URL, getToken } from "@/hooks/code/getToken";
 
@@ -203,6 +203,22 @@ export function FileExplorer({ projectId, projectName }: Props) {
     } catch { flash("Download fehlgeschlagen"); }
   }, [authFetch, projectId]);
 
+  // C4b: download the whole project as a ZIP (server streams the project prefix,
+  // excluding .trash/). Reuses the existing GET /:id/download endpoint.
+  const [zipping, setZipping] = useState(false);
+  const downloadZip = useCallback(async () => {
+    setZipping(true);
+    try {
+      const r = await authFetch(`/api/projects/${projectId}/download`);
+      if (!r.ok) { flash("Download fehlgeschlagen"); return; }
+      const blob = await r.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = `${(projectName || "projekt").replace(/[^\w.-]+/g, "-")}.zip`; a.click();
+      URL.revokeObjectURL(url);
+    } catch { flash("Download fehlgeschlagen"); } finally { setZipping(false); }
+  }, [authFetch, projectId, projectName]);
+
   // WALK3-3.2: fetch a text file's content (for copy / share). Returns null for
   // non-text or on error.
   const fetchText = useCallback(async (path: string): Promise<string | null> => {
@@ -338,6 +354,9 @@ export function FileExplorer({ projectId, projectName }: Props) {
         </button>
         <button onClick={() => setNamePrompt({ kind: "newfile", value: "" })} disabled={busy} style={btnGhost} title="Neue Datei">
           <FilePlus size={14} /> Datei
+        </button>
+        <button onClick={downloadZip} disabled={busy || zipping} style={btnGhost} title="Projekt als ZIP herunterladen" data-testid="download-zip">
+          <FileArchive size={14} /> {zipping ? "…" : "ZIP"}
         </button>
         <button onClick={() => fileInput.current?.click()} disabled={busy} style={btnPrimary}>
           <Upload size={14} /> Hochladen

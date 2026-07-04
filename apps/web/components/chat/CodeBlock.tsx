@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Copy, Check, ChevronDown, ChevronRight, FileCode2, FolderInput } from 'lucide-react';
+import { Copy, Check, ChevronDown, ChevronRight, FileCode2, FolderInput, Download, FileText } from 'lucide-react';
 import { highlight } from '@/lib/syntax/highlighter';
 import { useLang } from '@/lib/use-lang';
 import { useExistingFiles } from '@/contexts/existing-files-context';
@@ -101,6 +101,76 @@ export function CodeBlock({ code, lang, filename, asCard }: CodeBlockProps) {
     </span>
   ) : null;
 
+  // C4a: per-card download in the card's native format + correct MIME.
+  const mimeFor = (name: string): string => {
+    const e = name.slice(name.lastIndexOf('.') + 1).toLowerCase();
+    const map: Record<string, string> = {
+      html: 'text/html', htm: 'text/html', css: 'text/css', js: 'text/javascript',
+      mjs: 'text/javascript', ts: 'text/typescript', tsx: 'text/typescript',
+      json: 'application/json', md: 'text/markdown', markdown: 'text/markdown',
+      csv: 'text/csv', xml: 'application/xml', svg: 'image/svg+xml',
+      txt: 'text/plain', yml: 'text/yaml', yaml: 'text/yaml', py: 'text/x-python',
+    };
+    return map[e] ?? 'text/plain';
+  };
+  const downloadName = filename || `${lang || 'code'}.txt`;
+  const handleDownload = (e?: React.MouseEvent | React.KeyboardEvent) => {
+    e?.stopPropagation();
+    const blob = new Blob([code], { type: mimeFor(downloadName) });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = downloadName; a.click();
+    URL.revokeObjectURL(url);
+  };
+  const dlLabel = langPref === 'en' ? 'Download' : 'Herunterladen';
+  const DownloadAction = code.trim().length > 0 ? (
+    <span
+      role="button" tabIndex={0}
+      data-testid="cb-download"
+      onClick={handleDownload}
+      onKeyDown={(e) => { if (e.key === 'Enter') handleDownload(e); }}
+      aria-label={dlLabel} title={dlLabel}
+      style={{ flexShrink: 0, display: 'inline-flex', color: 'var(--meta)', cursor: 'pointer' }}
+    >
+      <Download size={14} />
+    </span>
+  ) : null;
+
+  // C4c: "Als PDF speichern" for document-class cards (md / plain prose) — opens a
+  // clean print view; the browser / iOS print-to-PDF does the rest (no server PDF
+  // rendering in v1). Gated to document outputs so we don't offer it on raw code.
+  const docExt = (() => {
+    const e = filename ? filename.slice(filename.lastIndexOf('.') + 1).toLowerCase() : '';
+    const l = (lang ?? '').toLowerCase();
+    if (['md', 'markdown', 'txt'].includes(e)) return true;
+    if (!filename && ['', 'markdown', 'md', 'text', 'plaintext'].includes(l)) return true;
+    return false;
+  })();
+  const pdfLabel = langPref === 'en' ? 'Save as PDF' : 'Als PDF speichern';
+  const handlePrintPdf = (e?: React.MouseEvent | React.KeyboardEvent) => {
+    e?.stopPropagation();
+    try {
+      sessionStorage.setItem('goblin:print-doc', JSON.stringify({
+        title: filename || (langPref === 'en' ? 'Document' : 'Dokument'),
+        content: code,
+        format: /\.(md|markdown)$/i.test(filename ?? '') || (lang ?? '').toLowerCase().startsWith('md') ? 'md' : 'text',
+      }));
+      window.open('/dashboard/print', '_blank', 'noopener');
+    } catch { /* ignore */ }
+  };
+  const PdfAction = docExt && code.trim().length > 0 ? (
+    <span
+      role="button" tabIndex={0}
+      data-testid="cb-save-pdf"
+      onClick={handlePrintPdf}
+      onKeyDown={(e) => { if (e.key === 'Enter') handlePrintPdf(e); }}
+      aria-label={pdfLabel} title={pdfLabel}
+      style={{ flexShrink: 0, display: 'inline-flex', color: 'var(--meta)', cursor: 'pointer' }}
+    >
+      <FileText size={14} />
+    </span>
+  ) : null;
+
   const lineCount = code === '' ? 0 : code.split('\n').length;
   const title = filename || lang || 'code';
 
@@ -125,6 +195,8 @@ export function CodeBlock({ code, lang, filename, asCard }: CodeBlockProps) {
           <span style={{ fontSize: 11.5, color: 'var(--meta)', flexShrink: 0 }}>
             {lang && filename ? `${lang} · ` : ''}{lineCount} {langPref === 'en' ? 'lines' : 'Zeilen'}
           </span>
+          {PdfAction}
+          {DownloadAction}
           {StcAction}
           <span
             role="button"
@@ -169,6 +241,8 @@ export function CodeBlock({ code, lang, filename, asCard }: CodeBlockProps) {
           <span className="cb-fname">{title}</span>
         )}
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+          {PdfAction}
+          {DownloadAction}
           {StcAction}
           <button className="cb-copy" onClick={handleCopy} aria-label="Code kopieren" title="Code kopieren">
             {copied ? <Check size={14} /> : <Copy size={14} />}

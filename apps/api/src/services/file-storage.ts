@@ -623,7 +623,9 @@ export async function purgeProjectStorage(projectIds: string[]): Promise<Project
  */
 export async function createZip(projectId: string): Promise<Buffer> {
   const zip = new JSZip();
-  const files = await listFiles(projectId);
+  // C4b: exclude soft-deleted files (the `.trash/` prefix) from the download —
+  // they are logically deleted and must not reappear in an exported ZIP.
+  const files = (await listFiles(projectId)).filter((f) => !f.startsWith('.trash/'));
 
   const entries = await Promise.all(
     files.map(async (filePath) => ({ filePath, content: await getFile(projectId, filePath) }))
