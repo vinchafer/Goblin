@@ -63,3 +63,60 @@ Live "Wo waren wir?" probe **BLOCKED** twice over: migration 0076 not applied an
 
 - Projects `[E2E-TEST] Habit Tracker FEEL2` (pre-existing) and `[E2E-TEST] FEEL2 U0U2 Mini` (created this session; contains an unsaved Code-workspace draft) remain on the test account; `styles.css` test artifact was deleted (trashed).
 - `GOBLIN_DEV_MODE=false` was inline-env only for the probe API process; `.env.local` untouched (`GOBLIN_DEV_MODE=true` on disk throughout).
+
+---
+
+# FEEL-2b — Fix-Wave (reverify session 2026-07-05)
+
+The four FEEL-2 findings (F1/F2/F3 + the Groq free-tier token-limit note) were fixed on branch `feel-sprint-2-2026-07-03` and re-verified. API suite **327/327 green**, `tsc --noEmit` clean (api + web).
+
+## Fixes (one isolated commit each)
+
+| ID | Commit | Addresses | Summary |
+|----|--------|-----------|---------|
+| B1 | `fe929f5` | F3 | Pin the project-state summarizer to `goblin/efficient` — the default slug 404'd on local free-key routing, silently never populating state. |
+| B2 | `8de5b4b` | U1 Groq note | `streamWithReducedContextRetry`: on a pre-content provider token-limit rejection (Groq TPM/413, OpenAI context, Anthropic prompt-too-long), retry ONCE with file contents stripped to names+sizes + honest German note. 7 unit tests. |
+| B3 | `39a0266` + `556285a` | F1 | Reclassify STC badge after the integrity auto-rename (two bugs — see below). |
+| B4 | `56ddedc` | F2 | Persist the chat file-card change line per assistant message id (localStorage `goblin:chat-change-notes`) so it survives reload. |
+
+### B3 — two bugs found & fixed during E2E
+The original F1 ("rename doesn't reclassify") was **two** defects, both surfaced only by running the flow end-to-end:
+1. **Wrong lookup key** (`39a0266`, `StcPreviewSheet.tsx`): status + diff were keyed by the **original** outgoing path, so a `styles.css -> style.css` rename left the badge stuck on **NEU**. Fixed to key by the **effective (renamed)** path.
+2. **Missing target content** (`556285a`, `standalone-chat.tsx`): even keyed correctly, the preview only fetched the **outgoing** file paths — the rename **target**'s content was never loaded, so the comparison lookup was empty and the badge still read NEU. Fixed to load **all** project text files (`fetchAllTextFiles`, capped at 30) before opening the preview, so any rename target is comparable.
+
+## Gate results
+
+- **G1.1 (U1 Swift probe 1)** — PASS. `goblin_hosted` / `goblin/efficient` confirmed; injected `index.html` byte-compared vs stored copy (identical). Tokens up 4'866 down 1'534. Evidence: `U1_swift_probe1.txt`.
+- **G1.2 (U1 Swift probe 2)** — PASS. File preserved; diff vs stored = 2 lines (`<h1>` + `<title>`). Observed note: the model mirrored the new heading into `<title>` as well — recorded as observed, acceptable. Evidence: `U1_swift_probe2.txt`.
+- **G1.3 (U1 Swift probe 3, over-budget file)** — PASS. `Zeig mir daten.json.` -> honest not-loaded answer: "der Inhalt ist nicht in meinen Kontext geladen — die Datei ist 59 KB gross und wird als 'zu gross' markiert", explicitly refusing to fabricate ("keinen erfundenen Inhalt ausgeben — das waere nicht korrekt"). Zero fabricated content. Tokens up 5'020 down 165. Evidence: `U1_swift_probe3.txt`.
+- **G2 (U3 end-to-end)** — PASS. Chat 1 stored the decision live: `project_state` row `decisions` = "...dauerhaft unter dem festen localStorage-Schluessel 'gob_habits_v2' als ein JSON-Objekt..." (row captured, `updated_at 2026-07-03T20:07:22Z`). NEW chat, same project, "Wo waren wir?" -> answer reflects the **real stored** decision (names `gob_habits_v2`, the single JSON object, defaults `darkMode='system'/notifications='disabled'/language='de'`) AND honestly flags it is "noch nicht im Code vorhanden" — no invented history. Evidence: `U3_swift_probe.txt` (+ `U3_swift_probe_chat1.txt`).
+- **G3 (B2 live, real Groq free key)** — PASS. daten.json (59 KB) is dropped as over-budget, so the plain project only injects ~11 KB (~2.5k tokens) — under Groq's 12k TPM. Condition forced per plan by adding a token-dense 34 KB JSON file that fits the 48k-char budget and IS injected. First request = **28'645 tokens -> Groq 413** ("tokens per minute (TPM): Limit 12000, Requested 28645"); `isTokenLimitError` matched; B2 retried ONCE with reduced context (names+sizes + `REDUCED_CONTEXT_NOTE`) -> stream **succeeded**; answer fabricated no file contents. The two `meta` events in the SSE are the attempt->retry transition; done at 2'550 tokens = the reduced request. Evidence: `B2_groq_fallback_sse.txt` (SSE + verbatim server-log 413).
+- **B3 E2E** — PASS. `styles.css -> style.css` auto-rename flips the badge **NEU -> IDENTISCH**. Evidence: `B3_01_before_rename.png`, `B3_02_after_rename.png`.
+- **B4 E2E** — PASS. Live revision rendered "aendert index.html · +1 -1"; after a hard reload the line re-rendered **identical** from the persisted store (before == after == `aendert index.html · +1 -1`). Evidence: `B4_01_live_change_line.png`, `B4_02_after_reload.png`. (Run pinned the chat model to Goblin Swift: the keyless Groq default hits its 12k TPM on this project — the very case B2 handles — and its reduced-context retry strips the file contents the model needs to emit the full file. Swift has no such cap. This is an E2E-harness choice, not a B4 change.)
+
+## Updated token counts
+- U1 injection on the habit project: system prompt ~18.7k chars (~4.7k tokens) with injection vs ~7.5k chars (~1.9k tokens) without -> **~2.8k-token delta** per turn (budget-capped at ~12k tokens / 48k chars worst case).
+- Swift turns on this project: up 4.8-5.0k input tokens.
+- B2 trigger reproduced deterministically at **28'645** request tokens (dense 34 KB injected) -> 413 -> reduced to **2'550**.
+
+## Consumption ledger (`docs/GOBLIN_CONSUMPTION_LEDGER.md`) — ADDED (commit `[L1]`)
+
+Added from the founder's copy (`04 - Financials_Machbarkeit/GOBLIN_CONSUMPTION_LEDGER.md`) as its own commit `docs: consumption ledger v1 [L1]`, with all VERIFY-PATH cells resolved and the M3 accounting verified against the live code. Resolved locations:
+
+- **FORGE_WEIGHT** = `4.4` -> `apps/api/src/lib/goblin-cap.ts:48` (derived `0.715 / 0.162`, Forge ~4.4x Swift per token).
+- **COST_UNITS_PER_BUILD** = `150_000` -> `apps/api/src/lib/goblin-cap.ts:84` (1 build ~0.15M cost units ~150k Swift / ~34k Forge tokens).
+- **Monthly allowance table** -> `GOBLIN_MONTHLY_ALLOWANCE` `goblin-cap.ts:55`; default (trial) `GOBLIN_DEFAULT_ALLOWANCE = 4_900_000` `:68`. Formula `cost_units = swift_tokens + forge_tokens x FORGE_WEIGHT` (header, `goblin-cap.ts:10`).
+- **Allowance accounting / history window** -> `goblinWeightedUsage()` `apps/api/src/services/model-router.ts:275-306`: one month-scoped read of `completion_costs` filtered `user_id` + `source_tier='goblin_hosted'`, summing `tokens_in + tokens_out`, split Swift vs Forge by `model === 'goblin/premium'` (Forge), for the calendar month and the current day. Allowance gate at `model-router.ts:~501` (`allowance_reached`); usage is written by `trackCompletion()` at `model-router.ts:566`. Chat history window = last **50** messages (`chat-sessions.ts:174`).
+
+### M3 — is the summarizer billed to the user's allowance? (what the code ACTUALLY does)
+**It IS billed.** `updateProjectState()` (`project-state.ts:86`) calls `streamCompletionGuarded({ userId, projectId, modelPreference: 'goblin/efficient', ... })` with the **real userId** and the goblin_hosted Swift tier. That path (a) is subject to the allowance gate — a user at their cap has summarization silently rejected — and (b) records a `completion_costs` row via `trackCompletion` (`model-router.ts:566`) that `goblinWeightedUsage` sums into the user's **monthly Swift usage**. There is **no exemption / system-user bypass** for the background summarizer. If M3's intent is that rolling-memory summarization must NOT consume user allowance, that is a **gap** (fix would be a dedicated non-billed path or a system userId) — flagged, not silently changed.
+
+## For the founder
+1. **DeepInfra key**: the scoped key is to be **revoked after this run** (per plan). Swift gates G1/G2/G3 above were captured while it was live.
+2. **Consumption ledger**: added as `docs/GOBLIN_CONSUMPTION_LEDGER.md` (commit `[L1]`) with VERIFY-PATH cells resolved. **Action needed:** M3 verified as billing-to-user (see item 3); M4's per-build 150k charge site is still VERIFY-PATH (not located this pass).
+3. **M3 gap**: summarizer tokens currently DO count against the user's monthly Swift allowance (see above) — decide whether that is intended.
+4. Migration **0076** (`project_state`) status unchanged from the FEEL-2 report — confirm it is applied in prod before relying on U3 live.
+
+## Test residue (FEEL-2b)
+- Test-account project `[E2E-TEST] Habit Tracker FEEL2` (`99e9238c...`) gained transient chat sessions (B4/G3) and a temporary `big.json` (G3) that was **purged** (hard delete verified — files back to `daten.json, index.html, script-1.js, script.js`).
+- Local `GOBLIN_DEV_MODE=false` + `ALLOWED_ORIGINS=http://localhost:3100` were inline-env on the probe API process only; `.env.local` untouched on disk.

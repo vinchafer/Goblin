@@ -1,0 +1,199 @@
+# probe 2026-07-04T00:34:27.552Z
+# session=1b4c5cd6-5e82-4ec6-9b67-e58d25567259 project=99e9238c-bbc4-4293-a113-0ef522781988 modelSlug=groq/llama-3.3-70b-versatile
+# message=Was macht dieses Projekt? Fasse kurz zusammen.
+# http=200
+
+data: {"type":"meta","source_tier":"byok","model":"llama-3.3-70b-versatile","model_slug":"groq/llama-3.3-70b-versatile","provider":"groq"}
+
+data: {"type":"meta","source_tier":"byok","model":"llama-3.3-70b-versatile","model_slug":"groq/llama-3.3-70b-versatile","provider":"groq"}
+
+data: {"type":"delta","content":"Dies"}
+
+data: {"type":"delta","content":"es"}
+
+data: {"type":"delta","content":" Projekt"}
+
+data: {"type":"delta","content":","}
+
+data: {"type":"delta","content":" '"}
+
+data: {"type":"delta","content":"H"}
+
+data: {"type":"delta","content":"abit"}
+
+data: {"type":"delta","content":" Tracker"}
+
+data: {"type":"delta","content":" FE"}
+
+data: {"type":"delta","content":"EL"}
+
+data: {"type":"delta","content":"2"}
+
+data: {"type":"delta","content":"',"}
+
+data: {"type":"delta","content":" ist"}
+
+data: {"type":"delta","content":" eine"}
+
+data: {"type":"delta","content":" lokale"}
+
+data: {"type":"delta","content":" deutsche"}
+
+data: {"type":"delta","content":" Web"}
+
+data: {"type":"delta","content":"-"}
+
+data: {"type":"delta","content":"App"}
+
+data: {"type":"delta","content":","}
+
+data: {"type":"delta","content":" die"}
+
+data: {"type":"delta","content":" es"}
+
+data: {"type":"delta","content":" Ben"}
+
+data: {"type":"delta","content":"utz"}
+
+data: {"type":"delta","content":"ern"}
+
+data: {"type":"delta","content":" ermög"}
+
+data: {"type":"delta","content":"licht"}
+
+data: {"type":"delta","content":","}
+
+data: {"type":"delta","content":" ihre"}
+
+data: {"type":"delta","content":" Gew"}
+
+data: {"type":"delta","content":"ohn"}
+
+data: {"type":"delta","content":"heiten"}
+
+data: {"type":"delta","content":" zu"}
+
+data: {"type":"delta","content":" ver"}
+
+data: {"type":"delta","content":"fol"}
+
+data: {"type":"delta","content":"gen"}
+
+data: {"type":"delta","content":"."}
+
+data: {"type":"delta","content":" Die"}
+
+data: {"type":"delta","content":" App"}
+
+data: {"type":"delta","content":" spe"}
+
+data: {"type":"delta","content":"ichert"}
+
+data: {"type":"delta","content":" Ben"}
+
+data: {"type":"delta","content":"utz"}
+
+data: {"type":"delta","content":"ere"}
+
+data: {"type":"delta","content":"inst"}
+
+data: {"type":"delta","content":"ellungen"}
+
+data: {"type":"delta","content":" in"}
+
+data: {"type":"delta","content":" localStorage"}
+
+data: {"type":"delta","content":" und"}
+
+data: {"type":"delta","content":" enth"}
+
+data: {"type":"delta","content":"ält"}
+
+data: {"type":"delta","content":" eine"}
+
+data: {"type":"delta","content":" E"}
+
+data: {"type":"delta","content":"inst"}
+
+data: {"type":"delta","content":"ell"}
+
+data: {"type":"delta","content":"ungs"}
+
+data: {"type":"delta","content":"seite"}
+
+data: {"type":"delta","content":" mit"}
+
+data: {"type":"delta","content":" Option"}
+
+data: {"type":"delta","content":"en"}
+
+data: {"type":"delta","content":" wie"}
+
+data: {"type":"delta","content":" Dark"}
+
+data: {"type":"delta","content":" Mode"}
+
+data: {"type":"delta","content":","}
+
+data: {"type":"delta","content":" Ben"}
+
+data: {"type":"delta","content":"ach"}
+
+data: {"type":"delta","content":"richt"}
+
+data: {"type":"delta","content":"ig"}
+
+data: {"type":"delta","content":"ungs"}
+
+data: {"type":"delta","content":"-T"}
+
+data: {"type":"delta","content":"oggle"}
+
+data: {"type":"delta","content":" und"}
+
+data: {"type":"delta","content":" Spr"}
+
+data: {"type":"delta","content":"ach"}
+
+data: {"type":"delta","content":"aus"}
+
+data: {"type":"delta","content":"wahl"}
+
+data: {"type":"delta","content":"."}
+
+data: {"type":"done","input_tokens":2550,"output_tokens":78,"token_display":"↑2'550 ↓78 tokens · $0.0016","source_tier":"byok","model_used":"llama-3.3-70b-versatile","messageId":"8ccf7e53-fe38-4a08-aef7-ee8e17839902"}
+
+
+
+# ============================================================================
+# G3 ANALYSIS — B2 reduced-context retry, LIVE against real Groq free key
+# ============================================================================
+# Condition forced per prompt ("grow the injected content within the 48k budget"):
+# daten.json (59 KB) exceeds the 48 000-char FILE_CONTENT_BUDGET_CHARS and is
+# dropped as too-large, so the un-augmented project only injects ~11 KB
+# (index.html + script.js + script-1.js) → ~2.5k tokens, UNDER Groq's 12k TPM.
+# To reproduce the report's failing case, a token-dense 34 KB JSON file
+# (big.json) was uploaded; it fits the budget and IS injected.
+#
+# FIRST attempt (full context, big.json contents injected) — Groq rejected it.
+# Verbatim provider error from server log (swallowed by B2 before any content,
+# so it does NOT appear in the SSE above — this is the whole point of the fix):
+#
+#   [chat] provider token-limit rejection — retrying once with reduced project
+#   context: 413 Request too large for model `llama-3.3-70b-versatile` in
+#   organization `org_01kt2mw249etpa3fk631kkys1a` service tier `on_demand` on
+#   tokens per minute (TPM): Limit 12000, Requested 28645, please reduce your
+#   message size and try again.
+#
+# isTokenLimitError() matched "/request too large/i" + "/tokens per minute (TPM)/i".
+# Requested = 28 645 tokens (big.json is token-dense JSON) vs Limit 12 000.
+#
+# RETRY (reduced context: file names+sizes only + REDUCED_CONTEXT_NOTE) — SUCCEEDED.
+# This is why TWO `meta` events appear above: attempt 1 meta, then retry meta.
+# The done event's input_tokens=2550 is the REDUCED request (contents stripped).
+# The assembled answer is honest: it summarizes the project from names/state only
+# and fabricates NO big.json / daten.json contents (E7 honesty rule holds).
+#
+# VERDICT: G3 PASS — real Groq 413 TPM rejection → exactly ONE automatic
+# reduced-context retry → stream succeeded → no fabricated file contents.
+# (Deterministic corroboration: server-log line above; single retry, no loop.)
