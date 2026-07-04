@@ -124,7 +124,7 @@ function PasswordStrengthBar({ strength }: { strength: { score: number; label: s
 const VALUE_BULLETS = [
   { title: 'Build from your phone', body: 'Real coding sessions on iPad, iPhone, anywhere. Not a watered-down chat.' },
   { title: 'Bring your own keys', body: 'Anthropic, OpenAI, Groq, Mistral — encrypted at rest, never sent to us.' },
-  { title: 'Ship to GitHub + Vercel', body: 'One click from chat to commit to live preview.' },
+  { title: 'Ship to GitHub + Vercel', body: 'One click from chat to a saved version to live preview.' },
 ];
 
 export default function LoginPage() {

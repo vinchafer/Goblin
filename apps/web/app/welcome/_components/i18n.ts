@@ -165,7 +165,10 @@ export const STR: Record<Lang, {
       eyebrow: 'Vibe Coding',
       titleA: 'Du sagst, was du willst.',
       titleB: 'Goblin baut es.',
-      lead: 'Kein Setup, kein Laptop, kein Code-Wissen nötig. So einfach läuft es:',
+      lead:
+        'Du beschreibst in normalen Sätzen, was du willst — Goblin schreibt daraus '
+        + 'echten Code, den du mit einem Klick veröffentlichst. Kein Editor-Wissen '
+        + 'nötig. So einfach läuft es:',
       points: [
         {
           title: 'Beschreib es in normaler Sprache',
@@ -273,7 +276,7 @@ export const STR: Record<Lang, {
       flow: { prompt: 'Prompt', l1: 'Ebene 1 · Standard', l2: 'Ebene 2 · optional', l3: 'Ebene 3 · optional' },
       flowCap: 'Der Standard funktioniert sofort — kein Key, keine Konfiguration.',
       // D1(a) copy — DRAFT (Gate 3): GitHub + Vercel are built in.
-      shipNote: 'Und wenn du live gehen willst: GitHub und Vercel sind eingebaut — ein Klick vom Chat zum Commit zur Live-Vorschau.',
+      shipNote: 'Und wenn du live gehen willst: GitHub und Vercel sind eingebaut — ein Klick vom Chat zum gespeicherten Stand zur Live-Vorschau.',
       continue: 'Weiter — Modelle ansehen', skip: 'Überspringen',
       footChange: 'STANDARD FUNKTIONIERT SOFORT — KEIN KEY',
       footNext: 'WEITER — MODELLE →',
@@ -293,7 +296,7 @@ export const STR: Record<Lang, {
       fallbackTag: 'AUTO-ROUTING · ÜBER DEINE PROVIDER',
       // 1D value copy — DRAFT (Gate 3): both tiers framed as exciting choices, not homework.
       freeGroupLabel: 'Kostenlos · keine Karte',
-      freeGroupSub: 'Schalte kostenlos stärkere Modelle frei — weiterhin keine Karte, in ~60 Sek verbunden.',
+      freeGroupSub: 'Schalte kostenlos stärkere Modelle frei — weiterhin keine Karte, du brauchst nur ein Google-Konto.',
       paidGroupLabel: 'Bezahlt · Frontier · nutzungsbasiert',
       paidGroupSub: 'Bring deinen eigenen Key für Spitzenqualität, wann du willst — dein Key, kein Aufschlag, du zahlst nur, was du nutzt.',
       recommended: 'EMPFOHLEN · KOSTENLOS', startSetup: 'Einrichten', connect: 'Verbinden',
@@ -367,12 +370,12 @@ export const STR: Record<Lang, {
       sec2num: '/02 — Infrastruktur', sec2title: 'Backend & Hosting',
       sec2desc: 'Für Projekte, die einem statischen Deploy entwachsen. Aus den Einstellungen verbindbar, sobald verfügbar.',
       sec3num: '/03 — Geplant', sec3title: 'Zahlungen, Produktivität & Alerts',
-      githubDesc: 'Auto-Commit & Push direkt aus dem Chat — die Source-of-Truth für jedes Goblin-Projekt.',
+      githubDesc: 'Automatisch gesichert & veröffentlicht direkt aus dem Chat — die verlässliche Quelle für jedes Goblin-Projekt.',
       connectGithub: 'GitHub verbinden', connecting: 'Verbinde…',
       githubOwnTitle: 'Noch kein GitHub?',
       githubOwnBody:
         ' Goblin pusht in dein eigenes GitHub — du behältst den Code. '
-        + 'Account in unter einer Minute, kostenlos.',
+        + 'Der Account ist kostenlos.',
       githubOwnCta: 'Kostenloses GitHub erstellen →',
       ownTitle: 'Du bringst dein eigenes Vercel mit.',
       ownBody:
@@ -390,7 +393,7 @@ export const STR: Record<Lang, {
       mobileTitle: 'Du bist am Desktop.',
       mobileBody: ' Goblin läuft auch auf deinem Handy — arbeite von überall, ship von überall.',
       copyLink: 'Link kopieren', linkCopied: 'Link kopiert ✓',
-      summaryEyebrow: 'DU BIST BEREIT · 5 MIN INSGESAMT',
+      summaryEyebrow: 'DU BIST BEREIT',
       summaryTitle: 'Provider, Routing, Werkzeuge, Integrationen —',
       summaryBody: 'Goblin hat alles parat. Lass uns dein erstes Projekt bauen.',
       startBuilding: 'Loslegen', skipAll: 'Alles überspringen',
@@ -424,7 +427,10 @@ export const STR: Record<Lang, {
       eyebrow: 'Vibe coding',
       titleA: 'You say what you want.',
       titleB: 'Goblin builds it.',
-      lead: 'No setup, no laptop, no coding knowledge needed. Here is how it works:',
+      lead:
+        'You describe what you want in plain sentences — Goblin turns it into real '
+        + 'code that you publish with one click. No editor skills needed. Here is how '
+        + 'it works:',
       points: [
         {
           title: 'Describe it in plain language',
@@ -531,7 +537,7 @@ export const STR: Record<Lang, {
       flow: { prompt: 'Prompt', l1: 'Layer 1 · default', l2: 'Layer 2 · optional', l3: 'Layer 3 · optional' },
       flowCap: 'The default works out of the box — no key, no setup.',
       // D1(a) copy — DRAFT (Gate 3): GitHub + Vercel are built in.
-      shipNote: 'And when you want to go live: GitHub and Vercel are built in — one click from chat to commit to live preview.',
+      shipNote: 'And when you want to go live: GitHub and Vercel are built in — one click from chat to a saved version to live preview.',
       continue: 'Continue — see the models', skip: 'Skip',
       footChange: 'THE DEFAULT WORKS OUT OF THE BOX — NO KEY',
       footNext: 'NEXT — MODELS →',
@@ -551,7 +557,7 @@ export const STR: Record<Lang, {
       fallbackTag: 'AUTO-ROUTING · ACROSS YOUR PROVIDERS',
       // 1D value copy — DRAFT (Gate 3): both tiers framed as exciting choices, not homework.
       freeGroupLabel: 'Free · no card',
-      freeGroupSub: 'Add more capable models for free — still no card, connected in ~60 sec.',
+      freeGroupSub: 'Add more capable models for free — still no card, all you need is a Google account.',
       paidGroupLabel: 'Paid · frontier · usage-based',
       paidGroupSub: 'Bring your own key for top-tier quality when you want it — your key, no markup, pay only for what you use.',
       recommended: 'RECOMMENDED · FREE', startSetup: 'Start setup', connect: 'Connect',
@@ -625,12 +631,12 @@ export const STR: Record<Lang, {
       sec2num: '/02 — Infrastructure', sec2title: 'Backend & hosting',
       sec2desc: 'For projects that outgrow a static deploy. Connectable from Settings as these land.',
       sec3num: '/03 — Planned', sec3title: 'Payments, productivity & alerts',
-      githubDesc: 'Auto-commit & push straight from chat — the source-of-truth for every Goblin project.',
+      githubDesc: 'Automatically saved & published straight from chat — the reliable source for every Goblin project.',
       connectGithub: 'Connect GitHub', connecting: 'Connecting…',
       githubOwnTitle: 'No GitHub yet?',
       githubOwnBody:
         " Goblin pushes to your own GitHub — you keep the code. "
-        + 'Account in under a minute, free.',
+        + 'The account is free.',
       githubOwnCta: 'Create a free GitHub →',
       ownTitle: 'You bring your own Vercel.',
       ownBody:
@@ -648,7 +654,7 @@ export const STR: Record<Lang, {
       mobileTitle: "You're on desktop.",
       mobileBody: ' Goblin runs on your phone too — work from anywhere, ship from anywhere.',
       copyLink: 'Copy link', linkCopied: 'Link copied ✓',
-      summaryEyebrow: "YOU'RE READY · 5 MIN TOTAL",
+      summaryEyebrow: "YOU'RE READY",
       summaryTitle: 'Provider, routing, tools, integrations —',
       summaryBody: "Goblin's got everything queued. Let's build your first project.",
       startBuilding: 'Start building', skipAll: 'Skip all',
@@ -688,7 +694,7 @@ export const PROV_COPY: Record<Lang, Record<ProvCopyId, ProvCopy>> = {
         '3–5× schneller als die Standard-API',
         'Läuft über Goblins verschlüsselten Proxy',
       ],
-      price: 'KOSTENLOS · KEINE KARTE · ~ 60 SEK',
+      price: 'KOSTENLOS · KEINE KARTE',
       guide: [
         'Geh auf console.groq.com/keys',
         'Mit Google/GitHub anmelden',
@@ -703,7 +709,7 @@ export const PROV_COPY: Record<Lang, Record<ProvCopyId, ProvCopy>> = {
         'Starkes Coding, Bild + Audio, riesiger Kontext',
         'Auto-Routing über Goblins verschlüsselten Proxy',
       ],
-      price: 'KOSTENLOS · KEINE KARTE · ~ 60 SEK',
+      price: 'KOSTENLOS · KEINE KARTE',
       guide: [
         'Geh auf aistudio.google.com',
         'Mit Google-Account anmelden',
@@ -757,7 +763,7 @@ export const PROV_COPY: Record<Lang, Record<ProvCopyId, ProvCopy>> = {
         '3–5× faster than the standard API',
         "Runs through Goblin's encrypted proxy",
       ],
-      price: 'FREE · NO CARD · ~ 60 SEC',
+      price: 'FREE · NO CARD',
       guide: [
         'Go to console.groq.com/keys',
         'Sign in with Google/GitHub',
@@ -772,7 +778,7 @@ export const PROV_COPY: Record<Lang, Record<ProvCopyId, ProvCopy>> = {
         'Strong coding, image + audio, huge context',
         "Auto-routes through Goblin's encrypted proxy",
       ],
-      price: 'FREE · NO CARD · ~ 60 SEC SETUP',
+      price: 'FREE · NO CARD',
       guide: [
         'Go to aistudio.google.com',
         'Sign in with your Google account',
