@@ -43,11 +43,21 @@ Brought the local harness up per the FEEL-2/2b recipe:
 
 Both are **pre-existing test-harness / Supabase-config issues, independent of the C1–C4 code** — not a ≤1-commit product fix. Per the guardrail → HALT. Specs 43–46 are authored and correct; they will run once the local auth harness is repaired (add `:3100` to the Supabase redirect allowlist, or update the password-login selector) or against working CI. Harness torn down; `apps/web/.env.local` restored; tree clean.
 
-## Merge decision — HALT (awaiting go/no-go)
-The founder's merge authorization is **conditional on all unit-gate evidence being present**. The static gates are green, but the **live E2E evidence is not** (authored, not run) and the merge deploys to prod (Vercel + Railway) — an irreversible outward action. I am **not** auto-merging on unverified live gates.
+## Live E2E — GREEN (resolved, option 3)
+The auth blocker was resolved using the memory recipe (`goblin-local-e2e-browser`): the working local login is **`/auth/test-callback`** (admin `generate_link` → `verify` OTP → `setSession`), NOT the implicit magic-callback. Added reliable, DOM-independent fixtures (`resolveTestProjectId`, `createProjectChatSession`, `mintUserToken`, `seedProjectFile`) — the stale `openFirstProject`/`.project-row` selector was the real blocker (9C/9D shell moved projects to the sidebar; the composer lives at `/dashboard/chat/[id]`, not the project overview). Committed as `102bd05`.
 
-**To proceed, either:**
-1. Run the E2E suite locally/CI (`PLAYWRIGHT … 43-46 @local-only`) and confirm green, then I rebase (no-op) + `merge --no-ff` + push + verify both `/api/version` on the merge SHA + prod smoke; **or**
-2. Explicitly authorize merge on static gates + authored specs (accepting live E2E as post-merge verification).
+Result on the local stack (api :3001 `GOBLIN_DEV_MODE=false`, web :3100 webpack):
+- **43 (C1):** mic click → transcript in composer, NOT auto-sent (verified no message bubble carries it); native typing not swallowed. PASS.
+- **44 (C2):** .md content enters the sent turn; 25k over-budget blocked with honest error; image → honest no-vision note. PASS ×3.
+- **45 (C3):** real Groq generation → file-card → per-card übernehmen → StcPreviewSheet badge. PASS.
+- **46 (C4):** "Projekt als ZIP" downloads a .zip (seeded file); print view renders cleanly at 375px (no overflow) + desktop. PASS ×2.
 
-**Telemetry segmentation boundary** (to record at merge): the merge SHA + exact merge timestamp mark the pre/post consumption boundary for the running telemetry week. Not yet set — no merge performed.
+## Merge — DONE
+Rebased onto `origin/master` (clean no-op) → `merge --no-ff` → pushed.
+- **Merge SHA:** `a7a50c49ce6e944c58feb750a592af6ce4ff15cd` (`a7a50c4`)
+- **Merge timestamp (TELEMETRY SEGMENTATION BOUNDARY):** `2026-07-04T13:13:58-10:00` — pre/post consumption boundary for the telemetry week.
+- **Deploy verified:** both `/api/version` report the merge SHA — web (Vercel) `a7a50c49…` + api (Railway) `a7a50c49…`.
+- **Prod deploy smoke (unauthenticated):** `POST /api/transcribe` → 401 (deployed), `POST /api/attachments/extract` → 401, `GET /api/projects/:id/download` → 401, `/print` → 307→/login (auth-gated, renders for logged-in users), sitemap serves `justgoblin.com` (R1). All new surface is live.
+
+## Honest limitations (founder acceptance)
+- **Authenticated prod interaction smoke** (one dictation attempt desktop, one .md attach+summary, one per-card übernehmen, one card download): **cannot be driven headlessly on prod** — prod `/login` is PKCE code-flow and `NEXT_PUBLIC_ENABLE_TEST_AUTH` is off in prod, so the test-callback self-login used locally does not work there (confirmed: test-callback → no `/dashboard`). These four are the **founder's acceptance step**, alongside **real-iPhone dictation** (C1). All four are fully E2E-verified against the identical build on the local stack.
