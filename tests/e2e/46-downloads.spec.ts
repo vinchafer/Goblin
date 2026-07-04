@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { loginAsRealTestUser, openFirstProject, dismissTour } from './helpers/auth';
+import { loginAsTestCallback as loginAsRealTestUser, resolveTestProjectId, seedProjectFile, dismissTour } from './helpers/auth';
 
 /**
  * C4 — downloads. Project ZIP (C4b) and the clean print-to-PDF view (C4c). The
@@ -13,18 +13,21 @@ test.describe('Downloads', { tag: '@local-only' }, () => {
   test.beforeAll(async ({ browser }) => {
     const page = await browser.newPage();
     await loginAsRealTestUser(page);
-    projectId = await openFirstProject(page);
+    projectId = await resolveTestProjectId(page);
+    // Ensure the project has at least one file so the ZIP export is non-empty.
+    await seedProjectFile(page, projectId, 'e2e-zip.html', '<h1>zip fixture</h1>');
     await page.close();
   });
 
   test('C4b — "Projekt als ZIP" downloads a .zip', async ({ page }) => {
     await loginAsRealTestUser(page);
     await page.goto(`/dashboard/project/${projectId}/files`);
-    await page.waitForLoadState('networkidle');
+    await page.waitForLoadState('domcontentloaded');
     await dismissTour(page);
 
+    // Wait on the button itself (networkidle is unreliable during webpack dev first-compile).
     const zipBtn = page.locator('[data-testid="download-zip"]');
-    await expect(zipBtn).toBeVisible({ timeout: 15000 });
+    await expect(zipBtn).toBeVisible({ timeout: 30000 });
 
     const [download] = await Promise.all([
       page.waitForEvent('download', { timeout: 20000 }),

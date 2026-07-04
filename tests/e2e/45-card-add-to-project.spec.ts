@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { loginAsRealTestUser, openFirstProject, dismissTour } from './helpers/auth';
+import { loginAsTestCallback as loginAsRealTestUser, resolveTestProjectId, createProjectChatSession, dismissTour } from './helpers/auth';
 
 /**
  * C3 — per-card "Ins Projekt übernehmen". In a project-bound chat, each generated
@@ -11,17 +11,19 @@ const PROMPT = 'Erzeuge eine index.html mit einer Überschrift "Hallo". Nur eine
 
 test.describe('Per-card add-to-project', { tag: '@local-only' }, () => {
   let projectId: string;
+  let chatId: string;
 
   test.beforeAll(async ({ browser }) => {
     const page = await browser.newPage();
     await loginAsRealTestUser(page);
-    projectId = await openFirstProject(page);
+    projectId = await resolveTestProjectId(page);
+    chatId = await createProjectChatSession(page, projectId);
     await page.close();
   });
 
   test('a generated file-card exposes add-to-project and opens the STC preview with a badge', async ({ page }) => {
     await loginAsRealTestUser(page);
-    await page.goto(`/dashboard/project/${projectId}`);
+    await page.goto(`/dashboard/chat/${chatId}`);
     await page.waitForLoadState('networkidle');
     await dismissTour(page);
 

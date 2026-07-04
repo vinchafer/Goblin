@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { loginAsRealTestUser, openFirstProject, dismissTour } from './helpers/auth';
+import { loginAsTestCallback as loginAsRealTestUser, resolveTestProjectId, createProjectChatSession, dismissTour } from './helpers/auth';
 
 /**
  * C2 — Attachments reach the model. The composed user turn embeds the real file
@@ -14,17 +14,19 @@ const MD_CONTENT = '# Reisenotizen\n\nDie Hauptstadt von Portugal ist Lissabon. 
 
 test.describe('Chat attachments', { tag: '@local-only' }, () => {
   let projectId: string;
+  let chatId: string;
 
   test.beforeAll(async ({ browser }) => {
     const page = await browser.newPage();
     await loginAsRealTestUser(page);
-    projectId = await openFirstProject(page);
+    projectId = await resolveTestProjectId(page);
+    chatId = await createProjectChatSession(page, projectId);
     await page.close();
   });
 
   async function openChat(page: import('@playwright/test').Page) {
     await loginAsRealTestUser(page);
-    await page.goto(`/dashboard/project/${projectId}`);
+    await page.goto(`/dashboard/chat/${chatId}`);
     await page.waitForLoadState('networkidle');
     await dismissTour(page);
     await page.locator('textarea[data-chat-input]').first().waitFor({ state: 'visible', timeout: 15000 });

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { loginAsRealTestUser, openFirstProject, dismissTour } from './helpers/auth';
+import { loginAsTestCallback as loginAsRealTestUser, resolveTestProjectId, createProjectChatSession, dismissTour } from './helpers/auth';
 
 /**
  * C1 — Dictation. Desktop-Chrome path uses the on-device Web Speech API; we inject
@@ -42,18 +42,20 @@ const INSTALL_MOCK_SR = (transcript: string) => {
 
 test.describe('Dictation — Web Speech path (mocked)', { tag: '@local-only' }, () => {
   let projectId: string;
+  let chatId: string;
 
   test.beforeAll(async ({ browser }) => {
     const page = await browser.newPage();
     await loginAsRealTestUser(page);
-    projectId = await openFirstProject(page);
+    projectId = await resolveTestProjectId(page);
+    chatId = await createProjectChatSession(page, projectId);
     await page.close();
   });
 
   test('mic click inserts the transcript into the composer and does not auto-send', async ({ page }) => {
     await page.addInitScript(INSTALL_MOCK_SR, MOCK_TRANSCRIPT);
     await loginAsRealTestUser(page);
-    await page.goto(`/dashboard/project/${projectId}`);
+    await page.goto(`/dashboard/chat/${chatId}`);
     await page.waitForLoadState('networkidle');
     await dismissTour(page);
 
@@ -66,13 +68,14 @@ test.describe('Dictation — Web Speech path (mocked)', { tag: '@local-only' }, 
 
     // Transcript should appear in the composer…
     await expect(textarea).toHaveValue(new RegExp(MOCK_TRANSCRIPT, 'i'), { timeout: 5000 });
-    // …and must NOT have been sent (still editable in the composer, no user bubble).
-    await expect(page.locator(`text="${MOCK_TRANSCRIPT}"`)).toHaveCount(0);
+    // …and must NOT have been sent: no message bubble in the chat list carries it
+    // (the composer sits outside .chat-scroll, so this excludes the textarea itself).
+    await expect(page.locator('.chat-scroll').getByText(MOCK_TRANSCRIPT, { exact: false })).toHaveCount(0);
   });
 
   test('native keyboard typing is not swallowed by the composer', async ({ page }) => {
     await loginAsRealTestUser(page);
-    await page.goto(`/dashboard/project/${projectId}`);
+    await page.goto(`/dashboard/chat/${chatId}`);
     await page.waitForLoadState('networkidle');
     await dismissTour(page);
 
