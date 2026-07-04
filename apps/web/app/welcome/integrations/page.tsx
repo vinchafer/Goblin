@@ -147,7 +147,7 @@ export default function IntegrationsStepPage() {
         <Integration name="Notion" letter="N" logoBg="#111111"
           desc={lang === 'de' ? 'Synct Produkt-Specs in deinen Notion-Workspace.' : 'Sync product specs into your Notion workspace.'} soon soonLabel={t.soon} />
         <Integration name="Discord" Logo={IBell} logoBg="#5865F2"
-          desc={lang === 'de' ? 'Pings in einen Channel — „Newsletter-Tool in 28s deployed“.' : 'Ship pings to a channel — "Newsletter Tool deployed in 28s".'} soon soonLabel={t.soon} />
+          desc={lang === 'de' ? 'Pings in einen Channel — „Newsletter-Tool ist live“.' : 'Ship pings to a channel — "Newsletter Tool is live".'} soon soonLabel={t.soon} />
         <Integration name="Cloudflare" Logo={IGlobe} logoBg="#F38020"
           desc={lang === 'de' ? 'DNS + Workers / KV / R2 für Edge-Stacks.' : 'DNS + Workers / KV / R2 for edge stacks.'} soon soonLabel={t.soon} />
       </Section>

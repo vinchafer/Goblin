@@ -90,6 +90,11 @@ const nextConfig: NextConfig = {
     return [
       // LP-3: legacy /landing-v2 review URL → production / (LP-2 is now the landing)
       { source: '/landing-v2', destination: '/', permanent: true },
+      // H3: /de previously 404'd (no route, no i18n routing). The marketing landing
+      // is served language-neutral at / (client toggles DE/EN), so /de has no distinct
+      // canonical page — 301 it to the canonical landing. Runs before auth middleware,
+      // so unauthenticated visitors are not bounced to /login. /en and / are untouched.
+      { source: '/de', destination: '/', permanent: true },
     ];
   },
 };

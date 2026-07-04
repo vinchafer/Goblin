@@ -2,7 +2,7 @@ import { createHash, randomBytes } from 'crypto';
 import Stripe from 'stripe';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { sendEmail } from '../lib/email';
-import { deleteUserStorage } from './file-storage';
+import { deleteUserStorage, purgeProjectStorage } from './file-storage';
 import logger from '../lib/logger';
 
 /**
@@ -451,7 +451,41 @@ export async function hardDeleteUser(userId: string): Promise<HardDeleteOutcome>
   if (wlErr) throw new Error(`goblin_hosted_waitlist delete failed: ${wlErr.message}`);
 
   const removed = await deleteUserStorage(userId);
-  logger.info({ userIdHash: sha256(userId), objects: removed }, 'account-deletion: storage purged');
+  logger.info({ userIdHash: sha256(userId), objects: removed }, 'account-deletion: user storage purged');
+
+  // GDPR (Art. 17): the user's PROJECT files under projects/<id>/ (incl. each
+  // project's .trash/) must be purged too — the DB rows cascade below, but the B2
+  // objects would otherwise be orphaned forever. Enumerate BEFORE the auth cascade
+  // (which deletes the projects rows), then purge every prefix. This is resumable:
+  // on any partial failure we throw, leaving account_deletions.status = 'pending'
+  // so the cron re-runs and re-purges (purgeProjectStorage is idempotent).
+  const { data: userProjects, error: projErr } = await supabase
+    .from('projects')
+    .select('id')
+    .eq('user_id', userId);
+  if (projErr) throw new Error(`projects lookup failed: ${projErr.message}`);
+  const projectIds = (userProjects ?? []).map((p) => p.id as string);
+  if (projectIds.length > 0) {
+    const purge = await purgeProjectStorage(projectIds);
+    logger.info(
+      {
+        userIdHash: sha256(userId),
+        requested: purge.requested,
+        verifiedEmpty: purge.purged.length,
+        objects: purge.objectsDeleted,
+        failed: purge.failed.length,
+      },
+      'account-deletion: project storage purged',
+    );
+    if (purge.failed.length > 0) {
+      // Do NOT proceed to the cascade — that would drop the projects rows and lose
+      // the ids we need to retry. Leave status 'pending' for the next cron run.
+      throw new Error(
+        `project storage purge incomplete: ${purge.failed.length}/${purge.requested} prefixes not verified empty `
+        + `(${purge.failed.map((f) => f.projectId).join(', ')})`,
+      );
+    }
+  }
 
   // The cascade purge — every PII-bearing table cascades from auth.users.
   const { error: deleteErr } = await supabase.auth.admin.deleteUser(userId);

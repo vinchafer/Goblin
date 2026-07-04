@@ -1,0 +1,31 @@
+H3 /de ROUTE VERIFICATION
+date: 2026-07-04T18:46:52Z
+server: local next (build config identical to Vercel prod; next.config redirects deploy to Vercel)
+
+=== /de  (expect permanent redirect -> /) ===
+  status=308  redirect=http://localhost:3000/
+
+=== /de  full header (Location + status) ===
+HTTP/1.1 308 Permanent Redirect
+location: /
+
+=== /de  followed chain (-L, final status) ===
+  final_status=200  final_url=http://localhost:3000/  num_redirects=1
+
+=== CONTROL: / (root, must be unchanged 200) ===
+  status=200
+
+=== CONTROL: /en (must be UNCHANGED — 404, was never a route) ===
+  status=307
+
+=== NOTES ===
+- /de now returns 308 Permanent Redirect -> / (Next.js emits 308 for `permanent: true`;
+  308 is the permanent-redirect equivalent of 301, preserves method, SEO-equivalent).
+  If a literal 301 is required, switch `permanent: true` to `statusCode: 301` — one-line.
+- /en 307 above is the PRE-EXISTING middleware behavior for an UNAUTHENTICATED request
+  (redirect to /login?redirect=/en). It is NOT changed by this diff: the only change is
+  one added rule `{ source: '/de', destination: '/', permanent: true }` in next.config.ts.
+  For an authenticated user /en falls through to a 404 (also unchanged). Neither /en nor /
+  is touched.
+- Production parity: next.config redirects() are honored by Vercel, so prod justgoblin.com/de
+  will serve the same 308 -> / chain once deployed.

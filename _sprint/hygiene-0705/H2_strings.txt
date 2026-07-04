@@ -1,0 +1,41 @@
+H2 BUILT-APP STRING VERIFICATION
+date: 2026-07-04T18:28:02Z
+scope: production client bundles (apps/web/.next/static) after 'next build'
+       + authoritative source grep (app/ components/)
+
+=== A) OLD strings — MUST be ABSENT from built client bundles (expect 0) ===
+  [PASS] "~60 Sek"                -> 0 files
+  [PASS] "in ~60 sec"             -> 0 files
+  [PASS] "~ 60 SEK"               -> 0 files
+  [PASS] "~ 60 SEC"               -> 0 files
+  [PASS] "5 MIN INSGESAMT"        -> 0 files
+  [PASS] "5 MIN TOTAL"            -> 0 files
+  [PASS] "zum Commit zur"         -> 0 files
+  [PASS] "chat to commit to"      -> 0 files
+  [PASS] "Auto-Commit & Push"     -> 0 files
+  [PASS] "Auto-commit & push"     -> 0 files
+  [PASS] "in unter einer Minute"  -> 0 files
+  [PASS] "in under a minute"      -> 0 files
+
+=== B) NEW strings — MUST be PRESENT in built client bundles (expect >=1) ===
+  [PASS] "nur ein Google-Konto"   -> 3 files
+  [PASS] "all you need is a Google account" -> 3 files
+  [PASS] "gespeicherten Stand"    -> 3 files
+  [PASS] "to a saved version"     -> 4 files
+  [PASS] "Automatisch gesichert & veröffentlicht" -> 3 files
+  [PASS] "Automatically saved & published" -> 3 files
+  [PASS] "Du beschreibst in normalen Sätzen" -> 3 files
+  [PASS] "You describe what you want in plain sentences" -> 3 files
+
+=== C) SCOPE GUARD — code-workspace dev Git surface MUST remain untouched ===
+  [PASS] SessionGitPill.tsx retains developer 'Commit' strings -> 3
+
+OVERALL: PASS
+
+=== D) EXTRA fabricated-timing sweep of the welcome flow (source: app/welcome) ===
+    (founder: 'No fabricated timings anywhere in the flow')
+  [PASS] "in 28s deployed"      -> 0 files (source)
+  [PASS] "deployed in 28s"      -> 0 files (source)
+  remaining numeric matches in flow are CSS durations (.15s) + a '~4.4x' speed ratio — not time claims.
+
+OVERALL (incl. D): PASS
