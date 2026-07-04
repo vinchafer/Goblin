@@ -41,6 +41,7 @@ interface Tables {
   deletion_audit_log: Row[];
   build_runs: Row[];
   goblin_hosted_waitlist: Row[];
+  projects: Row[];
 }
 const tables: Tables = {
   users: [],
@@ -48,6 +49,7 @@ const tables: Tables = {
   deletion_audit_log: [],
   build_runs: [],
   goblin_hosted_waitlist: [],
+  projects: [],
 };
 const authUsers = new Map<string, Row>();
 const deletedAuthIds: string[] = [];
@@ -117,9 +119,19 @@ const fakeSupabase = {
   },
 };
 
+// Spy on the project-storage purge so tests can assert the GDPR wiring (H1)
+// without touching real object storage. Hoisted so vi.mock's factory can see it.
+const { purgeSpy } = vi.hoisted(() => ({ purgeSpy: vi.fn() }));
+
 vi.mock('../lib/supabase', () => ({ getSupabaseAdmin: () => fakeSupabase }));
 vi.mock('../lib/email', () => ({ sendEmail: async () => undefined }));
-vi.mock('./file-storage', () => ({ deleteUserStorage: async () => 3 }));
+vi.mock('./file-storage', () => ({
+  deleteUserStorage: async () => 3,
+  purgeProjectStorage: async (ids: string[]) => {
+    purgeSpy(ids);
+    return { requested: ids.length, purged: [...ids], failed: [], objectsDeleted: ids.length };
+  },
+}));
 vi.mock('../lib/logger', () => ({ default: { info() {}, warn() {}, error() {} } }));
 
 // Import AFTER mocks + env are set.
@@ -241,6 +253,9 @@ skip('account-deletion canonical service (real test-mode Stripe)', () => {
     const { customerId, subId } = await makeUserWithSub(uid, 'del4@example.test');
     tables.build_runs.push({ id: 'br1', user_id: uid });
     tables.goblin_hosted_waitlist.push({ id: 'wl1', user_id: uid, email: 'del4@example.test' });
+    // H1: two projects owned by this user — their storage must be purged too.
+    tables.projects.push({ id: 'proj-a', user_id: uid }, { id: 'proj-b', user_id: uid });
+    purgeSpy.mockClear();
 
     await requestAccountDeletion(uid);
     // Fully cancel the sub now so the purge is allowed.
@@ -250,6 +265,10 @@ skip('account-deletion canonical service (real test-mode Stripe)', () => {
     const outcome = await hardDeleteUser(uid);
     expect(outcome.purged).toBe(true);
     expect(outcome.blocked).toBe(false);
+
+    // H1: project storage purge invoked with exactly this user's project ids.
+    expect(purgeSpy).toHaveBeenCalledTimes(1);
+    expect(purgeSpy).toHaveBeenCalledWith(['proj-a', 'proj-b']);
 
     // Stripe customer gone.
     const cust = await stripe.customers.retrieve(customerId);

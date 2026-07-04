@@ -551,6 +551,72 @@ export async function deleteUserStorage(userId: string): Promise<number> {
   return keys.length;
 }
 
+export interface ProjectPurgeResult {
+  /** how many project prefixes were requested */
+  requested: number;
+  /** projectIds whose `projects/<id>/` prefix was deleted AND verified empty */
+  purged: string[];
+  /** projectIds that could not be fully purged (kept for a safe re-run) */
+  failed: Array<{ projectId: string; error: string }>;
+  /** total objects removed across all prefixes this run */
+  objectsDeleted: number;
+}
+
+/**
+ * GDPR hard-delete helper: purge every `projects/<projectId>/` prefix — including
+ * each project's `.trash/` — from object storage. Used when a user is erased, so
+ * their project files don't outlive the account (DSGVO Art. 17).
+ *
+ * Idempotent and resumable: a prefix that is already empty is a no-op success, and
+ * a per-project failure is COLLECTED, not thrown, so the caller can safely re-run
+ * against the same ids. After deleting, each prefix is re-listed to VERIFY it is
+ * empty before being reported as purged — a prefix that still lists objects is
+ * reported in `failed`, never as complete. Deletes in batches of 1000 (S3 cap).
+ */
+export async function purgeProjectStorage(projectIds: string[]): Promise<ProjectPurgeResult> {
+  const result: ProjectPurgeResult = {
+    requested: projectIds.length, purged: [], failed: [], objectsDeleted: 0,
+  };
+  const s3 = getS3Client();
+
+  for (const projectId of projectIds) {
+    const prefix = projectPrefix(projectId);
+    try {
+      // 1. Enumerate every object under projects/<id>/ (incl. .trash/).
+      const keys: string[] = [];
+      await walkPrefixObjects(prefix, (key) => keys.push(key));
+
+      // 2. Delete — memory fallback for dev/test, batched DeleteObjects for S3/B2.
+      if (!s3) {
+        for (const key of keys) memoryStorage.delete(key);
+      } else {
+        for (let i = 0; i < keys.length; i += 1000) {
+          await s3.send(new DeleteObjectsCommand({
+            Bucket: getBucket(),
+            Delete: { Objects: keys.slice(i, i + 1000).map((Key) => ({ Key })), Quiet: true },
+          }));
+        }
+      }
+      result.objectsDeleted += keys.length;
+
+      // 3. VERIFY the prefix is now empty — never claim completion on a partial purge.
+      const remaining: string[] = [];
+      await walkPrefixObjects(prefix, (key) => remaining.push(key));
+      if (remaining.length > 0) {
+        result.failed.push({
+          projectId,
+          error: `prefix not empty after purge (${remaining.length} objects remain)`,
+        });
+      } else {
+        result.purged.push(projectId);
+      }
+    } catch (err) {
+      result.failed.push({ projectId, error: err instanceof Error ? err.message : String(err) });
+    }
+  }
+  return result;
+}
+
 /**
  * Create a ZIP file containing all project files.
  * Returns a Buffer of the ZIP data.

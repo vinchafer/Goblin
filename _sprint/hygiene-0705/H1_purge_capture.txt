@@ -1,0 +1,33 @@
+H1 PURGE INTEGRATION — real B2 bucket=goblin-projects @ 2026-07-04T17:44:01Z
+storage endpoint configured: yes
+
+throwaway userId=h1test-0be140f4-4231-411a-ac1f-769f0a2b71b2
+throwaway projectIds=[h1test-88ef971b-168d-4501-a115-d895abaf9b4a, h1test-4ffa7b10-7f6e-4299-b0c8-aa0c6452affb]
+
+--- SEED ---
+  put users/h1test-0be140f4-4231-411a-ac1f-769f0a2b71b2/avatar.png
+  put projects/h1test-88ef971b-168d-4501-a115-d895abaf9b4a/index.html
+  put projects/h1test-88ef971b-168d-4501-a115-d895abaf9b4a/src/app.js
+  put projects/h1test-88ef971b-168d-4501-a115-d895abaf9b4a/.trash/old.txt
+  put projects/h1test-4ffa7b10-7f6e-4299-b0c8-aa0c6452affb/README.md
+  put projects/h1test-4ffa7b10-7f6e-4299-b0c8-aa0c6452affb/.trash/deleted/nested.txt
+
+--- PRE-DELETE LIST ---
+  users/h1test-0be140f4-4231-411a-ac1f-769f0a2b71b2/ -> 1 objects
+  projects/h1test-88ef971b-168d-4501-a115-d895abaf9b4a/ -> 3 objects (incl .trash: true)
+  projects/h1test-4ffa7b10-7f6e-4299-b0c8-aa0c6452affb/ -> 2 objects (incl .trash: true)
+
+--- DELETE ---
+  deleteUserStorage removed 1 objects
+  purgeProjectStorage: requested=2 verifiedEmpty=2 objectsDeleted=5 failed=0
+
+--- POST-DELETE VERIFY (must all be 0) ---
+  users/h1test-0be140f4-4231-411a-ac1f-769f0a2b71b2/ -> 0
+  projects/h1test-88ef971b-168d-4501-a115-d895abaf9b4a/ -> 0
+  projects/h1test-4ffa7b10-7f6e-4299-b0c8-aa0c6452affb/ -> 0
+
+--- IDEMPOTENCY RE-RUN ---
+  re-run: verifiedEmpty=2 objectsDeleted=0 failed=0
+
+=== VERDICT: PASS ===
+Both users/<id>/ and projects/<id>/ (incl .trash/) verified empty; purge idempotent.
