@@ -1,0 +1,27 @@
+════════════════════════════════════════════════════════════════════════
+FEEL-2 MERGE — production smoke (test account vinc.hafner3@gmail.com)
+Captured 2026-07-05. Merge commit 15c3552 confirmed deployed on BOTH:
+  • web  justgoblin.com/api/version                  gitCommit=15c3552 ✓
+  • api  goblinapi-production.up.railway.app/version  gitCommit=15c3552 ✓
+
+── Project-chat send on Goblin Swift (POST /api/chat/stream) ──
+  HTTP 200 text/event-stream
+  META  {"type":"meta","source_tier":"goblin_hosted","model":"goblin/efficient",
+         "model_slug":"goblin/efficient","provider":"openai"}
+  deltas=6  sample="Hallo. Wie geht's?"
+  DONE  {"type":"done","model_used":"goblin/efficient","source_tier":"goblin_hosted"}
+  RESULT: PASS — streamed cleanly (meta → deltas → done, no error).
+  (This turn also fired scheduleProjectStateUpdate → the B5 summarizer runs as
+   platform COGS server-side; the user allowance counter reflects the chat turn
+   only — proven deterministically in B5_allowance_capture.txt.)
+
+── Deploy status stream: German + truth-gated ──
+  Verified present in the deployed merge commit (F1.5, unchanged by FEEL-2):
+  apps/api/src/routes/deploy.ts — POST /api/deploy/vercel streams via streamSSE,
+  translates real Vercel states through `stateDe` (German), polls the real
+  getDeployStatus (truth-gated, HTTP), and throws German copy on ERROR/CANCELED
+  ("Veröffentlichung fehlgeschlagen (Build-Fehler bei Vercel)."). No live Vercel
+  build was triggered (would consume a real build on the test account); the
+  property is confirmed at the deployed source.
+
+RESULT: MERGE SMOKE PASS.
