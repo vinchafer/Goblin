@@ -3,31 +3,31 @@ import type { MetadataRoute } from 'next';
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
     {
-      url: 'https://goblin.build',
+      url: 'https://www.justgoblin.com',
       lastModified: new Date(),
       changeFrequency: 'weekly',
       priority: 1,
     },
     {
-      url: 'https://goblin.build/login',
+      url: 'https://www.justgoblin.com/login',
       lastModified: new Date(),
       changeFrequency: 'monthly',
       priority: 0.8,
     },
     {
-      url: 'https://goblin.build/terms',
+      url: 'https://www.justgoblin.com/terms',
       lastModified: new Date(),
       changeFrequency: 'yearly',
       priority: 0.5,
     },
     {
-      url: 'https://goblin.build/privacy',
+      url: 'https://www.justgoblin.com/privacy',
       lastModified: new Date(),
       changeFrequency: 'yearly',
       priority: 0.5,
     },
     {
-      url: 'https://goblin.build/imprint',
+      url: 'https://www.justgoblin.com/imprint',
       lastModified: new Date(),
       changeFrequency: 'yearly',
       priority: 0.5,
