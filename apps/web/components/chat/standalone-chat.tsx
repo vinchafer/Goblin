@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, type ReactNode, type CSSProperties } from "react";
+import { useState, useEffect, useRef, useCallback, type ReactNode, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowUpRight, Copy, Download, Code2 } from "lucide-react";
 import { apiStream } from "@/lib/api";
@@ -18,6 +18,7 @@ import { useLang } from "@/lib/use-lang";
 import { useStickToBottom } from "@/hooks/useStickToBottom";
 import { ScrollToEndChip } from "@/components/chat/ScrollToEndChip";
 import { ExistingFilesContext } from "@/contexts/existing-files-context";
+import { SendToCodeContext, type CardStcFile } from "@/contexts/send-to-code-context";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -79,6 +80,54 @@ function deriveProjectName(prompt?: string | null): string {
   if (!base) return "Neues Projekt";
   const words = base.split(" ").slice(0, 5).join(" ").trim();
   return (words.length > 40 ? words.slice(0, 40).trim() : words) || "Neues Projekt";
+}
+
+// Shared Send-to-Code confirm: stash the selected files and deep-link into the
+// target's Code tab (draft landing + P0.3/U2 unpack there). Used by the
+// message-level "Alle übernehmen" and the per-card "Ins Projekt übernehmen" (C3).
+async function stashAndRouteToCode(
+  files: StcFile[],
+  chosenProjectId: string | null,
+  ctx: { projectId?: string | null; sessionId: string; lastUserPrompt?: string | null },
+  push: (url: string) => void,
+): Promise<void> {
+  try {
+    sessionStorage.setItem("goblin:stc-pending", JSON.stringify({
+      files, content: files[0]?.content, filename: files[0]?.path,
+      prompt: ctx.lastUserPrompt ?? undefined,
+    }));
+  } catch { /* ignore */ }
+
+  const target = chosenProjectId ?? ctx.projectId ?? null;
+  if (target) {
+    try { sessionStorage.setItem(`goblin:lastChat:${target}`, ctx.sessionId); } catch { /* ignore */ }
+    push(`/dashboard/project/${target}/work?tab=code`);
+    return;
+  }
+
+  // "Neues Projekt": create one in a single step (auto-named) and land in Code.
+  try {
+    const { createClient } = await import("@/lib/supabase/client");
+    const { data: { session } } = await createClient().auth.getSession();
+    const token = session?.access_token;
+    const apiBase = process.env.NEXT_PUBLIC_API_URL || "";
+    if (token) {
+      const res = await fetch(`${apiBase}/api/projects`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ name: deriveProjectName(ctx.lastUserPrompt) }),
+      });
+      if (res.ok) {
+        const proj = (await res.json()) as { id?: string };
+        if (proj?.id) {
+          try { sessionStorage.setItem(`goblin:lastChat:${proj.id}`, ctx.sessionId); } catch { /* ignore */ }
+          push(`/dashboard/project/${proj.id}/work?tab=code`);
+          return;
+        }
+      }
+    }
+  } catch { /* fall through to the form as a safety net */ }
+  push("/dashboard?start=1");
 }
 
 function CodeActionButton({ lastMessage, lastUserPrompt, hasProject, projectId, projectName, sessionId }: {
@@ -172,48 +221,8 @@ function CodeActionButton({ lastMessage, lastUserPrompt, hasProject, projectId, 
 
   // Confirm: stash the selected files and deep-link into the target's Code tab.
   const confirmSend = async (files: StcFile[], chosenProjectId: string | null) => {
-    try {
-      sessionStorage.setItem("goblin:stc-pending", JSON.stringify({
-        files, content: files[0]?.content, filename: files[0]?.path,
-        prompt: lastUserPrompt ?? undefined,
-      }));
-    } catch { /* ignore */ }
     setPreview(null);
-    const target = chosenProjectId ?? projectId;
-    if (target) {
-      // 11A-A: remember the conversation we're leaving so the workspace "Chat"
-      // tab (and back-from-code) returns HERE, not a new/different window.
-      try { sessionStorage.setItem(`goblin:lastChat:${target}`, sessionId); } catch { /* ignore */ }
-      router.push(`/dashboard/project/${target}/work?tab=code`);
-      return;
-    }
-
-    // FIX3-2 (V2-P1-2): "Neues Projekt" must LAND the code, not detour into the
-    // full new-project form. Create a project in one step (auto-named from the
-    // prompt) and deep-link straight into its Code tab where the stash unpacks.
-    try {
-      const { createClient } = await import("@/lib/supabase/client");
-      const { data: { session } } = await createClient().auth.getSession();
-      const token = session?.access_token;
-      const apiBase = process.env.NEXT_PUBLIC_API_URL || "";
-      if (token) {
-        const res = await fetch(`${apiBase}/api/projects`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-          body: JSON.stringify({ name: deriveProjectName(lastUserPrompt) }),
-        });
-        if (res.ok) {
-          const proj = (await res.json()) as { id?: string };
-          if (proj?.id) {
-            try { sessionStorage.setItem(`goblin:lastChat:${proj.id}`, sessionId); } catch { /* ignore */ }
-            router.push(`/dashboard/project/${proj.id}/work?tab=code`);
-            return;
-          }
-        }
-      }
-    } catch { /* fall through to the form as a safety net */ }
-    // Safety net only (create failed): the stash is set, so the form still works.
-    router.push("/dashboard?start=1");
+    await stashAndRouteToCode(files, chosenProjectId, { projectId, sessionId, lastUserPrompt }, router.push);
   };
 
   return (
@@ -393,6 +402,36 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
   // Project-bound chat (10.7-14): same component, project context via props.
   const hasProject = !!projectId;
 
+  // C3: per-card "Ins Projekt übernehmen" — a single file-card requests STC.
+  // Opens the same StcPreviewSheet (P0.3 integrity + U2 classification) the
+  // multi-file flow uses; project-bound → target known, standalone → picker.
+  const [cardPreview, setCardPreview] = useState<StcFile[] | null>(null);
+  const [cardExistingFiles, setCardExistingFiles] = useState<Record<string, string> | null>(null);
+  const [cardProjects, setCardProjects] = useState<{ id: string; name: string }[]>([]);
+  const requestCardStc = useCallback(async (file: CardStcFile) => {
+    if (projectId) {
+      try {
+        const { fetchAllTextFiles } = await import("@/lib/project-files");
+        setCardExistingFiles(await fetchAllTextFiles(projectId));
+      } catch { setCardExistingFiles(null); }
+    } else {
+      setCardExistingFiles(null);
+      try {
+        const { createClient } = await import("@/lib/supabase/client");
+        const { data: { session } } = await createClient().auth.getSession();
+        const token = session?.access_token;
+        if (token) {
+          const res = await fetch(`${apiBase}/api/projects`, { headers: { Authorization: `Bearer ${token}` } });
+          if (res.ok) {
+            const list = await res.json();
+            if (Array.isArray(list)) setCardProjects(list.map((p: { id: string; name: string }) => ({ id: p.id, name: p.name })));
+          }
+        }
+      } catch { /* sheet still works with "Neues Projekt" only */ }
+    }
+    setCardPreview([{ path: file.path, content: file.content }]);
+  }, [projectId, apiBase]);
+
   // P0.5 — `retry` re-sends an existing failed message: same clientMessageId
   // (server dedupes → no double-submit), no new user bubble.
   const handleSubmit = async (text: string, model: SelectedModel, retry?: { id: string; clientMessageId: string }) => {
@@ -522,7 +561,22 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
 
   return (
     <ExistingFilesContext.Provider value={projectFilesMap}>
+    <SendToCodeContext.Provider value={requestCardStc}>
     <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--bone)" }}>
+      {/* C3: per-card "Ins Projekt übernehmen" preview (single file). */}
+      {cardPreview && (
+        <StcPreviewSheet
+          files={cardPreview}
+          projects={hasProject ? undefined : cardProjects}
+          targetName={hasProject ? (projectName ?? undefined) : undefined}
+          existingFiles={cardExistingFiles}
+          onConfirm={async (files, chosen) => {
+            setCardPreview(null);
+            await stashAndRouteToCode(files, chosen, { projectId, sessionId, lastUserPrompt }, router.push);
+          }}
+          onCancel={() => setCardPreview(null)}
+        />
+      )}
       {/* Project context bar — only when this chat belongs to a project.
           Keeps the body identical to a top-level chat (10.7-14 parity). */}
       {projectName && (
@@ -636,6 +690,7 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
         </div>
       </div>
     </div>
+    </SendToCodeContext.Provider>
     </ExistingFilesContext.Provider>
   );
 }

@@ -5,7 +5,15 @@ import { toast } from 'sonner';
 import { apiGet } from '@/lib/api';
 import { createClient } from '@/lib/supabase/client';
 import { isDemoActive } from '@/lib/demo/demo-flag';
-import { useLang } from '@/lib/use-lang';
+import { useLang, type Lang } from '@/lib/use-lang';
+import { useDictation } from '@/hooks/use-dictation';
+import {
+  buildAttachment,
+  composeMessageWithAttachments,
+  attachmentCharCount,
+  ATTACH_BUDGET_CHARS,
+  type ChatAttachment,
+} from '@/lib/chat-attachments';
 import { GOBLIN_HOSTED_ENABLED } from '@/lib/goblin-hosted-models';
 import { ComposerPlusPopover, type PlusAction } from './ComposerPlusPopover';
 import { Icon } from '@/components/ui/icon';
@@ -303,36 +311,35 @@ function ModelHub({
 
 // ─── Voice Button ─────────────────────────────────────────────────────────────
 
-function VoiceButton({ onTranscript, disabled }: { onTranscript: (t: string) => void; disabled: boolean }) {
-  const [recording, setRecording] = useState(false);
-  const [processing, setProcessing] = useState(false);
-  const mediaRef = useRef<MediaRecorder | null>(null);
+// C1: real dictation. Live Web Speech (desktop/Android Chrome) or a
+// MediaRecorder → /api/transcribe fallback (iOS Safari) — see useDictation. The
+// transcript is inserted at the caret; it is NEVER auto-sent. onStart snapshots
+// the caret, onText replaces the dictated span as interim results refine.
+function VoiceButton({
+  disabled,
+  lang,
+  onStart,
+  onText,
+}: {
+  disabled: boolean;
+  lang: Lang;
+  onStart: () => void;
+  onText: (text: string, isFinal: boolean) => void;
+}) {
+  const { status, toggle } = useDictation({
+    lang,
+    onStart,
+    onTranscript: onText,
+    onError: (msg) => toast.error(msg),
+  });
+  const recording = status === 'listening';
+  const processing = status === 'processing';
 
-  const toggle = async () => {
-    if (disabled) return;
-    if (recording) {
-      mediaRef.current?.stop();
-      setRecording(false);
-      setProcessing(true);
-      setTimeout(() => setProcessing(false), 1200);
-      return;
-    }
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mr = new MediaRecorder(stream);
-      mediaRef.current = mr;
-      mr.start();
-      setRecording(true);
-      mr.onstop = () => {
-        stream.getTracks().forEach(t => t.stop());
-        // Real transcription would go here
-      };
-    } catch {
-      // Mic not available — ignore silently
-    }
-  };
-
-  const label = processing ? 'Goblin hört zu…' : recording ? 'Aufnehmen…' : '';
+  const label = processing
+    ? lang === 'en' ? 'Transcribing…' : 'Wird verschriftet …'
+    : recording
+    ? lang === 'en' ? 'Listening…' : 'Goblin hört zu …'
+    : '';
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
@@ -346,9 +353,15 @@ function VoiceButton({ onTranscript, disabled }: { onTranscript: (t: string) => 
         </span>
       )}
       <button
-        onClick={toggle}
-        aria-label={recording ? 'Aufnahme stoppen' : 'Sprachaufnahme'}
-        title={recording ? 'Aufnahme stoppen' : 'Sprachaufnahme'}
+        onClick={() => { if (!disabled) toggle(); }}
+        disabled={disabled || processing}
+        aria-label={recording
+          ? (lang === 'en' ? 'Stop recording' : 'Aufnahme stoppen')
+          : (lang === 'en' ? 'Voice input' : 'Spracheingabe')}
+        title={recording
+          ? (lang === 'en' ? 'Stop recording' : 'Aufnahme stoppen')
+          : (lang === 'en' ? 'Voice input' : 'Spracheingabe')}
+        data-testid="composer-mic"
         style={{
           width: 32, height: 32, borderRadius: '50%', border: 'none',
           background: recording ? 'rgba(184,92,60,0.12)' : 'transparent',
@@ -451,6 +464,8 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
   const lang = useLang();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [input, setInput] = useState('');
+  // C2 attachments — declared here so render-time gates (hasInput) can read it.
+  const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
 
   // Outside-driven prefill (03 quick-prompt chips). Focus after filling.
   useEffect(() => {
@@ -543,13 +558,53 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
 
   const submit = () => {
     const trimmed = input.trim();
-    if (!trimmed || disabled || isStreaming) return;
-    onSubmit(trimmed, selectedModel);
+    const usableAtts = attachments.filter((a) => a.state === 'ready' || a.kind === 'image');
+    if ((!trimmed && usableAtts.length === 0) || disabled || isStreaming) return;
+    // Don't send while an attachment is still being read/extracted.
+    if (attachments.some((a) => a.state === 'extracting')) {
+      toast.error(lang === 'en' ? 'An attachment is still loading…' : 'Ein Anhang wird noch geladen …');
+      return;
+    }
+    const { message, error } = composeMessageWithAttachments(trimmed, attachments, lang);
+    if (error) {
+      // Over the attach budget — honest pre-send error, never a silent truncation.
+      toast.error(error);
+      return;
+    }
+    onSubmit(message, selectedModel);
     setInput('');
+    setAttachments([]);
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
   };
 
-  const hasInput = input.trim().length > 0;
+  // C1 dictation: snapshot the caret when the mic starts, then replace the
+  // dictated span (before + text + after) as interim results refine. Reads live
+  // DOM value/selection so it stays correct regardless of render timing.
+  const dictRef = useRef<{ before: string; after: string }>({ before: '', after: '' });
+  const captureDictationAnchor = useCallback(() => {
+    const ta = textareaRef.current;
+    const val = ta?.value ?? '';
+    const pos = ta && ta.selectionStart != null ? ta.selectionStart : val.length;
+    dictRef.current = { before: val.slice(0, pos), after: val.slice(pos) };
+  }, []);
+  const applyDictationText = useCallback((text: string, isFinal: boolean) => {
+    const { before, after } = dictRef.current;
+    const sep = before && !/\s$/.test(before) && text ? ' ' : '';
+    setInput(before + sep + text + after);
+    if (isFinal) {
+      const caret = (before + sep + text).length;
+      requestAnimationFrame(() => {
+        const ta = textareaRef.current;
+        if (ta) {
+          ta.focus();
+          try { ta.setSelectionRange(caret, caret); } catch { /* ignore */ }
+        }
+      });
+    }
+  }, []);
+
+  const hasUsableAttachment = attachments.some((a) => a.state === 'ready' || a.kind === 'image');
+  const hasInput = input.trim().length > 0 || hasUsableAttachment;
   const plusBtnRef = useRef<HTMLButtonElement>(null);
   const [plusOpen, setPlusOpen] = useState(false);
   const [websearchOn, setWebsearchOn] = useState(false);
@@ -604,17 +659,36 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
     }
   };
 
+  // C2: attachments that actually reach the model. Text-class files are read
+  // client-side, PDFs are server-extracted, images get an honest no-vision note.
+  // On send, their content is injected into the user's turn (composeMessage…).
   const handleFilesPicked = (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    // Append a marker to the prompt so the user sees what they attached.
-    // Real upload-to-storage happens in the chat-message-send path (out of
-    // scope for this row — backend supports image+pdf attachments already).
-    const names = Array.from(files).map(f => f.name).join(', ');
-    setInput(prev => {
-      const tag = `\n\n[Anhang: ${names}]`;
-      return prev.endsWith(tag) ? prev : prev + tag;
-    });
-    toast.success(`${files.length} Datei(en) angehängt`);
+    const picked = Array.from(files);
+    // Insert placeholders (extracting…) immediately, then resolve each in place.
+    const entries = picked.map((f) => ({
+      file: f,
+      id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
+    }));
+    setAttachments((prev) => [
+      ...prev,
+      ...entries.map(({ file, id }) => ({
+        id,
+        name: file.name,
+        kind: 'text' as const,
+        state: 'extracting' as const,
+      })),
+    ]);
+    for (const { file, id } of entries) {
+      void buildAttachment(file, id, lang).then((att) => {
+        setAttachments((prev) => prev.map((a) => (a.id === id ? att : a)));
+        if (att.state === 'error') toast.error(att.error ?? 'Anhang fehlgeschlagen');
+      });
+    }
+  };
+
+  const removeAttachment = (id: string) => {
+    setAttachments((prev) => prev.filter((a) => a.id !== id));
   };
 
   return (
@@ -651,6 +725,63 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
           onFocusCapture={e => (e.currentTarget.style.borderColor = hero ? 'rgba(244,236,216,.34)' : 'var(--brand-green)')}
           onBlurCapture={e => (e.currentTarget.style.borderColor = hero ? 'rgba(244,236,216,.16)' : 'var(--border-subtle)')}
         >
+          {/* C2: attachment chips */}
+          {attachments.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '10px 12px 0' }}>
+              {attachments.map((a) => {
+                const isErr = a.state === 'error';
+                const isBusy = a.state === 'extracting';
+                return (
+                  <span
+                    key={a.id}
+                    data-testid="composer-attachment"
+                    title={a.error ?? a.name}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 6,
+                      maxWidth: 220, padding: '4px 8px', borderRadius: 8,
+                      fontSize: 'var(--t-caption-fs)', fontFamily: 'var(--font-sans)',
+                      border: '1px solid',
+                      borderColor: isErr ? 'var(--danger, #B85C3C)' : 'var(--border-subtle)',
+                      background: isErr ? 'rgba(184,92,60,0.08)' : 'var(--panel)',
+                      color: isErr ? 'var(--danger, #B85C3C)' : 'var(--text-2)',
+                    }}
+                  >
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {isBusy ? (lang === 'en' ? 'Reading… ' : 'Lese … ') : ''}
+                      {a.name}
+                      {a.kind === 'image' ? (lang === 'en' ? ' · image' : ' · Bild') : ''}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeAttachment(a.id)}
+                      aria-label={lang === 'en' ? `Remove ${a.name}` : `${a.name} entfernen`}
+                      style={{
+                        border: 'none', background: 'none', cursor: 'pointer', padding: 0,
+                        color: 'inherit', display: 'inline-flex', flexShrink: 0,
+                      }}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
+                    </button>
+                  </span>
+                );
+              })}
+              {(() => {
+                const chars = attachmentCharCount(attachments);
+                if (chars === 0) return null;
+                const over = chars > ATTACH_BUDGET_CHARS;
+                return (
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', padding: '4px 6px',
+                    fontSize: 'var(--t-caption-fs)', fontFamily: 'var(--font-sans)',
+                    color: over ? 'var(--danger, #B85C3C)' : 'var(--meta)',
+                  }}>
+                    {chars.toLocaleString()} / {ATTACH_BUDGET_CHARS.toLocaleString()} {lang === 'en' ? 'chars' : 'Zeichen'}
+                  </span>
+                );
+              })()}
+            </div>
+          )}
+
           {/* Textarea */}
           <textarea
             ref={textareaRef}
@@ -754,7 +885,12 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
             </span>
 
             {/* Voice input button */}
-            <VoiceButton onTranscript={t => setInput(prev => prev + t)} disabled={disabled} />
+            <VoiceButton
+              disabled={disabled}
+              lang={lang}
+              onStart={captureDictationAnchor}
+              onText={applyDictationText}
+            />
 
             {/* Send / Stop button — right. Streaming → Stop (abrupt abort). */}
             {isStreaming ? (
