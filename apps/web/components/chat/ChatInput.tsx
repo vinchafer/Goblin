@@ -5,7 +5,8 @@ import { toast } from 'sonner';
 import { apiGet } from '@/lib/api';
 import { createClient } from '@/lib/supabase/client';
 import { isDemoActive } from '@/lib/demo/demo-flag';
-import { useLang } from '@/lib/use-lang';
+import { useLang, type Lang } from '@/lib/use-lang';
+import { useDictation } from '@/hooks/use-dictation';
 import { GOBLIN_HOSTED_ENABLED } from '@/lib/goblin-hosted-models';
 import { ComposerPlusPopover, type PlusAction } from './ComposerPlusPopover';
 import { Icon } from '@/components/ui/icon';
@@ -303,36 +304,35 @@ function ModelHub({
 
 // ─── Voice Button ─────────────────────────────────────────────────────────────
 
-function VoiceButton({ onTranscript, disabled }: { onTranscript: (t: string) => void; disabled: boolean }) {
-  const [recording, setRecording] = useState(false);
-  const [processing, setProcessing] = useState(false);
-  const mediaRef = useRef<MediaRecorder | null>(null);
+// C1: real dictation. Live Web Speech (desktop/Android Chrome) or a
+// MediaRecorder → /api/transcribe fallback (iOS Safari) — see useDictation. The
+// transcript is inserted at the caret; it is NEVER auto-sent. onStart snapshots
+// the caret, onText replaces the dictated span as interim results refine.
+function VoiceButton({
+  disabled,
+  lang,
+  onStart,
+  onText,
+}: {
+  disabled: boolean;
+  lang: Lang;
+  onStart: () => void;
+  onText: (text: string, isFinal: boolean) => void;
+}) {
+  const { status, toggle } = useDictation({
+    lang,
+    onStart,
+    onTranscript: onText,
+    onError: (msg) => toast.error(msg),
+  });
+  const recording = status === 'listening';
+  const processing = status === 'processing';
 
-  const toggle = async () => {
-    if (disabled) return;
-    if (recording) {
-      mediaRef.current?.stop();
-      setRecording(false);
-      setProcessing(true);
-      setTimeout(() => setProcessing(false), 1200);
-      return;
-    }
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mr = new MediaRecorder(stream);
-      mediaRef.current = mr;
-      mr.start();
-      setRecording(true);
-      mr.onstop = () => {
-        stream.getTracks().forEach(t => t.stop());
-        // Real transcription would go here
-      };
-    } catch {
-      // Mic not available — ignore silently
-    }
-  };
-
-  const label = processing ? 'Goblin hört zu…' : recording ? 'Aufnehmen…' : '';
+  const label = processing
+    ? lang === 'en' ? 'Transcribing…' : 'Wird verschriftet …'
+    : recording
+    ? lang === 'en' ? 'Listening…' : 'Goblin hört zu …'
+    : '';
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 5, flexShrink: 0 }}>
@@ -346,9 +346,15 @@ function VoiceButton({ onTranscript, disabled }: { onTranscript: (t: string) => 
         </span>
       )}
       <button
-        onClick={toggle}
-        aria-label={recording ? 'Aufnahme stoppen' : 'Sprachaufnahme'}
-        title={recording ? 'Aufnahme stoppen' : 'Sprachaufnahme'}
+        onClick={() => { if (!disabled) toggle(); }}
+        disabled={disabled || processing}
+        aria-label={recording
+          ? (lang === 'en' ? 'Stop recording' : 'Aufnahme stoppen')
+          : (lang === 'en' ? 'Voice input' : 'Spracheingabe')}
+        title={recording
+          ? (lang === 'en' ? 'Stop recording' : 'Aufnahme stoppen')
+          : (lang === 'en' ? 'Voice input' : 'Spracheingabe')}
+        data-testid="composer-mic"
         style={{
           width: 32, height: 32, borderRadius: '50%', border: 'none',
           background: recording ? 'rgba(184,92,60,0.12)' : 'transparent',
@@ -548,6 +554,32 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
     setInput('');
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
   };
+
+  // C1 dictation: snapshot the caret when the mic starts, then replace the
+  // dictated span (before + text + after) as interim results refine. Reads live
+  // DOM value/selection so it stays correct regardless of render timing.
+  const dictRef = useRef<{ before: string; after: string }>({ before: '', after: '' });
+  const captureDictationAnchor = useCallback(() => {
+    const ta = textareaRef.current;
+    const val = ta?.value ?? '';
+    const pos = ta && ta.selectionStart != null ? ta.selectionStart : val.length;
+    dictRef.current = { before: val.slice(0, pos), after: val.slice(pos) };
+  }, []);
+  const applyDictationText = useCallback((text: string, isFinal: boolean) => {
+    const { before, after } = dictRef.current;
+    const sep = before && !/\s$/.test(before) && text ? ' ' : '';
+    setInput(before + sep + text + after);
+    if (isFinal) {
+      const caret = (before + sep + text).length;
+      requestAnimationFrame(() => {
+        const ta = textareaRef.current;
+        if (ta) {
+          ta.focus();
+          try { ta.setSelectionRange(caret, caret); } catch { /* ignore */ }
+        }
+      });
+    }
+  }, []);
 
   const hasInput = input.trim().length > 0;
   const plusBtnRef = useRef<HTMLButtonElement>(null);
@@ -754,7 +786,12 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
             </span>
 
             {/* Voice input button */}
-            <VoiceButton onTranscript={t => setInput(prev => prev + t)} disabled={disabled} />
+            <VoiceButton
+              disabled={disabled}
+              lang={lang}
+              onStart={captureDictationAnchor}
+              onText={applyDictationText}
+            />
 
             {/* Send / Stop button — right. Streaming → Stop (abrupt abort). */}
             {isStreaming ? (

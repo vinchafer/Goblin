@@ -73,6 +73,7 @@ initSentry();
 import { generalRateLimit } from './middleware/rate-limit';
 import { trialGate } from './middleware/trial-gate';
 import { chat } from './routes/chat';
+import { transcribe } from './routes/transcribe';
 import { billing } from './routes/billing';
 import { projects } from './routes/projects';
 import { github } from './routes/github';
@@ -207,6 +208,7 @@ app.route('/health', health);
 
 
 app.route('/api/chat', chat);
+app.route('/api/transcribe', transcribe);
 app.route('/api/byok-keys', byok);
 app.route('/api/projects', projects);
 app.route('/api/github', github);
