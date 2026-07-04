@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Copy, Check, ChevronDown, ChevronRight, FileCode2 } from 'lucide-react';
+import { Copy, Check, ChevronDown, ChevronRight, FileCode2, FolderInput } from 'lucide-react';
 import { highlight } from '@/lib/syntax/highlighter';
 import { useLang } from '@/lib/use-lang';
 import { useExistingFiles } from '@/contexts/existing-files-context';
+import { useCardSendToCode } from '@/contexts/send-to-code-context';
 import { useMessageId } from '@/contexts/message-id-context';
 import { classifyFile, lineDelta, type LineDelta } from '@/lib/file-compare';
 import { saveChangeNote, loadChangeNote } from '@/lib/change-note-store';
@@ -76,6 +77,30 @@ export function CodeBlock({ code, lang, filename, asCard }: CodeBlockProps) {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // C3: per-card "Ins Projekt übernehmen". Only when a chat host provides the
+  // handler AND this card resolves to a filename (a real target path).
+  const onCardStc = useCardSendToCode();
+  const canStc = !!onCardStc && !!filename && code.trim().length > 0;
+  const stcLabel = langPref === 'en' ? 'Add to project' : 'Ins Projekt übernehmen';
+  const handleStc = (e?: React.MouseEvent | React.KeyboardEvent) => {
+    e?.stopPropagation();
+    if (filename && onCardStc) onCardStc({ path: filename, content: code });
+  };
+  const StcAction = canStc ? (
+    <span
+      role="button"
+      tabIndex={0}
+      data-testid="cb-add-to-project"
+      onClick={handleStc}
+      onKeyDown={(e) => { if (e.key === 'Enter') handleStc(e); }}
+      aria-label={stcLabel}
+      title={stcLabel}
+      style={{ flexShrink: 0, display: 'inline-flex', color: 'var(--brand-green)', cursor: 'pointer' }}
+    >
+      <FolderInput size={14} />
+    </span>
+  ) : null;
+
   const lineCount = code === '' ? 0 : code.split('\n').length;
   const title = filename || lang || 'code';
 
@@ -100,6 +125,7 @@ export function CodeBlock({ code, lang, filename, asCard }: CodeBlockProps) {
           <span style={{ fontSize: 11.5, color: 'var(--meta)', flexShrink: 0 }}>
             {lang && filename ? `${lang} · ` : ''}{lineCount} {langPref === 'en' ? 'lines' : 'Zeilen'}
           </span>
+          {StcAction}
           <span
             role="button"
             tabIndex={0}
@@ -142,9 +168,12 @@ export function CodeBlock({ code, lang, filename, asCard }: CodeBlockProps) {
         ) : (
           <span className="cb-fname">{title}</span>
         )}
-        <button className="cb-copy" onClick={handleCopy} aria-label="Code kopieren" title="Code kopieren">
-          {copied ? <Check size={14} /> : <Copy size={14} />}
-        </button>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
+          {StcAction}
+          <button className="cb-copy" onClick={handleCopy} aria-label="Code kopieren" title="Code kopieren">
+            {copied ? <Check size={14} /> : <Copy size={14} />}
+          </button>
+        </span>
       </div>
       <div className="cb-body">
         {html
