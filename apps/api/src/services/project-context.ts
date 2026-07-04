@@ -30,6 +30,18 @@ export interface ContextFile {
   notLoaded?: 'too-large' | 'binary';
 }
 
+/**
+ * B6 (feel-sprint-2): soft-deleted files live under `.trash/` (see the delete flow
+ * in routes/projects.ts — a delete copies the file to `.trash/<ts>_<name>` and
+ * removes the original). Those bytes still count toward the storage cap until
+ * purged, but their CONTENT must never re-enter model context: injecting it would
+ * feed deleted code back to the model and burn injection budget. This is the single
+ * soft-delete prefix in the codebase (the FileExplorer UI filters the same one).
+ */
+export function isSoftDeletedPath(path: string): boolean {
+  return path === '.trash' || path.startsWith('.trash/');
+}
+
 function extOf(path: string): string {
   const base = path.split('/').pop() ?? path;
   const dot = base.lastIndexOf('.');
@@ -58,7 +70,8 @@ function referencedPaths(html: string): Set<string> {
  * name+size, never throws.
  */
 export async function loadProjectContextFiles(projectId: string): Promise<ContextFile[]> {
-  const meta = await listFilesWithMeta(projectId);
+  // B6: drop soft-deleted files up front — never injected, never listed to the model.
+  const meta = (await listFilesWithMeta(projectId)).filter((f) => !isSoftDeletedPath(f.path));
   const files: ContextFile[] = meta.map((f) => ({ path: f.path, size: f.size }));
 
   const textFiles = files.filter((f) => isTextFile(f.path));

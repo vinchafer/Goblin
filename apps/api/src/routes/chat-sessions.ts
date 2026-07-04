@@ -5,7 +5,7 @@ import { getSupabaseAdmin } from '../lib/supabase.js';
 import { streamWithReducedContextRetry } from '../services/token-limit-retry.js';
 import { buildGoblinChatSystemPrompt, REDUCED_CONTEXT_NOTE } from '../prompts/goblin-chat-system.js';
 import { listFilesWithMeta } from '../services/file-storage.js';
-import { loadProjectContextFiles, type ContextFile } from '../services/project-context.js';
+import { loadProjectContextFiles, isSoftDeletedPath, type ContextFile } from '../services/project-context.js';
 import { loadProjectState, scheduleProjectStateUpdate } from '../services/project-state.js';
 import { truncateTitle } from '../lib/truncate-title.js';
 
@@ -199,7 +199,10 @@ chatSessions.post('/:id/stream', async (c) => {
       }
       // U1: file CONTENTS (budget-capped) — falls back to name+size only.
       projectFiles = await loadProjectContextFiles(projectId).catch(async () =>
-        (await listFilesWithMeta(projectId)).map((f) => ({ path: f.path, size: f.size })),
+        // B6: mirror the soft-delete exclusion on the degraded fallback path too.
+        (await listFilesWithMeta(projectId))
+          .filter((f) => !isSoftDeletedPath(f.path))
+          .map((f) => ({ path: f.path, size: f.size })),
       );
     } catch { /* context stays minimal */ }
   }

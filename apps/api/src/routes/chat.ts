@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { streamWithReducedContextRetry } from '../services/token-limit-retry';
 import { buildGoblinChatSystemPrompt, REDUCED_CONTEXT_NOTE } from '../prompts/goblin-chat-system';
 import { listFilesWithMeta } from '../services/file-storage';
-import { loadProjectContextFiles } from '../services/project-context';
+import { loadProjectContextFiles, isSoftDeletedPath } from '../services/project-context';
 import { loadProjectState, scheduleProjectStateUpdate } from '../services/project-state';
 import { authMiddleware } from '../middleware/auth';
 import { chatStreamRateLimit } from '../middleware/rate-limit';
@@ -148,7 +148,10 @@ chat.post('/stream', chatStreamRateLimit, async (c) => {
     // U1: file CONTENTS (budget-capped) — falls back to the bare name+size
     // list if the content loader hiccups.
     const files = await loadProjectContextFiles(projectId).catch(async () =>
-      (await listFilesWithMeta(projectId).catch(() => [])).map((f) => ({ path: f.path, size: f.size })),
+      // B6: mirror the soft-delete exclusion on the degraded fallback path too.
+      (await listFilesWithMeta(projectId).catch(() => []))
+        .filter((f) => !isSoftDeletedPath(f.path))
+        .map((f) => ({ path: f.path, size: f.size })),
     );
     const p = proj as { name?: string; preview_url?: string | null; last_deployed_at?: string | null } | null;
     const promptCtx = {

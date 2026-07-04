@@ -37,7 +37,11 @@ const TEXT_EXT = /\.(html?|css|js|mjs|cjs|ts|tsx|jsx|json|md|txt|svg|xml|ya?ml|t
  * chat's file-card change summaries.
  */
 export async function fetchAllTextFiles(projectId: string, cap = 30): Promise<Record<string, string>> {
-  const paths = (await fetchProjectFileList(projectId)).filter((p) => TEXT_EXT.test(p)).slice(0, cap);
+  // B6 (feel-sprint-2): exclude soft-deleted files (`.trash/`) — deleted content
+  // must not appear as a GEÄNDERT/IDENTISCH candidate in the STC change summary.
+  const paths = (await fetchProjectFileList(projectId))
+    .filter((p) => TEXT_EXT.test(p) && !p.startsWith('.trash/'))
+    .slice(0, cap);
   return fetchExistingFiles(projectId, paths);
 }
 
