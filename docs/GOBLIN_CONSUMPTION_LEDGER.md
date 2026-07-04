@@ -69,6 +69,14 @@ Deploy truth-gating (P0.2: HTTP checks only) · STC integrity checks (client/sha
 - **Cost:** DeepInfra Whisper ≈ **$0.0005/min** of audio → a 2-min memo ≈ $0.001; at the 30/day cap ≈ $0.03/user/day worst case. Pure platform COGS; no user-allowance consumption. Local/no-key returns a deterministic mock (no cost).
 - **CFO dependency:** small variable **platform COGS** (like M3), NOT user allowance; add an A-row when prod volume is measured. | Status: FORMULA (pricing 2026-07) — prod COGS measurement open (read from the `platform_cogs` log line).
 
+### M9 — Chat attachments (CHAT-IO C2)
+- **Trigger:** user attaches a file in chat (text-class file, or PDF; images accepted but not sent as pixels). On send, the extracted/read text is injected into the **user's turn** as a delimited `Angehängte Datei: <name>` fenced block.
+- **Tokens:** +Δ input = attachment character content (≈ chars/4 tokens), added to that one completion's input. Output unchanged. PDF text extraction itself is **zero model tokens** (a lib call in `/api/attachments/extract`, no LLM). Images add only a short honest note (~30 tokens), never image tokens.
+- **Billed to:** **user allowance** — attachments are user input in the user's turn, flow through the same completion as M1/M2 (no special path). A19-adjacent: like M2 it raises effective A6 exhaustion, but bounded per message by the attach budget.
+- **Knobs:** attach budget **24_000 chars/message** across all text+PDF attachments — `ATTACH_BUDGET_CHARS` in `apps/web/lib/chat-attachments.ts` (over-budget → honest pre-send UI error, **never silent truncation**); PDF upload cap `MAX_PDF_BYTES = 10 MB` in `apps/api/src/routes/attachments.ts`.
+- **Degradation:** attachments live in the user message, so the M2 reduced-context retry (which drops only the injected **project** file section) never silently drops them; if the provider token-limit still trips, the user gets the honest token-limit error (suggest shortening/splitting) — no fabrication.
+- **CFO dependency:** A6, A19 (same register family as M2) — widen with prod telemetry. | Status: FORMULA — measure with prod telemetry.
+
 ### M6 — Reserved (not yet built; add rows before shipping)
 Web search / Recherche (feature-flagged off) · extended thinking · MOBILE-1 line-anchored instructions (expected shape: M1-sized turn + file context à la M2) · FEEL-3 agent loop (tool-calling turns — will dominate this ledger when built; **cost model required before merge**).
 

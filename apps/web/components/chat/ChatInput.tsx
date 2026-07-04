@@ -7,6 +7,13 @@ import { createClient } from '@/lib/supabase/client';
 import { isDemoActive } from '@/lib/demo/demo-flag';
 import { useLang, type Lang } from '@/lib/use-lang';
 import { useDictation } from '@/hooks/use-dictation';
+import {
+  buildAttachment,
+  composeMessageWithAttachments,
+  attachmentCharCount,
+  ATTACH_BUDGET_CHARS,
+  type ChatAttachment,
+} from '@/lib/chat-attachments';
 import { GOBLIN_HOSTED_ENABLED } from '@/lib/goblin-hosted-models';
 import { ComposerPlusPopover, type PlusAction } from './ComposerPlusPopover';
 import { Icon } from '@/components/ui/icon';
@@ -457,6 +464,8 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
   const lang = useLang();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [input, setInput] = useState('');
+  // C2 attachments — declared here so render-time gates (hasInput) can read it.
+  const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
 
   // Outside-driven prefill (03 quick-prompt chips). Focus after filling.
   useEffect(() => {
@@ -549,9 +558,22 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
 
   const submit = () => {
     const trimmed = input.trim();
-    if (!trimmed || disabled || isStreaming) return;
-    onSubmit(trimmed, selectedModel);
+    const usableAtts = attachments.filter((a) => a.state === 'ready' || a.kind === 'image');
+    if ((!trimmed && usableAtts.length === 0) || disabled || isStreaming) return;
+    // Don't send while an attachment is still being read/extracted.
+    if (attachments.some((a) => a.state === 'extracting')) {
+      toast.error(lang === 'en' ? 'An attachment is still loading…' : 'Ein Anhang wird noch geladen …');
+      return;
+    }
+    const { message, error } = composeMessageWithAttachments(trimmed, attachments, lang);
+    if (error) {
+      // Over the attach budget — honest pre-send error, never a silent truncation.
+      toast.error(error);
+      return;
+    }
+    onSubmit(message, selectedModel);
     setInput('');
+    setAttachments([]);
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
   };
 
@@ -581,7 +603,8 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
     }
   }, []);
 
-  const hasInput = input.trim().length > 0;
+  const hasUsableAttachment = attachments.some((a) => a.state === 'ready' || a.kind === 'image');
+  const hasInput = input.trim().length > 0 || hasUsableAttachment;
   const plusBtnRef = useRef<HTMLButtonElement>(null);
   const [plusOpen, setPlusOpen] = useState(false);
   const [websearchOn, setWebsearchOn] = useState(false);
@@ -636,17 +659,36 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
     }
   };
 
+  // C2: attachments that actually reach the model. Text-class files are read
+  // client-side, PDFs are server-extracted, images get an honest no-vision note.
+  // On send, their content is injected into the user's turn (composeMessage…).
   const handleFilesPicked = (files: FileList | null) => {
     if (!files || files.length === 0) return;
-    // Append a marker to the prompt so the user sees what they attached.
-    // Real upload-to-storage happens in the chat-message-send path (out of
-    // scope for this row — backend supports image+pdf attachments already).
-    const names = Array.from(files).map(f => f.name).join(', ');
-    setInput(prev => {
-      const tag = `\n\n[Anhang: ${names}]`;
-      return prev.endsWith(tag) ? prev : prev + tag;
-    });
-    toast.success(`${files.length} Datei(en) angehängt`);
+    const picked = Array.from(files);
+    // Insert placeholders (extracting…) immediately, then resolve each in place.
+    const entries = picked.map((f) => ({
+      file: f,
+      id: (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
+    }));
+    setAttachments((prev) => [
+      ...prev,
+      ...entries.map(({ file, id }) => ({
+        id,
+        name: file.name,
+        kind: 'text' as const,
+        state: 'extracting' as const,
+      })),
+    ]);
+    for (const { file, id } of entries) {
+      void buildAttachment(file, id, lang).then((att) => {
+        setAttachments((prev) => prev.map((a) => (a.id === id ? att : a)));
+        if (att.state === 'error') toast.error(att.error ?? 'Anhang fehlgeschlagen');
+      });
+    }
+  };
+
+  const removeAttachment = (id: string) => {
+    setAttachments((prev) => prev.filter((a) => a.id !== id));
   };
 
   return (
@@ -683,6 +725,63 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
           onFocusCapture={e => (e.currentTarget.style.borderColor = hero ? 'rgba(244,236,216,.34)' : 'var(--brand-green)')}
           onBlurCapture={e => (e.currentTarget.style.borderColor = hero ? 'rgba(244,236,216,.16)' : 'var(--border-subtle)')}
         >
+          {/* C2: attachment chips */}
+          {attachments.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '10px 12px 0' }}>
+              {attachments.map((a) => {
+                const isErr = a.state === 'error';
+                const isBusy = a.state === 'extracting';
+                return (
+                  <span
+                    key={a.id}
+                    data-testid="composer-attachment"
+                    title={a.error ?? a.name}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 6,
+                      maxWidth: 220, padding: '4px 8px', borderRadius: 8,
+                      fontSize: 'var(--t-caption-fs)', fontFamily: 'var(--font-sans)',
+                      border: '1px solid',
+                      borderColor: isErr ? 'var(--danger, #B85C3C)' : 'var(--border-subtle)',
+                      background: isErr ? 'rgba(184,92,60,0.08)' : 'var(--panel)',
+                      color: isErr ? 'var(--danger, #B85C3C)' : 'var(--text-2)',
+                    }}
+                  >
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      {isBusy ? (lang === 'en' ? 'Reading… ' : 'Lese … ') : ''}
+                      {a.name}
+                      {a.kind === 'image' ? (lang === 'en' ? ' · image' : ' · Bild') : ''}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => removeAttachment(a.id)}
+                      aria-label={lang === 'en' ? `Remove ${a.name}` : `${a.name} entfernen`}
+                      style={{
+                        border: 'none', background: 'none', cursor: 'pointer', padding: 0,
+                        color: 'inherit', display: 'inline-flex', flexShrink: 0,
+                      }}
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><line x1="5" y1="5" x2="19" y2="19"/><line x1="19" y1="5" x2="5" y2="19"/></svg>
+                    </button>
+                  </span>
+                );
+              })}
+              {(() => {
+                const chars = attachmentCharCount(attachments);
+                if (chars === 0) return null;
+                const over = chars > ATTACH_BUDGET_CHARS;
+                return (
+                  <span style={{
+                    display: 'inline-flex', alignItems: 'center', padding: '4px 6px',
+                    fontSize: 'var(--t-caption-fs)', fontFamily: 'var(--font-sans)',
+                    color: over ? 'var(--danger, #B85C3C)' : 'var(--meta)',
+                  }}>
+                    {chars.toLocaleString()} / {ATTACH_BUDGET_CHARS.toLocaleString()} {lang === 'en' ? 'chars' : 'Zeichen'}
+                  </span>
+                );
+              })()}
+            </div>
+          )}
+
           {/* Textarea */}
           <textarea
             ref={textareaRef}
