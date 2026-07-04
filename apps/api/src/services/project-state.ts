@@ -91,6 +91,10 @@ async function updateProjectState(opts: {
     modelPreference: SUMMARIZER_MODEL,
     supabase,
     systemPrompt,
+    // B5 (feel-sprint-2): this is a server-initiated platform feature, not a user
+    // turn. Bill its tokens as platform COGS — exempt from the user allowance gate
+    // and excluded from the user's usage counters (see model-router internalBilling).
+    internalBilling: true,
   })) {
     const parsed = JSON.parse(jsonToken) as { type?: string; content?: string; message?: string };
     if (parsed.type === 'delta') raw += parsed.content ?? '';

@@ -1,0 +1,32 @@
+{"level":30,"time":1783158303756,"pid":15448,"hostname":"VincentHafner26","feature":"project-state-summarizer","userId":"u1","provider":"openai","model":"goblin/efficient","sourceTier":"goblin_hosted","tokensIn":2000,"tokensOut":300,"billing":"platform_cogs","msg":"platform COGS (internal, not user-billed)"}
+{"level":30,"time":1783158303763,"pid":15448,"hostname":"VincentHafner26","feature":"project-state-summarizer","userId":"u1","provider":"openai","model":"goblin/efficient","sourceTier":"goblin_hosted","tokensIn":10,"tokensOut":5,"billing":"platform_cogs","msg":"platform COGS (internal, not user-billed)"}
+ ✓ src/services/goblin-hosted.test.ts > B5 — summarizer billed as platform COGS, not user allowance > a normal user turn WRITES one completion_costs row (allowance counter ticks) 867ms
+ ✓ src/services/goblin-hosted.test.ts > B5 — summarizer billed as platform COGS, not user allowance > the summarizer (internalBilling) WRITES NO completion_costs row (user counter unchanged)
+ ✓ src/services/goblin-hosted.test.ts > B5 — summarizer billed as platform COGS, not user allowance > the summarizer streams even when the user is OVER their monthly allowance (gate exempt)
+
+════════════════════════════════════════════════════════════════════════
+B5 GATE — summarizer billed as platform COGS, not user allowance
+Captured 2026-07-05 (FEEL-2 merge prep). Deterministic mock harness
+(goblin-hosted.test.ts) against the same GoblinChatClient interface as prod.
+
+The user's allowance counter = the completion_costs rows summed by
+goblinWeightedUsage() (model-router.ts) filtered user_id + source_tier=
+'goblin_hosted'. This gate captures that counter before/after a completion.
+
+BEFORE/AFTER CAPTURE (completion_costs rows written = the allowance delta):
+  • normal user turn  → 1 completion_costs row  (counter ticks by the turn) ✓
+  • summarizer turn   → 0 completion_costs rows  (counter UNCHANGED)         ✓
+  • summarizer turn while user is OVER monthly cap:
+        → streams 'done', NO 'error' (allowance gate exempt)                 ✓
+        → still 0 completion_costs rows                                       ✓
+
+The summarizer's tokens instead appear in the server log as platform COGS
+(see the two JSON log lines above: billing="platform_cogs",
+feature="project-state-summarizer", per-call tokensIn/tokensOut) — measurable,
+never on the user counter.
+
+Mechanism: streamCompletion internalBilling flag (model-router.ts) — set as a
+code literal ONLY in project-state.ts (updateProjectState). No HTTP route reads
+or forwards it, so the exemption is unreachable from any user request.
+
+RESULT: PASS. Counter delta = chat turn only; summarizer = platform COGS.

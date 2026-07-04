@@ -627,3 +627,71 @@ describe('getInvestorModelMapping (single source of truth)', () => {
     expect(blob).not.toContain('apikey');
   });
 });
+
+// ════════════════════════════════════════════════════════════════════════════
+// B5 (feel-sprint-2) — the project-state summarizer is platform COGS, not user
+// allowance. The user's allowance counter = the completion_costs rows summed by
+// goblinWeightedUsage. These tests capture that counter before/after a completion:
+// a normal user turn writes exactly one row (counter ticks); an internalBilling
+// completion writes NONE (counter unchanged) and is exempt from the allowance gate.
+// ════════════════════════════════════════════════════════════════════════════
+function costRows(stub: unknown): Array<{ table: string; row: unknown }> {
+  return (stub as { inserted: Array<{ table: string; row: unknown }> }).inserted.filter((r) => r.table === 'completion_costs');
+}
+
+describe('B5 — summarizer billed as platform COGS, not user allowance', () => {
+  beforeEach(enableFlag);
+
+  it('a normal user turn WRITES one completion_costs row (allowance counter ticks)', async () => {
+    h.stub = makeSupabaseStub({
+      users: { data: { plan: 'pro', stripe_subscription_id: 'sub_test' } },
+      byok_keys: { data: [] },
+      completion_costs: { data: [] },
+      agent_runs: { data: { id: 'run-1' } },
+    });
+    setGoblinClientFactory(() => mockClient({ text: 'user turn', inputTokens: 100, outputTokens: 50 }));
+    const { streamCompletion } = await import('./model-router');
+    const events = await collect(streamCompletion({
+      userId: 'u1', projectId: 'p1', message: 'hi', chatHistory: [],
+      modelPreference: 'goblin/efficient', supabase: h.stub as never,
+    }));
+    expect(events.find((e) => e.type === 'done')).toBeTruthy();
+    expect(costRows(h.stub).length).toBe(1); // counter incremented by exactly this turn
+  });
+
+  it('the summarizer (internalBilling) WRITES NO completion_costs row (user counter unchanged)', async () => {
+    h.stub = makeSupabaseStub({
+      users: { data: { plan: 'pro', stripe_subscription_id: 'sub_test' } },
+      byok_keys: { data: [] },
+      completion_costs: { data: [] },
+      agent_runs: { data: { id: 'run-1' } },
+    });
+    setGoblinClientFactory(() => mockClient({ text: '{"summary":"s","decisions":"d"}', inputTokens: 2000, outputTokens: 300 }));
+    const { streamCompletion } = await import('./model-router');
+    const events = await collect(streamCompletion({
+      userId: 'u1', projectId: 'p1', message: 'x', chatHistory: [],
+      modelPreference: 'goblin/efficient', supabase: h.stub as never, internalBilling: true,
+    }));
+    expect(events.find((e) => e.type === 'done')).toBeTruthy();
+    expect(costRows(h.stub).length).toBe(0); // platform COGS — never touches the user counter
+  });
+
+  it('the summarizer streams even when the user is OVER their monthly allowance (gate exempt)', async () => {
+    h.stub = makeSupabaseStub({
+      users: { data: { plan: 'trial', preferred_lang: 'en' } },
+      byok_keys: { data: [] },
+      // 5M Swift this month → over the 4.9M trial cap: a normal turn would be refused.
+      completion_costs: { data: [{ model: 'goblin/efficient', tokens_in: 5_000_000, tokens_out: 0, created_at: new Date().toISOString() }] },
+      agent_runs: { data: { id: 'run-1' } },
+    });
+    setGoblinClientFactory(() => mockClient({ text: '{"summary":"s","decisions":"d"}' }));
+    const { streamCompletion } = await import('./model-router');
+    const events = await collect(streamCompletion({
+      userId: 'u1', projectId: 'p1', message: 'x', chatHistory: [],
+      modelPreference: 'goblin/efficient', supabase: h.stub as never, internalBilling: true,
+    }));
+    expect(events.find((e) => e.type === 'error')).toBeUndefined();
+    expect(events.find((e) => e.type === 'done')).toBeTruthy();
+    expect(costRows(h.stub).length).toBe(0); // still no user-counter write
+  });
+});
