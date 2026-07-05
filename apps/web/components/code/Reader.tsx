@@ -62,13 +62,20 @@ interface Props {
   theme: EditorTheme;
   onClose: () => void;
   onEdit?: () => void;
+  /** M3: long-press a line (or long-press with a selection) → Tier-2 action sheet. */
+  onLineAction?: (from: number, to: number) => void;
 }
 
-export function Reader({ path, content, theme, onClose, onEdit }: Props) {
+export function Reader({ path, content, theme, onClose, onEdit, onLineAction }: Props) {
   const lang = useLang();
   const containerRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
   const [filter, setFilter_] = useState("");
+  // M3: long-press detection. Hold ~500ms without moving → resolve the line under
+  // the pointer (or the current selection's line range) and open the action sheet.
+  const pressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pressPos = useRef<{ x: number; y: number } | null>(null);
+  const clearPress = () => { if (pressTimer.current) { clearTimeout(pressTimer.current); pressTimer.current = null; } };
 
   const palette = theme === "dark" ? DARK : LIGHT;
 
@@ -151,7 +158,38 @@ export function Reader({ path, content, theme, onClose, onEdit }: Props) {
 
       {/* Code viewport — horizontal pan with a gradient hint at the right edge. */}
       <div style={{ flex: 1, minHeight: 0, position: "relative" }}>
-        <div ref={containerRef} data-testid="reader-code" style={{ height: "100%", overflow: "auto" }} />
+        <div
+          ref={containerRef}
+          data-testid="reader-code"
+          style={{ height: "100%", overflow: "auto" }}
+          onPointerDown={(e) => {
+            if (!onLineAction) return;
+            pressPos.current = { x: e.clientX, y: e.clientY };
+            clearPress();
+            pressTimer.current = setTimeout(() => {
+              const v = viewRef.current;
+              const pos = pressPos.current;
+              if (!v || !pos) return;
+              const sel = v.state.selection.main;
+              let from: number, to: number;
+              if (!sel.empty) {
+                from = v.state.doc.lineAt(sel.from).number;
+                to = v.state.doc.lineAt(sel.to).number;
+              } else {
+                const p = v.posAtCoords({ x: pos.x, y: pos.y });
+                if (p == null) return;
+                from = to = v.state.doc.lineAt(p).number;
+              }
+              onLineAction(from, to);
+            }, 500);
+          }}
+          onPointerMove={(e) => {
+            const p = pressPos.current;
+            if (p && (Math.abs(e.clientX - p.x) > 8 || Math.abs(e.clientY - p.y) > 8)) clearPress();
+          }}
+          onPointerUp={clearPress}
+          onPointerCancel={clearPress}
+        />
         <div aria-hidden style={{ position: "absolute", top: 0, right: 0, bottom: 0, width: 18, pointerEvents: "none", background: "linear-gradient(to right, transparent, var(--ed-canvas))" }} />
       </div>
     </div>

@@ -80,8 +80,27 @@ Deploy truth-gating (P0.2: HTTP checks only) · STC integrity checks (client/sha
 - **Degradation:** attachments live in the user message, so the M2 reduced-context retry (which drops only the injected **project** file section) never silently drops them; if the provider token-limit still trips, the user gets the honest token-limit error (suggest shortening/splitting) — no fabrication.
 - **CFO dependency:** A6, A19 (same register family as M2) — widen with prod telemetry. | Status: FORMULA — measure with prod telemetry.
 
+### M7 — Line-anchored instruction (MOBILE-1 Tier 2, "Diese Stelle ändern lassen")
+- **Trigger:** user long-presses a line (or a range) in the Reader / Diff sheet, chooses "Diese Stelle
+  ändern lassen", pre-anchors the command bar, and sends. One anchored send = one normal chat completion.
+- **Tokens:** +Δ input over a bare M1 turn = the anchor payload — a preamble (`[Anker → file · Zeile a–b] …`)
+  plus **±`SURROUNDING_LINES` (=10)** lines of surrounding code with line numbers. Typical add ≈ **a few
+  hundred input tokens** (≈20 context lines × ~8 tok + preamble ≈50 tok ≈ 200 tok). The message also still
+  flows through U1 file-content injection (M2), so the anchor is *additive* to that. Output = the targeted
+  edit (variable, like M1). **Built deterministically** by `buildAnchoredMessage()` — verifiable without a
+  model round-trip.
+- **Billed to:** **user allowance** — the anchored instruction is a normal user turn (no special path); it
+  flows through the same completion as M1/M2. Result lands as a reviewed `GEÄNDERT` draft (no auto-apply).
+- **Knobs:** `SURROUNDING_LINES` (= **10**) — `apps/web/lib/anchor-message.ts` (the sole token knob; raising
+  it linearly increases the added input tokens for better targeting); the anchored range/location (user-chosen).
+- **Cost:** at realistic mix $0.20/M → +~200 input tok ≈ **+$0.00004/anchored send** on top of the base turn.
+  Negligible per use; scales with anchored-send frequency.
+- **CFO dependency:** A6 (exhaustion), A19 family (project token split — same as M2). | Status: FORMULA
+  (constants VERIFIED `anchor-message.ts`) — widen with prod telemetry once anchored sends are measurable
+  (attributable via I0 `completion_costs.project_id` + `chat_session_id`).
+
 ### M6 — Reserved (not yet built; add rows before shipping)
-Web search / Recherche (feature-flagged off) · extended thinking · MOBILE-1 line-anchored instructions (expected shape: M1-sized turn + file context à la M2) · FEEL-3 agent loop (tool-calling turns — will dominate this ledger when built; **cost model required before merge**).
+Web search / Recherche (feature-flagged off) · extended thinking · FEEL-3 agent loop (tool-calling turns — will dominate this ledger when built; **cost model required before merge**).
 
 ---
 

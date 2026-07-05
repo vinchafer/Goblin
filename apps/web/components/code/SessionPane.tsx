@@ -19,6 +19,9 @@ import { StatusStrip } from "./StatusStrip";
 import { FileCardList } from "./FileCardList";
 import { Reader } from "./Reader";
 import { DiffSheet } from "./DiffSheet";
+import { LineActionSheet } from "./LineActionSheet";
+import type { CommandAnchor } from "./CommandBar";
+import { buildAnchoredMessage } from "@/lib/anchor-message";
 import { useIsMobile } from "@/hooks/use-is-mobile";
 import { fetchAllTextFiles } from "@/lib/project-files";
 import { lineDelta } from "@/lib/file-compare";
@@ -73,6 +76,10 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
   const [mobileMain, setMobileMain] = useState<"cards" | "reader" | "editor">("cards");
   const [readerPath, setReaderPath] = useState<string | null>(null);
   const [diffPath, setDiffPath] = useState<string | null>(null);
+  // M3 (Tier 2): a long-press → this pending selection → the action sheet; choosing
+  // "ändern lassen" pre-anchors the command bar with `commandAnchor`.
+  const [lineAction, setLineAction] = useState<{ file: string; from: number; to: number } | null>(null);
+  const [commandAnchor, setCommandAnchor] = useState<CommandAnchor | null>(null);
   // Saved base map (project storage) — a reloaded draft row no longer carries
   // its pre-edit base, so GEÄNDERT/NEU + line deltas are computed against this.
   const [baseFiles, setBaseFiles] = useState<Record<string, string>>({});
@@ -312,6 +319,42 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
   const backToCards = () => { setReaderPath(null); setMobileMain("cards"); };
   const editFromReader = () => { setMobileMain("editor"); };
 
+  // ── M3 Tier-2 point & instruct ──
+  // Confirm "Diese Stelle ändern lassen": pre-anchor the command bar and return to
+  // the cards so the incoming GEÄNDERT card surfaces after the send.
+  const confirmAnchor = () => {
+    if (!lineAction) return;
+    setCommandAnchor({ file: lineAction.file, from: lineAction.from, to: lineAction.to });
+    setLineAction(null);
+    setReaderPath(null);
+    setMobileMain("cards");
+    setDiffPath(null);
+  };
+  const copyAnchoredLines = () => {
+    if (!lineAction) return;
+    const f = detail.files.find(x => x.path === lineAction.file);
+    if (f) {
+      const lines = f.content.split("\n").slice(lineAction.from - 1, lineAction.to).join("\n");
+      navigator.clipboard?.writeText(lines);
+      setToast("Kopiert"); setTimeout(() => setToast(null), 1600);
+    }
+    setLineAction(null);
+  };
+  // Submit from the command bar. With an anchor, wrap the instruction in the
+  // structured anchor payload (M3) so the model targets the pointed-at region; the
+  // result still lands as a reviewed GEÄNDERT draft (no auto-apply).
+  const submitCommand = (text: string) => {
+    setAskText("");
+    if (commandAnchor) {
+      const f = detail.files.find(x => x.path === commandAnchor.file);
+      const message = buildAnchoredMessage(text, commandAnchor, f?.content ?? "");
+      setCommandAnchor(null);
+      handleSubmit(message);
+    } else {
+      handleSubmit(text);
+    }
+  };
+
   // 10.8-7: open a file from the nav panel.
   const handleNavSelect = (path: string) => {
     detail.setActivePath(path);
@@ -509,11 +552,13 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
           <CommandBar
             value={askText}
             onChange={setAskText}
-            onSubmit={(text) => { setAskText(""); handleSubmit(text); }}
+            onSubmit={submitCommand}
             streaming={agent.streaming}
             onCancel={agent.cancel}
             modelId={session.model_id}
             onModelChange={onModelChange}
+            anchor={commandAnchor}
+            onClearAnchor={() => setCommandAnchor(null)}
           />
           <StatusStrip
             state={liveBlock ? "draft" : state}
@@ -534,6 +579,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
                 theme={theme}
                 onClose={backToCards}
                 onEdit={editFromReader}
+                onLineAction={(from, to) => setLineAction({ file: readerPath, from, to })}
               />
             ) : (
               <FileCardList
@@ -678,6 +724,19 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
             removed={diffDelta.removed}
             onClose={() => setDiffPath(null)}
             onWholeFile={() => { setDiffPath(null); openReader(diffPath); }}
+            onReanchor={(range) => { setLineAction({ file: diffPath, from: range.from, to: range.to }); }}
+          />
+        )}
+
+        {/* M3 Tier-2 action sheet — from a Reader long-press or the Diff sheet. */}
+        {lineAction && (
+          <LineActionSheet
+            file={lineAction.file}
+            from={lineAction.from}
+            to={lineAction.to}
+            onChange={confirmAnchor}
+            onCopy={copyAnchoredLines}
+            onClose={() => setLineAction(null)}
           />
         )}
 
