@@ -25,7 +25,11 @@ create index if not exists completion_costs_project_idx
 
 -- Refresh the rollup view to expose the project dimension. date_trunc grouping
 -- unchanged; project_id added so A19 can split project vs standalone (NULL).
-create or replace view public.monthly_costs_per_user as
+-- DROP first: CREATE OR REPLACE VIEW cannot reorder/insert columns (adding
+-- project_id ahead of the existing `month` column errors 42P16), so replace the
+-- whole view. Safe — nothing depends on this reporting view.
+drop view if exists public.monthly_costs_per_user;
+create view public.monthly_costs_per_user as
 select
   user_id,
   project_id,
