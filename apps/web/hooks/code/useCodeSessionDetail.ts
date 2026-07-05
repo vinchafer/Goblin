@@ -116,7 +116,15 @@ export function useCodeSessionDetail(sessionId: string | null) {
       method: 'POST', headers: { Authorization: `Bearer ${t}`, 'Content-Type': 'application/json' },
     });
     if (res.status === 409) return { error: 'Bitte zuerst alle Entwürfe sichern' };
-    if (!res.ok || !res.body) return { error: 'Veröffentlichen fehlgeschlagen' };
+    // MOBILE-1: surface the real HTTP status instead of collapsing every non-OK
+    // response to a generic string — otherwise a transient 429 (rate limit) or a
+    // 5xx is indistinguishable in the UI (W10 root-cause finding). 429 gets a
+    // calm, actionable message; anything else names its status for diagnosis.
+    if (res.status === 429) return { error: 'Zu viele Anfragen gerade — bitte kurz warten und erneut auf „Live stellen" tippen.' };
+    if (!res.ok || !res.body) {
+      const detail = await res.text().catch(() => '');
+      return { error: `Veröffentlichen fehlgeschlagen (HTTP ${res.status})${detail ? ` — ${detail.slice(0, 140)}` : ''}` };
+    }
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
