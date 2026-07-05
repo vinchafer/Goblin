@@ -25,9 +25,11 @@ interface Props {
   onWholeFile: () => void;
   /** M3: "Diese Stelle ändern lassen" — pre-anchor the command bar to a hunk. */
   onReanchor?: (range: { from: number; to: number }) => void;
+  /** M4: "Übernehmen sieht gut aus" — accept the change into the draft, close. */
+  onDismiss?: () => void;
 }
 
-export function DiffSheet({ path, base, proposed, added, removed, onClose, onWholeFile, onReanchor }: Props) {
+export function DiffSheet({ path, base, proposed, added, removed, onClose, onWholeFile, onReanchor, onDismiss }: Props) {
   const lang = useLang();
   const lines = useMemo(() => unifiedDiffLines(path, base, proposed), [path, base, proposed]);
 
@@ -72,18 +74,23 @@ export function DiffSheet({ path, base, proposed, added, removed, onClose, onWho
           })}
         </div>
 
-        {/* Actions */}
-        <div style={{ flexShrink: 0, borderTop: "1px solid var(--ed-rule)", background: "var(--ed-chrome)", padding: "10px 14px", display: "flex", alignItems: "center", gap: 8 }}>
+        {/* Actions — spec §4: dismiss (stays in draft) · whole file (Reader) ·
+            re-anchor (Tier 2). */}
+        <div style={{ flexShrink: 0, borderTop: "1px solid var(--ed-rule)", background: "var(--ed-chrome)", padding: "10px 14px", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           {onReanchor && (
             <button onClick={() => onReanchor({ from: 1, to: proposed.split("\n").length })} data-testid="diff-sheet-reanchor"
               style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "transparent", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-2)", borderRadius: 9, padding: "9px 12px", fontSize: 13, cursor: "pointer", fontFamily: "var(--font-sans)" }}>
               <Icon name="code" size={13} /> {t(lang, "Diese Stelle ändern lassen", "Change this part")}
             </button>
           )}
-          <span style={{ flex: 1 }} />
           <button onClick={onWholeFile} data-testid="diff-sheet-wholefile"
-            style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "transparent", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-2)", borderRadius: 9, padding: "9px 14px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-sans)" }}>
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "transparent", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-2)", borderRadius: 9, padding: "9px 12px", fontSize: 13, cursor: "pointer", fontFamily: "var(--font-sans)" }}>
             {t(lang, "Ganze Datei", "Whole file")}
+          </button>
+          <span style={{ flex: 1 }} />
+          <button onClick={onDismiss ?? onClose} data-testid="diff-sheet-dismiss"
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "var(--ed-primary)", border: "none", color: "var(--ed-on-primary)", borderRadius: 9, padding: "9px 14px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-sans)" }}>
+            <Icon name="check" size={13} /> {t(lang, "Sieht gut aus", "Looks good")}
           </button>
         </div>
       </div>

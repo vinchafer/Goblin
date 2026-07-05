@@ -25,6 +25,7 @@ import { buildAnchoredMessage } from "@/lib/anchor-message";
 import { useIsMobile } from "@/hooks/use-is-mobile";
 import { fetchAllTextFiles } from "@/lib/project-files";
 import { lineDelta } from "@/lib/file-compare";
+import { useLang, t } from "@/lib/use-lang";
 import { createTwoFilesPatch } from "diff";
 import { parseCodeBlocks, linkedLocalAssets } from "@/lib/parse-code-blocks";
 import { DiffModal } from "@/components/project/diff-modal";
@@ -60,6 +61,7 @@ interface Props {
  *  mobile single-column. The change-state spine (Entwurf → Gesichert → Veröffentlicht)
  *  lives in the work-surface status line; deploy is gated on Saved. */
 export function SessionPane({ session, theme, onModelChange, onDraftCountChange, onAutoTitle, intent, projectId }: Props) {
+  const lang = useLang();
   const detail = useCodeSessionDetail(session.id);
   const agent = useCodeAgent(session.id);
   const preset = layoutPreset(intent);
@@ -85,6 +87,11 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
   const [baseFiles, setBaseFiles] = useState<Record<string, string>>({});
   const [deployConfirm, setDeployConfirm] = useState(false);
   const [deploying, setDeploying] = useState(false);
+  // M4: the inline truth-gated publish stream. `message` mirrors the server's
+  // progress (incl. "wird geprüft, n/6"); phase never becomes "live" until the
+  // server's success event — no completion claim before the checks pass.
+  const [publishStream, setPublishStream] = useState<{ phase: "publishing" | "live" | "error"; message: string; url?: string } | null>(null);
+  const [moreMenu, setMoreMenu] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [liveUrl, setLiveUrl] = useState<string | null>(null);
   const [liveDismissed, setLiveDismissed] = useState(false);
@@ -417,38 +424,39 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
     setTimeout(() => setToast(null), 3000);
   };
 
-  // WALK2-2 (Phase 2): ONE deliberate action to go live. A non-technical user
-  // shouldn't have to learn "save, then publish" — publishing saves any pending
-  // drafts first, then deploys, in a single press. Nothing auto-deploys; the user
-  // still chooses to publish (confirm dialog). The /save and /deploy endpoints are
-  // unchanged — this only orchestrates them client-side.
-  const publishNow = async () => {
+  // WALK2-2 (Phase 2): ONE deliberate action to go live — see `liveStellen` below.
+  // M4 — "Live stellen": Sichern + Veröffentlichen in one flow with the truth-gated
+  // status stream rendered INLINE (not a toast). The stream mirrors the server's
+  // progress ("wird geprüft, n/6"); it only flips to "Live" on the success event —
+  // the deploy is truth-gated server-side (verifyDeployment), so we never claim a
+  // published state before the checks pass.
+  const liveStellen = async () => {
     setDeployConfirm(false);
     setDeploying(true);
+    setPublishStream({ phase: "publishing", message: "Sichere Änderungen …" });
     if (detail.draftCount > 0) {
-      setToast("Sichere Änderungen …");
       const ok = await detail.saveSession();
       if (!ok) {
         setDeploying(false);
-        setToast("Konnte nicht sichern — erneut?");
-        setTimeout(() => setToast(null), 5000);
+        setPublishStream({ phase: "error", message: "Konnte nicht sichern — erneut?" });
         return;
       }
       reviewsByPathRef.current.clear();
       setReviewablePaths(new Set());
     }
-    setToast("Veröffentliche …");
-    const { url, error, deploymentUrl, aliasUrl } = await detail.deploySession((msg) => setToast(msg));
+    setPublishStream({ phase: "publishing", message: "Veröffentliche …" });
+    const { url, error, deploymentUrl, aliasUrl } = await detail.deploySession((msg) =>
+      setPublishStream({ phase: "publishing", message: msg }),
+    );
     setDeploying(false);
     setDeployDebug({ deploymentUrl, aliasUrl });
     if (url) {
       setLiveUrl(url);
       setLiveDismissed(false);
-      setToast(null);
+      setPublishStream({ phase: "live", message: "Live", url });
     } else {
       const msg = (error ?? "Veröffentlichen fehlgeschlagen").replace(/^NO_VERCEL_TOKEN —\s*/, "");
-      setToast(msg);
-      setTimeout(() => setToast(null), 8000);
+      setPublishStream({ phase: "error", message: msg });
     }
   };
 
@@ -725,6 +733,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
             onClose={() => setDiffPath(null)}
             onWholeFile={() => { setDiffPath(null); openReader(diffPath); }}
             onReanchor={(range) => { setLineAction({ file: diffPath, from: range.from, to: range.to }); }}
+            onDismiss={() => setDiffPath(null)}
           />
         )}
 
@@ -776,61 +785,92 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
             the surface (see .gb-mobile-surface-top above). The command input now
             lives there with the mic; nothing here. */}
 
-        {/* Status line + the two-step Sichern → Veröffentlichen */}
+        {/* MOBILE-1 · M4: one "Live stellen" primary (Sichern + Veröffentlichen in
+            one flow) with the truth-gated status stream rendered INLINE. "Nur
+            sichern" + GitHub push live in the ⋯ menu. */}
         <div className="gb-actbar" style={{ flexShrink: 0, borderTop: "1px solid var(--ed-rule)", background: "var(--ed-chrome)", padding: "10px 14px", display: "flex", alignItems: "center", gap: 12 }}>
-          {projectId && <SessionGitPill projectId={projectId} />}
-          <span className="gb-statusline" style={{ fontSize: 12, fontFamily: "var(--font-sans)", flex: 1, display: "inline-flex", alignItems: "center", gap: 7, minWidth: 0 }}>
-            {state === "empty" ? (
-              <span style={{ color: "var(--ed-fg-3)" }}>Noch keine Dateien</span>
-            ) : hasUnpublished ? (
-              <>
-                <span style={{ width: 8, height: 8, borderRadius: "50%", border: "1.5px solid var(--ed-draft)", flexShrink: 0 }} />
-                <span style={{ color: "var(--ed-fg-2)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Nicht veröffentlichte Änderungen</span>
-              </>
-            ) : detail.deployedAt ? (
-              <>
-                <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#6db97b", flexShrink: 0 }} />
-                <span style={{ color: "var(--ed-fg-3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Live{lastDeployedRel ? ` · zuletzt aktualisiert ${lastDeployedRel}` : ""}</span>
-              </>
-            ) : (
-              <span style={{ color: "var(--ed-fg-3)" }}>Gesichert · bereit zum Veröffentlichen</span>
-            )}
-          </span>
-          <button
-            className="gb-icon-btn"
-            onClick={doSave}
-            disabled={!canSave || detail.saving}
-            title="Sichern"
-            aria-label="Sichern"
-            style={{
-              display: "inline-flex", alignItems: "center", gap: 6,
-              background: canSave ? "var(--ed-primary)" : "transparent",
-              color: canSave ? "var(--ed-on-primary)" : "var(--ed-fg-3)",
-              border: canSave ? "none" : "1px solid var(--ed-rule)",
-              borderRadius: 9, padding: "8px 14px", fontSize: 13, fontWeight: 600,
-              cursor: canSave && !detail.saving ? "pointer" : "not-allowed", fontFamily: "var(--font-sans)",
-            }}
-          >
-            {detail.saving ? <GoblinLogo state="working" size={14} variant="gold" /> : <Icon name="save" size={14} />} <span className="gb-btn-lbl">Sichern</span>
-          </button>
-          <span style={{ width: 1, height: 22, background: "var(--ed-rule)" }} />
-          <button
-            className="gb-icon-btn"
-            onClick={() => setDeployConfirm(true)}
-            disabled={!canPublish || deploying}
-            title={hasUnpublished ? "Sichern + Veröffentlichen" : "Veröffentlichen"}
-            aria-label="Veröffentlichen"
-            style={{
-              display: "inline-flex", alignItems: "center", gap: 6,
-              background: canPublish ? "var(--ed-primary)" : "transparent",
-              color: canPublish ? "var(--ed-on-primary)" : "var(--ed-fg-3)",
-              border: canPublish ? "none" : "1px solid var(--ed-rule)",
-              borderRadius: 9, padding: "8px 14px", fontSize: 13, fontWeight: 600,
-              cursor: canPublish && !deploying ? "pointer" : "not-allowed", fontFamily: "var(--font-sans)",
-            }}
-          >
-            {deploying ? <GoblinLogo state="working" size={14} variant="gold" /> : <Icon name="play" size={14} />} <span className="gb-btn-lbl">Veröffentlichen</span>
-          </button>
+          {publishStream ? (
+            <div data-testid="publish-stream" style={{ flex: 1, display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+              {publishStream.phase === "publishing" ? (
+                <GoblinLogo state="working" size={16} variant="gold" />
+              ) : (
+                <span style={{ width: 9, height: 9, borderRadius: "50%", background: publishStream.phase === "live" ? "#6db97b" : "var(--danger, #B0432A)", flexShrink: 0 }} />
+              )}
+              <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontFamily: "var(--font-sans)", color: publishStream.phase === "error" ? "var(--danger, #B0432A)" : "var(--ed-fg-1)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {publishStream.phase === "live" ? (t(lang, "Live gestellt", "Published")) : publishStream.message}
+              </span>
+              {publishStream.phase !== "publishing" && (
+                <button onClick={() => setPublishStream(null)} aria-label="Schließen" style={{ background: "transparent", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-2)", borderRadius: 8, padding: "5px 10px", fontSize: 12, cursor: "pointer", fontFamily: "var(--font-sans)", flexShrink: 0 }}>
+                  {publishStream.phase === "error" ? t(lang, "Erneut", "Retry") : "OK"}
+                </button>
+              )}
+            </div>
+          ) : (
+            <>
+              <span className="gb-statusline" style={{ fontSize: 12, fontFamily: "var(--font-sans)", flex: 1, display: "inline-flex", alignItems: "center", gap: 7, minWidth: 0 }}>
+                {state === "empty" ? (
+                  <span style={{ color: "var(--ed-fg-3)" }}>Noch keine Dateien</span>
+                ) : hasUnpublished ? (
+                  <>
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", border: "1.5px solid var(--ed-draft)", flexShrink: 0 }} />
+                    <span style={{ color: "var(--ed-fg-2)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Nicht veröffentlichte Änderungen</span>
+                  </>
+                ) : detail.deployedAt ? (
+                  <>
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#6db97b", flexShrink: 0 }} />
+                    <span style={{ color: "var(--ed-fg-3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Live{lastDeployedRel ? ` · zuletzt aktualisiert ${lastDeployedRel}` : ""}</span>
+                  </>
+                ) : (
+                  <span style={{ color: "var(--ed-fg-3)" }}>Gesichert · bereit zum Veröffentlichen</span>
+                )}
+              </span>
+              {/* ⋯ menu — Nur sichern + GitHub push (demoted per spec §2.4). */}
+              <div style={{ position: "relative", flexShrink: 0 }}>
+                <button
+                  onClick={() => setMoreMenu(v => !v)}
+                  aria-label="Weitere Aktionen" title="Mehr" data-testid="more-menu-button"
+                  style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, background: "transparent", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-2)", borderRadius: 9, cursor: "pointer" }}
+                >
+                  <Icon name="more" size={16} />
+                </button>
+                {moreMenu && (
+                  <>
+                    <div onClick={() => setMoreMenu(false)} style={{ position: "fixed", inset: 0, zIndex: 40 }} />
+                    <div data-testid="more-menu" style={{ position: "absolute", bottom: "calc(100% + 6px)", right: 0, zIndex: 41, minWidth: 220, background: "var(--ed-chrome-2, var(--ed-canvas))", border: "1px solid var(--ed-rule)", borderRadius: 12, padding: 8, boxShadow: "0 12px 32px rgba(15,43,30,0.24)", display: "flex", flexDirection: "column", gap: 6 }}>
+                      <button
+                        onClick={() => { setMoreMenu(false); doSave(); }}
+                        disabled={!canSave || detail.saving}
+                        data-testid="menu-save"
+                        style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", textAlign: "left", background: "transparent", border: "none", color: canSave ? "var(--ed-fg-1)" : "var(--ed-fg-3)", borderRadius: 8, padding: "10px 10px", fontSize: 14, cursor: canSave ? "pointer" : "not-allowed", fontFamily: "var(--font-sans)" }}
+                      >
+                        <Icon name="save" size={15} /> {t(lang, "Nur sichern", "Save only")}
+                      </button>
+                      {projectId && (
+                        <div style={{ borderTop: "1px solid var(--ed-rule)", paddingTop: 6 }}>
+                          <SessionGitPill projectId={projectId} />
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+              <button
+                onClick={() => setDeployConfirm(true)}
+                disabled={!canPublish || deploying}
+                title="Live stellen" aria-label="Live stellen" data-testid="live-stellen"
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 6, flexShrink: 0,
+                  background: canPublish ? "var(--ed-primary)" : "transparent",
+                  color: canPublish ? "var(--ed-on-primary)" : "var(--ed-fg-3)",
+                  border: canPublish ? "none" : "1px solid var(--ed-rule)",
+                  borderRadius: 9, padding: "10px 18px", fontSize: 14, fontWeight: 600,
+                  cursor: canPublish && !deploying ? "pointer" : "not-allowed", fontFamily: "var(--font-sans)",
+                }}
+              >
+                <Icon name="play" size={15} /> Live stellen
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -839,15 +879,15 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
         <>
           <div style={{ position: "absolute", inset: 0, zIndex: 80, background: "var(--surface-overlay, rgba(0,0,0,0.4))" }} onClick={() => setDeployConfirm(false)} />
           <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "var(--ed-chrome-2)", border: "1px solid var(--ed-rule)", borderRadius: 14, padding: "22px 24px", zIndex: 81, minWidth: 320, maxWidth: 380, boxShadow: "0 16px 40px rgba(15,43,30,0.28)" }}>
-            <div style={{ fontSize: 16, fontWeight: 600, color: "var(--ed-fg-1)", fontFamily: "var(--font-sans)", marginBottom: 8 }}>Veröffentlichen?</div>
+            <div style={{ fontSize: 16, fontWeight: 600, color: "var(--ed-fg-1)", fontFamily: "var(--font-sans)", marginBottom: 8 }}>Live stellen?</div>
             <div style={{ fontSize: 13, lineHeight: 1.55, color: "var(--ed-fg-3)", fontFamily: "var(--font-sans)", marginBottom: 18 }}>
               {hasUnpublished
-                ? "Goblin sichert deine Änderungen und stellt sie live — unter derselben Adresse wie bisher. Nichts geht automatisch online; du entscheidest."
-                : "Goblin baut dein Projekt und stellt es unter derselben öffentlichen Adresse bereit."}
+                ? "Goblin sichert deine Änderungen und stellt sie live — unter derselben Adresse wie bisher. Erst wenn alle Prüfungen bestanden sind, gilt es als live. Nichts geht automatisch online; du entscheidest."
+                : "Goblin baut dein Projekt und stellt es unter derselben öffentlichen Adresse bereit. Erst nach bestandener Prüfung gilt es als live."}
             </div>
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
               <button onClick={() => setDeployConfirm(false)} style={{ background: "transparent", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-2)", borderRadius: 9, padding: "9px 16px", fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "var(--font-sans)" }}>Abbrechen</button>
-              <button onClick={publishNow} style={{ background: "var(--ed-primary)", border: "none", color: "var(--ed-on-primary)", borderRadius: 9, padding: "9px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-sans)", display: "inline-flex", alignItems: "center", gap: 7 }}><Icon name="play" size={14} /> Veröffentlichen</button>
+              <button onClick={liveStellen} data-testid="live-stellen-confirm" style={{ background: "var(--ed-primary)", border: "none", color: "var(--ed-on-primary)", borderRadius: 9, padding: "9px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-sans)", display: "inline-flex", alignItems: "center", gap: 7 }}><Icon name="play" size={14} /> Live stellen</button>
             </div>
           </div>
         </>
