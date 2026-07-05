@@ -2,7 +2,12 @@ import { createMiddleware } from 'hono/factory';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { derivePlanTruth } from '../lib/plan-truth';
 
-const TRIAL_DAYS = 3;
+export const TRIAL_DAYS = 7;
+
+/** Single authoritative trial-window computation: start + TRIAL_DAYS. Pure, for testing. */
+export function trialEndFrom(now: Date): Date {
+  return new Date(now.getTime() + TRIAL_DAYS * 86400000);
+}
 
 // Paths that skip the trial gate entirely (public routes, webhooks, OAuth callbacks)
 const SKIP_PATHS = [
@@ -133,7 +138,7 @@ export async function startTrial(
   }
 
   const now = new Date();
-  const trialEnd = new Date(now.getTime() + TRIAL_DAYS * 86400000);
+  const trialEnd = trialEndFrom(now);
   await supabase
     .from('users')
     .update({

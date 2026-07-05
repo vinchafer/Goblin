@@ -88,8 +88,8 @@ export function TrialBanner() {
             ? t(lang, 'Testphase endet heute.', 'Trial ends today.')
             : t(
                 lang,
-                `Tag ${3 - days + (info.extensionUsed ? 2 : 0) + 1} von ${info.extensionUsed ? 5 : 3} in deiner Testphase.`,
-                `Day ${3 - days + (info.extensionUsed ? 2 : 0) + 1} of ${info.extensionUsed ? 5 : 3} in your free trial.`,
+                `Tag ${7 - days + (info.extensionUsed ? 2 : 0) + 1} von ${info.extensionUsed ? 9 : 7} in deiner Testphase.`,
+                `Day ${7 - days + (info.extensionUsed ? 2 : 0) + 1} of ${info.extensionUsed ? 9 : 7} in your free trial.`,
               )}
           {' '}
           <button

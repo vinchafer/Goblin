@@ -90,8 +90,8 @@ export const COST_UNITS_PER_BUILD = 150_000;
  *
  * Paid plans ≈ 1/5 of the monthly allowance. TRIAL is sized differently (2026-06-27):
  * at the reconciled 0.15M/build the full 4.9M trial cap is ~33 builds, but the trial
- * runs only 3 days. The guard is set to TRIAL_BUILDS_PER_DAY (11) × COST_UNITS_PER_BUILD
- * = 1.65M/day so a genuine trial user can reach the full ~33 builds across the 3 days,
+ * runs only 7 days. The guard is set to TRIAL_BUILDS_PER_DAY (11) × COST_UNITS_PER_BUILD
+ * = 1.65M/day so a genuine trial user can reach the full ~33 builds across the 7 days,
  * with the monthly 4.9M cap (not the daily guard) as the real ceiling. Worst-case trial
  * inference cost at the daily guard stays ≈ $0.98.
  */

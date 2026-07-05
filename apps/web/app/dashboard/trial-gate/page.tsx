@@ -110,7 +110,7 @@ export default function TrialGatePage() {
             >
               {starting
                 ? t(lang, 'Startet…', 'Starting…')
-                : t(lang, '3 Tage kostenlos testen', 'Start 3-day free trial')}
+                : t(lang, '7 Tage kostenlos testen', 'Start 7-day free trial')}
             </button>
           )}
 

@@ -75,7 +75,7 @@ export function Pricing() {
               Simple pricing. <span className="serif-italic">Build anywhere.</span>
             </>
           }
-          lead="3-day free trial. No credit card required. Cancel anytime."
+          lead="7-day free trial. No credit card required. Cancel anytime."
         />
 
         <div className="pricing-grid">
