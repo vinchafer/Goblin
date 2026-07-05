@@ -11,10 +11,11 @@ import { GoblinLogo } from "@/components/brand/GoblinLogo";
 import { StreamingDiffView } from "./StreamingDiffView";
 import { SessionThread } from "./SessionThread";
 import { SessionPromptInput } from "./SessionPromptInput";
-import { SessionModelPicker } from "./SessionModelPicker";
 import { SessionGitPill } from "./SessionGitPill";
 import { CodeFileTabs } from "./CodeFileTabs";
 import { SessionFileNav } from "./SessionFileNav";
+import { CommandBar } from "./CommandBar";
+import { StatusStrip } from "./StatusStrip";
 import { createTwoFilesPatch } from "diff";
 import { parseCodeBlocks, linkedLocalAssets } from "@/lib/parse-code-blocks";
 import { DiffModal } from "@/components/project/diff-modal";
@@ -385,11 +386,19 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
         .gb-thread-col { display: flex; width: ${preset.threadPct}%; max-width: 560px; min-width: 300px; border-right: 1px solid var(--ed-rule); }
         .gb-surface-col { display: flex; flex: 1; min-width: 0; }
         .gb-mobile-back { display: none; }
+        /* MOBILE-1 · M1: the promoted command bar + status strip live at the TOP
+           of the mobile Code surface. Desktop keeps the thread composer as the
+           front door (HARD RULE 3), so this region is mobile-only. */
+        .gb-mobile-surface-top { display: none; }
         @media (max-width: 860px) {
           .gb-session-pane { flex-direction: column; }
           .gb-thread-col { width: 100%; max-width: none; min-width: 0; border-right: none; display: ${mobileView === "thread" ? "flex" : "none"}; }
           .gb-surface-col { display: ${mobileView === "editor" ? "flex" : "none"}; }
           .gb-mobile-back { display: inline-flex !important; }
+          .gb-mobile-surface-top { display: block; }
+          /* The status strip now carries state at the top; drop the duplicate
+             status line from the bottom action bar across the whole mobile band. */
+          .gb-statusline { display: none !important; }
         }
         /* 10.8-6: mobile bottom-row is icon-only with 44px tap targets — no more
            overflow from "Kopieren Verwerfen Entwurf | Sichern | Veröffentlichen". */
@@ -397,13 +406,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
           .gb-actbar { gap: 8px !important; justify-content: flex-end !important; }
           .gb-btn-lbl { display: none !important; }
           .gb-icon-btn { padding: 0 !important; width: 44px !important; height: 44px !important; justify-content: center !important; gap: 0 !important; }
-          .gb-statusline { display: none !important; }
         }
-        /* A.2: the docked "ask Goblin" bar lives only in the mobile editor view
-           (desktop keeps the always-visible thread composer). The surface column
-           is itself display:none in mobile thread view, so this never doubles up. */
-        .gb-editor-ask { display: none; }
-        @media (max-width: 860px) { .gb-editor-ask { display: flex; } }
       `}</style>
 
       {/* THREAD column */}
@@ -444,6 +447,27 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
           onSelect={handleNavSelect}
           onNewFile={handleNewFile}
         />
+        {/* MOBILE-1 · M1: promoted command bar + status strip at the TOP of the
+            mobile Code surface (spec §2.1–2.2). Mobile-only; desktop keeps the
+            thread composer as the front door. Routes through the same
+            handleSubmit → reviewed GEÄNDERT draft path (no auto-apply). */}
+        <div className="gb-mobile-surface-top">
+          <CommandBar
+            value={askText}
+            onChange={setAskText}
+            onSubmit={(text) => { setAskText(""); handleSubmit(text); }}
+            streaming={agent.streaming}
+            onCancel={agent.cancel}
+            modelId={session.model_id}
+            onModelChange={onModelChange}
+          />
+          <StatusStrip
+            state={liveBlock ? "draft" : state}
+            draftCount={detail.draftCount}
+            liveUrl={detail.deployedAt ? (liveUrl ?? detail.deployUrl ?? null) : null}
+            lastDeployedRel={lastDeployedRel}
+          />
+        </div>
         {/* Multi-file tabs (Slice 3). The session already holds many files; tabs let
             Sofia switch between them. Hidden for a single file so Max's landing-page
             flow stays clean. Closing only discards drafts (saved files are a no-op). */}
@@ -591,46 +615,9 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
           </div>
         )}
 
-        {/* A.2: docked "ask Goblin" bar — only the mobile editor view (the thread
-            is hidden there). Routes through handleSubmit → the change comes back
-            as the review card; the editor/review is never hidden. BUG-5: now also
-            carries the model picker so you can choose the model for an in-editor
-            edit without switching to the thread. */}
-        <form
-          className="gb-editor-ask"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const t = askText.trim();
-            if (!t || agent.streaming) return;
-            setAskText("");
-            handleSubmit(t);
-          }}
-          style={{ flexShrink: 0, borderTop: "1px solid var(--ed-rule)", background: "var(--ed-chrome)", padding: "8px 12px", display: "flex", flexDirection: "column", gap: 8 }}
-        >
-          {/* WALK3-2: this composer only renders ≤860px (the constrained / split /
-              mobile view; >860 uses the threaded SessionPromptInput). The model
-              picker used to eat a full row below the input — wasteful. Collapse it
-              to an icon sitting right next to Send; tapping it opens the same picker. */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <input
-              value={askText}
-              onChange={(e) => setAskText(e.target.value)}
-              placeholder="Goblin um eine Änderung bitten…"
-              aria-label="Goblin um eine Änderung bitten"
-              disabled={agent.streaming}
-              style={{ flex: 1, minWidth: 0, background: "var(--ed-canvas)", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-1)", borderRadius: 9, padding: "10px 12px", fontSize: 14, fontFamily: "var(--font-sans)", outline: "none" }}
-            />
-            <SessionModelPicker value={session.model_id} onChange={onModelChange} variant="icon" />
-            <button
-              type="submit"
-              disabled={!askText.trim() || agent.streaming}
-              aria-label="Senden"
-              style={{ flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", width: 44, height: 44, background: askText.trim() && !agent.streaming ? "var(--ed-primary)" : "transparent", color: askText.trim() && !agent.streaming ? "var(--ed-on-primary)" : "var(--ed-fg-3)", border: askText.trim() && !agent.streaming ? "none" : "1px solid var(--ed-rule)", borderRadius: 9, cursor: askText.trim() && !agent.streaming ? "pointer" : "not-allowed" }}
-            >
-              {agent.streaming ? <GoblinLogo state="working" size={15} variant="gold" /> : <Icon name="send" size={16} />}
-            </button>
-          </div>
-        </form>
+        {/* MOBILE-1 · M1: the docked bottom "ask" bar was promoted to the top of
+            the surface (see .gb-mobile-surface-top above). The command input now
+            lives there with the mic; nothing here. */}
 
         {/* Status line + the two-step Sichern → Veröffentlichen */}
         <div className="gb-actbar" style={{ flexShrink: 0, borderTop: "1px solid var(--ed-rule)", background: "var(--ed-chrome)", padding: "10px 14px", display: "flex", alignItems: "center", gap: 12 }}>
