@@ -20,6 +20,7 @@ import { FileCardList } from "./FileCardList";
 import { Reader } from "./Reader";
 import { DiffSheet } from "./DiffSheet";
 import { LineActionSheet } from "./LineActionSheet";
+import { EditorSearchOverlay } from "./EditorSearchOverlay";
 import type { CommandAnchor } from "./CommandBar";
 import { buildAnchoredMessage } from "@/lib/anchor-message";
 import { useIsMobile } from "@/hooks/use-is-mobile";
@@ -92,6 +93,9 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
   // server's success event — no completion claim before the checks pass.
   const [publishStream, setPublishStream] = useState<{ phase: "publishing" | "live" | "error"; message: string; url?: string } | null>(null);
   const [moreMenu, setMoreMenu] = useState(false);
+  // M5: compact find/replace overlay for the Tier-3 editor (mobile) — replaces the
+  // permanent desktop CodeMirror panel.
+  const [searchOverlay, setSearchOverlay] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [liveUrl, setLiveUrl] = useState<string | null>(null);
   const [liveDismissed, setLiveDismissed] = useState(false);
@@ -639,9 +643,10 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
               discoverability. Title surfaces the multi-cursor hint (Alt+Klick / Ctrl+D). */}
           {detail.activeFile && !liveBlock && (
             <button
-              onClick={() => { const v = editorViewRef.current; if (v) { openSearchPanel(v); v.focus(); } }}
+              onClick={() => { const v = editorViewRef.current; if (!v) return; if (mobile) { setSearchOverlay(true); } else { openSearchPanel(v); v.focus(); } }}
               title="Suchen / Ersetzen (Strg+F · Strg+H) — Alt+Klick oder Strg+D für Mehrfach-Cursor"
               aria-label="Suchen und Ersetzen"
+              data-testid="editor-search-button"
               style={{ display: "inline-flex", alignItems: "center", background: "transparent", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-2)", borderRadius: 8, padding: "5px 8px", cursor: "pointer", flexShrink: 0 }}
             >
               <Search size={14} />
@@ -718,6 +723,11 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
               </div>
             );
           })()}
+
+          {/* M5: compact find/replace overlay (mobile Tier-3 editor). */}
+          {searchOverlay && editorViewRef.current && (
+            <EditorSearchOverlay view={editorViewRef.current} onClose={() => setSearchOverlay(false)} />
+          )}
         </div>
         </>)}
 
