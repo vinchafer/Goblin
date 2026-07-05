@@ -89,7 +89,7 @@ export const trialGate = createMiddleware(async (c, next) => {
 
   const { data: user } = await supabase
     .from('users')
-    .select('plan, stripe_subscription_id, cloud_trial_started_at, cloud_trial_ends_at, trial_extension_used, is_comped')
+    .select('plan, stripe_subscription_id, cloud_trial_started_at, cloud_trial_ends_at, trial_extension_used, is_comped, preferred_lang')
     .eq('id', userId)
     .single();
 
@@ -105,11 +105,19 @@ export const trialGate = createMiddleware(async (c, next) => {
   // auto-start anymore). Distinguish never-started vs expired for the message;
   // the web gate (dashboard-shell) redirects to /dashboard/trial-gate on 402.
   const started = !!user.cloud_trial_started_at;
+  // TRIAL-7 T3: localize the gate message (was English-only — a leak for DE users).
+  // The expired copy is also specific about what survives: nothing is deleted.
+  const de = user.preferred_lang === 'de';
+  const message = started
+    ? (de
+        ? 'Deine kostenlose Testphase ist beendet. Deine Projekte und veröffentlichten Apps bleiben erhalten — schließe ein Abo ab, um weiterzuarbeiten.'
+        : 'Your free trial has ended. Your projects and published apps are safe — subscribe to keep working.')
+    : (de
+        ? 'Wähle deine kostenlose Testphase oder ein Abo, um Goblin Cloud zu nutzen.'
+        : 'Choose your free trial or a subscription to start using Goblin Cloud.');
   return c.json({
     error: started ? 'trial_expired' : 'trial_required',
-    message: started
-      ? 'Your free trial has ended. Start a subscription to continue using Goblin Cloud.'
-      : 'Choose your free trial or a subscription to start using Goblin Cloud.',
+    message,
     upgradeUrl: '/dashboard/upgrade',
     gateUrl: '/dashboard/trial-gate',
     code: started ? 'trial_expired' : 'trial_required',
