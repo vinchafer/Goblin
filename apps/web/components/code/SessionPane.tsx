@@ -11,10 +11,24 @@ import { GoblinLogo } from "@/components/brand/GoblinLogo";
 import { StreamingDiffView } from "./StreamingDiffView";
 import { SessionThread } from "./SessionThread";
 import { SessionPromptInput } from "./SessionPromptInput";
-import { SessionModelPicker } from "./SessionModelPicker";
 import { SessionGitPill } from "./SessionGitPill";
 import { CodeFileTabs } from "./CodeFileTabs";
 import { SessionFileNav } from "./SessionFileNav";
+import { CommandBar } from "./CommandBar";
+import { StatusStrip } from "./StatusStrip";
+import { FileCardList } from "./FileCardList";
+import { Reader } from "./Reader";
+import { DiffSheet } from "./DiffSheet";
+import { LineActionSheet } from "./LineActionSheet";
+import { EditorSearchOverlay } from "./EditorSearchOverlay";
+import { JitCard } from "./JitCard";
+import { bumpPublishCount, dismissJit, jitToShow, type JitKind } from "@/lib/jit-cards";
+import type { CommandAnchor } from "./CommandBar";
+import { buildAnchoredMessage } from "@/lib/anchor-message";
+import { useIsMobile } from "@/hooks/use-is-mobile";
+import { fetchAllTextFiles } from "@/lib/project-files";
+import { lineDelta } from "@/lib/file-compare";
+import { useLang, t } from "@/lib/use-lang";
 import { createTwoFilesPatch } from "diff";
 import { parseCodeBlocks, linkedLocalAssets } from "@/lib/parse-code-blocks";
 import { DiffModal } from "@/components/project/diff-modal";
@@ -50,6 +64,7 @@ interface Props {
  *  mobile single-column. The change-state spine (Entwurf → Gesichert → Veröffentlicht)
  *  lives in the work-surface status line; deploy is gated on Saved. */
 export function SessionPane({ session, theme, onModelChange, onDraftCountChange, onAutoTitle, intent, projectId }: Props) {
+  const lang = useLang();
   const detail = useCodeSessionDetail(session.id);
   const agent = useCodeAgent(session.id);
   const preset = layoutPreset(intent);
@@ -59,8 +74,34 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
   // docked bar here routes through the SAME chat→edit path (handleSubmit) — the
   // change surfaces as the hunk-review card, the review is never hidden.
   const [askText, setAskText] = useState("");
+  // M2 (MOBILE-1): the mobile Code surface is a file-card list (Tier 1) by
+  // default, not the editor. Tapping a card opens the Reader (unchanged) or the
+  // Diff sheet (changed). The editor (Tier 3) is reached via "Bearbeiten".
+  const mobile = useIsMobile();
+  const [mobileMain, setMobileMain] = useState<"cards" | "reader" | "editor">("cards");
+  const [readerPath, setReaderPath] = useState<string | null>(null);
+  const [diffPath, setDiffPath] = useState<string | null>(null);
+  // M3 (Tier 2): a long-press → this pending selection → the action sheet; choosing
+  // "ändern lassen" pre-anchors the command bar with `commandAnchor`.
+  const [lineAction, setLineAction] = useState<{ file: string; from: number; to: number } | null>(null);
+  const [commandAnchor, setCommandAnchor] = useState<CommandAnchor | null>(null);
+  // Saved base map (project storage) — a reloaded draft row no longer carries
+  // its pre-edit base, so GEÄNDERT/NEU + line deltas are computed against this.
+  const [baseFiles, setBaseFiles] = useState<Record<string, string>>({});
   const [deployConfirm, setDeployConfirm] = useState(false);
   const [deploying, setDeploying] = useState(false);
+  // M4: the inline truth-gated publish stream. `message` mirrors the server's
+  // progress (incl. "wird geprüft, n/6"); phase never becomes "live" until the
+  // server's success event — no completion claim before the checks pass.
+  const [publishStream, setPublishStream] = useState<{ phase: "publishing" | "live" | "error"; message: string; url?: string } | null>(null);
+  const [moreMenu, setMoreMenu] = useState(false);
+  // M5: compact find/replace overlay for the Tier-3 editor (mobile) — replaces the
+  // permanent desktop CodeMirror panel.
+  const [searchOverlay, setSearchOverlay] = useState(false);
+  // M6: JIT integration card. `jitTick` forces a recompute after a publish/dismiss
+  // (localStorage isn't reactive). `jitKind` = the earned card, if any.
+  const [jitTick, setJitTick] = useState(0);
+  const [jitKind, setJitKind] = useState<JitKind | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [liveUrl, setLiveUrl] = useState<string | null>(null);
   const [liveDismissed, setLiveDismissed] = useState(false);
@@ -117,6 +158,47 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
   // Seed the persistent live-URL card from the session's last deploy, so it
   // survives a browser close + reopen (not just the deploy moment).
   useEffect(() => { if (detail.deployUrl) setLiveUrl(detail.deployUrl); }, [detail.deployUrl]);
+
+  // M2: pull the saved project files as the diff/badge base. Best-effort; on a
+  // failure the map stays empty (drafts then read as NEU, never a crash). Refreshes
+  // when the draft set changes so a newly-saved base is reflected.
+  useEffect(() => {
+    if (!projectId) return;
+    let cancelled = false;
+    fetchAllTextFiles(projectId).then(m => { if (!cancelled) setBaseFiles(m); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [projectId]);
+
+  // M6: recompute which JIT card is earned (post-publish / post-dismiss).
+  useEffect(() => {
+    if (!projectId) { setJitKind(null); return; }
+    setJitKind(jitToShow(projectId));
+  }, [projectId, jitTick]);
+
+  const jitSetup = () => {
+    if (!projectId || !jitKind) return;
+    dismissJit(projectId, jitKind);       // acted → don't nag again for 30 days
+    setJitTick(v => v + 1);
+    if (jitKind === "github") setMoreMenu(true);  // surface the GitHub push affordance
+  };
+  const jitLater = () => {
+    if (!projectId || !jitKind) return;
+    dismissJit(projectId, jitKind);
+    setJitTick(v => v + 1);
+  };
+
+  // M2 (spec §8): the mobile back button closes an open sheet/reader before
+  // leaving the tab. Push a history entry when one opens; pop closes the top.
+  useEffect(() => {
+    if (!diffPath && !(mobile && mobileMain === "reader")) return;
+    window.history.pushState({ gbSheet: true }, "");
+    const onPop = () => {
+      if (diffPath) setDiffPath(null);
+      else { setReaderPath(null); setMobileMain("cards"); }
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [diffPath, mobile, mobileMain]);
 
   // Keep parent's tab badge in sync with the real draft count.
   useEffect(() => { onDraftCountChange(detail.draftCount); }, [detail.draftCount, onDraftCountChange]);
@@ -266,6 +348,48 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
 
   const handleViewFile = (path: string) => { detail.setActivePath(path); setMobileView("editor"); };
 
+  // ── M2 mobile card→reader→diff navigation ──
+  const openReader = (path: string) => { detail.setActivePath(path); setReaderPath(path); setMobileMain("reader"); };
+  const openDiff = (path: string) => { detail.setActivePath(path); setDiffPath(path); };
+  const backToCards = () => { setReaderPath(null); setMobileMain("cards"); };
+  const editFromReader = () => { setMobileMain("editor"); };
+
+  // ── M3 Tier-2 point & instruct ──
+  // Confirm "Diese Stelle ändern lassen": pre-anchor the command bar and return to
+  // the cards so the incoming GEÄNDERT card surfaces after the send.
+  const confirmAnchor = () => {
+    if (!lineAction) return;
+    setCommandAnchor({ file: lineAction.file, from: lineAction.from, to: lineAction.to });
+    setLineAction(null);
+    setReaderPath(null);
+    setMobileMain("cards");
+    setDiffPath(null);
+  };
+  const copyAnchoredLines = () => {
+    if (!lineAction) return;
+    const f = detail.files.find(x => x.path === lineAction.file);
+    if (f) {
+      const lines = f.content.split("\n").slice(lineAction.from - 1, lineAction.to).join("\n");
+      navigator.clipboard?.writeText(lines);
+      setToast("Kopiert"); setTimeout(() => setToast(null), 1600);
+    }
+    setLineAction(null);
+  };
+  // Submit from the command bar. With an anchor, wrap the instruction in the
+  // structured anchor payload (M3) so the model targets the pointed-at region; the
+  // result still lands as a reviewed GEÄNDERT draft (no auto-apply).
+  const submitCommand = (text: string) => {
+    setAskText("");
+    if (commandAnchor) {
+      const f = detail.files.find(x => x.path === commandAnchor.file);
+      const message = buildAnchoredMessage(text, commandAnchor, f?.content ?? "");
+      setCommandAnchor(null);
+      handleSubmit(message);
+    } else {
+      handleSubmit(text);
+    }
+  };
+
   // 10.8-7: open a file from the nav panel.
   const handleNavSelect = (path: string) => {
     detail.setActivePath(path);
@@ -328,38 +452,41 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
     setTimeout(() => setToast(null), 3000);
   };
 
-  // WALK2-2 (Phase 2): ONE deliberate action to go live. A non-technical user
-  // shouldn't have to learn "save, then publish" — publishing saves any pending
-  // drafts first, then deploys, in a single press. Nothing auto-deploys; the user
-  // still chooses to publish (confirm dialog). The /save and /deploy endpoints are
-  // unchanged — this only orchestrates them client-side.
-  const publishNow = async () => {
+  // WALK2-2 (Phase 2): ONE deliberate action to go live — see `liveStellen` below.
+  // M4 — "Live stellen": Sichern + Veröffentlichen in one flow with the truth-gated
+  // status stream rendered INLINE (not a toast). The stream mirrors the server's
+  // progress ("wird geprüft, n/6"); it only flips to "Live" on the success event —
+  // the deploy is truth-gated server-side (verifyDeployment), so we never claim a
+  // published state before the checks pass.
+  const liveStellen = async () => {
     setDeployConfirm(false);
     setDeploying(true);
+    setPublishStream({ phase: "publishing", message: "Sichere Änderungen …" });
     if (detail.draftCount > 0) {
-      setToast("Sichere Änderungen …");
       const ok = await detail.saveSession();
       if (!ok) {
         setDeploying(false);
-        setToast("Konnte nicht sichern — erneut?");
-        setTimeout(() => setToast(null), 5000);
+        setPublishStream({ phase: "error", message: "Konnte nicht sichern — erneut?" });
         return;
       }
       reviewsByPathRef.current.clear();
       setReviewablePaths(new Set());
     }
-    setToast("Veröffentliche …");
-    const { url, error, deploymentUrl, aliasUrl } = await detail.deploySession((msg) => setToast(msg));
+    setPublishStream({ phase: "publishing", message: "Veröffentliche …" });
+    const { url, error, deploymentUrl, aliasUrl } = await detail.deploySession((msg) =>
+      setPublishStream({ phase: "publishing", message: msg }),
+    );
     setDeploying(false);
     setDeployDebug({ deploymentUrl, aliasUrl });
     if (url) {
       setLiveUrl(url);
       setLiveDismissed(false);
-      setToast(null);
+      setPublishStream({ phase: "live", message: "Live", url });
+      // M6: record the truth-gated successful publish → may earn a JIT card.
+      if (projectId) { bumpPublishCount(projectId); setJitTick(v => v + 1); }
     } else {
       const msg = (error ?? "Veröffentlichen fehlgeschlagen").replace(/^NO_VERCEL_TOKEN —\s*/, "");
-      setToast(msg);
-      setTimeout(() => setToast(null), 8000);
+      setPublishStream({ phase: "error", message: msg });
     }
   };
 
@@ -374,6 +501,15 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
 
   const editorFilename = liveBlock ? liveBlock.path : (detail.activeFile?.path ?? "index.html");
 
+  // M2: on mobile the editor chrome (tabs + file bar + editor) only renders when
+  // the user has explicitly opened Tier 3 ("Bearbeiten"); otherwise the cards /
+  // reader own the surface. Desktop always shows the editor (front door).
+  const showEditorChrome = !mobile || mobileMain === "editor";
+  // Diff sheet inputs — saved base vs the current draft content.
+  const diffFile = diffPath ? detail.files.find(f => f.path === diffPath) ?? null : null;
+  const diffBase = diffPath ? (baseFiles[diffPath] ?? "") : "";
+  const diffDelta = diffFile ? lineDelta(diffBase, diffFile.content) : { added: 0, removed: 0 };
+
   return (
     <div className="gb-session-pane" style={{ flex: 1, display: "flex", minHeight: 0, position: "relative" }}>
       <style>{`
@@ -385,11 +521,19 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
         .gb-thread-col { display: flex; width: ${preset.threadPct}%; max-width: 560px; min-width: 300px; border-right: 1px solid var(--ed-rule); }
         .gb-surface-col { display: flex; flex: 1; min-width: 0; }
         .gb-mobile-back { display: none; }
+        /* MOBILE-1 · M1: the promoted command bar + status strip live at the TOP
+           of the mobile Code surface. Desktop keeps the thread composer as the
+           front door (HARD RULE 3), so this region is mobile-only. */
+        .gb-mobile-surface-top { display: none; }
         @media (max-width: 860px) {
           .gb-session-pane { flex-direction: column; }
           .gb-thread-col { width: 100%; max-width: none; min-width: 0; border-right: none; display: ${mobileView === "thread" ? "flex" : "none"}; }
           .gb-surface-col { display: ${mobileView === "editor" ? "flex" : "none"}; }
           .gb-mobile-back { display: inline-flex !important; }
+          .gb-mobile-surface-top { display: block; }
+          /* The status strip now carries state at the top; drop the duplicate
+             status line from the bottom action bar across the whole mobile band. */
+          .gb-statusline { display: none !important; }
         }
         /* 10.8-6: mobile bottom-row is icon-only with 44px tap targets — no more
            overflow from "Kopieren Verwerfen Entwurf | Sichern | Veröffentlichen". */
@@ -397,13 +541,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
           .gb-actbar { gap: 8px !important; justify-content: flex-end !important; }
           .gb-btn-lbl { display: none !important; }
           .gb-icon-btn { padding: 0 !important; width: 44px !important; height: 44px !important; justify-content: center !important; gap: 0 !important; }
-          .gb-statusline { display: none !important; }
         }
-        /* A.2: the docked "ask Goblin" bar lives only in the mobile editor view
-           (desktop keeps the always-visible thread composer). The surface column
-           is itself display:none in mobile thread view, so this never doubles up. */
-        .gb-editor-ask { display: none; }
-        @media (max-width: 860px) { .gb-editor-ask { display: flex; } }
       `}</style>
 
       {/* THREAD column */}
@@ -444,6 +582,55 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
           onSelect={handleNavSelect}
           onNewFile={handleNewFile}
         />
+        {/* MOBILE-1 · M1: promoted command bar + status strip at the TOP of the
+            mobile Code surface (spec §2.1–2.2). Mobile-only; desktop keeps the
+            thread composer as the front door. Routes through the same
+            handleSubmit → reviewed GEÄNDERT draft path (no auto-apply). */}
+        <div className="gb-mobile-surface-top">
+          <CommandBar
+            value={askText}
+            onChange={setAskText}
+            onSubmit={submitCommand}
+            streaming={agent.streaming}
+            onCancel={agent.cancel}
+            modelId={session.model_id}
+            onModelChange={onModelChange}
+            anchor={commandAnchor}
+            onClearAnchor={() => setCommandAnchor(null)}
+          />
+          <StatusStrip
+            state={liveBlock ? "draft" : state}
+            draftCount={detail.draftCount}
+            liveUrl={detail.deployedAt ? (liveUrl ?? detail.deployUrl ?? null) : null}
+            lastDeployedRel={lastDeployedRel}
+            jit={jitKind ? <JitCard kind={jitKind} onSetup={jitSetup} onLater={jitLater} /> : null}
+          />
+        </div>
+        {/* MOBILE-1 · M2: the mobile Code surface = file cards (Tier 1) by default.
+            Tapping a changed card → Diff sheet first; unchanged/new → Reader. The
+            editor (Tier 3) is behind "Bearbeiten". Desktop keeps the editor chrome. */}
+        {mobile && mobileMain !== "editor" && (
+          <div style={{ flex: 1, minHeight: 0, position: "relative", display: "flex", flexDirection: "column" }}>
+            {readerPath && detail.files.some(f => f.path === readerPath) ? (
+              <Reader
+                path={readerPath}
+                content={detail.files.find(f => f.path === readerPath)?.content ?? ""}
+                theme={theme}
+                onClose={backToCards}
+                onEdit={editFromReader}
+                onLineAction={(from, to) => setLineAction({ file: readerPath, from, to })}
+              />
+            ) : (
+              <FileCardList
+                files={detail.files}
+                baseFiles={baseFiles}
+                onOpenReader={openReader}
+                onOpenDiff={openDiff}
+              />
+            )}
+          </div>
+        )}
+        {showEditorChrome && (<>
         {/* Multi-file tabs (Slice 3). The session already holds many files; tabs let
             Sofia switch between them. Hidden for a single file so Max's landing-page
             flow stays clean. Closing only discards drafts (saved files are a no-op). */}
@@ -460,7 +647,12 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
         {/* File bar + status. FIX3-6: overflowX so the row can never clip a control
             at 390 — if the actions don't fit they scroll instead of being cut off. */}
         <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderBottom: "1px solid var(--ed-rule)", background: "var(--ed-chrome)", flexShrink: 0, overflowX: "auto" }}>
-          <button className="gb-mobile-back" onClick={() => setMobileView("thread")} aria-label="Zurück zum Thread" style={{ background: "transparent", border: "none", color: "var(--ed-fg-2)", cursor: "pointer", alignItems: "center" }}>
+          <button
+            className="gb-mobile-back"
+            onClick={() => { if (mobile && mobileMain === "editor") setMobileMain(readerPath ? "reader" : "cards"); else setMobileView("thread"); }}
+            aria-label={mobile && mobileMain === "editor" ? "Zurück zur Übersicht" : "Zurück zum Thread"}
+            style={{ background: "transparent", border: "none", color: "var(--ed-fg-2)", cursor: "pointer", alignItems: "center" }}
+          >
             <Icon name="back" size={16} />
           </button>
           {/* 10.8-7: open the file navigation panel (browse all session files). */}
@@ -478,9 +670,10 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
               discoverability. Title surfaces the multi-cursor hint (Alt+Klick / Ctrl+D). */}
           {detail.activeFile && !liveBlock && (
             <button
-              onClick={() => { const v = editorViewRef.current; if (v) { openSearchPanel(v); v.focus(); } }}
+              onClick={() => { const v = editorViewRef.current; if (!v) return; if (mobile) { setSearchOverlay(true); } else { openSearchPanel(v); v.focus(); } }}
               title="Suchen / Ersetzen (Strg+F · Strg+H) — Alt+Klick oder Strg+D für Mehrfach-Cursor"
               aria-label="Suchen und Ersetzen"
+              data-testid="editor-search-button"
               style={{ display: "inline-flex", alignItems: "center", background: "transparent", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-2)", borderRadius: 8, padding: "5px 8px", cursor: "pointer", flexShrink: 0 }}
             >
               <Search size={14} />
@@ -557,7 +750,41 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
               </div>
             );
           })()}
+
+          {/* M5: compact find/replace overlay (mobile Tier-3 editor). */}
+          {searchOverlay && editorViewRef.current && (
+            <EditorSearchOverlay view={editorViewRef.current} onClose={() => setSearchOverlay(false)} />
+          )}
         </div>
+        </>)}
+
+        {/* MOBILE-1 · M2: the Diff sheet — a GEÄNDERT card opens this first
+            (review-before-anything), base (saved) → draft. */}
+        {diffPath && diffFile && (
+          <DiffSheet
+            path={diffPath}
+            base={diffBase}
+            proposed={diffFile.content}
+            added={diffDelta.added}
+            removed={diffDelta.removed}
+            onClose={() => setDiffPath(null)}
+            onWholeFile={() => { setDiffPath(null); openReader(diffPath); }}
+            onReanchor={(range) => { setLineAction({ file: diffPath, from: range.from, to: range.to }); }}
+            onDismiss={() => setDiffPath(null)}
+          />
+        )}
+
+        {/* M3 Tier-2 action sheet — from a Reader long-press or the Diff sheet. */}
+        {lineAction && (
+          <LineActionSheet
+            file={lineAction.file}
+            from={lineAction.from}
+            to={lineAction.to}
+            onChange={confirmAnchor}
+            onCopy={copyAnchoredLines}
+            onClose={() => setLineAction(null)}
+          />
+        )}
 
         {/* Persistent live URL — stays put after deploy (replaces the old toast
             that vanished after a few seconds). Survives reopen via detail.deployUrl. */}
@@ -591,102 +818,96 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
           </div>
         )}
 
-        {/* A.2: docked "ask Goblin" bar — only the mobile editor view (the thread
-            is hidden there). Routes through handleSubmit → the change comes back
-            as the review card; the editor/review is never hidden. BUG-5: now also
-            carries the model picker so you can choose the model for an in-editor
-            edit without switching to the thread. */}
-        <form
-          className="gb-editor-ask"
-          onSubmit={(e) => {
-            e.preventDefault();
-            const t = askText.trim();
-            if (!t || agent.streaming) return;
-            setAskText("");
-            handleSubmit(t);
-          }}
-          style={{ flexShrink: 0, borderTop: "1px solid var(--ed-rule)", background: "var(--ed-chrome)", padding: "8px 12px", display: "flex", flexDirection: "column", gap: 8 }}
-        >
-          {/* WALK3-2: this composer only renders ≤860px (the constrained / split /
-              mobile view; >860 uses the threaded SessionPromptInput). The model
-              picker used to eat a full row below the input — wasteful. Collapse it
-              to an icon sitting right next to Send; tapping it opens the same picker. */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <input
-              value={askText}
-              onChange={(e) => setAskText(e.target.value)}
-              placeholder="Goblin um eine Änderung bitten…"
-              aria-label="Goblin um eine Änderung bitten"
-              disabled={agent.streaming}
-              style={{ flex: 1, minWidth: 0, background: "var(--ed-canvas)", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-1)", borderRadius: 9, padding: "10px 12px", fontSize: 14, fontFamily: "var(--font-sans)", outline: "none" }}
-            />
-            <SessionModelPicker value={session.model_id} onChange={onModelChange} variant="icon" />
-            <button
-              type="submit"
-              disabled={!askText.trim() || agent.streaming}
-              aria-label="Senden"
-              style={{ flexShrink: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", width: 44, height: 44, background: askText.trim() && !agent.streaming ? "var(--ed-primary)" : "transparent", color: askText.trim() && !agent.streaming ? "var(--ed-on-primary)" : "var(--ed-fg-3)", border: askText.trim() && !agent.streaming ? "none" : "1px solid var(--ed-rule)", borderRadius: 9, cursor: askText.trim() && !agent.streaming ? "pointer" : "not-allowed" }}
-            >
-              {agent.streaming ? <GoblinLogo state="working" size={15} variant="gold" /> : <Icon name="send" size={16} />}
-            </button>
-          </div>
-        </form>
+        {/* MOBILE-1 · M1: the docked bottom "ask" bar was promoted to the top of
+            the surface (see .gb-mobile-surface-top above). The command input now
+            lives there with the mic; nothing here. */}
 
-        {/* Status line + the two-step Sichern → Veröffentlichen */}
+        {/* MOBILE-1 · M4: one "Live stellen" primary (Sichern + Veröffentlichen in
+            one flow) with the truth-gated status stream rendered INLINE. "Nur
+            sichern" + GitHub push live in the ⋯ menu. */}
         <div className="gb-actbar" style={{ flexShrink: 0, borderTop: "1px solid var(--ed-rule)", background: "var(--ed-chrome)", padding: "10px 14px", display: "flex", alignItems: "center", gap: 12 }}>
-          {projectId && <SessionGitPill projectId={projectId} />}
-          <span className="gb-statusline" style={{ fontSize: 12, fontFamily: "var(--font-sans)", flex: 1, display: "inline-flex", alignItems: "center", gap: 7, minWidth: 0 }}>
-            {state === "empty" ? (
-              <span style={{ color: "var(--ed-fg-3)" }}>Noch keine Dateien</span>
-            ) : hasUnpublished ? (
-              <>
-                <span style={{ width: 8, height: 8, borderRadius: "50%", border: "1.5px solid var(--ed-draft)", flexShrink: 0 }} />
-                <span style={{ color: "var(--ed-fg-2)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Nicht veröffentlichte Änderungen</span>
-              </>
-            ) : detail.deployedAt ? (
-              <>
-                <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#6db97b", flexShrink: 0 }} />
-                <span style={{ color: "var(--ed-fg-3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Live{lastDeployedRel ? ` · zuletzt aktualisiert ${lastDeployedRel}` : ""}</span>
-              </>
-            ) : (
-              <span style={{ color: "var(--ed-fg-3)" }}>Gesichert · bereit zum Veröffentlichen</span>
-            )}
-          </span>
-          <button
-            className="gb-icon-btn"
-            onClick={doSave}
-            disabled={!canSave || detail.saving}
-            title="Sichern"
-            aria-label="Sichern"
-            style={{
-              display: "inline-flex", alignItems: "center", gap: 6,
-              background: canSave ? "var(--ed-primary)" : "transparent",
-              color: canSave ? "var(--ed-on-primary)" : "var(--ed-fg-3)",
-              border: canSave ? "none" : "1px solid var(--ed-rule)",
-              borderRadius: 9, padding: "8px 14px", fontSize: 13, fontWeight: 600,
-              cursor: canSave && !detail.saving ? "pointer" : "not-allowed", fontFamily: "var(--font-sans)",
-            }}
-          >
-            {detail.saving ? <GoblinLogo state="working" size={14} variant="gold" /> : <Icon name="save" size={14} />} <span className="gb-btn-lbl">Sichern</span>
-          </button>
-          <span style={{ width: 1, height: 22, background: "var(--ed-rule)" }} />
-          <button
-            className="gb-icon-btn"
-            onClick={() => setDeployConfirm(true)}
-            disabled={!canPublish || deploying}
-            title={hasUnpublished ? "Sichern + Veröffentlichen" : "Veröffentlichen"}
-            aria-label="Veröffentlichen"
-            style={{
-              display: "inline-flex", alignItems: "center", gap: 6,
-              background: canPublish ? "var(--ed-primary)" : "transparent",
-              color: canPublish ? "var(--ed-on-primary)" : "var(--ed-fg-3)",
-              border: canPublish ? "none" : "1px solid var(--ed-rule)",
-              borderRadius: 9, padding: "8px 14px", fontSize: 13, fontWeight: 600,
-              cursor: canPublish && !deploying ? "pointer" : "not-allowed", fontFamily: "var(--font-sans)",
-            }}
-          >
-            {deploying ? <GoblinLogo state="working" size={14} variant="gold" /> : <Icon name="play" size={14} />} <span className="gb-btn-lbl">Veröffentlichen</span>
-          </button>
+          {publishStream ? (
+            <div data-testid="publish-stream" style={{ flex: 1, display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+              {publishStream.phase === "publishing" ? (
+                <GoblinLogo state="working" size={16} variant="gold" />
+              ) : (
+                <span style={{ width: 9, height: 9, borderRadius: "50%", background: publishStream.phase === "live" ? "#6db97b" : "var(--danger, #B0432A)", flexShrink: 0 }} />
+              )}
+              <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontFamily: "var(--font-sans)", color: publishStream.phase === "error" ? "var(--danger, #B0432A)" : "var(--ed-fg-1)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {publishStream.phase === "live" ? (t(lang, "Live gestellt", "Published")) : publishStream.message}
+              </span>
+              {publishStream.phase !== "publishing" && (
+                <button onClick={() => setPublishStream(null)} aria-label="Schließen" style={{ background: "transparent", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-2)", borderRadius: 8, padding: "5px 10px", fontSize: 12, cursor: "pointer", fontFamily: "var(--font-sans)", flexShrink: 0 }}>
+                  {publishStream.phase === "error" ? t(lang, "Erneut", "Retry") : "OK"}
+                </button>
+              )}
+            </div>
+          ) : (
+            <>
+              <span className="gb-statusline" style={{ fontSize: 12, fontFamily: "var(--font-sans)", flex: 1, display: "inline-flex", alignItems: "center", gap: 7, minWidth: 0 }}>
+                {state === "empty" ? (
+                  <span style={{ color: "var(--ed-fg-3)" }}>Noch keine Dateien</span>
+                ) : hasUnpublished ? (
+                  <>
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", border: "1.5px solid var(--ed-draft)", flexShrink: 0 }} />
+                    <span style={{ color: "var(--ed-fg-2)", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Nicht veröffentlichte Änderungen</span>
+                  </>
+                ) : detail.deployedAt ? (
+                  <>
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#6db97b", flexShrink: 0 }} />
+                    <span style={{ color: "var(--ed-fg-3)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Live{lastDeployedRel ? ` · zuletzt aktualisiert ${lastDeployedRel}` : ""}</span>
+                  </>
+                ) : (
+                  <span style={{ color: "var(--ed-fg-3)" }}>Gesichert · bereit zum Veröffentlichen</span>
+                )}
+              </span>
+              {/* ⋯ menu — Nur sichern + GitHub push (demoted per spec §2.4). */}
+              <div style={{ position: "relative", flexShrink: 0 }}>
+                <button
+                  onClick={() => setMoreMenu(v => !v)}
+                  aria-label="Weitere Aktionen" title="Mehr" data-testid="more-menu-button"
+                  style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, background: "transparent", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-2)", borderRadius: 9, cursor: "pointer" }}
+                >
+                  <Icon name="more" size={16} />
+                </button>
+                {moreMenu && (
+                  <>
+                    <div onClick={() => setMoreMenu(false)} style={{ position: "fixed", inset: 0, zIndex: 40 }} />
+                    <div data-testid="more-menu" style={{ position: "absolute", bottom: "calc(100% + 6px)", right: 0, zIndex: 41, minWidth: 220, background: "var(--ed-chrome-2, var(--ed-canvas))", border: "1px solid var(--ed-rule)", borderRadius: 12, padding: 8, boxShadow: "0 12px 32px rgba(15,43,30,0.24)", display: "flex", flexDirection: "column", gap: 6 }}>
+                      <button
+                        onClick={() => { setMoreMenu(false); doSave(); }}
+                        disabled={!canSave || detail.saving}
+                        data-testid="menu-save"
+                        style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", textAlign: "left", background: "transparent", border: "none", color: canSave ? "var(--ed-fg-1)" : "var(--ed-fg-3)", borderRadius: 8, padding: "10px 10px", fontSize: 14, cursor: canSave ? "pointer" : "not-allowed", fontFamily: "var(--font-sans)" }}
+                      >
+                        <Icon name="save" size={15} /> {t(lang, "Nur sichern", "Save only")}
+                      </button>
+                      {projectId && (
+                        <div style={{ borderTop: "1px solid var(--ed-rule)", paddingTop: 6 }}>
+                          <SessionGitPill projectId={projectId} />
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+              <button
+                onClick={() => setDeployConfirm(true)}
+                disabled={!canPublish || deploying}
+                title="Live stellen" aria-label="Live stellen" data-testid="live-stellen"
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 6, flexShrink: 0,
+                  background: canPublish ? "var(--ed-primary)" : "transparent",
+                  color: canPublish ? "var(--ed-on-primary)" : "var(--ed-fg-3)",
+                  border: canPublish ? "none" : "1px solid var(--ed-rule)",
+                  borderRadius: 9, padding: "10px 18px", fontSize: 14, fontWeight: 600,
+                  cursor: canPublish && !deploying ? "pointer" : "not-allowed", fontFamily: "var(--font-sans)",
+                }}
+              >
+                <Icon name="play" size={15} /> Live stellen
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -695,15 +916,15 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
         <>
           <div style={{ position: "absolute", inset: 0, zIndex: 80, background: "var(--surface-overlay, rgba(0,0,0,0.4))" }} onClick={() => setDeployConfirm(false)} />
           <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "var(--ed-chrome-2)", border: "1px solid var(--ed-rule)", borderRadius: 14, padding: "22px 24px", zIndex: 81, minWidth: 320, maxWidth: 380, boxShadow: "0 16px 40px rgba(15,43,30,0.28)" }}>
-            <div style={{ fontSize: 16, fontWeight: 600, color: "var(--ed-fg-1)", fontFamily: "var(--font-sans)", marginBottom: 8 }}>Veröffentlichen?</div>
+            <div style={{ fontSize: 16, fontWeight: 600, color: "var(--ed-fg-1)", fontFamily: "var(--font-sans)", marginBottom: 8 }}>Live stellen?</div>
             <div style={{ fontSize: 13, lineHeight: 1.55, color: "var(--ed-fg-3)", fontFamily: "var(--font-sans)", marginBottom: 18 }}>
               {hasUnpublished
-                ? "Goblin sichert deine Änderungen und stellt sie live — unter derselben Adresse wie bisher. Nichts geht automatisch online; du entscheidest."
-                : "Goblin baut dein Projekt und stellt es unter derselben öffentlichen Adresse bereit."}
+                ? "Goblin sichert deine Änderungen und stellt sie live — unter derselben Adresse wie bisher. Erst wenn alle Prüfungen bestanden sind, gilt es als live. Nichts geht automatisch online; du entscheidest."
+                : "Goblin baut dein Projekt und stellt es unter derselben öffentlichen Adresse bereit. Erst nach bestandener Prüfung gilt es als live."}
             </div>
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
               <button onClick={() => setDeployConfirm(false)} style={{ background: "transparent", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-2)", borderRadius: 9, padding: "9px 16px", fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "var(--font-sans)" }}>Abbrechen</button>
-              <button onClick={publishNow} style={{ background: "var(--ed-primary)", border: "none", color: "var(--ed-on-primary)", borderRadius: 9, padding: "9px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-sans)", display: "inline-flex", alignItems: "center", gap: 7 }}><Icon name="play" size={14} /> Veröffentlichen</button>
+              <button onClick={liveStellen} data-testid="live-stellen-confirm" style={{ background: "var(--ed-primary)", border: "none", color: "var(--ed-on-primary)", borderRadius: 9, padding: "9px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-sans)", display: "inline-flex", alignItems: "center", gap: 7 }}><Icon name="play" size={14} /> Live stellen</button>
             </div>
           </div>
         </>

@@ -23,7 +23,7 @@ import { search, searchKeymap, openSearchPanel } from '@codemirror/search';
 // "black hole". Theme is chosen by the `theme` prop, persisted per user.
 type EditorTheme = 'light' | 'dark';
 
-interface Palette {
+export interface Palette {
   canvas: string; chrome: string; fg: string; fgMuted: string; fgFaint: string;
   gutterFg: string; accent: string; selection: string; activeLine: string; border: string;
   syn: {
@@ -32,7 +32,7 @@ interface Palette {
   };
 }
 
-const LIGHT: Palette = {
+export const LIGHT: Palette = {
   canvas: '#FBF7EC',          // --surface-1 (paper)
   chrome: '#F4ECD8',          // --surface-2 (bone) — gutters/panels
   fg: '#0F2B1E',              // --ink-deep
@@ -50,7 +50,7 @@ const LIGHT: Palette = {
   },
 };
 
-const DARK: Palette = {
+export const DARK: Palette = {
   canvas: '#3F3A2C',          // --surface-ink-1 (warm-dark, retuned)
   chrome: '#28251D',          // --surface-ink-2 (gutters/panels)
   fg: '#FBF7EC',              // --ink-on-dark-1
@@ -68,7 +68,7 @@ const DARK: Palette = {
   },
 };
 
-function buildViewTheme(p: Palette, dark: boolean) {
+export function buildViewTheme(p: Palette, dark: boolean) {
   return EditorView.theme({
     '&': { background: p.canvas, color: p.fg, height: '100%', fontSize: '13px' },
     '.cm-content': { fontFamily: 'JetBrains Mono, monospace', padding: '14px 0', caretColor: p.accent },
@@ -88,7 +88,7 @@ function buildViewTheme(p: Palette, dark: boolean) {
   }, { dark });
 }
 
-function buildHighlight(p: Palette) {
+export function buildHighlight(p: Palette) {
   const s = p.syn;
   return syntaxHighlighting(HighlightStyle.define([
     { tag: [t.keyword, t.controlKeyword, t.definitionKeyword, t.moduleKeyword, t.operatorKeyword], color: s.keyword, fontWeight: '500' },
@@ -106,7 +106,7 @@ function buildHighlight(p: Palette) {
   ]));
 }
 
-function getLanguage(filename: string) {
+export function getLanguage(filename: string) {
   const ext = filename.split('.').pop()?.toLowerCase();
   switch (ext) {
     case 'js': case 'jsx': case 'ts': case 'tsx': case 'mjs': case 'cjs':

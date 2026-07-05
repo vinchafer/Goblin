@@ -1,6 +1,7 @@
 # GOBLIN CONSUMPTION LEDGER
 **The consumption blueprint (Verbrauchs-Bauplan). v1.0 · 2026-07-04 · Author: Steven · Repo target: `docs/GOBLIN_CONSUMPTION_LEDGER.md`**
 **VERIFY-PATH cells + M3 accounting resolved by CC 2026-07-05 (FEEL-2b reverify). Resolutions cite code at that commit — re-confirm line numbers if the files move.**
+**I0 (MOBILE-1, 2026-07-07): measurement-only changes — `completion_costs` now attributable project-vs-standalone (`chat_session_id` + `project_id`, migration 0077); `platform_events` table (0078) gives A20/B2 a DB twin of the platform_cogs/context_retry log lines. No token consumption changed. Migrations 0077/0078 authored, NOT applied — founder applies. See M2/M3.**
 
 ## Purpose & standing rule
 
@@ -41,8 +42,9 @@ Every mechanism that consumes model tokens (user-billed or platform-paid) is reg
 - **Billed to:** user allowance (flows through the same completion). **Consequence: raises effective A6 exhaustion** — e.g. 100 project-chat turns/mo ≈ +0.28–1.2M units. Most visible on Trial (4.9M): worst-case injection alone can consume ~25% of Trial via ~100 turns.
 - **Knobs:** total context budget **48k chars** — **VERIFIED** `FILE_CONTENT_BUDGET_CHARS = 48_000` `apps/api/src/services/project-context.ts:14`; per-file over-budget marker "(Inhalt nicht geladen — zu gross)"; loader `loadProjectContextFiles()` `apps/api/src/services/project-context.ts`.
 - **Exclusion rule (B6, feel-sprint-2):** soft-deleted files (`.trash/`, the sole soft-delete prefix) are dropped from BOTH the injected contents and the file list shown to the model — `isSoftDeletedPath()` filters `listFilesWithMeta` in `loadProjectContextFiles()` and on both chat-route degraded fallbacks (`chat.ts`, `chat-sessions.ts`). Mirror on the web STC existing-files map (`apps/web/lib/project-files.ts` `fetchAllTextFiles`) so trashed files are not GEÄNDERT/IDENTISCH candidates. Deleted content therefore never re-enters context or burns injection budget.
-- **Degradation:** on provider token-limit rejection (Layer-2 free keys, e.g. Groq 12k TPM), one retry **without** file contents + honest note (FEEL-2b B2, `apps/api/src/services/token-limit-retry.ts`). **Live-verified 2026-07-05** (G3): 28'645-token request → Groq 413 → one reduced-context retry → success, no fabrication.
+- **Degradation:** on provider token-limit rejection (Layer-2 free keys, e.g. Groq 12k TPM), one retry **without** file contents + honest note (FEEL-2b B2, `apps/api/src/services/token-limit-retry.ts`). **Live-verified 2026-07-05** (G3): 28'645-token request → Groq 413 → one reduced-context retry → success, no fabrication. **Measurement (I0, MOBILE-1):** each such retry now also inserts a `platform_events` row (`event_type='context_retry'`, silent-fail/no-op pre-migration 0078) → B2 retry frequency is queryable from the DB, not only Railway logs.
 - **CFO dependency:** A19 (new register row), A6, Trial economics (kTrial), regional typical margin. | Status: MEASURED (1 project) — widen with prod telemetry.
+- **Measurement path (I0, MOBILE-1) — no token change, attribution only:** `completion_costs` rows are now attributable project-vs-standalone. The chat-sessions route passes `chatSessionId` (→ `chat_sessions.project_id`); additionally `trackCompletion` writes `completion_costs.project_id` directly (migration 0077, `add column if not exists project_id`; API write is pre-migration tolerant — retries the insert without `project_id` rather than dropping the cost row) so the **legacy** project route (`chat.ts`, no session row — telemetry NOTES gap #1) is also attributable. `project_id` NULL = standalone. A19 (project vs standalone split) becomes computable. Cost formulas unchanged.
 
 ### M3 — Project-state summarizer (FEEL-2 U3)
 - **Trigger:** async after each completed assistant turn in a project chat (`scheduleProjectStateUpdate` → `updateProjectState`, `apps/api/src/services/project-state.ts:124/73`).
@@ -50,7 +52,8 @@ Every mechanism that consumes model tokens (user-billed or platform-paid) is reg
 - **Billed to — PLATFORM COGS (FIXED, CC 2026-07-05, FEEL-2 merge prep B5).** The summarizer is exempt from user allowance. `updateProjectState()` calls `streamCompletionGuarded({ …, internalBilling: true })` `project-state.ts:86-96`. In `streamCompletion` (`model-router.ts`) that flag (a) skips the goblin_hosted allowance/daily gate — `if (route.layer === 'goblin_hosted' && !internalBilling)` `model-router.ts:~514` — so a user at their cap still gets background summarization and it never reads as user spend; and (b) suppresses the `completion_costs` write (the row `goblinWeightedUsage` sums into monthly usage): both `trackCompletion` sites are now `if (internalBilling) logger.info({ billing: 'platform_cogs', tokensIn, tokensOut, … }) else await trackCompletion(...)`. **Accounting mechanism = structured server log line** (`feature: project-state-summarizer`, `billing: platform_cogs`, per-call input/output tokens) — measurable COGS, zero user-allowance impact. **Not user-reachable:** `internalBilling` is a typed param set as a code literal ONLY in `project-state.ts`; no HTTP route (chat.ts/chat-sessions.ts/code-sessions.ts/models.ts) reads or forwards it — the summarizer is invoked server-side via `scheduleProjectStateUpdate` with explicit fields, never from request body. **Status: FIXED 2026-07-05 (was VERIFIED-FAIL).**
 - **Cost:** ~2k tok × $0.162/M ≈ **$0.0003/turn** → $0.02–0.10 per active user/mo. Pure platform COGS; no user-allowance consumption.
 - **Knobs:** output cap (`project-state.ts:26`), summarizer prompt (`apps/api/src/prompts/project-state-summarizer.ts`), model pin (`project-state.ts:23`), billing exemption (`internalBilling`, `project-state.ts` + `model-router.ts`).
-- **CFO dependency:** A20 (new register row); per-user variable **platform COGS** (+<1%), NOT user allowance. | Status: FIXED (accounting) — prod COGS measurement open (read from the platform_cogs log line).
+- **Measurement (I0, MOBILE-1):** the `billing: platform_cogs` log line now has a DB twin — both `internalBilling` sites in `model-router.ts` also insert a `platform_events` row (`event_type='platform_cogs'`, model + tokens_in/out + meta; silent-fail/no-op pre-migration 0078). A20 platform COGS is therefore measurable from the DB without Railway log access (defuses half of ticket #12). No token change — logging/attribution only.
+- **CFO dependency:** A20 (new register row); per-user variable **platform COGS** (+<1%), NOT user allowance. | Status: FIXED (accounting) — prod COGS now measurable from `platform_events` (0078) + the platform_cogs log line.
 
 ### M4 — Build (Send-to-Code → build pipeline)
 - **Trigger:** user-initiated build.
@@ -77,8 +80,27 @@ Deploy truth-gating (P0.2: HTTP checks only) · STC integrity checks (client/sha
 - **Degradation:** attachments live in the user message, so the M2 reduced-context retry (which drops only the injected **project** file section) never silently drops them; if the provider token-limit still trips, the user gets the honest token-limit error (suggest shortening/splitting) — no fabrication.
 - **CFO dependency:** A6, A19 (same register family as M2) — widen with prod telemetry. | Status: FORMULA — measure with prod telemetry.
 
+### M7 — Line-anchored instruction (MOBILE-1 Tier 2, "Diese Stelle ändern lassen")
+- **Trigger:** user long-presses a line (or a range) in the Reader / Diff sheet, chooses "Diese Stelle
+  ändern lassen", pre-anchors the command bar, and sends. One anchored send = one normal chat completion.
+- **Tokens:** +Δ input over a bare M1 turn = the anchor payload — a preamble (`[Anker → file · Zeile a–b] …`)
+  plus **±`SURROUNDING_LINES` (=10)** lines of surrounding code with line numbers. Typical add ≈ **a few
+  hundred input tokens** (≈20 context lines × ~8 tok + preamble ≈50 tok ≈ 200 tok). The message also still
+  flows through U1 file-content injection (M2), so the anchor is *additive* to that. Output = the targeted
+  edit (variable, like M1). **Built deterministically** by `buildAnchoredMessage()` — verifiable without a
+  model round-trip.
+- **Billed to:** **user allowance** — the anchored instruction is a normal user turn (no special path); it
+  flows through the same completion as M1/M2. Result lands as a reviewed `GEÄNDERT` draft (no auto-apply).
+- **Knobs:** `SURROUNDING_LINES` (= **10**) — `apps/web/lib/anchor-message.ts` (the sole token knob; raising
+  it linearly increases the added input tokens for better targeting); the anchored range/location (user-chosen).
+- **Cost:** at realistic mix $0.20/M → +~200 input tok ≈ **+$0.00004/anchored send** on top of the base turn.
+  Negligible per use; scales with anchored-send frequency.
+- **CFO dependency:** A6 (exhaustion), A19 family (project token split — same as M2). | Status: FORMULA
+  (constants VERIFIED `anchor-message.ts`) — widen with prod telemetry once anchored sends are measurable
+  (attributable via I0 `completion_costs.project_id` + `chat_session_id`).
+
 ### M6 — Reserved (not yet built; add rows before shipping)
-Web search / Recherche (feature-flagged off) · extended thinking · MOBILE-1 line-anchored instructions (expected shape: M1-sized turn + file context à la M2) · FEEL-3 agent loop (tool-calling turns — will dominate this ledger when built; **cost model required before merge**).
+Web search / Recherche (feature-flagged off) · extended thinking · FEEL-3 agent loop (tool-calling turns — will dominate this ledger when built; **cost model required before merge**).
 
 ---
 

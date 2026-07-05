@@ -1,6 +1,13 @@
 // B2 (feel-sprint-2b): token-limit matcher + reduced-context retry logic.
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+// I0: the retry fires a platform_events insert (silent-fail in prod). Mock it so
+// the unit test neither hits the DB nor depends on env, and can assert the call.
+vi.mock('../lib/platform-events', () => ({ insertPlatformEvent: vi.fn() }));
+// eslint-disable-next-line import/first
+import { insertPlatformEvent } from '../lib/platform-events';
+// eslint-disable-next-line import/first
 import { isTokenLimitError, streamWithReducedContextRetry } from '../services/token-limit-retry';
 
 const ev = (obj: Record<string, unknown>) => JSON.stringify(obj);
@@ -34,7 +41,8 @@ describe('isTokenLimitError', () => {
 });
 
 describe('streamWithReducedContextRetry', () => {
-  const baseParams = { userId: 'u1', message: 'hi', chatHistory: [] };
+  const baseParams = { userId: 'u1', projectId: 'p1', message: 'hi', chatHistory: [] };
+  beforeEach(() => vi.mocked(insertPlatformEvent).mockClear());
   const TPM_ERROR = ev({
     type: 'error',
     message: 'Request too large for model on tokens per minute (TPM): Limit 12000, Requested 12975',
@@ -63,6 +71,11 @@ describe('streamWithReducedContextRetry', () => {
     expect(events.filter((e) => e.type === 'error')).toHaveLength(0);
     expect(events.some((e) => e.type === 'delta' && e.content === 'ok')).toBe(true);
     expect(events.some((e) => e.type === 'done')).toBe(true);
+    // I0: the forced retry is persisted as a context_retry platform event.
+    expect(insertPlatformEvent).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(insertPlatformEvent).mock.calls[0]![0]).toMatchObject({
+      eventType: 'context_retry', userId: 'u1', projectId: 'p1',
+    });
   });
 
   it('forwards the error untouched when no reduced prompt is available', async () => {

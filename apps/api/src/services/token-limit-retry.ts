@@ -11,6 +11,7 @@
 // content already streamed, or a second failure is forwarded untouched.
 
 import { streamCompletionGuarded } from './model-router';
+import { insertPlatformEvent } from '../lib/platform-events';
 
 type StreamParams = Parameters<typeof streamCompletionGuarded>[0];
 
@@ -68,6 +69,16 @@ export async function* streamWithReducedContextRetry(opts: {
         '[chat] provider token-limit rejection — retrying once with reduced project context:',
         parsed.message,
       );
+      // I0: persist the forced reduced-context retry (silent-fail, no-op
+      // pre-migration) so B2 retry frequency is measurable from the DB. Tokens
+      // are unknown here (rejection came before any usage event) → left null.
+      void insertPlatformEvent({
+        eventType: 'context_retry',
+        userId: opts.params.userId,
+        projectId: opts.params.projectId ?? null,
+        model: opts.params.modelPreference ?? null,
+        meta: { reason: parsed.message },
+      });
       yield* stream({ ...opts.params, systemPrompt: opts.reducedSystemPrompt });
       return;
     }
