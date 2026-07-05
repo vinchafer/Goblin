@@ -16,6 +16,12 @@ import { CodeFileTabs } from "./CodeFileTabs";
 import { SessionFileNav } from "./SessionFileNav";
 import { CommandBar } from "./CommandBar";
 import { StatusStrip } from "./StatusStrip";
+import { FileCardList } from "./FileCardList";
+import { Reader } from "./Reader";
+import { DiffSheet } from "./DiffSheet";
+import { useIsMobile } from "@/hooks/use-is-mobile";
+import { fetchAllTextFiles } from "@/lib/project-files";
+import { lineDelta } from "@/lib/file-compare";
 import { createTwoFilesPatch } from "diff";
 import { parseCodeBlocks, linkedLocalAssets } from "@/lib/parse-code-blocks";
 import { DiffModal } from "@/components/project/diff-modal";
@@ -60,6 +66,16 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
   // docked bar here routes through the SAME chat→edit path (handleSubmit) — the
   // change surfaces as the hunk-review card, the review is never hidden.
   const [askText, setAskText] = useState("");
+  // M2 (MOBILE-1): the mobile Code surface is a file-card list (Tier 1) by
+  // default, not the editor. Tapping a card opens the Reader (unchanged) or the
+  // Diff sheet (changed). The editor (Tier 3) is reached via "Bearbeiten".
+  const mobile = useIsMobile();
+  const [mobileMain, setMobileMain] = useState<"cards" | "reader" | "editor">("cards");
+  const [readerPath, setReaderPath] = useState<string | null>(null);
+  const [diffPath, setDiffPath] = useState<string | null>(null);
+  // Saved base map (project storage) — a reloaded draft row no longer carries
+  // its pre-edit base, so GEÄNDERT/NEU + line deltas are computed against this.
+  const [baseFiles, setBaseFiles] = useState<Record<string, string>>({});
   const [deployConfirm, setDeployConfirm] = useState(false);
   const [deploying, setDeploying] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -118,6 +134,29 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
   // Seed the persistent live-URL card from the session's last deploy, so it
   // survives a browser close + reopen (not just the deploy moment).
   useEffect(() => { if (detail.deployUrl) setLiveUrl(detail.deployUrl); }, [detail.deployUrl]);
+
+  // M2: pull the saved project files as the diff/badge base. Best-effort; on a
+  // failure the map stays empty (drafts then read as NEU, never a crash). Refreshes
+  // when the draft set changes so a newly-saved base is reflected.
+  useEffect(() => {
+    if (!projectId) return;
+    let cancelled = false;
+    fetchAllTextFiles(projectId).then(m => { if (!cancelled) setBaseFiles(m); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [projectId]);
+
+  // M2 (spec §8): the mobile back button closes an open sheet/reader before
+  // leaving the tab. Push a history entry when one opens; pop closes the top.
+  useEffect(() => {
+    if (!diffPath && !(mobile && mobileMain === "reader")) return;
+    window.history.pushState({ gbSheet: true }, "");
+    const onPop = () => {
+      if (diffPath) setDiffPath(null);
+      else { setReaderPath(null); setMobileMain("cards"); }
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [diffPath, mobile, mobileMain]);
 
   // Keep parent's tab badge in sync with the real draft count.
   useEffect(() => { onDraftCountChange(detail.draftCount); }, [detail.draftCount, onDraftCountChange]);
@@ -267,6 +306,12 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
 
   const handleViewFile = (path: string) => { detail.setActivePath(path); setMobileView("editor"); };
 
+  // ── M2 mobile card→reader→diff navigation ──
+  const openReader = (path: string) => { detail.setActivePath(path); setReaderPath(path); setMobileMain("reader"); };
+  const openDiff = (path: string) => { detail.setActivePath(path); setDiffPath(path); };
+  const backToCards = () => { setReaderPath(null); setMobileMain("cards"); };
+  const editFromReader = () => { setMobileMain("editor"); };
+
   // 10.8-7: open a file from the nav panel.
   const handleNavSelect = (path: string) => {
     detail.setActivePath(path);
@@ -375,6 +420,15 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
 
   const editorFilename = liveBlock ? liveBlock.path : (detail.activeFile?.path ?? "index.html");
 
+  // M2: on mobile the editor chrome (tabs + file bar + editor) only renders when
+  // the user has explicitly opened Tier 3 ("Bearbeiten"); otherwise the cards /
+  // reader own the surface. Desktop always shows the editor (front door).
+  const showEditorChrome = !mobile || mobileMain === "editor";
+  // Diff sheet inputs — saved base vs the current draft content.
+  const diffFile = diffPath ? detail.files.find(f => f.path === diffPath) ?? null : null;
+  const diffBase = diffPath ? (baseFiles[diffPath] ?? "") : "";
+  const diffDelta = diffFile ? lineDelta(diffBase, diffFile.content) : { added: 0, removed: 0 };
+
   return (
     <div className="gb-session-pane" style={{ flex: 1, display: "flex", minHeight: 0, position: "relative" }}>
       <style>{`
@@ -468,6 +522,30 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
             lastDeployedRel={lastDeployedRel}
           />
         </div>
+        {/* MOBILE-1 · M2: the mobile Code surface = file cards (Tier 1) by default.
+            Tapping a changed card → Diff sheet first; unchanged/new → Reader. The
+            editor (Tier 3) is behind "Bearbeiten". Desktop keeps the editor chrome. */}
+        {mobile && mobileMain !== "editor" && (
+          <div style={{ flex: 1, minHeight: 0, position: "relative", display: "flex", flexDirection: "column" }}>
+            {readerPath && detail.files.some(f => f.path === readerPath) ? (
+              <Reader
+                path={readerPath}
+                content={detail.files.find(f => f.path === readerPath)?.content ?? ""}
+                theme={theme}
+                onClose={backToCards}
+                onEdit={editFromReader}
+              />
+            ) : (
+              <FileCardList
+                files={detail.files}
+                baseFiles={baseFiles}
+                onOpenReader={openReader}
+                onOpenDiff={openDiff}
+              />
+            )}
+          </div>
+        )}
+        {showEditorChrome && (<>
         {/* Multi-file tabs (Slice 3). The session already holds many files; tabs let
             Sofia switch between them. Hidden for a single file so Max's landing-page
             flow stays clean. Closing only discards drafts (saved files are a no-op). */}
@@ -484,7 +562,12 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
         {/* File bar + status. FIX3-6: overflowX so the row can never clip a control
             at 390 — if the actions don't fit they scroll instead of being cut off. */}
         <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", borderBottom: "1px solid var(--ed-rule)", background: "var(--ed-chrome)", flexShrink: 0, overflowX: "auto" }}>
-          <button className="gb-mobile-back" onClick={() => setMobileView("thread")} aria-label="Zurück zum Thread" style={{ background: "transparent", border: "none", color: "var(--ed-fg-2)", cursor: "pointer", alignItems: "center" }}>
+          <button
+            className="gb-mobile-back"
+            onClick={() => { if (mobile && mobileMain === "editor") setMobileMain(readerPath ? "reader" : "cards"); else setMobileView("thread"); }}
+            aria-label={mobile && mobileMain === "editor" ? "Zurück zur Übersicht" : "Zurück zum Thread"}
+            style={{ background: "transparent", border: "none", color: "var(--ed-fg-2)", cursor: "pointer", alignItems: "center" }}
+          >
             <Icon name="back" size={16} />
           </button>
           {/* 10.8-7: open the file navigation panel (browse all session files). */}
@@ -582,6 +665,21 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
             );
           })()}
         </div>
+        </>)}
+
+        {/* MOBILE-1 · M2: the Diff sheet — a GEÄNDERT card opens this first
+            (review-before-anything), base (saved) → draft. */}
+        {diffPath && diffFile && (
+          <DiffSheet
+            path={diffPath}
+            base={diffBase}
+            proposed={diffFile.content}
+            added={diffDelta.added}
+            removed={diffDelta.removed}
+            onClose={() => setDiffPath(null)}
+            onWholeFile={() => { setDiffPath(null); openReader(diffPath); }}
+          />
+        )}
 
         {/* Persistent live URL — stays put after deploy (replaces the old toast
             that vanished after a few seconds). Survives reopen via detail.deployUrl. */}
