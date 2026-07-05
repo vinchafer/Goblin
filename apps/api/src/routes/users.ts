@@ -6,6 +6,7 @@ import { saveFallbackChain, getFallbackChain } from '../services/model-router';
 import { extendTrial, startTrial } from '../middleware/trial-gate';
 import { computeCapStatus } from '../lib/goblin-cap';
 import { derivePlanTruth } from '../lib/plan-truth';
+import { shouldShowAchievementCard } from '../lib/achievement-card';
 import { isGoblinHostedEnabled } from '../services/goblin-hosted';
 import { usageModelLabel } from '../lib/model-label';
 
@@ -274,6 +275,35 @@ users.post('/me/trial/extend', async (c) => {
     return c.json({ error: 'Extension already used or trial not active' }, 400);
   }
   return c.json({ success: true, newEnd: result.newEnd });
+});
+
+// GET /api/users/me/achievement-card — TRIAL-7 T2. Should the one-time
+// achievement upgrade card be shown? True only for an active-trial user who has
+// never seen it. The client asks after a truth-gated successful publish.
+users.get('/me/achievement-card', async (c) => {
+  const userId = c.get('userId');
+  const supabase = getSupabaseAdmin();
+  const { data: user } = await supabase
+    .from('users')
+    .select('plan, is_comped, stripe_subscription_id, cloud_trial_ends_at, trial_consumed_at, achievement_upgrade_card_seen_at')
+    .eq('id', userId)
+    .single();
+  if (!user) return c.json({ show: false });
+  return c.json({ show: shouldShowAchievementCard(user) });
+});
+
+// POST /api/users/me/achievement-card/seen — TRIAL-7 T2. Stamp the card as shown
+// so it never reappears (dismiss is final; later publishes never re-trigger it).
+// Idempotent: only stamps the first time so first-seen is preserved.
+users.post('/me/achievement-card/seen', async (c) => {
+  const userId = c.get('userId');
+  const supabase = getSupabaseAdmin();
+  await supabase
+    .from('users')
+    .update({ achievement_upgrade_card_seen_at: new Date().toISOString() })
+    .eq('id', userId)
+    .is('achievement_upgrade_card_seen_at', null);
+  return c.json({ success: true });
 });
 
 export { users };

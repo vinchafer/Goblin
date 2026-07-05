@@ -23,6 +23,7 @@ export interface Database {
           cancel_at_period_end: boolean | null
           cloud_trial_ends_at: string | null
           trial_consumed_at: string | null
+          achievement_upgrade_card_seen_at: string | null
           is_comped: boolean | null
           monthly_requests_used: number
           billing_cycle_start: string | null

@@ -90,6 +90,28 @@ export default function TrialGatePage() {
             : t(lang, 'Wähle, wie du loslegst — kostenlose Testphase oder direkt ein Abo.', 'Choose how to start — a free trial or a subscription.')}
         </p>
 
+        {/* TRIAL-7 T3: the expired screen was honest but vague — it never said what
+            happens to the user's work. This is the specific, verified truth: expiry
+            gates only new paid actions; projects, code and already-published apps
+            persist (no teardown runs on expiry), and read/download/GitHub push stay
+            open. No promise beyond what the code actually does. */}
+        {expired && (
+          <p
+            style={{
+              fontSize: 'var(--t-small-fs, 13px)',
+              color: 'rgba(0,0,0,0.55)',
+              margin: '-16px 0 28px',
+              lineHeight: 1.55,
+            }}
+          >
+            {t(
+              lang,
+              'Deine Projekte und bereits veröffentlichten Apps bleiben erhalten und online. Du kannst dich weiterhin anmelden, deinen Code herunterladen und zu GitHub pushen. Mit einem Abo arbeitest du sofort weiter.',
+              'Your projects and already-published apps stay — and stay online. You can still sign in, download your code, and push to GitHub. Subscribe to pick up right where you left off.',
+            )}
+          </p>
+        )}
+
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {!expired && (
             <button
@@ -110,7 +132,7 @@ export default function TrialGatePage() {
             >
               {starting
                 ? t(lang, 'Startet…', 'Starting…')
-                : t(lang, '3 Tage kostenlos testen', 'Start 3-day free trial')}
+                : t(lang, '7 Tage kostenlos testen', 'Start 7-day free trial')}
             </button>
           )}
 

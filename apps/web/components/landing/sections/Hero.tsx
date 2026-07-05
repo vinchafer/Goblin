@@ -41,7 +41,7 @@ export function Hero() {
 
         <div className="hero-foot">
           <span className="dot" aria-hidden="true" />
-          <span>3-day free trial</span>
+          <span>7-day free trial</span>
           <span className="rule" aria-hidden="true" />
           <span>No credit card required</span>
         </div>

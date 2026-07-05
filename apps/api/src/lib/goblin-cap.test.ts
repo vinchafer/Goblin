@@ -28,7 +28,7 @@ describe('locked constants', () => {
     expect(GOBLIN_MONTHLY_ALLOWANCE.pro).toBe(30_000_000);
     expect(GOBLIN_MONTHLY_ALLOWANCE.power).toBe(61_700_000);
   });
-  it('per-plan daily guards (paid ≈ 1/5 monthly; trial raised for 3-day reachability)', () => {
+  it('per-plan daily guards (paid ≈ 1/5 monthly; trial raised for 7-day reachability)', () => {
     expect(GOBLIN_DAILY_GUARD.trial).toBe(1_650_000);
     expect(GOBLIN_DAILY_GUARD.none).toBe(1_650_000); // mirrors trial
     expect(GOBLIN_DAILY_GUARD.build).toBe(3_500_000);
@@ -47,12 +47,12 @@ describe('locked constants', () => {
     expect(b('pro')).toBe(200);
     expect(b('power')).toBe(411);
   });
-  it('trial daily guard = 11 builds/day, full ~33-build cap reachable in 3 days', () => {
+  it('trial daily guard = 11 builds/day, full ~33-build cap reachable in 7 days', () => {
     expect(TRIAL_BUILDS_PER_DAY).toBe(11);
     expect(TRIAL_DAILY_GUARD).toBe(1_650_000);
     expect(GOBLIN_DAILY_GUARD.trial).toBe(TRIAL_DAILY_GUARD);
-    // 3 days × daily guard ≥ the full monthly trial cap (cap binds, not the guard)
-    expect(TRIAL_DAILY_GUARD * 3).toBeGreaterThanOrEqual(monthlyAllowanceForPlan('trial'));
+    // 7 days × daily guard ≥ the full monthly trial cap (cap binds, not the guard)
+    expect(TRIAL_DAILY_GUARD * 7).toBeGreaterThanOrEqual(monthlyAllowanceForPlan('trial'));
   });
 });
 

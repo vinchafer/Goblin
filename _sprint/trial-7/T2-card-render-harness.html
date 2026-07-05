@@ -1,0 +1,45 @@
+<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+:root{ /* editor dark theme = Goblin default (dark-mode default, m6) */
+  --ed-canvas:#3F3A2C; --ed-chrome:#28251D; --ed-chrome-2:#34301F;
+  --ed-fg-1:#FBF7EC; --ed-fg-2:#D8CBA8; --ed-fg-3:#968768;
+  --ed-rule:rgba(247,247,236,0.14); --ed-primary:#D4A737; --ed-on-primary:#28251D;
+  --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+}
+body{margin:0;background:#211f18;font-family:var(--font-sans);padding:22px;color:var(--ed-fg-2)}
+h2{font-size:13px;color:var(--ed-fg-3);text-transform:uppercase;letter-spacing:.08em;margin:26px 0 10px}
+.strip{background:var(--ed-chrome);border-bottom:1px solid var(--ed-rule);padding:7px 14px;display:flex;flex-direction:column;gap:7px}
+.surface{position:relative;height:200px;background:var(--ed-canvas);border:1px solid var(--ed-rule);border-radius:8px;overflow:hidden}
+/* slot */
+.card-slot{display:flex;align-items:center;gap:11px;width:100%;background:rgba(212,169,74,0.10);border:1px solid rgba(212,169,74,0.42);border-radius:10px;padding:9px 11px;box-sizing:border-box}
+.eyebrow{font-size:10.5px;font-weight:700;letter-spacing:.07em;color:#e0b34a;margin-bottom:2px}
+.bodytxt{font-size:12.5px;line-height:1.4;color:var(--ed-fg-2)}
+.later{background:transparent;border:none;color:var(--ed-fg-3);font-size:12.5px;cursor:pointer;padding:6px 8px}
+.upg{display:inline-flex;align-items:center;gap:5px;background:var(--ed-primary);border:none;color:var(--ed-on-primary);border-radius:8px;padding:7px 13px;font-size:12.5px;font-weight:600;cursor:pointer}
+/* toast */
+.card-toast{position:absolute;bottom:16px;left:50%;transform:translateX(-50%);z-index:92;max-width:460px;width:calc(100% - 32px);background:var(--ed-chrome-2);border:1px solid rgba(212,169,74,0.42);border-radius:12px;padding:13px 15px;box-shadow:0 10px 32px rgba(0,0,0,0.4);display:flex;flex-direction:column;gap:9px;box-sizing:border-box}
+.card-toast .bodytxt{font-size:13px;line-height:1.5;color:var(--ed-fg-1)}
+.row{display:flex;align-items:center;justify-content:flex-end;gap:8px}
+</style></head><body>
+<h2>Slot variant — mobile status-strip (DE)</h2>
+<div class="strip">
+  <div style="font-size:12.5px;color:var(--ed-fg-3)">● Live · goblin-demo.vercel.app</div>
+  <div class="card-slot">
+    <div style="flex:1;min-width:0">
+      <div class="eyebrow">DEINE APP IST LIVE</div>
+      <div class="bodytxt">Genau dafür ist Goblin gebaut. Mit einem Plan bleibst du dran — mehr Einheiten pro Monat, und dein Zugang endet nicht.</div>
+    </div>
+    <button class="later">Später</button>
+    <button class="upg">Pläne ansehen</button>
+  </div>
+</div>
+
+<h2>Toast variant — work surface (EN)</h2>
+<div class="surface">
+  <div class="card-toast">
+    <div class="eyebrow">YOUR APP IS LIVE</div>
+    <div class="bodytxt">This is exactly what Goblin is for. With a plan you keep going — more units each month, and your access doesn't end.</div>
+    <div class="row"><button class="later">Later</button><button class="upg">See plans</button></div>
+  </div>
+</div>
+</body></html>

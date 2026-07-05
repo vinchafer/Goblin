@@ -15,7 +15,7 @@ const ITEMS = [
   },
   {
     q: 'What happens after my trial?',
-    a: "3 days free, no card required. After that you'll see an upgrade prompt. Your projects are always safe. If you don't upgrade, you can still log in, download your code, and push to GitHub.",
+    a: "7 days free, no card required. After that you'll see an upgrade prompt. Your projects are always safe. If you don't upgrade, you can still log in, download your code, and push to GitHub.",
   },
   {
     q: 'Is my code private?',

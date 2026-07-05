@@ -40,7 +40,7 @@ Local mode requires the Goblin Desktop App (Tauri). It connects to a local Ollam
 ## Pricing
 
 **Current plan:** $9/month (one plan, everything included)
-**Trial:** 3 days free, no credit card required to sign up
+**Trial:** 7 days free, no credit card required to sign up
 **What's included:** Unlimited projects, BYOK (all providers), GitHub push, 5GB storage, Send to Code, web push notifications, mobile access, Auto-Fallback
 **After trial:** Access is gated — you see an upgrade prompt. Data is safe, not deleted.
 
@@ -55,7 +55,7 @@ Local mode requires the Goblin Desktop App (Tauri). It connects to a local Ollam
 ## Trial System FAQ
 
 **How does the trial work?**
-When you sign up, you get 3 days of free cloud access. No credit card needed. After 3 days, cloud features are gated until you upgrade to $9/month.
+When you sign up, you get 7 days of free cloud access. No credit card needed. After 7 days, cloud features are gated until you upgrade to $9/month.
 
 **What happens when my trial expires?**
 You'll see a "Trial Ended" banner and can't use AI features in cloud mode until you upgrade. Your projects and code are still there — nothing is deleted.
@@ -120,7 +120,7 @@ The Preview tab activates after a successful Vercel deploy. Click Deploy in the 
 Magic links expire in 15 minutes. Request a new one. Check spam folder. If on a different device, open the link on the device where you requested it (some email clients redirect; copy-paste the URL instead).
 
 **"Trial has ended" banner:**
-Your 3-day trial ended. Upgrade to $9/month in Settings → Billing, or use Local Mode (free, no trial).
+Your 7-day trial ended. Upgrade to $9/month in Settings → Billing, or use Local Mode (free, no trial).
 
 **"Usage limit reached":**
 You've hit your monthly request limit for Goblin-hosted / Free-pool requests. Options: (1) upgrade plan, (2) add your own API key (BYOK — doesn't count against limit).
