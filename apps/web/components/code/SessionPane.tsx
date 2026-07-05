@@ -22,7 +22,10 @@ import { DiffSheet } from "./DiffSheet";
 import { LineActionSheet } from "./LineActionSheet";
 import { EditorSearchOverlay } from "./EditorSearchOverlay";
 import { JitCard } from "./JitCard";
+import { AchievementUpgradeCard } from "./AchievementUpgradeCard";
 import { bumpPublishCount, dismissJit, jitToShow, type JitKind } from "@/lib/jit-cards";
+import { apiGet, apiPost } from "@/lib/api";
+import { useRouter } from "next/navigation";
 import type { CommandAnchor } from "./CommandBar";
 import { buildAnchoredMessage } from "@/lib/anchor-message";
 import { useIsMobile } from "@/hooks/use-is-mobile";
@@ -102,6 +105,11 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
   // (localStorage isn't reactive). `jitKind` = the earned card, if any.
   const [jitTick, setJitTick] = useState(0);
   const [jitKind, setJitKind] = useState<JitKind | null>(null);
+  // TRIAL-7 T2: the once-per-user achievement upgrade card. Shown after the FIRST
+  // truth-gated successful publish (trial users only); "once" is enforced
+  // server-side (achievement_upgrade_card_seen_at). Local flag drives this render.
+  const router = useRouter();
+  const [showUpgradeCard, setShowUpgradeCard] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [liveUrl, setLiveUrl] = useState<string | null>(null);
   const [liveDismissed, setLiveDismissed] = useState(false);
@@ -186,6 +194,11 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
     dismissJit(projectId, jitKind);
     setJitTick(v => v + 1);
   };
+
+  // TRIAL-7 T2: the card already stamped itself seen on show; these just close it.
+  // "Pläne ansehen" → the real plan page; "Später" → dismiss (final, never re-shown).
+  const upgradeCardOpen = () => { setShowUpgradeCard(false); router.push("/dashboard/upgrade"); };
+  const upgradeCardLater = () => { setShowUpgradeCard(false); };
 
   // M2 (spec §8): the mobile back button closes an open sheet/reader before
   // leaving the tab. Push a history entry when one opens; pop closes the top.
@@ -484,6 +497,17 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
       setPublishStream({ phase: "live", message: "Live", url });
       // M6: record the truth-gated successful publish → may earn a JIT card.
       if (projectId) { bumpPublishCount(projectId); setJitTick(v => v + 1); }
+      // TRIAL-7 T2: the truth-gated Live is the achievement moment. Ask the server
+      // whether the once-per-user upgrade card is owed (active trial + never shown).
+      // Stamp it seen immediately so it can never re-appear (even without a dismiss).
+      apiGet<{ show: boolean }>("/api/users/me/achievement-card")
+        .then((r) => {
+          if (r.show) {
+            setShowUpgradeCard(true);
+            apiPost("/api/users/me/achievement-card/seen").catch(() => {});
+          }
+        })
+        .catch(() => {});
     } else {
       const msg = (error ?? "Veröffentlichen fehlgeschlagen").replace(/^NO_VERCEL_TOKEN —\s*/, "");
       setPublishStream({ phase: "error", message: msg });
@@ -603,7 +627,9 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
             draftCount={detail.draftCount}
             liveUrl={detail.deployedAt ? (liveUrl ?? detail.deployUrl ?? null) : null}
             lastDeployedRel={lastDeployedRel}
-            jit={jitKind ? <JitCard kind={jitKind} onSetup={jitSetup} onLater={jitLater} /> : null}
+            jit={showUpgradeCard
+              ? <AchievementUpgradeCard variant="slot" onUpgrade={upgradeCardOpen} onLater={upgradeCardLater} />
+              : jitKind ? <JitCard kind={jitKind} onSetup={jitSetup} onLater={jitLater} /> : null}
           />
         </div>
         {/* MOBILE-1 · M2: the mobile Code surface = file cards (Tier 1) by default.
@@ -968,6 +994,14 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
           <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 240 }}>Verworfen · {undoDiscard.path}</span>
           <button onClick={undoLastDiscard} style={{ background: "var(--ed-primary)", border: "none", color: "var(--ed-on-primary)", borderRadius: 7, padding: "6px 12px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "var(--font-sans)", display: "inline-flex", alignItems: "center", gap: 6, flexShrink: 0 }}><Icon name="back" size={13} /> Rückgängig</button>
         </div>
+      )}
+
+      {/* TRIAL-7 T2: achievement upgrade card — toast variant. The slot variant
+          lives in the mobile status strip; this floating card covers desktop (where
+          the status strip is hidden) so the earned moment surfaces on every surface.
+          Rendered only when the mobile strip isn't showing it, so never doubled. */}
+      {showUpgradeCard && !mobile && (
+        <AchievementUpgradeCard variant="toast" onUpgrade={upgradeCardOpen} onLater={upgradeCardLater} />
       )}
 
       {/* Toast */}
