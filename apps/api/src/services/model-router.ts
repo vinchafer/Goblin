@@ -22,6 +22,7 @@ import { PROVIDERS, PROVIDER_BASE_URLS, type ProviderId } from '../config/provid
 import { GoblinError, isGoblinError, litellmStream } from './litellm-client';
 import { formatTokenDisplay } from '../config/pricing';
 import { trackCompletion } from '../lib/track-completion';
+import { insertPlatformEvent } from '../lib/platform-events';
 import { recordOutcome, getHealth, isModelNotFound } from './provider-health';
 import logger from '../lib/logger';
 
@@ -452,6 +453,11 @@ async function applyHealthFallback(
 interface StreamCompletionParams {
   userId: string;
   projectId?: string | null;
+  // I0: links this completion to its chat_sessions row so
+  // completion_costs.chat_session_id is populated (telemetry A19). NULL for the
+  // legacy project route (chat.ts), which has no session row — that path is
+  // attributed via project_id instead (migration 0077).
+  chatSessionId?: string | null;
   message: string;
   chatHistory: Array<{ role: string; content: string }>;
   modelPreference?: string;
@@ -477,6 +483,7 @@ interface StreamCompletionParams {
 export async function* streamCompletion({
   userId,
   projectId,
+  chatSessionId,
   message,
   chatHistory,
   modelPreference,
@@ -587,9 +594,14 @@ export async function* streamCompletion({
           { feature: 'project-state-summarizer', userId, provider: route.provider, model: route.model, sourceTier: route.layer, tokensIn: inputTokens, tokensOut: outputTokens, billing: 'platform_cogs' },
           'platform COGS (internal, not user-billed)',
         );
+        // I0: also persist to platform_events (silent-fail, no-op pre-migration)
+        // so A20 platform COGS is measurable from the DB, not just Railway logs.
+        void insertPlatformEvent({ eventType: 'platform_cogs', userId, projectId, model: route.model, tokensIn: inputTokens, tokensOut: outputTokens, meta: { feature: 'project-state-summarizer', provider: route.provider, sourceTier: route.layer } });
       } else {
         await trackCompletion({
           userId,
+          chatSessionId,
+          projectId,
           provider: route.provider,
           model: route.model,
           sourceTier: route.layer,
@@ -680,9 +692,13 @@ export async function* streamCompletion({
         { feature: 'project-state-summarizer', userId, provider: route.provider, model: route.model, sourceTier: route.layer, tokensIn: inputTokens, tokensOut: outputTokens, billing: 'platform_cogs' },
         'platform COGS (internal, not user-billed)',
       );
+      // I0: also persist to platform_events (silent-fail, no-op pre-migration).
+      void insertPlatformEvent({ eventType: 'platform_cogs', userId, projectId, model: route.model, tokensIn: inputTokens, tokensOut: outputTokens, meta: { feature: 'project-state-summarizer', provider: route.provider, sourceTier: route.layer } });
     } else {
       await trackCompletion({
         userId,
+        chatSessionId,
+        projectId,
         provider: route.provider,
         model: route.model,
         sourceTier: route.layer,

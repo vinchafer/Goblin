@@ -237,6 +237,7 @@ chatSessions.post('/:id/stream', async (c) => {
         params: {
           userId,
           projectId,
+          chatSessionId: sessionId,
           message,
           chatHistory,
           modelPreference: modelSlug,
