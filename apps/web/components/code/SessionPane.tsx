@@ -21,6 +21,8 @@ import { Reader } from "./Reader";
 import { DiffSheet } from "./DiffSheet";
 import { LineActionSheet } from "./LineActionSheet";
 import { EditorSearchOverlay } from "./EditorSearchOverlay";
+import { JitCard } from "./JitCard";
+import { bumpPublishCount, dismissJit, jitToShow, type JitKind } from "@/lib/jit-cards";
 import type { CommandAnchor } from "./CommandBar";
 import { buildAnchoredMessage } from "@/lib/anchor-message";
 import { useIsMobile } from "@/hooks/use-is-mobile";
@@ -96,6 +98,10 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
   // M5: compact find/replace overlay for the Tier-3 editor (mobile) — replaces the
   // permanent desktop CodeMirror panel.
   const [searchOverlay, setSearchOverlay] = useState(false);
+  // M6: JIT integration card. `jitTick` forces a recompute after a publish/dismiss
+  // (localStorage isn't reactive). `jitKind` = the earned card, if any.
+  const [jitTick, setJitTick] = useState(0);
+  const [jitKind, setJitKind] = useState<JitKind | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [liveUrl, setLiveUrl] = useState<string | null>(null);
   const [liveDismissed, setLiveDismissed] = useState(false);
@@ -162,6 +168,24 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
     fetchAllTextFiles(projectId).then(m => { if (!cancelled) setBaseFiles(m); }).catch(() => {});
     return () => { cancelled = true; };
   }, [projectId]);
+
+  // M6: recompute which JIT card is earned (post-publish / post-dismiss).
+  useEffect(() => {
+    if (!projectId) { setJitKind(null); return; }
+    setJitKind(jitToShow(projectId));
+  }, [projectId, jitTick]);
+
+  const jitSetup = () => {
+    if (!projectId || !jitKind) return;
+    dismissJit(projectId, jitKind);       // acted → don't nag again for 30 days
+    setJitTick(v => v + 1);
+    if (jitKind === "github") setMoreMenu(true);  // surface the GitHub push affordance
+  };
+  const jitLater = () => {
+    if (!projectId || !jitKind) return;
+    dismissJit(projectId, jitKind);
+    setJitTick(v => v + 1);
+  };
 
   // M2 (spec §8): the mobile back button closes an open sheet/reader before
   // leaving the tab. Push a history entry when one opens; pop closes the top.
@@ -458,6 +482,8 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
       setLiveUrl(url);
       setLiveDismissed(false);
       setPublishStream({ phase: "live", message: "Live", url });
+      // M6: record the truth-gated successful publish → may earn a JIT card.
+      if (projectId) { bumpPublishCount(projectId); setJitTick(v => v + 1); }
     } else {
       const msg = (error ?? "Veröffentlichen fehlgeschlagen").replace(/^NO_VERCEL_TOKEN —\s*/, "");
       setPublishStream({ phase: "error", message: msg });
@@ -577,6 +603,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
             draftCount={detail.draftCount}
             liveUrl={detail.deployedAt ? (liveUrl ?? detail.deployUrl ?? null) : null}
             lastDeployedRel={lastDeployedRel}
+            jit={jitKind ? <JitCard kind={jitKind} onSetup={jitSetup} onLater={jitLater} /> : null}
           />
         </div>
         {/* MOBILE-1 · M2: the mobile Code surface = file cards (Tier 1) by default.
