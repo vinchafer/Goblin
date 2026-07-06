@@ -16,7 +16,7 @@
 // bar's jump). Reuses the editor-surface `--ed-*` tokens so it tracks the
 // light/dark editor theme.
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/ui/icon";
 import { GoblinLogo } from "@/components/brand/GoblinLogo";
 import { SessionModelPicker } from "./SessionModelPicker";
@@ -50,7 +50,19 @@ export function CommandBar({
   modelId, onModelChange, anchor, onClearAnchor, className,
 }: Props) {
   const lang = useLang();
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  // P1.2(a): the command input is an auto-growing textarea — grows with the
+  // instruction up to ~4 lines, then scrolls internally. A single-line <input>
+  // showed only 4–5 words of a longer request (founder-reproduced), so the user
+  // couldn't see what they'd typed. maxH ≈ 4 lines of the 16px/1.4 field.
+  const MAX_TEXTAREA_H = 112;
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, MAX_TEXTAREA_H)}px`;
+  }, [value]);
   // Dictation appends to whatever was typed so far (never auto-sends). Snapshot
   // the pre-dictation text on start; each transcript update rewrites the tail.
   const dictationBaseRef = useRef<string>("");
@@ -112,11 +124,16 @@ export function CommandBar({
           </span>
         </div>
       )}
-      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-        <input
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
+        <textarea
           ref={inputRef}
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onKeyDown={(e) => {
+            // Enter sends; Shift+Enter inserts a newline (the textarea grows).
+            if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submit(); }
+          }}
+          rows={1}
           placeholder={t(lang, "Goblin um eine Änderung bitten…", "Ask Goblin for a change…")}
           aria-label={t(lang, "Goblin um eine Änderung bitten", "Ask Goblin for a change")}
           disabled={streaming}
@@ -124,7 +141,9 @@ export function CommandBar({
           style={{
             flex: 1, minWidth: 0, background: "var(--ed-canvas)", border: "1px solid var(--ed-rule)",
             color: "var(--ed-fg-1)", borderRadius: 9, padding: "10px 12px", fontSize: 16,
-            fontFamily: "var(--font-sans)", outline: "none",
+            fontFamily: "var(--font-sans)", outline: "none", resize: "none",
+            lineHeight: 1.4, maxHeight: MAX_TEXTAREA_H, overflowY: "auto",
+            opacity: streaming ? 0.6 : 1,
           }}
         />
         {/* Mic — reuse dictation (CHAT-IO C1). Inserts at the field; never auto-sends. */}

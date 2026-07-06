@@ -111,6 +111,11 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
   const router = useRouter();
   const [showUpgradeCard, setShowUpgradeCard] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  // P1.2(b): "Goblin arbeitet… <n>s" while a command runs, and the change pop-up
+  // header once the result lands. workingSeconds ticks while agent.streaming;
+  // changeSummary is the number of files the turn touched (null = no banner).
+  const [workingSeconds, setWorkingSeconds] = useState<number | null>(null);
+  const [changeSummary, setChangeSummary] = useState<number | null>(null);
   const [liveUrl, setLiveUrl] = useState<string | null>(null);
   const [liveDismissed, setLiveDismissed] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -222,6 +227,18 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
     return agent.blocks[agent.blocks.length - 1] ?? null;
   }, [agent.streaming, agent.blocks]);
 
+  // P1.2(b): tick the "Goblin arbeitet… <n>s" counter for as long as the command
+  // is streaming. Resets to null the moment streaming ends (the change pop-up
+  // takes over). Visible within one frame of submit, so the Code surface never
+  // sits silent after a send.
+  useEffect(() => {
+    if (!agent.streaming) { setWorkingSeconds(null); return; }
+    setWorkingSeconds(0);
+    const startedAt = Date.now();
+    const iv = setInterval(() => setWorkingSeconds(Math.max(0, Math.floor((Date.now() - startedAt) / 1000))), 1000);
+    return () => clearInterval(iv);
+  }, [agent.streaming]);
+
   // ── Undo / Redo (CodeMirror history) ──
   // The editor stays mounted across the AI boundary (the live stream is a separate
   // overlay), so an AI generation lands as ONE undoable transaction via the
@@ -260,6 +277,12 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
       agent.reset();
       setMobileView("editor");
       maybeOpenReviewCard(text);
+      // P1.2(b): announce the result on the Code surface — the change pop-up
+      // header. Count the distinct files this turn produced (new + edited).
+      const changed = new Set(
+        parseCodeBlocks(text).filter(b => b.complete && b.path).map(b => b.path),
+      ).size;
+      if (changed > 0) setChangeSummary(changed);
     }, detail.activePath);
     setMobileView("editor");
   };
@@ -625,6 +648,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
           <StatusStrip
             state={liveBlock ? "draft" : state}
             draftCount={detail.draftCount}
+            workingSeconds={agent.streaming ? (workingSeconds ?? 0) : null}
             liveUrl={detail.deployedAt ? (liveUrl ?? detail.deployUrl ?? null) : null}
             lastDeployedRel={lastDeployedRel}
             jit={showUpgradeCard
@@ -1002,6 +1026,33 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
           Rendered only when the mobile strip isn't showing it, so never doubled. */}
       {showUpgradeCard && !mobile && (
         <AchievementUpgradeCard variant="toast" onUpgrade={upgradeCardOpen} onLater={upgradeCardLater} />
+      )}
+
+      {/* P1.2(b): the change pop-up header — announced on the Code surface the
+          moment a command result lands, so the edit is never silent. Tapping
+          "Änderungen prüfen" foregrounds the review (the GEÄNDERT card / file
+          list); the DiffModal review queue opens beneath for edited files. */}
+      {changeSummary != null && (
+        <div
+          data-testid="change-summary"
+          role="status"
+          style={{ position: "absolute", top: 12, left: "50%", transform: "translateX(-50%)", zIndex: 92, maxWidth: "calc(100% - 24px)", background: "var(--ed-chrome-2, var(--ed-canvas))", border: "1px solid var(--ed-rule)", borderRadius: 12, padding: "10px 12px 10px 14px", display: "flex", alignItems: "center", gap: 12, boxShadow: "0 12px 32px rgba(15,43,30,0.28)" }}
+        >
+          <GoblinLogo state="breath" size={18} variant="gold" />
+          <span style={{ fontSize: 13, fontFamily: "var(--font-sans)", color: "var(--ed-fg-1)", fontWeight: 600 }}>
+            {t(lang, `Goblin hat ${changeSummary} ${changeSummary === 1 ? "Datei" : "Dateien"} geändert`, `Goblin changed ${changeSummary} ${changeSummary === 1 ? "file" : "files"}`)} — {t(lang, "prüfe die Änderungen", "review the changes")}
+          </span>
+          <button
+            data-testid="change-summary-review"
+            onClick={() => { setChangeSummary(null); setMobileView("editor"); if (mobile) setMobileMain("cards"); }}
+            style={{ flexShrink: 0, background: "var(--ed-primary)", border: "none", color: "var(--ed-on-primary)", borderRadius: 8, padding: "6px 12px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "var(--font-sans)" }}
+          >
+            {t(lang, "Änderungen prüfen", "Review changes")}
+          </button>
+          <button onClick={() => setChangeSummary(null)} aria-label={t(lang, "Schließen", "Close")} style={{ flexShrink: 0, background: "transparent", border: "none", color: "var(--ed-fg-3)", cursor: "pointer", display: "inline-flex", alignItems: "center" }}>
+            <Icon name="close" size={14} />
+          </button>
+        </div>
       )}
 
       {/* Toast */}

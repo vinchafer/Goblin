@@ -11,6 +11,7 @@
 // server's recorded deploy, not by a click.
 
 import type { ReactNode } from "react";
+import { GoblinLogo } from "@/components/brand/GoblinLogo";
 import { useLang, t } from "@/lib/use-lang";
 
 export type SurfaceState = "empty" | "draft" | "saved" | "deployed";
@@ -18,6 +19,9 @@ export type SurfaceState = "empty" | "draft" | "saved" | "deployed";
 interface Props {
   state: SurfaceState;
   draftCount: number;
+  /** P1.2(b): while a command is running, the strip shows "Goblin arbeitet… <n>s"
+      so the user can see something is happening on the Code surface. Null = idle. */
+  workingSeconds?: number | null;
   /** Public deploy URL — only present when the project has actually been deployed. */
   liveUrl?: string | null;
   /** Compact relative time of the last deploy, e.g. "vor 3min". */
@@ -27,8 +31,9 @@ interface Props {
   className?: string;
 }
 
-export function StatusStrip({ state, draftCount, liveUrl, lastDeployedRel, jit, className }: Props) {
+export function StatusStrip({ state, draftCount, workingSeconds, liveUrl, lastDeployedRel, jit, className }: Props) {
   const lang = useLang();
+  const working = workingSeconds != null;
 
   return (
     <div
@@ -44,7 +49,12 @@ export function StatusStrip({ state, draftCount, liveUrl, lastDeployedRel, jit, 
           data-testid="status-strip-state"
           style={{ fontSize: 12.5, fontFamily: "var(--font-sans)", display: "inline-flex", alignItems: "center", gap: 7, minWidth: 0, flex: 1 }}
         >
-          {state === "empty" ? (
+          {working ? (
+            <span data-testid="status-strip-working" style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "var(--ed-fg-1)", fontWeight: 600 }}>
+              <GoblinLogo state="working" size={15} variant="gold" />
+              {t(lang, "Goblin arbeitet", "Goblin is working")}… {workingSeconds}s
+            </span>
+          ) : state === "empty" ? (
             <span style={{ color: "var(--ed-fg-3)" }}>{t(lang, "Noch keine Dateien", "No files yet")}</span>
           ) : draftCount > 0 ? (
             <>
