@@ -334,11 +334,14 @@ function VoiceButton({
   });
   const recording = status === 'listening';
   const processing = status === 'processing';
+  const pending = status === 'pending';   // P1.6: permission prompt is up
 
   const label = processing
     ? lang === 'en' ? 'Transcribing…' : 'Wird verschriftet …'
     : recording
     ? lang === 'en' ? 'Listening…' : 'Goblin hört zu …'
+    : pending
+    ? lang === 'en' ? 'Waiting for access…' : 'Zugriff erlauben …'
     : '';
 
   return (
@@ -362,15 +365,16 @@ function VoiceButton({
           ? (lang === 'en' ? 'Stop recording' : 'Aufnahme stoppen')
           : (lang === 'en' ? 'Voice input' : 'Spracheingabe')}
         data-testid="composer-mic"
+        data-mic-status={status}
         style={{
           width: 32, height: 32, borderRadius: '50%', border: 'none',
-          background: recording ? 'rgba(184,92,60,0.12)' : 'transparent',
+          background: recording ? 'rgba(184,92,60,0.12)' : pending ? 'rgba(212,167,55,0.14)' : 'transparent',
           cursor: disabled ? 'not-allowed' : 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: recording ? 'var(--rust)' : 'var(--text-2)',
+          color: recording ? 'var(--rust)' : pending ? 'var(--brand-gold)' : 'var(--text-2)',
           flexShrink: 0,
-          boxShadow: recording ? '0 0 0 2px rgba(184,92,60,0.4)' : 'none',
-          animation: recording ? 'goblin-pulse 1.2s ease-in-out infinite' : undefined,
+          boxShadow: recording ? '0 0 0 2px rgba(184,92,60,0.4)' : pending ? '0 0 0 2px rgba(212,167,55,0.4)' : 'none',
+          animation: (recording || pending) ? 'goblin-pulse 1.2s ease-in-out infinite' : undefined,
           transition: 'all 0.15s',
           opacity: disabled ? 0.4 : 1,
         }}

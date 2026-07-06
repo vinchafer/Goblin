@@ -79,6 +79,7 @@ export function CommandBar({
   });
   const recording = status === "listening";
   const processing = status === "processing";
+  const pending = status === "pending";   // P1.6: mic permission prompt is up
 
   const submit = () => {
     const text = value.trim();
@@ -193,9 +194,9 @@ export function CommandBar({
           </button>
         )}
       </div>
-      {(recording || dictationErr) && (
-        <span style={{ fontSize: 12, fontFamily: "var(--font-sans)", color: dictationErr ? "var(--danger, #B0432A)" : "var(--ed-fg-3)" }}>
-          {dictationErr ?? t(lang, "Goblin hört zu …", "Listening…")}
+      {(recording || pending || dictationErr) && (
+        <span data-testid="command-bar-mic-status" style={{ fontSize: 12, fontFamily: "var(--font-sans)", color: dictationErr ? "var(--danger, #B0432A)" : "var(--ed-fg-3)" }}>
+          {dictationErr ?? (pending ? t(lang, "Zugriff erlauben …", "Waiting for access…") : t(lang, "Goblin hört zu …", "Listening…"))}
         </span>
       )}
     </form>
