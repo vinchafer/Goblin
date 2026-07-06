@@ -14,6 +14,11 @@ interface TrackParams {
   sourceTier?: string | null;
   tokensIn: number;
   tokensOut: number;
+  // P1.8: speed measurement (migration 0080). ttftMs = time to first token,
+  // durationMs = total generation wall time, both in ms. Optional — non-streaming
+  // / BYOK callers where ttft isn't meaningful leave them undefined (→ NULL).
+  ttftMs?: number;
+  durationMs?: number;
 }
 
 /**
@@ -34,11 +39,20 @@ export async function trackCompletion(params: TrackParams): Promise<void> {
   };
   try {
     const sb = getSupabaseAdmin();
-    // I0: write project_id when the column exists (migration 0077). Pre-migration
-    // tolerant — a missing column errors the insert, so we retry WITHOUT project_id
-    // rather than dropping the cost row entirely (accounting must never silently
-    // lose a completion because an instrumentation column is not yet applied).
-    const { error } = await sb.from('completion_costs').insert({ ...baseRow, project_id: params.projectId ?? null });
+    // Write the optional instrumentation columns (project_id — migration 0077;
+    // ttft_ms/duration_ms — migration 0080) when they exist. Pre-migration
+    // tolerant: a missing column errors the insert, so we retry with the bare
+    // baseRow (dropping ALL of project_id + the timing fields) rather than losing
+    // the cost row entirely — accounting must never silently drop a completion
+    // because an instrumentation column is not yet applied. The retry degrades
+    // gracefully whether the missing column is project_id (pre-0077) or the timing
+    // fields (pre-0080).
+    const { error } = await sb.from('completion_costs').insert({
+      ...baseRow,
+      project_id: params.projectId ?? null,
+      ttft_ms: params.ttftMs ?? null,
+      duration_ms: params.durationMs ?? null,
+    });
     if (error) {
       await sb.from('completion_costs').insert(baseRow);
     }

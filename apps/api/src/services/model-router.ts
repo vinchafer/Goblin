@@ -511,6 +511,12 @@ export async function* streamCompletion({
 
   let inputTokens = 0;
   let outputTokens = 0;
+  // P1.8 speed measurement (migration 0080) — pure instrumentation, no effect on
+  // token counts, cost, or control flow. requestStart is stamped when the provider
+  // stream begins; firstTokenAt on the first streamed delta. ttft/duration are
+  // derived from these at trackCompletion time.
+  let requestStart = 0;
+  let firstTokenAt = 0;
 
   // HR-3 fair-use enforcement — only for the Goblin-hosted (server-keyed) tier, and
   // ALWAYS pre-stream so the current run is never cut mid-build. The run that pushes
@@ -631,6 +637,7 @@ export async function* streamCompletion({
   // to a provider, the provider only accepts its own slug. A provider
   // "model not found / invalid model" error is a slug failure: it must surface
   // (and feed the 10.9-3 circuit breaker), never be silently rewritten.
+  requestStart = Date.now(); // P1.8: stamp just before the provider stream opens.
   try {
     if (route.layer === 'goblin_hosted') {
       // Goblin-bundled (server-side key) tier — routed through the injectable
@@ -646,6 +653,7 @@ export async function* streamCompletion({
         signal,
       })) {
         if (part.type === 'delta' && part.content) {
+          if (!firstTokenAt) firstTokenAt = Date.now(); // P1.8 ttft
           yield JSON.stringify({ type: 'delta', content: part.content });
         } else if (part.type === 'usage') {
           inputTokens = part.inputTokens ?? 0;
@@ -659,6 +667,7 @@ export async function* streamCompletion({
 
       for await (const event of stream) {
         if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
+          if (!firstTokenAt) firstTokenAt = Date.now(); // P1.8 ttft
           yield JSON.stringify({ type: 'delta', content: event.delta.text });
         } else if (event.type === 'message_start') {
           inputTokens = event.message.usage.input_tokens;
@@ -673,7 +682,10 @@ export async function* streamCompletion({
 
       for await (const chunk of stream) {
         const text = chunk.choices[0]?.delta?.content ?? '';
-        if (text) yield JSON.stringify({ type: 'delta', content: text });
+        if (text) {
+          if (!firstTokenAt) firstTokenAt = Date.now(); // P1.8 ttft
+          yield JSON.stringify({ type: 'delta', content: text });
+        }
         if (chunk.usage) {
           inputTokens = chunk.usage.prompt_tokens ?? 0;
           outputTokens = chunk.usage.completion_tokens ?? 0;
@@ -704,6 +716,10 @@ export async function* streamCompletion({
         sourceTier: route.layer,
         tokensIn: inputTokens,
         tokensOut: outputTokens,
+        // P1.8 speed measurement — ttft = first token − request start; duration =
+        // stream end − request start. Undefined if no token ever streamed.
+        ttftMs: firstTokenAt ? firstTokenAt - requestStart : undefined,
+        durationMs: requestStart ? Date.now() - requestStart : undefined,
       });
     }
     // Goblin-hosted maps to provider 'openai'; don't let its health bleed into the

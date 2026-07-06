@@ -74,4 +74,44 @@ describe('trackCompletion — I0 attribution', () => {
     expect(inserted[1]).not.toHaveProperty('project_id');
     expect(inserted[1]).toMatchObject({ user_id: 'u1', tokens_in: 10 });
   });
+
+  // P1.8 — speed measurement (migration 0080), same pre-migration tolerance as I0.
+  it('writes ttft_ms and duration_ms when the timing columns are accepted', async () => {
+    await trackCompletion({
+      userId: 'u1',
+      chatSessionId: 's1',
+      projectId: 'p1',
+      provider: 'groq',
+      model: 'llama-x',
+      tokensIn: 100,
+      tokensOut: 50,
+      ttftMs: 120,
+      durationMs: 800,
+    });
+    expect(inserted).toHaveLength(1);
+    expect(inserted[0]).toMatchObject({ ttft_ms: 120, duration_ms: 800 });
+  });
+
+  it('retries WITHOUT the timing columns (and project_id) when they are absent — pre-migration tolerant', async () => {
+    // First insert (with timing + project_id) errors as if pre-0080; retry must succeed.
+    results = [{ error: { message: 'column "ttft_ms" does not exist' } }, { error: null }];
+    await trackCompletion({
+      userId: 'u1',
+      projectId: 'p1',
+      provider: 'groq',
+      model: 'llama-x',
+      tokensIn: 10,
+      tokensOut: 5,
+      ttftMs: 120,
+      durationMs: 800,
+    });
+    expect(inserted).toHaveLength(2);
+    // First attempt carried the timing fields...
+    expect(inserted[0]).toMatchObject({ ttft_ms: 120, duration_ms: 800 });
+    // ...the fallback dropped them (and project_id) entirely, so the cost row survives.
+    expect(inserted[1]).not.toHaveProperty('ttft_ms');
+    expect(inserted[1]).not.toHaveProperty('duration_ms');
+    expect(inserted[1]).not.toHaveProperty('project_id');
+    expect(inserted[1]).toMatchObject({ user_id: 'u1', tokens_in: 10 });
+  });
 });

@@ -2,6 +2,7 @@
 **The consumption blueprint (Verbrauchs-Bauplan). v1.0 · 2026-07-04 · Author: Steven · Repo target: `docs/GOBLIN_CONSUMPTION_LEDGER.md`**
 **VERIFY-PATH cells + M3 accounting resolved by CC 2026-07-05 (FEEL-2b reverify). Resolutions cite code at that commit — re-confirm line numbers if the files move.**
 **I0 (MOBILE-1, 2026-07-07): measurement-only changes — `completion_costs` now attributable project-vs-standalone (`chat_session_id` + `project_id`, migration 0077); `platform_events` table (0078) gives A20/B2 a DB twin of the platform_cogs/context_retry log lines. No token consumption changed. Migrations 0077/0078 authored, NOT applied — founder applies. See M2/M3.**
+**P1.8 (speed measurement, 2026-07): MEASUREMENT-ONLY — added `completion_costs.ttft_ms` + `completion_costs.duration_ms` (time to first token + total generation wall time, ms; tokens/sec derivable from `tokens_out ÷ duration_ms`) via migration 0080, pre-migration-tolerant like 0077 (`trackCompletion` retries the insert without the timing columns / project_id if absent, never dropping a cost row). Populated on the primary Goblin-hosted streamed completion (`model-router.ts` direct-SDK path). NO change to token consumption, cost, or billing math — we measure Swift latency before tuning it. Migration 0080 authored, NOT applied — founder applies via Supabase SQL Editor.**
 
 ## Purpose & standing rule
 
