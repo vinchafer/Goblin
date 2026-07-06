@@ -17,6 +17,7 @@ import { agentEligibility } from '../services/agent/config';
 import { AGENT_TOOLS, buildToolExecutor } from '../services/agent/tools';
 import { getAgentModel } from '../services/agent/model-turn';
 import { runAgent } from '../services/agent/orchestrator';
+import { grantsPublish } from '../services/agent/intent';
 import { createAgentRun, finalizeAgentRun } from '../services/agent/run-store';
 import type { AgentMessage } from '../services/agent/types';
 
@@ -533,8 +534,10 @@ codeSessions.post('/:sessionId/messages', async (c) => {
 codeSessions.post('/:sessionId/agent', async (c) => {
   const userId = c.get('userId');
   const sessionId = c.req.param('sessionId');
-  const body = (await c.req.json().catch(() => ({}))) as { prompt?: string; modelId?: string };
-  const prompt = (body.prompt ?? '').trim();
+  const body = (await c.req.json().catch(() => ({}))) as { prompt?: string; modelId?: string; confirmPublish?: boolean };
+  // FEEL-3b D1: the confirmation chip resumes a publish-only run — one tap grants publish.
+  const confirmPublish = body.confirmPublish === true;
+  const prompt = (body.prompt ?? '').trim() || (confirmPublish ? 'Jetzt veröffentlichen.' : '');
   if (!prompt) return c.json({ error: 'prompt required' }, 400);
 
   const sb = getSupabaseAdmin();
@@ -599,6 +602,8 @@ codeSessions.post('/:sessionId/agent', async (c) => {
         tools: AGENT_TOOLS,
         executor: buildToolExecutor(sb),
         model: getAgentModel(tier),
+        // D1: publish is granted only on explicit intent in THIS message, or a chip tap.
+        publishGranted: confirmPublish || grantsPublish(prompt),
         stopSignal: c.req.raw.signal,
         emit: async (evt) => { await stream.writeSSE({ data: JSON.stringify(evt) }); },
       });

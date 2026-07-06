@@ -11,6 +11,8 @@ const TOOLS: ToolSpec[] = [
   { name: 'read_file', description: '', parameters: {} },
   { name: 'write_file', description: '', parameters: {} },
   { name: 'save_draft', description: '', parameters: {} },
+  { name: 'publish', description: '', parameters: {} },
+  { name: 'read_deploy_status', description: '', parameters: {} },
   { name: 'finish', description: '', parameters: {} },
 ];
 
@@ -95,7 +97,8 @@ describe('orchestrator — A2 loop', () => {
     expect(res.report.files).toEqual([{ path: 'index.html', classification: 'NEU' }]);
     expect(res.report.modelText).toBe('Fertig — Notiz-App als Entwurf gesichert.');
     expect(res.report.followUps).toContain('view-changes');
-    expect(res.report.followUps).toContain('go-live');
+    // FEEL-3b: a saved-but-unpublished draft now carries the D1 confirmation chip.
+    expect(res.report.followUps).toContain('confirm-publish');
     // billed once per model turn (3 turns).
     expect(bill).toHaveBeenCalledTimes(3);
     // step events emitted for the two service tools, and a final report frame.
@@ -208,5 +211,93 @@ describe('orchestrator — A2 loop', () => {
     // the in-flight write completed and is attested; the run did not reach finish.
     expect(res.report.files).toEqual([{ path: 'index.html', classification: 'NEU' }]);
     expect(res.steps).toHaveLength(1);
+  });
+});
+
+// ─── FEEL-3b B2: the explicit-intent publish gate (D1) ───────────────────────────
+
+/** Executor that also serves a green `publish` and records which tools actually ran. */
+function publishExecutor(ran: string[]): ToolExecutor {
+  return async (call): Promise<ToolResult> => {
+    ran.push(call.name);
+    switch (call.name) {
+      case 'write_file':
+        return { ok: true, summary: `${call.args.path} · NEU`, file: { path: String(call.args.path), classification: 'NEU' } };
+      case 'save_draft':
+        return { ok: true, summary: 'Entwurf gesichert ✓' };
+      case 'publish':
+        return { ok: true, summary: 'Live ✓ https://p1.vercel.app', data: { verified: true, url: 'https://p1.vercel.app' } };
+      default:
+        return { ok: false, summary: 'unbekannt', error: { code: 'unknown_tool', message: 'x' } };
+    }
+  };
+}
+
+describe('orchestrator — B2 publish gate (D1)', () => {
+  it('granted: explicit intent → publish executes → verified-live report with the URL', async () => {
+    const { emit } = collector();
+    const ran: string[] = [];
+    const res = await runAgent({
+      ...base,
+      executor: publishExecutor(ran),
+      publishGranted: true,
+      userMessage: 'Baue eine Umfrage und stell sie live.',
+      model: scriptedModel([
+        nativeTurn('write_file', { path: 'index.html', content: '<html>' }, 'Ich baue die Seite'),
+        nativeTurn('save_draft', {}, 'Ich sichere'),
+        nativeTurn('publish', {}, 'Ich stelle live'),
+        nativeTurn('finish', { report: 'Live gestellt.' }),
+      ]),
+      emit,
+    });
+    expect(ran).toContain('publish');
+    expect(res.report.state).toBe('published');
+    expect(res.report.publishedUrl).toBe('https://p1.vercel.app');
+    expect(res.report.followUps).toContain('open');
+    expect(res.toolsUsed).toContain('publish');
+  });
+
+  it('not granted: a publish call is DENIED before the deploy → draft-saved + chip', async () => {
+    const { emit, events } = collector();
+    const ran: string[] = [];
+    const res = await runAgent({
+      ...base,
+      executor: publishExecutor(ran),
+      publishGranted: false,
+      userMessage: 'Baue eine Umfrage.', // no publish signal
+      model: scriptedModel([
+        nativeTurn('write_file', { path: 'index.html', content: '<html>' }, 'Ich baue die Seite'),
+        nativeTurn('publish', {}, 'Ich stelle live'), // model tries anyway → denied
+        nativeTurn('save_draft', {}, 'Ich sichere den Entwurf'),
+        nativeTurn('finish', { report: 'Als Entwurf gesichert.' }),
+      ]),
+      emit,
+    });
+    expect(ran).not.toContain('publish'); // never reached the deploy
+    expect(res.report.state).toBe('draft-saved');
+    expect(res.report.publishedUrl).toBeUndefined();
+    expect(res.report.followUps).toContain('confirm-publish'); // the D1 chip
+    // the denial surfaced as a failed step in the log/stream (honest narration).
+    expect(res.steps.some((s) => s.tool === 'publish' && s.outcome === 'intent_required')).toBe(true);
+    expect(events.some((e) => e.type === 'agent_step' && e.tool === 'publish' && !e.ok)).toBe(true);
+  });
+
+  it('chip tap semantics: a publish-only granted run publishes and lands verified-live', async () => {
+    const { emit } = collector();
+    const ran: string[] = [];
+    const res = await runAgent({
+      ...base,
+      executor: publishExecutor(ran),
+      publishGranted: true, // the route sets this when the chip is tapped
+      userMessage: 'Jetzt veröffentlichen',
+      model: scriptedModel([
+        nativeTurn('publish', {}, 'Ich stelle live'),
+        nativeTurn('finish', { report: 'Live.' }),
+      ]),
+      emit,
+    });
+    expect(ran).toContain('publish');
+    expect(res.report.state).toBe('published');
+    expect(res.report.publishedUrl).toBe('https://p1.vercel.app');
   });
 });
