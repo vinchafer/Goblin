@@ -114,4 +114,47 @@ describe('trackCompletion — I0 attribution', () => {
     expect(inserted[1]).not.toHaveProperty('project_id');
     expect(inserted[1]).toMatchObject({ user_id: 'u1', tokens_in: 10 });
   });
+
+  // FEEL-3a — run_id links a billed model turn to its agent run (migration 0081),
+  // same pre-migration tolerance.
+  it('writes run_id when the column is accepted', async () => {
+    await trackCompletion({
+      userId: 'u1',
+      projectId: 'p1',
+      provider: 'goblin_hosted',
+      model: 'goblin/efficient',
+      tokensIn: 100,
+      tokensOut: 50,
+      runId: 'run-1',
+    });
+    expect(inserted).toHaveLength(1);
+    expect(inserted[0]).toMatchObject({ run_id: 'run-1' });
+  });
+
+  it('a non-agent completion leaves run_id null', async () => {
+    await trackCompletion({
+      userId: 'u1',
+      provider: 'groq',
+      model: 'llama-x',
+      tokensIn: 10,
+      tokensOut: 5,
+    });
+    expect(inserted[0]).toMatchObject({ run_id: null });
+  });
+
+  it('retries WITHOUT run_id when the column is absent — pre-migration tolerant', async () => {
+    results = [{ error: { message: 'column "run_id" does not exist' } }, { error: null }];
+    await trackCompletion({
+      userId: 'u1',
+      provider: 'goblin_hosted',
+      model: 'goblin/efficient',
+      tokensIn: 10,
+      tokensOut: 5,
+      runId: 'run-1',
+    });
+    expect(inserted).toHaveLength(2);
+    expect(inserted[0]).toHaveProperty('run_id', 'run-1');
+    expect(inserted[1]).not.toHaveProperty('run_id');
+    expect(inserted[1]).toMatchObject({ user_id: 'u1', tokens_in: 10 });
+  });
 });

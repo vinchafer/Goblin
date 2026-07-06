@@ -11,6 +11,14 @@ import { verifyDeployment } from '../services/deploy-verification';
 import { parseCodeBlocks } from '../lib/parse-code-blocks';
 import { reconcileBlockPaths } from '../lib/asset-reconcile';
 import logger from '../lib/logger';
+import { buildAgentSystemPrompt } from '../prompts/goblin-chat-system';
+import { parseGoblinTier } from '../services/goblin-hosted';
+import { agentEligibility } from '../services/agent/config';
+import { AGENT_TOOLS, buildToolExecutor } from '../services/agent/tools';
+import { getAgentModel } from '../services/agent/model-turn';
+import { runAgent } from '../services/agent/orchestrator';
+import { createAgentRun, finalizeAgentRun } from '../services/agent/run-store';
+import type { AgentMessage } from '../services/agent/types';
 
 type Variables = { userId: string };
 const codeSessions = new Hono<{ Variables: Variables }>();
@@ -513,6 +521,112 @@ codeSessions.post('/:sessionId/messages', async (c) => {
         model_used: modelUsed, state: 'error',
       }).then(() => {}, () => {});
       await stream.writeSSE({ data: JSON.stringify({ type: 'error', message: err instanceof Error ? err.message : 'Stream failed' }) });
+    }
+  });
+});
+
+// ─── POST /api/code-sessions/:sessionId/agent — the FEEL-3a agent run ────────────
+// The orchestrator loop drives tools (list/read/write_file, save_draft, finish) and
+// streams step events. Eligibility is gated server-side (flag/test-account + project
+// chat + Swift/Forge); an ineligible call falls through to today's /messages behavior
+// by returning 409 so the web can retry the classic path (no silent broken agent).
+codeSessions.post('/:sessionId/agent', async (c) => {
+  const userId = c.get('userId');
+  const sessionId = c.req.param('sessionId');
+  const body = (await c.req.json().catch(() => ({}))) as { prompt?: string; modelId?: string };
+  const prompt = (body.prompt ?? '').trim();
+  if (!prompt) return c.json({ error: 'prompt required' }, 400);
+
+  const sb = getSupabaseAdmin();
+  const session = await ownSession(sb, sessionId, userId);
+  if (!session) return c.json({ error: 'Session not found' }, 404);
+
+  const modelSlug = body.modelId || session.model_id || undefined;
+
+  // Eligibility (D2/D4 + flag): need the user's email for the test-account bypass.
+  const { data: userRow } = await sb.from('users').select('email').eq('id', userId).single();
+  const elig = agentEligibility({
+    userEmail: (userRow as { email?: string } | null)?.email ?? null,
+    projectId: session.project_id,
+    modelSlug,
+  });
+  if (!elig.eligible) {
+    // Not an error — the web should use the classic /messages path instead.
+    return c.json({ error: 'agent_not_eligible', reason: elig.reason }, 409);
+  }
+  const tier = parseGoblinTier(modelSlug)!; // eligibility guarantees a Goblin tier
+
+  // Mirror the project's real files into the session so the tools see actual code.
+  await hydrateSessionFiles(sb, sessionId, session.project_id, userId);
+
+  // Persist the user turn (same thread the classic path writes to).
+  await sb.from('code_session_messages').insert({
+    session_id: sessionId, user_id: userId, role: 'user', content: prompt, state: 'complete',
+  });
+
+  // Build the agent system prompt with the project's file list (contents are read on
+  // demand via read_file, keeping the injected context small).
+  const [{ data: sessionFiles }, { data: priorMsgs }, { data: project }] = await Promise.all([
+    sb.from('code_session_files').select('path, content').eq('session_id', sessionId),
+    sb.from('code_session_messages').select('role, content')
+      .eq('session_id', sessionId).order('created_at', { ascending: true }).limit(30),
+    sb.from('projects').select('name').eq('id', session.project_id).single(),
+  ]);
+  const systemPrompt = buildAgentSystemPrompt({
+    projectName: (project as { name?: string } | null)?.name ?? 'Projekt',
+    files: (sessionFiles ?? []).map((f) => ({ path: f.path as string, size: (f.content as string)?.length ?? 0 })),
+  });
+  // History excludes the just-inserted user turn (passed as userMessage).
+  const history: AgentMessage[] = (priorMsgs ?? []).slice(0, -1)
+    .map((m) => ({ role: m.role === 'assistant' ? 'assistant' : 'user', content: m.content as string }) as AgentMessage);
+
+  const runId = await createAgentRun({
+    userId, projectId: session.project_id, model: modelSlug!, sourceTier: 'goblin_hosted',
+  });
+
+  return streamSSE(c, async (stream) => {
+    await stream.writeSSE({ data: JSON.stringify({ type: 'meta', model_slug: modelSlug, run_id: runId }) });
+    try {
+      const result = await runAgent({
+        runId,
+        userId,
+        projectId: session.project_id,
+        sessionId,
+        modelSlug: tier,
+        systemPrompt,
+        userMessage: prompt,
+        history,
+        tools: AGENT_TOOLS,
+        executor: buildToolExecutor(sb),
+        model: getAgentModel(tier),
+        stopSignal: c.req.raw.signal,
+        emit: async (evt) => { await stream.writeSSE({ data: JSON.stringify(evt) }); },
+      });
+
+      // Persist the run row (step log + outcome) and the final assistant message.
+      await finalizeAgentRun(runId ?? '', {
+        status: result.status,
+        outcome: result.outcome,
+        inputTokens: result.tokensIn,
+        outputTokens: result.tokensOut,
+        steps: result.steps,
+        toolsUsed: result.toolsUsed,
+        iterations: result.iterations,
+      });
+      await sb.from('code_session_messages').insert({
+        session_id: sessionId, user_id: userId, role: 'assistant',
+        content: result.report.modelText, model_used: modelSlug,
+        state: result.status === 'failed' ? 'error' : 'complete',
+      });
+      await sb.from('code_sessions').update({ updated_at: new Date().toISOString() }).eq('id', sessionId);
+
+      await stream.writeSSE({ data: JSON.stringify({ type: 'done', outcome: result.outcome, run_id: runId }) });
+    } catch (err) {
+      // Fatal orchestration error — persist what we can, tell the truth.
+      await finalizeAgentRun(runId ?? '', {
+        status: 'failed', outcome: 'error', steps: [], toolsUsed: [], iterations: 0,
+      }).catch(() => {});
+      await stream.writeSSE({ data: JSON.stringify({ type: 'error', message: err instanceof Error ? err.message : 'Agent-Lauf fehlgeschlagen' }) });
     }
   });
 });

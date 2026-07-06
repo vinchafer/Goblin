@@ -11,15 +11,18 @@
   "dependencies": {
     "zod": "^3.23.0",
     "@supabase/ssr": "^0.6.0",
-    "@supabase/supabase-js": "^2.45.0"
+    "@supabase/supabase-js": "^2.45.0",
+    "diff": "^9.0.0"
   },
   "devDependencies": {
-    "typescript": "^5.5"
+    "typescript": "^5.5",
+    "@types/diff": "^8.0.0"
   },
   "exports": {
     ".": "./src/index.ts",
     "./src/schemas": "./src/schemas.ts",
     "./src/html-refs": "./src/html-refs.ts",
-    "./src/stc-integrity": "./src/stc-integrity.ts"
+    "./src/stc-integrity": "./src/stc-integrity.ts",
+    "./src/file-classify": "./src/file-classify.ts"
   }
 }
