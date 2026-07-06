@@ -3,34 +3,19 @@
 // Used by the Send-to-Code preview sheet (GEÄNDERT/NEU/IDENTISCH badges, diff
 // preview) and the chat file-card change summary ("ändert index.html · +12 −3").
 
-import { diffLines, structuredPatch } from 'diff';
+import { structuredPatch } from 'diff';
 
-export type FileStatus = 'new' | 'changed' | 'identical';
-
-export interface LineDelta {
-  added: number;
-  removed: number;
-}
+// U2 classification (classifyFile / lineDelta) is now the single source in
+// @goblin/shared so the API's FEEL-3a agent write_file tool returns the SAME
+// GEÄNDERT/NEU/IDENTISCH + line delta. Re-exported here so existing web imports
+// (StcPreviewSheet, FileCardList, CodeBlock, DiffSheet) are untouched.
+export { classifyFile, lineDelta, type FileStatus, type LineDelta } from '@goblin/shared';
 
 // Line endings and a missing trailing newline are presentation noise, not a
-// content change — LLM output routinely drops the final newline.
+// content change — LLM output routinely drops the final newline. (Local to the
+// render-only unified diff below; the shared module normalizes independently.)
 function normalize(s: string): string {
   return s.replace(/\r\n/g, '\n').replace(/\n+$/, '');
-}
-
-export function classifyFile(existing: string | null | undefined, incoming: string): FileStatus {
-  if (existing == null) return 'new';
-  return normalize(existing) === normalize(incoming) ? 'identical' : 'changed';
-}
-
-export function lineDelta(oldStr: string, newStr: string): LineDelta {
-  let added = 0;
-  let removed = 0;
-  for (const part of diffLines(normalize(oldStr) + '\n', normalize(newStr) + '\n')) {
-    if (part.added) added += part.count ?? 0;
-    else if (part.removed) removed += part.count ?? 0;
-  }
-  return { added, removed };
 }
 
 export interface DiffLine {
