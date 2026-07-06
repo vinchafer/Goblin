@@ -16,6 +16,9 @@ vi.mock('../file-storage', () => ({
   getFile: (...a: unknown[]) => (storage.getFile as (...x: unknown[]) => unknown)(...a),
   uploadFile: (...a: unknown[]) => (storage.uploadFile as (...x: unknown[]) => unknown)(...a),
   headBytes: (...a: unknown[]) => (storage.headBytes as (...x: unknown[]) => unknown)(...a),
+  // FEEL-3b: publish.ts (imported transitively via tools.ts) pulls listFiles/downloadFile.
+  listFiles: vi.fn(async () => [] as string[]),
+  downloadFile: vi.fn(async () => ''),
 }));
 vi.mock('../storage-usage', () => ({
   byteLen: (s: string) => Buffer.byteLength(s, 'utf8'),

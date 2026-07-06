@@ -49,6 +49,8 @@ export interface ToolContext {
   userId: string;
   projectId: string;
   sessionId: string;
+  /** FEEL-3b: sub-step progress sink (deploy/verify narration, "wird geprüft 3/6"). */
+  emitProgress?: (msg: string) => void | Promise<void>;
 }
 
 /** One entry in the file list of the final report — from real classify results. */
