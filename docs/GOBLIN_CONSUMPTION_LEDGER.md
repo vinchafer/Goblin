@@ -100,8 +100,40 @@ Deploy truth-gating (P0.2: HTTP checks only) · STC integrity checks (client/sha
   (constants VERIFIED `anchor-message.ts`) — widen with prod telemetry once anchored sends are measurable
   (attributable via I0 `completion_costs.project_id` + `chat_session_id`).
 
+### M10 — Agent run (FEEL-3a, the loop, safe half)
+- **Trigger:** a project chat on an agent-eligible model (Goblin Swift default / Forge opt-in, D2),
+  with the `AGENT_LOOP` flag on (or the test account), runs the server-side orchestrator loop
+  (`apps/api/src/services/agent/orchestrator.ts`) instead of a single completion. One run = N model
+  turns, each of which may call a tool (`list_files`/`read_file`/`write_file`/`save_draft`/`finish`)
+  whose result is fed back as the next turn's input. **Safe half only — no `publish` / `read_deploy_status`
+  (those are FEEL-3b); a run lands as a saved/unsaved draft, never a live deploy.**
+- **Tokens (per run):** Σ over turns of (injected context + accumulated **step history** + tool results
+  as input) + narration/tool-call tokens as output. The step history is the A19 driver: each turn re-sends
+  the prior turns' assistant messages + tool results, so input grows ~linearly with iteration count —
+  **capped structurally by the iteration budget** (below). Typical Swift run (small project, 3–5 turns,
+  ~5k injected context + growing tool results) ≈ **60–150k weighted units**.
+- **Billed to:** **user allowance** — user-initiated work. Every model turn flows through the existing
+  `trackCompletion` with the new **`run_id`** (migration 0081) so `completion_costs` rows for a run are
+  summable (the report's cost line + telemetry). No special path; same weighted accounting as M1/M2.
+- **Weighting:** one run uses one model, so `runWeightedUnits` (`config.ts`) applies `FORGE_WEIGHT` (4.4×,
+  `goblin-cap.ts:48`) for Forge, 1× for Swift — a Forge run costs ~4.4× a Swift run of the same tokens.
+- **Budget knobs (enforced by the orchestrator, forced truthful finish on breach):**
+  - `AGENT_MAX_ITERATIONS` (default **8**) — max model turns/run (`config.ts` `agentMaxIterations`).
+  - `AGENT_MAX_UNITS` (default **200_000**) — max weighted units/run (`config.ts` `agentMaxUnits`).
+  On breach the loop stops and emits "Budget erreicht — Stand: …" (`outcome='budget'`), never an infinite loop.
+- **Cost:** at Swift blended ≈ $0.162/M units → 60–150k units ≈ **$0.012–0.03/run**; Forge ≈ 4.4× that.
+  A Trial (4.9M units) affords ~30–80 Swift runs; the Build plan ~120–290. Healthy against the allowance.
+- **A19 note:** step history accumulates per turn WITHIN a run; the iteration cap (8) bounds it — a run can
+  never silently grow context without limit. Persisted to `agent_runs.step_log` (0081) for post-merge
+  reconciliation.
+- **CFO dependency:** A6 (exhaustion — agent runs are the heaviest single user action), A19 (step-history
+  growth). | Status: FORMULA — reconcile with A6/M10 actuals 1 week post-merge (the standing telemetry
+  protocol), using `agent_runs` + `completion_costs.run_id`.
+
 ### M6 — Reserved (not yet built; add rows before shipping)
-Web search / Recherche (feature-flagged off) · extended thinking · FEEL-3 agent loop (tool-calling turns — will dominate this ledger when built; **cost model required before merge**).
+Web search / Recherche (feature-flagged off) · extended thinking · FEEL-3**b** agent publish (`publish` +
+`read_deploy_status` + bounded self-heal — cost model required before the 3b merge). *FEEL-3a agent loop
+(safe half) is now **M10** above.*
 
 ---
 
