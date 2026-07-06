@@ -243,7 +243,7 @@ export default function LocalSettingsPage() {
       {/* Install Ollama */}
       <div style={{
         marginTop: 28,
-        background: 'var(--paper)', border: '1px solid var(--border)',
+        background: 'var(--surface)', border: '1px solid var(--border)',
         borderRadius: 10, padding: '14px 16px',
       }}>
         <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-sans)', marginBottom: 6 }}>
@@ -275,7 +275,7 @@ export default function LocalSettingsPage() {
 function HwBadge({ label, value }: { label: string; value: string }) {
   return (
     <div style={{
-      background: 'var(--paper)', border: '1px solid var(--border)',
+      background: 'var(--surface)', border: '1px solid var(--border)',
       borderRadius: 7, padding: '6px 12px',
       display: 'flex', flexDirection: 'column', gap: 2,
       minWidth: 80,

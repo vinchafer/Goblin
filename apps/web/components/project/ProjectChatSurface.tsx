@@ -85,7 +85,7 @@ export function ProjectChatSurface({ projectId, projectName }: { projectId: stri
 
   if (!state) {
     return (
-      <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bone)' }}>
+      <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--surface-2)' }}>
         <GoblinLogo state="breath" size={28} variant="green" />
       </div>
     );

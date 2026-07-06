@@ -19,6 +19,7 @@ import { StatusStrip } from "./StatusStrip";
 import { FileCardList } from "./FileCardList";
 import { Reader } from "./Reader";
 import { DiffSheet } from "./DiffSheet";
+import { VercelConnectSheet } from "./VercelConnectSheet";
 import { LineActionSheet } from "./LineActionSheet";
 import { EditorSearchOverlay } from "./EditorSearchOverlay";
 import { JitCard } from "./JitCard";
@@ -29,7 +30,7 @@ import { useRouter } from "next/navigation";
 import type { CommandAnchor } from "./CommandBar";
 import { buildAnchoredMessage } from "@/lib/anchor-message";
 import { useIsMobile } from "@/hooks/use-is-mobile";
-import { fetchAllTextFiles } from "@/lib/project-files";
+import { fetchAllTextFilesWithStatus } from "@/lib/project-files";
 import { lineDelta } from "@/lib/file-compare";
 import { useLang, t } from "@/lib/use-lang";
 import { createTwoFilesPatch } from "diff";
@@ -91,8 +92,15 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
   // Saved base map (project storage) — a reloaded draft row no longer carries
   // its pre-edit base, so GEÄNDERT/NEU + line deltas are computed against this.
   const [baseFiles, setBaseFiles] = useState<Record<string, string>>({});
+  // P1.7: paths whose saved base could not be fetched (429 past retry budget) —
+  // these must NOT render a confident NEU badge (base unknown, not absent).
+  const [unknownBase, setUnknownBase] = useState<ReadonlySet<string>>(new Set());
   const [deployConfirm, setDeployConfirm] = useState(false);
   const [deploying, setDeploying] = useState(false);
+  // P1.11: the publish-moment JIT for a missing Vercel connection. Opened when a
+  // token-less "Live stellen" is detected (pre-check, or a NO_VERCEL_TOKEN deploy
+  // error) so the user connects inline instead of hitting a dead end.
+  const [vercelJit, setVercelJit] = useState(false);
   // M4: the inline truth-gated publish stream. `message` mirrors the server's
   // progress (incl. "wird geprüft, n/6"); phase never becomes "live" until the
   // server's success event — no completion claim before the checks pass.
@@ -111,6 +119,11 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
   const router = useRouter();
   const [showUpgradeCard, setShowUpgradeCard] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  // P1.2(b): "Goblin arbeitet… <n>s" while a command runs, and the change pop-up
+  // header once the result lands. workingSeconds ticks while agent.streaming;
+  // changeSummary is the number of files the turn touched (null = no banner).
+  const [workingSeconds, setWorkingSeconds] = useState<number | null>(null);
+  const [changeSummary, setChangeSummary] = useState<number | null>(null);
   const [liveUrl, setLiveUrl] = useState<string | null>(null);
   const [liveDismissed, setLiveDismissed] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -173,7 +186,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
   useEffect(() => {
     if (!projectId) return;
     let cancelled = false;
-    fetchAllTextFiles(projectId).then(m => { if (!cancelled) setBaseFiles(m); }).catch(() => {});
+    fetchAllTextFilesWithStatus(projectId).then(r => { if (!cancelled) { setBaseFiles(r.files); setUnknownBase(r.unknownPaths); } }).catch(() => {});
     return () => { cancelled = true; };
   }, [projectId]);
 
@@ -222,6 +235,18 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
     return agent.blocks[agent.blocks.length - 1] ?? null;
   }, [agent.streaming, agent.blocks]);
 
+  // P1.2(b): tick the "Goblin arbeitet… <n>s" counter for as long as the command
+  // is streaming. Resets to null the moment streaming ends (the change pop-up
+  // takes over). Visible within one frame of submit, so the Code surface never
+  // sits silent after a send.
+  useEffect(() => {
+    if (!agent.streaming) { setWorkingSeconds(null); return; }
+    setWorkingSeconds(0);
+    const startedAt = Date.now();
+    const iv = setInterval(() => setWorkingSeconds(Math.max(0, Math.floor((Date.now() - startedAt) / 1000))), 1000);
+    return () => clearInterval(iv);
+  }, [agent.streaming]);
+
   // ── Undo / Redo (CodeMirror history) ──
   // The editor stays mounted across the AI boundary (the live stream is a separate
   // overlay), so an AI generation lands as ONE undoable transaction via the
@@ -260,6 +285,12 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
       agent.reset();
       setMobileView("editor");
       maybeOpenReviewCard(text);
+      // P1.2(b): announce the result on the Code surface — the change pop-up
+      // header. Count the distinct files this turn produced (new + edited).
+      const changed = new Set(
+        parseCodeBlocks(text).filter(b => b.complete && b.path).map(b => b.path),
+      ).size;
+      if (changed > 0) setChangeSummary(changed);
     }, detail.activePath);
     setMobileView("editor");
   };
@@ -473,6 +504,13 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
   // published state before the checks pass.
   const liveStellen = async () => {
     setDeployConfirm(false);
+    // P1.11: detect a missing Vercel connection BEFORE attempting the deploy — a
+    // token-less publish must never dead-end. Open the connect JIT instead; it
+    // resumes this same flow (onConnected → liveStellen) after connecting.
+    try {
+      const v = await apiGet<{ connected: boolean }>("/api/integrations/vercel");
+      if (!v?.connected) { setVercelJit(true); return; }
+    } catch { /* status unreachable — fall through; the deploy path still guards NO_VERCEL_TOKEN */ }
     setDeploying(true);
     setPublishStream({ phase: "publishing", message: "Sichere Änderungen …" });
     if (detail.draftCount > 0) {
@@ -509,6 +547,9 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
         })
         .catch(() => {});
     } else {
+      // P1.11: if the deploy failed purely for a missing token, don't show a raw
+      // error — open the connect JIT (belt-and-suspenders behind the pre-check).
+      if (/NO_VERCEL_TOKEN/.test(error ?? "")) { setPublishStream(null); setVercelJit(true); return; }
       const msg = (error ?? "Veröffentlichen fehlgeschlagen").replace(/^NO_VERCEL_TOKEN —\s*/, "");
       setPublishStream({ phase: "error", message: msg });
     }
@@ -625,6 +666,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
           <StatusStrip
             state={liveBlock ? "draft" : state}
             draftCount={detail.draftCount}
+            workingSeconds={agent.streaming ? (workingSeconds ?? 0) : null}
             liveUrl={detail.deployedAt ? (liveUrl ?? detail.deployUrl ?? null) : null}
             lastDeployedRel={lastDeployedRel}
             jit={showUpgradeCard
@@ -650,6 +692,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
               <FileCardList
                 files={detail.files}
                 baseFiles={baseFiles}
+                unknownBase={unknownBase}
                 onOpenReader={openReader}
                 onOpenDiff={openDiff}
               />
@@ -815,16 +858,40 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
         {/* Persistent live URL — stays put after deploy (replaces the old toast
             that vanished after a few seconds). Survives reopen via detail.deployUrl. */}
         {liveUrl && !liveDismissed && (
-          <div style={{ flexShrink: 0, borderTop: "1px solid var(--ed-rule)", background: "var(--ed-canvas)", padding: "10px 14px", display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#6db97b", flexShrink: 0 }} />
-            <span style={{ fontSize: 11, fontWeight: 600, color: "var(--ed-fg-3)", fontFamily: "var(--font-sans)", textTransform: "uppercase", letterSpacing: "0.06em", flexShrink: 0 }}>Live{lastDeployedRel ? ` · aktualisiert ${lastDeployedRel}` : ""}</span>
+          <div data-testid="live-url-card" data-stale={hasUnpublished ? "1" : "0"} style={{ flexShrink: 0, borderTop: "1px solid var(--ed-rule)", background: "var(--ed-canvas)", padding: "10px 14px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            {/* P1.3: when unpublished drafts exist the live URL points at an OLDER
+                deploy. Say so plainly (amber, not a reassuring green), demote
+                "Öffnen" to a neutral secondary, and let "Live stellen" (the action
+                bar below) be the sole primary. After a verified publish drafts are
+                gone → "Live · aktuell" and Öffnen is prominent again. */}
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: hasUnpublished ? "var(--ed-draft)" : "#6db97b", flexShrink: 0 }} />
+            {hasUnpublished ? (
+              <span data-testid="live-state-label" style={{ flex: 1, minWidth: 140, fontSize: 12, fontWeight: 600, color: "var(--ed-draft)", fontFamily: "var(--font-sans)", lineHeight: 1.35 }}>
+                {t(lang, "Live · älterer Stand — Änderungen noch nicht veröffentlicht", "Live · older version — changes not published yet")}
+              </span>
+            ) : (
+              <span data-testid="live-state-label" style={{ fontSize: 11, fontWeight: 600, color: "var(--ed-fg-3)", fontFamily: "var(--font-sans)", textTransform: "uppercase", letterSpacing: "0.06em", flexShrink: 0 }}>
+                {t(lang, "Live · aktuell", "Live · current")}{lastDeployedRel ? ` · ${t(lang, "aktualisiert", "updated")} ${lastDeployedRel}` : ""}
+              </span>
+            )}
             <a href={liveUrl} target="_blank" rel="noopener noreferrer" title={liveUrl} style={{ flex: 1, minWidth: 0, color: "var(--ed-accent)", fontFamily: "JetBrains Mono, monospace", fontSize: 12, textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {liveUrl.replace(/^https?:\/\//, "")}
             </a>
             <button onClick={copyLiveUrl} title="URL kopieren" style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "transparent", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-2)", borderRadius: 8, padding: "5px 10px", fontSize: 12, cursor: "pointer", fontFamily: "var(--font-sans)", flexShrink: 0 }}>
               <Icon name={copied ? "check" : "copy"} size={12} /> {copied ? "Kopiert" : "Kopieren"}
             </button>
-            <a href={liveUrl} target="_blank" rel="noopener noreferrer" title="Im neuen Tab öffnen" style={{ display: "inline-flex", alignItems: "center", background: "var(--ed-primary)", color: "var(--ed-on-primary)", borderRadius: 8, padding: "5px 10px", fontSize: 12, fontWeight: 600, textDecoration: "none", flexShrink: 0, gap: 5 }}>
+            <a
+              href={liveUrl} target="_blank" rel="noopener noreferrer"
+              title={hasUnpublished ? t(lang, "Älteren, veröffentlichten Stand öffnen", "Open the older, published version") : "Im neuen Tab öffnen"}
+              data-testid="live-oeffnen"
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 5, flexShrink: 0,
+                borderRadius: 8, padding: "5px 10px", fontSize: 12, fontWeight: 600, textDecoration: "none",
+                background: hasUnpublished ? "transparent" : "var(--ed-primary)",
+                color: hasUnpublished ? "var(--ed-fg-2)" : "var(--ed-on-primary)",
+                border: hasUnpublished ? "1px solid var(--ed-rule)" : "none",
+              }}
+            >
               <Icon name="play" size={12} /> Öffnen
             </a>
             <button onClick={() => setLiveDismissed(true)} aria-label="Ausblenden" title="Ausblenden" style={{ background: "transparent", border: "none", color: "var(--ed-fg-3)", cursor: "pointer", flexShrink: 0, display: "inline-flex", alignItems: "center" }}>
@@ -937,6 +1004,14 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
         </div>
       </div>
 
+      {/* P1.11: publish-moment JIT — connect Vercel inline, then resume the publish. */}
+      {vercelJit && (
+        <VercelConnectSheet
+          onClose={() => setVercelJit(false)}
+          onConnected={() => { setVercelJit(false); void liveStellen(); }}
+        />
+      )}
+
       {/* Deploy confirm */}
       {deployConfirm && (
         <>
@@ -1002,6 +1077,33 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
           Rendered only when the mobile strip isn't showing it, so never doubled. */}
       {showUpgradeCard && !mobile && (
         <AchievementUpgradeCard variant="toast" onUpgrade={upgradeCardOpen} onLater={upgradeCardLater} />
+      )}
+
+      {/* P1.2(b): the change pop-up header — announced on the Code surface the
+          moment a command result lands, so the edit is never silent. Tapping
+          "Änderungen prüfen" foregrounds the review (the GEÄNDERT card / file
+          list); the DiffModal review queue opens beneath for edited files. */}
+      {changeSummary != null && (
+        <div
+          data-testid="change-summary"
+          role="status"
+          style={{ position: "absolute", top: 12, left: "50%", transform: "translateX(-50%)", zIndex: 92, maxWidth: "calc(100% - 24px)", background: "var(--ed-chrome-2, var(--ed-canvas))", border: "1px solid var(--ed-rule)", borderRadius: 12, padding: "10px 12px 10px 14px", display: "flex", alignItems: "center", gap: 12, boxShadow: "0 12px 32px rgba(15,43,30,0.28)" }}
+        >
+          <GoblinLogo state="breath" size={18} variant="gold" />
+          <span style={{ fontSize: 13, fontFamily: "var(--font-sans)", color: "var(--ed-fg-1)", fontWeight: 600 }}>
+            {t(lang, `Goblin hat ${changeSummary} ${changeSummary === 1 ? "Datei" : "Dateien"} geändert`, `Goblin changed ${changeSummary} ${changeSummary === 1 ? "file" : "files"}`)} — {t(lang, "prüfe die Änderungen", "review the changes")}
+          </span>
+          <button
+            data-testid="change-summary-review"
+            onClick={() => { setChangeSummary(null); setMobileView("editor"); if (mobile) setMobileMain("cards"); }}
+            style={{ flexShrink: 0, background: "var(--ed-primary)", border: "none", color: "var(--ed-on-primary)", borderRadius: 8, padding: "6px 12px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "var(--font-sans)" }}
+          >
+            {t(lang, "Änderungen prüfen", "Review changes")}
+          </button>
+          <button onClick={() => setChangeSummary(null)} aria-label={t(lang, "Schließen", "Close")} style={{ flexShrink: 0, background: "transparent", border: "none", color: "var(--ed-fg-3)", cursor: "pointer", display: "inline-flex", alignItems: "center" }}>
+            <Icon name="close" size={14} />
+          </button>
+        </div>
       )}
 
       {/* Toast */}

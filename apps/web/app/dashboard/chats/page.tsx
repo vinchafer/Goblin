@@ -79,7 +79,7 @@ export default function ChatsOverviewPage() {
   };
 
   return (
-    <div style={{ minHeight: '100%', background: 'var(--paper)', padding: '20px 16px 96px' }}>
+    <div style={{ minHeight: '100%', background: 'var(--surface-page)', padding: '20px 16px 96px' }}>
       <div style={{ maxWidth: 760, margin: '0 auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, gap: 12 }}>
           <h1 style={{ margin: 0, fontFamily: 'var(--font-dash-display), Manrope, sans-serif', fontSize: 'var(--t-h2-fs)', lineHeight: 'var(--t-h2-lh)', color: 'var(--text)' }}>

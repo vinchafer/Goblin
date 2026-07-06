@@ -77,14 +77,39 @@ export function CodeBlock({ code, lang, filename, asCard }: CodeBlockProps) {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // Document-class card? (md/txt filename, or a filename-less prose block.)
+  // Gates "Als PDF speichern" AND — P1.4 — gives übernehmen a target path when
+  // the model emitted a document with no explicit filename.
+  const docExt = (() => {
+    const e = filename ? filename.slice(filename.lastIndexOf('.') + 1).toLowerCase() : '';
+    const l = (lang ?? '').toLowerCase();
+    if (['md', 'markdown', 'txt'].includes(e)) return true;
+    if (!filename && ['', 'markdown', 'md', 'text', 'plaintext'].includes(l)) return true;
+    return false;
+  })();
+  // P1.4: derive a sensible target path for a filename-less document so it can be
+  // taken into the project through the SAME STC pipeline as code cards. Founder
+  // repro: a generated REPORT.md prose card offered only PDF/download/copy — no
+  // "Ins Projekt übernehmen" — because übernehmen required an explicit filename.
+  // Prefer the first markdown heading as the slug; fall back to Dokument.md.
+  const deriveDocName = (): string => {
+    const heading = code.match(/^\s*#\s+(.+?)\s*$/m)?.[1];
+    const slug = heading
+      ? heading.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40)
+      : '';
+    return `${slug || (langPref === 'en' ? 'document' : 'dokument')}.md`;
+  };
+  const stcTarget = filename || (docExt ? deriveDocName() : null);
+
   // C3: per-card "Ins Projekt übernehmen". Only when a chat host provides the
-  // handler AND this card resolves to a filename (a real target path).
+  // handler AND this card resolves to a target path (a real filename, or a
+  // derived name for a filename-less document — P1.4).
   const onCardStc = useCardSendToCode();
-  const canStc = !!onCardStc && !!filename && code.trim().length > 0;
+  const canStc = !!onCardStc && !!stcTarget && code.trim().length > 0;
   const stcLabel = langPref === 'en' ? 'Add to project' : 'Ins Projekt übernehmen';
   const handleStc = (e?: React.MouseEvent | React.KeyboardEvent) => {
     e?.stopPropagation();
-    if (filename && onCardStc) onCardStc({ path: filename, content: code });
+    if (stcTarget && onCardStc) onCardStc({ path: stcTarget, content: code });
   };
   const StcAction = canStc ? (
     <span
@@ -138,14 +163,8 @@ export function CodeBlock({ code, lang, filename, asCard }: CodeBlockProps) {
 
   // C4c: "Als PDF speichern" for document-class cards (md / plain prose) — opens a
   // clean print view; the browser / iOS print-to-PDF does the rest (no server PDF
-  // rendering in v1). Gated to document outputs so we don't offer it on raw code.
-  const docExt = (() => {
-    const e = filename ? filename.slice(filename.lastIndexOf('.') + 1).toLowerCase() : '';
-    const l = (lang ?? '').toLowerCase();
-    if (['md', 'markdown', 'txt'].includes(e)) return true;
-    if (!filename && ['', 'markdown', 'md', 'text', 'plaintext'].includes(l)) return true;
-    return false;
-  })();
+  // rendering in v1). Gated to document outputs (docExt, computed above) so we
+  // don't offer it on raw code.
   const pdfLabel = langPref === 'en' ? 'Save as PDF' : 'Als PDF speichern';
   const handlePrintPdf = (e?: React.MouseEvent | React.KeyboardEvent) => {
     e?.stopPropagation();

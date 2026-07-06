@@ -239,7 +239,7 @@ export function ChatTab({ projectId }: ChatTabProps) {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--paper)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--surface-page)' }}>
       <FirstChatTip />
 
       {/* FIX C: No model configured banner */}

@@ -21,7 +21,7 @@ export function ScrollToEndChip({ onClick, bottom = 12 }: { onClick: () => void;
         padding: "6px 14px",
         borderRadius: 999,
         border: "1px solid var(--div, #DDD7CC)",
-        background: "var(--bone, #fff)",
+        background: "var(--panel)",
         color: "var(--brand-green, #2D4A2B)",
         fontSize: 12.5,
         fontWeight: 600,

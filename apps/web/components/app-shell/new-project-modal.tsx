@@ -110,7 +110,7 @@ export function NewProjectModal({ onClose, onProjectCreated }: NewProjectModalPr
     <dialog
       ref={dialogRef}
       style={{
-        backgroundColor: '#fff',
+        backgroundColor: 'var(--panel)',
         border: '1px solid var(--div)',
         borderRadius: 18,
         boxShadow: '0 24px 64px rgba(0,0,0,0.18)',
@@ -153,7 +153,7 @@ export function NewProjectModal({ onClose, onProjectCreated }: NewProjectModalPr
                 width: '100%', padding: '10px 14px', borderRadius: 9,
                 border: '1.5px solid var(--div)', fontSize: 'var(--t-small-fs)',
                 fontFamily: 'var(--font-sans)', color: 'var(--text)',
-                outline: 'none', boxSizing: 'border-box', background: '#fff',
+                outline: 'none', boxSizing: 'border-box', background: 'var(--surface)',
               }}
               onFocus={e => (e.target.style.borderColor = 'var(--brand-green)')}
               onBlur={e => (e.target.style.borderColor = 'var(--div)')}
@@ -180,7 +180,7 @@ export function NewProjectModal({ onClose, onProjectCreated }: NewProjectModalPr
                 border: '1.5px solid var(--div)', fontSize: 13,
                 fontFamily: 'var(--font-sans)', color: 'var(--text)',
                 outline: 'none', resize: 'none', boxSizing: 'border-box',
-                lineHeight: 1.5, background: '#fff',
+                lineHeight: 1.5, background: 'var(--surface)',
               }}
               onFocus={e => (e.target.style.borderColor = 'var(--brand-green)')}
               onBlur={e => (e.target.style.borderColor = 'var(--div)')}

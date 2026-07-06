@@ -19,7 +19,16 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { API_URL, getAuthHeaders } from '@/lib/api';
 
 export type DictationMode = 'speech' | 'server';
-export type DictationStatus = 'idle' | 'listening' | 'processing' | 'error';
+// 'pending' = permission prompt is up / stream is opening but not yet capturing.
+export type DictationStatus = 'idle' | 'pending' | 'listening' | 'processing' | 'error';
+
+// P1.6: the one honest message for a blocked / denied microphone. Desktop Web
+// Speech otherwise fails silently on a denied permission ("the mic did nothing").
+function micBlockedMsg(lang: 'de' | 'en'): string {
+  return lang === 'en'
+    ? 'Microphone is blocked — allow access via the lock icon in the address bar.'
+    : 'Mikrofon ist blockiert — erlaube den Zugriff über das Schloss-Symbol in der Adressleiste.';
+}
 
 interface UseDictationOptions {
   lang: 'de' | 'en';
@@ -93,6 +102,11 @@ export function useDictation({ lang, onStart, onTranscript, onError }: UseDictat
         setStatus('idle');
         return;
       }
+      // P1.6: a denied/blocked mic is the founder's "did nothing" case — name it.
+      if (e?.error === 'not-allowed' || e?.error === 'service-not-allowed') {
+        fail(micBlockedMsg(lang));
+        return;
+      }
       fail(lang === 'en' ? "Couldn't hear you — please try again." : 'Ich konnte dich nicht hören — bitte nochmal.');
     };
     recognition.onend = () => setStatus((s) => (s === 'error' ? s : 'idle'));
@@ -142,8 +156,14 @@ export function useDictation({ lang, onStart, onTranscript, onError }: UseDictat
     let stream: MediaStream;
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    } catch {
-      fail(lang === 'en' ? 'No microphone access.' : 'Kein Mikrofonzugriff.');
+    } catch (err) {
+      // P1.6: distinguish a denied/blocked permission (actionable hint) from a
+      // genuinely missing device.
+      const name = (err as { name?: string } | null)?.name;
+      const denied = name === 'NotAllowedError' || name === 'SecurityError';
+      fail(denied
+        ? micBlockedMsg(lang)
+        : (lang === 'en' ? 'No microphone found.' : 'Kein Mikrofon gefunden.'));
       return;
     }
     const mr = new MediaRecorder(stream);
@@ -171,11 +191,25 @@ export function useDictation({ lang, onStart, onTranscript, onError }: UseDictat
   }, [lang, uploadRecording, fail]);
 
   // ── Public controls ────────────────────────────────────────────────────────
-  const start = useCallback(() => {
-    if (status === 'listening' || status === 'processing') return;
+  const start = useCallback(async () => {
+    if (status === 'listening' || status === 'processing' || status === 'pending') return;
+    // P1.6: honest permission pre-check. A denied mic otherwise fails silently on
+    // desktop Web Speech (recognition just never starts) — surface the unblock
+    // hint immediately instead of leaving the click looking dead. The Permissions
+    // API may be unavailable or not expose 'microphone'; if so we fall through and
+    // the path-level handlers still catch the denial.
+    try {
+      const perms = (navigator as Navigator & { permissions?: Permissions }).permissions;
+      if (perms?.query) {
+        const st = await perms.query({ name: 'microphone' as PermissionName });
+        if (st.state === 'denied') { fail(micBlockedMsg(lang)); return; }
+      }
+    } catch { /* Permissions API unavailable — continue; handlers below still catch denial. */ }
+    // 'pending' drives the listening-pending indicator while the prompt is up.
+    setStatus('pending');
     if (mode === 'speech') startSpeech();
     else void startServer();
-  }, [mode, status, startSpeech, startServer]);
+  }, [mode, status, lang, startSpeech, startServer, fail]);
 
   const stop = useCallback(() => {
     if (mode === 'speech') {

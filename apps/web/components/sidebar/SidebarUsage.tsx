@@ -105,7 +105,9 @@ export function SidebarUsage() {
             fontSize: 'var(--t-mono-fs)', fontWeight: 600,
             color: hot ? 'var(--brand-gold-ink, #7A5A12)' : 'var(--ink-1, #0F2B1E)',
           }}>
-            {pct}&nbsp;%
+            {/* P1.10: "0 %" alone read ambiguously (0% left? 0% used?). Say it
+                plainly — this is percent CONSUMED, matching the usage page. */}
+            {pct}&nbsp;% {t(lang, 'verbraucht', 'used')}
           </span>
         </div>
         <div

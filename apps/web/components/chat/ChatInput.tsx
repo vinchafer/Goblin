@@ -223,7 +223,7 @@ function ModelHub({
           style={{
             width: '100%', border: '1px solid var(--rule-soft)', borderRadius: 8,
             padding: '7px 12px', fontSize: 'var(--t-small-fs)', outline: 'none',
-            fontFamily: 'var(--font-sans)', background: 'var(--paper)',
+            fontFamily: 'var(--font-sans)', background: 'var(--surface)',
             color: 'var(--text)',
           }}
         />
@@ -334,11 +334,14 @@ function VoiceButton({
   });
   const recording = status === 'listening';
   const processing = status === 'processing';
+  const pending = status === 'pending';   // P1.6: permission prompt is up
 
   const label = processing
     ? lang === 'en' ? 'Transcribing…' : 'Wird verschriftet …'
     : recording
     ? lang === 'en' ? 'Listening…' : 'Goblin hört zu …'
+    : pending
+    ? lang === 'en' ? 'Waiting for access…' : 'Zugriff erlauben …'
     : '';
 
   return (
@@ -362,15 +365,16 @@ function VoiceButton({
           ? (lang === 'en' ? 'Stop recording' : 'Aufnahme stoppen')
           : (lang === 'en' ? 'Voice input' : 'Spracheingabe')}
         data-testid="composer-mic"
+        data-mic-status={status}
         style={{
           width: 32, height: 32, borderRadius: '50%', border: 'none',
-          background: recording ? 'rgba(184,92,60,0.12)' : 'transparent',
+          background: recording ? 'rgba(184,92,60,0.12)' : pending ? 'rgba(212,167,55,0.14)' : 'transparent',
           cursor: disabled ? 'not-allowed' : 'pointer',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          color: recording ? 'var(--rust)' : 'var(--text-2)',
+          color: recording ? 'var(--rust)' : pending ? 'var(--brand-gold)' : 'var(--text-2)',
           flexShrink: 0,
-          boxShadow: recording ? '0 0 0 2px rgba(184,92,60,0.4)' : 'none',
-          animation: recording ? 'goblin-pulse 1.2s ease-in-out infinite' : undefined,
+          boxShadow: recording ? '0 0 0 2px rgba(184,92,60,0.4)' : pending ? '0 0 0 2px rgba(212,167,55,0.4)' : 'none',
+          animation: (recording || pending) ? 'goblin-pulse 1.2s ease-in-out infinite' : undefined,
           transition: 'all 0.15s',
           opacity: disabled ? 0.4 : 1,
         }}
@@ -466,6 +470,12 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
   const [input, setInput] = useState('');
   // C2 attachments — declared here so render-time gates (hasInput) can read it.
   const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
+  // P1.5: drop / paste a file onto the composer → same C2 attach path as the "+"
+  // menu (same budgets, same honest errors). dragActive drives the drop-zone
+  // highlight. dragDepth counts nested dragenter/leave so the highlight doesn't
+  // flicker as the pointer crosses child elements.
+  const [dragActive, setDragActive] = useState(false);
+  const dragDepthRef = useRef(0);
 
   // Outside-driven prefill (03 quick-prompt chips). Focus after filling.
   useEffect(() => {
@@ -691,6 +701,54 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
     setAttachments((prev) => prev.filter((a) => a.id !== id));
   };
 
+  // P1.5: drag & drop onto the composer. Only reacts when the drag actually
+  // carries files (not a text selection being dragged).
+  const dragHasFiles = (e: React.DragEvent) => {
+    const dt = e.dataTransfer;
+    if (!dt) return false;
+    if (Array.from(dt.types ?? []).includes('Files')) return true;
+    // Some browsers report empty types on dragenter but expose item kinds; during
+    // a drag getAsFile() is null but item.kind is still 'file'.
+    return dt.items ? Array.from(dt.items).some((i) => i.kind === 'file') : false;
+  };
+  const handleDragEnter = (e: React.DragEvent) => {
+    if (disabled || !dragHasFiles(e)) return;
+    e.preventDefault();
+    dragDepthRef.current += 1;
+    setDragActive(true);
+  };
+  const handleDragOver = (e: React.DragEvent) => {
+    if (disabled || !dragHasFiles(e)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+  };
+  const handleDragLeave = (e: React.DragEvent) => {
+    if (!dragHasFiles(e)) return;
+    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+    if (dragDepthRef.current === 0) setDragActive(false);
+  };
+  const handleDrop = (e: React.DragEvent) => {
+    dragDepthRef.current = 0;
+    setDragActive(false);
+    if (disabled) return;
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) {
+      e.preventDefault();
+      handleFilesPicked(files);
+    }
+  };
+  // P1.5: paste a file from the clipboard (screenshot, copied file) → attach it.
+  // Only intercepts when the clipboard actually holds files, so pasting text
+  // into the textarea still works normally.
+  const handlePaste = (e: React.ClipboardEvent) => {
+    if (disabled) return;
+    const files = e.clipboardData?.files;
+    if (files && files.length > 0) {
+      e.preventDefault();
+      handleFilesPicked(files);
+    }
+  };
+
   return (
     <div style={hero
       ? { padding: 0, background: 'transparent', flexShrink: 0 }
@@ -713,18 +771,46 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
           />
         )}
 
-        {/* Input container */}
+        {/* Input container — also the P1.5 drop zone (drag a file here or paste one). */}
         <div
+          data-testid="composer-dropzone"
+          data-drag-active={dragActive ? '1' : '0'}
           style={{
+            position: 'relative',
             display: 'flex', flexDirection: 'column',
-            border: hero ? '1px solid rgba(244,236,216,.16)' : '1.5px solid var(--border-subtle)',
+            border: dragActive
+              ? '1.5px dashed var(--brand-green)'
+              : (hero ? '1px solid rgba(244,236,216,.16)' : '1.5px solid var(--border-subtle)'),
             borderRadius: 14,
-            background: hero ? 'rgba(244,236,216,.05)' : 'var(--subtle)',
-            transition: 'border-color 0.15s',
+            background: dragActive
+              ? (hero ? 'rgba(212,167,55,.10)' : 'rgba(45,74,43,0.06)')
+              : (hero ? 'rgba(244,236,216,.05)' : 'var(--subtle)'),
+            transition: 'border-color 0.15s, background 0.15s',
           }}
-          onFocusCapture={e => (e.currentTarget.style.borderColor = hero ? 'rgba(244,236,216,.34)' : 'var(--brand-green)')}
-          onBlurCapture={e => (e.currentTarget.style.borderColor = hero ? 'rgba(244,236,216,.16)' : 'var(--border-subtle)')}
+          onFocusCapture={e => { if (!dragActive) e.currentTarget.style.borderColor = hero ? 'rgba(244,236,216,.34)' : 'var(--brand-green)'; }}
+          onBlurCapture={e => { if (!dragActive) e.currentTarget.style.borderColor = hero ? 'rgba(244,236,216,.16)' : 'var(--border-subtle)'; }}
+          onDragEnter={handleDragEnter}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          onPaste={handlePaste}
         >
+          {/* P1.5: drop-zone highlight overlay */}
+          {dragActive && (
+            <div
+              data-testid="composer-drop-hint"
+              style={{
+                position: 'absolute', inset: 0, zIndex: 5, borderRadius: 14,
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                background: hero ? 'rgba(15,43,30,0.55)' : 'rgba(251,247,236,0.82)',
+                color: hero ? 'var(--bone)' : 'var(--brand-green)',
+                fontFamily: 'var(--font-sans)', fontSize: 'var(--t-small-fs)', fontWeight: 600,
+                pointerEvents: 'none',
+              }}
+            >
+              <Icon name="upload" size={16} /> {lang === 'en' ? 'Drop file to attach' : 'Datei zum Anhängen ablegen'}
+            </div>
+          )}
           {/* C2: attachment chips */}
           {attachments.length > 0 && (
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '10px 12px 0' }}>

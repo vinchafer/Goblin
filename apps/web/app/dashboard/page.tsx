@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useApp } from '@/contexts/app-context';
 import { ChatInput, useChatModel } from '@/components/chat/ChatInput';
 import { filterVisibleProjects } from '@/lib/project-visibility';
+import { fetchWithRetryOn429 } from '@/lib/api';
 import { friendlyError } from '@/lib/friendly-error';
 import { useLang, readLang, t } from '@/lib/use-lang';
 
@@ -175,9 +176,11 @@ export default function DashboardPage() {
       if (!token) { router.push('/login'); return; }
 
       const apiBase = process.env.NEXT_PUBLIC_API_URL || '';
+      // P1.10: retry a transient 429 (dashboard mount burst vs generalRateLimit)
+      // before surfacing "Projekte konnten nicht geladen werden".
       const [projRes, meRes] = await Promise.all([
-        fetch(`${apiBase}/api/projects`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${apiBase}/api/users/me`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetchWithRetryOn429(`${apiBase}/api/projects`, { headers: { Authorization: `Bearer ${token}` } }),
+        fetchWithRetryOn429(`${apiBase}/api/users/me`, { headers: { Authorization: `Bearer ${token}` } }),
       ]);
 
       if (!projRes.ok) throw new Error('Projekte konnten nicht geladen werden');

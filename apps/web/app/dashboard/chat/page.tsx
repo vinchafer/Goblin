@@ -34,7 +34,7 @@ export default function NewChatPage() {
   }, [router]);
 
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", background: "var(--paper)" }}>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", background: "var(--surface-page)" }}>
       <GoblinLogo state="thinking" size={36} variant="green" />
     </div>
   );

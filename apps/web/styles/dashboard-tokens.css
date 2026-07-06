@@ -176,7 +176,7 @@
   transition: border-color .15s, background .15s;
 }
 .gobl-dash .gobl-input:focus, .gobl-dash .gobl-textarea:focus {
-  outline: none; border-color: var(--ink-1); background: #fff;
+  outline: none; border-color: var(--ink-1); background: var(--d-surface-elev);
 }
 .gobl-dash .gobl-textarea { resize: vertical; min-height: 96px; line-height: 1.5; }
 .gobl-dash .gobl-field-label {
@@ -199,4 +199,26 @@
     animation-duration: .001ms !important;
     transition-duration: .001ms !important;
   }
+}
+
+/* ──────────────────────────────────────────────────────────────────────
+   P1.1 — DARK THEME for the scoped .gobl-dash dashboard surfaces.
+   The dashboard has its own surface set (--d-surface*, --line*) defined as
+   LIGHT literals/aliases that never flipped. Under [data-theme="dark"] the
+   inks flipped (global) but these surfaces stayed cream → ghost "Deine
+   Projekte" heading + cream project cards (founder-reproduced). Flip the
+   surfaces to the global dark primitives and invert the hairlines. The
+   inks (--ink-1/2/3) already flip via design-tokens.css; --bone stays a
+   light literal used as text ON dark buttons (correct in both themes).
+   ────────────────────────────────────────────────────────────────────── */
+[data-theme="dark"] .gobl-dash {
+  --d-surface:      var(--surface-2);   /* page content bg  → #0F2B1E */
+  --d-surface-elev: var(--surface-1);   /* cards/panels     → #133224 */
+  --d-surface-2:    var(--surface-3);   /* tags/ghost hover → #1A3A2A */
+  --d-surface-3:    var(--surface-4);   /*                  → #2A523E */
+  --bone-warm:      var(--surface-1);
+  --line:           rgba(247, 247, 236, 0.10);
+  --line-strong:    rgba(247, 247, 236, 0.22);
+  --shadow-card:    0 1px 0 rgba(0,0,0,.30), 0 14px 32px -22px rgba(0,0,0,.55);
+  --shadow-pop:     0 1px 0 rgba(0,0,0,.40), 0 24px 60px -28px rgba(0,0,0,.70);
 }
