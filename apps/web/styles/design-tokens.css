@@ -227,7 +227,12 @@
   --div:      var(--rule-soft);
   --white:    var(--surface-0);
   --panel:    var(--surface-0);
-  --surface:  var(--paper);
+  /* P1.1: was var(--paper) — a LOCKED light anchor that never flips, so any
+     surface/control fill using --surface stayed cream under dark text
+     (founder-reproduced: project-create modal inputs invisible in dark).
+     --surface-1 is #FBF7EC in light (identical to --paper) and flips to
+     #133224 in [data-theme="dark"]. Same for --surface-page below. */
+  --surface:  var(--surface-1);
   --border:   var(--rule);
 
   /* — text inks — */
@@ -294,7 +299,7 @@
   --code-root-2:  #0F1410;
 
   /* — semantic surface / ink names — */
-  --surface-page:     var(--paper);
+  --surface-page:     var(--surface-1);   /* P1.1: flip in dark (was --paper) */
   --surface-dark:     var(--brand-green);
   --surface-elevated: var(--surface-0);
   --ink-on-dark:      var(--ink-on-dark-1);
@@ -333,6 +338,12 @@
   --shadow-md:    0 4px 16px rgba(0,0,0,0.3);
   --shadow-lg:    0 8px 32px rgba(0,0,0,0.4);
   --surface-overlay: rgba(0, 0, 0, 0.60);
+
+  /* P1.1: these two secondary-text tokens were LIGHT-only literals that never
+     flipped (dark green / dark brown) → invisible dark-on-dark. Flip to the
+     light-on-dark equivalents so captions/faint copy clear AA in dark. */
+  --ink-muted:  var(--ink-muted-dark);   /* rgba(247,244,237,0.55) */
+  --text-faint: #B8A988;                 /* was #665C42 */
 }
 /* ════════════════ END SEMANTIC ALIAS LAYER ════════════════════════ */
 

@@ -9,7 +9,7 @@ export default function Loading() {
       alignItems: 'center',
       justifyContent: 'center',
       gap: 16,
-      background: 'var(--paper)',
+      background: 'var(--surface-page)',
     }}>
       <GoblinLogo state="breath" size={64} variant="green" />
       <p style={{

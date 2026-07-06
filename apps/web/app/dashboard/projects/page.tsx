@@ -83,7 +83,7 @@ export default function ProjectsOverviewPage() {
   };
 
   return (
-    <div style={{ minHeight: '100%', background: 'var(--paper)', padding: '20px 16px 96px' }}>
+    <div style={{ minHeight: '100%', background: 'var(--surface-page)', padding: '20px 16px 96px' }}>
       <div style={{ maxWidth: 760, margin: '0 auto' }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, gap: 12 }}>

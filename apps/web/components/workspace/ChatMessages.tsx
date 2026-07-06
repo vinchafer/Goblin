@@ -99,13 +99,13 @@ function EmptyState({ onSuggestion }: { onSuggestion: (s: string) => void }) {
             onClick={() => onSuggestion(s.prompt)}
             style={{
               padding: '7px 14px', borderRadius: 20,
-              border: '1px solid #DDD7CC',
-              background: '#fff', color: 'var(--text)',
+              border: '1px solid var(--border)',
+              background: 'var(--panel)', color: 'var(--text)',
               fontSize: 'var(--t-caption-fs)', fontFamily: 'var(--font-sans)',
               cursor: 'pointer', transition: 'all 0.15s',
             }}
             onMouseEnter={e => { e.currentTarget.style.background = 'var(--brand-green)'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'var(--brand-green)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = '#fff'; e.currentTarget.style.color = 'var(--text)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'var(--panel)'; e.currentTarget.style.color = 'var(--text)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
           >
             {s.label}
           </button>
@@ -179,7 +179,7 @@ export function ChatMessages({
         {/* Error banner */}
         {error && (
           <div style={{
-            background: isNoModel ? 'rgba(212,169,74,0.08)' : '#FEF2F2',
+            background: isNoModel ? 'rgba(212,169,74,0.08)' : 'var(--danger-soft)',
             border: `1px solid ${isNoModel ? 'rgba(212,169,74,0.3)' : '#FCA5A5'}`,
             borderRadius: 10, padding: '11px 14px', fontSize: 13,
             color: isNoModel ? 'var(--text, var(--ink-1))' : '#991B1B',
@@ -218,7 +218,7 @@ export function ChatMessages({
           padding: '3px 16px', flexShrink: 0,
           fontSize: 11, color: 'var(--text-faint)',
           fontFamily: 'JetBrains Mono, monospace',
-          background: 'var(--paper)',
+          background: 'var(--surface-page)',
           display: 'flex', gap: 6, alignItems: 'center',
         }}>
           {tokenInfo.tokenDisplay ? (

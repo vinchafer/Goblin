@@ -221,7 +221,7 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
   const activeProjectName = projects.find(p => p.id === activeProjectId)?.name;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--paper)', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--surface-page)', overflow: 'hidden' }}>
       <Header
         activeTab={activeTab as 'chat' | 'code' | 'preview'}
         onTabChange={tab => {

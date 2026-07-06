@@ -129,7 +129,7 @@ export function BottomSheet({
           width: '100%',
           maxWidth: 720,
           height: heightMap[size],
-          background: 'var(--paper)',
+          background: 'var(--panel)',
           borderTopLeftRadius: 'var(--radius-sheet)',
           borderTopRightRadius: 'var(--radius-sheet)',
           boxShadow: 'var(--shadow-sheet)',

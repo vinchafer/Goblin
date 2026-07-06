@@ -223,7 +223,7 @@ function ModelHub({
           style={{
             width: '100%', border: '1px solid var(--rule-soft)', borderRadius: 8,
             padding: '7px 12px', fontSize: 'var(--t-small-fs)', outline: 'none',
-            fontFamily: 'var(--font-sans)', background: 'var(--paper)',
+            fontFamily: 'var(--font-sans)', background: 'var(--surface)',
             color: 'var(--text)',
           }}
         />

@@ -1,7 +1,7 @@
 export default function DashboardLoading() {
   return (
     <div style={{
-      height: '100%', background: 'var(--paper)',
+      height: '100%', background: 'var(--surface-page)',
       overflowY: 'auto',
     }}>
       <div style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 24px' }}>

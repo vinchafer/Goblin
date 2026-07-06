@@ -61,7 +61,7 @@ export default function TrialGatePage() {
         justifyContent: 'center',
         padding: '24px',
         fontFamily: 'var(--font-sans)',
-        background: 'var(--bg, #faf9f6)',
+        background: 'var(--surface-page)',
       }}
     >
       <div style={{ width: '100%', maxWidth: 460, textAlign: 'center' }}>

@@ -97,7 +97,7 @@ html { scroll-behavior: smooth; font-size: 16px; }
 
 body {
   font-family: var(--font-sans);
-  background: var(--paper);
+  background: var(--surface-page);   /* P1.1: was --paper (never flipped) — cream root behind every dark surface */
   color: var(--text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

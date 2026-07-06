@@ -562,7 +562,7 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
   return (
     <ExistingFilesContext.Provider value={projectFilesMap}>
     <SendToCodeContext.Provider value={requestCardStc}>
-    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--bone)" }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%", background: "var(--surface-2)" }}>
       {/* C3: per-card "Ins Projekt übernehmen" preview (single file). */}
       {cardPreview && (
         <StcPreviewSheet
@@ -583,7 +583,7 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
         <div style={{
           display: "flex", alignItems: "center", gap: 8, flexShrink: 0,
           padding: "8px 16px", borderBottom: "1px solid var(--rule)",
-          background: "var(--bone)", fontFamily: "var(--font-sans)",
+          background: "var(--surface-2)", fontFamily: "var(--font-sans)",
         }}>
           <button
             onClick={() => projectId && router.push(`/dashboard/project/${projectId}`)}
@@ -648,7 +648,7 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
 
         {error && (
           <div style={{
-            background: /no model|no key|api key/i.test(error) ? "rgba(212,169,74,0.08)" : "#FEF2F2",
+            background: /no model|no key|api key/i.test(error) ? "rgba(212,169,74,0.08)" : "var(--danger-soft)",
             border: `1px solid ${/no model|no key|api key/i.test(error) ? "rgba(212,169,74,0.3)" : "#FCA5A5"}`,
             borderRadius: 10, padding: "12px 16px", fontSize: 13,
             color: /no model|no key|api key/i.test(error) ? "var(--text)" : "#991B1B",
@@ -664,7 +664,7 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
 
       {/* Input area — sticky bottom of the flex column. Clears the iOS
           bottom safe area (gesture zone) so the composer stays thumb-reachable. */}
-      <div style={{ borderTop: "1px solid var(--rule)", background: "var(--bone)", paddingBottom: "env(safe-area-inset-bottom)" }}>
+      <div style={{ borderTop: "1px solid var(--rule)", background: "var(--surface-2)", paddingBottom: "env(safe-area-inset-bottom)" }}>
         <div style={{ position: "relative" }}>
           {/* U0: shown when the user scrolled away from the bottom; tap → back
               to live-follow. Sits centered above the composer, clear of the
