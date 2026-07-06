@@ -38,6 +38,9 @@ import { parseCodeBlocks, linkedLocalAssets } from "@/lib/parse-code-blocks";
 import { DiffModal } from "@/components/project/diff-modal";
 import { useCodeSessionDetail } from "@/hooks/code/useCodeSessionDetail";
 import { useCodeAgent } from "@/hooks/code/useCodeAgent";
+import { useAgentRun } from "@/hooks/code/useAgentRun";
+import { AgentRunView } from "./AgentRunView";
+import { isAgentModel } from "@/lib/agent-eligible";
 import type { EditorTheme } from "@/hooks/code/useEditorTheme";
 import type { CodeSession } from "@/hooks/code/useCodeSessions";
 import { layoutPreset, type Intent } from "@/lib/intent";
@@ -71,6 +74,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
   const lang = useLang();
   const detail = useCodeSessionDetail(session.id);
   const agent = useCodeAgent(session.id);
+  const agentRun = useAgentRun(session.id);
   const preset = layoutPreset(intent);
   const [mobileView, setMobileView] = useState<"thread" | "editor">(preset.mobileDefault);
   // A.2 (NAVFIX-2): on mobile the editor view hides the thread (display:none), so
@@ -240,12 +244,18 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
   // takes over). Visible within one frame of submit, so the Code surface never
   // sits silent after a send.
   useEffect(() => {
-    if (!agent.streaming) { setWorkingSeconds(null); return; }
+    // Ticks for BOTH the classic stream and a FEEL-3a agent run.
+    if (!agent.streaming && !agentRun.streaming) { setWorkingSeconds(null); return; }
     setWorkingSeconds(0);
     const startedAt = Date.now();
     const iv = setInterval(() => setWorkingSeconds(Math.max(0, Math.floor((Date.now() - startedAt) / 1000))), 1000);
     return () => clearInterval(iv);
-  }, [agent.streaming]);
+  }, [agent.streaming, agentRun.streaming]);
+
+  // Any streaming work in flight (classic or agent) — drives the composer's
+  // busy/cancel affordances so Stopp ends whichever path is running.
+  const busy = agent.streaming || agentRun.streaming;
+  const cancelAll = useCallback(() => { agent.cancel(); agentRun.cancel(); }, [agent, agentRun]);
 
   // ── Undo / Redo (CodeMirror history) ──
   // The editor stays mounted across the AI boundary (the live stream is a separate
@@ -278,6 +288,24 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
     // B: snapshot ALL files too — a chat-driven edit may touch a file that isn't
     // the open one (founder: "mach die Überschrift größer" with no file open).
     baseFilesRef.current = new Map(detail.files.map(f => [f.path, f.content]));
+    // FEEL-3a: on a Swift/Forge session, drive the server-side agent loop (step
+    // stream + attested report). If the server declines (flag off / not eligible →
+    // 409), fall back to the classic single-turn path so behavior never breaks.
+    if (isAgentModel(session.model_id)) {
+      agentRun.submit(prompt, session.model_id ?? undefined, {
+        onDone: async () => { await detail.refresh(); },
+        onNotEligible: () => runClassic(prompt),
+      });
+      setMobileView("editor");
+      return;
+    }
+    runClassic(prompt);
+    setMobileView("editor");
+  };
+
+  // The classic single-turn code agent (pre-FEEL-3a behavior), also the fallback
+  // when an agent run is declined server-side.
+  const runClassic = (prompt: string) => {
     // 10.8-8: pass the open file so the agent edits it in place (→ live diff)
     // rather than dumping a new file.
     agent.submit(prompt, session.model_id ?? undefined, async ({ text }) => {
@@ -292,7 +320,6 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
       ).size;
       if (changed > 0) setChangeSummary(changed);
     }, detail.activePath);
-    setMobileView("editor");
   };
 
   // B: a chat turn → reviewable edits. Every produced block whose path matches an
@@ -621,17 +648,28 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
           onApplyFromChat={handleApplyFromChat}
           applicablePaths={reviewablePaths}
         />
-        {agent.error && (
+        {/* FEEL-3a: the agent run's live step stream + attested report card. */}
+        <AgentRunView
+          streaming={agentRun.streaming}
+          steps={agentRun.steps}
+          narration={agentRun.narration}
+          report={agentRun.report}
+          elapsedSeconds={agentRun.streaming ? (workingSeconds ?? 0) : null}
+          onViewChanges={(p) => handleViewFile(p)}
+          onGoLive={() => setDeployConfirm(true)}
+          onOpen={() => { const u = liveUrl ?? detail.deployUrl; if (u) window.open(u, "_blank", "noopener"); }}
+        />
+        {(agent.error || agentRun.error) && (
           <div style={{ margin: "0 16px 8px", padding: "8px 12px", borderRadius: 8, background: "rgba(176,67,42,0.08)", border: "1px solid rgba(176,67,42,0.3)", color: "#B0432A", fontSize: 12.5, fontFamily: "var(--font-sans)" }}>
-            {agent.error}
+            {agent.error || agentRun.error}
           </div>
         )}
         <SessionPromptInput
           modelId={session.model_id}
           onModelChange={onModelChange}
           onSubmit={handleSubmit}
-          streaming={agent.streaming}
-          onCancel={agent.cancel}
+          streaming={busy}
+          onCancel={cancelAll}
           autoFocus
         />
       </div>
@@ -656,8 +694,8 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
             value={askText}
             onChange={setAskText}
             onSubmit={submitCommand}
-            streaming={agent.streaming}
-            onCancel={agent.cancel}
+            streaming={busy}
+            onCancel={cancelAll}
             modelId={session.model_id}
             onModelChange={onModelChange}
             anchor={commandAnchor}
@@ -666,12 +704,23 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
           <StatusStrip
             state={liveBlock ? "draft" : state}
             draftCount={detail.draftCount}
-            workingSeconds={agent.streaming ? (workingSeconds ?? 0) : null}
+            workingSeconds={busy ? (workingSeconds ?? 0) : null}
             liveUrl={detail.deployedAt ? (liveUrl ?? detail.deployUrl ?? null) : null}
             lastDeployedRel={lastDeployedRel}
-            jit={showUpgradeCard
-              ? <AchievementUpgradeCard variant="slot" onUpgrade={upgradeCardOpen} onLater={upgradeCardLater} />
-              : jitKind ? <JitCard kind={jitKind} onSetup={jitSetup} onLater={jitLater} /> : null}
+            jit={(agentRun.streaming || agentRun.report)
+              ? <AgentRunView
+                  streaming={agentRun.streaming}
+                  steps={agentRun.steps}
+                  narration={agentRun.narration}
+                  report={agentRun.report}
+                  elapsedSeconds={agentRun.streaming ? (workingSeconds ?? 0) : null}
+                  onViewChanges={(p) => handleViewFile(p)}
+                  onGoLive={() => setDeployConfirm(true)}
+                  onOpen={() => { const u = liveUrl ?? detail.deployUrl; if (u) window.open(u, "_blank", "noopener"); }}
+                />
+              : showUpgradeCard
+                ? <AchievementUpgradeCard variant="slot" onUpgrade={upgradeCardOpen} onLater={upgradeCardLater} />
+                : jitKind ? <JitCard kind={jitKind} onSetup={jitSetup} onLater={jitLater} /> : null}
           />
         </div>
         {/* MOBILE-1 · M2: the mobile Code surface = file cards (Tier 1) by default.
