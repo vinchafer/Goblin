@@ -301,3 +301,88 @@ describe('orchestrator — B2 publish gate (D1)', () => {
     expect(res.report.publishedUrl).toBe('https://p1.vercel.app');
   });
 });
+
+// ─── FEEL-3b B3: bounded self-heal (spec §5.3) ───────────────────────────────────
+
+/** Executor whose publish is red for the first `redPublishes` calls, then green. */
+function healingExecutor(redPublishes: number): ToolExecutor {
+  let publishCalls = 0;
+  return async (call): Promise<ToolResult> => {
+    switch (call.name) {
+      case 'write_file':
+        return { ok: true, summary: `${call.args.path} · NEU`, file: { path: String(call.args.path), classification: 'NEU' } };
+      case 'save_draft':
+        return { ok: true, summary: 'Entwurf gesichert ✓' };
+      case 'publish': {
+        publishCalls += 1;
+        if (publishCalls <= redPublishes) {
+          return {
+            ok: false,
+            summary: 'Prüfung fehlgeschlagen: styles.css nicht erreichbar',
+            error: { code: 'verify_failed', message: 'styles.css nicht erreichbar' },
+            data: { verified: false, failedAssets: ['styles.css'] },
+          };
+        }
+        return { ok: true, summary: 'Live ✓ https://p1.vercel.app', data: { verified: true, url: 'https://p1.vercel.app' } };
+      }
+      default:
+        return { ok: false, summary: 'unbekannt', error: { code: 'unknown_tool', message: 'x' } };
+    }
+  };
+}
+
+describe('orchestrator — B3 self-heal', () => {
+  it('one red gate → narrated corrective cycle → green verified-live (heal=1)', async () => {
+    const { emit, events } = collector();
+    const res = await runAgent({
+      ...base,
+      executor: healingExecutor(1), // fails once, then green
+      publishGranted: true,
+      userMessage: 'Baue X und stell es live',
+      model: scriptedModel([
+        nativeTurn('write_file', { path: 'index.html', content: '<link href=styles.css>' }, 'Ich baue die Seite'),
+        nativeTurn('save_draft', {}, 'Ich sichere'),
+        nativeTurn('publish', {}, 'Ich stelle live'), // → red, narrated, continue
+        nativeTurn('write_file', { path: 'styles.css', content: 'body{}' }, 'Ich ergänze styles.css'),
+        nativeTurn('publish', {}, 'Ich stelle erneut live'), // → green
+        nativeTurn('finish', { report: 'Live nach einer Korrektur.' }),
+      ]),
+      emit,
+    });
+    expect(res.healCycles).toBe(1);
+    expect(res.report.state).toBe('published');
+    expect(res.report.publishedUrl).toBe('https://p1.vercel.app');
+    // the corrective cycle was narrated verbatim ("Prüfung fehlgeschlagen: styles.css …").
+    expect(events.some((e) => e.type === 'agent_narration' && /Prüfung fehlgeschlagen/.test(e.text))).toBe(true);
+  });
+
+  it('unfixable: 2 red cycles → forced honest failure (never a 3rd attempt)', async () => {
+    const { emit } = collector();
+    const ran: string[] = [];
+    const spy: ToolExecutor = async (call, ctx) => { ran.push(call.name); return healingExecutor(99)(call, ctx); };
+    const res = await runAgent({
+      ...base,
+      executor: spy, // publish always red
+      publishGranted: true,
+      userMessage: 'Baue X und stell es live',
+      model: scriptedModel([
+        nativeTurn('write_file', { path: 'index.html', content: '<link href=styles.css>' }),
+        nativeTurn('publish', {}), // red → cycle 1
+        nativeTurn('write_file', { path: 'index.html', content: '<fixed>' }),
+        nativeTurn('publish', {}), // red → cycle 2 → forced finish
+        nativeTurn('publish', {}), // MUST NOT run
+      ]),
+      maxIterations: 8,
+      emit,
+    });
+    expect(res.healCycles).toBe(2);
+    expect(res.outcome).toBe('error');
+    expect(res.report.state).toBe('failed');
+    expect(res.report.failureReason).toMatch(/2 Korrekturversuchen/);
+    expect(res.report.failureReason).toContain('styles.css');
+    // exactly two publish attempts reached the executor — the 3rd never ran.
+    expect(ran.filter((t) => t === 'publish')).toHaveLength(2);
+    // the step log carries the exact cycle count (two failed publish steps).
+    expect(res.steps.filter((s) => s.tool === 'publish' && s.outcome === 'verify_failed')).toHaveLength(2);
+  });
+});

@@ -131,6 +131,8 @@ export interface RunResult {
   steps: Array<{ tool: string; args: string; outcome: string; ms: number }>;
   toolsUsed: string[];
   iterations: number;
+  /** FEEL-3b B3: how many corrective (self-heal) cycles the run spent (0–2). */
+  healCycles: number;
   tokensIn: number;
   tokensOut: number;
   unitsConsumed: number;

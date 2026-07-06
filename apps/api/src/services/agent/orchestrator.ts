@@ -36,6 +36,27 @@ import type {
 /** Injected biller — one call per model turn. Defaults to trackCompletion. */
 export type BillTurn = (usage: { inputTokens: number; outputTokens: number }) => Promise<void> | void;
 
+/**
+ * FEEL-3b B3: bounded self-heal (spec §5.3). A red publish gate or a failed tool feeds
+ * the error to the model verbatim; the model may run at most this many CORRECTIVE cycles,
+ * each narrated. On the last cycle the loop forces an honest finish — never a silent
+ * retry, never an infinite loop.
+ */
+const MAX_HEAL_CYCLES = 2;
+
+/** The narrated corrective line for a failed tool result (spec §5.3 tone). */
+function healNarration(tool: string, result: ToolResult): string {
+  const detail = result.error?.message || result.summary || 'unbekannter Fehler';
+  if (tool === 'publish') return `Prüfung fehlgeschlagen: ${detail} — ich korrigiere das und versuche es erneut.`;
+  return `${tool} meldete einen Fehler: ${detail} — ich versuche es korrigiert.`;
+}
+
+/** The honest failure reason after the heal budget is spent (what was tried + the state). */
+function healFailureReason(result: ToolResult): string {
+  const detail = result.error?.message || result.summary || 'unbekannter Fehler';
+  return `Nach ${MAX_HEAL_CYCLES} Korrekturversuchen weiterhin fehlgeschlagen: ${detail}`;
+}
+
 export interface RunAgentInput {
   runId: string | null;
   userId: string;
@@ -167,6 +188,7 @@ export async function runAgent(input: RunAgentInput): Promise<RunResult> {
   let units = 0;
   let iterations = 0;
   let repairsUsed = 0;
+  let healCycles = 0;
   let modelText = '';
   let outcome: RunOutcome | null = null;
   let failureReason: string | undefined;
@@ -291,6 +313,25 @@ export async function runAgent(input: RunAgentInput): Promise<RunResult> {
       messages.push(toolResultMessage(call, result, model.supportsNativeTools));
 
       if (stop?.aborted) { outcome = 'stopped'; terminated = true; break; }
+
+      // B3 self-heal: a failed tool (incl. a red publish gate) is narrated and counted.
+      // The model gets the error verbatim (in the tool result above) and may correct — but
+      // only MAX_HEAL_CYCLES times. On the last cycle we force an honest finish. A benign
+      // not-found during orientation (read_file/list_files) is NOT a corrective cycle —
+      // that's the FEEL-3a same-tool retry path, so it never burns the heal budget.
+      const isOrientationMiss =
+        (call.name === 'read_file' || call.name === 'list_files') && result.error?.code === 'not_found';
+      if (!result.ok && !isOrientationMiss) {
+        healCycles += 1;
+        await input.emit({ type: 'agent_narration', text: healNarration(call.name, result) });
+        if (healCycles >= MAX_HEAL_CYCLES) {
+          outcome = 'error';
+          failureReason = healFailureReason(result);
+          modelText = modelText || failureReason;
+          terminated = true;
+          break;
+        }
+      }
     }
 
     if (terminated) break;
@@ -312,6 +353,7 @@ export async function runAgent(input: RunAgentInput): Promise<RunResult> {
     steps,
     toolsUsed: [...toolsUsed],
     iterations,
+    healCycles,
     tokensIn,
     tokensOut,
     unitsConsumed: units,
