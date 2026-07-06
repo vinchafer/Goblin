@@ -29,7 +29,7 @@ import { useRouter } from "next/navigation";
 import type { CommandAnchor } from "./CommandBar";
 import { buildAnchoredMessage } from "@/lib/anchor-message";
 import { useIsMobile } from "@/hooks/use-is-mobile";
-import { fetchAllTextFiles } from "@/lib/project-files";
+import { fetchAllTextFilesWithStatus } from "@/lib/project-files";
 import { lineDelta } from "@/lib/file-compare";
 import { useLang, t } from "@/lib/use-lang";
 import { createTwoFilesPatch } from "diff";
@@ -91,6 +91,9 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
   // Saved base map (project storage) — a reloaded draft row no longer carries
   // its pre-edit base, so GEÄNDERT/NEU + line deltas are computed against this.
   const [baseFiles, setBaseFiles] = useState<Record<string, string>>({});
+  // P1.7: paths whose saved base could not be fetched (429 past retry budget) —
+  // these must NOT render a confident NEU badge (base unknown, not absent).
+  const [unknownBase, setUnknownBase] = useState<ReadonlySet<string>>(new Set());
   const [deployConfirm, setDeployConfirm] = useState(false);
   const [deploying, setDeploying] = useState(false);
   // M4: the inline truth-gated publish stream. `message` mirrors the server's
@@ -178,7 +181,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
   useEffect(() => {
     if (!projectId) return;
     let cancelled = false;
-    fetchAllTextFiles(projectId).then(m => { if (!cancelled) setBaseFiles(m); }).catch(() => {});
+    fetchAllTextFilesWithStatus(projectId).then(r => { if (!cancelled) { setBaseFiles(r.files); setUnknownBase(r.unknownPaths); } }).catch(() => {});
     return () => { cancelled = true; };
   }, [projectId]);
 
@@ -674,6 +677,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
               <FileCardList
                 files={detail.files}
                 baseFiles={baseFiles}
+                unknownBase={unknownBase}
                 onOpenReader={openReader}
                 onOpenDiff={openDiff}
               />
