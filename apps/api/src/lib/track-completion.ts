@@ -19,6 +19,10 @@ interface TrackParams {
   // / BYOK callers where ttft isn't meaningful leave them undefined (→ NULL).
   ttftMs?: number;
   durationMs?: number;
+  // FEEL-3a: links a billed model turn to its agent run (migration 0081). NULL for
+  // ordinary (non-agent) completions; set only by the orchestrator so the report's
+  // cost line sums the run's real completions.
+  runId?: string | null;
 }
 
 /**
@@ -40,18 +44,19 @@ export async function trackCompletion(params: TrackParams): Promise<void> {
   try {
     const sb = getSupabaseAdmin();
     // Write the optional instrumentation columns (project_id — migration 0077;
-    // ttft_ms/duration_ms — migration 0080) when they exist. Pre-migration
-    // tolerant: a missing column errors the insert, so we retry with the bare
-    // baseRow (dropping ALL of project_id + the timing fields) rather than losing
-    // the cost row entirely — accounting must never silently drop a completion
-    // because an instrumentation column is not yet applied. The retry degrades
-    // gracefully whether the missing column is project_id (pre-0077) or the timing
-    // fields (pre-0080).
+    // ttft_ms/duration_ms — migration 0080; run_id — migration 0081) when they
+    // exist. Pre-migration tolerant: a missing column errors the insert, so we
+    // retry with the bare baseRow (dropping ALL of project_id + the timing fields
+    // + run_id) rather than losing the cost row entirely — accounting must never
+    // silently drop a completion because an instrumentation column is not yet
+    // applied. The retry degrades gracefully whether the missing column is
+    // project_id (pre-0077), the timing fields (pre-0080), or run_id (pre-0081).
     const { error } = await sb.from('completion_costs').insert({
       ...baseRow,
       project_id: params.projectId ?? null,
       ttft_ms: params.ttftMs ?? null,
       duration_ms: params.durationMs ?? null,
+      run_id: params.runId ?? null,
     });
     if (error) {
       await sb.from('completion_costs').insert(baseRow);
