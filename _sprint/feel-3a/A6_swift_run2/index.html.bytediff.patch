@@ -1,0 +1,15 @@
+Index: index.html
+===================================================================
+--- index.html
++++ index.html
+@@ -9,9 +9,9 @@
+ </head>
+ <body>
+     <div class="container">
+         <header>
+-            <h1><i class="fas fa-sticky-note"></i> Notiz-App</h1>
++            <h1><i class="fas fa-sticky-note"></i> Meine Notizen</h1>
+             <p class="subtitle">Deine persönlichen Notizen im Browser</p>
+         </header>
+ 
+         <main>
