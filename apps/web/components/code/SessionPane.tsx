@@ -19,6 +19,7 @@ import { StatusStrip } from "./StatusStrip";
 import { FileCardList } from "./FileCardList";
 import { Reader } from "./Reader";
 import { DiffSheet } from "./DiffSheet";
+import { VercelConnectSheet } from "./VercelConnectSheet";
 import { LineActionSheet } from "./LineActionSheet";
 import { EditorSearchOverlay } from "./EditorSearchOverlay";
 import { JitCard } from "./JitCard";
@@ -96,6 +97,10 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
   const [unknownBase, setUnknownBase] = useState<ReadonlySet<string>>(new Set());
   const [deployConfirm, setDeployConfirm] = useState(false);
   const [deploying, setDeploying] = useState(false);
+  // P1.11: the publish-moment JIT for a missing Vercel connection. Opened when a
+  // token-less "Live stellen" is detected (pre-check, or a NO_VERCEL_TOKEN deploy
+  // error) so the user connects inline instead of hitting a dead end.
+  const [vercelJit, setVercelJit] = useState(false);
   // M4: the inline truth-gated publish stream. `message` mirrors the server's
   // progress (incl. "wird geprüft, n/6"); phase never becomes "live" until the
   // server's success event — no completion claim before the checks pass.
@@ -499,6 +504,13 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
   // published state before the checks pass.
   const liveStellen = async () => {
     setDeployConfirm(false);
+    // P1.11: detect a missing Vercel connection BEFORE attempting the deploy — a
+    // token-less publish must never dead-end. Open the connect JIT instead; it
+    // resumes this same flow (onConnected → liveStellen) after connecting.
+    try {
+      const v = await apiGet<{ connected: boolean }>("/api/integrations/vercel");
+      if (!v?.connected) { setVercelJit(true); return; }
+    } catch { /* status unreachable — fall through; the deploy path still guards NO_VERCEL_TOKEN */ }
     setDeploying(true);
     setPublishStream({ phase: "publishing", message: "Sichere Änderungen …" });
     if (detail.draftCount > 0) {
@@ -535,6 +547,9 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
         })
         .catch(() => {});
     } else {
+      // P1.11: if the deploy failed purely for a missing token, don't show a raw
+      // error — open the connect JIT (belt-and-suspenders behind the pre-check).
+      if (/NO_VERCEL_TOKEN/.test(error ?? "")) { setPublishStream(null); setVercelJit(true); return; }
       const msg = (error ?? "Veröffentlichen fehlgeschlagen").replace(/^NO_VERCEL_TOKEN —\s*/, "");
       setPublishStream({ phase: "error", message: msg });
     }
@@ -988,6 +1003,14 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
           )}
         </div>
       </div>
+
+      {/* P1.11: publish-moment JIT — connect Vercel inline, then resume the publish. */}
+      {vercelJit && (
+        <VercelConnectSheet
+          onClose={() => setVercelJit(false)}
+          onConnected={() => { setVercelJit(false); void liveStellen(); }}
+        />
+      )}
 
       {/* Deploy confirm */}
       {deployConfirm && (
