@@ -9,8 +9,8 @@ import { buildAgentSystemPrompt, buildGoblinChatSystemPrompt } from './goblin-ch
 describe('AGENT MODE system prompt — A4', () => {
   const p = buildAgentSystemPrompt({ projectName: 'MeinProjekt' });
 
-  it('declares all five tools', () => {
-    for (const tool of ['list_files', 'read_file', 'write_file', 'save_draft', 'finish']) {
+  it('declares all seven tools (incl. FEEL-3b publish + read_deploy_status)', () => {
+    for (const tool of ['list_files', 'read_file', 'write_file', 'save_draft', 'publish', 'read_deploy_status', 'finish']) {
       expect(p).toContain(tool);
     }
   });
@@ -39,15 +39,20 @@ describe('AGENT MODE system prompt — A4', () => {
     expect(p).toMatch(/fremden Server/);
   });
 
-  it('D1 scaffolding: publish is unavailable → honest "Live stellen" pointer', () => {
-    expect(p).toMatch(/KEIN Werkzeug zum Veröffentlichen/);
-    expect(p).toMatch(/‚Live stellen' im Code-Bereich/);
+  it('D1 semantics: publish allowed only on explicit intent in THIS message, else chip', () => {
+    expect(p).toMatch(/in DIESER Nachricht verlangt/);
+    expect(p).toMatch(/Bestätigungs-Chip/);
+    expect(p).toMatch(/Im Zweifel: nicht veröffentlichen/);
   });
 
-  it('FORBIDS promising future capability (no "bald direkt ich")', () => {
+  it('bounded self-heal few-shot: red publish gate → fix → re-publish, max 2 cycles', () => {
+    expect(p).toMatch(/Höchstens ZWEI Korrekturversuche/);
+    expect(p).toMatch(/styles\.css nicht erreichbar/);
+  });
+
+  it('honesty: "Live" only after a green publish, never an invented URL', () => {
+    expect(p).toMatch(/erfinde NIE eine Live-URL/);
     expect(p).not.toMatch(/bald direkt ich/);
-    // the prompt explicitly names this as forbidden, but must not itself make the promise
-    expect(p).toMatch(/VERBOTEN ist jedes Versprechen künftiger Fähigkeiten/);
   });
 
   it('still renders the live project context (shared with normal chat)', () => {
