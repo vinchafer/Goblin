@@ -839,16 +839,40 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
         {/* Persistent live URL — stays put after deploy (replaces the old toast
             that vanished after a few seconds). Survives reopen via detail.deployUrl. */}
         {liveUrl && !liveDismissed && (
-          <div style={{ flexShrink: 0, borderTop: "1px solid var(--ed-rule)", background: "var(--ed-canvas)", padding: "10px 14px", display: "flex", alignItems: "center", gap: 10 }}>
-            <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#6db97b", flexShrink: 0 }} />
-            <span style={{ fontSize: 11, fontWeight: 600, color: "var(--ed-fg-3)", fontFamily: "var(--font-sans)", textTransform: "uppercase", letterSpacing: "0.06em", flexShrink: 0 }}>Live{lastDeployedRel ? ` · aktualisiert ${lastDeployedRel}` : ""}</span>
+          <div data-testid="live-url-card" data-stale={hasUnpublished ? "1" : "0"} style={{ flexShrink: 0, borderTop: "1px solid var(--ed-rule)", background: "var(--ed-canvas)", padding: "10px 14px", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            {/* P1.3: when unpublished drafts exist the live URL points at an OLDER
+                deploy. Say so plainly (amber, not a reassuring green), demote
+                "Öffnen" to a neutral secondary, and let "Live stellen" (the action
+                bar below) be the sole primary. After a verified publish drafts are
+                gone → "Live · aktuell" and Öffnen is prominent again. */}
+            <span style={{ width: 8, height: 8, borderRadius: "50%", background: hasUnpublished ? "var(--ed-draft)" : "#6db97b", flexShrink: 0 }} />
+            {hasUnpublished ? (
+              <span data-testid="live-state-label" style={{ flex: 1, minWidth: 140, fontSize: 12, fontWeight: 600, color: "var(--ed-draft)", fontFamily: "var(--font-sans)", lineHeight: 1.35 }}>
+                {t(lang, "Live · älterer Stand — Änderungen noch nicht veröffentlicht", "Live · older version — changes not published yet")}
+              </span>
+            ) : (
+              <span data-testid="live-state-label" style={{ fontSize: 11, fontWeight: 600, color: "var(--ed-fg-3)", fontFamily: "var(--font-sans)", textTransform: "uppercase", letterSpacing: "0.06em", flexShrink: 0 }}>
+                {t(lang, "Live · aktuell", "Live · current")}{lastDeployedRel ? ` · ${t(lang, "aktualisiert", "updated")} ${lastDeployedRel}` : ""}
+              </span>
+            )}
             <a href={liveUrl} target="_blank" rel="noopener noreferrer" title={liveUrl} style={{ flex: 1, minWidth: 0, color: "var(--ed-accent)", fontFamily: "JetBrains Mono, monospace", fontSize: 12, textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {liveUrl.replace(/^https?:\/\//, "")}
             </a>
             <button onClick={copyLiveUrl} title="URL kopieren" style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "transparent", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-2)", borderRadius: 8, padding: "5px 10px", fontSize: 12, cursor: "pointer", fontFamily: "var(--font-sans)", flexShrink: 0 }}>
               <Icon name={copied ? "check" : "copy"} size={12} /> {copied ? "Kopiert" : "Kopieren"}
             </button>
-            <a href={liveUrl} target="_blank" rel="noopener noreferrer" title="Im neuen Tab öffnen" style={{ display: "inline-flex", alignItems: "center", background: "var(--ed-primary)", color: "var(--ed-on-primary)", borderRadius: 8, padding: "5px 10px", fontSize: 12, fontWeight: 600, textDecoration: "none", flexShrink: 0, gap: 5 }}>
+            <a
+              href={liveUrl} target="_blank" rel="noopener noreferrer"
+              title={hasUnpublished ? t(lang, "Älteren, veröffentlichten Stand öffnen", "Open the older, published version") : "Im neuen Tab öffnen"}
+              data-testid="live-oeffnen"
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 5, flexShrink: 0,
+                borderRadius: 8, padding: "5px 10px", fontSize: 12, fontWeight: 600, textDecoration: "none",
+                background: hasUnpublished ? "transparent" : "var(--ed-primary)",
+                color: hasUnpublished ? "var(--ed-fg-2)" : "var(--ed-on-primary)",
+                border: hasUnpublished ? "1px solid var(--ed-rule)" : "none",
+              }}
+            >
               <Icon name="play" size={12} /> Öffnen
             </a>
             <button onClick={() => setLiveDismissed(true)} aria-label="Ausblenden" title="Ausblenden" style={{ background: "transparent", border: "none", color: "var(--ed-fg-3)", cursor: "pointer", flexShrink: 0, display: "inline-flex", alignItems: "center" }}>
