@@ -49,8 +49,7 @@ export async function loginContext(browser, { width, height, theme = 'dark', lan
   await ctx.addInitScript(([th, lg]) => {
     try {
       localStorage.setItem('goblin_theme', th);
-      localStorage.setItem('goblin-lang', lg);
-      localStorage.setItem('lang', lg);
+      localStorage.setItem('goblin:preferred-lang', lg); // the real i18n key (use-lang.ts)
       localStorage.setItem('goblin:preview-onboarding', '1');
     } catch {}
   }, [theme, lang]);
