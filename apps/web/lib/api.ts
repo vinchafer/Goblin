@@ -39,6 +39,28 @@ export async function getAuthHeaders(): Promise<HeadersInit> {
   }
 }
 
+// P1.10: bounded retry-on-429 for a plain fetch. The dashboard fires several
+// requests on mount (projects + me + usage + connector status …); on a burst the
+// API's generalRateLimit (60/min) can 429 one of them, which surfaced as
+// "Projekte konnten nicht geladen werden". Retry the transient 429 with backoff
+// + jitter (honoring Retry-After) before giving up. Same philosophy as the P1.7
+// badge-base loader.
+export async function fetchWithRetryOn429(
+  input: string,
+  init?: RequestInit,
+  { retries = 3, baseDelayMs = 400 }: { retries?: number; baseDelayMs?: number } = {},
+): Promise<Response> {
+  for (let attempt = 0; ; attempt++) {
+    const res = await fetch(input, init);
+    if (res.status !== 429 || attempt >= retries) return res;
+    const retryAfter = Number(res.headers.get('Retry-After'));
+    const wait = Number.isFinite(retryAfter) && retryAfter > 0
+      ? retryAfter * 1000
+      : baseDelayMs * 2 ** attempt + Math.random() * 200;
+    await new Promise((r) => setTimeout(r, wait));
+  }
+}
+
 // WS-C: friendlier German messages for the statuses users actually hit, instead
 // of a raw "API error 429". Server-provided messages still win.
 function friendlyError(status: number, serverMessage?: string): string {
