@@ -16,7 +16,7 @@
 
 import { trackCompletion } from '../../lib/track-completion';
 import { runWeightedUnits, agentMaxIterations, agentMaxUnits } from './config';
-import { parseFallbackToolCall, REPAIR_INSTRUCTION } from './protocol';
+import { parseFallbackToolCall, buildRepairInstruction } from './protocol';
 import { getAgentModel } from './model-turn';
 import type { GoblinTierId } from '../goblin-hosted';
 import type {
@@ -263,11 +263,14 @@ export async function runAgent(input: RunAgentInput): Promise<RunResult> {
       } else if (parsed.kind === 'malformed') {
         if (repairsUsed < 1) {
           repairsUsed += 1;
-          messages.push({ role: 'system', content: REPAIR_INSTRUCTION });
+          // C1: quote the exact schema/parse violation so the model fixes THAT mistake.
+          messages.push({ role: 'system', content: buildRepairInstruction(parsed.detail) });
           continue; // exactly one repair reprompt, then honest abort
         }
         outcome = 'error';
-        failureReason = 'Ungültiges Tool-Protokoll nach Reparaturversuch';
+        failureReason =
+          'Der Entwurf konnte nicht sauber gelesen werden — das Modell hat auch nach einem ' +
+          'Hinweis kein gültiges Werkzeug-Format geliefert. Ich habe nichts verändert.';
         break;
       } else {
         // 'none' — plain prose, no tool call. The model answered (refusal / wrap-up).

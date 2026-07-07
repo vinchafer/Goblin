@@ -27,27 +27,43 @@ export type ParseOutcome =
   | { kind: 'malformed'; detail: string }; // a tool_call fence was present but unparseable/invalid
 
 const FENCE_RE = /```tool_call\s*\n([\s\S]*?)```/i;
+// Global variant to count how many tool_call fences a turn carried. Two fences in
+// one turn is the "two calls in one turn" malformed case (C1): the first-match parser
+// would silently drop the second, which is exactly how a run loses a file. Reject it.
+const FENCE_RE_G = /```tool_call\s*\n[\s\S]*?```/gi;
 
 let fallbackIdSeq = 0;
 
 /**
  * Extract a single fallback tool_call from assistant text. Returns 'none' when no
  * `tool_call` fence exists (the model answered in prose — a legitimate refusal/finish),
- * and 'malformed' when a fence exists but the JSON/schema is invalid (→ repair).
+ * and 'malformed' when a fence exists but the JSON/schema is invalid, or when MORE THAN
+ * ONE fence is present (→ repair). The 'malformed' detail is the exact violation, quoted
+ * verbatim into the repair reprompt so the model corrects the specific mistake (C1).
  */
 export function parseFallbackToolCall(text: string): ParseOutcome {
+  const fenceCount = (text.match(FENCE_RE_G) ?? []).length;
+  if (fenceCount === 0) return { kind: 'none' };
+  if (fenceCount > 1) {
+    return {
+      kind: 'malformed',
+      detail: `${fenceCount} tool_call-Blöcke gefunden — pro Antwort ist genau EINER erlaubt`,
+    };
+  }
   const m = text.match(FENCE_RE);
-  if (!m) return { kind: 'none' };
-  const body = (m[1] ?? '').trim();
+  const body = (m?.[1] ?? '').trim();
   let json: unknown;
   try {
     json = JSON.parse(body);
   } catch (e) {
-    return { kind: 'malformed', detail: `JSON parse error: ${(e as Error).message}` };
+    return { kind: 'malformed', detail: `JSON-Syntaxfehler: ${(e as Error).message}` };
   }
   const parsed = ToolCallSchema.safeParse(json);
   if (!parsed.success) {
-    return { kind: 'malformed', detail: parsed.error.issues.map((i) => i.message).join('; ') };
+    const detail = parsed.error.issues
+      .map((i) => `${i.path.join('.') || '(Wurzel)'}: ${i.message}`)
+      .join('; ');
+    return { kind: 'malformed', detail };
   }
   fallbackIdSeq += 1;
   return {
@@ -56,8 +72,21 @@ export function parseFallbackToolCall(text: string): ParseOutcome {
   };
 }
 
-/** The single repair reprompt appended after a malformed tool_call, before the honest abort. */
-export const REPAIR_INSTRUCTION =
-  'Deine letzte Antwort enthielt einen fehlerhaften `tool_call`. Antworte mit GENAU EINEM ' +
-  'umzäunten `tool_call`-Block, dessen Inhalt gültiges JSON `{ "tool": "...", "args": { ... } }` ist. ' +
-  'Kein weiterer Text. Wenn du fertig bist, rufe stattdessen das Werkzeug `finish` auf.';
+/**
+ * The single repair reprompt appended after a malformed tool_call, before the honest
+ * abort. `detail` is the exact violation (from ParseOutcome.malformed.detail), quoted so
+ * the model sees precisely what to fix — the C1 requirement. Called with no argument it
+ * yields the generic instruction (kept for callers/tests that don't carry a detail).
+ */
+export function buildRepairInstruction(detail?: string): string {
+  const violation = detail ? `Der Fehler war: „${detail}“. ` : '';
+  return (
+    `Deine letzte Antwort enthielt einen fehlerhaften \`tool_call\`. ${violation}` +
+    'Antworte mit GENAU EINEM umzäunten `tool_call`-Block, dessen Inhalt gültiges JSON ' +
+    '`{ "tool": "...", "args": { ... } }` ist. Kein weiterer Text, kein zweiter Block. ' +
+    'Wenn du fertig bist, rufe stattdessen das Werkzeug `finish` auf.'
+  );
+}
+
+/** Backwards-compatible generic reprompt (no quoted violation). */
+export const REPAIR_INSTRUCTION = buildRepairInstruction();

@@ -140,7 +140,8 @@ describe('orchestrator — A2 loop', () => {
     expect(res.outcome).toBe('error');
     expect(res.status).toBe('failed');
     expect(res.report.state).toBe('failed');
-    expect(res.report.failureReason).toMatch(/Tool-Protokoll/);
+    // C1/C2: honest, jargon-free abort — names the state, promises nothing was changed.
+    expect(res.report.failureReason).toMatch(/nichts verändert/);
   });
 
   it('plain prose with no tool call is an honest implicit finish (refusal path)', async () => {
