@@ -97,6 +97,12 @@ export function ConnectorsPage() {
         </SettingsCard>
       </SettingsGroup>
 
+      <SettingsGroup label={t(lang, 'Websuche', 'Web search')}>
+        <SettingsCard>
+          <WebSearchConnector />
+        </SettingsCard>
+      </SettingsGroup>
+
       <SettingsGroup label={t(lang, 'Bald verfügbar', 'Coming soon')}>
         <SettingsCard>
           <SoonSection />
@@ -324,6 +330,164 @@ function VercelConnectorRow() {
           </div>
           <div style={{ fontSize: 11, color: 'var(--text-meta)' }}>
             {t(lang, 'Wird gegen die Vercel-API geprüft und verschlüsselt gespeichert. Nur Account-Ebene.', 'Validated against the Vercel API and stored encrypted. Account level only.')}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// F4.3 — Websuche connector. Two layers, honest: the bundled platform key makes web
+// search LIVE in agent chats (with a daily cap), and the user can add their own free
+// Brave key to search cap-free (JIT-nudged as the daily cap approaches).
+interface WebSearchState {
+  platform: boolean;
+  live: boolean;
+  userKey: boolean;
+  keyHint?: string;
+  dailyCap: number;
+  remaining: number | null;
+}
+
+function WebSearchConnector() {
+  const lang = useLang();
+  const [state, setState] = useState<WebSearchState | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [key, setKey] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const refresh = useCallback(async () => {
+    const headers = await authHeaders();
+    if (!headers) { setLoading(false); return; }
+    try {
+      const r = await fetch(`${apiBase}/api/integrations/websearch`, { headers, signal: AbortSignal.timeout(8000) });
+      if (r.ok) setState(await r.json());
+    } catch {
+      /* leave null → honest "unavailable" */
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { void refresh(); }, [refresh]);
+
+  const connect = useCallback(async () => {
+    setError(null);
+    if (!key.trim()) { setError(t(lang, 'Bitte Key einfügen', 'Please paste a key')); return; }
+    setBusy(true);
+    try {
+      const headers = await authHeaders();
+      if (!headers) { setError(t(lang, 'Nicht angemeldet', 'Not signed in')); return; }
+      const r = await fetch(`${apiBase}/api/integrations/brave`, {
+        method: 'POST', headers, body: JSON.stringify({ key: key.trim() }),
+      });
+      const data = await r.json().catch(() => ({}));
+      if (!r.ok) { setError(data.error ?? t(lang, 'Verbindung fehlgeschlagen', 'Connection failed')); return; }
+      setShowForm(false); setKey('');
+      await refresh();
+    } catch {
+      setError(t(lang, 'Verbindung fehlgeschlagen', 'Connection failed'));
+    } finally {
+      setBusy(false);
+    }
+  }, [key, lang, refresh]);
+
+  const disconnect = useCallback(async () => {
+    setBusy(true);
+    try {
+      const headers = await authHeaders();
+      if (!headers) return;
+      await fetch(`${apiBase}/api/integrations/brave`, { method: 'DELETE', headers });
+      await refresh();
+    } finally {
+      setBusy(false);
+    }
+  }, [refresh]);
+
+  const live = state?.live ?? false;
+  const nearCap = state != null && !state.userKey && state.remaining != null && state.remaining <= 5;
+
+  return (
+    <div style={{ borderBottom: '1px solid var(--border-hairline)' }}>
+      <div className="list-item" style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
+        <span style={{
+          width: 36, height: 36, borderRadius: 10, background: 'var(--subtle)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 12, fontWeight: 700, color: 'var(--meta)', fontFamily: 'var(--font-mono)',
+        }}>W</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{t(lang, 'Websuche', 'Web search')}</div>
+          <div style={{ fontSize: 13, color: 'var(--text-meta)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {loading
+              ? t(lang, 'Lade…', 'Loading…')
+              : state?.userKey
+                ? t(lang, `Eigener Brave-Key ····${state.keyHint ?? ''} — ohne Tageslimit`, `Your Brave key ····${state.keyHint ?? ''} — no daily limit`)
+                : t(lang, 'Goblin sucht im Agent-Chat aktuelle Infos und zitiert die Quelle', 'Goblin searches the web in agent chats and cites the source')}
+          </div>
+        </div>
+        {live ? (
+          <span style={{ padding: '4px 10px', borderRadius: 12, background: 'color-mix(in srgb, var(--brand-green) 8%, transparent)', color: 'var(--brand-green)', fontSize: 'var(--t-caption-fs)', fontWeight: 600 }}>
+            {t(lang, 'Live', 'Live')}
+          </span>
+        ) : (
+          <span style={{ padding: '4px 10px', borderRadius: 12, background: 'var(--subtle)', color: 'var(--text-meta)', fontSize: 'var(--t-caption-fs)', fontWeight: 600 }}>
+            {t(lang, 'Inaktiv', 'Off')}
+          </span>
+        )}
+      </div>
+
+      {/* Own-key layer — JIT-emphasised near the daily cap. */}
+      <div style={{ padding: '0 16px 14px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <span style={{ fontSize: 11.5, fontStyle: 'italic', color: nearCap ? 'var(--brand-gold, #7E5C1B)' : 'var(--text-meta)', lineHeight: 1.45 }}>
+          {state?.userKey
+            ? t(lang, 'Deine Suchen laufen über deinen eigenen kostenlosen Brave-Key — kein Tageslimit, keine Plattformkosten.', 'Your searches go through your own free Brave key — no daily limit, no platform cost.')
+            : nearCap
+              ? t(lang, `Nur noch ${state?.remaining} Suchen heute. Mit einem eigenen, kostenlosen Brave-Key (2'000 Suchen/Monat) suchst du ohne dieses Limit.`, `Only ${state?.remaining} searches left today. With your own free Brave key (2,000 searches/month) you search without this limit.`)
+              : t(lang, `Bis zu ${state?.dailyCap ?? 25} Suchen/Tag inklusive. Eigener, kostenloser Brave-Key: 2'000 Suchen/Monat, ohne Tageslimit.`, `Up to ${state?.dailyCap ?? 25} searches/day included. Your own free Brave key: 2,000 searches/month, no daily limit.`)}
+        </span>
+        <div>
+          {state?.userKey ? (
+            <button onClick={disconnect} disabled={busy} style={ghostBtn('var(--text-meta)')}>
+              {busy ? '…' : t(lang, 'Eigenen Key entfernen', 'Remove own key')}
+            </button>
+          ) : (
+            <button onClick={() => { setShowForm((s) => !s); setError(null); }} style={ghostBtn('var(--brand-green)')}>
+              {showForm ? t(lang, 'Abbrechen', 'Cancel') : t(lang, 'Eigenen Brave-Key hinzufügen', 'Add your own Brave key')}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {showForm && !state?.userKey && (
+        <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <input
+            type="password"
+            value={key}
+            onChange={(e) => setKey(e.target.value)}
+            placeholder="Brave Search API Key (brave.com/search/api)"
+            autoComplete="off"
+            spellCheck={false}
+            style={{
+              width: '100%', padding: '9px 12px', borderRadius: 8,
+              border: '1px solid var(--border)', background: 'var(--surface)',
+              color: 'var(--text)', fontSize: 13, fontFamily: 'var(--font-mono)',
+            }}
+          />
+          {error && <div style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--danger)' }}>{error}</div>}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={connect} disabled={busy} style={{
+              padding: '8px 16px', borderRadius: 8, border: 'none',
+              background: 'var(--brand-green)', color: 'var(--on-brand, #fff)',
+              fontSize: 13, fontWeight: 600, cursor: busy ? 'wait' : 'pointer',
+              fontFamily: 'var(--font-sans)', opacity: busy ? 0.7 : 1,
+            }}>
+              {busy ? t(lang, 'Prüfe…', 'Checking…') : t(lang, 'Verbinden', 'Connect')}
+            </button>
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-meta)' }}>
+            {t(lang, 'Wird gegen die Brave-API geprüft und verschlüsselt gespeichert.', 'Validated against the Brave API and stored encrypted.')}
           </div>
         </div>
       )}
