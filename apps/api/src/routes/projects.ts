@@ -47,11 +47,13 @@ projects.get('/:id/instructions', async (c) => {
 });
 
 // PUT /api/projects/:id/instructions  { instructions: string }
+// F4.1: cap 2000 chars (spec §2). The instructions ride the existing project-context
+// injection (goblin-chat-system renderProjectContext, above the rolling memory).
 projects.put('/:id/instructions', async (c) => {
   const userId = c.get('userId');
   const projectId = c.req.param('id');
   const body = await c.req.json().catch(() => ({}));
-  const schema = z.object({ instructions: z.string().max(8000) });
+  const schema = z.object({ instructions: z.string().max(2000) });
   const parsed = schema.safeParse(body);
   if (!parsed.success) return c.json({ error: 'Invalid input' }, 400);
 
@@ -62,6 +64,58 @@ projects.put('/:id/instructions', async (c) => {
     .eq('id', projectId)
     .eq('user_id', userId);
   if (error) return c.json({ error: 'Save failed' }, 500);
+  return c.json({ success: true });
+});
+
+// F4.1: the rolling memory made visible & controllable (spec §2 — "control beats
+// mystery"). GET returns the current stored state read-only; DELETE clears the row
+// so the next chat honestly has no history (probe 6.2 / the E3 no-history path).
+//
+// GET /api/projects/:id/state
+projects.get('/:id/state', async (c) => {
+  const userId = c.get('userId');
+  const projectId = c.req.param('id');
+  const supabase = getSupabaseAdmin();
+  if (!(await verifyProjectOwnership(supabase, projectId, userId))) {
+    return c.json({ error: 'Not found' }, 404);
+  }
+  // Tolerant of a pre-migration DB (table 0076 absent) → honest empty state.
+  try {
+    const { data } = await supabase
+      .from('project_state')
+      .select('summary, decisions, updated_at')
+      .eq('project_id', projectId)
+      .maybeSingle();
+    const row = data as { summary?: string; decisions?: string; updated_at?: string } | null;
+    return c.json({
+      summary: row?.summary ?? '',
+      decisions: row?.decisions ?? '',
+      updatedAt: row?.updated_at ?? null,
+    });
+  } catch {
+    return c.json({ summary: '', decisions: '', updatedAt: null });
+  }
+});
+
+// DELETE /api/projects/:id/state — "Gedächtnis zurücksetzen"
+projects.delete('/:id/state', async (c) => {
+  const userId = c.get('userId');
+  const projectId = c.req.param('id');
+  const supabase = getSupabaseAdmin();
+  if (!(await verifyProjectOwnership(supabase, projectId, userId))) {
+    return c.json({ error: 'Not found' }, 404);
+  }
+  // Delete the row entirely — a fresh project_state is indistinguishable from
+  // "never had one", which is exactly the honest post-reset state we want.
+  try {
+    const { error } = await supabase
+      .from('project_state')
+      .delete()
+      .eq('project_id', projectId);
+    if (error) return c.json({ error: 'Reset failed' }, 500);
+  } catch {
+    // Pre-migration table absent → nothing to clear, already the desired state.
+  }
   return c.json({ success: true });
 });
 

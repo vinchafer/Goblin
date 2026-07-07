@@ -573,11 +573,14 @@ codeSessions.post('/:sessionId/agent', async (c) => {
     sb.from('code_session_files').select('path, content').eq('session_id', sessionId),
     sb.from('code_session_messages').select('role, content')
       .eq('session_id', sessionId).order('created_at', { ascending: true }).limit(30),
-    sb.from('projects').select('name').eq('id', session.project_id).single(),
+    sb.from('projects').select('name, instructions').eq('id', session.project_id).single(),
   ]);
+  const proj = project as { name?: string; instructions?: string | null } | null;
   const systemPrompt = buildAgentSystemPrompt({
-    projectName: (project as { name?: string } | null)?.name ?? 'Projekt',
+    projectName: proj?.name ?? 'Projekt',
     files: (sessionFiles ?? []).map((f) => ({ path: f.path as string, size: (f.content as string)?.length ?? 0 })),
+    // F4.1: user-authored project instructions flow into agent runs too (probe 6.1).
+    projectInstructions: proj?.instructions ?? null,
   });
   // History excludes the just-inserted user turn (passed as userMessage).
   const history: AgentMessage[] = (priorMsgs ?? []).slice(0, -1)

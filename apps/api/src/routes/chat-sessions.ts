@@ -184,18 +184,20 @@ chatSessions.post('/:id/stream', async (c) => {
   let projectName: string | null = null;
   let projectFiles: ContextFile[] | undefined;
   let lastDeploy: { url: string | null; deployedAt: string | null } | null = null;
+  let projectInstructions: string | null = null;
   if (projectId) {
     try {
       const { data: proj } = await supabase
         .from('projects')
-        .select('name, preview_url, last_deployed_at')
+        .select('name, preview_url, last_deployed_at, instructions')
         .eq('id', projectId)
         .eq('user_id', userId)
         .single();
       if (proj) {
         projectName = (proj as { name: string }).name;
-        const p = proj as { preview_url: string | null; last_deployed_at: string | null };
+        const p = proj as { preview_url: string | null; last_deployed_at: string | null; instructions: string | null };
         lastDeploy = { url: p.preview_url, deployedAt: p.last_deployed_at?.slice(0, 10) ?? null };
+        projectInstructions = p.instructions ?? null;
       }
       // U1: file CONTENTS (budget-capped) — falls back to name+size only.
       projectFiles = await loadProjectContextFiles(projectId).catch(async () =>
@@ -212,6 +214,8 @@ chatSessions.post('/:id/stream', async (c) => {
     lastDeploy,
     // U3: rolling memory — null pre-migration / when nothing stored yet.
     projectState: projectId ? await loadProjectState(supabase, projectId) : null,
+    // F4.1: user-authored project instructions (empty/absent → not rendered).
+    projectInstructions,
   };
   const systemPrompt = buildGoblinChatSystemPrompt(promptCtx);
   // B2: fallback prompt (names+sizes only) for the token-limit retry; only set

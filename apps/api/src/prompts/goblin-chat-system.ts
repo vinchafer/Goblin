@@ -26,6 +26,13 @@ export interface GoblinChatContext {
    */
   projectState?: { summary: string; decisions: string } | null;
   /**
+   * F4.1: per-project user-authored instructions (projects.instructions, ≤2k).
+   * Injected ABOVE the rolling memory and explicitly marked as the user's own
+   * standing rules — the model must honour them without them being repeated in
+   * each message. Absent/empty → nothing rendered.
+   */
+  projectInstructions?: string | null;
+  /**
    * B2: honest note rendered with the file list — used by the reduced-context
    * retry so the model knows file contents were dropped due to a model limit.
    */
@@ -149,6 +156,17 @@ function renderProjectContext(ctx: GoblinChatContext): string {
     // B2: reduced-context retry marks WHY no contents follow — keeps the model
     // honest (E7: these files count as not loaded) without a hard error.
     if (ctx.contextNote) lines.push(`- ${ctx.contextNote}`);
+
+    // F4.1: user-authored project instructions — standing rules for THIS
+    // project, above the rolling memory and marked as the user's own words so
+    // the model treats them as binding without needing them repeated per turn.
+    const instr = ctx.projectInstructions?.trim();
+    if (instr) {
+      lines.push(
+        '- Projekt-Anweisungen des Nutzers (verbindliche Vorgaben für dieses Projekt — befolge sie in jeder Antwort, auch ohne erneute Nennung):',
+        ...instr.split('\n').map((l) => `  ${l}`),
+      );
+    }
 
     // U3: rolling memory — lets a NEW chat answer "Wo waren wir?" truthfully.
     if (ctx.projectState && (ctx.projectState.summary || ctx.projectState.decisions)) {

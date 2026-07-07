@@ -141,7 +141,7 @@ chat.post('/stream', chatStreamRateLimit, async (c) => {
   try {
     const { data: proj } = await supabase
       .from('projects')
-      .select('name, preview_url, last_deployed_at')
+      .select('name, preview_url, last_deployed_at, instructions')
       .eq('id', projectId)
       .eq('user_id', userId)
       .single();
@@ -153,13 +153,15 @@ chat.post('/stream', chatStreamRateLimit, async (c) => {
         .filter((f) => !isSoftDeletedPath(f.path))
         .map((f) => ({ path: f.path, size: f.size })),
     );
-    const p = proj as { name?: string; preview_url?: string | null; last_deployed_at?: string | null } | null;
+    const p = proj as { name?: string; preview_url?: string | null; last_deployed_at?: string | null; instructions?: string | null } | null;
     const promptCtx = {
       projectName: p?.name ?? null,
       files,
       lastDeploy: p ? { url: p.preview_url ?? null, deployedAt: p.last_deployed_at?.slice(0, 10) ?? null } : null,
       // U3: rolling memory — null pre-migration / when nothing stored yet.
       projectState: await loadProjectState(supabase, projectId),
+      // F4.1: user-authored project instructions (empty/absent → not rendered).
+      projectInstructions: p?.instructions ?? null,
     };
     systemPrompt = buildGoblinChatSystemPrompt(promptCtx);
     if (files.some((f) => 'content' in f && f.content != null)) {
