@@ -1,4 +1,4 @@
-// FEEL-3a — the five tools (A3). Thin adapters over the ALREADY-HARDENED services,
+// FEEL-3a/3b — the agent tools. Thin adapters over the ALREADY-HARDENED services,
 // project-scoped, acting as the run's user. No new capability code:
 //   list_files  → code_session_files (hydrated from storage), .trash-excluded (B6)
 //   read_file   → session/storage content, size-capped like U1 (over-cap → "zu gross")
@@ -19,6 +19,14 @@ import { byteLen, assertStorageRoom } from '../storage-usage';
 import { isSoftDeletedPath, FILE_CONTENT_BUDGET_CHARS } from '../project-context';
 import { classifyFile, lineDelta, checkStcIntegrity } from '@goblin/shared';
 import logger from '../../lib/logger';
+import {
+  runPublish,
+  readDeployStatus,
+  newPublishState,
+  realPublishDeps,
+  type PublishDeps,
+  type PublishState,
+} from './publish';
 import type { ToolSpec, ToolExecutor, ToolCall, ToolResult, ToolContext } from './types';
 
 // ─── Tool schemas (native function-calling shape + the fallback JSON contract) ──
@@ -63,7 +71,25 @@ export const AGENT_TOOLS: ToolSpec[] = [
     name: 'save_draft',
     description:
       'Sichert alle offenen Entwürfe (Sichern). Idempotent — mehrfaches Aufrufen schadet nicht. ' +
-      'Veröffentlicht NICHT; das übernimmt der Nutzer mit „Live stellen" im Code-Bereich.',
+      'Veröffentlicht NICHT.',
+    parameters: { type: 'object', properties: {}, additionalProperties: false },
+  },
+  {
+    name: 'publish',
+    description:
+      'Veröffentlicht das Projekt (Live stellen): sichert offene Entwürfe, baut und stellt live, und ' +
+      'PRÜFT danach, ob die Seite und alle referenzierten Dateien wirklich erreichbar sind. Ergebnis ist ' +
+      'ehrlich: bei Erfolg die geprüfte Live-URL, bei einem Fehler die konkret fehlgeschlagene Prüfung ' +
+      '(z.B. welche Datei nicht erreichbar ist). Rufe dies NUR auf, wenn der Nutzer das Veröffentlichen ' +
+      'ausdrücklich verlangt hat — sonst sichere nur den Entwurf.',
+    parameters: { type: 'object', properties: {}, additionalProperties: false },
+  },
+  {
+    name: 'read_deploy_status',
+    description:
+      'Liest den aktuellen Veröffentlichungs-Status: live (mit URL), nicht veröffentlicht, oder ' +
+      'fehlgeschlagen (mit dem letzten Fehler im Wortlaut). Nutze dies nach einem fehlgeschlagenen ' +
+      'publish, um zu sehen, was genau schiefging.',
     parameters: { type: 'object', properties: {}, additionalProperties: false },
   },
   {
@@ -203,17 +229,22 @@ async function toolWriteFile(sb: Sb, ctx: ToolContext, args: Record<string, unkn
   };
 }
 
-async function toolSaveDraft(sb: Sb, ctx: ToolContext): Promise<ToolResult> {
+/**
+ * Promote all open drafts of a session to real storage (the Sichern flow). Shared by
+ * save_draft and publish (publish must save what the model wrote before deploying it).
+ * Returns saved paths + an honest failure reason (storage full / all uploads failed).
+ */
+async function promoteDrafts(
+  sb: Sb,
+  ctx: ToolContext,
+): Promise<{ ok: boolean; saved: string[]; error?: string; empty?: boolean }> {
   const { data: drafts } = await sb
     .from('code_session_files')
     .select('id, path, content')
     .eq('session_id', ctx.sessionId)
     .eq('change_state', 'draft');
 
-  if (!drafts || drafts.length === 0) {
-    // Idempotent: nothing to save is a success, not an error.
-    return { ok: true, summary: 'Keine Entwürfe zu sichern', data: { saved: 0 } };
-  }
+  if (!drafts || drafts.length === 0) return { ok: true, saved: [], empty: true };
 
   // Storage cap — pre-check the whole batch before any write (mirrors POST /save).
   let aggregateDelta = 0;
@@ -223,7 +254,7 @@ async function toolSaveDraft(sb: Sb, ctx: ToolContext): Promise<ToolResult> {
   try {
     await assertStorageRoom(ctx.userId, aggregateDelta);
   } catch (e) {
-    return { ok: false, summary: 'Speicher voll', error: { code: 'storage_full', message: (e as Error).message } };
+    return { ok: false, saved: [], error: `Speicher voll: ${(e as Error).message}` };
   }
 
   const saved: string[] = [];
@@ -240,19 +271,64 @@ async function toolSaveDraft(sb: Sb, ctx: ToolContext): Promise<ToolResult> {
     }
   }
   await sb.from('code_sessions').update({ updated_at: new Date().toISOString() }).eq('id', ctx.sessionId);
+  if (saved.length === 0) return { ok: false, saved: [], error: 'Sichern fehlgeschlagen' };
+  return { ok: true, saved };
+}
+
+async function toolSaveDraft(sb: Sb, ctx: ToolContext): Promise<ToolResult> {
+  const res = await promoteDrafts(sb, ctx);
+  if (res.empty) return { ok: true, summary: 'Keine Entwürfe zu sichern', data: { saved: 0 } };
+  if (!res.ok) {
+    const code = res.error?.startsWith('Speicher voll') ? 'storage_full' : 'save_failed';
+    return { ok: false, summary: res.error ?? 'Sichern fehlgeschlagen', error: { code, message: res.error ?? 'Sichern fehlgeschlagen' } };
+  }
   return {
-    ok: saved.length > 0,
-    summary: saved.length ? `${saved.length} Datei${saved.length === 1 ? '' : 'en'} gesichert ✓` : 'Sichern fehlgeschlagen',
-    data: { saved: saved.length, paths: saved },
+    ok: true,
+    summary: `${res.saved.length} Datei${res.saved.length === 1 ? '' : 'en'} gesichert ✓`,
+    data: { saved: res.saved.length, paths: res.saved },
   };
+}
+
+/** Vercel project name — deployToVercel keys off it. Falls back to the id if unnamed. */
+async function projectName(sb: Sb, projectId: string): Promise<string> {
+  const { data } = await sb.from('projects').select('name').eq('id', projectId).maybeSingle();
+  return ((data as { name?: string } | null)?.name ?? projectId) as string;
+}
+
+/** Persist the verified URL on the project row (mirrors the deploy route's success write). */
+async function markDeployed(sb: Sb, projectId: string, url: string): Promise<void> {
+  await sb.from('projects').update({ preview_url: url, last_deployed_at: new Date().toISOString() }).eq('id', projectId);
+}
+
+/** read_deploy_status adapter — reads the project row + the run's publish memory. */
+async function toolReadDeployStatus(sb: Sb, ctx: ToolContext, state: PublishState): Promise<ToolResult> {
+  const { data } = await sb
+    .from('projects')
+    .select('preview_url, last_deployed_at')
+    .eq('id', ctx.projectId)
+    .maybeSingle();
+  const row = (data as { preview_url?: string | null; last_deployed_at?: string | null } | null) ?? {};
+  return readDeployStatus(state, { previewUrl: row.preview_url, lastDeployedAt: row.last_deployed_at });
+}
+
+/** Options for the executor — the B1 publish deps + the run's shared publish state. */
+export interface ExecutorOptions {
+  publishDeps?: PublishDeps;
+  publishState?: PublishState;
+  /** Injectable sleep for the deploy poll (tests pass a no-op). */
+  sleep?: (ms: number) => Promise<void>;
 }
 
 /**
  * Build the real tool executor. `finish` is intercepted by the orchestrator before it
- * reaches here; if it ever arrives, it's a harmless terminator. Unknown tools return a
- * structured error (the model self-heals in 3b; here it informs the narration).
+ * reaches here; if it ever arrives, it's a harmless terminator. `publish` runs the full
+ * Live-stellen + truth-gate pipeline (B1) and mutates the run's PublishState so
+ * read_deploy_status and the self-heal loop see the outcome. Unknown tools return a
+ * structured error.
  */
-export function buildToolExecutor(sb: Sb = getSupabaseAdmin()): ToolExecutor {
+export function buildToolExecutor(sb: Sb = getSupabaseAdmin(), opts: ExecutorOptions = {}): ToolExecutor {
+  const publishDeps = opts.publishDeps ?? realPublishDeps;
+  const publishState = opts.publishState ?? newPublishState();
   return async (call: ToolCall, ctx: ToolContext): Promise<ToolResult> => {
     switch (call.name) {
       case 'list_files':
@@ -263,6 +339,21 @@ export function buildToolExecutor(sb: Sb = getSupabaseAdmin()): ToolExecutor {
         return toolWriteFile(sb, ctx, call.args ?? {});
       case 'save_draft':
         return toolSaveDraft(sb, ctx);
+      case 'publish':
+        return runPublish(
+          publishDeps,
+          {
+            promoteDrafts: (c) => promoteDrafts(sb, c),
+            projectName: (pid) => projectName(sb, pid),
+            markDeployed: (pid, url) => markDeployed(sb, pid, url),
+            sleep: opts.sleep,
+          },
+          ctx,
+          publishState,
+          (msg) => ctx.emitProgress?.(msg),
+        );
+      case 'read_deploy_status':
+        return toolReadDeployStatus(sb, ctx, publishState);
       case 'finish':
         return { ok: true, summary: 'fertig', terminate: true, report: String(call.args?.report ?? '') };
       default:

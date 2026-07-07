@@ -20,11 +20,13 @@ export interface AgentReportFile {
 /** The orchestrator-assembled report (§5.1) — the shape the server emits. */
 export interface AgentReport {
   outcome: 'finished' | 'stopped' | 'budget' | 'error';
-  state: 'draft-saved' | 'draft-unsaved' | 'failed' | 'stopped';
+  state: 'published' | 'draft-saved' | 'draft-unsaved' | 'failed' | 'stopped';
   files: AgentReportFile[];
   unitsConsumed: number;
   modelText: string;
-  followUps: Array<'view-changes' | 'go-live' | 'open'>;
+  followUps: Array<'view-changes' | 'go-live' | 'open' | 'confirm-publish'>;
+  /** FEEL-3b: the verified live URL when state === 'published'. */
+  publishedUrl?: string;
   failureReason?: string;
 }
 
@@ -32,6 +34,8 @@ interface SubmitOpts {
   onDone?: (report: AgentReport | null) => void | Promise<void>;
   /** Called when the server declines the agent path (409) — caller falls back to /messages. */
   onNotEligible?: () => void;
+  /** FEEL-3b D1: confirmation-chip tap — grants publish for this (publish-only) run. */
+  confirmPublish?: boolean;
 }
 
 /**
@@ -65,7 +69,7 @@ export function useAgentRun(sessionId: string | null) {
     try {
       await apiStream(
         `/api/code-sessions/${sessionId}/agent`,
-        { prompt, modelId },
+        { prompt, modelId, confirmPublish: opts?.confirmPublish === true },
         (raw: unknown) => {
           const d = raw as {
             type: string;

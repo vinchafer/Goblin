@@ -100,18 +100,26 @@ Deploy truth-gating (P0.2: HTTP checks only) · STC integrity checks (client/sha
   (constants VERIFIED `anchor-message.ts`) — widen with prod telemetry once anchored sends are measurable
   (attributable via I0 `completion_costs.project_id` + `chat_session_id`).
 
-### M10 — Agent run (FEEL-3a, the loop, safe half)
+### M10 — Agent run (FEEL-3a loop + FEEL-3b publish/self-heal)
 - **Trigger:** a project chat on an agent-eligible model (Goblin Swift default / Forge opt-in, D2),
   with the `AGENT_LOOP` flag on (or the test account), runs the server-side orchestrator loop
   (`apps/api/src/services/agent/orchestrator.ts`) instead of a single completion. One run = N model
-  turns, each of which may call a tool (`list_files`/`read_file`/`write_file`/`save_draft`/`finish`)
-  whose result is fed back as the next turn's input. **Safe half only — no `publish` / `read_deploy_status`
-  (those are FEEL-3b); a run lands as a saved/unsaved draft, never a live deploy.**
+  turns, each of which may call a tool (`list_files`/`read_file`/`write_file`/`save_draft`/`publish`/
+  `read_deploy_status`/`finish`) whose result is fed back as the next turn's input. **FEEL-3b adds the
+  publish half:** a run may now end in a **verified live deploy** — but only on explicit publish intent
+  (D1 gate) or a confirmation-chip tap; otherwise it still lands as a saved draft.
 - **Tokens (per run):** Σ over turns of (injected context + accumulated **step history** + tool results
   as input) + narration/tool-call tokens as output. The step history is the A19 driver: each turn re-sends
   the prior turns' assistant messages + tool results, so input grows ~linearly with iteration count —
   **capped structurally by the iteration budget** (below). Typical Swift run (small project, 3–5 turns,
   ~5k injected context + growing tool results) ≈ **60–150k weighted units**.
+- **FEEL-3b publish cost:** `publish`/`read_deploy_status` consume **no extra model tokens themselves**
+  (the deploy + n/6 truth-gate run server-side; only their short structured *result* re-enters the next
+  turn's input). The real driver is **self-heal**: a red gate feeds the error back and the model may run
+  **at most 2 corrective cycles** (each = up to 1 rewrite turn + 1 re-publish), orchestrator-enforced —
+  so a worst-case publishing run adds ~2–3 turns over a draft-only run, still inside the 8-iteration cap.
+  A typical explicit-publish Swift run (build + 1 clean publish) ≈ **90–180k units**; a 2-cycle self-heal
+  run ≈ **150–260k units** (may hit the 200k budget → truthful finish).
 - **Billed to:** **user allowance** — user-initiated work. Every model turn flows through the existing
   `trackCompletion` with the new **`run_id`** (migration 0081) so `completion_costs` rows for a run are
   summable (the report's cost line + telemetry). No special path; same weighted accounting as M1/M2.

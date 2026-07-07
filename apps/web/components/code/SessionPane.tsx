@@ -657,7 +657,8 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
           elapsedSeconds={agentRun.streaming ? (workingSeconds ?? 0) : null}
           onViewChanges={(p) => handleViewFile(p)}
           onGoLive={() => setDeployConfirm(true)}
-          onOpen={() => { const u = liveUrl ?? detail.deployUrl; if (u) window.open(u, "_blank", "noopener"); }}
+          onConfirmPublish={() => agentRun.submit("Jetzt veröffentlichen.", session.model_id ?? undefined, { confirmPublish: true, onDone: async () => { await detail.refresh(); } })}
+          onOpen={() => { const u = agentRun.report?.publishedUrl ?? liveUrl ?? detail.deployUrl; if (u) window.open(u, "_blank", "noopener"); }}
         />
         {(agent.error || agentRun.error) && (
           <div style={{ margin: "0 16px 8px", padding: "8px 12px", borderRadius: 8, background: "rgba(176,67,42,0.08)", border: "1px solid rgba(176,67,42,0.3)", color: "#B0432A", fontSize: 12.5, fontFamily: "var(--font-sans)" }}>
@@ -716,7 +717,8 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
                   elapsedSeconds={agentRun.streaming ? (workingSeconds ?? 0) : null}
                   onViewChanges={(p) => handleViewFile(p)}
                   onGoLive={() => setDeployConfirm(true)}
-                  onOpen={() => { const u = liveUrl ?? detail.deployUrl; if (u) window.open(u, "_blank", "noopener"); }}
+                  onConfirmPublish={() => agentRun.submit("Jetzt veröffentlichen.", session.model_id ?? undefined, { confirmPublish: true, onDone: async () => { await detail.refresh(); } })}
+                  onOpen={() => { const u = agentRun.report?.publishedUrl ?? liveUrl ?? detail.deployUrl; if (u) window.open(u, "_blank", "noopener"); }}
                 />
               : showUpgradeCard
                 ? <AchievementUpgradeCard variant="slot" onUpgrade={upgradeCardOpen} onLater={upgradeCardLater} />

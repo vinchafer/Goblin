@@ -57,21 +57,25 @@ interface Props {
   onViewChanges?: (path: string) => void;
   onGoLive?: () => void;
   onOpen?: () => void;
+  /** FEEL-3b D1: the confirmation chip — grants publish + resumes a publish-only run. */
+  onConfirmPublish?: () => void;
 }
 
-export function AgentRunView({ streaming, steps, narration, report, elapsedSeconds, onViewChanges, onGoLive, onOpen }: Props) {
+export function AgentRunView({ streaming, steps, narration, report, elapsedSeconds, onViewChanges, onGoLive, onOpen, onConfirmPublish }: Props) {
   const lang = useLang();
   const [collapsed, setCollapsed] = useState(false);
   if (!streaming && steps.length === 0 && !report) return null;
 
   const stateLabel = report
-    ? report.state === "draft-saved"
-      ? t(lang, "Entwurf gesichert — bereit zum Veröffentlichen", "Draft saved — ready to publish")
-      : report.state === "draft-unsaved"
-        ? t(lang, "Entwurf erstellt (noch nicht gesichert)", "Draft created (not yet saved)")
-        : report.state === "stopped"
-          ? t(lang, "Gestoppt — Teilstand gesichert", "Stopped — partial state kept")
-          : t(lang, "Nicht abgeschlossen", "Did not complete")
+    ? report.state === "published"
+      ? t(lang, "Live ✓ — veröffentlicht und geprüft", "Live ✓ — published and verified")
+      : report.state === "draft-saved"
+        ? t(lang, "Entwurf gesichert — bereit zum Veröffentlichen", "Draft saved — ready to publish")
+        : report.state === "draft-unsaved"
+          ? t(lang, "Entwurf erstellt (noch nicht gesichert)", "Draft created (not yet saved)")
+          : report.state === "stopped"
+            ? t(lang, "Gestoppt — Teilstand gesichert", "Stopped — partial state kept")
+            : t(lang, "Nicht abgeschlossen", "Did not complete")
     : "";
 
   const firstChanged = report?.files.find((f) => f.classification !== "IDENTISCH")?.path ?? report?.files[0]?.path;
@@ -106,9 +110,27 @@ export function AgentRunView({ streaming, steps, narration, report, elapsedSecon
       {report && (
         <div data-testid="agent-report-card" style={{ borderTop: "1px solid var(--ed-rule)", padding: "12px", display: "flex", flexDirection: "column", gap: 10 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ width: 8, height: 8, borderRadius: "50%", flexShrink: 0, background: report.state === "failed" ? "#B0432A" : report.state === "draft-saved" ? "var(--ed-saved, #6db97b)" : "var(--ed-draft, #d4a737)" }} />
+            <span style={{ width: 8, height: 8, borderRadius: "50%", flexShrink: 0, background: report.state === "failed" ? "#B0432A" : (report.state === "published" || report.state === "draft-saved") ? "var(--ed-saved, #6db97b)" : "var(--ed-draft, #d4a737)" }} />
             <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--ed-fg-1)", fontFamily: "var(--font-sans)" }}>{stateLabel}</span>
           </div>
+
+          {/* Verified live URL — attested by the truth-gate (§5.1). */}
+          {report.state === "published" && report.publishedUrl && (
+            <a
+              href={report.publishedUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              data-testid="agent-report-url"
+              style={{ fontSize: 12, fontFamily: "JetBrains Mono, monospace", color: "var(--ed-primary, var(--brand-green))", textDecoration: "none", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+            >
+              {report.publishedUrl}
+            </a>
+          )}
+
+          {/* Honest failure reason (self-heal exhausted / build error). */}
+          {report.state === "failed" && report.failureReason && (
+            <p data-testid="agent-report-failure" style={{ margin: 0, fontSize: 12, lineHeight: 1.5, color: "#B0432A", fontFamily: "var(--font-sans)" }}>{report.failureReason}</p>
+          )}
 
           {report.files.length > 0 && (
             <ul style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 6 }}>
@@ -143,6 +165,12 @@ export function AgentRunView({ streaming, steps, narration, report, elapsedSecon
             {report.followUps.includes("go-live") && (
               <button type="button" data-testid="report-go-live" onClick={() => onGoLive?.()} style={primaryBtn}>
                 {t(lang, "Live stellen", "Go live")}
+              </button>
+            )}
+            {/* FEEL-3b D1 chip: one tap grants publish + resumes a publish-only run. */}
+            {report.followUps.includes("confirm-publish") && (
+              <button type="button" data-testid="report-confirm-publish" onClick={() => onConfirmPublish?.()} style={primaryBtn}>
+                {t(lang, "Jetzt veröffentlichen", "Publish now")}
               </button>
             )}
           </div>

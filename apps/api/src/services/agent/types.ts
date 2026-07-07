@@ -49,6 +49,8 @@ export interface ToolContext {
   userId: string;
   projectId: string;
   sessionId: string;
+  /** FEEL-3b: sub-step progress sink (deploy/verify narration, "wird geprüft 3/6"). */
+  emitProgress?: (msg: string) => void | Promise<void>;
 }
 
 /** One entry in the file list of the final report — from real classify results. */
@@ -100,14 +102,24 @@ export type EmitEvent = (evt: AgentEvent) => void | Promise<void>;
  */
 export interface ReportCard {
   outcome: RunOutcome;
-  /** draft-saved | draft-unsaved | failed | stopped — the truthful landing state. */
-  state: 'draft-saved' | 'draft-unsaved' | 'failed' | 'stopped';
+  /**
+   * The truthful landing state:
+   *  • published    — a green `publish` truth-gate produced a verified live URL (§5.1);
+   *  • draft-saved  — drafts saved, not published (offers the D1 confirmation chip);
+   *  • draft-unsaved / failed / stopped — as before.
+   */
+  state: 'published' | 'draft-saved' | 'draft-unsaved' | 'failed' | 'stopped';
   files: ReportFile[];
   unitsConsumed: number;
   /** The model's finish() report text (or last narration), quoted — never treated as truth. */
   modelText: string;
-  /** One-tap follow-ups the card offers (publish arrives in 3b — 'go-live' points at "Live stellen"). */
-  followUps: Array<'view-changes' | 'go-live' | 'open'>;
+  /**
+   * One-tap follow-ups the card offers. 'confirm-publish' is the D1 chip
+   * ("Bereit — jetzt veröffentlichen?"): one tap grants + resumes a publish-only run.
+   */
+  followUps: Array<'view-changes' | 'go-live' | 'open' | 'confirm-publish'>;
+  /** The verified live URL when state === 'published' (attested by the truth-gate). */
+  publishedUrl?: string;
   failureReason?: string;
 }
 
@@ -119,6 +131,8 @@ export interface RunResult {
   steps: Array<{ tool: string; args: string; outcome: string; ms: number }>;
   toolsUsed: string[];
   iterations: number;
+  /** FEEL-3b B3: how many corrective (self-heal) cycles the run spent (0–2). */
+  healCycles: number;
   tokensIn: number;
   tokensOut: number;
   unitsConsumed: number;

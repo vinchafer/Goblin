@@ -36,6 +36,39 @@ import type {
 /** Injected biller — one call per model turn. Defaults to trackCompletion. */
 export type BillTurn = (usage: { inputTokens: number; outputTokens: number }) => Promise<void> | void;
 
+/**
+ * FEEL-3b B3: bounded self-heal (spec §5.3). A red publish gate or a failed tool feeds
+ * the error to the model verbatim; the model may run at most this many CORRECTIVE cycles,
+ * each narrated. On the last cycle the loop forces an honest finish — never a silent
+ * retry, never an infinite loop.
+ */
+const MAX_HEAL_CYCLES = 2;
+
+/**
+ * The single repair reprompt after a mixed-mode turn (a native call + a fenced
+ * `tool_call`, or several calls in one turn). One tool-call signal per turn is the
+ * contract; the extra call would otherwise be dropped silently.
+ */
+const MIXED_MODE_REPAIR =
+  'Deine letzte Antwort enthielt MEHR ALS EINEN Werkzeug-Aufruf (z.B. einen nativen ' +
+  'Function-Call UND einen umzäunten `tool_call`-Block, oder mehrere Aufrufe). Rufe pro ' +
+  'Antwort GENAU EIN Werkzeug auf — nutze NUR das native Function-Call-Format, ohne ' +
+  'zusätzlichen `tool_call`-Block und ohne zweiten Aufruf. Wiederhole jetzt den EINEN ' +
+  'Aufruf, den du als Nächstes ausführen willst.';
+
+/** The narrated corrective line for a failed tool result (spec §5.3 tone). */
+function healNarration(tool: string, result: ToolResult): string {
+  const detail = result.error?.message || result.summary || 'unbekannter Fehler';
+  if (tool === 'publish') return `Prüfung fehlgeschlagen: ${detail} — ich korrigiere das und versuche es erneut.`;
+  return `${tool} meldete einen Fehler: ${detail} — ich versuche es korrigiert.`;
+}
+
+/** The honest failure reason after the heal budget is spent (what was tried + the state). */
+function healFailureReason(result: ToolResult): string {
+  const detail = result.error?.message || result.summary || 'unbekannter Fehler';
+  return `Nach ${MAX_HEAL_CYCLES} Korrekturversuchen weiterhin fehlgeschlagen: ${detail}`;
+}
+
 export interface RunAgentInput {
   runId: string | null;
   userId: string;
@@ -49,6 +82,13 @@ export interface RunAgentInput {
   executor: ToolExecutor;
   emit: EmitEvent;
   stopSignal?: AbortSignal;
+  /**
+   * FEEL-3b D1: is `publish` allowed this run? Set by the route from explicit publish
+   * intent (classifyPublishIntent) or a confirmation-chip tap. When false, a `publish`
+   * call is denied by the orchestrator (never reaches the deploy) and the run lands as a
+   * saved draft carrying the confirmation chip. Per-run, never sticky.
+   */
+  publishGranted?: boolean;
   /** Test seams — default to the real model / budgets / biller. */
   model?: AgentModel;
   maxIterations?: number;
@@ -108,21 +148,27 @@ function assembleReport(
   savedDraft: boolean,
   units: number,
   modelText: string,
+  publishedUrl: string | undefined,
   failureReason?: string,
 ): ReportCard {
   let state: ReportCard['state'];
   if (outcome === 'stopped') state = 'stopped';
   else if (outcome === 'error') state = 'failed';
+  else if (publishedUrl) state = 'published';
   else state = savedDraft ? 'draft-saved' : 'draft-unsaved';
 
   const followUps: ReportCard['followUps'] = [];
-  if (files.length > 0) followUps.push('view-changes');
-  if (savedDraft) {
-    followUps.push('go-live'); // 3b wires publish; here it points at the manual "Live stellen"
+  if (publishedUrl) {
+    // Verified live — open the attested URL; still let the user inspect the diff.
     followUps.push('open');
+    if (files.length > 0) followUps.push('view-changes');
+  } else {
+    if (files.length > 0) followUps.push('view-changes');
+    // A saved-but-unpublished draft carries the D1 confirmation chip (one tap → publish).
+    if (savedDraft && (outcome === 'finished' || outcome === 'stopped')) followUps.push('confirm-publish');
   }
 
-  return { outcome, state, files, unitsConsumed: units, modelText, followUps, failureReason };
+  return { outcome, state, files, unitsConsumed: units, modelText, followUps, publishedUrl, failureReason };
 }
 
 /**
@@ -147,11 +193,15 @@ export async function runAgent(input: RunAgentInput): Promise<RunResult> {
   const toolsUsed = new Set<string>();
   const files = new Map<string, ReportFile>();
   let savedDraft = false;
+  let publishedUrl: string | undefined;
+  const publishGranted = input.publishGranted === true;
   let tokensIn = 0;
   let tokensOut = 0;
   let units = 0;
   let iterations = 0;
   let repairsUsed = 0;
+  let mixedRepairsUsed = 0;
+  let healCycles = 0;
   let modelText = '';
   let outcome: RunOutcome | null = null;
   let failureReason: string | undefined;
@@ -183,9 +233,31 @@ export async function runAgent(input: RunAgentInput): Promise<RunResult> {
     messages.push({ role: 'assistant', content: turn.content, raw: turn.assistantMessage });
 
     // Resolve tool calls: native first, JSON fallback on the text when native is empty.
-    let calls: ToolCall[] = turn.toolCalls;
-    if (calls.length === 0) {
-      const parsed = parseFallbackToolCall(turn.content);
+    const nativeCalls = turn.toolCalls;
+    const parsed = parseFallbackToolCall(turn.content);
+    const fencePresent = parsed.kind !== 'none';
+
+    // Mixed-mode guard (founder D-fix, B5 flake): exactly ONE tool-call signal per turn.
+    // The Swift model occasionally emits a native call AND a fenced `tool_call` in prose
+    // (or several native calls) in one turn — the extra call is then silently dropped,
+    // which is how W10 obs-1 lost index.html. Reject the turn with one repair-reprompt;
+    // a second violation is an honest abort. Never silently execute a subset.
+    if (nativeCalls.length + (fencePresent ? 1 : 0) > 1) {
+      if (mixedRepairsUsed < 1) {
+        mixedRepairsUsed += 1;
+        messages.push({ role: 'system', content: MIXED_MODE_REPAIR });
+        continue;
+      }
+      outcome = 'error';
+      failureReason = 'Mehrere Tool-Aufrufe in einem Turn (nach Reparaturversuch)';
+      break;
+    }
+
+    let calls: ToolCall[];
+    if (nativeCalls.length === 1) {
+      calls = nativeCalls;
+    } else {
+      // No native call — resolve via the strict JSON fallback protocol.
       if (parsed.kind === 'call') {
         calls = [parsed.call];
       } else if (parsed.kind === 'malformed') {
@@ -215,6 +287,28 @@ export async function runAgent(input: RunAgentInput): Promise<RunResult> {
         break;
       }
 
+      // FEEL-3b D1: publish is orchestrator-gated. Without an intent grant it never
+      // reaches the deploy — the model gets a structured denial and must save + finish;
+      // the run then lands as a saved draft carrying the confirmation chip.
+      if (call.name === 'publish' && !publishGranted) {
+        const denial: ToolResult = {
+          ok: false,
+          summary: 'Veröffentlichen braucht deine Freigabe',
+          error: {
+            code: 'intent_required',
+            message:
+              'Der Nutzer hat das Veröffentlichen in DIESER Nachricht nicht ausdrücklich verlangt. ' +
+              'Veröffentliche NICHT. Sichere den Entwurf mit save_draft und schließe mit finish ab — ' +
+              'die Plattform bietet dem Nutzer danach einen Bestätigungs-Chip zum Veröffentlichen an.',
+          },
+        };
+        toolsUsed.add('publish');
+        steps.push({ tool: 'publish', args: '', outcome: 'intent_required', ms: 0 });
+        await input.emit({ type: 'agent_step', tool: 'publish', summary: denial.summary, ok: false, ms: 0 });
+        messages.push(toolResultMessage(call, denial, model.supportsNativeTools));
+        continue; // next call/turn — NOT counted as a failure/heal cycle
+      }
+
       const t0 = Date.now();
       let result: ToolResult;
       try {
@@ -222,6 +316,8 @@ export async function runAgent(input: RunAgentInput): Promise<RunResult> {
           userId: input.userId,
           projectId: input.projectId,
           sessionId: input.sessionId,
+          // Deploy/verify sub-progress ("wird geprüft 3/6") flows into the narration feed.
+          emitProgress: (msg) => input.emit({ type: 'agent_narration', text: msg }),
         });
       } catch (e) {
         result = {
@@ -243,10 +339,34 @@ export async function runAgent(input: RunAgentInput): Promise<RunResult> {
 
       if (result.file) files.set(result.file.path, result.file);
       if (call.name === 'save_draft' && result.ok) savedDraft = true;
+      // A green publish attests a verified live URL — the report's ground truth for §5.1.
+      if (call.name === 'publish' && result.ok) {
+        const url = (result.data as { url?: string } | undefined)?.url;
+        if (typeof url === 'string' && url) { publishedUrl = url; savedDraft = true; }
+      }
 
       messages.push(toolResultMessage(call, result, model.supportsNativeTools));
 
       if (stop?.aborted) { outcome = 'stopped'; terminated = true; break; }
+
+      // B3 self-heal: a failed tool (incl. a red publish gate) is narrated and counted.
+      // The model gets the error verbatim (in the tool result above) and may correct — but
+      // only MAX_HEAL_CYCLES times. On the last cycle we force an honest finish. A benign
+      // not-found during orientation (read_file/list_files) is NOT a corrective cycle —
+      // that's the FEEL-3a same-tool retry path, so it never burns the heal budget.
+      const isOrientationMiss =
+        (call.name === 'read_file' || call.name === 'list_files') && result.error?.code === 'not_found';
+      if (!result.ok && !isOrientationMiss) {
+        healCycles += 1;
+        await input.emit({ type: 'agent_narration', text: healNarration(call.name, result) });
+        if (healCycles >= MAX_HEAL_CYCLES) {
+          outcome = 'error';
+          failureReason = healFailureReason(result);
+          modelText = modelText || failureReason;
+          terminated = true;
+          break;
+        }
+      }
     }
 
     if (terminated) break;
@@ -256,7 +376,7 @@ export async function runAgent(input: RunAgentInput): Promise<RunResult> {
   if (outcome === null) outcome = 'budget';
 
   const fileList = [...files.values()];
-  const report = assembleReport(outcome, fileList, savedDraft, units, modelText, failureReason);
+  const report = assembleReport(outcome, fileList, savedDraft, units, modelText, publishedUrl, failureReason);
   const status: RunResult['status'] = outcome === 'error' ? 'failed' : 'success';
 
   await input.emit({ type: 'agent_report', report });
@@ -268,6 +388,7 @@ export async function runAgent(input: RunAgentInput): Promise<RunResult> {
     steps,
     toolsUsed: [...toolsUsed],
     iterations,
+    healCycles,
     tokensIn,
     tokensOut,
     unitsConsumed: units,

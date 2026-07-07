@@ -1,0 +1,33 @@
+user 8745e258-b05b-4e26-99fa-a3fa403eb2d4
+
+>>> MESSAGE: Jetzt veröffentlichen.  (confirmPublish=true)
+>>> project=ecdc860d-0b8d-4e31-ba30-dd593646a5ac session=13d82904-6292-4f0f-8cd5-acd31c5c603f
+
+[0.0s] meta run_id=3dbb1276-b8bf-46ce-a5a2-54840b9b70a3
+[3.1s] 💬 Ich stelle die Seite live und prüfe sie.
+
+
+[3.8s] 💬 Dateien werden vorbereitet…
+[5.8s] 💬 3 Dateien werden hochgeladen…
+[7.7s] 💬 Veröffentlichung wird erstellt…
+[9.0s] 💬 Veröffentlichung wird öffentlich geschaltet…
+[13.0s] 💬 Bereitstellung abgeschlossen — wird geprüft…
+[15.4s] 💬 Wird veröffentlicht… (wird geprüft, 1/6)
+[18.4s] ✓ publish: Live ✓ https://feel3b-b5-32305.vercel.app (15258ms)
+[21.8s] 💬 Fertig und live — die Mini-Umfrage mit der Frage "Kaffee oder Tee?" ist unter der geprüften Adresse erreichbar.
+[22.8s] done outcome=finished
+
+=== FINAL REPORT ===
+{
+  "outcome": "finished",
+  "state": "published",
+  "files": [],
+  "unitsConsumed": 7117,
+  "modelText": "Fertig und live — die Mini-Umfrage mit der Frage \"Kaffee oder Tee?\" ist unter der geprüften Adresse erreichbar.",
+  "followUps": [
+    "open"
+  ],
+  "publishedUrl": "https://feel3b-b5-32305.vercel.app"
+}
+
+RESULT_IDS project=ecdc860d-0b8d-4e31-ba30-dd593646a5ac session=13d82904-6292-4f0f-8cd5-acd31c5c603f
