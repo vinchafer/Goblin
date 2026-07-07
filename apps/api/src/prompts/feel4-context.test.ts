@@ -77,3 +77,24 @@ describe('F4.2 — user preferences inject globally and are non-placebo', () => 
     expect(p).not.toContain('Aktueller Projektkontext'); // no project block
   });
 });
+
+describe('F4.3 — web capability is honest and conditional', () => {
+  it('base chat still declares it cannot search the web (regression)', () => {
+    const p = buildGoblinChatSystemPrompt({ projectName: 'X' });
+    expect(p).toMatch(/Nicht im Web suchen/);
+    expect(p).not.toContain('web_search');
+  });
+
+  it('agent run WITHOUT a provider does not advertise web_search', () => {
+    const p = buildAgentSystemPrompt({ projectName: 'X' });
+    expect(p).not.toContain('web_search');
+    // the stale "kein Web-Zugriff" claim is gone from the refusal example
+    expect(p).not.toContain('keinen Web-Zugriff');
+  });
+
+  it('agent run WITH a provider advertises web_search + the citation rule', () => {
+    const p = buildAgentSystemPrompt({ projectName: 'X', searchAvailable: true });
+    expect(p).toContain('web_search');
+    expect(p).toMatch(/Quelle: <url>/);
+  });
+});

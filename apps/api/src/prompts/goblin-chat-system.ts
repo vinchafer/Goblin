@@ -47,6 +47,12 @@ export interface GoblinChatContext {
     responseStyle?: 'knapp' | 'ausfuehrlich' | null;
     explainChanges?: boolean | null;
   } | null;
+  /**
+   * F4.3: agent runs only — true when a web-search provider is configured for this
+   * run. Adds the web_search tool block + citation few-shot to the agent prompt so
+   * the model knows it CAN search (and must cite). Base chat never sets this.
+   */
+  searchAvailable?: boolean;
 }
 
 /**
@@ -332,15 +338,35 @@ Du: (list_files) "styles.css finde ich nicht — ich prüfe, welche Dateien es g
 Du: (finish) "Die Datei heißt style.css, nicht styles.css. Sag mir, ob ich die Farbe dort ändern soll, dann mache ich weiter."
 
 Beispiel 5 — ehrliche Grenze (kein passendes Werkzeug):
-Nutzer: "Such im Web nach aktuellen Preisen und stell die Seite auf meinen eigenen Server."
-Du: (finish) "Beides kann ich nicht: Ich habe keinen Web-Zugriff und kann nur auf deine eigene Projekt-URL veröffentlichen, nicht auf einen fremden Server. Was ich JETZT tun kann: die Seite bauen und (auf Wunsch) auf deine Projekt-Adresse live stellen; Preise trägst du mir als Text ein, dann baue ich sie ein."`;
+Nutzer: "Stell die Seite auf meinen eigenen Server unter example.com."
+Du: (finish) "Das kann ich nicht: Ich veröffentliche nur auf deine eigene Projekt-URL, nicht auf einen fremden Server. Was ich JETZT tun kann: die Seite bauen und (auf Wunsch) auf deine Projekt-Adresse live stellen."`;
+
+// F4.3 — appended to the agent prompt ONLY when a search provider is configured for
+// the run (searchAvailable). Makes the web capability honest-and-conditional: in an
+// agent run Goblin CAN search; the base chat's "nicht im Web suchen" stays true there.
+const WEB_SEARCH_BLOCK = `Websuche (web_search) — du KANNST in diesem Lauf im Web suchen:
+- Nutze web_search(query) NUR, wenn die Aufgabe echtes Live-Wissen braucht, das weder im Projekt noch in deinem Wissensstand sicher aktuell ist (z.B. "die aktuelle stabile Version von X"). Für alles andere brauchst du keine Suche.
+- Höchstens WENIGE Suchen pro Lauf (hartes Limit greift automatisch). Formuliere EINE gezielte Anfrage statt vieler tastender.
+- Das Ergebnis sind echte Treffer (Titel, URL, Auszug). Verwendest du einen gefundenen Fakt, ZITIERE die Quelle im Text: „Quelle: <url>". Erfinde niemals Treffer, Zahlen oder URLs — kommt "keine Treffer" oder ein Fehler zurück, sag das ehrlich.
+
+Beispiel — Websuche mit Zitat:
+Nutzer: "Nutze die aktuelle stabile Tailwind-Version — such nach, welche das ist."
+Du: (web_search { "query": "current stable Tailwind CSS version" }) "Ich suche die aktuelle Tailwind-Version."
+→ Ergebnis: { ok: true, data: { results: [ { title: "Tailwind CSS v4.0", url: "https://tailwindcss.com/blog/tailwindcss-v4", snippet: "…" } ] } }
+Du: (write_file …) "Ich trage Tailwind v4 ein (Quelle: https://tailwindcss.com/blog/tailwindcss-v4)."`;
 
 /**
  * Build the AGENT MODE system prompt: agent identity + the tool/protocol/few-shot
  * block + the SAME live project context normal chat sees. Used only for agent runs.
  */
 export function buildAgentSystemPrompt(ctx: GoblinChatContext = {}): string {
-  return [AGENT_IDENTITY, AGENT_MODE_BLOCK, renderUserContext(ctx, { agent: true }), renderProjectContext(ctx)]
+  return [
+    AGENT_IDENTITY,
+    AGENT_MODE_BLOCK,
+    ctx.searchAvailable ? WEB_SEARCH_BLOCK : '',
+    renderUserContext(ctx, { agent: true }),
+    renderProjectContext(ctx),
+  ]
     .filter(Boolean)
     .join('\n\n');
 }

@@ -14,7 +14,8 @@ import logger from '../lib/logger';
 import { buildAgentSystemPrompt } from '../prompts/goblin-chat-system';
 import { parseGoblinTier } from '../services/goblin-hosted';
 import { agentEligibility } from '../services/agent/config';
-import { AGENT_TOOLS, buildToolExecutor } from '../services/agent/tools';
+import { agentToolsFor, buildToolExecutor } from '../services/agent/tools';
+import { resolveSearchProvider, agentMaxSearchesPerRun } from '../services/search';
 import { getAgentModel } from '../services/agent/model-turn';
 import { runAgent } from '../services/agent/orchestrator';
 import { loadUserPreferences } from '../services/user-preferences';
@@ -579,12 +580,16 @@ codeSessions.post('/:sessionId/agent', async (c) => {
   const proj = project as { name?: string; instructions?: string | null } | null;
   // F4.2: global user preferences flow into agent runs too (probe 6.3 report card).
   const userPreferences = await loadUserPreferences(sb, userId);
+  // F4.3: resolve the run's search provider up front so the prompt truthfully tells
+  // the model whether it CAN search (user BYOK Brave key → cap-exempt, else platform).
+  const search = await resolveSearchProvider(userId);
   const systemPrompt = buildAgentSystemPrompt({
     projectName: proj?.name ?? 'Projekt',
     files: (sessionFiles ?? []).map((f) => ({ path: f.path as string, size: (f.content as string)?.length ?? 0 })),
     // F4.1: user-authored project instructions flow into agent runs too (probe 6.1).
     projectInstructions: proj?.instructions ?? null,
     userPreferences,
+    searchAvailable: !!search,
   });
   // History excludes the just-inserted user turn (passed as userMessage).
   const history: AgentMessage[] = (priorMsgs ?? []).slice(0, -1)
@@ -606,8 +611,8 @@ codeSessions.post('/:sessionId/agent', async (c) => {
         systemPrompt,
         userMessage: prompt,
         history,
-        tools: AGENT_TOOLS,
-        executor: buildToolExecutor(sb),
+        tools: agentToolsFor({ search: !!search }),
+        executor: buildToolExecutor(sb, { search, maxSearchesPerRun: agentMaxSearchesPerRun() }),
         model: getAgentModel(tier),
         // D1: publish is granted only on explicit intent in THIS message, or a chip tap.
         publishGranted: confirmPublish || grantsPublish(prompt),
