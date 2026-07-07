@@ -127,9 +127,20 @@ export function AgentRunView({ streaming, steps, narration, report, elapsedSecon
             </a>
           )}
 
-          {/* Honest failure reason (self-heal exhausted / build error). */}
+          {/* Honest failure reason (self-heal exhausted / build error / model unavailable). */}
           {report.state === "failed" && report.failureReason && (
             <p data-testid="agent-report-failure" style={{ margin: 0, fontSize: 12, lineHeight: 1.5, color: "#B0432A", fontFamily: "var(--font-sans)" }}>{report.failureReason}</p>
+          )}
+
+          {/* C2: budget-forced finish — an honest pause, not a failure. Amber, not red. */}
+          {report.outcome === "budget" && (
+            <p data-testid="agent-report-budget" style={{ margin: 0, fontSize: 12, lineHeight: 1.5, color: "var(--ed-draft, #9a6a00)", fontFamily: "var(--font-sans)" }}>
+              {t(
+                lang,
+                "Ich habe hier pausiert — das Budget für diese Aufgabe war erreicht. Dein Entwurf ist gesichert; schreib mir „weiter“, dann mache ich dort weiter.",
+                "I paused here — this task hit its budget. Your draft is saved; send “continue” and I'll pick up where I left off.",
+              )}
+            </p>
           )}
 
           {report.files.length > 0 && (
