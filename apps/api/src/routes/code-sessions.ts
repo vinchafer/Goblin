@@ -17,6 +17,7 @@ import { agentEligibility } from '../services/agent/config';
 import { AGENT_TOOLS, buildToolExecutor } from '../services/agent/tools';
 import { getAgentModel } from '../services/agent/model-turn';
 import { runAgent } from '../services/agent/orchestrator';
+import { loadUserPreferences } from '../services/user-preferences';
 import { grantsPublish } from '../services/agent/intent';
 import { createAgentRun, finalizeAgentRun } from '../services/agent/run-store';
 import type { AgentMessage } from '../services/agent/types';
@@ -576,11 +577,14 @@ codeSessions.post('/:sessionId/agent', async (c) => {
     sb.from('projects').select('name, instructions').eq('id', session.project_id).single(),
   ]);
   const proj = project as { name?: string; instructions?: string | null } | null;
+  // F4.2: global user preferences flow into agent runs too (probe 6.3 report card).
+  const userPreferences = await loadUserPreferences(sb, userId);
   const systemPrompt = buildAgentSystemPrompt({
     projectName: proj?.name ?? 'Projekt',
     files: (sessionFiles ?? []).map((f) => ({ path: f.path as string, size: (f.content as string)?.length ?? 0 })),
     // F4.1: user-authored project instructions flow into agent runs too (probe 6.1).
     projectInstructions: proj?.instructions ?? null,
+    userPreferences,
   });
   // History excludes the just-inserted user turn (passed as userMessage).
   const history: AgentMessage[] = (priorMsgs ?? []).slice(0, -1)

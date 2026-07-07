@@ -37,6 +37,57 @@ export interface GoblinChatContext {
    * retry so the model knows file contents were dropped due to a model limit.
    */
   contextNote?: string;
+  /**
+   * F4.2: global user preferences ("Wie Goblin arbeitet") — injected into every
+   * chat and agent run (project-independent), above the project context.
+   */
+  userPreferences?: {
+    customInstructions?: string | null;
+    addressName?: string | null;
+    responseStyle?: 'knapp' | 'ausfuehrlich' | null;
+    explainChanges?: boolean | null;
+  } | null;
+}
+
+/**
+ * F4.2: render the global user-preferences block. Project-independent, so it is
+ * added directly in the build functions (not inside renderProjectContext, which
+ * returns '' with no project). Every line maps to a stored control and provably
+ * changes behavior — no placebo toggles (probe 6.3). Returns '' when nothing set.
+ */
+function renderUserContext(ctx: GoblinChatContext, opts: { agent: boolean } = { agent: false }): string {
+  const p = ctx.userPreferences;
+  if (!p) return '';
+  const lines: string[] = [];
+  const name = p.addressName?.trim();
+  if (name) lines.push(`- Sprich den Nutzer mit »${name}« an — in Begrüßungen und im Bericht.`);
+  if (p.responseStyle === 'knapp') {
+    lines.push('- Antwortstil: KNAPP. Das Nötigste zuerst, keine Vorrede, keine abschließende Zusammenfassung, es sei denn, sie ist sachlich nötig.');
+  } else if (p.responseStyle === 'ausfuehrlich') {
+    lines.push('- Antwortstil: AUSFÜHRLICH. Erkläre Kontext, nenne Alternativen und begründe deine Empfehlung.');
+  }
+  if (p.explainChanges === true) {
+    lines.push(
+      opts.agent
+        ? '- Erklärtiefe: AN. Erkläre in deinem finish-Bericht kurz das WARUM der wesentlichen Änderungen.'
+        : '- Erklärtiefe: AN. Wenn du Code änderst, erkläre kurz das WARUM der wesentlichen Änderungen.',
+    );
+  } else if (p.explainChanges === false) {
+    lines.push(
+      opts.agent
+        ? '- Erklärtiefe: AUS. Halte den finish-Bericht knapp beim WAS — keine ausführliche Begründung der Änderungen.'
+        : '- Erklärtiefe: AUS. Wenn du Code änderst, nenne knapp das WAS — keine ausführliche Begründung.',
+    );
+  }
+  const ci = p.customInstructions?.trim();
+  if (ci) {
+    lines.push(
+      '- Persönliche Anweisungen des Nutzers (gelten für alle Projekte, befolge sie):',
+      ...ci.split('\n').map((l) => `  ${l}`),
+    );
+  }
+  if (lines.length === 0) return '';
+  return ['Nutzer-Präferenzen (verbindlich, in jeder Antwort zu beachten):', ...lines].join('\n');
 }
 
 /** B2: note for the reduced-context retry (file contents dropped). */
@@ -208,9 +259,9 @@ function renderProjectContext(ctx: GoblinChatContext): string {
   }
 }
 
-/** Build the full system prompt: identity + (optional) live project context. */
+/** Build the full system prompt: identity + user prefs + (optional) live project context. */
 export function buildGoblinChatSystemPrompt(ctx: GoblinChatContext = {}): string {
-  return [IDENTITY, renderProjectContext(ctx)].filter(Boolean).join('\n');
+  return [IDENTITY, renderUserContext(ctx), renderProjectContext(ctx)].filter(Boolean).join('\n');
 }
 
 // ─── AGENT MODE (FEEL-3a) ───────────────────────────────────────────────────────
@@ -289,7 +340,9 @@ Du: (finish) "Beides kann ich nicht: Ich habe keinen Web-Zugriff und kann nur au
  * block + the SAME live project context normal chat sees. Used only for agent runs.
  */
 export function buildAgentSystemPrompt(ctx: GoblinChatContext = {}): string {
-  return [AGENT_IDENTITY, AGENT_MODE_BLOCK, renderProjectContext(ctx)].filter(Boolean).join('\n\n');
+  return [AGENT_IDENTITY, AGENT_MODE_BLOCK, renderUserContext(ctx, { agent: true }), renderProjectContext(ctx)]
+    .filter(Boolean)
+    .join('\n\n');
 }
 
 export { AGENT_MODE_BLOCK };

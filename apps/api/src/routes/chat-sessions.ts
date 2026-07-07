@@ -7,6 +7,7 @@ import { buildGoblinChatSystemPrompt, REDUCED_CONTEXT_NOTE } from '../prompts/go
 import { listFilesWithMeta } from '../services/file-storage.js';
 import { loadProjectContextFiles, isSoftDeletedPath, type ContextFile } from '../services/project-context.js';
 import { loadProjectState, scheduleProjectStateUpdate } from '../services/project-state.js';
+import { loadUserPreferences } from '../services/user-preferences.js';
 import { truncateTitle } from '../lib/truncate-title.js';
 
 type Variables = { userId: string };
@@ -216,6 +217,8 @@ chatSessions.post('/:id/stream', async (c) => {
     projectState: projectId ? await loadProjectState(supabase, projectId) : null,
     // F4.1: user-authored project instructions (empty/absent → not rendered).
     projectInstructions,
+    // F4.2: global user preferences — injected in project AND standalone chats.
+    userPreferences: await loadUserPreferences(supabase, userId),
   };
   const systemPrompt = buildGoblinChatSystemPrompt(promptCtx);
   // B2: fallback prompt (names+sizes only) for the token-limit retry; only set

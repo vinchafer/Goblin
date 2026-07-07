@@ -35,6 +35,7 @@ Every mechanism that consumes model tokens (user-billed or platform-paid) is reg
 - **Billed to:** user allowance (units, Forge-weighted).
 - **Knobs:** history window (50) — **VERIFIED** `apps/api/src/routes/chat.ts:132` (`.limit(50)`, then `.slice(0, -1)` :134); same in the project route `apps/api/src/routes/chat-sessions.ts:174`. System prompt length: `apps/api/src/prompts/goblin-chat-system.ts`.
 - **Cost:** at realistic mix $0.20/M → a 6k-token turn ≈ $0.0012.
+- **F4.2 note (feel-4 — global user preferences, negligible):** the "Wie Goblin arbeitet" block (`renderUserContext`, `goblin-chat-system.ts`) now rides EVERY chat and agent turn (project + standalone). Structured prefs (Anrede/Antwortstil/Erklärtiefe) add **~1 short line each (<40 tok total)**; `custom_instructions` (previously stored-but-never-injected, now live — 0048) adds **≤4k chars ÷ 4 ≈ ≤1k tok/turn** only when the user has set it, zero otherwise. Loader `loadUserPreferences` (`services/user-preferences.ts`); the three structured columns are dark until migration 0082 is applied (authored). **User allowance**, same completion, no new billing path. Negligible vs M2 file injection.
 - **CFO dependency:** A6 (limit exhaustion), Effizienzklasse (A8). | Status: FORMULA + partial MEASURED.
 
 ### M2 — Project file-content injection (FEEL-2 U1)

@@ -6,6 +6,7 @@ import { buildGoblinChatSystemPrompt, REDUCED_CONTEXT_NOTE } from '../prompts/go
 import { listFilesWithMeta } from '../services/file-storage';
 import { loadProjectContextFiles, isSoftDeletedPath } from '../services/project-context';
 import { loadProjectState, scheduleProjectStateUpdate } from '../services/project-state';
+import { loadUserPreferences } from '../services/user-preferences';
 import { authMiddleware } from '../middleware/auth';
 import { chatStreamRateLimit } from '../middleware/rate-limit';
 
@@ -162,6 +163,8 @@ chat.post('/stream', chatStreamRateLimit, async (c) => {
       projectState: await loadProjectState(supabase, projectId),
       // F4.1: user-authored project instructions (empty/absent → not rendered).
       projectInstructions: p?.instructions ?? null,
+      // F4.2: global user preferences (custom instructions live; pref_* dark pre-0082).
+      userPreferences: await loadUserPreferences(supabase, userId),
     };
     systemPrompt = buildGoblinChatSystemPrompt(promptCtx);
     if (files.some((f) => 'content' in f && f.content != null)) {
