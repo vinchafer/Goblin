@@ -140,7 +140,8 @@ describe('orchestrator — A2 loop', () => {
     expect(res.outcome).toBe('error');
     expect(res.status).toBe('failed');
     expect(res.report.state).toBe('failed');
-    expect(res.report.failureReason).toMatch(/Tool-Protokoll/);
+    // C1/C2: honest, jargon-free abort — names the state, promises nothing was changed.
+    expect(res.report.failureReason).toMatch(/nichts verändert/);
   });
 
   it('plain prose with no tool call is an honest implicit finish (refusal path)', async () => {
@@ -378,7 +379,7 @@ describe('orchestrator — B3 self-heal', () => {
     expect(res.healCycles).toBe(2);
     expect(res.outcome).toBe('error');
     expect(res.report.state).toBe('failed');
-    expect(res.report.failureReason).toMatch(/2 Korrekturversuchen/);
+    expect(res.report.failureReason).toMatch(/2× korrigiert versucht/);
     expect(res.report.failureReason).toContain('styles.css');
     // exactly two publish attempts reached the executor — the 3rd never ran.
     expect(ran.filter((t) => t === 'publish')).toHaveLength(2);
@@ -433,7 +434,9 @@ describe('orchestrator — mixed-mode guard (one tool signal per turn)', () => {
     });
     expect(res.outcome).toBe('error');
     expect(res.report.state).toBe('failed');
-    expect(res.report.failureReason).toMatch(/Mehrere Tool-Aufrufe/);
+    // C2: honest, jargon-free — no "tool"/"turn" leaking into the user-facing reason.
+    expect(res.report.failureReason).toMatch(/verheddert/);
+    expect(res.report.failureReason).not.toMatch(/Tool|Turn/);
     expect(ran).toEqual([]); // never executed a partial turn
   });
 });

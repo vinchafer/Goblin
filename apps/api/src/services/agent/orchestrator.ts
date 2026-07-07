@@ -16,7 +16,7 @@
 
 import { trackCompletion } from '../../lib/track-completion';
 import { runWeightedUnits, agentMaxIterations, agentMaxUnits } from './config';
-import { parseFallbackToolCall, REPAIR_INSTRUCTION } from './protocol';
+import { parseFallbackToolCall, buildRepairInstruction } from './protocol';
 import { getAgentModel } from './model-turn';
 import type { GoblinTierId } from '../goblin-hosted';
 import type {
@@ -63,10 +63,31 @@ function healNarration(tool: string, result: ToolResult): string {
   return `${tool} meldete einen Fehler: ${detail} — ich versuche es korrigiert.`;
 }
 
-/** The honest failure reason after the heal budget is spent (what was tried + the state). */
+/** The honest failure reason after the heal budget is spent (what was tried + the state + next step). */
 function healFailureReason(result: ToolResult): string {
-  const detail = result.error?.message || result.summary || 'unbekannter Fehler';
-  return `Nach ${MAX_HEAL_CYCLES} Korrekturversuchen weiterhin fehlgeschlagen: ${detail}`;
+  const detail = result.error?.message || result.summary || 'ein unbekannter Fehler';
+  return (
+    `Das habe ich nicht hinbekommen: ${detail} Ich habe es ${MAX_HEAL_CYCLES}× korrigiert versucht ` +
+    'und dann gestoppt, statt dir ein falsches „fertig" zu melden. Deine Entwürfe sind gesichert — ' +
+    'schau dir die Änderungen an oder sag mir, was ich anders machen soll.'
+  );
+}
+
+/**
+ * C2: turn a raw model/provider error into honest German the user can act on. The key
+ * case is the #16 fallthrough — the Goblin-hosted key is missing, so agent mode can't
+ * run at all; the user must hear that plainly, not a stack-trace fragment. Everything
+ * else lands as a calm "der Dienst antwortet gerade nicht" so no jargon leaks into chat.
+ */
+function humanizeModelError(raw: string | undefined): string {
+  const msg = raw ?? '';
+  if (/not configured|is not configured|unavailable|401|403|404/i.test(msg)) {
+    return (
+      'Das Goblin-Modell ist gerade nicht verfügbar, deshalb konnte ich diese Aufgabe nicht ' +
+      'ausführen. Ich habe nichts verändert — bitte versuch es später noch einmal.'
+    );
+  }
+  return 'Beim Nachdenken ist etwas schiefgelaufen. Ich habe nichts verändert — magst du es nochmal versuchen?';
 }
 
 export interface RunAgentInput {
@@ -217,7 +238,7 @@ export async function runAgent(input: RunAgentInput): Promise<RunResult> {
     } catch (e) {
       if (stop?.aborted) { outcome = 'stopped'; break; }
       outcome = 'error';
-      failureReason = e instanceof Error ? e.message : 'Modellfehler';
+      failureReason = humanizeModelError(e instanceof Error ? e.message : undefined);
       break;
     }
 
@@ -249,7 +270,10 @@ export async function runAgent(input: RunAgentInput): Promise<RunResult> {
         continue;
       }
       outcome = 'error';
-      failureReason = 'Mehrere Tool-Aufrufe in einem Turn (nach Reparaturversuch)';
+      failureReason =
+        'Ich habe mich beim Ausführen der Schritte verheddert und lieber gestoppt, als etwas ' +
+        'Halbes zu bauen. Deine Entwürfe sind gesichert — sag mir die Aufgabe gern nochmal, ' +
+        'dann gehe ich sie in ruhigeren Schritten an.';
       break;
     }
 
@@ -263,11 +287,14 @@ export async function runAgent(input: RunAgentInput): Promise<RunResult> {
       } else if (parsed.kind === 'malformed') {
         if (repairsUsed < 1) {
           repairsUsed += 1;
-          messages.push({ role: 'system', content: REPAIR_INSTRUCTION });
+          // C1: quote the exact schema/parse violation so the model fixes THAT mistake.
+          messages.push({ role: 'system', content: buildRepairInstruction(parsed.detail) });
           continue; // exactly one repair reprompt, then honest abort
         }
         outcome = 'error';
-        failureReason = 'Ungültiges Tool-Protokoll nach Reparaturversuch';
+        failureReason =
+          'Der Entwurf konnte nicht sauber gelesen werden — das Modell hat auch nach einem ' +
+          'Hinweis kein gültiges Werkzeug-Format geliefert. Ich habe nichts verändert.';
         break;
       } else {
         // 'none' — plain prose, no tool call. The model answered (refusal / wrap-up).

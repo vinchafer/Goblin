@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FEEL-3c — C2/C3/C4 component states</title>
+<style>
+  /* Editor + type tokens ported verbatim from apps/web/styles/dashboard-tokens.css. */
+  :root[data-theme="light"] {
+    --bg:#EFE7D2; --ed-chrome:#F4ECD8; --ed-fg-1:#0F2B1E; --ed-fg-2:#3F3A2C; --ed-fg-3:#5F5640;
+    --ed-rule:#D8CBA8; --ed-primary:#1A3A2A; --ed-on-primary:#FBF7EC; --ed-draft:#BC8E2E;
+    --ed-saved:#3D7A4F; --text-faint:#665C42;
+  }
+  :root[data-theme="dark"] {
+    --bg:#1E1B15; --ed-chrome:#28251D; --ed-fg-1:#FBF7EC; --ed-fg-2:#D8CBA8; --ed-fg-3:#968768;
+    --ed-rule:rgba(247,247,236,0.14); --ed-primary:#D4A737; --ed-on-primary:#28251D; --ed-draft:#E8C97F;
+    --ed-saved:#87C098; --text-faint:#B8A988;
+  }
+  :root { --font-sans:'Manrope',system-ui,-apple-system,sans-serif; --font-serif:'Instrument Serif',Georgia,serif; }
+  body { margin:0; background:var(--bg); font-family:var(--font-sans); padding:20px 0; }
+  .col { max-width:520px; margin:0 auto; display:flex; flex-direction:column; gap:18px; }
+  .cap { font-size:11px; color:var(--ed-fg-3); font-family:var(--font-sans); padding:0 16px; letter-spacing:.02em; text-transform:uppercase; }
+  /* AgentRunView outer shell (verbatim inline style from AgentRunView.tsx). */
+  .arv { margin:0 14px 10px; border:1px solid var(--ed-rule); border-radius:10px; background:var(--ed-chrome); overflow:hidden; }
+  .hdr { width:100%; display:flex; align-items:center; gap:8px; padding:8px 12px; background:transparent; border:none; color:var(--ed-fg-1); text-align:left; }
+  .hdr .glyph { width:15px; text-align:center; color:var(--ed-fg-3); }
+  .hdr .title { font-size:12.5px; font-weight:600; font-family:var(--font-sans); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .dot-working { width:15px; height:15px; border-radius:50%; background:var(--ed-draft); flex-shrink:0; }
+  ul.steps { list-style:none; margin:0; padding:0 12px 8px 34px; }
+  li.step { display:flex; align-items:center; gap:8px; padding:3px 0; min-width:0; font-size:12.5px; font-family:var(--font-sans); }
+  .step .g { flex-shrink:0; color:var(--ed-fg-3); font-weight:700; width:14px; text-align:center; font-size:12px; }
+  .step .g.fail { color:#B0432A; font-size:11px; }
+  .step .sum { color:var(--ed-fg-2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; min-width:0; }
+  .step .ms { color:var(--ed-fg-3); flex-shrink:0; font-variant-numeric:tabular-nums; font-size:11px; }
+  /* C3 idle quote */
+  .quote { margin:0; padding:0 12px 10px 34px; font-family:var(--font-serif); font-style:italic; font-size:12px; line-height:1.5; color:var(--ed-fg-3); opacity:.85; }
+  /* Report card */
+  .card { border-top:1px solid var(--ed-rule); padding:12px; display:flex; flex-direction:column; gap:10px; }
+  .card .state { display:flex; align-items:center; gap:8px; }
+  .card .sdot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .card .slabel { font-size:12.5px; font-weight:600; color:var(--ed-fg-1); font-family:var(--font-sans); }
+  .card a.url { font-size:12px; font-family:'JetBrains Mono',monospace; color:var(--ed-primary); text-decoration:none; }
+  .card .fail { margin:0; font-size:12px; line-height:1.5; color:#B0432A; font-family:var(--font-sans); }
+  .card .budget { margin:0; font-size:12px; line-height:1.5; color:var(--ed-draft); font-family:var(--font-sans); }
+  .card ul.files { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:6px; }
+  .card li.file { display:flex; align-items:center; gap:8px; min-width:0; }
+  .card .fpath { font-size:12.5px; font-family:'JetBrains Mono',monospace; color:var(--ed-fg-2); flex:1; }
+  .badge-new { font-size:10.5px; font-weight:700; color:#2f7d43; background:rgba(109,185,123,.16); border-radius:4px; padding:1px 6px; }
+  .badge-chg { font-size:10.5px; font-weight:700; color:#9a6a00; background:rgba(212,167,55,.18); border-radius:4px; padding:1px 6px; white-space:nowrap; }
+  .card .model { margin:0; font-size:12.5px; line-height:1.5; color:var(--ed-fg-2); font-family:var(--font-sans); white-space:pre-wrap; }
+  .actions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .units { font-size:11px; color:var(--ed-fg-3); font-family:var(--font-sans); }
+  .spacer { flex:1; }
+  .ghost { font-size:12px; font-family:var(--font-sans); color:var(--ed-fg-1); background:transparent; border:1px solid var(--ed-rule); border-radius:7px; padding:5px 11px; }
+  .primary { font-size:12px; font-weight:600; font-family:var(--font-sans); color:var(--ed-on-primary); background:var(--ed-primary); border:none; border-radius:7px; padding:6px 12px; }
+</style>
+</head>
+<body>
+<div class="col">
+
+  <div class="cap">C3 — streaming, idle gap &gt;4s: rotating quote below the live step (serif, faint, secondary)</div>
+  <div class="arv">
+    <div class="hdr"><span class="dot-working"></span><span class="title">Schreibt index.html… 12s</span></div>
+    <ul class="steps">
+      <li class="step"><span class="g">≣</span><span class="sum">3 Dateien</span><span class="ms">120ms</span></li>
+      <li class="step"><span class="g">✎</span><span class="sum">index.html · NEU</span><span class="ms">0.4s</span></li>
+    </ul>
+    <p class="quote">Ein ehrliches „noch nicht“ ist besser als ein falsches „fertig“.</p>
+  </div>
+
+  <div class="cap">C4 — published card: per-tool step icons, elapsed, verified URL, follow-ups</div>
+  <div class="arv">
+    <div class="hdr"><span class="glyph">▾</span><span class="title">4 Schritte · 3.1s</span></div>
+    <ul class="steps">
+      <li class="step"><span class="g">✎</span><span class="sum">index.html · NEU</span><span class="ms">0.6s</span></li>
+      <li class="step"><span class="g">▣</span><span class="sum">1 Datei gesichert ✓</span><span class="ms">0.3s</span></li>
+      <li class="step"><span class="g">▲</span><span class="sum">Live ✓ (geprüft)</span><span class="ms">2.1s</span></li>
+      <li class="step"><span class="g">✓</span><span class="sum">fertig</span><span class="ms">0ms</span></li>
+    </ul>
+    <div class="card">
+      <div class="state"><span class="sdot" style="background:var(--ed-saved)"></span><span class="slabel">Live ✓ — veröffentlicht und geprüft</span></div>
+      <a class="url" href="#">https://mini-umfrage-32305.vercel.app</a>
+      <ul class="files"><li class="file"><span class="fpath">index.html</span><span class="badge-new">NEU</span></li></ul>
+      <p class="model">Die Umfrage-Seite ist live und funktioniert wie erwartet.</p>
+      <div class="actions"><span class="units">72.480 Einheiten verbraucht</span><span class="spacer"></span>
+        <button class="ghost">Änderungen ansehen</button><button class="ghost">Öffnen</button></div>
+    </div>
+  </div>
+
+  <div class="cap">C2 — budget-forced finish: an honest pause (amber, not red), draft saved</div>
+  <div class="arv">
+    <div class="hdr"><span class="glyph">▾</span><span class="title">6 Schritte · 41.2s</span></div>
+    <ul class="steps">
+      <li class="step"><span class="g">✎</span><span class="sum">index.html · GEÄNDERT +40 −2</span><span class="ms">1.1s</span></li>
+      <li class="step"><span class="g">▣</span><span class="sum">1 Datei gesichert ✓</span><span class="ms">0.3s</span></li>
+    </ul>
+    <div class="card">
+      <div class="state"><span class="sdot" style="background:var(--ed-saved)"></span><span class="slabel">Entwurf gesichert — bereit zum Veröffentlichen</span></div>
+      <p class="budget">Ich habe hier pausiert — das Budget für diese Aufgabe war erreicht. Dein Entwurf ist gesichert; schreib mir „weiter“, dann mache ich dort weiter.</p>
+      <ul class="files"><li class="file"><span class="fpath">index.html</span><span class="badge-chg">GEÄNDERT +40 −2</span></li></ul>
+      <div class="actions"><span class="units">198.400 Einheiten verbraucht</span><span class="spacer"></span>
+        <button class="ghost">Änderungen ansehen</button><button class="primary">Jetzt veröffentlichen</button></div>
+    </div>
+  </div>
+
+  <div class="cap">C2 — honest failure (self-heal exhausted): specific, next-step, no jargon</div>
+  <div class="arv">
+    <div class="hdr"><span class="glyph">▾</span><span class="title">5 Schritte · 12.7s</span></div>
+    <ul class="steps">
+      <li class="step"><span class="g">✎</span><span class="sum">index.html · GEÄNDERT +14 −2</span><span class="ms">0.9s</span></li>
+      <li class="step"><span class="g fail">✗</span><span class="sum">Prüfung fehlgeschlagen: styles.css nicht erreichbar</span><span class="ms">2.4s</span></li>
+    </ul>
+    <div class="card">
+      <div class="state"><span class="sdot" style="background:#B0432A"></span><span class="slabel">Nicht abgeschlossen</span></div>
+      <p class="fail">Das habe ich nicht hinbekommen: styles.css wird nicht gefunden. Ich habe es 2× korrigiert versucht und dann gestoppt, statt dir ein falsches „fertig“ zu melden. Deine Entwürfe sind gesichert — schau dir die Änderungen an oder sag mir, was ich anders machen soll.</p>
+      <div class="actions"><span class="units">88.900 Einheiten verbraucht</span><span class="spacer"></span>
+        <button class="ghost">Änderungen ansehen</button></div>
+    </div>
+  </div>
+
+  <div class="cap">C4 — long run (&gt;8 steps): collapsed by default, summary line only</div>
+  <div class="arv">
+    <div class="hdr"><span class="glyph">▸</span><span class="title">12 Schritte · 1m 3s</span></div>
+    <div class="card">
+      <div class="state"><span class="sdot" style="background:var(--ed-saved)"></span><span class="slabel">Live ✓ — veröffentlicht und geprüft</span></div>
+      <a class="url" href="#">https://portfolio-91021.vercel.app</a>
+      <div class="actions"><span class="units">146.200 Einheiten verbraucht</span><span class="spacer"></span>
+        <button class="ghost">Öffnen</button></div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
