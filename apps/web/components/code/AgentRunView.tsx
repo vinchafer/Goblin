@@ -41,17 +41,42 @@ function useIdleQuote(streaming: boolean, stepCount: number): ReturnType<typeof 
 
 function fmtMs(ms: number): string {
   if (ms < 1000) return `${ms}ms`;
-  return `${(ms / 1000).toFixed(1)}s`;
+  if (ms < 60_000) return `${(ms / 1000).toFixed(1)}s`;
+  const m = Math.floor(ms / 60_000);
+  const s = Math.round((ms % 60_000) / 1000);
+  return `${m}m ${s}s`;
 }
 
+/** Live elapsed (seconds in) → "12s" or "1:05" once past a minute. */
+function fmtElapsed(sec: number): string {
+  if (sec < 60) return `${sec}s`;
+  return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, "0")}`;
+}
+
+/** C4: a per-tool glyph so the eye reads the KIND of step at a glance, not just its status. */
+const TOOL_GLYPH: Record<string, string> = {
+  list_files: "≣",
+  read_file: "⌕",
+  write_file: "✎",
+  save_draft: "▣",
+  publish: "▲",
+  read_deploy_status: "◈",
+  finish: "✓",
+};
+
 function StepRow({ step }: { step: AgentStep }) {
+  const glyph = step.ok ? TOOL_GLYPH[step.tool] ?? "•" : "✗";
   return (
     <li
       data-testid="agent-step"
       style={{ display: "flex", alignItems: "center", gap: 8, padding: "3px 0", minWidth: 0, fontSize: 12.5, fontFamily: "var(--font-sans)" }}
     >
-      <span aria-hidden style={{ flexShrink: 0, color: step.ok ? "var(--ed-saved, #6db97b)" : "#B0432A", fontWeight: 700, width: 14, textAlign: "center" }}>
-        {step.ok ? "✓" : "✗"}
+      <span
+        aria-label={step.ok ? step.tool : `${step.tool} fehlgeschlagen`}
+        title={step.tool}
+        style={{ flexShrink: 0, color: step.ok ? "var(--ed-fg-3)" : "#B0432A", fontWeight: 700, width: 14, textAlign: "center", fontSize: step.ok ? 12 : 11 }}
+      >
+        {glyph}
       </span>
       <span style={{ color: "var(--ed-fg-2)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1, minWidth: 0 }}>
         {step.summary || step.tool}
@@ -92,8 +117,18 @@ interface Props {
 export function AgentRunView({ streaming, steps, narration, report, elapsedSeconds, onViewChanges, onGoLive, onOpen, onConfirmPublish }: Props) {
   const lang = useLang();
   const [collapsed, setCollapsed] = useState(false);
+  const toggledRef = useRef(false);
   const idleQuote = useIdleQuote(streaming, steps.length);
+
+  // C4: long runs (>8 steps) collapse by default once finished, showing just the summary
+  // line — unless the user has already opened/closed the list themselves.
+  useEffect(() => {
+    if (!streaming && report && steps.length > 8 && !toggledRef.current) setCollapsed(true);
+  }, [streaming, report, steps.length]);
+
   if (!streaming && steps.length === 0 && !report) return null;
+
+  const totalMs = steps.reduce((sum, s) => sum + s.ms, 0);
 
   const stateLabel = report
     ? report.state === "published"
@@ -117,15 +152,15 @@ export function AgentRunView({ streaming, steps, narration, report, elapsedSecon
       {/* Step stream header — collapsible */}
       <button
         type="button"
-        onClick={() => setCollapsed((c) => !c)}
+        onClick={() => { toggledRef.current = true; setCollapsed((c) => !c); }}
         aria-expanded={!collapsed}
         style={{ width: "100%", display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: "transparent", border: "none", cursor: "pointer", color: "var(--ed-fg-1)", textAlign: "left" }}
       >
         {streaming ? <GoblinLogo state="working" size={15} variant="gold" /> : <span aria-hidden style={{ width: 15, textAlign: "center", color: "var(--ed-fg-3)" }}>{collapsed ? "▸" : "▾"}</span>}
         <span style={{ fontSize: 12.5, fontWeight: 600, fontFamily: "var(--font-sans)", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {streaming
-            ? (narration || t(lang, "Goblin arbeitet", "Goblin is working")) + (elapsedSeconds != null ? `… ${elapsedSeconds}s` : "…")
-            : `${steps.length} ${steps.length === 1 ? t(lang, "Schritt", "step") : t(lang, "Schritte", "steps")}`}
+            ? (narration || t(lang, "Goblin arbeitet", "Goblin is working")) + (elapsedSeconds != null ? `… ${fmtElapsed(elapsedSeconds)}` : "…")
+            : `${steps.length} ${steps.length === 1 ? t(lang, "Schritt", "step") : t(lang, "Schritte", "steps")}${totalMs > 0 ? ` · ${fmtMs(totalMs)}` : ""}`}
         </span>
       </button>
 
