@@ -15,6 +15,7 @@ import {
   type ChatAttachment,
 } from '@/lib/chat-attachments';
 import { GOBLIN_HOSTED_ENABLED } from '@/lib/goblin-hosted-models';
+import { isAgentModel } from '@/lib/agent-eligible';
 import { ComposerPlusPopover, type PlusAction } from './ComposerPlusPopover';
 import { Icon } from '@/components/ui/icon';
 import { GoblinLogo } from '@/components/brand/GoblinLogo';
@@ -581,7 +582,14 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
       toast.error(error);
       return;
     }
-    onSubmit(message, selectedModel);
+    // F4.3: when the user has "Websuche" on (agent-eligible chats only), append an
+    // explicit directive so the toggle is REAL — the agent is nudged to use web_search.
+    // Not a placebo: it changes the message the agent receives.
+    const finalMessage =
+      websearchOn && websearchAvailable
+        ? `${message}\n\n(Nutze bei Bedarf die Websuche für aktuelle Informationen und zitiere die Quelle.)`
+        : message;
+    onSubmit(finalMessage, selectedModel);
     setInput('');
     setAttachments([]);
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
@@ -618,6 +626,12 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
   const plusBtnRef = useRef<HTMLButtonElement>(null);
   const [plusOpen, setPlusOpen] = useState(false);
   const [websearchOn, setWebsearchOn] = useState(false);
+  // F4.3: web search is real only in agent-eligible chats (Goblin Swift/Forge). The
+  // composer affordance + the send-time directive both key off this.
+  const websearchAvailable = isAgentModel(selectedModel.slug);
+  useEffect(() => {
+    try { setWebsearchOn(localStorage.getItem('goblin-websearch-on') === 'true'); } catch { /* ignore */ }
+  }, []);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -920,6 +934,7 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
               anchorRef={plusBtnRef}
               onAction={handlePlusAction}
               websearchOn={websearchOn}
+              websearchAvailable={websearchAvailable}
             />
 
             <input

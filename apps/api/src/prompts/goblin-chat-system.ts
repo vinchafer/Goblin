@@ -26,10 +26,74 @@ export interface GoblinChatContext {
    */
   projectState?: { summary: string; decisions: string } | null;
   /**
+   * F4.1: per-project user-authored instructions (projects.instructions, ≤2k).
+   * Injected ABOVE the rolling memory and explicitly marked as the user's own
+   * standing rules — the model must honour them without them being repeated in
+   * each message. Absent/empty → nothing rendered.
+   */
+  projectInstructions?: string | null;
+  /**
    * B2: honest note rendered with the file list — used by the reduced-context
    * retry so the model knows file contents were dropped due to a model limit.
    */
   contextNote?: string;
+  /**
+   * F4.2: global user preferences ("Wie Goblin arbeitet") — injected into every
+   * chat and agent run (project-independent), above the project context.
+   */
+  userPreferences?: {
+    customInstructions?: string | null;
+    addressName?: string | null;
+    responseStyle?: 'knapp' | 'ausfuehrlich' | null;
+    explainChanges?: boolean | null;
+  } | null;
+  /**
+   * F4.3: agent runs only — true when a web-search provider is configured for this
+   * run. Adds the web_search tool block + citation few-shot to the agent prompt so
+   * the model knows it CAN search (and must cite). Base chat never sets this.
+   */
+  searchAvailable?: boolean;
+}
+
+/**
+ * F4.2: render the global user-preferences block. Project-independent, so it is
+ * added directly in the build functions (not inside renderProjectContext, which
+ * returns '' with no project). Every line maps to a stored control and provably
+ * changes behavior — no placebo toggles (probe 6.3). Returns '' when nothing set.
+ */
+function renderUserContext(ctx: GoblinChatContext, opts: { agent: boolean } = { agent: false }): string {
+  const p = ctx.userPreferences;
+  if (!p) return '';
+  const lines: string[] = [];
+  const name = p.addressName?.trim();
+  if (name) lines.push(`- Sprich den Nutzer mit »${name}« an — in Begrüßungen und im Bericht.`);
+  if (p.responseStyle === 'knapp') {
+    lines.push('- Antwortstil: KNAPP. Das Nötigste zuerst, keine Vorrede, keine abschließende Zusammenfassung, es sei denn, sie ist sachlich nötig.');
+  } else if (p.responseStyle === 'ausfuehrlich') {
+    lines.push('- Antwortstil: AUSFÜHRLICH. Erkläre Kontext, nenne Alternativen und begründe deine Empfehlung.');
+  }
+  if (p.explainChanges === true) {
+    lines.push(
+      opts.agent
+        ? '- Erklärtiefe: AN. Erkläre in deinem finish-Bericht kurz das WARUM der wesentlichen Änderungen.'
+        : '- Erklärtiefe: AN. Wenn du Code änderst, erkläre kurz das WARUM der wesentlichen Änderungen.',
+    );
+  } else if (p.explainChanges === false) {
+    lines.push(
+      opts.agent
+        ? '- Erklärtiefe: AUS. Halte den finish-Bericht knapp beim WAS — keine ausführliche Begründung der Änderungen.'
+        : '- Erklärtiefe: AUS. Wenn du Code änderst, nenne knapp das WAS — keine ausführliche Begründung.',
+    );
+  }
+  const ci = p.customInstructions?.trim();
+  if (ci) {
+    lines.push(
+      '- Persönliche Anweisungen des Nutzers (gelten für alle Projekte, befolge sie):',
+      ...ci.split('\n').map((l) => `  ${l}`),
+    );
+  }
+  if (lines.length === 0) return '';
+  return ['Nutzer-Präferenzen (verbindlich, in jeder Antwort zu beachten):', ...lines].join('\n');
 }
 
 /** B2: note for the reduced-context retry (file contents dropped). */
@@ -150,6 +214,17 @@ function renderProjectContext(ctx: GoblinChatContext): string {
     // honest (E7: these files count as not loaded) without a hard error.
     if (ctx.contextNote) lines.push(`- ${ctx.contextNote}`);
 
+    // F4.1: user-authored project instructions — standing rules for THIS
+    // project, above the rolling memory and marked as the user's own words so
+    // the model treats them as binding without needing them repeated per turn.
+    const instr = ctx.projectInstructions?.trim();
+    if (instr) {
+      lines.push(
+        '- Projekt-Anweisungen des Nutzers (verbindliche Vorgaben für dieses Projekt — befolge sie in jeder Antwort, auch ohne erneute Nennung):',
+        ...instr.split('\n').map((l) => `  ${l}`),
+      );
+    }
+
     // U3: rolling memory — lets a NEW chat answer "Wo waren wir?" truthfully.
     if (ctx.projectState && (ctx.projectState.summary || ctx.projectState.decisions)) {
       lines.push('- Bisheriger Stand & Entscheidungen:');
@@ -190,9 +265,9 @@ function renderProjectContext(ctx: GoblinChatContext): string {
   }
 }
 
-/** Build the full system prompt: identity + (optional) live project context. */
+/** Build the full system prompt: identity + user prefs + (optional) live project context. */
 export function buildGoblinChatSystemPrompt(ctx: GoblinChatContext = {}): string {
-  return [IDENTITY, renderProjectContext(ctx)].filter(Boolean).join('\n');
+  return [IDENTITY, renderUserContext(ctx), renderProjectContext(ctx)].filter(Boolean).join('\n');
 }
 
 // ─── AGENT MODE (FEEL-3a) ───────────────────────────────────────────────────────
@@ -263,15 +338,37 @@ Du: (list_files) "styles.css finde ich nicht — ich prüfe, welche Dateien es g
 Du: (finish) "Die Datei heißt style.css, nicht styles.css. Sag mir, ob ich die Farbe dort ändern soll, dann mache ich weiter."
 
 Beispiel 5 — ehrliche Grenze (kein passendes Werkzeug):
-Nutzer: "Such im Web nach aktuellen Preisen und stell die Seite auf meinen eigenen Server."
-Du: (finish) "Beides kann ich nicht: Ich habe keinen Web-Zugriff und kann nur auf deine eigene Projekt-URL veröffentlichen, nicht auf einen fremden Server. Was ich JETZT tun kann: die Seite bauen und (auf Wunsch) auf deine Projekt-Adresse live stellen; Preise trägst du mir als Text ein, dann baue ich sie ein."`;
+Nutzer: "Stell die Seite auf meinen eigenen Server unter example.com."
+Du: (finish) "Das kann ich nicht: Ich veröffentliche nur auf deine eigene Projekt-URL, nicht auf einen fremden Server. Was ich JETZT tun kann: die Seite bauen und (auf Wunsch) auf deine Projekt-Adresse live stellen."`;
+
+// F4.3 — appended to the agent prompt ONLY when a search provider is configured for
+// the run (searchAvailable). Makes the web capability honest-and-conditional: in an
+// agent run Goblin CAN search; the base chat's "nicht im Web suchen" stays true there.
+const WEB_SEARCH_BLOCK = `Websuche (web_search) — du KANNST in diesem Lauf im Web suchen:
+- Nutze web_search(query) NUR, wenn die Aufgabe echtes Live-Wissen braucht, das weder im Projekt noch in deinem Wissensstand sicher aktuell ist (z.B. "die aktuelle stabile Version von X"). Für alles andere brauchst du keine Suche.
+- Höchstens WENIGE Suchen pro Lauf (hartes Limit greift automatisch). Formuliere EINE gezielte Anfrage statt vieler tastender.
+- Das Ergebnis sind echte Treffer (Titel, URL, Auszug). Verwendest du einen gefundenen Fakt, ZITIERE die Quelle im Text: „Quelle: <url>". Erfinde niemals Treffer, Zahlen oder URLs — kommt "keine Treffer" oder ein Fehler zurück, sag das ehrlich.
+
+Beispiel — Websuche mit Zitat:
+Nutzer: "Nutze die aktuelle stabile Tailwind-Version — such nach, welche das ist."
+Du: (web_search { "query": "current stable Tailwind CSS version" }) "Ich suche die aktuelle Tailwind-Version."
+→ Ergebnis: { ok: true, data: { results: [ { title: "Tailwind CSS v4.0", url: "https://tailwindcss.com/blog/tailwindcss-v4", snippet: "…" } ] } }
+Du: (write_file …) "Ich trage Tailwind v4 ein (Quelle: https://tailwindcss.com/blog/tailwindcss-v4)."`;
 
 /**
  * Build the AGENT MODE system prompt: agent identity + the tool/protocol/few-shot
  * block + the SAME live project context normal chat sees. Used only for agent runs.
  */
 export function buildAgentSystemPrompt(ctx: GoblinChatContext = {}): string {
-  return [AGENT_IDENTITY, AGENT_MODE_BLOCK, renderProjectContext(ctx)].filter(Boolean).join('\n\n');
+  return [
+    AGENT_IDENTITY,
+    AGENT_MODE_BLOCK,
+    ctx.searchAvailable ? WEB_SEARCH_BLOCK : '',
+    renderUserContext(ctx, { agent: true }),
+    renderProjectContext(ctx),
+  ]
+    .filter(Boolean)
+    .join('\n\n');
 }
 
 export { AGENT_MODE_BLOCK };

@@ -12,8 +12,8 @@ const Check14 = () => <svg width="14" height="14" viewBox="0 0 24 24" fill="none
 
 export type PlusAction = 'upload-file' | 'screenshot' | 'github' | 'research' | 'websearch' | 'paste-chat';
 
-// F1.4 (feel-sprint-1): web search/research are not real capabilities yet.
-const WEBSEARCH_ENABLED = process.env.NEXT_PUBLIC_ENABLE_WEBSEARCH === 'true';
+// F1.4: "Recherche" (deep research) is still not a real capability — stays flag-gated.
+const RESEARCH_ENABLED = process.env.NEXT_PUBLIC_ENABLE_WEBSEARCH === 'true';
 
 interface ComposerPlusPopoverProps {
   open: boolean;
@@ -21,9 +21,14 @@ interface ComposerPlusPopoverProps {
   anchorRef: React.RefObject<HTMLElement | null>;
   onAction: (action: PlusAction) => void;
   websearchOn?: boolean;
+  /**
+   * F4.3: web search is REAL in agent-eligible chats (Goblin Swift/Forge on a project).
+   * Show the honest "Websuche" affordance only there; hidden everywhere else.
+   */
+  websearchAvailable?: boolean;
 }
 
-export function ComposerPlusPopover({ open, onClose, anchorRef, onAction, websearchOn }: ComposerPlusPopoverProps) {
+export function ComposerPlusPopover({ open, onClose, anchorRef, onAction, websearchOn, websearchAvailable }: ComposerPlusPopoverProps) {
   const popoverRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -72,15 +77,15 @@ export function ComposerPlusPopover({ open, onClose, anchorRef, onAction, websea
       <PopoverItem icon={<Camera16 />} onClick={() => { onAction('screenshot'); onClose(); }}>Screenshot</PopoverItem>
       <PopoverItem icon={<Quote16 />} onClick={() => { onAction('paste-chat'); onClose(); }}>Notiz oder Chat einfügen</PopoverItem>
       <PopoverItem icon={<GitHub16 />} onClick={() => { onAction('github'); onClose(); }}>Aus GitHub</PopoverItem>
-      {/* F1.4 — phantom affordances off by default: the model cannot browse the
-          web yet, so the composer must not advertise it. Flag back on via
-          NEXT_PUBLIC_ENABLE_WEBSEARCH=true once real search ships. */}
-      {WEBSEARCH_ENABLED && (
-        <>
-          <Divider />
-          <PopoverItem icon={<Search16 />} onClick={() => { onAction('research'); onClose(); }}>Recherche</PopoverItem>
-          <PopoverItem icon={<Globe16 />} onClick={() => { onAction('websearch'); }} checked={websearchOn}>Websuche</PopoverItem>
-        </>
+      {/* F4.3 — Websuche is a REAL affordance in agent-eligible chats (the agent has
+          the web_search tool there). Hidden elsewhere, where the model truly can't
+          browse. "Recherche" (deep research) remains flag-gated (not built). */}
+      {(websearchAvailable || RESEARCH_ENABLED) && <Divider />}
+      {RESEARCH_ENABLED && (
+        <PopoverItem icon={<Search16 />} onClick={() => { onAction('research'); onClose(); }}>Recherche</PopoverItem>
+      )}
+      {websearchAvailable && (
+        <PopoverItem icon={<Globe16 />} onClick={() => { onAction('websearch'); }} checked={websearchOn}>Websuche</PopoverItem>
       )}
 
       <style jsx>{`

@@ -35,6 +35,7 @@ Every mechanism that consumes model tokens (user-billed or platform-paid) is reg
 - **Billed to:** user allowance (units, Forge-weighted).
 - **Knobs:** history window (50) — **VERIFIED** `apps/api/src/routes/chat.ts:132` (`.limit(50)`, then `.slice(0, -1)` :134); same in the project route `apps/api/src/routes/chat-sessions.ts:174`. System prompt length: `apps/api/src/prompts/goblin-chat-system.ts`.
 - **Cost:** at realistic mix $0.20/M → a 6k-token turn ≈ $0.0012.
+- **F4.2 note (feel-4 — global user preferences, negligible):** the "Wie Goblin arbeitet" block (`renderUserContext`, `goblin-chat-system.ts`) now rides EVERY chat and agent turn (project + standalone). Structured prefs (Anrede/Antwortstil/Erklärtiefe) add **~1 short line each (<40 tok total)**; `custom_instructions` (previously stored-but-never-injected, now live — 0048) adds **≤4k chars ÷ 4 ≈ ≤1k tok/turn** only when the user has set it, zero otherwise. Loader `loadUserPreferences` (`services/user-preferences.ts`); the three structured columns are dark until migration 0082 is applied (authored). **User allowance**, same completion, no new billing path. Negligible vs M2 file injection.
 - **CFO dependency:** A6 (limit exhaustion), Effizienzklasse (A8). | Status: FORMULA + partial MEASURED.
 
 ### M2 — Project file-content injection (FEEL-2 U1)
@@ -44,6 +45,7 @@ Every mechanism that consumes model tokens (user-billed or platform-paid) is reg
 - **Knobs:** total context budget **48k chars** — **VERIFIED** `FILE_CONTENT_BUDGET_CHARS = 48_000` `apps/api/src/services/project-context.ts:14`; per-file over-budget marker "(Inhalt nicht geladen — zu gross)"; loader `loadProjectContextFiles()` `apps/api/src/services/project-context.ts`.
 - **Exclusion rule (B6, feel-sprint-2):** soft-deleted files (`.trash/`, the sole soft-delete prefix) are dropped from BOTH the injected contents and the file list shown to the model — `isSoftDeletedPath()` filters `listFilesWithMeta` in `loadProjectContextFiles()` and on both chat-route degraded fallbacks (`chat.ts`, `chat-sessions.ts`). Mirror on the web STC existing-files map (`apps/web/lib/project-files.ts` `fetchAllTextFiles`) so trashed files are not GEÄNDERT/IDENTISCH candidates. Deleted content therefore never re-enters context or burns injection budget.
 - **Degradation:** on provider token-limit rejection (Layer-2 free keys, e.g. Groq 12k TPM), one retry **without** file contents + honest note (FEEL-2b B2, `apps/api/src/services/token-limit-retry.ts`). **Live-verified 2026-07-05** (G3): 28'645-token request → Groq 413 → one reduced-context retry → success, no fabrication. **Measurement (I0, MOBILE-1):** each such retry now also inserts a `platform_events` row (`event_type='context_retry'`, silent-fail/no-op pre-migration 0078) → B2 retry frequency is queryable from the DB, not only Railway logs.
+- **A19 note (F4.1 — project instructions, feel-4):** per-project user-authored **`projects.instructions`** (≤2k chars, cap enforced `apps/api/src/routes/projects.ts` PUT `/:id/instructions`) now rides this same injection — rendered by `renderProjectContext()` above the rolling memory (`goblin-chat-system.ts`, `projectInstructions`), wired into all three prompt paths (`chat.ts`, `chat-sessions.ts`, `code-sessions.ts` agent). **+Δ input ≤ ~500 tok/turn** when set (≤2k chars ÷ 4), zero when empty — additive to M2 file injection and, in agent runs, re-sent each turn like the step history (bounded by the 8-iteration cap, M10). Same A19 family (project vs standalone split); **user allowance**, same completion, no new billing path. The memory read/reset endpoints (`GET`/`DELETE /:id/state`) are DB-only, **zero model tokens**.
 - **CFO dependency:** A19 (new register row), A6, Trial economics (kTrial), regional typical margin. | Status: MEASURED (1 project) — widen with prod telemetry.
 - **Measurement path (I0, MOBILE-1) — no token change, attribution only:** `completion_costs` rows are now attributable project-vs-standalone. The chat-sessions route passes `chatSessionId` (→ `chat_sessions.project_id`); additionally `trackCompletion` writes `completion_costs.project_id` directly (migration 0077, `add column if not exists project_id`; API write is pre-migration tolerant — retries the insert without `project_id` rather than dropping the cost row) so the **legacy** project route (`chat.ts`, no session row — telemetry NOTES gap #1) is also attributable. `project_id` NULL = standalone. A19 (project vs standalone split) becomes computable. Cost formulas unchanged.
 
@@ -138,10 +140,34 @@ Deploy truth-gating (P0.2: HTTP checks only) · STC integrity checks (client/sha
   growth). | Status: FORMULA — reconcile with A6/M10 actuals 1 week post-merge (the standing telemetry
   protocol), using `agent_runs` + `completion_costs.run_id`.
 
+### M11 — Web search (FEEL-4 F4.3, `web_search` agent tool)
+- **Trigger:** the agent calls `web_search(query)` during an agent run (project chat, eligible Goblin tier).
+  Available ONLY in agent runs; base chat still cannot search. Advertised to the model only when a provider
+  is configured (`agentToolsFor({ search })`).
+- **Two cost components:**
+  1. **Search API fee** — one Brave Web Search request per call.
+     - **PLATFORM key** (`BRAVE_SEARCH_API_KEY`, bundled default) = **PLATFORM COGS**, protected by a
+       **per-user daily cap 25** (`SEARCH_DAILY_CAP`, in-memory per instance like the M8 dictation cap) and a
+       **per-run cap 3** (`AGENT_MAX_SEARCHES`, enforced in the run's executor closure). Brave pricing:
+       free tier ~2k queries/mo, then ~**$3/1k** → a capped user costs ≤ 25 × $0.003 = **$0.075/day** worst case.
+     - **USER key** (BYOK 'brave', `resolveSearchProvider` prefers it) = **zero platform cost**, **cap-EXEMPT**
+       (the user's own free Brave quota, ~2k/mo). JIT-offered when the platform daily cap is hit.
+  2. **Result tokens** — the returned hits (title/url/snippet, ≤5 results) re-enter the next agent turn's input,
+     so they are **user-billed input** exactly like any tool result (flows through the M10 agent accounting,
+     `run_id`). Rough add ≈ **≤300–500 input tok per search** (5 results × ~60–90 tok). Always user allowance,
+     regardless of whose API key served the search.
+- **Billed to:** search fee = PLATFORM COGS (platform key, capped) OR zero (user key); result tokens = **user allowance** (always).
+- **Knobs:** `AGENT_MAX_SEARCHES` (per-run, default 3) + `SEARCH_DAILY_CAP` (per-user/day, default 25) —
+  `apps/api/src/services/search/index.ts`; provider key `BRAVE_SEARCH_API_KEY`; result count (5) `services/agent/tools.ts` `toolWebSearch`.
+- **Accounting mechanism:** platform-key searches decrement the in-memory daily counter (abuse guard, not a
+  billing ledger — resets on deploy, per-replica). Promote to a persisted counter / `platform_events` row if
+  search volume grows and per-search COGS needs DB-level measurement.
+- **CFO dependency:** small variable **platform COGS** (like M3/M8), NOT user allowance for the fee; A19 family
+  for the result-token add. | Status: FORMULA (Brave pricing 2026-07) — measure prod search volume post-merge.
+
 ### M6 — Reserved (not yet built; add rows before shipping)
-Web search / Recherche (feature-flagged off) · extended thinking · FEEL-3**b** agent publish (`publish` +
-`read_deploy_status` + bounded self-heal — cost model required before the 3b merge). *FEEL-3a agent loop
-(safe half) is now **M10** above.*
+Extended thinking · new third-party connectors beyond GitHub/Vercel/Brave. *FEEL-3a agent loop → **M10**;
+FEEL-3b publish/self-heal folded into M10; web search → **M11** above.*
 
 ---
 

@@ -513,18 +513,34 @@ const PreferencesSchema = z.object({
   notify_important_updates: z.boolean().optional(),
   notify_email: z.boolean().optional(),
   memory_enabled: z.boolean().optional(),
+  // F4.2 ("Wie Goblin arbeitet"). Columns land in migration 0082 (authored, not
+  // yet applied) — the PUT below is tolerant so saving prefs never 500s pre-apply.
+  pref_address_name: z.string().max(80).optional().nullable(),
+  pref_response_style: z.enum(['knapp', 'ausfuehrlich']).optional().nullable(),
+  pref_explain_changes: z.boolean().optional().nullable(),
 });
+
+// F4.2: the pref_* keys only exist post-0082 — split them out so a pre-apply DB
+// can still persist the always-present fields.
+const F42_PREF_KEYS = ['pref_address_name', 'pref_response_style', 'pref_explain_changes'] as const;
 
 account.get('/preferences', authMiddleware, async (c) => {
   const userId = c.get('userId');
   const supabase = getSupabaseAdmin();
-  const { data, error } = await supabase
+  // Try with the F4.2 columns; fall back to the legacy set if 0082 isn't applied.
+  const full = await supabase
+    .from('users')
+    .select('custom_instructions, locale, timezone, notify_build_complete, notify_important_updates, notify_email, memory_enabled, pref_address_name, pref_response_style, pref_explain_changes')
+    .eq('id', userId)
+    .maybeSingle();
+  if (!full.error) return c.json(full.data ?? {});
+  const legacy = await supabase
     .from('users')
     .select('custom_instructions, locale, timezone, notify_build_complete, notify_important_updates, notify_email, memory_enabled')
     .eq('id', userId)
     .maybeSingle();
-  if (error) return c.json({ error: 'Lookup failed' }, 500);
-  return c.json(data ?? {});
+  if (legacy.error) return c.json({ error: 'Lookup failed' }, 500);
+  return c.json(legacy.data ?? {});
 });
 
 account.put('/preferences', authMiddleware, async (c) => {
@@ -539,10 +555,20 @@ account.put('/preferences', authMiddleware, async (c) => {
     .update(parsed.data)
     .eq('id', userId);
   if (error) {
+    // F4.2: a missing pref_* column (pre-0082) fails the whole update — retry
+    // without the F4.2 keys so the legacy fields still save. The structured prefs
+    // simply stay unset until the founder applies the migration.
+    const hasF42 = F42_PREF_KEYS.some((k) => k in parsed.data);
+    if (hasF42) {
+      const legacyData = { ...parsed.data };
+      for (const k of F42_PREF_KEYS) delete (legacyData as Record<string, unknown>)[k];
+      const retry = await supabase.from('users').update(legacyData).eq('id', userId);
+      if (!retry.error) return c.json({ success: true, prefsPersisted: false });
+    }
     logger.error({ err: error.message, userId }, 'preferences update failed');
     return c.json({ error: 'Update failed' }, 500);
   }
-  return c.json({ success: true });
+  return c.json({ success: true, prefsPersisted: true });
 });
 
 export { account };

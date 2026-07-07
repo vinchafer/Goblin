@@ -34,9 +34,11 @@ describe('AGENT MODE system prompt — A4', () => {
     expect(p).toMatch(/weiteres Mal korrigiert/);
   });
 
-  it('includes the refusal few-shot (web search / foreign-server deploy → honest limit)', () => {
-    expect(p).toMatch(/keinen Web-Zugriff/);
+  it('includes the refusal few-shot (foreign-server deploy → honest limit)', () => {
+    // FEEL-4 F4.3: the agent CAN search the web now, so the refusal example no longer
+    // claims "keinen Web-Zugriff" — it refuses only the foreign-server deploy.
     expect(p).toMatch(/fremden Server/);
+    expect(p).not.toMatch(/keinen Web-Zugriff/);
   });
 
   it('D1 semantics: publish allowed only on explicit intent in THIS message, else chip', () => {

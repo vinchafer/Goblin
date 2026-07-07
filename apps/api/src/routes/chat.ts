@@ -6,6 +6,7 @@ import { buildGoblinChatSystemPrompt, REDUCED_CONTEXT_NOTE } from '../prompts/go
 import { listFilesWithMeta } from '../services/file-storage';
 import { loadProjectContextFiles, isSoftDeletedPath } from '../services/project-context';
 import { loadProjectState, scheduleProjectStateUpdate } from '../services/project-state';
+import { loadUserPreferences } from '../services/user-preferences';
 import { authMiddleware } from '../middleware/auth';
 import { chatStreamRateLimit } from '../middleware/rate-limit';
 
@@ -141,7 +142,7 @@ chat.post('/stream', chatStreamRateLimit, async (c) => {
   try {
     const { data: proj } = await supabase
       .from('projects')
-      .select('name, preview_url, last_deployed_at')
+      .select('name, preview_url, last_deployed_at, instructions')
       .eq('id', projectId)
       .eq('user_id', userId)
       .single();
@@ -153,13 +154,17 @@ chat.post('/stream', chatStreamRateLimit, async (c) => {
         .filter((f) => !isSoftDeletedPath(f.path))
         .map((f) => ({ path: f.path, size: f.size })),
     );
-    const p = proj as { name?: string; preview_url?: string | null; last_deployed_at?: string | null } | null;
+    const p = proj as { name?: string; preview_url?: string | null; last_deployed_at?: string | null; instructions?: string | null } | null;
     const promptCtx = {
       projectName: p?.name ?? null,
       files,
       lastDeploy: p ? { url: p.preview_url ?? null, deployedAt: p.last_deployed_at?.slice(0, 10) ?? null } : null,
       // U3: rolling memory — null pre-migration / when nothing stored yet.
       projectState: await loadProjectState(supabase, projectId),
+      // F4.1: user-authored project instructions (empty/absent → not rendered).
+      projectInstructions: p?.instructions ?? null,
+      // F4.2: global user preferences (custom instructions live; pref_* dark pre-0082).
+      userPreferences: await loadUserPreferences(supabase, userId),
     };
     systemPrompt = buildGoblinChatSystemPrompt(promptCtx);
     if (files.some((f) => 'content' in f && f.content != null)) {

@@ -14,6 +14,11 @@ import { useLang, t } from '@/lib/use-lang';
 interface Prefs {
   custom_instructions: string | null;
   memory_enabled: boolean;
+  // F4.2 — "Wie Goblin arbeitet". All three are injected globally and provably
+  // change behavior (probe 6.3); no placebo toggles.
+  pref_address_name: string | null;
+  pref_response_style: 'knapp' | 'ausfuehrlich' | null;
+  pref_explain_changes: boolean;
 }
 
 export function PersonalizationPage() {
@@ -24,6 +29,9 @@ export function PersonalizationPage() {
   const [prefs, setPrefs] = useState<Prefs>({
     custom_instructions: '',
     memory_enabled: false,
+    pref_address_name: '',
+    pref_response_style: null,
+    pref_explain_changes: true,
   });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -50,6 +58,9 @@ export function PersonalizationPage() {
         setPrefs({
           custom_instructions: data.custom_instructions ?? '',
           memory_enabled: data.memory_enabled ?? false,
+          pref_address_name: data.pref_address_name ?? '',
+          pref_response_style: data.pref_response_style ?? null,
+          pref_explain_changes: data.pref_explain_changes ?? true,
         });
       }
     })();
@@ -114,6 +125,71 @@ export function PersonalizationPage() {
             </Field>
           </div>
         </SettingsCard>
+      </SettingsGroup>
+
+      {/* F4.2 — Wie Goblin arbeitet: Anrede, Antwortstil, Erklärtiefe. All three
+          inject globally and provably change behavior (no placebo toggles). */}
+      <SettingsGroup label={t(lang, 'Wie Goblin arbeitet', 'How Goblin works')}>
+        <SettingsCard>
+          <div style={{ padding: 20, display: 'flex', flexDirection: 'column', gap: 18 }}>
+            <Field label={t(lang, 'Anrede / Name', 'Name / how to address you')}>
+              <input
+                style={inputStyle}
+                value={prefs.pref_address_name ?? ''}
+                onChange={(e) => setPrefs((p) => ({ ...p, pref_address_name: e.target.value }))}
+                placeholder={t(lang, 'z. B. Vincent, oder „du"', 'e.g. Vincent, or "friend"')}
+                maxLength={80}
+              />
+              <span style={{ fontSize: 12, color: 'var(--text-meta)', lineHeight: 1.4 }}>
+                {t(lang, 'Goblin nutzt diesen Namen in Begrüßungen und Berichten.', 'Goblin uses this name in greetings and reports.')}
+              </span>
+            </Field>
+
+            <Field label={t(lang, 'Antwortstil', 'Response style')}>
+              <div style={{ display: 'flex', gap: 8 }}>
+                {([
+                  ['knapp', t(lang, 'Knapp', 'Concise')],
+                  ['ausfuehrlich', t(lang, 'Ausführlich', 'Detailed')],
+                ] as const).map(([val, label]) => {
+                  const active = prefs.pref_response_style === val;
+                  return (
+                    <button
+                      key={val}
+                      type="button"
+                      onClick={() => setPrefs((p) => ({ ...p, pref_response_style: active ? null : val }))}
+                      aria-pressed={active}
+                      style={{
+                        flex: 1, padding: '10px 12px', borderRadius: 10, cursor: 'pointer',
+                        fontFamily: 'var(--font-sans)', fontSize: 14, fontWeight: 600,
+                        border: active ? '2px solid var(--brand-green)' : '1px solid var(--border-subtle)',
+                        background: active ? 'rgba(45,74,43,0.06)' : 'var(--subtle)',
+                        color: active ? 'var(--brand-green)' : 'var(--text)',
+                      }}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+              <span style={{ fontSize: 12, color: 'var(--text-meta)', lineHeight: 1.4 }}>
+                {t(lang, 'Knapp: das Nötigste zuerst. Ausführlich: mit Kontext und Begründung.', 'Concise: essentials first. Detailed: with context and rationale.')}
+              </span>
+            </Field>
+          </div>
+        </SettingsCard>
+        <SettingsCard>
+          <SettingsRow
+            label={t(lang, 'Code-Änderungen erklären', 'Explain code changes')}
+            rightVariant="toggle"
+            value={prefs.pref_explain_changes}
+            onChange={(v) => setPrefs((p) => ({ ...p, pref_explain_changes: v }))}
+          />
+        </SettingsCard>
+        <p style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--text-meta)', marginTop: 8, padding: '0 4px', lineHeight: 1.5 }}>
+          {t(lang,
+            'An: Goblin erklärt bei Änderungen kurz das Warum (auch im Agent-Bericht). Aus: nur das Was.',
+            'On: Goblin briefly explains the why on changes (including in the agent report). Off: just the what.')}
+        </p>
       </SettingsGroup>
 
       <SettingsGroup label={t(lang, 'Anweisungen für Goblin', 'Instructions for Goblin')}>

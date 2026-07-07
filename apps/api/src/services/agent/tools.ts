@@ -28,6 +28,13 @@ import {
   type PublishState,
 } from './publish';
 import type { ToolSpec, ToolExecutor, ToolCall, ToolResult, ToolContext } from './types';
+import {
+  remainingPlatformSearches,
+  recordPlatformSearch,
+  searchDailyCap,
+  agentMaxSearchesPerRun,
+  type ResolvedSearch,
+} from '../search';
 
 // ─── Tool schemas (native function-calling shape + the fallback JSON contract) ──
 
@@ -106,6 +113,30 @@ export const AGENT_TOOLS: ToolSpec[] = [
     },
   },
 ];
+
+// F4.3 — web_search is advertised ONLY when a search provider is configured for the
+// run (platform key or the user's BYOK Brave key). Declared separately so a run
+// without search never sees a tool it can't use (no false capability).
+export const WEB_SEARCH_TOOL: ToolSpec = {
+  name: 'web_search',
+  description:
+    'Sucht im Web (aktuelle Fakten, Versionen, Doku). Nutze dies NUR, wenn die Aufgabe ' +
+    'echtes Live-Wissen braucht, das nicht im Projekt steht. Gib eine knappe, gezielte ' +
+    'Suchanfrage an. Das Ergebnis sind echte Treffer (Titel, URL, Auszug) — wenn du einen ' +
+    'gefundenen Fakt verwendest, zitiere die Quelle im Text als „Quelle: <url>". Erfinde ' +
+    'niemals Treffer oder URLs. Höchstens wenige Suchen pro Lauf — bündle deine Frage.',
+  parameters: {
+    type: 'object',
+    properties: { query: { type: 'string', description: 'Die Suchanfrage, z.B. "aktuelle stabile Tailwind-Version"' } },
+    required: ['query'],
+    additionalProperties: false,
+  },
+};
+
+/** The tool set advertised to a run: base tools, plus web_search when search is available. */
+export function agentToolsFor(opts: { search: boolean }): ToolSpec[] {
+  return opts.search ? [...AGENT_TOOLS, WEB_SEARCH_TOOL] : AGENT_TOOLS;
+}
 
 // ─── Session file helpers (the agent's coherent view of its own edits) ──────────
 
@@ -317,6 +348,82 @@ export interface ExecutorOptions {
   publishState?: PublishState;
   /** Injectable sleep for the deploy poll (tests pass a no-op). */
   sleep?: (ms: number) => Promise<void>;
+  /** F4.3: the resolved search provider for this run (null → web_search unavailable). */
+  search?: ResolvedSearch | null;
+  /** F4.3: max web searches this run may make (orchestrator-enforced knob, default 3). */
+  maxSearchesPerRun?: number;
+}
+
+// F4.3 — the web_search tool. Enforces the per-run cap (counter lives in the run's
+// executor closure) and, for platform-key searches, the per-user daily cap. User-key
+// searches are cap-exempt. Results are returned as structured hits so the model can
+// cite; a provider failure is an honest tool error, never a fabricated result.
+async function toolWebSearch(
+  ctx: ToolContext,
+  args: Record<string, unknown>,
+  search: ResolvedSearch | null | undefined,
+  state: { used: number; max: number },
+  signal?: AbortSignal,
+): Promise<ToolResult> {
+  const query = typeof args.query === 'string' ? args.query.trim() : '';
+  if (!query) return { ok: false, summary: 'Suchanfrage fehlt', error: { code: 'bad_args', message: 'query erforderlich' } };
+
+  if (!search) {
+    return {
+      ok: false,
+      summary: 'Websuche nicht verfügbar',
+      error: { code: 'search_unavailable', message: 'Websuche ist in diesem Lauf nicht konfiguriert.' },
+    };
+  }
+
+  // Per-run cap (spec §4). Honest, actionable message — the model should stop searching.
+  if (state.used >= state.max) {
+    return {
+      ok: false,
+      summary: `Such-Limit erreicht (${state.max}/Lauf)`,
+      error: {
+        code: 'search_run_cap',
+        message: `Maximal ${state.max} Websuchen pro Lauf. Arbeite mit den bisherigen Ergebnissen weiter oder frag den Nutzer.`,
+      },
+    };
+  }
+
+  // Per-user daily cap — platform key only; the user's own key is exempt.
+  if (!search.capExempt && remainingPlatformSearches(ctx.userId) <= 0) {
+    return {
+      ok: false,
+      summary: 'Tageslimit für Websuchen erreicht',
+      error: {
+        code: 'search_daily_cap',
+        message:
+          `Das tägliche Websuch-Kontingent (${searchDailyCap()}) ist aufgebraucht. Mit einem eigenen, ` +
+          `kostenlosen Brave-Search-Key (Einstellungen → Konnektoren) suchst du ohne dieses Limit weiter.`,
+      },
+    };
+  }
+
+  state.used += 1;
+  if (!search.capExempt) recordPlatformSearch(ctx.userId);
+
+  let results;
+  try {
+    results = await search.provider.search(query, { count: 5, signal });
+  } catch (e) {
+    return {
+      ok: false,
+      summary: `Websuche fehlgeschlagen: ${query}`,
+      error: { code: 'search_failed', message: e instanceof Error ? e.message : 'Suche fehlgeschlagen' },
+    };
+  }
+
+  if (results.length === 0) {
+    return { ok: true, summary: `Websuche: „${query}" · keine Treffer`, data: { query, results: [] } };
+  }
+  return {
+    ok: true,
+    summary: `Websuche: „${query}" · ${results.length} Treffer`,
+    data: { query, results },
+  };
 }
 
 /**
@@ -329,8 +436,12 @@ export interface ExecutorOptions {
 export function buildToolExecutor(sb: Sb = getSupabaseAdmin(), opts: ExecutorOptions = {}): ToolExecutor {
   const publishDeps = opts.publishDeps ?? realPublishDeps;
   const publishState = opts.publishState ?? newPublishState();
+  // F4.3: per-run search budget lives in this closure (one executor per run).
+  const searchState = { used: 0, max: opts.maxSearchesPerRun ?? agentMaxSearchesPerRun() };
   return async (call: ToolCall, ctx: ToolContext): Promise<ToolResult> => {
     switch (call.name) {
+      case 'web_search':
+        return toolWebSearch(ctx, call.args ?? {}, opts.search, searchState);
       case 'list_files':
         return toolListFiles(sb, ctx);
       case 'read_file':
