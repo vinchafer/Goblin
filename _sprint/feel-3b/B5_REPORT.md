@@ -30,8 +30,27 @@ Each run used a **fresh project chat** (a new `code_sessions` row). Transcripts 
 - `goblin-agent-system.test.ts` (11) — prompt: 7 tools, D1 semantics, self-heal few-shot, "Live only after green publish".
 - **Full API suite: 423/423 passed.** Web + API `tsc --noEmit`: clean.
 
-## Merge readiness verdict
+## Founder D-fix + post-guard re-measurement
 
-- Suites green ✓ · tsc clean ✓ · ledger M10 updated ✓ · runs 1–3 clean ✓ · **W10 (run 4): flaky — verified at 0 taps on obs-2, honest failure on obs-1.**
-- The honesty machinery is solid on every path (no false claim, ever). The W10 flake is a FEEL-3c-scope model-protocol issue.
-- **Recommendation: HALT the conditional prod merge for founder decision.** The headline W10 acceptance passes on a clean run but is not yet *reliable*; the fix (fallback/native-mixing hardening) is >1 commit and belongs to FEEL-3c. Founder go/no-go: merge now with a 3c hardening follow-up, or hold 3b merge until W10 is deterministic.
+Founder chose the minimal path: one isolated orchestrator commit (`9145d11`) — the
+**mixed-mode guard** (one tool-call signal per turn; native+fence or multi-call → one
+repair-reprompt → honest abort). This directly closes the obs-1 failure mode (a dropped
+`index.html`). Then the W10 canonical was re-run **3 more times, fresh project each**:
+
+| Post-guard W10 | State | Verified URL |
+|---|---|---|
+| run 1 | published | `feel3b-b5-60750.vercel.app` (HTTP 200, dark-mode) |
+| run 2 | published | `feel3b-b5-2698.vercel.app` (HTTP 200, dark-mode) |
+| run 3 | published | `feel3b-b5-86705.vercel.app` (HTTP 200, dark-mode) |
+
+**W10 pass rate: 4 of 5 clean** (obs-2 + 3× post-guard; the pre-guard obs-1 failure is
+excused per the founder rule). Post-guard specifically: **3 of 3 clean.** Interactions
+after send: **0** on every run.
+
+## Merge readiness verdict — GO
+
+- Suites green ✓ (423/423) · tsc clean ✓ · ledger M10 updated ✓ · runs 1–3 clean ✓ ·
+  **W10 4/5 clean (post-guard 3/3)** ✓ · mixed-mode guard unit-tested ✓.
+- Honesty machinery solid on every path (no false "live", ever).
+- **Merge condition (≥4/5 W10 clean) MET → conditional merge authorization applies.**
+- Broader JSON-fallback hardening stays FEEL-3c, as agreed.
