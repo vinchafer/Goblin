@@ -8,9 +8,13 @@ Criteria applied to every control:
 4. **Braucht es Max?** — dev-only → behind "Erweitert" or removed
 5. **Konsistent?** — same terms as the rest of the product (house glossary)
 
-Screenshots (375px + desktop, dark+light) are captured in the consolidated evidence run
-and referenced as `_sprint/feel-4/shots/<name>.png`. Behavior columns below are **code-verified**,
-not claimed.
+Behavior columns below are **code-verified** (not claimed) and, for the new controls,
+**live-verified on prod** via the browser-free API/agent smoke (`_sprint/feel-4/prod/SMOKE.txt`).
+Viewport/theme screenshots (375px + desktop, dark+light) were **not captured this session** — the
+prod web is behind an auth wall and credential entry / OAuth is out of policy for the agent, and
+cookie-injection was judged a rabbit-hole against already-decisive live evidence. The new surfaces
+are tsc-clean, deployed (SHA 89591cf), and their backing API is confirmed live. **Follow-up:** a
+founder eyeball or a screenshot pass with an injected test session (deferred, low-risk).
 
 ---
 
