@@ -6,10 +6,38 @@
 // results (files with real badges/deltas, landing state, units, follow-ups). Design
 // tokens only (--ed-*), so it tracks the editor's light/dark theme.
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { GoblinLogo } from "@/components/brand/GoblinLogo";
 import { useLang, t } from "@/lib/use-lang";
+import { pickQuote } from "@/lib/loading-quotes";
 import type { AgentStep, AgentReport } from "@/hooks/code/useAgentRun";
+
+// C3 — loading quotes. In an idle gap (no new real step for this long), a curated craft
+// quote fades in BELOW the live step, then rotates. It is decoration, never a step:
+// steps are truth. It only ever shows while streaming, and any new step clears it.
+const IDLE_BEFORE_QUOTE_MS = 4000;
+const QUOTE_ROTATE_MS = 7000;
+
+/**
+ * Show a rotating quote only during idle gaps of a live run. Returns the current quote
+ * (or null when a real step is flowing / not streaming). Keyed on steps.length so every
+ * new step resets the idle clock — the quote never competes with real narration.
+ */
+function useIdleQuote(streaming: boolean, stepCount: number): ReturnType<typeof pickQuote> | null {
+  const [tick, setTick] = useState<number | null>(null);
+  const seed = useRef(0);
+  useEffect(() => {
+    if (!streaming) { setTick(null); return; }
+    setTick(null); // a new step (or run start) hides any current quote
+    // Vary the starting quote per idle gap without a shared RNG dependency.
+    seed.current = (seed.current + stepCount + 1) % 40;
+    const show = setTimeout(() => setTick(0), IDLE_BEFORE_QUOTE_MS);
+    const rotate = setInterval(() => setTick((n) => (n == null ? 0 : n + 1)), QUOTE_ROTATE_MS);
+    return () => { clearTimeout(show); clearInterval(rotate); };
+  }, [streaming, stepCount]);
+  if (tick == null) return null;
+  return pickQuote(seed.current + tick);
+}
 
 function fmtMs(ms: number): string {
   if (ms < 1000) return `${ms}ms`;
@@ -64,6 +92,7 @@ interface Props {
 export function AgentRunView({ streaming, steps, narration, report, elapsedSeconds, onViewChanges, onGoLive, onOpen, onConfirmPublish }: Props) {
   const lang = useLang();
   const [collapsed, setCollapsed] = useState(false);
+  const idleQuote = useIdleQuote(streaming, steps.length);
   if (!streaming && steps.length === 0 && !report) return null;
 
   const stateLabel = report
@@ -104,6 +133,28 @@ export function AgentRunView({ streaming, steps, narration, report, elapsedSecon
         <ul style={{ listStyle: "none", margin: 0, padding: "0 12px 8px 34px" }}>
           {steps.map((s, i) => <StepRow key={i} step={s} />)}
         </ul>
+      )}
+
+      {/* C3: idle-gap quote — BELOW the live step, secondary (serif, faint), a decoration
+          that never pretends to be a step. Only while streaming, and any new step clears it. */}
+      {!collapsed && streaming && idleQuote && (
+        <p
+          data-testid="agent-idle-quote"
+          aria-hidden
+          style={{
+            margin: 0,
+            padding: "0 12px 10px 34px",
+            fontFamily: "var(--font-serif, Georgia, serif)",
+            fontStyle: "italic",
+            fontSize: 12,
+            lineHeight: 1.5,
+            color: "var(--ed-fg-3, var(--text-faint))",
+            opacity: 0.85,
+            transition: "opacity 240ms ease",
+          }}
+        >
+          {t(lang, idleQuote.de, idleQuote.en)}
+        </p>
       )}
 
       {/* Report card — assembled by the orchestrator from tool results */}
