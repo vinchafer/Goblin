@@ -556,4 +556,92 @@ export async function disconnectVercel(userId: string): Promise<void> {
     .throwOnError();
 }
 
+// ── Brave Search (user's own key) — F4.3 ────────────────────────────────────────
+// Like 'vercel', 'brave' is a CONNECTION provider kept out of the LLM ByokProviderSchema
+// so it never pollutes model lists. Stored in byok_keys (provider='brave') with the same
+// canonical v1/v2 encryption; the search adapter reads it via getActiveKeyByProvider.
+// A user key routes through the SAME Brave adapter as the platform key but is cap-exempt.
+
+export async function validateBraveKey(token: string): Promise<{ valid: boolean; error?: string }> {
+  try {
+    const res = await fetchWithTimeout(
+      'https://api.search.brave.com/res/v1/web/search?q=test&count=1',
+      { method: 'GET', headers: { Accept: 'application/json', 'X-Subscription-Token': token } },
+      VALIDATION_TIMEOUT_MS,
+    );
+    if (res.ok) return { valid: true };
+    if (res.status === 401 || res.status === 403 || res.status === 422) return { valid: false, error: 'Invalid key' };
+    return { valid: false, error: `Brave API error ${res.status}` };
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') return { valid: false, error: 'Validation timed out' };
+    return { valid: false, error: 'Validation failed' };
+  }
+}
+
+export async function storeBraveKey(userId: string, token: string): Promise<void> {
+  const v = await validateBraveKey(token);
+  if (!v.valid) throw new Error(v.error === 'Invalid key' ? 'Key ungültig — bitte prüfen' : (v.error || 'Ungültiger Brave-Key'));
+
+  const supabase = getSupabaseAdmin();
+  // Single active key: revoke any existing active brave key first.
+  await supabase
+    .from('byok_keys')
+    .update({ status: 'revoked' })
+    .eq('user_id', userId)
+    .eq('provider', 'brave')
+    .eq('status', 'active');
+
+  let encryptedBlob: string;
+  let vaultSecretId: string | null = null;
+  let encryptionVersion = 1;
+  try {
+    const v2 = await encryptApiKeyV2(userId, token);
+    encryptedBlob = v2.ciphertextB64;
+    vaultSecretId = v2.vaultSecretId;
+    encryptionVersion = v2.version;
+  } catch {
+    const userSalt = await getOrCreateUserSalt(userId);
+    encryptedBlob = encryptUserData(token, userSalt);
+  }
+
+  await supabase
+    .from('byok_keys')
+    .insert({
+      user_id: userId,
+      provider: 'brave',
+      key_encrypted: encryptedBlob,
+      key_hint: token.slice(-4),
+      validated_at: new Date().toISOString(),
+      encryption_version: encryptionVersion,
+      vault_secret_id: vaultSecretId,
+    })
+    .throwOnError();
+}
+
+export async function getBraveConnection(userId: string): Promise<{ connected: boolean; keyHint?: string }> {
+  const supabase = getSupabaseAdmin();
+  const { data } = await supabase
+    .from('byok_keys')
+    .select('key_hint')
+    .eq('user_id', userId)
+    .eq('provider', 'brave')
+    .eq('status', 'active')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  const row = data as { key_hint?: string } | null;
+  return row ? { connected: true, keyHint: row.key_hint ?? undefined } : { connected: false };
+}
+
+export async function disconnectBrave(userId: string): Promise<void> {
+  const supabase = getSupabaseAdmin();
+  await supabase
+    .from('byok_keys')
+    .update({ status: 'revoked' })
+    .eq('user_id', userId)
+    .eq('provider', 'brave')
+    .eq('status', 'active')
+    .throwOnError();
+}
+
 export { testKey };

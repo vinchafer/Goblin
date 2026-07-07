@@ -140,10 +140,34 @@ Deploy truth-gating (P0.2: HTTP checks only) · STC integrity checks (client/sha
   growth). | Status: FORMULA — reconcile with A6/M10 actuals 1 week post-merge (the standing telemetry
   protocol), using `agent_runs` + `completion_costs.run_id`.
 
+### M11 — Web search (FEEL-4 F4.3, `web_search` agent tool)
+- **Trigger:** the agent calls `web_search(query)` during an agent run (project chat, eligible Goblin tier).
+  Available ONLY in agent runs; base chat still cannot search. Advertised to the model only when a provider
+  is configured (`agentToolsFor({ search })`).
+- **Two cost components:**
+  1. **Search API fee** — one Brave Web Search request per call.
+     - **PLATFORM key** (`BRAVE_SEARCH_API_KEY`, bundled default) = **PLATFORM COGS**, protected by a
+       **per-user daily cap 25** (`SEARCH_DAILY_CAP`, in-memory per instance like the M8 dictation cap) and a
+       **per-run cap 3** (`AGENT_MAX_SEARCHES`, enforced in the run's executor closure). Brave pricing:
+       free tier ~2k queries/mo, then ~**$3/1k** → a capped user costs ≤ 25 × $0.003 = **$0.075/day** worst case.
+     - **USER key** (BYOK 'brave', `resolveSearchProvider` prefers it) = **zero platform cost**, **cap-EXEMPT**
+       (the user's own free Brave quota, ~2k/mo). JIT-offered when the platform daily cap is hit.
+  2. **Result tokens** — the returned hits (title/url/snippet, ≤5 results) re-enter the next agent turn's input,
+     so they are **user-billed input** exactly like any tool result (flows through the M10 agent accounting,
+     `run_id`). Rough add ≈ **≤300–500 input tok per search** (5 results × ~60–90 tok). Always user allowance,
+     regardless of whose API key served the search.
+- **Billed to:** search fee = PLATFORM COGS (platform key, capped) OR zero (user key); result tokens = **user allowance** (always).
+- **Knobs:** `AGENT_MAX_SEARCHES` (per-run, default 3) + `SEARCH_DAILY_CAP` (per-user/day, default 25) —
+  `apps/api/src/services/search/index.ts`; provider key `BRAVE_SEARCH_API_KEY`; result count (5) `services/agent/tools.ts` `toolWebSearch`.
+- **Accounting mechanism:** platform-key searches decrement the in-memory daily counter (abuse guard, not a
+  billing ledger — resets on deploy, per-replica). Promote to a persisted counter / `platform_events` row if
+  search volume grows and per-search COGS needs DB-level measurement.
+- **CFO dependency:** small variable **platform COGS** (like M3/M8), NOT user allowance for the fee; A19 family
+  for the result-token add. | Status: FORMULA (Brave pricing 2026-07) — measure prod search volume post-merge.
+
 ### M6 — Reserved (not yet built; add rows before shipping)
-Web search / Recherche (feature-flagged off) · extended thinking · FEEL-3**b** agent publish (`publish` +
-`read_deploy_status` + bounded self-heal — cost model required before the 3b merge). *FEEL-3a agent loop
-(safe half) is now **M10** above.*
+Extended thinking · new third-party connectors beyond GitHub/Vercel/Brave. *FEEL-3a agent loop → **M10**;
+FEEL-3b publish/self-heal folded into M10; web search → **M11** above.*
 
 ---
 

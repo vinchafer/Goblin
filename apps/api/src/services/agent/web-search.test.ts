@@ -39,7 +39,7 @@ describe('F4.3 — web_search adapter is provider-agnostic', () => {
     const exec = buildToolExecutor(stubSb, { search });
     const res = await exec(call('current stable Tailwind version'), ctx);
     expect(res.ok).toBe(true);
-    expect((res.data as { results: SearchResult[] }).results[0].url).toBe('https://tailwindcss.com');
+    expect((res.data as { results: SearchResult[] }).results[0]!.url).toBe('https://tailwindcss.com');
     expect(calls).toEqual(['current stable Tailwind version']);
   });
 
