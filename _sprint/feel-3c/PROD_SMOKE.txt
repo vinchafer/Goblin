@@ -1,0 +1,22 @@
+FEEL-3c prod smoke — deployed prod b2150a1 (both /api/version confirmed) — 2026-07-07
+Method: SSE-direct real agent run, test account, Goblin Forge (goblin/premium), no publish intent.
+Repro: npx dotenv -e .env.local -- node _sprint/feel-3c/prod_smoke.mjs
+
+ids: user 8745e258… project e93c78c2… session 905ab3ea…
+
+Run events (ms from start):
+  1184  meta
+  6563  step list_files  ok  "keine Dateien"
+ 35998  step write_file  ok  "index.html · NEU"      <- 29.4s idle gap before this step
+ 38102  step save_draft  ok  "1 Datei gesichert ✓"
+ 41510  report  state=draft-saved  outcome=finished  files=1  units=82253
+                followUps=[view-changes, confirm-publish]
+ 41938  done
+
+maxStepGapMs = 29435  → quoteWouldShow = true (>4s idle gap; C3 quote renders here)
+
+Verdict: PASS. Deployed prod agent loop runs end-to-end; a real run leaves a >4s idle gap
+(here 29.4s of Forge thinking) into which the C3 loading quote renders; the run ends in the
+polished C4 draft-saved card carrying the D1 confirm-publish chip + view-changes. No publish
+intent → saved draft (no Vercel side effect), correct D1. The on-screen quote pixel + card on a
+phone is Steven's closing feeling re-test (spec §9).
