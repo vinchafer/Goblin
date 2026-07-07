@@ -5,6 +5,7 @@ import { DeployUrlList, type DeployUrlItem } from "@/components/project/DeployUr
 import { RecentChatsCard, type RecentChatItem } from "@/components/project/RecentChatsCard";
 import { RecentSessionsCard, type RecentSessionItem } from "@/components/project/RecentSessionsCard";
 import { ProjectIntentControl } from "@/components/project/ProjectIntentControl";
+import { ProjectInstructionsCard } from "@/components/project/ProjectInstructionsCard";
 import { ProjectChatLaunch } from "@/components/project/ProjectChatLaunch";
 import { chatModelLabel } from "@/lib/chat-model-label";
 
@@ -220,8 +221,10 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
             @media (max-width: 820px) { .gobl-hub-grid { grid-template-columns: minmax(0, 1fr); } }
           `}</style>
           <div className="gobl-hub-grid">
-            {/* LEFT COLUMN — deploys + chats + code-sessions */}
+            {/* LEFT COLUMN — instructions/memory + deploys + chats + code-sessions */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16, minWidth: 0 }}>
+            {/* F4.1: per-project instructions + visible/resettable rolling memory. */}
+            <ProjectInstructionsCard projectId={id} />
             <div className="gobl-panel" style={{ overflow: 'hidden', alignSelf: 'stretch' }}>
               <div style={{
                 padding: '14px 18px', borderBottom: '1px solid var(--line)',
