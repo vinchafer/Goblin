@@ -44,6 +44,18 @@ export type BillTurn = (usage: { inputTokens: number; outputTokens: number }) =>
  */
 const MAX_HEAL_CYCLES = 2;
 
+/**
+ * The single repair reprompt after a mixed-mode turn (a native call + a fenced
+ * `tool_call`, or several calls in one turn). One tool-call signal per turn is the
+ * contract; the extra call would otherwise be dropped silently.
+ */
+const MIXED_MODE_REPAIR =
+  'Deine letzte Antwort enthielt MEHR ALS EINEN Werkzeug-Aufruf (z.B. einen nativen ' +
+  'Function-Call UND einen umzäunten `tool_call`-Block, oder mehrere Aufrufe). Rufe pro ' +
+  'Antwort GENAU EIN Werkzeug auf — nutze NUR das native Function-Call-Format, ohne ' +
+  'zusätzlichen `tool_call`-Block und ohne zweiten Aufruf. Wiederhole jetzt den EINEN ' +
+  'Aufruf, den du als Nächstes ausführen willst.';
+
 /** The narrated corrective line for a failed tool result (spec §5.3 tone). */
 function healNarration(tool: string, result: ToolResult): string {
   const detail = result.error?.message || result.summary || 'unbekannter Fehler';
@@ -188,6 +200,7 @@ export async function runAgent(input: RunAgentInput): Promise<RunResult> {
   let units = 0;
   let iterations = 0;
   let repairsUsed = 0;
+  let mixedRepairsUsed = 0;
   let healCycles = 0;
   let modelText = '';
   let outcome: RunOutcome | null = null;
@@ -220,9 +233,31 @@ export async function runAgent(input: RunAgentInput): Promise<RunResult> {
     messages.push({ role: 'assistant', content: turn.content, raw: turn.assistantMessage });
 
     // Resolve tool calls: native first, JSON fallback on the text when native is empty.
-    let calls: ToolCall[] = turn.toolCalls;
-    if (calls.length === 0) {
-      const parsed = parseFallbackToolCall(turn.content);
+    const nativeCalls = turn.toolCalls;
+    const parsed = parseFallbackToolCall(turn.content);
+    const fencePresent = parsed.kind !== 'none';
+
+    // Mixed-mode guard (founder D-fix, B5 flake): exactly ONE tool-call signal per turn.
+    // The Swift model occasionally emits a native call AND a fenced `tool_call` in prose
+    // (or several native calls) in one turn — the extra call is then silently dropped,
+    // which is how W10 obs-1 lost index.html. Reject the turn with one repair-reprompt;
+    // a second violation is an honest abort. Never silently execute a subset.
+    if (nativeCalls.length + (fencePresent ? 1 : 0) > 1) {
+      if (mixedRepairsUsed < 1) {
+        mixedRepairsUsed += 1;
+        messages.push({ role: 'system', content: MIXED_MODE_REPAIR });
+        continue;
+      }
+      outcome = 'error';
+      failureReason = 'Mehrere Tool-Aufrufe in einem Turn (nach Reparaturversuch)';
+      break;
+    }
+
+    let calls: ToolCall[];
+    if (nativeCalls.length === 1) {
+      calls = nativeCalls;
+    } else {
+      // No native call — resolve via the strict JSON fallback protocol.
       if (parsed.kind === 'call') {
         calls = [parsed.call];
       } else if (parsed.kind === 'malformed') {

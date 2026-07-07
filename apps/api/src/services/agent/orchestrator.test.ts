@@ -386,3 +386,54 @@ describe('orchestrator — B3 self-heal', () => {
     expect(res.steps.filter((s) => s.tool === 'publish' && s.outcome === 'verify_failed')).toHaveLength(2);
   });
 });
+
+// ─── Mixed-mode guard (founder D-fix for the B5/W10 flake) ───────────────────────
+
+/** A turn that emits BOTH a native call (styleArgs) AND a fenced tool_call in prose. */
+function mixedTurn(nativePath: string, fencedPath: string): ModelTurn {
+  return {
+    content: '```tool_call\n' + JSON.stringify({ tool: 'write_file', args: { path: fencedPath, content: '<html>' } }) + '\n```',
+    toolCalls: [{ id: 'cmix', name: 'write_file', args: { path: nativePath, content: '<html>' } }],
+    usage: { inputTokens: 100, outputTokens: 20 },
+  };
+}
+
+describe('orchestrator — mixed-mode guard (one tool signal per turn)', () => {
+  it('native call + fenced tool_call in one turn → one repair → clean turn proceeds (no dropped file)', async () => {
+    const { emit } = collector();
+    const ran: string[] = [];
+    const res = await runAgent({
+      ...base,
+      executor: publishExecutor(ran),
+      userMessage: 'Baue X',
+      model: scriptedModel([
+        mixedTurn('style.css', 'index.html'), // violation → repair, nothing executed
+        nativeTurn('write_file', { path: 'index.html', content: '<html>' }, 'Ich schreibe index.html'),
+        nativeTurn('finish', { report: 'ok' }),
+      ]),
+      emit,
+    });
+    expect(res.outcome).toBe('finished');
+    // the mixed turn executed NOTHING; only the clean index.html write ran.
+    expect(ran).toEqual(['write_file']);
+    expect(res.report.files).toEqual([{ path: 'index.html', classification: 'NEU' }]);
+    expect(res.iterations).toBe(3); // rejected turn + clean write + finish
+  });
+
+  it('two mixed turns in a row → honest abort after the single repair', async () => {
+    const { emit } = collector();
+    const ran: string[] = [];
+    const res = await runAgent({
+      ...base,
+      executor: publishExecutor(ran),
+      userMessage: 'Baue X',
+      model: scriptedModel([mixedTurn('a.css', 'a.html'), mixedTurn('b.css', 'b.html')]),
+      maxIterations: 6,
+      emit,
+    });
+    expect(res.outcome).toBe('error');
+    expect(res.report.state).toBe('failed');
+    expect(res.report.failureReason).toMatch(/Mehrere Tool-Aufrufe/);
+    expect(ran).toEqual([]); // never executed a partial turn
+  });
+});
