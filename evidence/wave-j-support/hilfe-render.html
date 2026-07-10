@@ -1,0 +1,506 @@
+<!doctype html><html data-theme="light"><head><meta charset="utf-8">
+<style>/* ─────────────────────────────────────────────────────────────────────
+   Goblin · Design Tokens — GLOBAL SOURCE OF TRUTH
+   Version 1.1 · synced with GOBLIN_DESIGN_SYSTEM.md v1.1
+   Installed by Brand Migration PROMPT A. This file REPLACES the retired
+   token set that previously lived here and in globals.css :root.
+
+   Structure:
+     1. v1.1 brand tokens (LOCKED anchors + ramps + scales + motion)
+     2. Dark theme
+     3. Mark animations + focus ring + reduced-motion
+     4. RETIRED-BRAND COMPAT SHIM  ← temporary, remove after PROMPT B
+   ───────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* ─── LOCKED brand anchors ─────────────────────────────────────── */
+  --brand-green:  #1A3A2A;   /* app header, primary brand surfaces */
+  --ink-deep:     #0F2B1E;   /* primary text, darkest surfaces, logo primary */
+  --brand-gold:   #D4A737;   /* logo mark, the single page accent */
+  --bone:         #F4ECD8;   /* light background — warm cream */
+  --paper:        #FBF7EC;   /* warmer paper variant of bone */
+
+  /* ─── Green ramp ───────────────────────────────────────────────── */
+  --green-50:  #EEF3EF;
+  --green-100: #D9E5DE;
+  --green-200: #B5CCC0;
+  --green-300: #87A998;
+  --green-400: #5E8973;
+  --green-500: #3D6D55;
+  --green-600: #2A523E;
+  --green-700: #1A3A2A;  /* = --brand-green (LOCKED) */
+  --green-800: #133224;
+  --green-900: #0F2B1E;  /* = --ink-deep (LOCKED) */
+  --green-950: #08170F;
+
+  /* ─── Gold ramp ────────────────────────────────────────────────── */
+  --gold-50:  #FBF3DF;
+  --gold-100: #F6E7C5;
+  --gold-200: #F0D9A4;
+  --gold-300: #E8C97F;
+  --gold-400: #DEB75A;
+  --gold-500: #D4A737;  /* = --brand-gold (LOCKED) */
+  --gold-600: #BC8E2E;
+  --gold-700: #A07726;
+  --gold-800: #7E5C1B;
+  --gold-900: #5E4514;
+
+  /* ─── Bone / surface ramp ──────────────────────────────────────── */
+  --surface-0: #FFFFFF;
+  --surface-1: #FBF7EC;  /* = --paper (LOCKED) */
+  --surface-2: #F4ECD8;  /* = --bone  (LOCKED) */
+  --surface-3: #E8DEC2;
+  --surface-4: #D8CBA8;
+  --rule-soft:   #E8DEC2;
+  --rule:        #D8CBA8;
+  --rule-strong: #B8A988;
+  --surface-ink-1: #3F3A2C;
+  --surface-ink-2: #28251D;
+
+  /* ─── Text inks ────────────────────────────────────────────────── */
+  --ink-1:        #0F2B1E;
+  --ink-2:        #3F3A2C;
+  --ink-3:        #5F5640;   /* B11: darkened from #74694F (4.04:1) → 5.4:1 on sand, clears WCAG AA */
+  --ink-disabled: #B8A988;
+
+  --ink-on-dark-1:        #FBF7EC;
+  --ink-on-dark-2:        #D8CBA8;
+  --ink-on-dark-3:        #968768;
+  --ink-on-dark-disabled: #5A523D;
+
+  /* ─── Semantic colours ─────────────────────────────────────────── */
+  --success:       #3D7A4F;
+  --success-soft:  #E1EDDE;
+  --warning:       #C7901A;
+  --warning-soft:  #F7E8C2;
+  --danger:        #B0432A;
+  --danger-soft:   #F0DACF;
+  --info:          #355B7A;
+  --info-soft:     #DCE6F0;
+
+  /* ─── Typography ───────────────────────────────────────────────── */
+  /* Manrope + Instrument Serif loaded globally in app/layout.tsx as the
+     named next/font variables below. --font-mono is owned by next/font
+     (JetBrains Mono, variable name --font-mono) — not redefined here. */
+  --font-sans:  var(--font-manrope), 'Manrope', system-ui, -apple-system, sans-serif;
+  --font-serif: var(--font-instrument-serif), 'Instrument Serif', Georgia, serif;
+
+  /* ─── Spacing scale (4 px base) ────────────────────────────────── */
+  --space-0:  0;
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-7:  32px;
+  --space-8:  40px;
+  --space-9:  48px;
+  --space-10: 64px;
+  --space-11: 80px;
+  --space-12: 120px;
+
+  /* ─── Radii ────────────────────────────────────────────────────── */
+  --radius-xs:     4px;
+  --radius-sm:     10px;
+  --radius-md:     14px;
+  --radius-lg:     20px;
+  --radius-pill:   9999px;
+  --radius-icon:   22.5%;
+  --radius-circle: 50%;
+
+  /* ─── Elevation ────────────────────────────────────────────────── */
+  --shadow-0: none;
+  --shadow-1: 0 1px 0 rgba(15, 43, 30, 0.06);
+  --shadow-2: 0 6px 16px -8px rgba(15, 43, 30, 0.18),
+              0 2px 4px  -2px rgba(15, 43, 30, 0.12);
+  --shadow-3: 0 24px 60px -20px rgba(15, 43, 30, 0.34),
+              0 8px  16px -8px  rgba(15, 43, 30, 0.18);
+
+  /* ─── Motion ───────────────────────────────────────────────────── */
+  --ease-out:    cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ─── Type scale (mobile) ──────────────────────────────────────── */
+  --t-display-fs: 40px;   --t-display-lh: 1.04; --t-display-ls: -0.02em;
+  --t-h1-fs:      30px;   --t-h1-lh:      1.10; --t-h1-ls:      -0.02em;
+  --t-h2-fs:      24px;   --t-h2-lh:      1.15; --t-h2-ls:      -0.01em;
+  --t-h3-fs:      20px;   --t-h3-lh:      1.25; --t-h3-ls:      -0.01em;
+  --t-h4-fs:      17px;   --t-h4-lh:      1.30;
+  --t-body-lg-fs: 17px;   --t-body-lg-lh: 1.55;
+  --t-body-fs:    16px;   --t-body-lh:    1.55;
+  --t-small-fs:   14px;   --t-small-lh:   1.50;
+  --t-caption-fs: 12px;   --t-caption-lh: 1.40;
+  --t-button-fs:  15px;   --t-button-lh:  1.20;
+  --t-eyebrow-fs: 11px;   --t-eyebrow-lh: 1.20; --t-eyebrow-ls:  0.14em;
+  --t-mono-fs:    13px;   --t-mono-lh:    1.45;
+  --t-mono-sm-fs: 11px;   --t-mono-sm-lh: 1.40; --t-mono-sm-ls:  0.04em;
+}
+
+/* ─── Type scale (desktop ≥ 640 px) ────────────────────────────────── */
+@media (min-width: 640px) {
+  :root {
+    --t-display-fs: 72px;
+    --t-h1-fs:      48px;
+    --t-h2-fs:      32px;
+    --t-h3-fs:      22px;
+    --t-h4-fs:      18px;
+    --t-body-lg-fs: 18px;
+    --t-eyebrow-fs: 12px;
+  }
+}
+
+/* ─── Dark theme — flip surfaces/inks, keep gold & semantics ──────── */
+[data-theme="dark"] {
+  --surface-0: #08170F;
+  --surface-1: #133224;
+  --surface-2: #0F2B1E;
+  --surface-3: #1A3A2A;
+  --surface-4: #2A523E;
+  --rule-soft:   rgba(247, 247, 236, 0.06);
+  --rule:        rgba(247, 247, 236, 0.10);
+  --rule-strong: rgba(247, 247, 236, 0.22);
+
+  --ink-1:        #FBF7EC;
+  --ink-2:        #D8CBA8;
+  --ink-3:        #968768;
+  --ink-disabled: #5A523D;
+}
+
+/* ─── Reduced motion ──────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ─── Goblin mark animations ──────────────────────────────────────── */
+@keyframes goblin-thinking {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-3px); }
+}
+@keyframes goblin-working {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.6; }
+}
+@keyframes goblin-breath {
+  0%, 100% { opacity: 0.42; transform: scale(1); }
+  50%      { opacity: 0.85; transform: scale(1.025); }
+}
+.goblin-mark--thinking { animation: goblin-thinking 0.6s ease-in-out infinite; }
+.goblin-mark--working  { animation: goblin-working  1.8s ease-in-out infinite; }
+.goblin-mark--breath   { animation: goblin-breath   2.2s ease-in-out infinite;
+                          transform-origin: 50% 50%; }
+
+/* Reduced-motion resolution for the four mark states.
+   Spec reference: GOBLIN_DESIGN_SYSTEM.md §A5.10 — values below are
+   the single source of truth in code; do not edit independently of
+   the spec. */
+@media (prefers-reduced-motion: reduce) {
+  .goblin-mark--thinking,
+  .goblin-mark--working { opacity: 1 !important; transform: none !important; }
+  .goblin-mark--breath  { opacity: 0.65 !important; transform: none !important; }
+}
+
+/* ─── Default focus ring (every interactive element) ──────────────── */
+:where(button, a, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--brand-gold);
+  outline-offset: 2px;
+  border-radius: inherit;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SEMANTIC ALIAS LAYER — PERMANENT (not a shim, do not delete)
+   ───────────────────────────────────────────────────────────────────
+   Maps meaning-named tokens (--text, --border, --panel, --shadow-*, …)
+   onto the v1.1 primitives above. This is an intentional, permanent
+   architecture layer: components reference semantic names, the names
+   resolve to v1.1 primitives in one place. The retired-BRAND compat shim
+   that previously sat here (--moss/--ochre/--cream/--font-ui/--font-brand/
+   --goblin-*) was REMOVED in PROMPT B once the file sweep finished — no
+   file references those names anymore.
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  /* — surfaces / neutrals — */
+  --subtle:   var(--surface-3);
+  --div:      var(--rule-soft);
+  --white:    var(--surface-0);
+  --panel:    var(--surface-0);
+  /* P1.1: was var(--paper) — a LOCKED light anchor that never flips, so any
+     surface/control fill using --surface stayed cream under dark text
+     (founder-reproduced: project-create modal inputs invisible in dark).
+     --surface-1 is #FBF7EC in light (identical to --paper) and flips to
+     #133224 in [data-theme="dark"]. Same for --surface-page below. */
+  --surface:  var(--surface-1);
+  --border:   var(--rule);
+
+  /* — text inks — */
+  --text:       var(--ink-1);
+  --text-2:     var(--ink-2);
+  --meta:       var(--ink-3);
+  --text-meta:  var(--ink-3);
+  --text-faint: #665C42;   /* B11: decoupled from --ink-disabled so empty-state copy clears AA (5.6:1 on bone, 6.6:1 on white); --ink-disabled stays light for genuinely-disabled UI */
+  --disabled:   var(--ink-disabled);
+  --sidebar-meta: var(--ink-3);
+
+  /* — status (semantic names → v1.1 semantic primitives) — */
+  --good:      var(--success);
+  --error:     var(--danger);
+  --rust:      var(--danger);
+  --rust-soft: var(--danger-soft);
+
+  /* — borders / tints — */
+  --border-hairline:   rgba(15, 43, 30, 0.06);
+  --border-subtle:     rgba(15, 43, 30, 0.10);
+  --border-strong:     rgba(15, 43, 30, 0.16);
+  --toggle-off:        rgba(120, 120, 128, 0.16);
+  --surface-overlay:   rgba(15, 43, 30, 0.40);
+
+  /* — spacing: three legacy step values kept stable for components that
+       reference them (1–6 identical to v1.1; 7/9/11 unused by legacy). — */
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* — layout dims — */
+  --topbar-height: 48px;
+  --sidebar-width: 240px;
+
+  /* — radii not present in the v1.1 primitive set → nearest — */
+  --radius-xl:    var(--radius-lg);
+  --radius-2xl:   var(--radius-lg);
+  --radius-full:  var(--radius-pill);
+  --radius-sheet: 24px;
+
+  /* — shadows — */
+  --shadow-sm:    0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:    0 4px 16px rgba(0,0,0,0.08);
+  --shadow-lg:    0 8px 32px rgba(0,0,0,0.12);
+  --shadow-gold:  0 2px 8px rgba(212,167,55,0.25);
+  --shadow-sheet:   0 -8px 32px rgba(0, 0, 0, 0.12);
+  --shadow-popover: 0 8px 24px rgba(0, 0, 0, 0.10);
+  --shadow-fab:     0 4px 12px rgba(212, 167, 55, 0.40);
+  --shadow-card:    0 1px 2px rgba(0, 0, 0, 0.04);
+
+  /* — auth screen (intentional dark card surface) — */
+  --auth-bg:     #1a1a18;
+  --auth-card:   #252521;
+  --auth-input:  rgba(255,255,255,0.06);
+  --auth-border: rgba(255,255,255,0.10);
+  --auth-text:   #ffffff;
+  --auth-meta:   rgba(255,255,255,0.38);
+
+  /* — code panels (dark surfaces) — */
+  --code-bg:      #1E2A1C;
+  --code-bg-dark: #1E3A1C;
+  --code-fg:      #8AAA85;
+  --code-root:    #141A12;
+  --code-root-2:  #0F1410;
+
+  /* — semantic surface / ink names — */
+  --surface-page:     var(--surface-1);   /* P1.1: flip in dark (was --paper) */
+  --surface-dark:     var(--brand-green);
+  --surface-elevated: var(--surface-0);
+  --ink-on-dark:      var(--ink-on-dark-1);
+  --ink-on-light:     var(--ink-1);
+  --ink-muted:        rgba(15, 43, 30, 0.58);
+  --ink-muted-dark:   rgba(247, 244, 237, 0.55);
+  --rule-on-dark:     rgba(244, 236, 216, 0.10);
+
+  /* — legacy px type scale (kept for components referencing these names) — */
+  --text-display: 88px;
+  --text-h1:      56px;
+  --text-h2:      40px;
+  --text-h3:      24px;
+  --text-body-l:  18px;
+  --text-body:    15px;
+  --text-small:   13px;
+  --text-mono:    12.5px;
+  --text-label:   11px;
+
+  /* — motion durations — */
+  --duration-fast: 150ms;
+  --duration-base: 200ms;
+  --duration-slow: 400ms;
+}
+
+/* Dark-mode: surfaces/inks are already flipped by the v1.1
+   [data-theme="dark"] block above (the semantic aliases point at those
+   primitives). Only the literal dark-surface specifics are set here. */
+[data-theme="dark"] {
+  --code-bg:      #111a0f;
+  --code-bg-dark: #0d140b;
+  --code-fg:      #a8d5a2;
+  --code-root:    #0a0f09;
+  --code-root-2:  #080c07;
+  --shadow-sm:    0 1px 3px rgba(0,0,0,0.2), 0 1px 2px rgba(0,0,0,0.15);
+  --shadow-md:    0 4px 16px rgba(0,0,0,0.3);
+  --shadow-lg:    0 8px 32px rgba(0,0,0,0.4);
+  --surface-overlay: rgba(0, 0, 0, 0.60);
+
+  /* P1.1: these two secondary-text tokens were LIGHT-only literals that never
+     flipped (dark green / dark brown) → invisible dark-on-dark. Flip to the
+     light-on-dark equivalents so captions/faint copy clear AA in dark. */
+  --ink-muted:  var(--ink-muted-dark);   /* rgba(247,244,237,0.55) */
+  --text-faint: #B8A988;                 /* was #665C42 */
+}
+/* ════════════════ END SEMANTIC ALIAS LAYER ════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   CODE-TAB EDITOR SURFACE — Sprint 6 (PROPOSED for v1.2)
+   ───────────────────────────────────────────────────────────────────
+   Scoped editor-surface tokens. The Code Tab root carries
+   data-editor-theme="light|dark"; every Code-Tab chrome component reads
+   these --ed-* vars so the whole surface flips from ONE place. LIGHT is
+   the new default (founder: the old #28251D/#08170F dark was unusable).
+   Dark is a retuned WARM-dark (surface-ink-1 #3F3A2C), not the black hole.
+   ═══════════════════════════════════════════════════════════════════ */
+.gb-codetab[data-editor-theme="light"] {
+  --ed-canvas:    #FBF7EC;  /* editor area / main surface (paper) */
+  --ed-chrome:    #F4ECD8;  /* bars, gutters, panels (bone) */
+  --ed-chrome-2:  #FBF7EC;  /* secondary panel */
+  --ed-fg-1:      #0F2B1E;  /* primary text */
+  --ed-fg-2:      #3F3A2C;  /* secondary text */
+  --ed-fg-3:      #5F5640;  /* faint text */
+  --ed-rule:      #D8CBA8;  /* hairlines */
+  --ed-rule-soft: #E8DEC2;
+  --ed-accent:    #D4A737;  /* gold — single accent */
+  --ed-primary:   #1A3A2A;  /* green — primary action fill */
+  --ed-on-primary:#FBF7EC;  /* text on green */
+  --ed-hover:     rgba(26,58,42,0.05);
+  --ed-draft:     #BC8E2E;  /* Entwurf */
+  --ed-saved:     #3D7A4F;  /* Gesichert */
+  --ed-deployed:  #D4A737;  /* Veröffentlicht (live URL) */
+}
+.gb-codetab[data-editor-theme="dark"] {
+  --ed-canvas:    #3F3A2C;
+  --ed-chrome:    #28251D;
+  --ed-chrome-2:  #34301F;
+  --ed-fg-1:      #FBF7EC;
+  --ed-fg-2:      #D8CBA8;
+  --ed-fg-3:      #968768;
+  --ed-rule:      rgba(247,247,236,0.14);
+  --ed-rule-soft: rgba(247,247,236,0.08);
+  --ed-accent:    #D4A737;
+  --ed-primary:   #D4A737;
+  --ed-on-primary:#28251D;
+  --ed-hover:     rgba(212,167,55,0.08);
+  --ed-draft:     #E8C97F;
+  --ed-saved:     #87C098;
+  --ed-deployed:  #D4A737;
+}
+</style>
+<style>
+  body { margin:0; background:var(--surface-page); font-family:var(--font-sans, system-ui); }
+  .wrap { max-width:375px; margin:0 auto; padding:20px 16px 40px; }
+  h1 { color:var(--text); font-size:28px; font-weight:700; margin:8px 0; letter-spacing:-.5px; }
+  .lead { color:var(--meta); font-size:14px; margin:0 0 20px; }
+  .card { display:flex; align-items:center; gap:12px; padding:13px 14px; min-height:56px; background:var(--panel,#fff); border:1px solid var(--border); border-radius:12px; text-decoration:none; margin-bottom:8px; }
+  .card .ico { font-size:20px; } .card .grow { flex:1; } .card .t { display:block; font-size:15px; font-weight:600; color:var(--text); } .card .s { display:block; font-size:12px; color:var(--meta); margin-top:2px; } .card .chev { color:var(--meta); font-size:18px; }
+  .divider { height:1px; background:var(--border); margin:28px 0; }
+  section { margin-bottom:22px; } section h2 { font-size:17px; font-weight:600; color:var(--text); margin:0 0 6px; } section p { font-size:14px; line-height:1.7; color:var(--text-2,var(--meta)); margin:0; }
+  .modal { background:var(--panel,#fff); border:1px solid var(--border); border-radius:16px; padding:16px; margin-top:8px; box-shadow:var(--shadow-2, 0 8px 30px rgba(0,0,0,.12)); }
+  .chips { display:flex; gap:8px; margin-bottom:12px; } .chip { flex:1; min-height:44px; border-radius:10px; border:1px solid var(--border); background:var(--panel,#fff); color:var(--text); font-weight:600; font-size:14px; display:flex; align-items:center; justify-content:center; } .chip.active { background:var(--brand-green); color:#fff; border-color:var(--brand-green); }
+  textarea { width:100%; box-sizing:border-box; padding:10px 12px; border:1.5px solid var(--border); border-radius:10px; font-size:14px; background:var(--panel,#fff); color:var(--text); min-height:70px; }
+  .consent { font-size:11.5px; color:var(--meta); margin:10px 0 14px; }
+  .btn { display:block; width:100%; text-align:center; min-height:44px; line-height:44px; border-radius:10px; background:var(--brand-green); color:#fff; font-weight:600; font-size:14px; text-decoration:none; }
+  .chat { border:1px solid var(--border); border-radius:14px; overflow:hidden; margin-top:8px; }
+  .chat .hdr { background:var(--brand-green); color:#fff; padding:12px 14px; font-weight:600; font-size:13px; }
+  .chat .body { padding:12px; display:flex; flex-direction:column; gap:10px; background:var(--surface-page); }
+  .bub { max-width:85%; padding:8px 12px; font-size:12.5px; line-height:1.6; }
+  .bub.u { align-self:flex-end; background:var(--brand-green); color:#fff; border-radius:12px 12px 3px 12px; }
+  .bub.a { align-self:flex-start; background:var(--panel,#fff); border:1px solid var(--border); color:var(--text); border-radius:12px 12px 12px 3px; }
+  .lbl { font-size:11px; color:var(--meta); text-transform:uppercase; letter-spacing:.05em; margin:26px 0 8px; font-weight:700; }
+</style></head>
+<body><div class="wrap">
+  <h1>Hilfe</h1>
+  <p class="lead">Verständliche Anleitungen — und ein Hilfe-Agent, der sofort antwortet.</p>
+  
+  <a class="card" href="#">
+    <span class="ico">🚀</span>
+    <span class="grow"><span class="t">Erste Schritte</span><span class="s">Von der Idee zur Nachricht, zusehen, wie Code entsteht, und live stellen.</span></span>
+    <span class="chev">›</span>
+  </a>
+  <a class="card" href="#">
+    <span class="ico">🗂️</span>
+    <span class="grow"><span class="t">Projekte &amp; Chats</span><span class="s">Der Unterschied, das Projekt-Gedächtnis und projektweite Anweisungen.</span></span>
+    <span class="chev">›</span>
+  </a>
+  <a class="card" href="#">
+    <span class="ico">🌍</span>
+    <span class="grow"><span class="t">Live stellen &amp; Vercel verbinden</span><span class="s">Schritt für Schritt online gehen — der häufigste Stolperpunkt, ehrlich erklärt.</span></span>
+    <span class="chev">›</span>
+  </a>
+  <a class="card" href="#">
+    <span class="ico">🎯</span>
+    <span class="grow"><span class="t">Was Goblin kann (und noch nicht)</span><span class="s">Ehrlich, ohne Marketing: was heute funktioniert und was (noch) fehlt.</span></span>
+    <span class="chev">›</span>
+  </a>
+  <a class="card" href="#">
+    <span class="ico">💳</span>
+    <span class="grow"><span class="t">Trial &amp; Pläne</span><span class="s">7 Tage testen, wie Einheiten funktionieren, und was bei Ablauf wirklich passiert.</span></span>
+    <span class="chev">›</span>
+  </a>
+  <a class="card" href="#">
+    <span class="ico">📁</span>
+    <span class="grow"><span class="t">Dateien &amp; Arbeitsbereich</span><span class="s">Dateien sehen und bearbeiten, Entwürfe, Papierkorb und Download.</span></span>
+    <span class="chev">›</span>
+  </a>
+  <a class="card" href="#">
+    <span class="ico">🔌</span>
+    <span class="grow"><span class="t">Websuche &amp; Konnektoren</span><span class="s">GitHub, Vercel, Websuche und eigene Modell-Keys — was heute verbunden werden kann.</span></span>
+    <span class="chev">›</span>
+  </a>
+  <a class="card" href="#">
+    <span class="ico">🛠️</span>
+    <span class="grow"><span class="t">Wenn etwas schiefgeht</span><span class="s">Deploy-Fehler lesen, einen Lauf stoppen und Änderungen zurücknehmen.</span></span>
+    <span class="chev">›</span>
+  </a>
+  <a class="card" href="#">
+    <span class="ico">🔒</span>
+    <span class="grow"><span class="t">Konto &amp; Daten</span><span class="s">Löschung, Export und die Datenschutz-Kurzfassung.</span></span>
+    <span class="chev">›</span>
+  </a>
+
+  <div class="divider"></div>
+  <div class="lbl">Artikel · Live stellen &amp; Vercel verbinden</div>
+  <h1 style="font-size:24px">🌍 Live stellen &amp; Vercel verbinden</h1>
+  <p class="lead">Schritt für Schritt online gehen — der häufigste Stolperpunkt, ehrlich erklärt.</p>
+  
+  <section id="dein-eigenes-vercel">
+    <h2>Goblin hostet nicht — dein Vercel hostet</h2>
+    <p>Wichtig zu wissen: Goblin betreibt deine Seite nicht selbst. Deine Live-Seite läuft in deinem eigenen Vercel-Konto. Deshalb verbindest du einmalig Vercel, bevor du live stellen kannst. Ein Vercel-Konto ist kostenlos.</p>
+  </section>
+  <section id="vercel-verbinden">
+    <h2>Vercel verbinden (Token einfügen)</h2>
+    <p>Die Verbindung läuft über einen Token, den du selbst erstellst — kein OAuth-Login. In Vercel: Settings → Tokens → „Create Token" (vercel.com/account/tokens). Diesen Token fügst du in Goblin ein: entweder beim ersten „Live stellen" im Fenster „Noch ein Schritt bis live", oder vorab unter Einstellungen → Konnektoren → Vercel → „Token einfügen". Goblin prüft den Token direkt bei Vercel und speichert ihn verschlüsselt.</p>
+  </section>
+  <section id="live-stellen-knopf">
+    <h2>Der „Live stellen"-Knopf</h2>
+    <p>Im Code-Bereich deines Projekts sicherst du zuerst offene Entwürfe und tippst dann „Live stellen" (in älteren Ansichten „Veröffentlichen"). Goblin speichert, deployt zu deinem Vercel und schaltet erst auf „Live", wenn die Prüfung besteht. Pro Stunde sind bis zu 10 Deploys möglich.</p>
+  </section>
+  <section id="wahrheits-pruefung">
+    <h2>Die Wahrheits-Prüfung</h2>
+    <p>Goblin behauptet „Live" nicht auf gut Glück. Nach dem Deploy prüft es echt: Antwortet die Seite mit HTTP 200 und stimmt sie mit dem gesicherten Stand überein, und laden alle darin verlinkten Dateien (Bilder, Skripte, Styles) ebenfalls? Erst dann heißt es „Live ✓". Scheitert eine Prüfung, nennt Goblin die genaue Ursache (welche Datei/welcher Check) — es wird bis zu ~1 Minute (6 Versuche) erneut geprüft.</p>
+  </section>
+
+  <div class="divider"></div>
+  <div class="lbl">Feedback</div>
+  <div class="modal">
+    <div class="chips"><div class="chip">Fehler</div><div class="chip active">Idee</div><div class="chip">Sonstiges</div></div>
+    <textarea>Ein Dark-Mode-Umschalter direkt im Editor wäre super.</textarea>
+    <p class="consent">Wir senden mit: aktuelle Seite, Projekt-ID, letzte Fehlermeldung — keine Chat-Inhalte.</p>
+    <a class="btn" href="#">Feedback senden</a>
+  </div>
+
+  <div class="lbl">Goblin Hilfe</div>
+  <div class="chat">
+    <div class="hdr">Goblin Hilfe · Beta</div>
+    <div class="body">
+      <div class="bub u">Wie stelle ich meine Seite live?</div>
+      <div class="bub a">Du verbindest zuerst dein Vercel-Konto mit einem selbst erstellten Token, fügst ihn unter Einstellungen → Konnektoren → Vercel ein, sicherst die Entwürfe und klickst „Live stellen“. Goblin prüft, ob die Seite und alle verlinkten Dateien erreichbar sind — erst dann steht „Live ✓“.<br><br>Siehe: Live stellen &amp; Vercel verbinden</div>
+    </div>
+  </div>
+</div></body></html>

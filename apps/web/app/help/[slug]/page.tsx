@@ -22,7 +22,7 @@ export default function HelpArticlePage() {
   if (!article) return notFound();
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--paper)', padding: '28px 20px 80px' }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--surface-page)', padding: '28px 20px 80px' }}>
       <HelpArticleBody article={article} />
     </div>
   );

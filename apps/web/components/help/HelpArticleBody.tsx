@@ -29,7 +29,7 @@ export function HelpArticleBody({ article }: { article: HelpArticle }) {
         <span aria-hidden style={{ fontSize: 30 }}>{article.icon}</span>
         <h1 style={{
           fontFamily: 'var(--font-sans)', fontSize: 'clamp(24px, 5vw, 34px)',
-          color: 'var(--brand-green)', fontWeight: 700, letterSpacing: '-0.5px', margin: 0,
+          color: 'var(--text)', fontWeight: 700, letterSpacing: '-0.5px', margin: 0,
         }}>
           {article.title[lang]}
         </h1>

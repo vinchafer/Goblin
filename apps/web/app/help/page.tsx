@@ -19,7 +19,7 @@ export default function HelpPage() {
   }, []);
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--paper)', padding: '32px 20px 80px' }}>
+    <div style={{ minHeight: '100dvh', background: 'var(--surface-page)', padding: '32px 20px 80px' }}>
       <div style={{ maxWidth: 720, margin: '0 auto' }}>
         <Link href="/dashboard" style={{
           display: 'inline-flex', alignItems: 'center', gap: 6,
@@ -31,7 +31,7 @@ export default function HelpPage() {
 
         <h1 style={{
           fontFamily: 'var(--font-sans)', fontSize: 'clamp(28px, 5vw, 40px)',
-          color: 'var(--brand-green)', fontWeight: 700, letterSpacing: '-0.5px',
+          color: 'var(--text)', fontWeight: 700, letterSpacing: '-0.5px',
           marginBottom: 8,
         }}>
           {t(lang, 'Hilfe', 'Help')}

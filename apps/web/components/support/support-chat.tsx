@@ -145,8 +145,8 @@ export function SupportChat({ onClose }: SupportChatProps) {
               maxWidth: '85%',
               padding: '8px 12px',
               borderRadius: msg.role === 'user' ? '12px 12px 3px 12px' : '12px 12px 12px 3px',
-              background: msg.role === 'user' ? 'var(--brand-green)' : '#fff',
-              border: msg.role === 'assistant' ? '1px solid #E8E4DC' : 'none',
+              background: msg.role === 'user' ? 'var(--brand-green)' : 'var(--panel, #fff)',
+              border: msg.role === 'assistant' ? '1px solid var(--border)' : 'none',
               color: msg.role === 'user' ? 'rgba(255,255,255,0.92)' : 'var(--text)',
               fontSize: 'var(--t-caption-fs)', lineHeight: 1.6,
               fontFamily: 'var(--font-sans)',
@@ -162,7 +162,7 @@ export function SupportChat({ onClose }: SupportChatProps) {
             <div style={{
               maxWidth: '85%', padding: '8px 12px',
               borderRadius: '12px 12px 12px 3px',
-              background: '#fff', border: '1px solid #E8E4DC',
+              background: 'var(--panel, #fff)', border: '1px solid var(--border)',
               fontSize: 'var(--t-caption-fs)', lineHeight: 1.6, color: 'var(--text)',
               fontFamily: 'var(--font-sans)', whiteSpace: 'pre-wrap',
             }}>
@@ -187,7 +187,7 @@ export function SupportChat({ onClose }: SupportChatProps) {
       </div>
 
       {/* Input */}
-      <div style={{ padding: '10px 12px', borderTop: '1px solid #E8E4DC', background: '#FAFAF8', flexShrink: 0 }}>
+      <div style={{ padding: '10px 12px', borderTop: '1px solid var(--border)', background: 'var(--surface-1, #FAFAF8)', flexShrink: 0 }}>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           <input
             ref={inputRef}
@@ -198,9 +198,9 @@ export function SupportChat({ onClose }: SupportChatProps) {
             disabled={streaming}
             style={{
               flex: 1, padding: '7px 10px',
-              border: '1.5px solid #E8E4DC', borderRadius: 8,
+              border: '1.5px solid var(--border)', borderRadius: 8,
               fontSize: 'var(--t-caption-fs)', fontFamily: 'var(--font-sans)',
-              outline: 'none', background: '#fff', color: 'var(--text)',
+              outline: 'none', background: 'var(--panel, #fff)', color: 'var(--text)',
             }}
           />
           <button
