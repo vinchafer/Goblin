@@ -42,6 +42,7 @@ interface Tables {
   build_runs: Row[];
   goblin_hosted_waitlist: Row[];
   projects: Row[];
+  platform_events: Row[];
 }
 const tables: Tables = {
   users: [],
@@ -50,6 +51,7 @@ const tables: Tables = {
   build_runs: [],
   goblin_hosted_waitlist: [],
   projects: [],
+  platform_events: [],
 };
 const authUsers = new Map<string, Row>();
 const deletedAuthIds: string[] = [];
@@ -253,6 +255,8 @@ skip('account-deletion canonical service (real test-mode Stripe)', () => {
     const { customerId, subId } = await makeUserWithSub(uid, 'del4@example.test');
     tables.build_runs.push({ id: 'br1', user_id: uid });
     tables.goblin_hosted_waitlist.push({ id: 'wl1', user_id: uid, email: 'del4@example.test' });
+    // I3: behaviour events (no FK to auth.users) must be purged explicitly.
+    tables.platform_events.push({ id: 'ev1', user_id: uid, event_type: 'project_created' }, { id: 'ev2', user_id: uid, event_type: 'message_sent' });
     // H1: two projects owned by this user — their storage must be purged too.
     tables.projects.push({ id: 'proj-a', user_id: uid }, { id: 'proj-b', user_id: uid });
     purgeSpy.mockClear();
@@ -277,6 +281,7 @@ skip('account-deletion canonical service (real test-mode Stripe)', () => {
     // Cascade-gap tables purged + auth delete called.
     expect(tables.build_runs.find((r) => r.user_id === uid)).toBeUndefined();
     expect(tables.goblin_hosted_waitlist.find((r) => r.user_id === uid)).toBeUndefined();
+    expect(tables.platform_events.find((r) => r.user_id === uid)).toBeUndefined();
     expect(deletedAuthIds).toContain(uid);
     expect(tables.account_deletions.find((r) => r.user_id === uid)!.status).toBe('completed');
   }, 40_000);

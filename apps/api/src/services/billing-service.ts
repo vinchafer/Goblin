@@ -12,6 +12,7 @@ import {
   type PlanName,
 } from '../config/geo-pricing';
 import logger from '../lib/logger';
+import { trackEvent } from '../lib/platform-events';
 
 // Stripe statuses where the subscription still exists and bills → "has an active
 // subscription" for the double-create guard + the change-plan path.
@@ -566,6 +567,10 @@ export async function handleSubscriptionCreated(subscription: Stripe.Subscriptio
   if (pe) patch.subscription_current_period_end = pe;
 
   await supabase.from('users').update(patch).eq('id', userId);
+
+  // I1 funnel: upgraded — fires from the Stripe webhook truth (a real paid
+  // subscription now exists), the final funnel stage. Metadata only (which plan).
+  if (userId) trackEvent({ eventType: 'upgraded', userId, meta: { plan } });
 }
 
 export async function handleSubscriptionUpdated(subscription: Stripe.Subscription): Promise<void> {

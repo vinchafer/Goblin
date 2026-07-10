@@ -450,6 +450,17 @@ export async function hardDeleteUser(userId: string): Promise<HardDeleteOutcome>
   const { error: wlErr } = await supabase.from('goblin_hosted_waitlist').delete().eq('user_id', userId);
   if (wlErr) throw new Error(`goblin_hosted_waitlist delete failed: ${wlErr.message}`);
 
+  // I3 (WAVE-I): behaviour events are personal data and carry NO FK to
+  // auth.users, so they do NOT cascade on the auth delete below — purge them
+  // explicitly (GDPR Art. 17). Tolerate a pre-migration absence (0078/0085 not
+  // applied → no rows to erase) so a measurement table can never BLOCK a
+  // deletion; any other error is a real failure to erase existing PII and must
+  // stop the purge, exactly like the tables above.
+  const { error: peErr } = await supabase.from('platform_events').delete().eq('user_id', userId);
+  if (peErr && peErr.code !== '42P01' && !/does not exist/i.test(peErr.message)) {
+    throw new Error(`platform_events delete failed: ${peErr.message}`);
+  }
+
   const removed = await deleteUserStorage(userId);
   logger.info({ userIdHash: sha256(userId), objects: removed }, 'account-deletion: user storage purged');
 

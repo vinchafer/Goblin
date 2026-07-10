@@ -103,6 +103,7 @@ import { auth2fa } from './routes/auth-2fa';
 import { auth } from './routes/auth';
 import { shared } from './routes/shared';
 import { waitlist } from './routes/waitlist';
+import { events } from './routes/events';
 import { startCron } from './lib/cron';
 
 const app = new Hono();
@@ -230,6 +231,7 @@ app.route('/api/code-sessions', codeSessions);
 app.route('/api/onboarding', onboarding);
 app.route('/api/onboarding-agent', onboardingAgent);
 app.route('/api/support', support);
+app.route('/api/events', events);
 app.route('/api/projects', secrets);
 app.route('/api/rankings', rankings);
 app.route('/api/admin/rankings', adminRankings);

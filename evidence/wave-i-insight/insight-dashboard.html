@@ -1,0 +1,238 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+  * { box-sizing: border-box; margin: 0; font-family: -apple-system, system-ui, sans-serif; }
+  body { background: #f3f4f2; display: flex; gap: 20px; padding: 20px; flex-wrap: wrap; }
+  .wrap { width: 375px; padding: 16px; border-radius: 14px; }
+  .light { --panel:#fff; --border:#e3e6e1; --text:#1a1c19; --meta:#6b7280; --green:#2e6d43; --gold:#B8860B; --danger:#c0392b; --dbg:rgba(200,60,60,.08); background:#f3f4f2; }
+  .dark { --panel:#16181a; --border:#2a2e31; --text:#e8eae7; --meta:#8b9199; --green:#4ea36a; --gold:#d4a94a; --danger:#e06060; --dbg:rgba(200,60,60,.12); background:#0e0f10; }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+  .hdr { display:flex; align-items:center; gap:10px; }
+  h1 { font-size:22px; color:var(--green); letter-spacing:-.5px; }
+  .pill { font-size:11px; font-weight:600; color:#7A5A12; background:#e8c766; border-radius:999px; padding:3px 10px; }
+  .sub { font-size:12.5px; color:var(--meta); margin:6px 0 14px; }
+  .ctrls { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
+  .tg { font-size:12px; font-weight:600; border-radius:999px; padding:4px 12px; border:1px solid var(--border); color:var(--meta); }
+  .tg.on { background:var(--green); color:#fff; border-color:var(--green); }
+  .card { background:var(--panel); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:14px; }
+  .ct { display:flex; justify-content:space-between; align-items:center; font-size:12px; font-weight:700; color:var(--meta); text-transform:uppercase; letter-spacing:.05em; margin-bottom:12px; }
+  .row { display:flex; justify-content:space-between; align-items:baseline; margin-bottom:3px; }
+  .lbl { font-size:13px; color:var(--text); }
+  .meta { color:var(--meta); font-size:11px; }
+  .bar { height:8px; background:var(--border); border-radius:5px; overflow:hidden; margin-bottom:8px; }
+  .bar > div { height:100%; border-radius:5px; }
+  .drop { font-size:10.5px; color:var(--meta); margin:-5px 0 8px; }
+  .drop.danger { color:var(--danger); }
+  .jrow { display:flex; align-items:center; gap:10px; padding:8px 10px; border-radius:8px; border:1px solid var(--border); margin-bottom:8px; }
+  .jrow.stuck { background:var(--dbg); }
+  .dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+  .jmain { flex:1; min-width:0; }
+  .jmail { font-size:12.5px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .htag { font-size:10.5px; font-weight:600; color:var(--danger); background:var(--dbg); border-radius:999px; padding:2px 9px; }
+  .stats { display:flex; gap:18px; flex-wrap:wrap; }
+  .stat { flex:1 1 90px; }
+  .big { font-size:18px; font-weight:700; color:var(--text); }
+  .actives { display:flex; align-items:flex-end; gap:3px; height:48px; }
+  .acol { flex:1; display:flex; align-items:flex-end; height:100%; }
+  .abar { width:100%; background:var(--green); border-radius:2px; min-height:2px; }
+</style></head><body>
+<div class="wrap light">
+  <div class="hdr"><h1>Insight</h1><span class="pill">Verhalten · live</span></div>
+  <div class="sub">Nur Nutzungsereignisse — welche Funktion wann, nie Inhalte.</div>
+  <div class="ctrls"><span class="tg on">7 Tage</span><span class="tg">30 Tage</span><span class="tg">Test-Accounts aus</span></div>
+  <div class="card"><div class="ct">Funnel · 7 Tage<span class="mono meta">9 registriert</span></div>
+  <div>
+    <div class="row"><span class="lbl">Registriert</span><span class="mono">9<span class="meta"> · 100%</span></span></div>
+    <div class="bar"><div style="width:100%;background:var(--green)"></div></div>
+    
+  </div>
+  <div>
+    <div class="row"><span class="lbl">Onboarding fertig</span><span class="mono">7<span class="meta"> · 77.8%</span></span></div>
+    <div class="bar"><div style="width:78%;background:var(--green)"></div></div>
+    <div class="drop ">−22.2% ab vorheriger Stufe</div>
+  </div>
+  <div>
+    <div class="row"><span class="lbl">Projekt erstellt</span><span class="mono">6<span class="meta"> · 66.7%</span></span></div>
+    <div class="bar"><div style="width:67%;background:var(--green)"></div></div>
+    <div class="drop ">−14.3% ab vorheriger Stufe</div>
+  </div>
+  <div>
+    <div class="row"><span class="lbl">Erste Nachricht</span><span class="mono">5<span class="meta"> · 55.6%</span></span></div>
+    <div class="bar"><div style="width:56%;background:var(--gold)"></div></div>
+    <div class="drop ">−16.7% ab vorheriger Stufe</div>
+  </div>
+  <div>
+    <div class="row"><span class="lbl">Erster Agent-Lauf</span><span class="mono">3<span class="meta"> · 33.3%</span></span></div>
+    <div class="bar"><div style="width:33%;background:var(--gold)"></div></div>
+    <div class="drop ">−40% ab vorheriger Stufe</div>
+  </div>
+  <div>
+    <div class="row"><span class="lbl">Live-App (verifiziert)</span><span class="mono">2<span class="meta"> · 22.2%</span></span></div>
+    <div class="bar"><div style="width:22%;background:var(--danger)"></div></div>
+    <div class="drop ">−33.3% ab vorheriger Stufe</div>
+  </div>
+  <div>
+    <div class="row"><span class="lbl">Upgrade geklickt</span><span class="mono">1<span class="meta"> · 11.1%</span></span></div>
+    <div class="bar"><div style="width:11%;background:var(--danger)"></div></div>
+    <div class="drop danger">−50% ab vorheriger Stufe</div>
+  </div>
+  <div>
+    <div class="row"><span class="lbl">Upgegradet</span><span class="mono">1<span class="meta"> · 11.1%</span></span></div>
+    <div class="bar"><div style="width:11%;background:var(--danger)"></div></div>
+    
+  </div></div>
+  <div class="card"><div class="ct">Journeys <span class="htag">4 hängen ≥24h</span></div>
+  <div class="jrow stuck">
+    <span class="dot" style="background:var(--danger)"></span>
+    <div class="jmain"><div class="jmail">dora@test.de</div><div class="meta">Erste Nachricht · vor 27h</div></div>
+    <span class="htag">hängt</span>
+  </div>
+  <div class="jrow stuck">
+    <span class="dot" style="background:var(--danger)"></span>
+    <div class="jmain"><div class="jmail">cara@test.de</div><div class="meta">Erster Agent-Lauf · vor 29h</div></div>
+    <span class="htag">hängt</span>
+  </div>
+  <div class="jrow stuck">
+    <span class="dot" style="background:var(--danger)"></span>
+    <div class="jmain"><div class="jmail">gina@test.de</div><div class="meta">Onboarding fertig · vor 40h</div></div>
+    <span class="htag">hängt</span>
+  </div>
+  <div class="jrow stuck">
+    <span class="dot" style="background:var(--danger)"></span>
+    <div class="jmain"><div class="jmail">finn@test.de</div><div class="meta">Projekt erstellt · vor 47h</div></div>
+    <span class="htag">hängt</span>
+  </div>
+  <div class="jrow ">
+    <span class="dot" style="background:var(--green)"></span>
+    <div class="jmain"><div class="jmail">ida@test.de</div><div class="meta">Registriert · vor 1h</div></div>
+    
+  </div>
+  <div class="jrow ">
+    <span class="dot" style="background:var(--green)"></span>
+    <div class="jmain"><div class="jmail">hans@test.de</div><div class="meta">Registriert · vor 3h</div></div>
+    
+  </div>
+  <div class="jrow ">
+    <span class="dot" style="background:var(--green)"></span>
+    <div class="jmain"><div class="jmail">emil@test.de</div><div class="meta">Erste Nachricht · vor 5h</div></div>
+    
+  </div>
+  <div class="jrow ">
+    <span class="dot" style="background:var(--green)"></span>
+    <div class="jmain"><div class="jmail">ben@test.de</div><div class="meta">Live-App (verifiziert) · vor 39h</div></div>
+    
+  </div>
+  <div class="jrow ">
+    <span class="dot" style="background:var(--green)"></span>
+    <div class="jmain"><div class="jmail">anna@test.de</div><div class="meta">Upgegradet · vor 89h</div></div>
+    
+  </div></div>
+  <div class="card"><div class="ct">Pulse · 7 Tage</div>
+    <div class="stats">
+      <div class="stat"><div class="meta">Agent-Läufe</div><div class="mono big">3</div><div class="meta">66.7% ok</div></div>
+      <div class="stat"><div class="meta">Publish-Erfolg</div><div class="mono big">66.7%</div><div class="meta">2 ✓ · 1 ✗</div></div>
+      <div class="stat"><div class="meta">Feedback</div><div class="mono big">1</div></div>
+    </div>
+    <div class="meta" style="margin:10px 0 5px">Tägliche Aktive</div>
+    <div class="actives"><div class="acol"><div class="abar" style="height:0%"></div></div><div class="acol"><div class="abar" style="height:0%"></div></div><div class="acol"><div class="abar" style="height:25%"></div></div><div class="acol"><div class="abar" style="height:50%"></div></div><div class="acol"><div class="abar" style="height:100%"></div></div><div class="acol"><div class="abar" style="height:75%"></div></div><div class="acol"><div class="abar" style="height:25%"></div></div></div>
+  </div>
+</div>
+<div class="wrap dark">
+  <div class="hdr"><h1>Insight</h1><span class="pill">Verhalten · live</span></div>
+  <div class="sub">Nur Nutzungsereignisse — welche Funktion wann, nie Inhalte.</div>
+  <div class="ctrls"><span class="tg on">7 Tage</span><span class="tg">30 Tage</span><span class="tg">Test-Accounts aus</span></div>
+  <div class="card"><div class="ct">Funnel · 7 Tage<span class="mono meta">9 registriert</span></div>
+  <div>
+    <div class="row"><span class="lbl">Registriert</span><span class="mono">9<span class="meta"> · 100%</span></span></div>
+    <div class="bar"><div style="width:100%;background:var(--green)"></div></div>
+    
+  </div>
+  <div>
+    <div class="row"><span class="lbl">Onboarding fertig</span><span class="mono">7<span class="meta"> · 77.8%</span></span></div>
+    <div class="bar"><div style="width:78%;background:var(--green)"></div></div>
+    <div class="drop ">−22.2% ab vorheriger Stufe</div>
+  </div>
+  <div>
+    <div class="row"><span class="lbl">Projekt erstellt</span><span class="mono">6<span class="meta"> · 66.7%</span></span></div>
+    <div class="bar"><div style="width:67%;background:var(--green)"></div></div>
+    <div class="drop ">−14.3% ab vorheriger Stufe</div>
+  </div>
+  <div>
+    <div class="row"><span class="lbl">Erste Nachricht</span><span class="mono">5<span class="meta"> · 55.6%</span></span></div>
+    <div class="bar"><div style="width:56%;background:var(--gold)"></div></div>
+    <div class="drop ">−16.7% ab vorheriger Stufe</div>
+  </div>
+  <div>
+    <div class="row"><span class="lbl">Erster Agent-Lauf</span><span class="mono">3<span class="meta"> · 33.3%</span></span></div>
+    <div class="bar"><div style="width:33%;background:var(--gold)"></div></div>
+    <div class="drop ">−40% ab vorheriger Stufe</div>
+  </div>
+  <div>
+    <div class="row"><span class="lbl">Live-App (verifiziert)</span><span class="mono">2<span class="meta"> · 22.2%</span></span></div>
+    <div class="bar"><div style="width:22%;background:var(--danger)"></div></div>
+    <div class="drop ">−33.3% ab vorheriger Stufe</div>
+  </div>
+  <div>
+    <div class="row"><span class="lbl">Upgrade geklickt</span><span class="mono">1<span class="meta"> · 11.1%</span></span></div>
+    <div class="bar"><div style="width:11%;background:var(--danger)"></div></div>
+    <div class="drop danger">−50% ab vorheriger Stufe</div>
+  </div>
+  <div>
+    <div class="row"><span class="lbl">Upgegradet</span><span class="mono">1<span class="meta"> · 11.1%</span></span></div>
+    <div class="bar"><div style="width:11%;background:var(--danger)"></div></div>
+    
+  </div></div>
+  <div class="card"><div class="ct">Journeys <span class="htag">4 hängen ≥24h</span></div>
+  <div class="jrow stuck">
+    <span class="dot" style="background:var(--danger)"></span>
+    <div class="jmain"><div class="jmail">dora@test.de</div><div class="meta">Erste Nachricht · vor 27h</div></div>
+    <span class="htag">hängt</span>
+  </div>
+  <div class="jrow stuck">
+    <span class="dot" style="background:var(--danger)"></span>
+    <div class="jmain"><div class="jmail">cara@test.de</div><div class="meta">Erster Agent-Lauf · vor 29h</div></div>
+    <span class="htag">hängt</span>
+  </div>
+  <div class="jrow stuck">
+    <span class="dot" style="background:var(--danger)"></span>
+    <div class="jmain"><div class="jmail">gina@test.de</div><div class="meta">Onboarding fertig · vor 40h</div></div>
+    <span class="htag">hängt</span>
+  </div>
+  <div class="jrow stuck">
+    <span class="dot" style="background:var(--danger)"></span>
+    <div class="jmain"><div class="jmail">finn@test.de</div><div class="meta">Projekt erstellt · vor 47h</div></div>
+    <span class="htag">hängt</span>
+  </div>
+  <div class="jrow ">
+    <span class="dot" style="background:var(--green)"></span>
+    <div class="jmain"><div class="jmail">ida@test.de</div><div class="meta">Registriert · vor 1h</div></div>
+    
+  </div>
+  <div class="jrow ">
+    <span class="dot" style="background:var(--green)"></span>
+    <div class="jmain"><div class="jmail">hans@test.de</div><div class="meta">Registriert · vor 3h</div></div>
+    
+  </div>
+  <div class="jrow ">
+    <span class="dot" style="background:var(--green)"></span>
+    <div class="jmain"><div class="jmail">emil@test.de</div><div class="meta">Erste Nachricht · vor 5h</div></div>
+    
+  </div>
+  <div class="jrow ">
+    <span class="dot" style="background:var(--green)"></span>
+    <div class="jmain"><div class="jmail">ben@test.de</div><div class="meta">Live-App (verifiziert) · vor 39h</div></div>
+    
+  </div>
+  <div class="jrow ">
+    <span class="dot" style="background:var(--green)"></span>
+    <div class="jmain"><div class="jmail">anna@test.de</div><div class="meta">Upgegradet · vor 89h</div></div>
+    
+  </div></div>
+  <div class="card"><div class="ct">Pulse · 7 Tage</div>
+    <div class="stats">
+      <div class="stat"><div class="meta">Agent-Läufe</div><div class="mono big">3</div><div class="meta">66.7% ok</div></div>
+      <div class="stat"><div class="meta">Publish-Erfolg</div><div class="mono big">66.7%</div><div class="meta">2 ✓ · 1 ✗</div></div>
+      <div class="stat"><div class="meta">Feedback</div><div class="mono big">1</div></div>
+    </div>
+    <div class="meta" style="margin:10px 0 5px">Tägliche Aktive</div>
+    <div class="actives"><div class="acol"><div class="abar" style="height:0%"></div></div><div class="acol"><div class="abar" style="height:0%"></div></div><div class="acol"><div class="abar" style="height:25%"></div></div><div class="acol"><div class="abar" style="height:50%"></div></div><div class="acol"><div class="abar" style="height:100%"></div></div><div class="acol"><div class="abar" style="height:75%"></div></div><div class="acol"><div class="abar" style="height:25%"></div></div></div>
+  </div>
+</div></body></html>

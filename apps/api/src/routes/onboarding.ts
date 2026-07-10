@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { authMiddleware } from '../middleware/auth';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { getFallbackChain, saveFallbackChain } from '../services/model-router';
+import { trackEvent } from '../lib/platform-events';
 
 // Default fallback chain seeded once when onboarding completes.
 // Matches the preview shown in /welcome/routing step 3:
@@ -87,6 +88,9 @@ onboarding.put('/state', async (c) => {
       .update({ onboarding_completed: true })
       .eq('id', userId);
     await seedDefaultChainIfMissing(userId);
+    // I1 funnel: onboarding_completed (metadata only). Fire-and-forget; the
+    // dashboard takes the first-per-user timestamp, so re-completes are harmless.
+    trackEvent({ eventType: 'onboarding_completed', userId });
   }
 
   return c.json(data);

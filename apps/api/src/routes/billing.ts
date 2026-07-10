@@ -13,6 +13,7 @@ import {
 } from '../services/billing-service';
 import { processStripeEvent } from '../services/stripe-webhook-processor';
 import { getSupabaseAdmin } from '../lib/supabase';
+import { trackEvent } from '../lib/platform-events';
 import { derivePlanTruth } from '../lib/plan-truth';
 import { getGeoTier, PLAN_PRICES, TIER_LABELS } from '../config/geo-pricing';
 import logger from '../lib/logger';
@@ -46,6 +47,10 @@ billing.post('/create-checkout-session', authMiddleware, async (c) => {
   const countryCode = cfCountry ?? result.data.countryCode ?? null;
 
   const checkoutUrl = await createCheckoutSession(userId, result.data.targetPlan, countryCode);
+  // I1 funnel: upgrade_clicked — a real checkout session was created (server-side
+  // intent to pay), distinct from `upgraded` which fires from the Stripe webhook
+  // truth. Metadata only (which plan). Fire-and-forget.
+  trackEvent({ eventType: 'upgrade_clicked', userId, meta: { target_plan: result.data.targetPlan } });
   return c.json({ checkoutUrl });
 });
 

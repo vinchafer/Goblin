@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { SupportChat } from '@/components/support/support-chat';
 import { useLang, t, type Lang } from '@/lib/use-lang';
+import { emitEvent } from '@/lib/api';
 
 interface Faq {
   q: string;
@@ -58,6 +59,12 @@ export default function HelpPage() {
   const lang = useLang();
   const [openIdx, setOpenIdx] = useState<number | null>(0);
   const FAQS = faqs(lang);
+
+  // I1 funnel: help_opened — a user reached the help/support surface (a friction
+  // signal). Once per mount, metadata only.
+  useEffect(() => {
+    emitEvent('help_opened');
+  }, []);
 
   return (
     <div style={{ minHeight: '100dvh', background: 'var(--paper)', padding: '32px 20px 80px' }}>

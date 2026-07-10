@@ -18,6 +18,7 @@ import { agentToolsFor, buildToolExecutor } from '../services/agent/tools';
 import { resolveSearchProvider, agentMaxSearchesPerRun } from '../services/search';
 import { getAgentModel } from '../services/agent/model-turn';
 import { runAgent } from '../services/agent/orchestrator';
+import { trackEvent } from '../lib/platform-events';
 import { loadUserPreferences } from '../services/user-preferences';
 import { grantsPublish } from '../services/agent/intent';
 import { createAgentRun, finalizeAgentRun } from '../services/agent/run-store';
@@ -601,6 +602,7 @@ codeSessions.post('/:sessionId/agent', async (c) => {
 
   return streamSSE(c, async (stream) => {
     await stream.writeSSE({ data: JSON.stringify({ type: 'meta', model_slug: modelSlug, run_id: runId }) });
+    const runStartedAt = Date.now();
     try {
       const result = await runAgent({
         runId,
@@ -637,12 +639,35 @@ codeSessions.post('/:sessionId/agent', async (c) => {
       });
       await sb.from('code_sessions').update({ updated_at: new Date().toISOString() }).eq('id', sessionId);
 
+      // I1 funnel: agent_run_finished (metadata only — outcome/status/timing,
+      // NEVER the generated code or model text). first-per-user timestamp feeds
+      // the first_agent_run_finished funnel stage.
+      trackEvent({
+        eventType: 'agent_run_finished',
+        userId,
+        projectId: session.project_id,
+        meta: {
+          status: result.status,
+          outcome: result.outcome,
+          iterations: result.iterations,
+          duration_ms: Date.now() - runStartedAt,
+        },
+      });
+
       await stream.writeSSE({ data: JSON.stringify({ type: 'done', outcome: result.outcome, run_id: runId }) });
     } catch (err) {
       // Fatal orchestration error — persist what we can, tell the truth.
       await finalizeAgentRun(runId ?? '', {
         status: 'failed', outcome: 'error', steps: [], toolsUsed: [], iterations: 0,
       }).catch(() => {});
+      // I1 funnel: still record the finish (failed outcome) — a crashed run is a
+      // drop-off signal, and hiding it would inflate the success rate.
+      trackEvent({
+        eventType: 'agent_run_finished',
+        userId,
+        projectId: session.project_id,
+        meta: { status: 'failed', outcome: 'error', duration_ms: Date.now() - runStartedAt },
+      });
       await stream.writeSSE({ data: JSON.stringify({ type: 'error', message: err instanceof Error ? err.message : 'Agent-Lauf fehlgeschlagen' }) });
     }
   });

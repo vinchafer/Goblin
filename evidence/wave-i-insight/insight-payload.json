@@ -1,0 +1,553 @@
+{
+  "real": {
+    "generatedAt": "2026-07-10T12:00:00.000Z",
+    "includeTest": false,
+    "testAccountCount": 1,
+    "funnel7": {
+      "days": 7,
+      "stages": [
+        {
+          "key": "signup",
+          "label": "Registriert",
+          "count": 9,
+          "conversionPct": 100,
+          "dropFromPrevPct": 0
+        },
+        {
+          "key": "onboarding_completed",
+          "label": "Onboarding fertig",
+          "count": 7,
+          "conversionPct": 77.8,
+          "dropFromPrevPct": 22.2
+        },
+        {
+          "key": "project_created",
+          "label": "Projekt erstellt",
+          "count": 6,
+          "conversionPct": 66.7,
+          "dropFromPrevPct": 14.3
+        },
+        {
+          "key": "first_message_sent",
+          "label": "Erste Nachricht",
+          "count": 5,
+          "conversionPct": 55.6,
+          "dropFromPrevPct": 16.7
+        },
+        {
+          "key": "first_agent_run_finished",
+          "label": "Erster Agent-Lauf",
+          "count": 3,
+          "conversionPct": 33.3,
+          "dropFromPrevPct": 40
+        },
+        {
+          "key": "first_publish_verified",
+          "label": "Live-App (verifiziert)",
+          "count": 2,
+          "conversionPct": 22.2,
+          "dropFromPrevPct": 33.3
+        },
+        {
+          "key": "upgrade_clicked",
+          "label": "Upgrade geklickt",
+          "count": 1,
+          "conversionPct": 11.1,
+          "dropFromPrevPct": 50
+        },
+        {
+          "key": "upgraded",
+          "label": "Upgegradet",
+          "count": 1,
+          "conversionPct": 11.1,
+          "dropFromPrevPct": 0
+        }
+      ],
+      "cohortSize": 9
+    },
+    "funnel30": {
+      "days": 30,
+      "stages": [
+        {
+          "key": "signup",
+          "label": "Registriert",
+          "count": 9,
+          "conversionPct": 100,
+          "dropFromPrevPct": 0
+        },
+        {
+          "key": "onboarding_completed",
+          "label": "Onboarding fertig",
+          "count": 7,
+          "conversionPct": 77.8,
+          "dropFromPrevPct": 22.2
+        },
+        {
+          "key": "project_created",
+          "label": "Projekt erstellt",
+          "count": 6,
+          "conversionPct": 66.7,
+          "dropFromPrevPct": 14.3
+        },
+        {
+          "key": "first_message_sent",
+          "label": "Erste Nachricht",
+          "count": 5,
+          "conversionPct": 55.6,
+          "dropFromPrevPct": 16.7
+        },
+        {
+          "key": "first_agent_run_finished",
+          "label": "Erster Agent-Lauf",
+          "count": 3,
+          "conversionPct": 33.3,
+          "dropFromPrevPct": 40
+        },
+        {
+          "key": "first_publish_verified",
+          "label": "Live-App (verifiziert)",
+          "count": 2,
+          "conversionPct": 22.2,
+          "dropFromPrevPct": 33.3
+        },
+        {
+          "key": "upgrade_clicked",
+          "label": "Upgrade geklickt",
+          "count": 1,
+          "conversionPct": 11.1,
+          "dropFromPrevPct": 50
+        },
+        {
+          "key": "upgraded",
+          "label": "Upgegradet",
+          "count": 1,
+          "conversionPct": 11.1,
+          "dropFromPrevPct": 0
+        }
+      ],
+      "cohortSize": 9
+    },
+    "journeys": [
+      {
+        "userId": "u_msg1",
+        "email": "dora@test.de",
+        "isTest": false,
+        "currentStage": "first_message_sent",
+        "currentStageLabel": "Erste Nachricht",
+        "lastEventType": "help_opened",
+        "lastEventAt": "2026-07-09T09:00:00.000Z",
+        "hoursSinceLast": 27,
+        "stuck": true
+      },
+      {
+        "userId": "u_run",
+        "email": "cara@test.de",
+        "isTest": false,
+        "currentStage": "first_agent_run_finished",
+        "currentStageLabel": "Erster Agent-Lauf",
+        "lastEventType": "publish_failed",
+        "lastEventAt": "2026-07-09T07:00:00.000Z",
+        "hoursSinceLast": 29,
+        "stuck": true
+      },
+      {
+        "userId": "u_onb",
+        "email": "gina@test.de",
+        "isTest": false,
+        "currentStage": "onboarding_completed",
+        "currentStageLabel": "Onboarding fertig",
+        "lastEventType": "onboarding_completed",
+        "lastEventAt": "2026-07-08T20:00:00.000Z",
+        "hoursSinceLast": 40,
+        "stuck": true
+      },
+      {
+        "userId": "u_proj",
+        "email": "finn@test.de",
+        "isTest": false,
+        "currentStage": "project_created",
+        "currentStageLabel": "Projekt erstellt",
+        "lastEventType": "project_created",
+        "lastEventAt": "2026-07-08T13:00:00.000Z",
+        "hoursSinceLast": 47,
+        "stuck": true
+      },
+      {
+        "userId": "u_new2",
+        "email": "ida@test.de",
+        "isTest": false,
+        "currentStage": "signup",
+        "currentStageLabel": "Registriert",
+        "lastEventType": null,
+        "lastEventAt": "2026-07-10T11:00:00.000Z",
+        "hoursSinceLast": 1,
+        "stuck": false
+      },
+      {
+        "userId": "u_new1",
+        "email": "hans@test.de",
+        "isTest": false,
+        "currentStage": "signup",
+        "currentStageLabel": "Registriert",
+        "lastEventType": null,
+        "lastEventAt": "2026-07-10T09:00:00.000Z",
+        "hoursSinceLast": 3,
+        "stuck": false
+      },
+      {
+        "userId": "u_msg2",
+        "email": "emil@test.de",
+        "isTest": false,
+        "currentStage": "first_message_sent",
+        "currentStageLabel": "Erste Nachricht",
+        "lastEventType": "message_sent",
+        "lastEventAt": "2026-07-10T07:00:00.000Z",
+        "hoursSinceLast": 5,
+        "stuck": false
+      },
+      {
+        "userId": "u_live",
+        "email": "ben@test.de",
+        "isTest": false,
+        "currentStage": "first_publish_verified",
+        "currentStageLabel": "Live-App (verifiziert)",
+        "lastEventType": "feedback_submitted",
+        "lastEventAt": "2026-07-08T21:00:00.000Z",
+        "hoursSinceLast": 39,
+        "stuck": false
+      },
+      {
+        "userId": "u_all",
+        "email": "anna@test.de",
+        "isTest": false,
+        "currentStage": "upgraded",
+        "currentStageLabel": "Upgegradet",
+        "lastEventType": "upgraded",
+        "lastEventAt": "2026-07-06T19:00:00.000Z",
+        "hoursSinceLast": 89,
+        "stuck": false
+      }
+    ],
+    "pulse": {
+      "days": 7,
+      "dailyActives": [
+        {
+          "date": "2026-07-04",
+          "count": 0
+        },
+        {
+          "date": "2026-07-05",
+          "count": 0
+        },
+        {
+          "date": "2026-07-06",
+          "count": 1
+        },
+        {
+          "date": "2026-07-07",
+          "count": 2
+        },
+        {
+          "date": "2026-07-08",
+          "count": 4
+        },
+        {
+          "date": "2026-07-09",
+          "count": 3
+        },
+        {
+          "date": "2026-07-10",
+          "count": 1
+        }
+      ],
+      "runsFinished": 3,
+      "runsSucceeded": 2,
+      "runSuccessPct": 66.7,
+      "publishVerified": 2,
+      "publishFailed": 1,
+      "publishSuccessPct": 66.7,
+      "feedbackCount": 1
+    }
+  },
+  "withTest": {
+    "generatedAt": "2026-07-10T12:00:00.000Z",
+    "includeTest": true,
+    "testAccountCount": 1,
+    "funnel7": {
+      "days": 7,
+      "stages": [
+        {
+          "key": "signup",
+          "label": "Registriert",
+          "count": 10,
+          "conversionPct": 100,
+          "dropFromPrevPct": 0
+        },
+        {
+          "key": "onboarding_completed",
+          "label": "Onboarding fertig",
+          "count": 8,
+          "conversionPct": 80,
+          "dropFromPrevPct": 20
+        },
+        {
+          "key": "project_created",
+          "label": "Projekt erstellt",
+          "count": 7,
+          "conversionPct": 70,
+          "dropFromPrevPct": 12.5
+        },
+        {
+          "key": "first_message_sent",
+          "label": "Erste Nachricht",
+          "count": 6,
+          "conversionPct": 60,
+          "dropFromPrevPct": 14.3
+        },
+        {
+          "key": "first_agent_run_finished",
+          "label": "Erster Agent-Lauf",
+          "count": 4,
+          "conversionPct": 40,
+          "dropFromPrevPct": 33.3
+        },
+        {
+          "key": "first_publish_verified",
+          "label": "Live-App (verifiziert)",
+          "count": 3,
+          "conversionPct": 30,
+          "dropFromPrevPct": 25
+        },
+        {
+          "key": "upgrade_clicked",
+          "label": "Upgrade geklickt",
+          "count": 2,
+          "conversionPct": 20,
+          "dropFromPrevPct": 33.3
+        },
+        {
+          "key": "upgraded",
+          "label": "Upgegradet",
+          "count": 2,
+          "conversionPct": 20,
+          "dropFromPrevPct": 0
+        }
+      ],
+      "cohortSize": 10
+    },
+    "funnel30": {
+      "days": 30,
+      "stages": [
+        {
+          "key": "signup",
+          "label": "Registriert",
+          "count": 10,
+          "conversionPct": 100,
+          "dropFromPrevPct": 0
+        },
+        {
+          "key": "onboarding_completed",
+          "label": "Onboarding fertig",
+          "count": 8,
+          "conversionPct": 80,
+          "dropFromPrevPct": 20
+        },
+        {
+          "key": "project_created",
+          "label": "Projekt erstellt",
+          "count": 7,
+          "conversionPct": 70,
+          "dropFromPrevPct": 12.5
+        },
+        {
+          "key": "first_message_sent",
+          "label": "Erste Nachricht",
+          "count": 6,
+          "conversionPct": 60,
+          "dropFromPrevPct": 14.3
+        },
+        {
+          "key": "first_agent_run_finished",
+          "label": "Erster Agent-Lauf",
+          "count": 4,
+          "conversionPct": 40,
+          "dropFromPrevPct": 33.3
+        },
+        {
+          "key": "first_publish_verified",
+          "label": "Live-App (verifiziert)",
+          "count": 3,
+          "conversionPct": 30,
+          "dropFromPrevPct": 25
+        },
+        {
+          "key": "upgrade_clicked",
+          "label": "Upgrade geklickt",
+          "count": 2,
+          "conversionPct": 20,
+          "dropFromPrevPct": 33.3
+        },
+        {
+          "key": "upgraded",
+          "label": "Upgegradet",
+          "count": 2,
+          "conversionPct": 20,
+          "dropFromPrevPct": 0
+        }
+      ],
+      "cohortSize": 10
+    },
+    "journeys": [
+      {
+        "userId": "u_msg1",
+        "email": "dora@test.de",
+        "isTest": false,
+        "currentStage": "first_message_sent",
+        "currentStageLabel": "Erste Nachricht",
+        "lastEventType": "help_opened",
+        "lastEventAt": "2026-07-09T09:00:00.000Z",
+        "hoursSinceLast": 27,
+        "stuck": true
+      },
+      {
+        "userId": "u_run",
+        "email": "cara@test.de",
+        "isTest": false,
+        "currentStage": "first_agent_run_finished",
+        "currentStageLabel": "Erster Agent-Lauf",
+        "lastEventType": "publish_failed",
+        "lastEventAt": "2026-07-09T07:00:00.000Z",
+        "hoursSinceLast": 29,
+        "stuck": true
+      },
+      {
+        "userId": "u_onb",
+        "email": "gina@test.de",
+        "isTest": false,
+        "currentStage": "onboarding_completed",
+        "currentStageLabel": "Onboarding fertig",
+        "lastEventType": "onboarding_completed",
+        "lastEventAt": "2026-07-08T20:00:00.000Z",
+        "hoursSinceLast": 40,
+        "stuck": true
+      },
+      {
+        "userId": "u_proj",
+        "email": "finn@test.de",
+        "isTest": false,
+        "currentStage": "project_created",
+        "currentStageLabel": "Projekt erstellt",
+        "lastEventType": "project_created",
+        "lastEventAt": "2026-07-08T13:00:00.000Z",
+        "hoursSinceLast": 47,
+        "stuck": true
+      },
+      {
+        "userId": "u_new2",
+        "email": "ida@test.de",
+        "isTest": false,
+        "currentStage": "signup",
+        "currentStageLabel": "Registriert",
+        "lastEventType": null,
+        "lastEventAt": "2026-07-10T11:00:00.000Z",
+        "hoursSinceLast": 1,
+        "stuck": false
+      },
+      {
+        "userId": "u_new1",
+        "email": "hans@test.de",
+        "isTest": false,
+        "currentStage": "signup",
+        "currentStageLabel": "Registriert",
+        "lastEventType": null,
+        "lastEventAt": "2026-07-10T09:00:00.000Z",
+        "hoursSinceLast": 3,
+        "stuck": false
+      },
+      {
+        "userId": "u_msg2",
+        "email": "emil@test.de",
+        "isTest": false,
+        "currentStage": "first_message_sent",
+        "currentStageLabel": "Erste Nachricht",
+        "lastEventType": "message_sent",
+        "lastEventAt": "2026-07-10T07:00:00.000Z",
+        "hoursSinceLast": 5,
+        "stuck": false
+      },
+      {
+        "userId": "u_live",
+        "email": "ben@test.de",
+        "isTest": false,
+        "currentStage": "first_publish_verified",
+        "currentStageLabel": "Live-App (verifiziert)",
+        "lastEventType": "feedback_submitted",
+        "lastEventAt": "2026-07-08T21:00:00.000Z",
+        "hoursSinceLast": 39,
+        "stuck": false
+      },
+      {
+        "userId": "u_all",
+        "email": "anna@test.de",
+        "isTest": false,
+        "currentStage": "upgraded",
+        "currentStageLabel": "Upgegradet",
+        "lastEventType": "upgraded",
+        "lastEventAt": "2026-07-06T19:00:00.000Z",
+        "hoursSinceLast": 89,
+        "stuck": false
+      },
+      {
+        "userId": "u_qa",
+        "email": "qa@goblin.com",
+        "isTest": true,
+        "currentStage": "upgraded",
+        "currentStageLabel": "Upgegradet",
+        "lastEventType": "upgraded",
+        "lastEventAt": "2026-07-06T19:00:00.000Z",
+        "hoursSinceLast": 89,
+        "stuck": false
+      }
+    ],
+    "pulse": {
+      "days": 7,
+      "dailyActives": [
+        {
+          "date": "2026-07-04",
+          "count": 0
+        },
+        {
+          "date": "2026-07-05",
+          "count": 0
+        },
+        {
+          "date": "2026-07-06",
+          "count": 2
+        },
+        {
+          "date": "2026-07-07",
+          "count": 2
+        },
+        {
+          "date": "2026-07-08",
+          "count": 4
+        },
+        {
+          "date": "2026-07-09",
+          "count": 3
+        },
+        {
+          "date": "2026-07-10",
+          "count": 1
+        }
+      ],
+      "runsFinished": 4,
+      "runsSucceeded": 3,
+      "runSuccessPct": 75,
+      "publishVerified": 3,
+      "publishFailed": 1,
+      "publishSuccessPct": 75,
+      "feedbackCount": 1
+    }
+  }
+}

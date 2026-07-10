@@ -4,6 +4,7 @@ import { hardDeletePendingAccounts } from '../jobs/hard-delete-pending-accounts'
 import { expireStaleSessions } from '../jobs/expire-stale-sessions';
 import { reconcileStorage } from '../jobs/reconcile-storage';
 import { recoverStuckWebhookJobs } from '../services/stripe-webhook-processor';
+import { sendFounderDigest } from '../services/insight-digest';
 
 let scheduled = false;
 
@@ -24,6 +25,7 @@ export function startCron(): void {
   let lastSessionSweepHour = -1;
   let lastStorageReconcileDay = -1;
   let lastWebhookRecoverySlot = -1;
+  let lastDigestDay = -1;
 
   setInterval(() => {
     const now = new Date();
@@ -80,8 +82,18 @@ export function startCron(): void {
           logger.error({ error: (e as Error).message }, 'cron storage reconcile failed'),
         );
     }
+
+    // I4 (WAVE-I) — founder insight digest, daily 07:00 UTC. Self-gates on
+    // GOBLIN_FOUNDER_DIGEST=true + a recipient (silent no-op otherwise), so this
+    // tick is free unless the founder opts in. One send/day, existing Resend.
+    if (utcHour === 7 && utcMinute < 2 && lastDigestDay !== utcDay) {
+      lastDigestDay = utcDay;
+      sendFounderDigest()
+        .then((r) => { if (r.sent) logger.info('founder digest: sent'); })
+        .catch((e) => logger.error({ error: (e as Error).message }, 'cron founder digest failed'));
+    }
   }, 60_000);
 
   scheduled = true;
-  logger.info('cron scheduled — rankings 6h, hard-delete daily 03:00 UTC, storage reconcile daily 03:30 UTC, session sweep hourly, stripe-webhook recovery every 5min');
+  logger.info('cron scheduled — rankings 6h, hard-delete daily 03:00 UTC, storage reconcile daily 03:30 UTC, session sweep hourly, stripe-webhook recovery every 5min, founder digest daily 07:00 UTC (opt-in)');
 }
