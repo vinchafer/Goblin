@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { aggregateTelemetry, type CompletionRow } from '../lib/goblin-telemetry';
 import { requestAccountDeletion, reactivateByUserId } from '../services/account-deletion';
+import { buildInsight } from '../services/insight';
 
 const admin = new Hono();
 
@@ -548,6 +549,22 @@ admin.get('/catalog', async (c) => {
     healthEvents24h: healthEvents.data ?? [],
     suspectSlugs: getSuspectSlugs(),
   });
+});
+
+// ─── I2 — Founder insight (behaviour funnel / journeys / pulse) ────────────────
+// Reads platform_events + users only (no third-party analytics). Gated by the
+// same x-admin-key middleware as every other /api/admin route (the web proxy
+// injects the key only after a server-side is_admin/ADMIN_EMAIL check → a
+// non-founder never reaches here; API-verified, not client-hidden).
+admin.get('/insight', async (c) => {
+  const days = c.req.query('days') === '30' ? 30 : 7;
+  const includeTest = c.req.query('includeTest') === 'true';
+  try {
+    const payload = await buildInsight({ days, includeTest });
+    return c.json(payload);
+  } catch (e) {
+    return c.json({ error: (e as Error).message }, 500);
+  }
 });
 
 export { admin };
