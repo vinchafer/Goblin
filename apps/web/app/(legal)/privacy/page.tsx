@@ -16,6 +16,30 @@ export default function PrivacyPage() {
         </p>
       </section>
 
+      {/* WAVE-I I3 — the honest usage-events paragraph, DE + EN. */}
+      <section className="mb-8">
+        <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--ink-1)' }}>1a. Usage events / Nutzungsereignisse</h2>
+        <p className="mb-3" style={{ color: 'var(--ink-3)' }}>
+          We record usage events — which feature was used and when (for example: a
+          project created, a message sent, an app published, an upgrade clicked) —
+          to understand where the product works and where people get stuck. These
+          events contain metadata only: never your message content, never your
+          file contents, and never the code that is generated. They are personal
+          data, retained only as long as your account exists and erased when you
+          delete your account.
+        </p>
+        <p className="mb-3" style={{ color: 'var(--ink-3)' }}>
+          Wir erfassen Nutzungsereignisse — welche Funktion wann verwendet wurde
+          (z.&nbsp;B. ein Projekt erstellt, eine Nachricht gesendet, eine App
+          veröffentlicht, ein Upgrade angeklickt) — um zu verstehen, wo das Produkt
+          funktioniert und wo Menschen hängen bleiben. Diese Ereignisse enthalten
+          nur Metadaten: nie Inhalte deiner Nachrichten, nie Inhalte deiner
+          Dateien und nie den generierten Code. Sie sind personenbezogene Daten,
+          werden nur so lange gespeichert, wie dein Konto besteht, und mit der
+          Löschung deines Kontos entfernt.
+        </p>
+      </section>
+
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--ink-1)' }}>2. Sub-processors</h2>
         <p className="mb-3" style={{ color: 'var(--ink-3)' }}>
