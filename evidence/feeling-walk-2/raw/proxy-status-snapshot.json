@@ -1,0 +1,55 @@
+{
+  "enabled": true,
+  "port": 40875,
+  "caBundlePath": "/root/.ccr/ca-bundle.crt",
+  "hasSystemCa": true,
+  "noProxy": "localhost,127.0.0.1,::1,127.0.0.0/8,0.0.0.0/8,::,169.254.0.0/16,anthropic.com,.anthropic.com,*.anthropic.com,registry.npmjs.org,jsr.io,npm.jsr.io,pypi.org,files.pythonhosted.org,index.crates.io,proxy.golang.org,host.docker.internal,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,100.64.0.0/10,.svc.cluster.local,*.svc.cluster.local",
+  "standalone": false,
+  "toolScoped": false,
+  "javaTrustStorePath": "/root/.ccr/java-truststore.p12",
+  "readmePath": "/root/.ccr/README.md",
+  "gitConfigInjection": true,
+  "gitSshRewrite": true,
+  "recentRelayFailures": [
+    {
+      "ts": "2026-07-10T02:52:22.865Z",
+      "kind": "not_connect",
+      "detail": "non-CONNECT request: GET http://clients2.google.com"
+    },
+    {
+      "ts": "2026-07-10T02:53:35.368Z",
+      "kind": "not_connect",
+      "detail": "non-CONNECT request: POST http://update.googleapis.com"
+    },
+    {
+      "ts": "2026-07-10T02:55:48.298Z",
+      "kind": "not_connect",
+      "detail": "non-CONNECT request: GET http://clients2.google.com"
+    },
+    {
+      "ts": "2026-07-10T02:58:09.177Z",
+      "kind": "not_connect",
+      "detail": "non-CONNECT request: GET http://clients2.google.com"
+    },
+    {
+      "ts": "2026-07-10T02:59:22.026Z",
+      "kind": "not_connect",
+      "detail": "non-CONNECT request: POST http://update.googleapis.com"
+    },
+    {
+      "ts": "2026-07-10T03:00:14.299Z",
+      "kind": "not_connect",
+      "detail": "non-CONNECT request: GET http://clients2.google.com"
+    },
+    {
+      "ts": "2026-07-10T03:00:53.409Z",
+      "kind": "not_connect",
+      "detail": "non-CONNECT request: GET http://clients2.google.com"
+    },
+    {
+      "ts": "2026-07-10T03:05:48.672Z",
+      "kind": "not_connect",
+      "detail": "non-CONNECT request: GET http://clients2.google.com"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+# curl/node reach production through sanctioned proxy (control proofs)
+
+## curl -IL https://www.justgoblin.com/  (follows non-www->www 307)
+final_http=200 final_url=https://www.justgoblin.com/ time=0.858303s
+
+## curl /api/version
+http=200
+
+## curl example.com (control)
+http=200
