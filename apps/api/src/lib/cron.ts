@@ -5,6 +5,7 @@ import { expireStaleSessions } from '../jobs/expire-stale-sessions';
 import { reconcileStorage } from '../jobs/reconcile-storage';
 import { recoverStuckWebhookJobs } from '../services/stripe-webhook-processor';
 import { sendFounderDigest } from '../services/insight-digest';
+import { sendFeedbackDigest } from '../services/feedback';
 
 let scheduled = false;
 
@@ -26,6 +27,7 @@ export function startCron(): void {
   let lastStorageReconcileDay = -1;
   let lastWebhookRecoverySlot = -1;
   let lastDigestDay = -1;
+  let lastFeedbackDigestDay = -1;
 
   setInterval(() => {
     const now = new Date();
@@ -91,6 +93,16 @@ export function startCron(): void {
       sendFounderDigest()
         .then((r) => { if (r.sent) logger.info('founder digest: sent'); })
         .catch((e) => logger.error({ error: (e as Error).message }, 'cron founder digest failed'));
+    }
+
+    // J3 (WAVE-J) — feedback daily digest (ideas/other), 07:05 UTC. Self-gates on
+    // GOBLIN_FEEDBACK_DIGEST=true + recipient (silent no-op otherwise). Bugs are
+    // emailed immediately from the request path, so the digest is the slow lane.
+    if (utcHour === 7 && utcMinute >= 5 && utcMinute < 7 && lastFeedbackDigestDay !== utcDay) {
+      lastFeedbackDigestDay = utcDay;
+      sendFeedbackDigest()
+        .then((r) => { if (r.sent) logger.info('feedback digest: sent'); })
+        .catch((e) => logger.error({ error: (e as Error).message }, 'cron feedback digest failed'));
     }
   }, 60_000);
 

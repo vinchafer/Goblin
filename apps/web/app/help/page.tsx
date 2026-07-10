@@ -3,12 +3,14 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { SupportChat } from '@/components/support/support-chat';
+import { FeedbackModal } from '@/components/feedback/FeedbackModal';
 import { HELP_ARTICLES } from '@goblin/shared/src/help-content';
 import { useLang, t, type Lang } from '@/lib/use-lang';
 import { emitEvent } from '@/lib/api';
 
 export default function HelpPage() {
   const lang = useLang();
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   // I1 funnel: help_opened — a user reached the help/support surface (a friction
   // signal). Once per mount, metadata only.
@@ -66,7 +68,23 @@ export default function HelpPage() {
 
         {/* Contact CTA — Goblin Hilfe agent */}
         <HelpAgentCTA lang={lang} />
+
+        {/* Feedback affordance */}
+        <div style={{ textAlign: 'center', marginTop: 20 }}>
+          <button
+            data-testid="help-feedback"
+            onClick={() => setFeedbackOpen(true)}
+            style={{
+              background: 'none', border: 'none', cursor: 'pointer', minHeight: 44,
+              color: 'var(--meta)', fontSize: 13, fontFamily: 'var(--font-sans)', textDecoration: 'underline',
+            }}
+          >
+            {t(lang, 'Feedback geben', 'Give feedback')}
+          </button>
+        </div>
       </div>
+
+      <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} surface="help" />
     </div>
   );
 }

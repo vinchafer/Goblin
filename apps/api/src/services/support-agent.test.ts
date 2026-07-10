@@ -6,18 +6,19 @@
 
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 
-const streamCompletionGuarded = vi.fn();
-const resolveModel = vi.fn();
+/* eslint-disable @typescript-eslint/no-explicit-any */
+const streamCompletionGuarded = vi.fn() as any;
+const resolveModel = vi.fn() as any;
 vi.mock('./model-router', () => ({
-  resolveModel: (...a: unknown[]) => resolveModel(...a),
-  streamCompletionGuarded: (...a: unknown[]) => streamCompletionGuarded(...a),
+  resolveModel: (...a: any[]) => resolveModel(...a),
+  streamCompletionGuarded: (...a: any[]) => streamCompletionGuarded(...a),
 }));
 
-const sendSupportEscalation = vi.fn(async () => ({ ok: true }));
-vi.mock('./support-email', () => ({ sendSupportEscalation: (...a: unknown[]) => sendSupportEscalation(...a) }));
+const sendSupportEscalation = vi.fn(async () => ({ ok: true })) as any;
+vi.mock('./support-email', () => ({ sendSupportEscalation: (...a: any[]) => sendSupportEscalation(...a) }));
 
-const trackEvent = vi.fn();
-vi.mock('../lib/platform-events', () => ({ trackEvent: (...a: unknown[]) => trackEvent(...a) }));
+const trackEvent = vi.fn() as any;
+vi.mock('../lib/platform-events', () => ({ trackEvent: (...a: any[]) => trackEvent(...a) }));
 
 import { streamSupportAgent, consumeSupportQuota, __resetSupportQuota, type SupportMessage } from './support-agent';
 
