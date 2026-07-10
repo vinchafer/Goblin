@@ -25,6 +25,7 @@ const events = [
   { event_type: 'onboarding_completed', user_id: 'u_all', created_at: iso(2 * DAY - HOUR), meta: null },
   { event_type: 'project_created', user_id: 'u_all', created_at: iso(2 * DAY - 2 * HOUR), meta: null },
   { event_type: 'message_sent', user_id: 'u_all', created_at: iso(2 * DAY - 3 * HOUR), meta: null },
+  { event_type: 'agent_run_started', user_id: 'u_all', created_at: iso(2 * DAY - 4 * HOUR - 60000), meta: { model_slug: 'goblin/efficient' } },
   { event_type: 'agent_run_finished', user_id: 'u_all', created_at: iso(2 * DAY - 4 * HOUR), meta: { status: 'ok' } },
   { event_type: 'publish_verified', user_id: 'u_all', created_at: iso(2 * DAY - 5 * HOUR), meta: null },
   { event_type: 'upgrade_clicked', user_id: 'u_all', created_at: iso(2 * DAY - 6 * HOUR), meta: null },
@@ -37,6 +38,10 @@ const events = [
   { event_type: 'onboarding_completed', user_id: 'u_live', created_at: iso(3 * DAY), meta: null },
   { event_type: 'project_created', user_id: 'u_live', created_at: iso(3 * DAY - HOUR), meta: null },
   { event_type: 'message_sent', user_id: 'u_live', created_at: iso(3 * DAY - 2 * HOUR), meta: null },
+  { event_type: 'agent_run_started', user_id: 'u_live', created_at: iso(3 * DAY - 3 * HOUR - 60000), meta: { model_slug: 'goblin/efficient' } },
+  // u_live also STARTED a second run that never finished (crash/abandon) — the
+  // started-vs-finished gap the rider makes visible.
+  { event_type: 'agent_run_started', user_id: 'u_live', created_at: iso(40 * HOUR), meta: { model_slug: 'goblin/premium' } },
   { event_type: 'agent_run_finished', user_id: 'u_live', created_at: iso(3 * DAY - 3 * HOUR), meta: { status: 'failed', outcome: 'error' } },
   { event_type: 'publish_verified', user_id: 'u_live', created_at: iso(50 * HOUR), meta: null },
   { event_type: 'publish_failed', user_id: 'u_live', created_at: iso(51 * HOUR), meta: { stage: 'build' } },
@@ -112,6 +117,9 @@ describe('computePulse', () => {
     // runs: u_all ok, u_live failed → 1/2 = 50%
     expect(p.runsFinished).toBe(2);
     expect(p.runSuccessPct).toBe(50);
+    // started (rider): u_all 1 + u_live 2 = 3 → the 3-vs-2 gap = one run that
+    // started but never finished (real users; u_test excluded).
+    expect(p.runsStarted).toBe(3);
     expect(p.dailyActives).toHaveLength(7);
   });
 
