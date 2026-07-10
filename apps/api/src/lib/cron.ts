@@ -3,6 +3,7 @@ import { runRankingsAggregator } from './rankings/aggregator';
 import { hardDeletePendingAccounts } from '../jobs/hard-delete-pending-accounts';
 import { expireStaleSessions } from '../jobs/expire-stale-sessions';
 import { reconcileStorage } from '../jobs/reconcile-storage';
+import { recoverStuckWebhookJobs } from '../services/stripe-webhook-processor';
 
 let scheduled = false;
 
@@ -22,12 +23,25 @@ export function startCron(): void {
   let lastHardDeleteDay = -1;
   let lastSessionSweepHour = -1;
   let lastStorageReconcileDay = -1;
+  let lastWebhookRecoverySlot = -1;
 
   setInterval(() => {
     const now = new Date();
     const utcHour = now.getUTCHours();
     const utcMinute = now.getUTCMinutes();
     const utcDay = now.getUTCDate();
+
+    // Stripe webhook recovery — every 5 minutes. Re-applies failed / stale-pending
+    // webhook jobs from their stored payload (durability backstop for the ACK-fast
+    // async processing: since we 200 before side-effects, Stripe won't retry, so a
+    // process restart mid-flight is recovered here).
+    const recoverySlot = Math.floor(utcMinute / 5);
+    if (lastWebhookRecoverySlot !== recoverySlot) {
+      lastWebhookRecoverySlot = recoverySlot;
+      recoverStuckWebhookJobs().catch((e) =>
+        logger.error({ error: (e as Error).message }, 'cron stripe-webhook recovery failed'),
+      );
+    }
 
     const slot = Math.floor(utcHour / 6);
     if (utcHour % 6 === 0 && utcMinute < 2 && lastRankingsSlot !== slot) {
@@ -69,5 +83,5 @@ export function startCron(): void {
   }, 60_000);
 
   scheduled = true;
-  logger.info('cron scheduled — rankings 6h, hard-delete daily 03:00 UTC, storage reconcile daily 03:30 UTC, session sweep hourly');
+  logger.info('cron scheduled — rankings 6h, hard-delete daily 03:00 UTC, storage reconcile daily 03:30 UTC, session sweep hourly, stripe-webhook recovery every 5min');
 }
