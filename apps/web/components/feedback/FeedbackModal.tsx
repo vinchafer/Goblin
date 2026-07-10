@@ -9,7 +9,7 @@
 
 import { useState } from 'react';
 import { BottomSheet } from '@/components/ui/BottomSheet';
-import { apiPost, emitEvent } from '@/lib/api';
+import { apiPost } from '@/lib/api';
 import { useLang, t } from '@/lib/use-lang';
 
 export type FeedbackCategory = 'bug' | 'idea' | 'other';
@@ -53,11 +53,12 @@ export function FeedbackModal({ open, onClose, surface, context }: FeedbackModal
       last_error: context?.last_error,
     };
     try {
+      // The route persists AND emits feedback_submitted server-side (the truth-gate),
+      // so the client must NOT emit it too — that would double-count in Pulse.
       await apiPost('/api/feedback', { category, body: body.trim(), context: ctx, surface });
     } catch {
-      /* best-effort — still emit the signal + thank the user honestly */
+      /* best-effort — thank the user honestly regardless */
     }
-    emitEvent('feedback_submitted', { category, surface });
     setSubmitting(false);
     setDone(true);
   };
