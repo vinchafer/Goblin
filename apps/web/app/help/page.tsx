@@ -3,67 +3,17 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { SupportChat } from '@/components/support/support-chat';
+import { HELP_ARTICLES } from '@goblin/shared/src/help-content';
 import { useLang, t, type Lang } from '@/lib/use-lang';
 import { emitEvent } from '@/lib/api';
 
-interface Faq {
-  q: string;
-  a: string;
-}
-
-// WS-C: the help page was hardcoded English while the app defaults to German
-// (useLang → 'de'), so a DE user saw an all-English page. Now bilingual via the
-// shared i18n hook — same source of truth as the rest of the app.
-function faqs(lang: Lang): Faq[] {
-  return [
-    {
-      q: t(lang, 'Was ist Goblin?', 'What is Goblin?'),
-      a: t(lang,
-        'Goblin ist ein mobiler Vibe-Coding-Arbeitsplatz: Chatte mit der KI, sieh dem Code live beim Entstehen zu und deploye in einem Schritt – vom Handy oder vom Laptop.',
-        'Goblin is a mobile vibe-coding workspace: chat with AI, watch the code live, and deploy in one step — from your phone or your laptop.'),
-    },
-    {
-      q: t(lang, 'Was bedeutet BYOK?', 'What does BYOK mean?'),
-      a: t(lang,
-        'Bring Your Own Key – dein eigener Schlüssel. Du verbindest deinen eigenen API-Schlüssel (Anthropic, OpenAI, Google, Groq usw.). Goblin leitet Anfragen an deinen Anbieter weiter – du zahlst die Inferenz direkt, und Goblin verlangt dafür 0 $ extra.',
-        'Bring Your Own Key. You connect your own API key (Anthropic, OpenAI, Google, Groq, and so on). Goblin routes requests to your provider — you pay for inference directly, and Goblin charges $0 extra for it.'),
-    },
-    {
-      q: t(lang, 'Welche KI-Anbieter werden unterstützt?', 'Which AI providers are supported?'),
-      a: t(lang,
-        'Anthropic (Claude), OpenAI (GPT), Google (Gemini), Groq, OpenRouter, Mistral und mehr. Du kannst die Modelle pro Projekt wählen.',
-        'Anthropic (Claude), OpenAI (GPT), Google (Gemini), Groq, OpenRouter, Mistral, and more. You can choose models per project.'),
-    },
-    {
-      q: t(lang, 'Kann ich jederzeit kündigen?', 'Can I cancel anytime?'),
-      a: t(lang,
-        'Ja. Geh zu den Abrechnungs-Einstellungen → Stripe-Kundenportal. Dein Abo läuft bis zum Ende der Periode und endet dann – danach keine automatische Verlängerung.',
-        'Yes. Go to Billing settings → Stripe customer portal. Your subscription runs until the end of the period, then ends — no auto-renew after that.'),
-    },
-    {
-      q: t(lang, 'Wo werden meine Daten gespeichert?', 'Where is my data stored?'),
-      a: t(lang,
-        'Supabase (EU-Region). Code-Dateien im Supabase-Storage, Chat-Verlauf in Postgres. BYOK-Schlüssel werden clientseitig verschlüsselt gespeichert; der Server sieht immer nur den verschlüsselten Wert.',
-        'Supabase (EU region). Code files in Supabase Storage, chat history in Postgres. BYOK keys are stored client-side encrypted; the server only ever sees the encrypted value.'),
-    },
-    {
-      q: t(lang, 'Was passiert, wenn ich offline bin?', 'What happens when I\'m offline?'),
-      a: t(lang,
-        'Die mobile App speichert deine letzten Projekte zwischen. Der Editor funktioniert offline; KI-Aufrufe und die Synchronisierung brauchen eine Verbindung. Deine Änderungen werden automatisch synchronisiert, sobald du wieder online bist.',
-        'The mobile app caches your recent projects. The editor works offline; AI calls and sync need a connection. Your changes sync automatically when you reconnect.'),
-    },
-  ];
-}
-
 export default function HelpPage() {
   const lang = useLang();
-  const [openIdx, setOpenIdx] = useState<number | null>(0);
-  const FAQS = faqs(lang);
 
   // I1 funnel: help_opened — a user reached the help/support surface (a friction
   // signal). Once per mount, metadata only.
   useEffect(() => {
-    emitEvent('help_opened');
+    emitEvent('help_opened', { surface: 'index' });
   }, []);
 
   return (
@@ -72,7 +22,7 @@ export default function HelpPage() {
         <Link href="/dashboard" style={{
           display: 'inline-flex', alignItems: 'center', gap: 6,
           fontSize: 13, color: 'var(--meta)', textDecoration: 'none',
-          fontFamily: 'var(--font-sans)', marginBottom: 24,
+          fontFamily: 'var(--font-sans)', marginBottom: 24, minHeight: 44,
         }}>
           {t(lang, '← Zurück', '← Back')}
         </Link>
@@ -82,54 +32,39 @@ export default function HelpPage() {
           color: 'var(--brand-green)', fontWeight: 700, letterSpacing: '-0.5px',
           marginBottom: 8,
         }}>
-          {t(lang, 'Hilfe & Support', 'Help & Support')}
+          {t(lang, 'Hilfe', 'Help')}
         </h1>
         <p style={{
           fontSize: 15, color: 'var(--meta)', fontFamily: 'var(--font-sans)',
-          marginBottom: 40, lineHeight: 1.6,
+          marginBottom: 32, lineHeight: 1.6,
         }}>
-          {t(lang, 'Häufige Fragen und wie du uns erreichst.', 'FAQs and how to reach us.')}
+          {t(lang, 'Verständliche Anleitungen — und ein Hilfe-Agent, der sofort antwortet.', 'Clear guides — and a help agent that answers instantly.')}
         </p>
 
-        {/* FAQ Accordion */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 40 }}>
-          {FAQS.map((f, i) => {
-            const open = openIdx === i;
-            return (
-              <div key={i} style={{
-                background: 'var(--panel, #fff)',
-                border: '1px solid var(--border)',
-                borderRadius: 12,
-                overflow: 'hidden',
-              }}>
-                <button
-                  onClick={() => setOpenIdx(open ? null : i)}
-                  style={{
-                    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '16px 20px', background: 'none', border: 'none', cursor: 'pointer',
-                    textAlign: 'left', fontFamily: 'var(--font-sans)',
-                    fontSize: 15, fontWeight: 500, color: 'var(--text)',
-                    minHeight: 56,
-                  }}
-                >
-                  <span>{f.q}</span>
-                  <span style={{ color: 'var(--meta)', fontSize: 18, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>⌄</span>
-                </button>
-                {open && (
-                  <div style={{
-                    padding: '0 20px 18px', fontSize: 'var(--t-small-fs)',
-                    lineHeight: 1.65, color: 'var(--text-2, var(--meta))',
-                    fontFamily: 'var(--font-sans)',
-                  }}>
-                    {f.a}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+        {/* Article index */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 36 }}>
+          {HELP_ARTICLES.map((a) => (
+            <Link
+              key={a.slug}
+              href={`/help/${a.slug}`}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 14,
+                padding: '14px 16px', minHeight: 56,
+                background: 'var(--panel, #fff)', border: '1px solid var(--border)',
+                borderRadius: 12, textDecoration: 'none', fontFamily: 'var(--font-sans)',
+              }}
+            >
+              <span aria-hidden style={{ fontSize: 22, flexShrink: 0 }}>{a.icon}</span>
+              <span style={{ flex: 1, minWidth: 0 }}>
+                <span style={{ display: 'block', fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{a.title[lang]}</span>
+                <span style={{ display: 'block', fontSize: 12.5, color: 'var(--meta)', marginTop: 2, lineHeight: 1.4 }}>{a.summary[lang]}</span>
+              </span>
+              <span aria-hidden style={{ color: 'var(--meta)', fontSize: 18, flexShrink: 0 }}>›</span>
+            </Link>
+          ))}
         </div>
 
-        {/* Contact CTA — Goblin help agent */}
+        {/* Contact CTA — Goblin Hilfe agent */}
         <HelpAgentCTA lang={lang} />
       </div>
     </div>

@@ -478,6 +478,12 @@ interface StreamCompletionParams {
   // code literal by the summarizer path (project-state.ts) — NO HTTP route reads or
   // forwards it, so the exemption is unreachable from any user-controlled request.
   internalBilling?: boolean;
+  // WAVE-J (J2): optional per-message OUTPUT-token budget for the goblin-hosted
+  // path. Overrides GOBLIN_MAX_TOKENS_PER_REQUEST downward (never up — a request
+  // can only ask for a *tighter* cap, so this can't be used to inflate COGS). The
+  // support agent pins this small (short, honest replies). No effect on the BYOK
+  // Anthropic/OpenAI paths (their max_tokens stays the existing default).
+  maxTokens?: number;
 }
 
 export async function* streamCompletion({
@@ -492,6 +498,7 @@ export async function* streamCompletion({
   signal,
   systemPrompt,
   internalBilling = false,
+  maxTokens,
 }: StreamCompletionParams): AsyncGenerator<string, void, unknown> {
   const resolved = await resolveModel(userId, modelPreference, supabase);
   // 10.9-3 — if the resolved provider is degraded, transparently re-route to a
@@ -649,7 +656,8 @@ export async function* streamCompletion({
       for await (const part of client.stream({
         model: route.apiModel,
         messages: oaiMessages,
-        maxTokens: GOBLIN_MAX_TOKENS_PER_REQUEST,
+        // A caller may only ask for a TIGHTER cap than the platform default.
+        maxTokens: Math.min(maxTokens ?? GOBLIN_MAX_TOKENS_PER_REQUEST, GOBLIN_MAX_TOKENS_PER_REQUEST),
         signal,
       })) {
         if (part.type === 'delta' && part.content) {
