@@ -10,15 +10,18 @@ import {
   createSubscriptionAtTier,
   previewPlanChange,
   changePlan,
-  handleSubscriptionCreated,
-  handleSubscriptionUpdated,
-  handleSubscriptionDeleted,
-  handleInvoicePaymentFailed,
-  handleInvoicePaymentSucceeded
 } from '../services/billing-service';
+import { processStripeEvent } from '../services/stripe-webhook-processor';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { derivePlanTruth } from '../lib/plan-truth';
 import { getGeoTier, PLAN_PRICES, TIER_LABELS } from '../config/geo-pricing';
+import logger from '../lib/logger';
+import { withTimeout, envTimeoutMs } from '../lib/with-timeout';
+
+// Pre-ACK claim-phase timeout (env-overridable). Kept short: the idempotency
+// check + claim are the only Supabase writes on the response path, and a stalled
+// one must not delay the 200 ACK to Stripe.
+const WEBHOOK_CLAIM_TIMEOUT_MS = () => envTimeoutMs('STRIPE_WEBHOOK_CLAIM_TIMEOUT_MS', 5_000);
 
 type Variables = { userId: string }
 const billing = new Hono<{ Variables: Variables }>();
@@ -402,92 +405,98 @@ billing.post('/webhook', async (c) => {
   const signature = c.req.header('stripe-signature')!;
   const body = await c.req.text();
 
+  // ── Phase 1: signature verify (the ONLY path that returns 400) ─────────────
+  // WH3: a 400 "Invalid signature" is reserved STRICTLY for a real signature
+  // failure. Business/processing errors never reach this label — they surface
+  // async on the job row (WH1) or as a 500 during the pre-ACK claim below.
+  let event: Stripe.Event;
   try {
-    const event = Stripe.webhooks.constructEvent(
+    event = Stripe.webhooks.constructEvent(
       body,
       signature,
       process.env.STRIPE_WEBHOOK_SECRET!
     );
-
-    // Idempotency: skip if we've already processed this event id.
-    const supabase = getSupabaseAdmin();
-    const { data: existing } = await supabase
-      .from('stripe_processed_events')
-      .select('event_id')
-      .eq('event_id', event.id)
-      .maybeSingle();
-    if (existing) {
-      return c.json({ received: true, duplicate: true });
-    }
-    // Claim the event before applying side effects so a concurrent duplicate
-    // delivery can't double-process (the unique-pk constraint rejects the racer).
-    // BUT: if the handler below THROWS (e.g. a payload-shape/transient error), we
-    // roll this claim back in the catch — otherwise the event is permanently
-    // recorded as "processed" and Stripe's automatic retry is skipped as a
-    // duplicate, silently losing the side effect (this is how a failed
-    // cancel-at-period-end update was lost forever).
-    await supabase
-      .from('stripe_processed_events')
-      .insert({ event_id: event.id, event_type: event.type });
-
-    try {
-    switch (event.type) {
-      case 'checkout.session.completed': {
-        // Legacy hosted-checkout path. The Elements/SetupIntent rebuild
-        // (2026-06-23) creates subscriptions server-side already AT the
-        // authoritative card-country tier, so the old "reprice to the typed
-        // billing-address country, never block entitlement" reconcile is RETIRED
-        // — it was a cheap-keep leak (a failed reprice left the cheaper tier in
-        // place) and it keyed off a spoofable typed address, not the card BIN.
-        // We keep only the entitlement write for any subscription created via
-        // this path; the tier is whatever the session was created with.
-        const session = event.data.object as Stripe.Checkout.Session;
-        if (session.subscription) {
-          const stripe = getStripe();
-          const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
-          await handleSubscriptionCreated(subscription);
-        }
-        break;
-      }
-      case 'customer.subscription.updated':
-        await handleSubscriptionUpdated(event.data.object as Stripe.Subscription);
-        break;
-
-      case 'customer.subscription.deleted':
-        await handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
-        break;
-
-      // Dunning (2026-06-27): a renewal charge failed → flag past_due (access kept,
-      // banner shown); a charge cleared → clear the flag (recovery). Both are
-      // dahlia-shape-aware (invoice.parent.subscription_details.subscription). The
-      // idempotency rollback above covers a throwing handler → Stripe retries.
-      case 'invoice.payment_failed':
-        await handleInvoicePaymentFailed(event.data.object as Stripe.Invoice);
-        break;
-
-      case 'invoice.payment_succeeded':
-        await handleInvoicePaymentSucceeded(event.data.object as Stripe.Invoice);
-        break;
-
-      // invoice.paid previously reset the legacy monthly_requests_used counter.
-      // That counter is retired (DD §A) and the weighted Goblin allowance resets
-      // automatically at the start of each calendar month (lib/goblin-cap.ts), so
-      // there is nothing to reset here.
-    }
-    } catch (handlerErr) {
-      // Side effect failed → release the idempotency claim so Stripe's retry is
-      // NOT short-circuited as a duplicate, then surface a 500 to trigger that retry.
-      await supabase
-        .from('stripe_processed_events')
-        .delete()
-        .eq('event_id', event.id);
-      throw handlerErr;
-    }
-
-    return c.json({ received: true });
-  } catch {
+  } catch (sigErr) {
+    logger.warn(
+      { error: sigErr instanceof Error ? sigErr.message : String(sigErr), error_class: 'signature' },
+      'stripe-webhook: signature verification failed',
+    );
     return c.json({ error: 'Invalid signature' }, 400);
   }
+
+  // ── Phase 2: idempotency + durable claim (pre-ACK) ─────────────────────────
+  // Store the raw payload so a background/recovery run can re-apply the side
+  // effects without a stalled upstream on the response path. A failure to even
+  // reach the idempotency table here is an INFRA error before we've ACKed → 500
+  // so Stripe retries (this is the "business/infra error → 500 class", never a
+  // mislabelled 400). Signature success is already proven at this point.
+  const supabase = getSupabaseAdmin();
+  try {
+    const { data: existing } = await withTimeout(
+      supabase
+        .from('stripe_processed_events')
+        .select('event_id')
+        .eq('event_id', event.id)
+        .maybeSingle(),
+      WEBHOOK_CLAIM_TIMEOUT_MS(),
+      'webhook:idempotencyCheck',
+    );
+    if (existing) {
+      // Duplicate delivery — the first delivery already claimed this event (it
+      // may still be processing). Idempotency short-circuit: no-op 200.
+      return c.json({ received: true, duplicate: true });
+    }
+
+    // Claim the event durably (status='pending', payload stored) BEFORE ACKing.
+    // The unique-pk constraint makes a concurrent duplicate delivery lose the
+    // race (its insert errors → caught below → we treat it as a duplicate).
+    const { error: claimErr } = await withTimeout(
+      supabase
+        .from('stripe_processed_events')
+        .insert({
+          event_id: event.id,
+          event_type: event.type,
+          status: 'pending',
+          payload: event as unknown as Record<string, unknown>,
+        }),
+      WEBHOOK_CLAIM_TIMEOUT_MS(),
+      'webhook:claim',
+    );
+    if (claimErr) {
+      // Most likely a duplicate delivery racing us (unique-pk conflict) → the
+      // other delivery owns processing, so this is a safe no-op 200.
+      logger.info(
+        { event_id: event.id, event_type: event.type, error: claimErr.message },
+        'stripe-webhook: claim conflict (concurrent duplicate) — no-op',
+      );
+      return c.json({ received: true, duplicate: true });
+    }
+  } catch (claimInfraErr) {
+    // Could not reach the idempotency table (Supabase down / timed out) BEFORE we
+    // ACKed. Return 500 so Stripe retries the delivery — NOT a 400. Nothing was
+    // claimed, so the retry re-runs cleanly.
+    logger.error(
+      {
+        event_id: event.id,
+        event_type: event.type,
+        error: claimInfraErr instanceof Error ? claimInfraErr.message : String(claimInfraErr),
+        error_class: 'infra',
+      },
+      'stripe-webhook: claim phase failed before ACK — returning 500 for Stripe retry',
+    );
+    return c.json({ error: 'Webhook claim failed, retry' }, 500);
+  }
+
+  // ── Phase 3: ACK fast, work async (WH1) ────────────────────────────────────
+  // Side-effects run in a background continuation with per-call timeouts (WH2).
+  // Railway keeps this Node process alive, so the fire-and-forget promise runs to
+  // completion; if the process is restarted mid-flight, the job stays 'pending'
+  // and recoverStuckWebhookJobs() (cron) re-applies it from the stored payload.
+  // processStripeEvent NEVER rejects (it records failure on the job row), so this
+  // is safe to leave un-awaited.
+  void processStripeEvent(event);
+
+  return c.json({ received: true });
 });
 
 export { billing };
