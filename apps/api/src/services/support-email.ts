@@ -47,8 +47,10 @@ export async function sendSupportEscalation(ticket: SupportTicket): Promise<{ ok
   }
 
   const apiKey = process.env.RESEND_API_KEY;
-  const to = process.env.SUPPORT_EMAIL_TO;
-  const from = process.env.SUPPORT_EMAIL_FROM ?? 'Goblin Support <support@send.justgoblin.com>';
+  // Recipient: the founder is the escalation. Unified with the Wave-I founder
+  // envs so a single ADMIN_EMAIL configures both digests and escalations.
+  const to = process.env.SUPPORT_EMAIL_TO ?? process.env.FOUNDER_DIGEST_EMAIL ?? process.env.ADMIN_EMAIL;
+  const from = process.env.SUPPORT_EMAIL_FROM ?? process.env.RESEND_FROM ?? 'Goblin Support <support@send.justgoblin.com>';
 
   if (!apiKey || !to) {
     return { ok: false, error: 'missing_config' };
