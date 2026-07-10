@@ -9,6 +9,7 @@ import { loadProjectState, scheduleProjectStateUpdate } from '../services/projec
 import { loadUserPreferences } from '../services/user-preferences';
 import { authMiddleware } from '../middleware/auth';
 import { chatStreamRateLimit } from '../middleware/rate-limit';
+import { trackEvent } from '../lib/platform-events';
 
 type Variables = { userId: string }
 const chat = new Hono<{ Variables: Variables }>();
@@ -120,6 +121,10 @@ chat.post('/stream', chatStreamRateLimit, async (c) => {
       // conversation memory. Surface it loudly instead of failing silently.
       console.error('[chat] failed to persist user message:', userInsertErr.message);
     }
+    // I1 funnel: message_sent (metadata only — NEVER the message text). One event
+    // per fresh user turn (idempotent replays set alreadyPersisted); the dashboard
+    // takes the first-per-user timestamp for the first_message_sent stage.
+    trackEvent({ eventType: 'message_sent', userId, projectId, meta: { surface: 'project' } });
   }
 
   // Get chat history. We just inserted the user message above, so the most

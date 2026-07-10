@@ -6,6 +6,7 @@ import { getSupabaseAdmin } from '../lib/supabase';
 import { deployToVercel, getDeployStatus } from '../services/vercel-service';
 import { verifyDeployment } from '../services/deploy-verification';
 import { listFiles } from '../services/file-storage';
+import { trackEvent } from '../lib/platform-events';
 
 type Variables = { userId: string };
 const deploy = new Hono<{ Variables: Variables }>();
@@ -97,6 +98,15 @@ deploy.post('/vercel', deployRateLimit, async (c) => {
         await stream.writeSSE({ data: JSON.stringify({ type: 'progress', message: msg }) });
       });
       if (!verdict.ok) {
+        // I1 funnel: publish_failed at the truth-gate (metadata only — the failing
+        // check name + failed-asset count, never file contents). This is the
+        // server-side truth, not a client claim.
+        trackEvent({
+          eventType: 'publish_failed',
+          userId,
+          projectId,
+          meta: { stage: 'verification', check: verdict.reason ?? 'unverified', failed_assets: verdict.failedAssets?.length ?? 0 },
+        });
         await stream.writeSSE({ data: JSON.stringify({ type: 'error', message: verdict.reason ?? 'Veröffentlichung konnte nicht bestätigt werden.' }) });
         return;
       }
@@ -105,6 +115,11 @@ deploy.post('/vercel', deployRateLimit, async (c) => {
         .from('projects')
         .update({ preview_url: finalUrl, last_deployed_at: new Date().toISOString() })
         .eq('id', projectId);
+
+      // I1 funnel: publish_verified — fires only after the truth-gate confirms the
+      // live URL serves the deployed artifact. first-per-user timestamp feeds the
+      // first_publish_verified funnel stage (the "reached a live app" number).
+      trackEvent({ eventType: 'publish_verified', userId, projectId });
 
       // Push notification (non-blocking)
       try {
@@ -134,6 +149,9 @@ deploy.post('/vercel', deployRateLimit, async (c) => {
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Deploy failed';
+      // I1 funnel: publish_failed on a build/pipeline error (before the truth-gate).
+      // Categorised, metadata only — no file contents.
+      trackEvent({ eventType: 'publish_failed', userId, projectId, meta: { stage: 'build' } });
       await stream.writeSSE({ data: JSON.stringify({ type: 'error', message: msg }) });
     }
   });

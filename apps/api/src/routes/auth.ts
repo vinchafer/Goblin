@@ -1,6 +1,8 @@
 import { Hono } from 'hono';
 import { z } from 'zod';
 import { checkLockout, logLoginAttempt } from '../middleware/login-lockout';
+import { getSupabaseAdmin } from '../lib/supabase';
+import { trackEvent } from '../lib/platform-events';
 
 const auth = new Hono();
 
@@ -46,6 +48,23 @@ auth.post('/login-attempt', async (c) => {
     ipAddress,
     userAgent,
   });
+
+  // I1: login (actives signal) — only on a successful sign-in, and only as a
+  // by-user-id event so it joins the purge. Resolve the id best-effort; the
+  // whole block is fire-and-forget and never blocks the response.
+  if (parsed.data.success) {
+    void (async () => {
+      try {
+        const { data } = await getSupabaseAdmin()
+          .from('users')
+          .select('id')
+          .ilike('email', parsed.data.email)
+          .maybeSingle();
+        const uid = (data as { id?: string } | null)?.id;
+        if (uid) trackEvent({ eventType: 'login', userId: uid });
+      } catch { /* silent-fail — measurement only */ }
+    })();
+  }
 
   return c.json({ ok: true });
 });

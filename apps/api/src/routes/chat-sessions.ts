@@ -9,6 +9,7 @@ import { loadProjectContextFiles, isSoftDeletedPath, type ContextFile } from '..
 import { loadProjectState, scheduleProjectStateUpdate } from '../services/project-state.js';
 import { loadUserPreferences } from '../services/user-preferences.js';
 import { truncateTitle } from '../lib/truncate-title.js';
+import { trackEvent } from '../lib/platform-events.js';
 
 type Variables = { userId: string };
 const chatSessions = new Hono<{ Variables: Variables }>();
@@ -146,6 +147,10 @@ chatSessions.post('/:id/stream', async (c) => {
       console.error('[chat-sessions] failed to persist user message:', userMsgErr.message);
       return c.json({ error: 'Chat-Speicher nicht verfügbar — bitte später erneut versuchen.' }, 503);
     }
+    // I1 funnel: message_sent (metadata only — NEVER the message text). One event
+    // per fresh user turn; the dashboard's first-per-user timestamp feeds the
+    // first_message_sent stage.
+    trackEvent({ eventType: 'message_sent', userId, meta: { surface: 'standalone' } });
   }
 
   // Auto-title from first user message

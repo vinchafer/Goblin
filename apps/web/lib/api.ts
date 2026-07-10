@@ -133,6 +133,26 @@ export async function apiDelete(path: string): Promise<void> {
   }
 }
 
+// I1 (WAVE-I insight): fire-and-forget behaviour event. Emits a whitelisted,
+// metadata-only UI signal (trial_card_shown/clicked, help_opened,
+// feedback_submitted) to POST /api/events. NEVER awaited on a UX path and NEVER
+// throws — a failed emit must not break or slow anything the user is doing.
+export function emitEvent(type: string, meta?: Record<string, string | number | boolean | null>): void {
+  void (async () => {
+    try {
+      const headers = await getAuthHeaders()
+      await fetch(`${API_URL}/api/events`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ type, meta }),
+        keepalive: true,
+      })
+    } catch {
+      /* silent-fail — measurement only */
+    }
+  })()
+}
+
 export async function apiStream(
   path: string,
   body: unknown,

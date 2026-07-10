@@ -14,7 +14,9 @@
 // Copy is honest and traces to real plan facts: paid access does not expire, and
 // the monthly unit allowance is larger than the trial's. No invented claims.
 
+import { useEffect } from "react";
 import { useLang, t } from "@/lib/use-lang";
+import { emitEvent } from "@/lib/api";
 
 interface Props {
   variant: "slot" | "toast";
@@ -24,6 +26,17 @@ interface Props {
 
 export function AchievementUpgradeCard({ variant, onUpgrade, onLater }: Props) {
   const lang = useLang();
+
+  // I1 funnel: trial_card_shown — fires once when the earned upgrade card mounts
+  // (metadata only: which placement). Paired with trial_card_clicked on the CTA.
+  useEffect(() => {
+    emitEvent("trial_card_shown", { variant });
+  }, [variant]);
+
+  const handleUpgrade = () => {
+    emitEvent("trial_card_clicked", { variant });
+    onUpgrade();
+  };
 
   const eyebrow = t(lang, "DEINE APP IST LIVE", "YOUR APP IS LIVE");
   const body = t(
@@ -44,7 +57,7 @@ export function AchievementUpgradeCard({ variant, onUpgrade, onLater }: Props) {
   );
   const upgradeBtn = (
     <button
-      onClick={onUpgrade} data-testid="achievement-upgrade"
+      onClick={handleUpgrade} data-testid="achievement-upgrade"
       style={{ flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 5, background: "var(--ed-primary)", border: "none", color: "var(--ed-on-primary)", borderRadius: 8, padding: "7px 13px", fontSize: 12.5, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-sans)" }}
     >
       {cta}

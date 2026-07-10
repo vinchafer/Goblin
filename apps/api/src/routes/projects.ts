@@ -10,6 +10,7 @@ import { createTwoFilesPatch } from 'diff';
 import { createProjectFromTemplate } from './templates';
 import { teardownVercelProject } from '../services/vercel-service';
 import logger from '../lib/logger';
+import { trackEvent } from '../lib/platform-events';
 
 type Variables = { userId: string }
 const projects = new Hono<{ Variables: Variables }>();
@@ -221,6 +222,11 @@ projects.post('/', async (c) => {
     logger.error({ user_id: userId, db_code: error.code, db_message: error.message }, 'project_create_failed');
     return c.json({ error: error.message || 'Failed to create project', code: error.code }, 500);
   }
+
+  // I1 funnel: project_created (metadata only — intent, never name/content).
+  // Only genuine new inserts reach here; the idempotent-replay branch returned
+  // above, so no duplicate stage event on a client retry.
+  trackEvent({ eventType: 'project_created', userId, projectId, meta: { intent: result.data.intent ?? null } });
 
   // Backfill storage_path — tolerates schema cache lag (column added in migration 0029)
   try {
