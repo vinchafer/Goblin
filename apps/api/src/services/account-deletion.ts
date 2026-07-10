@@ -461,6 +461,21 @@ export async function hardDeleteUser(userId: string): Promise<HardDeleteOutcome>
     throw new Error(`platform_events delete failed: ${peErr.message}`);
   }
 
+  // WAVE-J (I3): support tickets (escalation transcripts) and feedback are personal
+  // data — the ticket transcript is the one content-bearing support surface, and
+  // feedback bodies are user-authored. Both are FK-less (like platform_events) → no
+  // cascade → purge explicitly. Same pre-migration tolerance (0086/0087 not applied
+  // yet → nothing to erase); any other error stops the purge (never silently skip
+  // existing PII).
+  const { error: stErr } = await supabase.from('support_tickets').delete().eq('user_id', userId);
+  if (stErr && stErr.code !== '42P01' && !/does not exist/i.test(stErr.message)) {
+    throw new Error(`support_tickets delete failed: ${stErr.message}`);
+  }
+  const { error: fbErr } = await supabase.from('feedback').delete().eq('user_id', userId);
+  if (fbErr && fbErr.code !== '42P01' && !/does not exist/i.test(fbErr.message)) {
+    throw new Error(`feedback delete failed: ${fbErr.message}`);
+  }
+
   const removed = await deleteUserStorage(userId);
   logger.info({ userIdHash: sha256(userId), objects: removed }, 'account-deletion: user storage purged');
 
