@@ -2,5 +2,8 @@
   "buildCommand": "pnpm --filter @goblin/web build",
   "outputDirectory": ".next",
   "installCommand": "pnpm install",
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "github": {
+    "silent": true
+  }
 }
