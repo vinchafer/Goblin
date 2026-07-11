@@ -16,6 +16,7 @@
 import { getSupabaseAdmin } from '../../lib/supabase';
 import { getFile, uploadFile, headBytes } from '../file-storage';
 import { byteLen, assertStorageRoom } from '../storage-usage';
+import { checkProjectPath, isForbiddenWriteTarget, WRITE_FILE_MAX_CHARS } from '../project-path';
 import { isSoftDeletedPath, FILE_CONTENT_BUDGET_CHARS } from '../project-context';
 import { classifyFile, lineDelta, checkStcIntegrity } from '@goblin/shared';
 import logger from '../../lib/logger';
@@ -188,6 +189,14 @@ async function readSessionFile(sb: Sb, ctx: ToolContext, path: string): Promise<
   return getFile(ctx.projectId, path);
 }
 
+// D-1 — one honest German error for any structurally-unsafe path (traversal, absolute,
+// encoded separator, null byte). Same copy for every reason so a probe can't map the
+// guard by the message; the code stays machine-readable.
+const UNSAFE_PATH_ERROR = {
+  code: 'invalid_path',
+  message: 'Ungültiger Dateipfad. Bitte einen einfachen projektinternen Pfad angeben (z.B. index.html oder css/app.css).',
+} as const;
+
 // ─── The tool implementations ───────────────────────────────────────────────────
 
 async function toolListFiles(sb: Sb, ctx: ToolContext): Promise<ToolResult> {
@@ -200,8 +209,14 @@ async function toolListFiles(sb: Sb, ctx: ToolContext): Promise<ToolResult> {
 }
 
 async function toolReadFile(sb: Sb, ctx: ToolContext, args: Record<string, unknown>): Promise<ToolResult> {
-  const path = typeof args.path === 'string' ? args.path.trim() : '';
-  if (!path) return { ok: false, summary: 'Pfad fehlt', error: { code: 'bad_args', message: 'path erforderlich' } };
+  const raw = typeof args.path === 'string' ? args.path.trim() : '';
+  if (!raw) return { ok: false, summary: 'Pfad fehlt', error: { code: 'bad_args', message: 'path erforderlich' } };
+  // D-1: canonicalize + reject any path that could escape the project prefix.
+  const checked = checkProjectPath(raw);
+  if (!checked.ok || !checked.path) {
+    return { ok: false, summary: `${raw} · ungültiger Pfad`, error: { ...UNSAFE_PATH_ERROR } };
+  }
+  const path = checked.path;
   if (isSoftDeletedPath(path)) {
     return { ok: false, summary: `${path} · gelöscht`, error: { code: 'not_found', message: 'Datei ist gelöscht' } };
   }
@@ -226,11 +241,30 @@ function badge(status: 'new' | 'changed' | 'identical'): 'NEU' | 'GEÄNDERT' | '
 }
 
 async function toolWriteFile(sb: Sb, ctx: ToolContext, args: Record<string, unknown>): Promise<ToolResult> {
-  const path = typeof args.path === 'string' ? args.path.trim() : '';
+  const raw = typeof args.path === 'string' ? args.path.trim() : '';
   const content = typeof args.content === 'string' ? args.content : '';
-  if (!path) return { ok: false, summary: 'Pfad fehlt', error: { code: 'bad_args', message: 'path erforderlich' } };
-  if (content.length > 500_000) {
-    return { ok: false, summary: `${path} · zu gross`, error: { code: 'too_large', message: 'Inhalt über 500k Zeichen' } };
+  if (!raw) return { ok: false, summary: 'Pfad fehlt', error: { code: 'bad_args', message: 'path erforderlich' } };
+  // D-1: canonicalize + reject traversal/absolute/encoded/null-byte paths BEFORE any
+  // storage touch, so a run can never write outside its own project prefix.
+  const checked = checkProjectPath(raw);
+  if (!checked.ok || !checked.path) {
+    return { ok: false, summary: `${raw} · ungültiger Pfad`, error: { ...UNSAFE_PATH_ERROR } };
+  }
+  const path = checked.path;
+  // D-1: secret/control files (.env, .git/*, credentials) may never be written into a
+  // project — they would leak once deployed or subvert the build. Honest, specific copy.
+  if (isForbiddenWriteTarget(path)) {
+    return {
+      ok: false,
+      summary: `${path} · nicht erlaubt`,
+      error: {
+        code: 'forbidden_file',
+        message: 'Diese Datei darf nicht angelegt werden (Secret- oder Plattform-Datei wie .env oder .git). Wähle einen anderen Dateinamen.',
+      },
+    };
+  }
+  if (content.length > WRITE_FILE_MAX_CHARS) {
+    return { ok: false, summary: `${path} · zu gross`, error: { code: 'too_large', message: `Inhalt über ${WRITE_FILE_MAX_CHARS / 1000}k Zeichen` } };
   }
 
   // U2 classify against the CURRENT content (real ground truth for the report).
