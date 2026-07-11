@@ -85,6 +85,20 @@ merge, no local stack. Evidence in `_sprint/wave-a/`.
 - **BLOCKED-pending-env:** live desktop-Chrome subscribe→run→receive needs VAPID keys, which
   **must not transit this session**. Founder setup + honest support matrix in
   `A5_PUSH_FOUNDER_SETUP.md`. iOS PWA push = founder acceptance item.
+- **Silent degradation while VAPID env absent — CONFIRMED (code-verified):** with
+  `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY` unset the push wiring is a **no-op, never a crash
+  and never a false "sent"**:
+  - `notifications.ts:20` — `webpush.setVapidDetails` is called ONLY when both keys exist.
+  - `notifyAgentRunFinished` (`:232`) returns immediately if either key is absent; the whole
+    body is wrapped in try/catch (`:265`) and the route invokes it fire-and-forget
+    (`void notifyAgentRunFinished(...)`), so a run finish is unaffected either way.
+  - `sendPushNotification` (`:274`) logs one warn and returns; `/test` + `/send` return a
+    clean 500 "not configured" rather than throwing.
+  - Client `usePushNotifications.subscribe` (`usePushNotifications.ts:57`) logs and returns
+    when `NEXT_PUBLIC_VAPID_KEY` is unset — no throw; the settings toggle wraps it in
+    try/finally so the UI never breaks. The `notify_build_complete` toggle still persists.
+  Net: keys absent → nothing is sent, nothing errors; keys present → sends resume with no
+  code change.
 
 ### Settings riders (founder-ratified)
 - **Remove `memory_enabled` placebo:** confirmed it was stored/returned but **never read to
