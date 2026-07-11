@@ -1,6 +1,33 @@
 import { useCallback, useRef, useState } from 'react';
-import { apiStream } from '@/lib/api';
+import { apiStream, API_URL, getAuthHeaders } from '@/lib/api';
 import { friendlyError } from '@/lib/friendly-error';
+
+/**
+ * A-6: fetch a run's persisted report card. After a stop mid-run the SSE closes before the
+ * agent_report frame arrives; the server has still finalized a truthful partial report, so
+ * we recover it here. Returns null on 204 (no report persisted yet — pre-0088 / not
+ * finalized) or any error — the caller then falls back to whatever it already has.
+ */
+async function fetchRunReport(sessionId: string, runId: string): Promise<AgentReport | null> {
+  // The server finalizes the run (writing the report) just AFTER the abort races the SSE
+  // close, so a 204 can mean "not written yet". Retry a few times with backoff before
+  // giving up — bounded, so a genuinely report-less run resolves quickly to null.
+  for (let attempt = 0; attempt < 4; attempt++) {
+    try {
+      const headers = await getAuthHeaders();
+      const res = await fetch(`${API_URL}/api/code-sessions/${sessionId}/runs/${runId}/report`, { headers });
+      if (res.status === 200) {
+        const d = (await res.json()) as { report?: AgentReport };
+        return d.report ?? null;
+      }
+      if (res.status !== 204) return null; // 404/403 etc. — nothing to recover
+    } catch {
+      return null;
+    }
+    await new Promise((r) => setTimeout(r, 500 * (attempt + 1)));
+  }
+  return null;
+}
 
 /** One rendered tool step — mirrors the server's agent_step event + a wall clock. */
 export interface AgentStep {
@@ -48,12 +75,15 @@ export function useAgentRun(sessionId: string | null) {
   const [streaming, setStreaming] = useState(false);
   const [steps, setSteps] = useState<AgentStep[]>([]);
   const [narration, setNarration] = useState<string>('');
+  // A-4 (plan mode): the narrated plan for a mehrschrittige run, rendered as a distinct
+  // step above the tool steps. Null on trivial runs (the model never planned).
+  const [plan, setPlan] = useState<string[] | null>(null);
   const [report, setReport] = useState<AgentReport | null>(null);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   const reset = useCallback(() => {
-    setSteps([]); setNarration(''); setReport(null); setError(null);
+    setSteps([]); setNarration(''); setPlan(null); setReport(null); setError(null);
   }, []);
 
   const submit = useCallback(async (prompt: string, modelId: string | undefined, opts?: SubmitOpts) => {
@@ -62,9 +92,11 @@ export function useAgentRun(sessionId: string | null) {
     setError(null);
     setSteps([]);
     setNarration('');
+    setPlan(null);
     setReport(null);
     abortRef.current = new AbortController();
     let finalReport: AgentReport | null = null;
+    let runId: string | null = null;
 
     try {
       await apiStream(
@@ -78,11 +110,18 @@ export function useAgentRun(sessionId: string | null) {
             summary?: string;
             ok?: boolean;
             ms?: number;
+            steps?: string[];
             report?: AgentReport;
+            run_id?: string | null;
             message?: string;
           };
-          if (d.type === 'agent_narration') {
+          if (d.type === 'meta') {
+            // A-6: capture the run id so a stop/abort can recover the report via REST.
+            runId = d.run_id ?? null;
+          } else if (d.type === 'agent_narration') {
             setNarration(d.text ?? '');
+          } else if (d.type === 'agent_plan') {
+            setPlan(d.steps ?? null);
           } else if (d.type === 'agent_step') {
             setSteps((prev) => [...prev, { tool: d.tool ?? '', summary: d.summary ?? '', ok: d.ok ?? true, ms: d.ms ?? 0 }]);
           } else if (d.type === 'agent_report') {
@@ -108,11 +147,18 @@ export function useAgentRun(sessionId: string | null) {
         opts?.onNotEligible?.();
         return;
       }
-      if ((e as Error)?.name !== 'AbortError') {
+      const aborted = (e as Error)?.name === 'AbortError';
+      if (!aborted) {
         setError(friendlyError(e, 'Server nicht erreichbar — nochmal versuchen?'));
       }
       setStreaming(false);
-      // A stop mid-run still leaves the partial report the stream already delivered.
+      // A-6: a stop mid-run closes the SSE before the agent_report frame arrives. The
+      // server has finalized a truthful partial report — recover it via REST so the card
+      // renders reliably, not "only by luck". Only when we didn't already get one.
+      if (!finalReport && runId) {
+        const recovered = await fetchRunReport(sessionId, runId);
+        if (recovered) { finalReport = recovered; setReport(recovered); }
+      }
       await opts?.onDone?.(finalReport);
     }
   }, [sessionId, reset]);
@@ -122,5 +168,5 @@ export function useAgentRun(sessionId: string | null) {
     setStreaming(false);
   }, []);
 
-  return { streaming, steps, narration, report, error, submit, cancel, reset };
+  return { streaming, steps, narration, plan, report, error, submit, cancel, reset };
 }

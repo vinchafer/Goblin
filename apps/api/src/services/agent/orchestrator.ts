@@ -223,6 +223,7 @@ export async function runAgent(input: RunAgentInput): Promise<RunResult> {
   let repairsUsed = 0;
   let mixedRepairsUsed = 0;
   let healCycles = 0;
+  let planEmitted = false;
   let modelText = '';
   let outcome: RunOutcome | null = null;
   let failureReason: string | undefined;
@@ -312,6 +313,26 @@ export async function runAgent(input: RunAgentInput): Promise<RunResult> {
         outcome = 'finished';
         terminated = true;
         break;
+      }
+
+      // A-4 plan mode: control-flow, like finish — no service call. The model narrates a
+      // short plan for a mehrschrittige Aufgabe; we emit it as a DISTINCT step, ack it so
+      // the loop continues (announce-then-act, NO approval wait), and move on. It never
+      // terminates the run, never counts as a heal cycle, and is emitted at most once —
+      // a repeated plan call is acknowledged but not re-rendered, so no plan loop forms.
+      if (call.name === 'plan') {
+        const planSteps = Array.isArray(call.args?.steps)
+          ? (call.args.steps as unknown[]).map((s) => String(s)).filter((s) => s.trim())
+          : [];
+        const planResult: ToolResult = { ok: true, summary: 'Plan aufgestellt', data: { steps: planSteps } };
+        toolsUsed.add('plan');
+        steps.push({ tool: 'plan', args: `${planSteps.length} Schritte`, outcome: 'ok', ms: 0 });
+        if (!planEmitted && planSteps.length > 0) {
+          planEmitted = true;
+          await input.emit({ type: 'agent_plan', steps: planSteps });
+        }
+        messages.push(toolResultMessage(call, planResult, model.supportsNativeTools));
+        continue; // next turn — the model now starts executing its plan
       }
 
       // FEEL-3b D1: publish is orchestrator-gated. Without an intent grant it never

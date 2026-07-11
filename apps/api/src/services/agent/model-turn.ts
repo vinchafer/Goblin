@@ -84,7 +84,16 @@ export function nativeGoblinModel(tierId: GoblinTierId): AgentModel {
             tools: toOpenAITools(tools),
             tool_choice: 'auto',
             max_tokens: GOBLIN_MAX_TOKENS_PER_REQUEST,
-          },
+            // A-1 (TTFT): DeepInfra prompt caching is automatic and prefix-based, so
+            // the byte-stable static prefix built by buildAgentSystemPrompt (identity →
+            // ABSOLUTE rules → tool docs → few-shots, all BEFORE the dynamic project/
+            // user tail) is what actually earns the cache hit. `prompt_cache_key` is
+            // DeepInfra's optional hint that raises the hit rate for prompts sharing the
+            // same logical prefix; we key it per tier so every agent turn on a tier
+            // targets the same warm prefix. Passed as an extra body field (not yet in
+            // the SDK's typed params). Docs: docs.deepinfra.com/chat/prompt-caching.
+            prompt_cache_key: `goblin-agent:${tierId}`,
+          } as OpenAI.Chat.Completions.ChatCompletionCreateParamsNonStreaming & { prompt_cache_key: string },
           { signal },
         );
       } catch (err) {

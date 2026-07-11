@@ -214,6 +214,58 @@ notifications.post('/send', async (c) => {
   return c.json({ sent });
 });
 
+/**
+ * A-5 (WAVE-A) — "dein Ping vom Strand". Push the outcome of an agent run to the user's
+ * devices so they don't have to babysit the tab. Two content variants over one send:
+ *   • publish verified → "Deine App ist live ✓" + the VERIFIED url (attested by the
+ *     truth-gate; we never invent one — url is passed only when the report is published);
+ *   • run finished     → "Goblin ist fertig" + a short, honest outcome line.
+ * Gated by the user's notify_build_complete preference (default true). Fire-and-forget and
+ * best-effort: no VAPID keys, no subscription, or the toggle off → silent no-op. Never
+ * throws into the run's finalize path.
+ */
+export async function notifyAgentRunFinished(
+  userId: string,
+  run: { outcome: 'finished' | 'stopped' | 'budget' | 'error'; publishedUrl?: string | null; projectName?: string | null },
+): Promise<void> {
+  try {
+    if (!vapidPublicKey || !vapidPrivateKey) return; // key-agnostic: nothing to send without VAPID
+    const supabase = getSupabase();
+    // Respect the notify_build_complete toggle (the Benachrichtigungen surface). The
+    // preference columns live on public.users (migration 0048). Absent row / column →
+    // treat as opted-in (the column defaults true).
+    const { data: pref } = await supabase
+      .from('users')
+      .select('notify_build_complete')
+      .eq('id', userId)
+      .maybeSingle();
+    if (pref && pref.notify_build_complete === false) return;
+
+    const proj = run.projectName ? ` (${run.projectName})` : '';
+    let title: string;
+    let body: string;
+    let url = '/dashboard';
+    if (run.publishedUrl) {
+      title = 'Deine App ist live ✓';
+      body = `Veröffentlicht und geprüft${proj}.`;
+      url = run.publishedUrl;
+    } else {
+      title = 'Goblin ist fertig';
+      body =
+        run.outcome === 'finished'
+          ? `Deine Aufgabe ist erledigt${proj}.`
+          : run.outcome === 'stopped'
+            ? `Gestoppt — dein Teilstand ist gesichert${proj}.`
+            : run.outcome === 'budget'
+              ? `Pausiert — das Budget war erreicht${proj}. Schreib „weiter“, dann mache ich weiter.`
+              : `Das hat nicht geklappt${proj} — ich habe nichts kaputt gemacht. Schau im Chat nach.`;
+    }
+    await sendPushNotification(userId, { title, body, url });
+  } catch (err) {
+    console.warn('notifyAgentRunFinished failed:', (err as Error).message);
+  }
+}
+
 // Service function exported for use by other route modules
 export async function sendPushNotification(
   userId: string,

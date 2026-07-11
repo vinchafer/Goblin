@@ -6,6 +6,7 @@ import { SettingsCard } from '../ui/SettingsCard';
 import { SettingsGroup } from '../ui/SettingsGroup';
 import { SettingsRow } from '../ui/SettingsRow';
 import { useLang, t } from '@/lib/use-lang';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 
 // Honesty sprint (F3): notifications used to live in TWO places over TWO stores —
 // here (localStorage `goblin-notif-prefs`) and Personalisierung (server
@@ -38,6 +39,10 @@ export function NotificationsPage() {
   });
   const [loaded, setLoaded] = useState(false);
   const [pushPermission, setPushPermission] = useState<NotificationPermission>('default');
+  const [pushBusy, setPushBusy] = useState(false);
+  // WAVE-A rider: the push toggle is now REAL — it creates/removes an actual web-push
+  // subscription (the row the agent-run push send reads), not just a permission prompt.
+  const { subscribe, unsubscribe, isSubscribed, isSupported } = usePushNotifications();
 
   useEffect(() => {
     if (typeof Notification !== 'undefined') setPushPermission(Notification.permission);
@@ -73,9 +78,16 @@ export function NotificationsPage() {
   }
 
   async function togglePush(v: boolean) {
-    if (v && pushPermission !== 'granted' && typeof Notification !== 'undefined') {
-      const res = await Notification.requestPermission();
-      setPushPermission(res);
+    setPushBusy(true);
+    try {
+      if (v) {
+        await subscribe(); // requests permission + registers the SW + stores the subscription
+      } else {
+        await unsubscribe();
+      }
+      if (typeof Notification !== 'undefined') setPushPermission(Notification.permission);
+    } finally {
+      setPushBusy(false);
     }
   }
 
@@ -86,9 +98,9 @@ export function NotificationsPage() {
           <SettingsRow
             label={t(lang, 'Push-Benachrichtigungen', 'Push notifications')}
             rightVariant="toggle"
-            value={pushPermission === 'granted'}
+            value={isSubscribed}
             onChange={togglePush}
-            disabled={pushPermission === 'denied'}
+            disabled={pushBusy || !isSupported || pushPermission === 'denied'}
           />
           <SettingsRow
             label={t(lang, 'Build abgeschlossen', 'Build complete')}
@@ -119,6 +131,13 @@ export function NotificationsPage() {
           {t(lang, 'Push wurde im Browser blockiert. Aktiviere es in den Browser-Einstellungen.', 'Push is blocked in your browser. Enable it in your browser settings.')}
         </p>
       )}
+
+      {/* Honest support matrix (spec): iOS web push works only for an installed PWA. */}
+      <p style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--text-meta)', marginTop: 12, padding: '0 4px', lineHeight: 1.5 }}>
+        {t(lang,
+          'Push funktioniert in Chrome, Edge und Firefox (Desktop) sowie Android-Chrome. Auf iPhone/iPad nur, wenn du Goblin über „Zum Home-Bildschirm" installierst (iOS 16.4+).',
+          'Push works in Chrome, Edge and Firefox (desktop) and Android Chrome. On iPhone/iPad it works only if you install Goblin via "Add to Home Screen" (iOS 16.4+).')}
+      </p>
     </div>
   );
 }

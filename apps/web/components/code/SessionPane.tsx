@@ -40,6 +40,7 @@ import { useCodeSessionDetail } from "@/hooks/code/useCodeSessionDetail";
 import { useCodeAgent } from "@/hooks/code/useCodeAgent";
 import { useAgentRun } from "@/hooks/code/useAgentRun";
 import { AgentRunView } from "./AgentRunView";
+import { NotifyJitOffer } from "./NotifyJitOffer";
 import { FeedbackModal } from "@/components/feedback/FeedbackModal";
 import { SupportChat } from "@/components/support/support-chat";
 import { isAgentModel } from "@/lib/agent-eligible";
@@ -255,6 +256,18 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
     const iv = setInterval(() => setWorkingSeconds(Math.max(0, Math.floor((Date.now() - startedAt) / 1000))), 1000);
     return () => clearInterval(iv);
   }, [agent.streaming, agentRun.streaming]);
+
+  // A-5 JIT: remember how long the last AGENT run took, so we only offer the
+  // notification ask after a genuinely long wait (not on a 3-second trivial edit).
+  const [lastAgentRunSeconds, setLastAgentRunSeconds] = useState(0);
+  const agentRunStartRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (agentRun.streaming) { agentRunStartRef.current = Date.now(); }
+    else if (agentRunStartRef.current != null) {
+      setLastAgentRunSeconds(Math.floor((Date.now() - agentRunStartRef.current) / 1000));
+      agentRunStartRef.current = null;
+    }
+  }, [agentRun.streaming]);
 
   // Any streaming work in flight (classic or agent) — drives the composer's
   // busy/cancel affordances so Stopp ends whichever path is running.
@@ -657,6 +670,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
           streaming={agentRun.streaming}
           steps={agentRun.steps}
           narration={agentRun.narration}
+          plan={agentRun.plan}
           report={agentRun.report}
           elapsedSeconds={agentRun.streaming ? (workingSeconds ?? 0) : null}
           onViewChanges={(p) => handleViewFile(p)}
@@ -665,6 +679,8 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
           onOpen={() => { const u = agentRun.report?.publishedUrl ?? liveUrl ?? detail.deployUrl; if (u) window.open(u, "_blank", "noopener"); }}
           onFeedback={() => setFeedbackOpen(true)}
         />
+        {/* A-5 JIT: after a genuinely long agent run, offer push once, right here. */}
+        <NotifyJitOffer trigger={!agentRun.streaming && !!agentRun.report && lastAgentRunSeconds >= 15} />
         {(agent.error || agentRun.error) && (() => {
           const err = agent.error || agentRun.error || "";
           // WAVE-J J4: the trial/limit wall today is this inline error. On a
@@ -745,6 +761,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
                   streaming={agentRun.streaming}
                   steps={agentRun.steps}
                   narration={agentRun.narration}
+                  plan={agentRun.plan}
                   report={agentRun.report}
                   elapsedSeconds={agentRun.streaming ? (workingSeconds ?? 0) : null}
                   onViewChanges={(p) => handleViewFile(p)}

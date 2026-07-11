@@ -71,7 +71,7 @@ describe('run-store — A1 agent_runs persistence', () => {
     expect(id).toBeNull();
   });
 
-  it('finalize writes the 0081 log columns when they exist', async () => {
+  it('finalize writes the 0081 log columns + the A-6 0088 report card when they exist', async () => {
     await finalizeAgentRun('run-1', {
       status: 'success',
       outcome: 'finished',
@@ -83,6 +83,7 @@ describe('run-store — A1 agent_runs persistence', () => {
         { tool: 'read_file', args: 'index.html', outcome: 'ok', ms: 12 },
         { tool: 'write_file', args: 'script.js · GEÄNDERT +14 −2', outcome: 'ok', ms: 30 },
       ],
+      report: { state: 'draft-saved', files: [], modelText: 'Fertig.' },
     });
     expect(updated).toHaveLength(1);
     expect(updated[0]).toMatchObject({
@@ -94,11 +95,38 @@ describe('run-store — A1 agent_runs persistence', () => {
     });
     expect(updated[0]!.tools_used).toEqual(['read_file', 'write_file', 'save_draft', 'finish']);
     expect((updated[0]!.step_log as unknown[])).toHaveLength(2);
+    // A-6: the report card is persisted so a stop/abort can recover it via REST.
+    expect(updated[0]!.report).toMatchObject({ state: 'draft-saved', modelText: 'Fertig.' });
   });
 
-  it('finalize retries with the bare lifecycle update when 0081 columns are absent — pre-migration tolerant', async () => {
-    // First update (with the log columns) errors as if pre-0081; retry must keep the row.
-    updateResults = [{ error: { message: 'column "step_log" does not exist' } }, { error: null }];
+  it('finalize drops ONLY the 0088 report column when it is absent — keeps the 0081 log (pre-0088 tolerant)', async () => {
+    // First update (with report) errors as if pre-0088; the retry keeps the 0081 log,
+    // dropping only report, so a pre-0088 DB still records the full step log.
+    updateResults = [{ error: { message: 'column "report" does not exist' } }, { error: null }];
+    await finalizeAgentRun('run-1', {
+      status: 'success',
+      outcome: 'finished',
+      iterations: 2,
+      toolsUsed: ['write_file'],
+      steps: [{ tool: 'write_file', args: 'index.html · NEU', outcome: 'ok', ms: 8 }],
+      report: { state: 'draft-saved', files: [], modelText: 'x' },
+    });
+    expect(updated).toHaveLength(2);
+    expect(updated[0]).toHaveProperty('report');
+    // The retry keeps the 0081 columns but drops report.
+    expect(updated[1]).toHaveProperty('step_log');
+    expect(updated[1]).toHaveProperty('outcome', 'finished');
+    expect(updated[1]).not.toHaveProperty('report');
+  });
+
+  it('finalize falls back to the bare lifecycle update when 0081 columns are absent — pre-migration tolerant', async () => {
+    // 3-tier fallback: full(0081+report) errors, keep-log(0081, no report) still errors as
+    // if pre-0081, then the bare lifecycle update keeps the row.
+    updateResults = [
+      { error: { message: 'column "report" does not exist' } },
+      { error: { message: 'column "step_log" does not exist' } },
+      { error: null },
+    ];
     await finalizeAgentRun('run-1', {
       status: 'success',
       outcome: 'budget',
@@ -107,17 +135,21 @@ describe('run-store — A1 agent_runs persistence', () => {
       iterations: 8,
       toolsUsed: ['list_files'],
       steps: [{ tool: 'list_files', args: '', outcome: 'ok', ms: 3 }],
+      report: { state: 'stopped', files: [], modelText: '' },
     });
-    expect(updated).toHaveLength(2);
-    // First attempt carried the 0081 columns...
+    expect(updated).toHaveLength(3);
+    // First attempt carried report + the 0081 columns...
+    expect(updated[0]).toHaveProperty('report');
     expect(updated[0]).toHaveProperty('step_log');
-    expect(updated[0]).toHaveProperty('outcome', 'budget');
-    // ...the fallback dropped them entirely, keeping only the lifecycle fields.
-    expect(updated[1]).not.toHaveProperty('step_log');
-    expect(updated[1]).not.toHaveProperty('outcome');
-    expect(updated[1]).not.toHaveProperty('tools_used');
-    expect(updated[1]).toMatchObject({ status: 'success', input_tokens: 5, output_tokens: 5 });
-    expect(updated[1]).toHaveProperty('completed_at');
+    // ...the keep-log retry dropped report but kept the 0081 columns...
+    expect(updated[1]).not.toHaveProperty('report');
+    expect(updated[1]).toHaveProperty('step_log');
+    // ...the final fallback dropped everything but the lifecycle fields.
+    expect(updated[2]).not.toHaveProperty('step_log');
+    expect(updated[2]).not.toHaveProperty('outcome');
+    expect(updated[2]).not.toHaveProperty('tools_used');
+    expect(updated[2]).toMatchObject({ status: 'success', input_tokens: 5, output_tokens: 5 });
+    expect(updated[2]).toHaveProperty('completed_at');
   });
 
   it('finalize on an empty runId is a no-op', async () => {

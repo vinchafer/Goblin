@@ -512,7 +512,10 @@ const PreferencesSchema = z.object({
   notify_build_complete: z.boolean().optional(),
   notify_important_updates: z.boolean().optional(),
   notify_email: z.boolean().optional(),
-  memory_enabled: z.boolean().optional(),
+  // WAVE-A settings rider: memory_enabled was a placebo (stored, never read to gate any
+  // behavior — the rolling project memory runs regardless), superseded by the real
+  // per-project memory control (FEEL-4). Removed from the API surface; column dropped in
+  // migration 0089 (authored).
   // F4.2 ("Wie Goblin arbeitet"). Columns land in migration 0082 (authored, not
   // yet applied) — the PUT below is tolerant so saving prefs never 500s pre-apply.
   pref_address_name: z.string().max(80).optional().nullable(),
@@ -530,13 +533,13 @@ account.get('/preferences', authMiddleware, async (c) => {
   // Try with the F4.2 columns; fall back to the legacy set if 0082 isn't applied.
   const full = await supabase
     .from('users')
-    .select('custom_instructions, locale, timezone, notify_build_complete, notify_important_updates, notify_email, memory_enabled, pref_address_name, pref_response_style, pref_explain_changes')
+    .select('custom_instructions, locale, timezone, notify_build_complete, notify_important_updates, notify_email, pref_address_name, pref_response_style, pref_explain_changes')
     .eq('id', userId)
     .maybeSingle();
   if (!full.error) return c.json(full.data ?? {});
   const legacy = await supabase
     .from('users')
-    .select('custom_instructions, locale, timezone, notify_build_complete, notify_important_updates, notify_email, memory_enabled')
+    .select('custom_instructions, locale, timezone, notify_build_complete, notify_important_updates, notify_email')
     .eq('id', userId)
     .maybeSingle();
   if (legacy.error) return c.json({ error: 'Lookup failed' }, 500);

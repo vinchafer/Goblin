@@ -39,6 +39,13 @@ export interface FinalizeRunInput {
   steps: RunStep[];
   toolsUsed: string[];
   iterations: number;
+  /**
+   * A-6: the orchestrator's assembled report card (ReportCard). Persisted so the client
+   * can re-fetch it after a stop/abort closed the SSE before the agent_report frame
+   * landed. Optional + pre-migration tolerant (0088) — dropped from the update if the
+   * column is absent, never dropping the run row.
+   */
+  report?: unknown;
 }
 
 /**
@@ -87,18 +94,24 @@ export async function finalizeAgentRun(runId: string, input: FinalizeRunInput): 
   };
   try {
     const sb = getSupabaseAdmin();
-    const { error } = await sb
-      .from('agent_runs')
-      .update({
-        ...base,
-        outcome: input.outcome,
-        iterations: input.iterations,
-        tools_used: input.toolsUsed,
-        step_log: input.steps,
-      })
-      .eq('id', runId);
+    // Richest write: 0081 log columns + the 0088 report card.
+    const full = {
+      ...base,
+      outcome: input.outcome,
+      iterations: input.iterations,
+      tools_used: input.toolsUsed,
+      step_log: input.steps,
+      ...(input.report !== undefined ? { report: input.report } : {}),
+    };
+    const { error } = await sb.from('agent_runs').update(full).eq('id', runId);
     if (error) {
-      await sb.from('agent_runs').update(base).eq('id', runId);
+      // Retry WITHOUT the 0088 report column (pre-0088 DB) but keep the 0081 log.
+      const { error: e2 } = await sb
+        .from('agent_runs')
+        .update({ ...base, outcome: input.outcome, iterations: input.iterations, tools_used: input.toolsUsed, step_log: input.steps })
+        .eq('id', runId);
+      // Last resort: bare lifecycle (pre-0081 DB).
+      if (e2) await sb.from('agent_runs').update(base).eq('id', runId);
     }
   } catch (e) {
     logger.warn({ err: (e as Error).message, runId }, 'agent_run_finalize_failed');

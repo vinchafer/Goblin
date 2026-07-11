@@ -40,6 +40,31 @@ import {
 
 export const AGENT_TOOLS: ToolSpec[] = [
   {
+    // A-4 (plan mode): control-flow, intercepted by the orchestrator (no service call).
+    // The model calls this ONCE, as its FIRST action, only for a mehrschrittige/mehrdeutige
+    // Aufgabe — to narrate a short plan before it starts building. It does NOT wait for
+    // approval (announce-then-act); the loop emits the plan as a distinct step and the
+    // model proceeds straight to the tools. Trivial single edits skip it entirely.
+    name: 'plan',
+    description:
+      'NUR bei einer mehrschrittigen oder mehrdeutigen Aufgabe: nenne als ERSTES einen kurzen Plan ' +
+      '(2–5 knappe Schritte), BEVOR du Werkzeuge benutzt. Du wartest NICHT auf Bestätigung — direkt ' +
+      'nach dem Plan fängst du an zu bauen. Bei einer einfachen, eindeutigen Einzeländerung rufe plan ' +
+      'NICHT auf, sondern handle sofort.',
+    parameters: {
+      type: 'object',
+      properties: {
+        steps: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Die geplanten Schritte, je einer kurz, z.B. ["settings.html anlegen", "Toggle-Logik", "live stellen"]',
+        },
+      },
+      required: ['steps'],
+      additionalProperties: false,
+    },
+  },
+  {
     name: 'list_files',
     description:
       'Listet alle Dateien des Projekts (ohne gelöschte). Nutze dies zur Orientierung, ' +
