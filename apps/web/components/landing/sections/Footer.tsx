@@ -103,6 +103,7 @@ export function Footer() {
           <div className="footer-col">
             <div className="header">Legal</div>
             <a href="/terms">Terms</a>
+            <a href="/acceptable-use">Acceptable Use</a>
             <a href="/privacy">Privacy</a>
             <a href="/imprint">Imprint</a>
           </div>

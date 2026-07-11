@@ -602,6 +602,8 @@ export default function LoginPage() {
                   <span>
                     I agree to the{' '}
                     <a href="/terms" style={{ color: 'var(--brand-green)', textDecoration: 'none' }}>Terms</a>
+                    {', '}
+                    <a href="/acceptable-use" style={{ color: 'var(--brand-green)', textDecoration: 'none' }}>Acceptable Use</a>
                     {' '}and{' '}
                     <a href="/privacy" style={{ color: 'var(--brand-green)', textDecoration: 'none' }}>Privacy Policy</a>
                   </span>
@@ -666,6 +668,8 @@ export default function LoginPage() {
           }}>
             By continuing you agree to our{' '}
             <a href="/terms" style={{ color: 'var(--meta)', textDecoration: 'none' }}>Terms</a>
+            {' · '}
+            <a href="/acceptable-use" style={{ color: 'var(--meta)', textDecoration: 'none' }}>Acceptable Use</a>
             {' · '}
             <a href="/privacy" style={{ color: 'var(--meta)', textDecoration: 'none' }}>Privacy</a>
           </p>

@@ -25,7 +25,7 @@ export default function LegalLayout({ children }: { children: ReactNode }) {
           © 2026 Goblin
         </span>
         <nav style={{ display: 'flex', gap: 16 }}>
-          {[['Terms', '/terms'], ['Privacy', '/privacy'], ['Imprint', '/imprint']].map(([label, href]) => (
+          {[['Terms', '/terms'], ['Nutzung', '/acceptable-use'], ['Privacy', '/privacy'], ['Imprint', '/imprint']].map(([label, href]) => (
             <Link
               key={href}
               href={href!}
