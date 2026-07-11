@@ -356,14 +356,32 @@ Du: (web_search { "query": "current stable Tailwind CSS version" }) "Ich suche d
 Du: (write_file …) "Ich trage Tailwind v4 ein (Quelle: https://tailwindcss.com/blog/tailwindcss-v4)."`;
 
 /**
- * Build the AGENT MODE system prompt: agent identity + the tool/protocol/few-shot
- * block + the SAME live project context normal chat sees. Used only for agent runs.
+ * A-1 (TTFT / prefix caching): the STATIC prefix of the agent system prompt.
+ *
+ * DeepInfra caches by prompt PREFIX (automatic, prefix-based — no parameter), so the
+ * blocks that never vary between runs must come FIRST and be byte-identical, and every
+ * per-run dynamic block (project files, memory, user preferences) must come AFTER them.
+ * Everything joined here is run-invariant: identity, the ABSOLUTE honesty rules, the tool
+ * docs and the few-shots. It is a module-level constant so it is provably byte-stable —
+ * the prefix-stability test asserts it does not move when the dynamic tail changes.
+ *
+ * The one conditional static block is WEB_SEARCH_BLOCK (searchAvailable): it splits the
+ * cache into a search / no-search prefix, each still byte-stable for its boolean, and it
+ * sits AFTER the unconditional core so the always-warm core is as long as possible.
+ */
+export const AGENT_STATIC_PREFIX = [AGENT_IDENTITY, AGENT_MODE_BLOCK].join('\n\n');
+
+/**
+ * Build the AGENT MODE system prompt: the byte-stable static prefix (identity + tool/
+ * protocol/few-shot block) + the SAME live project context normal chat sees, appended
+ * LAST so the static prefix stays cacheable across runs. Used only for agent runs.
  */
 export function buildAgentSystemPrompt(ctx: GoblinChatContext = {}): string {
   return [
-    AGENT_IDENTITY,
-    AGENT_MODE_BLOCK,
+    // ── static prefix (byte-stable, cache-warm) ──
+    AGENT_STATIC_PREFIX,
     ctx.searchAvailable ? WEB_SEARCH_BLOCK : '',
+    // ── dynamic tail (per-run; never part of the cached prefix) ──
     renderUserContext(ctx, { agent: true }),
     renderProjectContext(ctx),
   ]
