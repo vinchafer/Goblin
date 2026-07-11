@@ -23,16 +23,19 @@ test.describe('9C — Help cleanup (BUG-014, BUG-015)', { tag: '@auth' }, () => 
     await expect(menu.getByText('Hilfe', { exact: true }).first()).toBeVisible();
   });
 
-  test('/help page renders FAQ + email CTA', async ({ page }) => {
+  test('/help page renders the article index + email CTA', async ({ page }) => {
     await page.goto('/help');
     await page.waitForLoadState('domcontentloaded');
 
-    // /help is bilingual (useLang); an unauthenticated visit defaults to German, so
-    // assert the CONTRACT — a top heading, the first FAQ question (either language),
-    // and a real support contact — by structure/role, language-agnostic, so neither
-    // a copy tweak nor the DE/EN default re-breaks this.
+    // WAVE-J (e9ce1c0) redesigned /help: it is no longer a flat FAQ list but an
+    // ARTICLE INDEX (HELP_ARTICLES → /help/<slug> cards) plus a help-agent CTA. This
+    // spec previously asserted the old FAQ question ("Was ist Goblin?"), which now
+    // lives inside the articles, not on the index — a stale expectation, not a page
+    // bug. Assert the real CONTRACT by structure/role (language-agnostic — /help is
+    // bilingual and defaults to German unauthenticated): a top heading, at least one
+    // article link into /help/<slug>, and a real support contact.
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
-    await expect(page.getByText(/Was ist Goblin\?|What is Goblin\?/i).first()).toBeVisible();
+    await expect(page.locator('a[href^="/help/"]').first()).toBeVisible();
     await expect(page.getByRole('link', { name: /support@justgoblin\.com/i })).toBeVisible();
   });
 });
