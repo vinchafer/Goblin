@@ -10,6 +10,7 @@ import { loadUserPreferences } from '../services/user-preferences';
 import { authMiddleware } from '../middleware/auth';
 import { chatStreamRateLimit } from '../middleware/rate-limit';
 import { trackEvent } from '../lib/platform-events';
+import { scrubString } from '../lib/scrub-secrets';
 
 type Variables = { userId: string }
 const chat = new Hono<{ Variables: Variables }>();
@@ -249,7 +250,7 @@ chat.post('/stream', chatStreamRateLimit, async (c) => {
             .insert({
               project_id: projectId,
               role: 'assistant',
-              content: fullResponse,
+              content: scrubString(fullResponse),
               model_used: currentModel,
               source_tier: currentSourceTier,
             })
@@ -279,7 +280,7 @@ chat.post('/stream', chatStreamRateLimit, async (c) => {
         .insert({
           project_id: projectId,
           role: 'assistant',
-          content: fullResponse,
+          content: scrubString(fullResponse),
           model_used: currentModel,
           source_tier: currentSourceTier,
         })
