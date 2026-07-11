@@ -125,12 +125,12 @@ export default function AcceptableUsePage() {
         <ul style={{ paddingLeft: 20, listStyle: "disc" }}>
           <li style={LI}>
             <strong style={{ color: "var(--ink-2)" }}>Phishing, credential harvesting &amp; brand impersonation.</strong>{" "}
-            No pages that capture credentials — including by imitating a known brand's login. A login for
-            <em> your own</em> app is fine; cloning someone else's brand to deceive users is not.
+            No pages that capture credentials — including by imitating a known brand&rsquo;s login. A login for
+            <em> your own</em> app is fine; cloning someone else&rsquo;s brand to deceive users is not.
           </li>
           <li style={LI}>
             <strong style={{ color: "var(--ink-2)" }}>Malware &amp; miners.</strong>{" "}
-            No malicious software, covert crypto-miners, or code that uses a visitor's device or compute
+            No malicious software, covert crypto-miners, or code that uses a visitor&rsquo;s device or compute
             without their knowledge.
           </li>
           <li style={LI}>
@@ -154,7 +154,7 @@ export default function AcceptableUsePage() {
           <li style={LI}>
             <strong style={{ color: "var(--ink-2)" }}>Circumventing safety mechanisms.</strong>{" "}
             No attempt to bypass, trick, or obscure the limits above, the publish-time checks, or the
-            platform's technical limits.
+            platform&rsquo;s technical limits.
           </li>
         </ul>
 
