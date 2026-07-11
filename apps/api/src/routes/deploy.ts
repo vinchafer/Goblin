@@ -5,8 +5,9 @@ import { authMiddleware } from '../middleware/auth';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { deployToVercel, getDeployStatus } from '../services/vercel-service';
 import { verifyDeployment } from '../services/deploy-verification';
-import { listFiles } from '../services/file-storage';
+import { listFiles, downloadFile } from '../services/file-storage';
 import { trackEvent } from '../lib/platform-events';
+import { runPublishGuard } from '../services/safety/publish-scan';
 
 type Variables = { userId: string };
 const deploy = new Hono<{ Variables: Variables }>();
@@ -64,6 +65,25 @@ deploy.post('/vercel', deployRateLimit, async (c) => {
 
   return streamSSE(c, async (stream) => {
     try {
+      // K3 (Wave-K, Layer 3) — deterministic safety scan BEFORE the deploy, alongside
+      // the truth-gate. A high-confidence phishing/malware hit blocks here with an honest,
+      // appeal-carrying message (Option A: softer signals are logged, not blocked). The
+      // guard degrades open on its own failure — it never kills an honest publish itself.
+      const guard = await runPublishGuard({ listFiles, downloadFile }, userId, projectId);
+      if (!guard.ok) {
+        await stream.writeSSE({
+          data: JSON.stringify({
+            type: 'blocked',
+            policyArea: guard.policyArea,
+            message: guard.message ?? 'Veröffentlichung wurde aus Sicherheitsgründen gestoppt.',
+            // The client wires this to the Wave-J feedback affordance (category auto-set)
+            // so a wrongly-blocked builder can appeal to a human.
+            appeal: { surface: 'publish_block', category: 'other', policyArea: guard.policyArea, ruleIds: guard.ruleIds },
+          }),
+        });
+        return;
+      }
+
       const result = await deployToVercel(
         userId,
         projectId,

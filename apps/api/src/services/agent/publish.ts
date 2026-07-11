@@ -103,6 +103,13 @@ interface PublishRunDeps {
   projectName: (projectId: string) => Promise<string>;
   /** Persist the verified URL on the project row (mirrors the deploy route). */
   markDeployed: (projectId: string, url: string) => Promise<void>;
+  /**
+   * K3 publish-time safety scan (Wave-K, Layer 3). Runs after drafts are promoted and
+   * BEFORE the deploy — a high-confidence phishing/malware hit blocks the publish with an
+   * honest, appeal-carrying message. Injectable; tests pass a stub, tools.ts wires the
+   * real deterministic scan. Optional so older callers/tests default to no-scan.
+   */
+  scanPublish?: (userId: string, projectId: string) => Promise<{ ok: boolean; message?: string; policyArea?: string; ruleIds?: string[] }>;
   /** Sleep (injectable — tests pass a no-op). */
   sleep?: (ms: number) => Promise<void>;
 }
@@ -128,6 +135,23 @@ export async function runPublish(
     const reason = promoted.error ?? 'Entwürfe konnten vor dem Veröffentlichen nicht gesichert werden.';
     state.lastError = reason;
     return { ok: false, summary: `Veröffentlichen fehlgeschlagen: ${reason}`, error: { code: 'publish_failed', message: reason } };
+  }
+
+  // 1b) K3 safety scan — deterministic, before any deploy. A high-confidence
+  //     phishing/malware hit blocks here with an honest, appeal-carrying message.
+  if (run.scanPublish) {
+    const scan: { ok: boolean; message?: string; policyArea?: string; ruleIds?: string[] } =
+      await run.scanPublish(ctx.userId, ctx.projectId).catch(() => ({ ok: true }));
+    if (!scan.ok) {
+      const reason = scan.message ?? 'Veröffentlichung wurde aus Sicherheitsgründen gestoppt.';
+      state.lastError = reason;
+      return {
+        ok: false,
+        summary: 'Veröffentlichen gestoppt (Nutzungsrichtlinie)',
+        error: { code: 'policy_blocked', message: reason },
+        data: { blocked: true, policyArea: scan.policyArea, ruleIds: scan.ruleIds },
+      };
+    }
   }
 
   // 2) Kick the deploy (may throw NO_VERCEL_TOKEN / build error → structured failure).

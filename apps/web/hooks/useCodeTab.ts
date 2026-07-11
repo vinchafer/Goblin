@@ -79,6 +79,8 @@ export function useCodeTab(projectId: string, pendingCode?: { content: string; f
     recentDone: vercelHook.recentDone,
     needsVercel: vercelHook.needsVercel,
     dismissNeedsVercel: vercelHook.dismissNeedsVercel,
+    policyBlock: vercelHook.policyBlock,
+    dismissPolicyBlock: vercelHook.dismissPolicyBlock,
 
     // GitHub
     pushModalOpen: githubHook.pushModalOpen,

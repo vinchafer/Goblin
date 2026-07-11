@@ -18,6 +18,7 @@ import { useCodeTab } from "@/hooks/useCodeTab";
 import { useEditorTheme } from "@/hooks/code/useEditorTheme";
 import { Icon } from "@/components/ui/icon";
 import { GoblinLogo } from "@/components/brand/GoblinLogo";
+import { FeedbackModal } from "@/components/feedback/FeedbackModal";
 
 const CodeEditor = dynamic(
   () => import("@/components/editor/code-editor").then(m => ({ default: m.CodeEditor })),
@@ -44,6 +45,8 @@ export function CodeTabClassic({ projectId, projectName = 'project', pendingCode
   const tab = useCodeTab(projectId, pendingCode);
   const [editorTheme, , toggleEditorTheme] = useEditorTheme();
   const [deployConfirm, setDeployConfirm] = useState(false);
+  // K3 (Wave-K) appeal path: opens the Wave-J feedback modal with category auto-set.
+  const [appealOpen, setAppealOpen] = useState(false);
 
   return (
     <div className="gb-codetab" data-editor-theme={editorTheme} style={{ position: 'relative', height: '100%', display: 'flex', flexDirection: 'column', background: 'var(--ed-canvas)' }}>
@@ -168,6 +171,41 @@ export function CodeTabClassic({ projectId, projectName = 'project', pendingCode
             </div>
           </div>
         </>
+      )}
+
+      {/* K3 (Wave-K) — publish stopped by the safety scan: honest message + appeal path */}
+      {tab.policyBlock && (
+        <>
+          <div style={{ position: 'fixed', inset: 0, zIndex: 80, background: 'var(--surface-overlay)' }} onClick={tab.dismissPolicyBlock} />
+          <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%,-50%)', background: 'var(--ed-chrome-2)', border: '1px solid var(--ed-rule)', borderRadius: 14, padding: '24px', zIndex: 81, minWidth: 320, maxWidth: 460, boxShadow: '0 16px 40px rgba(15,43,30,0.28)' }}>
+            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--ed-fg-1)', fontFamily: 'var(--font-sans)', marginBottom: 10 }}>
+              Veröffentlichung gestoppt
+            </div>
+            <div style={{ fontSize: 13, lineHeight: 1.55, color: 'var(--ed-fg-3)', fontFamily: 'var(--font-sans)', marginBottom: 16 }}>
+              {tab.policyBlock.message}
+            </div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              <button onClick={tab.dismissPolicyBlock} style={{ background: 'transparent', border: '1px solid var(--ed-rule)', color: 'var(--ed-fg-3)', borderRadius: 9, padding: '9px 16px', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>Verstanden</button>
+              <button onClick={() => setAppealOpen(true)} style={{ background: 'var(--ed-primary)', border: 'none', color: 'var(--ed-on-primary)', borderRadius: 9, padding: '9px 18px', fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-sans)', display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+                <Icon name="chat" size={14} /> Das ist ein Fehler — Feedback
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+      {tab.policyBlock && (
+        <FeedbackModal
+          open={appealOpen}
+          onClose={() => { setAppealOpen(false); tab.dismissPolicyBlock(); }}
+          surface={tab.policyBlock.surface}
+          initialCategory="other"
+          context={{
+            project_id: projectId,
+            // Metadata only — the policy area + rule-ids, no page content. Gives the human
+            // reviewer the appeal context (which rule fired) without any user data.
+            last_error: `publish_block:${tab.policyBlock.policyArea ?? 'unknown'}${tab.policyBlock.ruleIds?.length ? ` (${tab.policyBlock.ruleIds.join(',')})` : ''}`,
+          }}
+        />
       )}
 
       {/* Action Bar */}
