@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { sendEmail } from '../lib/email';
 import { deleteUserStorage, purgeProjectStorage } from './file-storage';
+import { teardownVercelProject } from './vercel-service';
 import logger from '../lib/logger';
 
 /**
@@ -487,10 +488,29 @@ export async function hardDeleteUser(userId: string): Promise<HardDeleteOutcome>
   // so the cron re-runs and re-purges (purgeProjectStorage is idempotent).
   const { data: userProjects, error: projErr } = await supabase
     .from('projects')
-    .select('id')
+    .select('id, name')
     .eq('user_id', userId);
   if (projErr) throw new Error(`projects lookup failed: ${projErr.message}`);
   const projectIds = (userProjects ?? []).map((p) => p.id as string);
+
+  // D-5 (WAVE-D): tear down each project's LIVE Vercel resource BEFORE the DB cascade
+  // drops the rows. Without this, a deleted user's <slug>.vercel.app deployments stay
+  // public (and billable on the user's own connected token) forever — a real-user
+  // data-retention gap the storage/DB purge did not cover. teardownVercelProject is
+  // best-effort by design (never throws; 404 / no-token = already gone), so a failure
+  // is logged for the next cron pass but never blocks the user's PII deletion.
+  for (const proj of userProjects ?? []) {
+    const name = (proj as { name?: string }).name;
+    if (!name) continue;
+    const td = await teardownVercelProject(userId, name);
+    if (!td.ok) {
+      logger.warn(
+        { userIdHash: sha256(userId), status: td.status, reason: td.error },
+        'account-deletion: vercel teardown not confirmed (will retry next cron pass)',
+      );
+    }
+  }
+
   if (projectIds.length > 0) {
     const purge = await purgeProjectStorage(projectIds);
     logger.info(
@@ -511,6 +531,19 @@ export async function hardDeleteUser(userId: string): Promise<HardDeleteOutcome>
         + `(${purge.failed.map((f) => f.projectId).join(', ')})`,
       );
     }
+  }
+
+  // D-5 (WAVE-D): purge the user's BYOK KEK from Vault. byok_keys rows cascade from
+  // auth.users but the vault.secrets KEK (byok_kek_user_<id>) is referenced with
+  // ON DELETE SET NULL, so it would be orphaned otherwise. Idempotent RPC (0090);
+  // pre-migration tolerant — a missing function is logged, never blocks the delete.
+  try {
+    const { error: kekErr } = await supabase.rpc('delete_user_kek', { p_user_id: userId });
+    if (kekErr && !/does not exist|schema cache|PGRST202|42883/i.test(`${kekErr.code ?? ''} ${kekErr.message ?? ''}`)) {
+      logger.warn({ userIdHash: sha256(userId), reason: kekErr.message }, 'account-deletion: KEK purge failed (non-fatal)');
+    }
+  } catch (e) {
+    logger.warn({ userIdHash: sha256(userId), reason: (e as Error).message }, 'account-deletion: KEK purge threw (non-fatal)');
   }
 
   // The cascade purge — every PII-bearing table cascades from auth.users.
