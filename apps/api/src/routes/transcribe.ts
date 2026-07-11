@@ -26,8 +26,12 @@ export const MAX_AUDIO_BYTES = 15 * 1024 * 1024; // 15 MB
 export const MAX_AUDIO_DURATION_MS = 125_000; // ~2 min + slack
 // Per-user daily transcription cap (abuse guard). v1: in-memory, per instance —
 // resets on deploy, not shared across replicas. Adequate as a v1 abuse ceiling;
-// promote to a persisted counter if transcription volume grows. Knob = here.
-export const TRANSCRIBE_DAILY_CAP = 30;
+// promote to a persisted counter if transcription volume grows. D-2: env-knobbed
+// (TRANSCRIBE_DAILY_CAP) with a 30/day default, matching the other abuse caps.
+export const TRANSCRIBE_DAILY_CAP = (() => {
+  const raw = Number(process.env.TRANSCRIBE_DAILY_CAP);
+  return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 30;
+})();
 
 const TRANSCRIBE_MODEL = process.env.GOBLIN_TRANSCRIBE_MODEL || 'openai/whisper-large-v3-turbo';
 

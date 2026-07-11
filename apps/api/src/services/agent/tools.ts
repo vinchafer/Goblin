@@ -17,6 +17,8 @@ import { getSupabaseAdmin } from '../../lib/supabase';
 import { getFile, uploadFile, headBytes } from '../file-storage';
 import { byteLen, assertStorageRoom } from '../storage-usage';
 import { checkProjectPath, isForbiddenWriteTarget, WRITE_FILE_MAX_CHARS } from '../project-path';
+import { hitRateLimit } from '../../middleware/rate-limit';
+import { publishesPerHour } from '../abuse-caps';
 import { isSoftDeletedPath, FILE_CONTENT_BUDGET_CHARS } from '../project-context';
 import { classifyFile, lineDelta, checkStcIntegrity } from '@goblin/shared';
 import logger from '../../lib/logger';
@@ -509,7 +511,21 @@ export function buildToolExecutor(sb: Sb = getSupabaseAdmin(), opts: ExecutorOpt
         return toolWriteFile(sb, ctx, call.args ?? {});
       case 'save_draft':
         return toolSaveDraft(sb, ctx);
-      case 'publish':
+      case 'publish': {
+        // D-2: per-user publishes/hour cap. An abuser could otherwise drive unlimited
+        // Vercel deploys through the agent. Honest German tool error — the run sees it
+        // verbatim and stops, exactly like any other publish failure.
+        const pubHit = hitRateLimit('publish', `user:${ctx.userId}`, publishesPerHour(), 3_600_000);
+        if (!pubHit.allowed) {
+          return {
+            ok: false,
+            summary: `Veröffentlichungs-Limit erreicht (${publishesPerHour()}/Stunde)`,
+            error: {
+              code: 'publish_rate_limited',
+              message: `Zu viele Veröffentlichungen in kurzer Zeit (max ${publishesPerHour()}/Stunde). Bitte in etwa ${Math.ceil(pubHit.retryAfterSec / 60)} Minuten erneut versuchen.`,
+            },
+          };
+        }
         return runPublish(
           publishDeps,
           {
@@ -522,6 +538,7 @@ export function buildToolExecutor(sb: Sb = getSupabaseAdmin(), opts: ExecutorOpt
           publishState,
           (msg) => ctx.emitProgress?.(msg),
         );
+      }
       case 'read_deploy_status':
         return toolReadDeployStatus(sb, ctx, publishState);
       case 'finish':

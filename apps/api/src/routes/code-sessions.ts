@@ -24,6 +24,8 @@ import { grantsPublish } from '../services/agent/intent';
 import { createAgentRun, finalizeAgentRun } from '../services/agent/run-store';
 import { notifyAgentRunFinished } from './notifications';
 import { scrubString, safeErrorMessage } from '../lib/scrub-secrets';
+import { hitRateLimit } from '../middleware/rate-limit';
+import { agentRunsPerHour } from '../services/abuse-caps';
 import type { AgentMessage } from '../services/agent/types';
 
 type Variables = { userId: string };
@@ -589,6 +591,22 @@ codeSessions.post('/:sessionId/agent', async (c) => {
     return c.json({ error: 'agent_not_eligible', reason: elig.reason }, 409);
   }
   const tier = parseGoblinTier(modelSlug)!; // eligibility guarantees a Goblin tier
+
+  // D-2: per-user agent-runs/hour cap. Counted only for a real, eligible run (after the
+  // 409 probe above) so honest use is never charged for ineligible calls. Honest German
+  // 429 + Retry-After — never a silent drop.
+  const runHit = hitRateLimit('agent-run', `user:${userId}`, agentRunsPerHour(), 3_600_000);
+  if (!runHit.allowed) {
+    c.header('Retry-After', runHit.retryAfterSec.toString());
+    return c.json(
+      {
+        error: 'agent_rate_limited',
+        message: `Du hast in der letzten Stunde schon viele Agent-Läufe gestartet (max ${agentRunsPerHour()}/Stunde). Bitte kurz warten und erneut versuchen.`,
+        retryAfterSeconds: runHit.retryAfterSec,
+      },
+      429,
+    );
+  }
 
   // Mirror the project's real files into the session so the tools see actual code.
   await hydrateSessionFiles(sb, sessionId, session.project_id, userId);

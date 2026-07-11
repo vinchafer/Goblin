@@ -164,3 +164,24 @@ describe('D-1 · a legitimate messy path is canonicalized before storage', () =>
     expect(stored?.path).toBe('css/app.css');
   });
 });
+
+// eslint-disable-next-line import/first
+import { hitRateLimit } from '../../middleware/rate-limit';
+// eslint-disable-next-line import/first
+import { publishesPerHour } from '../abuse-caps';
+
+describe('D-2 · agent publish is capped per user/hour', () => {
+  it('returns publish_rate_limited once the hourly budget is exhausted', async () => {
+    process.env.PUBLISHES_PER_HOUR = '2';
+    // Pre-exhaust THIS user's publish window (same shared store the executor reads), so
+    // the executor's publish is denied before it ever attempts a real deploy.
+    const cap = publishesPerHour();
+    for (let i = 0; i < cap; i++) hitRateLimit('publish', 'user:u1', cap, 3_600_000);
+
+    const exec = buildToolExecutor(makeFakeSb([], 's1') as never);
+    const r = await exec({ id: 'c1', name: 'publish', args: {} }, ctx);
+    expect(r.ok).toBe(false);
+    expect(r.error?.code).toBe('publish_rate_limited');
+    delete process.env.PUBLISHES_PER_HOUR;
+  });
+});
