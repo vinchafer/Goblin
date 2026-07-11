@@ -20,14 +20,25 @@ const deployRateLimit = async (c: Context<{ Variables: Variables }>, next: Next)
 
   const oneHourAgo = new Date(Date.now() - 3600_000).toISOString();
 
+  // D-2: env-knobbed (BUILDS_PER_HOUR), 10/hr default. Honest German 429 + Retry-After.
+  const raw = Number(process.env.BUILDS_PER_HOUR);
+  const limit = Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 10;
+
   const { count } = await supabase
     .from('projects')
     .select('id', { count: 'exact', head: true })
     .eq('user_id', userId)
     .gte('last_deployed_at', oneHourAgo);
 
-  if (count !== null && count >= 10) {
-    return c.json({ error: 'Deploy rate limit: max 10 deploys per hour' }, 429);
+  if (count !== null && count >= limit) {
+    c.header('Retry-After', '3600');
+    return c.json(
+      {
+        error: 'deploy_rate_limited',
+        message: `Du hast in der letzten Stunde schon viele Veröffentlichungen gestartet (max ${limit}/Stunde). Bitte kurz warten und erneut versuchen.`,
+      },
+      429,
+    );
   }
 
   await next();

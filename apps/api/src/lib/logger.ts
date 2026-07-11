@@ -1,10 +1,17 @@
 import pino from 'pino';
+import { scrubSecrets } from './scrub-secrets';
 
 const SENSITIVE_PATHS = ['apiKey', 'key', 'secret', 'password', 'token', 'key_encrypted', 'authorization'];
 
 const logger = pino({
   level: process.env.LOG_LEVEL ?? 'info',
   redact: { paths: SENSITIVE_PATHS, censor: '[REDACTED]' },
+  // D-3: pino's redact is key-name-based only — it misses a secret embedded in a
+  // string VALUE (err.message, a response body, a `data` blob). This formatter runs
+  // scrubSecrets over every logged object so a key in any value is redacted too.
+  formatters: {
+    log: (obj: Record<string, unknown>) => scrubSecrets(obj),
+  },
   ...(process.env.PRETTY_LOGS === 'true' && {
     transport: {
       target: 'pino-pretty',

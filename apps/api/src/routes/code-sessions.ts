@@ -23,6 +23,9 @@ import { loadUserPreferences } from '../services/user-preferences';
 import { grantsPublish } from '../services/agent/intent';
 import { createAgentRun, finalizeAgentRun } from '../services/agent/run-store';
 import { notifyAgentRunFinished } from './notifications';
+import { scrubString, safeErrorMessage } from '../lib/scrub-secrets';
+import { hitRateLimit } from '../middleware/rate-limit';
+import { agentRunsPerHour } from '../services/abuse-caps';
 import type { AgentMessage } from '../services/agent/types';
 
 type Variables = { userId: string };
@@ -513,19 +516,19 @@ codeSessions.post('/:sessionId/messages', async (c) => {
       }
 
       await sb.from('code_session_messages').insert({
-        session_id: sessionId, user_id: userId, role: 'assistant', content: full,
+        session_id: sessionId, user_id: userId, role: 'assistant', content: scrubString(full),
         model_used: modelUsed, state: 'complete',
       });
       await sb.from('code_sessions').update({ updated_at: new Date().toISOString() }).eq('id', sessionId);
 
       await stream.writeSSE({ data: JSON.stringify({ type: 'done', files: draftFiles.map(f => f.path), model_used: modelUsed }) });
     } catch (err) {
-      // Persist the partial as an error turn so the thread reflects reality.
+      // Persist the partial as an error turn so the thread reflects reality (D-3: scrubbed).
       await sb.from('code_session_messages').insert({
-        session_id: sessionId, user_id: userId, role: 'assistant', content: full,
+        session_id: sessionId, user_id: userId, role: 'assistant', content: scrubString(full),
         model_used: modelUsed, state: 'error',
       }).then(() => {}, () => {});
-      await stream.writeSSE({ data: JSON.stringify({ type: 'error', message: err instanceof Error ? err.message : 'Stream failed' }) });
+      await stream.writeSSE({ data: JSON.stringify({ type: 'error', message: safeErrorMessage(err, 'Stream failed') }) });
     }
   });
 });
@@ -588,6 +591,22 @@ codeSessions.post('/:sessionId/agent', async (c) => {
     return c.json({ error: 'agent_not_eligible', reason: elig.reason }, 409);
   }
   const tier = parseGoblinTier(modelSlug)!; // eligibility guarantees a Goblin tier
+
+  // D-2: per-user agent-runs/hour cap. Counted only for a real, eligible run (after the
+  // 409 probe above) so honest use is never charged for ineligible calls. Honest German
+  // 429 + Retry-After — never a silent drop.
+  const runHit = hitRateLimit('agent-run', `user:${userId}`, agentRunsPerHour(), 3_600_000);
+  if (!runHit.allowed) {
+    c.header('Retry-After', runHit.retryAfterSec.toString());
+    return c.json(
+      {
+        error: 'agent_rate_limited',
+        message: `Du hast in der letzten Stunde schon viele Agent-Läufe gestartet (max ${agentRunsPerHour()}/Stunde). Bitte kurz warten und erneut versuchen.`,
+        retryAfterSeconds: runHit.retryAfterSec,
+      },
+      429,
+    );
+  }
 
   // Mirror the project's real files into the session so the tools see actual code.
   await hydrateSessionFiles(sb, sessionId, session.project_id, userId);
@@ -673,7 +692,7 @@ codeSessions.post('/:sessionId/agent', async (c) => {
       });
       await sb.from('code_session_messages').insert({
         session_id: sessionId, user_id: userId, role: 'assistant',
-        content: result.report.modelText, model_used: modelSlug,
+        content: scrubString(result.report.modelText), model_used: modelSlug,
         state: result.status === 'failed' ? 'error' : 'complete',
       });
       await sb.from('code_sessions').update({ updated_at: new Date().toISOString() }).eq('id', sessionId);
@@ -716,7 +735,7 @@ codeSessions.post('/:sessionId/agent', async (c) => {
         projectId: session.project_id,
         meta: { status: 'failed', outcome: 'error', duration_ms: Date.now() - runStartedAt },
       });
-      await stream.writeSSE({ data: JSON.stringify({ type: 'error', message: err instanceof Error ? err.message : 'Agent-Lauf fehlgeschlagen' }) });
+      await stream.writeSSE({ data: JSON.stringify({ type: 'error', message: safeErrorMessage(err, 'Agent-Lauf fehlgeschlagen') }) });
     }
   });
 });

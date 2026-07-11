@@ -30,29 +30,52 @@ function getClientId(c: Context): string {
   return c.req.header('x-forwarded-for') ?? c.req.header('x-real-ip') ?? 'unknown';
 }
 
+// D-2: honest German copy for every 429 — "du gehst zu schnell", not a silent drop.
+export const RATE_LIMIT_MESSAGE_DE = 'Du gehst gerade etwas zu schnell — bitte einen kurzen Moment warten und erneut versuchen.';
+
+export interface RateLimitHit {
+  allowed: boolean;
+  remaining: number;
+  retryAfterSec: number;
+  resetAt: number;
+}
+
+/**
+ * D-2 — the single fixed-window accounting primitive, shared by the middleware and by
+ * routes that must count only AFTER their own eligibility checks (e.g. an agent run
+ * that should not burn quota on a 409-ineligible probe). Records one hit for `clientId`
+ * in `storeName` and reports whether it stayed within `limit` over `windowMs`.
+ */
+export function hitRateLimit(storeName: string, clientId: string, limit: number, windowMs: number): RateLimitHit {
+  const store = getStore(storeName);
+  const now = Date.now();
+  let entry = store.get(clientId);
+  if (!entry || entry.resetAt < now) {
+    entry = { count: 0, resetAt: now + windowMs };
+    store.set(clientId, entry);
+  }
+  entry.count++;
+  const retryAfterSec = Math.ceil((entry.resetAt - now) / 1000);
+  return {
+    allowed: entry.count <= limit,
+    remaining: Math.max(0, limit - entry.count),
+    retryAfterSec,
+    resetAt: entry.resetAt,
+  };
+}
+
 export function rateLimitMiddleware(limit: number, windowMs: number, storeName: string = 'default') {
   return async (c: Context, next: Next) => {
-    const store = getStore(storeName);
-    const clientId = getClientId(c);
-    const now = Date.now();
+    const hit = hitRateLimit(storeName, getClientId(c), limit, windowMs);
 
-    let entry = store.get(clientId);
-    if (!entry || entry.resetAt < now) {
-      entry = { count: 0, resetAt: now + windowMs };
-      store.set(clientId, entry);
-    }
-
-    entry.count++;
-
-    if (entry.count > limit) {
-      const retryAfter = Math.ceil((entry.resetAt - now) / 1000);
-      c.header('Retry-After', retryAfter.toString());
-      return c.json({ error: 'Rate limit exceeded. Please slow down.' }, 429);
+    if (!hit.allowed) {
+      c.header('Retry-After', hit.retryAfterSec.toString());
+      return c.json({ error: RATE_LIMIT_MESSAGE_DE, retryAfterSeconds: hit.retryAfterSec }, 429);
     }
 
     c.header('X-RateLimit-Limit', limit.toString());
-    c.header('X-RateLimit-Remaining', (limit - entry.count).toString());
-    c.header('X-RateLimit-Reset', Math.ceil(entry.resetAt / 1000).toString());
+    c.header('X-RateLimit-Remaining', hit.remaining.toString());
+    c.header('X-RateLimit-Reset', Math.ceil(hit.resetAt / 1000).toString());
 
     await next();
   };

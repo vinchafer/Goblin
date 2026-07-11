@@ -14,6 +14,7 @@ import { Hono } from 'hono';
 import { extractText, getDocumentProxy } from 'unpdf';
 import { authMiddleware } from '../middleware/auth';
 import logger from '../lib/logger';
+import { consumeDailyBytes, attachmentBytesPerDay } from '../services/abuse-caps';
 
 // Upload ceiling for a single PDF. The 24k-char attach budget is enforced
 // client-side after extraction; this only bounds the raw upload.
@@ -39,6 +40,21 @@ attachments.post('/extract', async (c) => {
   }
   if (file.size > MAX_PDF_BYTES) {
     return c.json({ error: 'Die PDF ist zu groß. Bitte teile sie auf oder kopiere den relevanten Text direkt hinein.' }, 413);
+  }
+
+  // D-2: per-user attachment bytes/day cap. Bounds an upload flood (many under-10MB
+  // files) that the per-file ceiling alone can't. Denied requests do not consume budget.
+  const userId = c.get('userId');
+  const bytesCap = consumeDailyBytes('attachment', userId, file.size, attachmentBytesPerDay());
+  if (!bytesCap.allowed) {
+    c.header('Retry-After', '3600');
+    return c.json(
+      {
+        error: 'attachment_daily_cap',
+        message: 'Du hast heute schon viele Dateien hochgeladen. Bitte morgen wieder — oder kopiere den relevanten Text direkt in die Nachricht.',
+      },
+      429,
+    );
   }
 
   let text: string;

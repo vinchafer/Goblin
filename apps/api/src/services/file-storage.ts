@@ -11,6 +11,7 @@ import {
 import type { S3ClientConfig } from '@aws-sdk/client-s3';
 import logger from '../lib/logger';
 import { byteLen, assertStorageRoom, applyStorageDelta } from './storage-usage';
+import { assertSafeStoragePath } from './project-path';
 
 /**
  * Storage-accounting options threaded into every write/delete. When `userId` is set
@@ -84,8 +85,14 @@ function getBucket(): string {
   return process.env.STORAGE_BUCKET || 'goblin-dev';
 }
 
+// D-1 — the single choke-point every project write/read/delete key is built through.
+// Canonicalizing + prefix-asserting here means NO caller (agent tools, the file-explorer
+// upload route, templates, the generator) can compose a key that escapes the project's
+// prefix, regardless of what the caller validated. Throws `unsafe_path` on traversal /
+// absolute / encoded / null-byte input; the canonical (normalized) path is used for the key.
 function storageKey(projectId: string, filePath: string): string {
-  return `projects/${projectId}/${filePath}`;
+  const safe = assertSafeStoragePath(filePath);
+  return `projects/${projectId}/${safe}`;
 }
 
 function projectPrefix(projectId: string): string {

@@ -10,6 +10,7 @@
 
 import { getSupabaseAdmin } from '../../lib/supabase';
 import logger from '../../lib/logger';
+import { scrubSecrets } from '../../lib/scrub-secrets';
 
 /** Fine-grained terminal reason, orthogonal to agent_runs.status. */
 export type RunOutcome = 'finished' | 'stopped' | 'budget' | 'error';
@@ -94,21 +95,26 @@ export async function finalizeAgentRun(runId: string, input: FinalizeRunInput): 
   };
   try {
     const sb = getSupabaseAdmin();
+    // D-3: scrub the run log + report before persisting. A tool error message or the
+    // model's own text (both flow verbatim into step_log/report) could echo an upstream
+    // API key — this pass guarantees no secret lands in the agent_runs row.
+    const steps = scrubSecrets(input.steps);
+    const report = input.report !== undefined ? scrubSecrets(input.report) : undefined;
     // Richest write: 0081 log columns + the 0088 report card.
     const full = {
       ...base,
       outcome: input.outcome,
       iterations: input.iterations,
       tools_used: input.toolsUsed,
-      step_log: input.steps,
-      ...(input.report !== undefined ? { report: input.report } : {}),
+      step_log: steps,
+      ...(report !== undefined ? { report } : {}),
     };
     const { error } = await sb.from('agent_runs').update(full).eq('id', runId);
     if (error) {
       // Retry WITHOUT the 0088 report column (pre-0088 DB) but keep the 0081 log.
       const { error: e2 } = await sb
         .from('agent_runs')
-        .update({ ...base, outcome: input.outcome, iterations: input.iterations, tools_used: input.toolsUsed, step_log: input.steps })
+        .update({ ...base, outcome: input.outcome, iterations: input.iterations, tools_used: input.toolsUsed, step_log: steps })
         .eq('id', runId);
       // Last resort: bare lifecycle (pre-0081 DB).
       if (e2) await sb.from('agent_runs').update(base).eq('id', runId);
