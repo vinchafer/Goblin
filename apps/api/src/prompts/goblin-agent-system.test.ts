@@ -69,4 +69,29 @@ describe('AGENT MODE system prompt — A4', () => {
     // normal chat does NOT carry the agent tool block.
     expect(normal).not.toContain('AGENT-MODUS');
   });
+
+  // K2 (Wave-K, Layer 2) — the generation-time refusal POLICY section rides in BOTH
+  // the agent prompt and normal chat, with the ABSOLUTE block + the refuse/refuse/build
+  // few-shot triple (③ is the false-positive guard).
+  describe('K2 POLICY section — generation-time refusal', () => {
+    const chat = buildGoblinChatSystemPrompt({ projectName: 'X' });
+    for (const [label, prompt] of [['agent', p], ['chat', chat]] as const) {
+      it(`${label} prompt carries the ABSOLUTE policy block + prohibited classes`, () => {
+        expect(prompt).toMatch(/ABSOLUTE REGEL — was du NICHT baust/);
+        expect(prompt).toMatch(/Phishing/);
+        expect(prompt).toMatch(/Krypto-Miner/);
+        expect(prompt).toMatch(/Marken-Imitation/);
+      });
+      it(`${label} prompt teaches the boundary with the refuse/refuse/build few-shots`, () => {
+        expect(prompt).toContain('Beispiel P1'); // brand-imitation → refuse
+        expect(prompt).toContain('Beispiel P2'); // card form + mail → refuse + Stripe
+        expect(prompt).toContain('Beispiel P3'); // own-app login → build (false-positive guard)
+        expect(prompt).toMatch(/Stripe Payment Links/);
+      });
+      it(`${label} prompt refusals name the legitimate path, never a bare "kann ich nicht"`, () => {
+        expect(prompt).toMatch(/nie ein nacktes "das kann ich nicht"/);
+        expect(prompt).toMatch(/EIGENE App des Nutzers ist dagegen normal/);
+      });
+    }
+  });
 });
