@@ -529,6 +529,32 @@ codeSessions.post('/:sessionId/messages', async (c) => {
   });
 });
 
+// ─── GET /api/code-sessions/:sessionId/runs/:runId/report — A-6 stop-report recovery ──
+// After a stop mid-run the client aborts the fetch, so the SSE closes before the final
+// agent_report frame arrives. The server still finalizes the run with a truthful partial
+// report (0088 agent_runs.report); the client re-fetches it here and renders the card,
+// instead of showing a coherent partial "only by luck". Ownership-scoped to the caller.
+codeSessions.get('/:sessionId/runs/:runId/report', async (c) => {
+  const userId = c.get('userId');
+  const sessionId = c.req.param('sessionId');
+  const runId = c.req.param('runId');
+  const sb = getSupabaseAdmin();
+  const session = await ownSession(sb, sessionId, userId);
+  if (!session) return c.json({ error: 'Session not found' }, 404);
+
+  const { data, error } = await sb
+    .from('agent_runs')
+    .select('report, outcome, status')
+    .eq('id', runId)
+    .eq('user_id', userId)
+    .eq('project_id', session.project_id)
+    .maybeSingle();
+  if (error || !data) return c.json({ error: 'Run not found' }, 404);
+  // report is NULL only pre-0088 or before finalize ran — say so honestly (204), don't fake one.
+  if (data.report == null) return c.body(null, 204);
+  return c.json({ report: data.report, outcome: data.outcome, status: data.status });
+});
+
 // ─── POST /api/code-sessions/:sessionId/agent — the FEEL-3a agent run ────────────
 // The orchestrator loop drives tools (list/read/write_file, save_draft, finish) and
 // streams step events. Eligibility is gated server-side (flag/test-account + project
@@ -640,6 +666,9 @@ codeSessions.post('/:sessionId/agent', async (c) => {
         steps: result.steps,
         toolsUsed: result.toolsUsed,
         iterations: result.iterations,
+        // A-6: persist the report card so a stop/abort that closed the SSE before the
+        // agent_report frame landed can be recovered via GET …/runs/:runId/report.
+        report: result.report,
       });
       await sb.from('code_session_messages').insert({
         session_id: sessionId, user_id: userId, role: 'assistant',
