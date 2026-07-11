@@ -40,6 +40,8 @@ import { useCodeSessionDetail } from "@/hooks/code/useCodeSessionDetail";
 import { useCodeAgent } from "@/hooks/code/useCodeAgent";
 import { useAgentRun } from "@/hooks/code/useAgentRun";
 import { AgentRunView } from "./AgentRunView";
+import { FeedbackModal } from "@/components/feedback/FeedbackModal";
+import { SupportChat } from "@/components/support/support-chat";
 import { isAgentModel } from "@/lib/agent-eligible";
 import type { EditorTheme } from "@/hooks/code/useEditorTheme";
 import type { CodeSession } from "@/hooks/code/useCodeSessions";
@@ -123,6 +125,8 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
   const router = useRouter();
   const [showUpgradeCard, setShowUpgradeCard] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [supportOpen, setSupportOpen] = useState(false);
   // P1.2(b): "Goblin arbeitet… <n>s" while a command runs, and the change pop-up
   // header once the result lands. workingSeconds ticks while agent.streaming;
   // changeSummary is the number of files the turn touched (null = no banner).
@@ -659,10 +663,38 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
           onGoLive={() => setDeployConfirm(true)}
           onConfirmPublish={() => agentRun.submit("Jetzt veröffentlichen.", session.model_id ?? undefined, { confirmPublish: true, onDone: async () => { await detail.refresh(); } })}
           onOpen={() => { const u = agentRun.report?.publishedUrl ?? liveUrl ?? detail.deployUrl; if (u) window.open(u, "_blank", "noopener"); }}
+          onFeedback={() => setFeedbackOpen(true)}
         />
-        {(agent.error || agentRun.error) && (
-          <div style={{ margin: "0 16px 8px", padding: "8px 12px", borderRadius: 8, background: "rgba(176,67,42,0.08)", border: "1px solid rgba(176,67,42,0.3)", color: "#B0432A", fontSize: 12.5, fontFamily: "var(--font-sans)" }}>
-            {agent.error || agentRun.error}
+        {(agent.error || agentRun.error) && (() => {
+          const err = agent.error || agentRun.error || "";
+          // WAVE-J J4: the trial/limit wall today is this inline error. On a
+          // limit/allowance error, add one quiet, honest help offer — no popup.
+          const isLimit = /limit|kontingent|allowance|aufgebraucht|reached|erreicht/i.test(err);
+          return (
+            <div style={{ margin: "0 16px 8px", padding: "8px 12px", borderRadius: 8, background: "rgba(176,67,42,0.08)", border: "1px solid rgba(176,67,42,0.3)", color: "#B0432A", fontSize: 12.5, fontFamily: "var(--font-sans)" }}>
+              <span>{err}</span>
+              {isLimit && (
+                <>
+                  {" "}
+                  <button data-testid="jit-support-limit" onClick={() => setSupportOpen(true)} style={{ background: "transparent", border: "none", color: "var(--brand-green, #1A3A2A)", textDecoration: "underline", fontSize: 12.5, cursor: "pointer", fontFamily: "var(--font-sans)" }}>
+                    {t(lang, "Brauchst du Hilfe dabei? → Goblin Hilfe", "Need help with this? → Goblin Hilfe")}
+                  </button>
+                </>
+              )}
+            </div>
+          );
+        })()}
+        <FeedbackModal
+          open={feedbackOpen}
+          onClose={() => setFeedbackOpen(false)}
+          surface="report_card"
+          context={{ project_id: projectId, last_error: (agent.error || agentRun.error || publishStream?.message) ?? undefined }}
+        />
+        {supportOpen && (
+          <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(0,0,0,0.45)", display: "flex", alignItems: "flex-end", justifyContent: "center" }} onClick={() => setSupportOpen(false)}>
+            <div onClick={(e) => e.stopPropagation()} style={{ width: "100%", maxWidth: 560, height: "90dvh", background: "var(--panel)", borderTopLeftRadius: 20, borderTopRightRadius: 20, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+              <SupportChat onClose={() => setSupportOpen(false)} />
+            </div>
           </div>
         )}
         <SessionPromptInput
@@ -719,6 +751,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
                   onGoLive={() => setDeployConfirm(true)}
                   onConfirmPublish={() => agentRun.submit("Jetzt veröffentlichen.", session.model_id ?? undefined, { confirmPublish: true, onDone: async () => { await detail.refresh(); } })}
                   onOpen={() => { const u = agentRun.report?.publishedUrl ?? liveUrl ?? detail.deployUrl; if (u) window.open(u, "_blank", "noopener"); }}
+                  onFeedback={() => setFeedbackOpen(true)}
                 />
               : showUpgradeCard
                 ? <AchievementUpgradeCard variant="slot" onUpgrade={upgradeCardOpen} onLater={upgradeCardLater} />
@@ -980,6 +1013,12 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
               <span style={{ flex: 1, minWidth: 0, fontSize: 13, fontFamily: "var(--font-sans)", color: publishStream.phase === "error" ? "var(--danger, #B0432A)" : "var(--ed-fg-1)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {publishStream.phase === "live" ? (t(lang, "Live gestellt", "Published")) : publishStream.message}
               </span>
+              {/* WAVE-J J4: one quiet, honest help offer at the failed-publish moment. */}
+              {publishStream.phase === "error" && (
+                <button data-testid="jit-support-publish" onClick={() => setSupportOpen(true)} style={{ background: "transparent", border: "none", color: "var(--brand-green, #1A3A2A)", textDecoration: "underline", fontSize: 12, cursor: "pointer", fontFamily: "var(--font-sans)", flexShrink: 0 }}>
+                  {t(lang, "Hilfe dabei?", "Need help?")}
+                </button>
+              )}
               {publishStream.phase !== "publishing" && (
                 <button onClick={() => setPublishStream(null)} aria-label="Schließen" style={{ background: "transparent", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-2)", borderRadius: 8, padding: "5px 10px", fontSize: 12, cursor: "pointer", fontFamily: "var(--font-sans)", flexShrink: 0 }}>
                   {publishStream.phase === "error" ? t(lang, "Erneut", "Retry") : "OK"}

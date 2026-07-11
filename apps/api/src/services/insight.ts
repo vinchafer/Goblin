@@ -225,6 +225,7 @@ export function computeJourneys(
 export interface PulseResult {
   days: number;
   dailyActives: Array<{ date: string; count: number }>;
+  runsStarted: number;
   runsFinished: number;
   runsSucceeded: number;
   runSuccessPct: number | null;
@@ -261,6 +262,7 @@ export function computePulse(
   }
   const dailyActives = [...perDay.entries()].map(([date, set]) => ({ date, count: set.size }));
 
+  const runsStarted = inWindow.filter((e) => e.event_type === 'agent_run_started').length;
   const runs = inWindow.filter((e) => e.event_type === 'agent_run_finished');
   const runsSucceeded = runs.filter((e) => (e.meta?.status ?? '') !== 'failed' && (e.meta?.outcome ?? '') !== 'error').length;
   const publishVerified = inWindow.filter((e) => e.event_type === 'publish_verified').length;
@@ -271,6 +273,7 @@ export function computePulse(
   return {
     days,
     dailyActives,
+    runsStarted,
     runsFinished: runs.length,
     runsSucceeded,
     runSuccessPct: runs.length > 0 ? Math.round((runsSucceeded / runs.length) * 1000) / 10 : null,

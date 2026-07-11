@@ -31,7 +31,7 @@ function samplePayload(): InsightPayload {
       { userId: 'c', email: 'anna@test.de', isTest: false, currentStage: 'upgraded', currentStageLabel: 'Upgegradet', lastEventType: 'upgraded', lastEventAt: '2026-07-10T05:00:00Z', hoursSinceLast: 2, stuck: false },
     ],
     pulse: {
-      days: 7, dailyActives: [], runsFinished: 3, runsSucceeded: 2, runSuccessPct: 66.7,
+      days: 7, dailyActives: [], runsStarted: 4, runsFinished: 3, runsSucceeded: 2, runSuccessPct: 66.7,
       publishVerified: 2, publishFailed: 1, publishSuccessPct: 66.7, feedbackCount: 1,
     },
   };

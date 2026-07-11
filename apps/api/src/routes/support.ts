@@ -3,29 +3,12 @@ import { streamSSE } from 'hono/streaming';
 import { z } from 'zod';
 import { authMiddleware } from '../middleware/auth';
 import { getSupabaseAdmin } from '../lib/supabase';
-import { streamSupportAgent, type SupportMessage } from '../services/support-agent';
+import { streamSupportAgent, consumeSupportQuota, type SupportMessage } from '../services/support-agent';
 
 type Variables = { userId: string };
 const support = new Hono<{ Variables: Variables }>();
 
 support.use('*', authMiddleware);
-
-// Rate limit: 30 messages/user/hour (tracked in support_tickets)
-async function checkRateLimit(userId: string): Promise<{ allowed: boolean; remaining: number; resetInMinutes: number }> {
-  const supabase = getSupabaseAdmin();
-  const since = new Date(Date.now() - 3600000).toISOString();
-  const { count } = await supabase
-    .from('support_tickets')
-    .select('*', { count: 'exact', head: true })
-    .eq('user_id', userId)
-    .gte('created_at', since)
-    .is('abuse_flag', null);
-
-  const used = count ?? 0;
-  const limit = 30;
-  const allowed = used < limit;
-  return { allowed, remaining: Math.max(0, limit - used), resetInMinutes: 60 };
-}
 
 const messageSchema = z.object({
   message: z.string().min(1).max(2000),
@@ -39,12 +22,13 @@ const messageSchema = z.object({
 support.post('/chat', async (c) => {
   const userId = c.get('userId');
 
-  const rateCheck = await checkRateLimit(userId);
-  if (!rateCheck.allowed) {
+  // Per-user daily message cap (in-memory abuse guard, WAVE-J J2). Honest limit
+  // message, no fabricated reset time, no "Discord".
+  const quota = consumeSupportQuota(userId);
+  if (!quota.allowed) {
     return c.json({
       error: 'rate_limited',
-      message: `I'm taking a quick break. Try again in ${rateCheck.resetInMinutes} minutes or drop us a line on Discord →`,
-      resetInMinutes: rateCheck.resetInMinutes,
+      message: 'Du hast das heutige Limit für den Hilfe-Agenten erreicht. Schau solange in die Hilfe-Artikel oder schreib uns an support@justgoblin.com. / You\'ve reached today\'s help-agent limit — see the help articles, or email support@justgoblin.com.',
     }, 429);
   }
 

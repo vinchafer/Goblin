@@ -603,6 +603,15 @@ codeSessions.post('/:sessionId/agent', async (c) => {
   return streamSSE(c, async (stream) => {
     await stream.writeSSE({ data: JSON.stringify({ type: 'meta', model_slug: modelSlug, run_id: runId }) });
     const runStartedAt = Date.now();
+    // I1 funnel (rider): agent_run_started — the twin of agent_run_finished.
+    // Emitted the instant the run begins so Pulse can show started-vs-finished;
+    // metadata only (model slug), never the prompt or generated code.
+    trackEvent({
+      eventType: 'agent_run_started',
+      userId,
+      projectId: session.project_id,
+      meta: { model_slug: modelSlug },
+    });
     try {
       const result = await runAgent({
         runId,

@@ -40,6 +40,32 @@ export default function PrivacyPage() {
         </p>
       </section>
 
+      {/* WAVE-J I3 — support + feedback data, DE + EN. */}
+      <section className="mb-8">
+        <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--ink-1)' }}>1b. Support &amp; feedback / Support &amp; Feedback</h2>
+        <p className="mb-3" style={{ color: 'var(--ink-3)' }}>
+          When you chat with the Goblin Hilfe support agent or send feedback, we
+          process what you write to help you and to improve the product. If your
+          request is handed to a human, a bounded transcript of that conversation
+          plus context (your plan, whether Vercel is connected, the last error) is
+          emailed to us and stored as a support ticket so we can reply. Feedback is
+          stored with metadata only (current page, project ID, last error) — never
+          your chat content or files. All of this is deleted when you delete your
+          account.
+        </p>
+        <p className="mb-3" style={{ color: 'var(--ink-3)' }}>
+          Wenn du mit dem Goblin-Hilfe-Agenten chattest oder Feedback sendest,
+          verarbeiten wir, was du schreibst, um dir zu helfen und das Produkt zu
+          verbessern. Wird dein Anliegen an einen Menschen übergeben, werden ein
+          begrenzter Gesprächsverlauf sowie Kontext (dein Plan, ob Vercel verbunden
+          ist, die letzte Fehlermeldung) an uns per E-Mail geschickt und als
+          Support-Ticket gespeichert, damit wir antworten können. Feedback wird nur
+          mit Metadaten gespeichert (aktuelle Seite, Projekt-ID, letzte
+          Fehlermeldung) — nie deine Chat-Inhalte oder Dateien. All das wird mit der
+          Löschung deines Kontos entfernt.
+        </p>
+      </section>
+
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--ink-1)' }}>2. Sub-processors</h2>
         <p className="mb-3" style={{ color: 'var(--ink-3)' }}>

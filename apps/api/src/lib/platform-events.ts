@@ -21,6 +21,10 @@ export type PlatformEventType =
   | 'onboarding_completed'
   | 'project_created'
   | 'message_sent'
+  // agent_run_started is the twin of agent_run_finished: emitted the instant a
+  // run begins, so Pulse can show started-vs-finished (a run that starts but
+  // never finishes is a crash/abandon signal the finished-only count hides).
+  | 'agent_run_started'
   | 'agent_run_finished'
   | 'publish_verified'
   | 'publish_failed'

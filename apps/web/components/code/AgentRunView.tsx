@@ -112,9 +112,11 @@ interface Props {
   onOpen?: () => void;
   /** FEEL-3b D1: the confirmation chip — grants publish + resumes a publish-only run. */
   onConfirmPublish?: () => void;
+  /** WAVE-J J3: opens the Feedback modal, pre-scoped to this run's context. */
+  onFeedback?: () => void;
 }
 
-export function AgentRunView({ streaming, steps, narration, report, elapsedSeconds, onViewChanges, onGoLive, onOpen, onConfirmPublish }: Props) {
+export function AgentRunView({ streaming, steps, narration, report, elapsedSeconds, onViewChanges, onGoLive, onOpen, onConfirmPublish, onFeedback }: Props) {
   const lang = useLang();
   const [collapsed, setCollapsed] = useState(false);
   const toggledRef = useRef(false);
@@ -268,6 +270,12 @@ export function AgentRunView({ streaming, steps, narration, report, elapsedSecon
             {report.followUps.includes("confirm-publish") && (
               <button type="button" data-testid="report-confirm-publish" onClick={() => onConfirmPublish?.()} style={primaryBtn}>
                 {t(lang, "Jetzt veröffentlichen", "Publish now")}
+              </button>
+            )}
+            {/* WAVE-J J3: report-card feedback affordance. */}
+            {onFeedback && (
+              <button type="button" data-testid="report-feedback" onClick={() => onFeedback()} style={ghostBtn}>
+                {t(lang, "Feedback", "Feedback")}
               </button>
             )}
           </div>

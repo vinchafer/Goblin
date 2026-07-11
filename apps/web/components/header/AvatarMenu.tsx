@@ -11,6 +11,7 @@ import { useUser } from '@/lib/hooks/useUser';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useDemoMode } from '@/lib/demo/demo-mode-context';
 import { useLang, t } from '@/lib/use-lang';
+import { FeedbackModal } from '@/components/feedback/FeedbackModal';
 
 // Per v6 TASK 1: the primary nav rows carry NO leading icon (no settings cog,
 // no upgrade/help/logout glyphs) — they sit flush-left, label + chevron only,
@@ -92,6 +93,7 @@ function DesktopMenuPopover({
 
 export function AvatarMenu() {
   const [open, setOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const user = useUser();
@@ -121,6 +123,7 @@ export function AvatarMenu() {
         <SettingsRow dense testId="avatar-menu-settings" label={t(lang, 'Einstellungen', 'Settings')} onClick={() => { close(); setShowSettingsSheet(true); }} />
         <SettingsRow dense label={t(lang, 'Plan upgraden', 'Upgrade plan')} onClick={() => { close(); router.push('/dashboard/upgrade'); }} />
         <SettingsRow dense label={t(lang, 'Hilfe', 'Help')} onClick={() => { close(); router.push('/help'); }} />
+        <SettingsRow dense testId="avatar-menu-feedback" label={t(lang, 'Feedback', 'Feedback')} onClick={() => { close(); setFeedbackOpen(true); }} />
       </SettingsCard>
 
       <div style={{ marginTop: 8 }}>
@@ -133,6 +136,7 @@ export function AvatarMenu() {
 
   return (
     <>
+      <FeedbackModal open={feedbackOpen} onClose={() => setFeedbackOpen(false)} surface="menu" />
       <button
         ref={triggerRef}
         data-testid="header-avatar"

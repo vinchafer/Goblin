@@ -17,6 +17,8 @@ interface Tables {
   goblin_hosted_waitlist: Row[];
   projects: Row[];
   platform_events: Row[];
+  support_tickets: Row[];
+  feedback: Row[];
 }
 let tables: Tables;
 const deletedAuthIds: string[] = [];
@@ -96,6 +98,14 @@ beforeEach(() => {
       { id: 'e3', event_type: 'publish_verified', user_id: VICTIM },
       { id: 'e4', event_type: 'message_sent', user_id: BYSTANDER },
     ],
+    support_tickets: [
+      { id: 't1', user_id: VICTIM, kind: 'escalation', transcript: [{ role: 'user', content: 'hilfe' }] },
+      { id: 't2', user_id: BYSTANDER, kind: 'escalation' },
+    ],
+    feedback: [
+      { id: 'f1', user_id: VICTIM, category: 'idea', body: 'dark mode' },
+      { id: 'f2', user_id: BYSTANDER, category: 'bug', body: 'oops' },
+    ],
   };
 });
 
@@ -111,5 +121,16 @@ describe('hardDeleteUser — platform_events purge (I3)', () => {
     expect(tables.platform_events.filter((e) => e.user_id === BYSTANDER)).toHaveLength(1);
     // And the existing cascade-gap cleanup still ran.
     expect(tables.build_runs.filter((r) => r.user_id === VICTIM)).toHaveLength(0);
+  });
+
+  it('erases the deleted user\'s support tickets + feedback, leaves bystander\'s (WAVE-J I3)', async () => {
+    const outcome = await hardDeleteUser(VICTIM);
+    expect(outcome.purged).toBe(true);
+    // Victim's support transcript + feedback body (personal data, FK-less) are gone.
+    expect(tables.support_tickets.filter((r) => r.user_id === VICTIM)).toHaveLength(0);
+    expect(tables.feedback.filter((r) => r.user_id === VICTIM)).toHaveLength(0);
+    // Bystander's rows survive.
+    expect(tables.support_tickets.filter((r) => r.user_id === BYSTANDER)).toHaveLength(1);
+    expect(tables.feedback.filter((r) => r.user_id === BYSTANDER)).toHaveLength(1);
   });
 });

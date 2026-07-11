@@ -26,7 +26,7 @@ interface Journey {
 interface Pulse {
   days: number;
   dailyActives: Array<{ date: string; count: number }>;
-  runsFinished: number; runsSucceeded: number; runSuccessPct: number | null;
+  runsStarted: number; runsFinished: number; runsSucceeded: number; runSuccessPct: number | null;
   publishVerified: number; publishFailed: number; publishSuccessPct: number | null;
   feedbackCount: number;
 }
@@ -205,6 +205,7 @@ export default function AdminInsightPage() {
           <Card title={`Pulse · ${data.pulse.days} Tage`}>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18, rowGap: 14, marginBottom: 14 }}>
               <Stat label="Agent-Läufe" value={nf(data.pulse.runsFinished)} sub={data.pulse.runSuccessPct != null ? `${data.pulse.runSuccessPct}% ok` : '—'} />
+              <Stat label="Gestartet → fertig" value={`${nf(data.pulse.runsStarted)} → ${nf(data.pulse.runsFinished)}`} sub={data.pulse.runsStarted > data.pulse.runsFinished ? `${nf(data.pulse.runsStarted - data.pulse.runsFinished)} nicht beendet` : 'alle beendet'} />
               <Stat label="Publish-Erfolg" value={data.pulse.publishSuccessPct != null ? `${data.pulse.publishSuccessPct}%` : '—'} sub={`${nf(data.pulse.publishVerified)} ✓ · ${nf(data.pulse.publishFailed)} ✗`} />
               <Stat label="Feedback" value={nf(data.pulse.feedbackCount)} />
             </div>

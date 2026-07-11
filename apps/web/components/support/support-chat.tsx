@@ -1,6 +1,7 @@
 'use client';
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { getAuthHeaders, API_URL } from '@/lib/api';
+import { useLang, t } from '@/lib/use-lang';
 
 interface SupportMessage {
   id: string;
@@ -17,10 +18,13 @@ interface SupportChatProps {
 }
 
 export function SupportChat({ onClose }: SupportChatProps) {
+  const lang = useLang();
   const [messages, setMessages] = useState<SupportMessage[]>([{
     id: 'welcome',
     role: 'assistant',
-    content: "Hi! I'm Goblin Support 👋\n\nWhat can I help you with?",
+    content: t(lang,
+      'Hi! Ich bin Goblin Hilfe 👋\n\nWomit kann ich helfen?',
+      "Hi! I'm Goblin Hilfe 👋\n\nWhat can I help you with?"),
   }]);
   const [input, setInput] = useState('');
   const [streaming, setStreaming] = useState(false);
@@ -96,12 +100,14 @@ export function SupportChat({ onClose }: SupportChatProps) {
 
       setMessages(prev => [...prev, { id: makeId(), role: 'assistant', content: fullText }]);
     } catch {
-      setMessages(prev => [...prev, { id: makeId(), role: 'assistant', content: "Couldn't connect. Check your internet and try again." }]);
+      setMessages(prev => [...prev, { id: makeId(), role: 'assistant', content: t(lang,
+        'Keine Verbindung. Prüfe dein Internet und versuch es nochmal.',
+        "Couldn't connect. Check your internet and try again.") }]);
     } finally {
       setStreaming(false);
       setStreamingText('');
     }
-  }, [messages, streaming]);
+  }, [messages, streaming, lang]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
@@ -116,7 +122,7 @@ export function SupportChat({ onClose }: SupportChatProps) {
           <div style={{ width: 26, height: 26, borderRadius: 7, background: 'rgba(212,169,74,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             <span style={{ fontSize: 'var(--t-caption-fs)', fontWeight: 700, color: 'var(--brand-gold)', fontFamily: 'var(--font-sans)' }}>G</span>
           </div>
-          <span style={{ color: '#fff', fontSize: 13, fontFamily: 'var(--font-sans)', fontWeight: 600 }}>Support</span>
+          <span style={{ color: '#fff', fontSize: 13, fontFamily: 'var(--font-sans)', fontWeight: 600 }}>{t(lang, 'Goblin Hilfe', 'Goblin Hilfe')}</span>
           <span style={{
             fontSize: 9, fontWeight: 700, padding: '1px 5px', borderRadius: 3,
             background: 'rgba(212,169,74,0.2)', color: 'var(--brand-gold)',
@@ -139,8 +145,8 @@ export function SupportChat({ onClose }: SupportChatProps) {
               maxWidth: '85%',
               padding: '8px 12px',
               borderRadius: msg.role === 'user' ? '12px 12px 3px 12px' : '12px 12px 12px 3px',
-              background: msg.role === 'user' ? 'var(--brand-green)' : '#fff',
-              border: msg.role === 'assistant' ? '1px solid #E8E4DC' : 'none',
+              background: msg.role === 'user' ? 'var(--brand-green)' : 'var(--panel, #fff)',
+              border: msg.role === 'assistant' ? '1px solid var(--border)' : 'none',
               color: msg.role === 'user' ? 'rgba(255,255,255,0.92)' : 'var(--text)',
               fontSize: 'var(--t-caption-fs)', lineHeight: 1.6,
               fontFamily: 'var(--font-sans)',
@@ -156,7 +162,7 @@ export function SupportChat({ onClose }: SupportChatProps) {
             <div style={{
               maxWidth: '85%', padding: '8px 12px',
               borderRadius: '12px 12px 12px 3px',
-              background: '#fff', border: '1px solid #E8E4DC',
+              background: 'var(--panel, #fff)', border: '1px solid var(--border)',
               fontSize: 'var(--t-caption-fs)', lineHeight: 1.6, color: 'var(--text)',
               fontFamily: 'var(--font-sans)', whiteSpace: 'pre-wrap',
             }}>
@@ -181,20 +187,20 @@ export function SupportChat({ onClose }: SupportChatProps) {
       </div>
 
       {/* Input */}
-      <div style={{ padding: '10px 12px', borderTop: '1px solid #E8E4DC', background: '#FAFAF8', flexShrink: 0 }}>
+      <div style={{ padding: '10px 12px', borderTop: '1px solid var(--border)', background: 'var(--surface-1, #FAFAF8)', flexShrink: 0 }}>
         <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
           <input
             ref={inputRef}
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input); } }}
-            placeholder="Ask anything..."
+            placeholder={t(lang, 'Frag mich alles …', 'Ask anything…')}
             disabled={streaming}
             style={{
               flex: 1, padding: '7px 10px',
-              border: '1.5px solid #E8E4DC', borderRadius: 8,
+              border: '1.5px solid var(--border)', borderRadius: 8,
               fontSize: 'var(--t-caption-fs)', fontFamily: 'var(--font-sans)',
-              outline: 'none', background: '#fff', color: 'var(--text)',
+              outline: 'none', background: 'var(--panel, #fff)', color: 'var(--text)',
             }}
           />
           <button
