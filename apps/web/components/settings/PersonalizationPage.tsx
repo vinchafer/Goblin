@@ -13,7 +13,6 @@ import { useLang, t } from '@/lib/use-lang';
 // page owns only what's unique to it: custom instructions + memory.
 interface Prefs {
   custom_instructions: string | null;
-  memory_enabled: boolean;
   // F4.2 — "Wie Goblin arbeitet". All three are injected globally and provably
   // change behavior (probe 6.3); no placebo toggles.
   pref_address_name: string | null;
@@ -28,7 +27,6 @@ export function PersonalizationPage() {
   const [bio, setBio] = useState('');
   const [prefs, setPrefs] = useState<Prefs>({
     custom_instructions: '',
-    memory_enabled: false,
     pref_address_name: '',
     pref_response_style: null,
     pref_explain_changes: true,
@@ -57,7 +55,6 @@ export function PersonalizationPage() {
         const data = await r.json();
         setPrefs({
           custom_instructions: data.custom_instructions ?? '',
-          memory_enabled: data.memory_enabled ?? false,
           pref_address_name: data.pref_address_name ?? '',
           pref_response_style: data.pref_response_style ?? null,
           pref_explain_changes: data.pref_explain_changes ?? true,
@@ -213,23 +210,6 @@ export function PersonalizationPage() {
             </div>
           </div>
         </SettingsCard>
-      </SettingsGroup>
-
-      <SettingsGroup label={t(lang, 'Erinnerung', 'Memory')}>
-        <SettingsCard>
-          <SettingsRow
-            label={t(lang, 'Goblin darf sich Kontext aus Chats merken', 'Let Goblin remember context from chats')}
-            rightVariant="toggle"
-            value={prefs.memory_enabled}
-            onChange={(v) => setPrefs((p) => ({ ...p, memory_enabled: v }))}
-          />
-        </SettingsCard>
-        <p style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--text-meta)', marginTop: 8, padding: '0 4px', lineHeight: 1.5 }}>
-          {t(lang,
-            'Memory-Verwaltung (was gemerkt wurde, einzelne Einträge löschen) folgt in einem kommenden Update.',
-            'Memory management (what was remembered, deleting individual entries) is coming in a future update.'
-          )}
-        </p>
       </SettingsGroup>
 
       <button onClick={save} disabled={saving} style={{
