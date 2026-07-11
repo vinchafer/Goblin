@@ -22,6 +22,7 @@ import { trackEvent } from '../lib/platform-events';
 import { loadUserPreferences } from '../services/user-preferences';
 import { grantsPublish } from '../services/agent/intent';
 import { createAgentRun, finalizeAgentRun } from '../services/agent/run-store';
+import { notifyAgentRunFinished } from './notifications';
 import type { AgentMessage } from '../services/agent/types';
 
 type Variables = { userId: string };
@@ -690,6 +691,15 @@ codeSessions.post('/:sessionId/agent', async (c) => {
           iterations: result.iterations,
           duration_ms: Date.now() - runStartedAt,
         },
+      });
+
+      // A-5: "dein Ping vom Strand" — push the run outcome (or the verified live URL) to
+      // the user's devices so they need not watch the tab. Gated by notify_build_complete,
+      // no-op without VAPID/subscription. Fire-and-forget — never blocks the response.
+      void notifyAgentRunFinished(userId, {
+        outcome: result.outcome,
+        publishedUrl: result.report.publishedUrl,
+        projectName: proj?.name ?? null,
       });
 
       await stream.writeSSE({ data: JSON.stringify({ type: 'done', outcome: result.outcome, run_id: runId }) });
