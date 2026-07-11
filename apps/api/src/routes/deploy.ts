@@ -4,10 +4,11 @@ import type { Context, Next } from 'hono';
 import { authMiddleware } from '../middleware/auth';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { deployToVercel, getDeployStatus } from '../services/vercel-service';
-import { verifyDeployment } from '../services/deploy-verification';
+import { verifyDeployment, pickEntryFile } from '../services/deploy-verification';
 import { listFiles, downloadFile } from '../services/file-storage';
 import { trackEvent } from '../lib/platform-events';
 import { runPublishGuard } from '../services/safety/publish-scan';
+import { collectPublishSignals, evalRepeatedBlocks, emitAbuseSignal, hashContent, NEW_ACCOUNT_WINDOW_MS } from '../services/safety/signals';
 
 type Variables = { userId: string };
 const deploy = new Hono<{ Variables: Variables }>();
@@ -71,6 +72,20 @@ deploy.post('/vercel', deployRateLimit, async (c) => {
       // guard degrades open on its own failure — it never kills an honest publish itself.
       const guard = await runPublishGuard({ listFiles, downloadFile }, userId, projectId);
       if (!guard.ok) {
+        // K4: repeated policy blocks = probing. Count this user's recent publish_blocks
+        // and flag if it crosses the threshold. Best-effort, never blocks the response.
+        try {
+          const since = new Date(Date.now() - 24 * 3600_000).toISOString();
+          const { count } = await supabase
+            .from('platform_events')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', userId)
+            .eq('event_type', 'publish_blocked')
+            .gte('created_at', since);
+          // +1 for the block just emitted (trackEvent is async fire-and-forget).
+          const sig = evalRepeatedBlocks((count ?? 0) + 1);
+          if (sig) emitAbuseSignal(userId, projectId, sig);
+        } catch { /* signal path is best-effort */ }
         await stream.writeSSE({
           data: JSON.stringify({
             type: 'blocked',
@@ -147,10 +162,58 @@ deploy.post('/vercel', deployRateLimit, async (c) => {
         .update({ preview_url: finalUrl, last_deployed_at: new Date().toISOString() })
         .eq('id', projectId);
 
+      // K4: content fingerprint of the deployed entry HTML (metadata only — a hash).
+      // Rides in publish_verified.meta so the fan-out flag can compare across projects.
+      let contentSha: string | null = null;
+      try {
+        const entry = pickEntryFile(deployedPaths);
+        const entryContent = entry ? await downloadFile(projectId, entry) : null;
+        if (entryContent) contentSha = hashContent([entryContent]);
+      } catch { /* best-effort fingerprint */ }
+
       // I1 funnel: publish_verified — fires only after the truth-gate confirms the
       // live URL serves the deployed artifact. first-per-user timestamp feeds the
       // first_publish_verified funnel stage (the "reached a live app" number).
-      trackEvent({ eventType: 'publish_verified', userId, projectId });
+      trackEvent({ eventType: 'publish_verified', userId, projectId, meta: contentSha ? { content_sha: contentSha } : {} });
+
+      // K4 (Wave-K, Layer 4) — velocity & fan-out flags. Deterministic, best-effort,
+      // metadata only; they INFORM (into platform_events + logs), never auto-punish.
+      if (contentSha) {
+        void collectPublishSignals(
+          {
+            accountAgeMs: async (uid) => {
+              const { data } = await supabase.auth.admin.getUserById(uid);
+              const created = data?.user?.created_at;
+              return created ? Date.now() - new Date(created).getTime() : null;
+            },
+            publishesInWindow: async (uid) => {
+              const since = new Date(Date.now() - NEW_ACCOUNT_WINDOW_MS).toISOString();
+              const { count } = await supabase
+                .from('projects')
+                .select('id', { count: 'exact', head: true })
+                .eq('user_id', uid)
+                .gte('last_deployed_at', since);
+              return count ?? 0;
+            },
+            priorContentHashes: async (uid, excludeId) => {
+              const { data } = await supabase
+                .from('platform_events')
+                .select('project_id, meta')
+                .eq('user_id', uid)
+                .eq('event_type', 'publish_verified')
+                .neq('project_id', excludeId)
+                .order('created_at', { ascending: false })
+                .limit(200);
+              return (data ?? [])
+                .map((r) => ({ projectId: (r.project_id as string) ?? '', hash: ((r.meta as Record<string, unknown>)?.content_sha as string) ?? '' }))
+                .filter((r) => r.projectId && r.hash);
+            },
+          },
+          userId,
+          projectId,
+          contentSha,
+        );
+      }
 
       // Push notification (non-blocking)
       try {
