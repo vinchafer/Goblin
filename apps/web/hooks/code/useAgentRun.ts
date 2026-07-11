@@ -48,12 +48,15 @@ export function useAgentRun(sessionId: string | null) {
   const [streaming, setStreaming] = useState(false);
   const [steps, setSteps] = useState<AgentStep[]>([]);
   const [narration, setNarration] = useState<string>('');
+  // A-4 (plan mode): the narrated plan for a mehrschrittige run, rendered as a distinct
+  // step above the tool steps. Null on trivial runs (the model never planned).
+  const [plan, setPlan] = useState<string[] | null>(null);
   const [report, setReport] = useState<AgentReport | null>(null);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   const reset = useCallback(() => {
-    setSteps([]); setNarration(''); setReport(null); setError(null);
+    setSteps([]); setNarration(''); setPlan(null); setReport(null); setError(null);
   }, []);
 
   const submit = useCallback(async (prompt: string, modelId: string | undefined, opts?: SubmitOpts) => {
@@ -62,6 +65,7 @@ export function useAgentRun(sessionId: string | null) {
     setError(null);
     setSteps([]);
     setNarration('');
+    setPlan(null);
     setReport(null);
     abortRef.current = new AbortController();
     let finalReport: AgentReport | null = null;
@@ -78,11 +82,14 @@ export function useAgentRun(sessionId: string | null) {
             summary?: string;
             ok?: boolean;
             ms?: number;
+            steps?: string[];
             report?: AgentReport;
             message?: string;
           };
           if (d.type === 'agent_narration') {
             setNarration(d.text ?? '');
+          } else if (d.type === 'agent_plan') {
+            setPlan(d.steps ?? null);
           } else if (d.type === 'agent_step') {
             setSteps((prev) => [...prev, { tool: d.tool ?? '', summary: d.summary ?? '', ok: d.ok ?? true, ms: d.ms ?? 0 }]);
           } else if (d.type === 'agent_report') {
@@ -122,5 +129,5 @@ export function useAgentRun(sessionId: string | null) {
     setStreaming(false);
   }, []);
 
-  return { streaming, steps, narration, report, error, submit, cancel, reset };
+  return { streaming, steps, narration, plan, report, error, submit, cancel, reset };
 }

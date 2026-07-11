@@ -90,6 +90,9 @@ export interface AgentModel {
 /** Events the loop emits as it runs — the route wraps these into SSE frames. */
 export type AgentEvent =
   | { type: 'agent_narration'; text: string }
+  // A-4 (plan mode): on a complex/ambiguous run the model narrates its plan FIRST,
+  // as a distinct step type, before any file tool. Trivial runs never emit this.
+  | { type: 'agent_plan'; steps: string[] }
   | { type: 'agent_step'; tool: string; summary: string; ok: boolean; ms: number }
   | { type: 'agent_report'; report: ReportCard };
 

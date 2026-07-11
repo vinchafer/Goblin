@@ -657,6 +657,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
           streaming={agentRun.streaming}
           steps={agentRun.steps}
           narration={agentRun.narration}
+          plan={agentRun.plan}
           report={agentRun.report}
           elapsedSeconds={agentRun.streaming ? (workingSeconds ?? 0) : null}
           onViewChanges={(p) => handleViewFile(p)}
@@ -745,6 +746,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
                   streaming={agentRun.streaming}
                   steps={agentRun.steps}
                   narration={agentRun.narration}
+                  plan={agentRun.plan}
                   report={agentRun.report}
                   elapsedSeconds={agentRun.streaming ? (workingSeconds ?? 0) : null}
                   onViewChanges={(p) => handleViewFile(p)}

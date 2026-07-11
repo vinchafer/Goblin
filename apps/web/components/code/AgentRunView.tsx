@@ -105,6 +105,8 @@ interface Props {
   streaming: boolean;
   steps: AgentStep[];
   narration: string;
+  /** A-4 plan mode: the narrated plan for a mehrschrittige run; null on trivial runs. */
+  plan?: string[] | null;
   report: AgentReport | null;
   elapsedSeconds?: number | null;
   onViewChanges?: (path: string) => void;
@@ -116,7 +118,7 @@ interface Props {
   onFeedback?: () => void;
 }
 
-export function AgentRunView({ streaming, steps, narration, report, elapsedSeconds, onViewChanges, onGoLive, onOpen, onConfirmPublish, onFeedback }: Props) {
+export function AgentRunView({ streaming, steps, narration, plan, report, elapsedSeconds, onViewChanges, onGoLive, onOpen, onConfirmPublish, onFeedback }: Props) {
   const lang = useLang();
   const [collapsed, setCollapsed] = useState(false);
   const toggledRef = useRef(false);
@@ -128,7 +130,7 @@ export function AgentRunView({ streaming, steps, narration, report, elapsedSecon
     if (!streaming && report && steps.length > 8 && !toggledRef.current) setCollapsed(true);
   }, [streaming, report, steps.length]);
 
-  if (!streaming && steps.length === 0 && !report) return null;
+  if (!streaming && steps.length === 0 && !report && !(plan && plan.length)) return null;
 
   const totalMs = steps.reduce((sum, s) => sum + s.ms, 0);
 
@@ -165,6 +167,24 @@ export function AgentRunView({ streaming, steps, narration, report, elapsedSecon
             : `${steps.length} ${steps.length === 1 ? t(lang, "Schritt", "step") : t(lang, "Schritte", "steps")}${totalMs > 0 ? ` · ${fmtMs(totalMs)}` : ""}`}
         </span>
       </button>
+
+      {/* A-4 plan mode: the narrated plan, a DISTINCT step type above the tool steps.
+          Announce-then-act — it renders as Goblin builds; it is never an approval gate. */}
+      {!collapsed && plan && plan.length > 0 && (
+        <div data-testid="agent-plan" style={{ padding: "2px 12px 8px 34px" }}>
+          <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.4, textTransform: "uppercase", color: "var(--ed-fg-3)", fontFamily: "var(--font-sans)", marginBottom: 4 }}>
+            {t(lang, "Plan", "Plan")}
+          </div>
+          <ol style={{ listStyle: "none", margin: 0, padding: 0, display: "flex", flexDirection: "column", gap: 3 }}>
+            {plan.map((s, i) => (
+              <li key={i} style={{ display: "flex", gap: 8, fontSize: 12.5, color: "var(--ed-fg-2)", fontFamily: "var(--font-sans)", minWidth: 0 }}>
+                <span aria-hidden style={{ flexShrink: 0, color: "var(--ed-fg-3)", fontVariantNumeric: "tabular-nums", width: 14 }}>{i + 1}.</span>
+                <span style={{ overflow: "hidden", textOverflow: "ellipsis" }}>{s}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
 
       {!collapsed && steps.length > 0 && (
         <ul style={{ listStyle: "none", margin: 0, padding: "0 12px 8px 34px" }}>
