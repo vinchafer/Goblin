@@ -1,3 +1,5 @@
+import { APP_DESIGN_FOUNDATION } from './app-design-foundation';
+
 // F1.1 (feel-sprint-1): the Goblin chat system prompt. Every chat completion
 // carries this so the model speaks AS the platform (never "textbasiertes
 // KI-Modell"), knows its true capability map, and routes users into the real
@@ -369,7 +371,10 @@ Du: (write_file …) "Ich trage Tailwind v4 ein (Quelle: https://tailwindcss.com
  * cache into a search / no-search prefix, each still byte-stable for its boolean, and it
  * sits AFTER the unconditional core so the always-warm core is as long as possible.
  */
-export const AGENT_STATIC_PREFIX = [AGENT_IDENTITY, AGENT_MODE_BLOCK].join('\n\n');
+// A-2: the design foundation rides in the static prefix so it is cache-warm (A-1) and
+// shapes the very first generation. It follows the tool docs — it is generation guidance,
+// not protocol — and precedes the dynamic project/user tail.
+export const AGENT_STATIC_PREFIX = [AGENT_IDENTITY, AGENT_MODE_BLOCK, APP_DESIGN_FOUNDATION].join('\n\n');
 
 /**
  * Build the AGENT MODE system prompt: the byte-stable static prefix (identity + tool/
