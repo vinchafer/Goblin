@@ -33,6 +33,28 @@ Numeric acceptance: **new adversarial/security tests = 84** (67+22+17 overlap co
 ## Migrations (authored, NOT applied — founder action)
 - `supabase/migrations/0090_delete_user_kek.sql` — service-role-only idempotent RPC to purge a user's Vault KEK on deletion. Code is pre-migration tolerant (missing function → logged, delete still completes).
 
+## CI ground truth (PR #24, head `7e0cb6e`) — checked from job logs + conclusions
+| Check | Conclusion | Relevance to WAVE-D |
+|---|---|---|
+| API unit tests (incl. build-loop net) | **success** | the suite that covers this wave's 84 new adversarial tests — green |
+| Typecheck & Build | **success** | tsc/build over the whole diff — green |
+| Bundle Size Check | success | — |
+| Vercel Preview Comments | success | — |
+| Sentry Release | skipped | — |
+| **E2E Tests** | **failure** | **PRE-EXISTING master baseline red — NOT introduced by WAVE-D** |
+
+**E2E is red on the master baseline, not from this branch.** Confirmed via the E2E Tests
+workflow history on `master`: **failure at my base `7f351d2`** (#23) and at `ea25df8` (#21)
+and `75131b6` (#20); **last green was `2ae43a9` (#19)** — i.e. e2e went red when **#20
+WAVE-J** merged. The two deterministic failures are both `tests/e2e/23-help-cleanup.spec.ts`
+(`/help` renders FAQ — "Was ist Goblin?" heading not found, auth-desktop + auth-mobile); a
+third (`19-mobile-create-project`) is flaky (passed on retry). **105 e2e passed.** This
+wave's diff touches **zero** web files (`apps/api` + one SQL migration + docs only), so it
+cannot have caused a `/help`-page render failure, and fixing it would be an out-of-scope
+drive-by into WAVE-J/web territory (OS Law 1) — named here as a **pre-existing failure /
+founder-or-WAVE-J-owned ticket**, not addressed by WAVE-D. The checks WAVE-D actually
+gates (API unit tests, Typecheck & Build) are green.
+
 ## Merge decision — **HALT, no merge performed**
 CLOUD RIDER rule 1 (BRANCH + PR, NEVER MERGE — merge is founder-granted only) and OS §3
 (conditional merges execute only when every gate is evidenced AND the founder grants the
