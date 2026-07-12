@@ -2,16 +2,21 @@
 
 import { useState, useEffect } from 'react';
 import type { BuildRun } from '@/hooks/useBuildStatus';
+import { useLang, t, type Lang } from '@/lib/use-lang';
 
 interface BuildStatusBarProps {
   builds: BuildRun[];
 }
 
-const TYPE_LABEL: Record<BuildRun['type'], string> = {
-  github_push: 'Pushing to GitHub',
-  vercel_deploy: 'Deploying to Vercel',
-  code_generation: 'Generating project',
-};
+// Fallback labels when a build has no explicit message. Bilingual (D-3): these
+// were EN-only while the rest of the app renders in the user's chosen language.
+function typeLabel(lang: Lang, type: BuildRun['type']): string {
+  switch (type) {
+    case 'github_push': return t(lang, 'Wird zu GitHub gesichert', 'Pushing to GitHub');
+    case 'vercel_deploy': return t(lang, 'Wird auf Vercel live gestellt', 'Deploying to Vercel');
+    case 'code_generation': return t(lang, 'Projekt wird erstellt', 'Generating project');
+  }
+}
 
 const TYPE_ICON: Record<BuildRun['type'], string> = {
   github_push: '⬆',
@@ -20,6 +25,7 @@ const TYPE_ICON: Record<BuildRun['type'], string> = {
 };
 
 function BuildItem({ build }: { build: BuildRun }) {
+  const lang = useLang();
   const [visible, setVisible] = useState(true);
   const isDone = build.status === 'done';
   const isFailed = build.status === 'failed';
@@ -54,13 +60,13 @@ function BuildItem({ build }: { build: BuildRun }) {
           {TYPE_ICON[build.type]}
         </span>
         <span style={{ fontSize: 'var(--t-caption-fs)', fontWeight: 600, color: 'var(--text)', fontFamily: 'var(--font-sans)', flex: 1 }}>
-          {build.message ?? TYPE_LABEL[build.type]}
+          {build.message ?? typeLabel(lang, build.type)}
         </span>
         {isDone && (
-          <span style={{ fontSize: 11, color: 'var(--success)', fontWeight: 600 }}>✓ Done</span>
+          <span style={{ fontSize: 11, color: 'var(--success)', fontWeight: 600 }}>{t(lang, '✓ Fertig', '✓ Done')}</span>
         )}
         {isFailed && (
-          <span style={{ fontSize: 11, color: 'var(--danger)', fontWeight: 600 }}>✗ Failed</span>
+          <span style={{ fontSize: 11, color: 'var(--danger)', fontWeight: 600 }}>{t(lang, '✗ Fehlgeschlagen', '✗ Failed')}</span>
         )}
         {isRunning && (
           <span style={{ fontSize: 11, color: 'var(--meta)' }}>
