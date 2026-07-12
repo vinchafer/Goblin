@@ -548,10 +548,10 @@ export default function DashboardPage() {
         <section>
           <div className="gobl-section-title">
             <h2>{t(lang, 'Was ist neu', "What's new")}</h2>
-            {/* TODO: point to a dedicated changelog route once it exists
-                (e.g. /dashboard/changelog). /help is the closest real
-                destination today — no dead href="#". */}
-            <Link href="/help">{t(lang, 'Alle Updates →', 'All updates →')}</Link>
+            {/* Labelled for its real destination: the link goes to /help, so it
+                says Help & FAQ rather than promising a changelog it doesn't reach.
+                A dedicated changelog route can reclaim an "All updates" label later. */}
+            <Link href="/help">{t(lang, 'Hilfe & FAQ →', 'Help & FAQ →')}</Link>
           </div>
 
           <div className="gobl-panel" style={{ overflow: 'hidden' }}>
