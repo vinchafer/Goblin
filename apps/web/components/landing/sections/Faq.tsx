@@ -11,7 +11,7 @@ const ITEMS = [
   },
   {
     q: 'What AI models can I use?',
-    a: 'Two Goblin models are built into every plan — Goblin Swift (fast, efficient) and Goblin Forge (for heavier work). No API key, no per-token counter. Want the absolute frontier? Bring your own Anthropic, OpenAI, Google, xAI, Mistral, or DeepSeek key — Goblin takes no margin on it.',
+    a: "Two Goblin models are built into every plan — Goblin Swift (fast, efficient) and Goblin Forge (for heavier work). For what most builders ship, that's more than enough model. No API key, no per-token counter. And if you ever want the absolute frontier, it's one tap away: bring your own Anthropic, OpenAI, Google, xAI, Mistral, or DeepSeek key — Goblin takes no margin on it.",
   },
   {
     q: 'What happens after my trial?',
