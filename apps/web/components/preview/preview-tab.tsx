@@ -80,7 +80,7 @@ export function PreviewTab({ projectId, previewUrl, displayUrl }: PreviewTabProp
           fontSize: 'var(--t-small-fs)', color: 'var(--ink-2)', maxWidth: 400,
           lineHeight: 1.65, marginBottom: 28,
         }}>
-          Push dein Projekt zu GitHub, dann verbinde Vercel zum Deployen.
+          Sichere dein Projekt zu GitHub (pushen), dann verbinde Vercel zum Live-Stellen (deployen).
           Live-Vorschauen erscheinen hier automatisch.
         </p>
 
@@ -90,9 +90,9 @@ export function PreviewTab({ projectId, previewUrl, displayUrl }: PreviewTabProp
           gap: 10, width: '100%', maxWidth: 480, marginBottom: 24,
         }}>
           {[
-            { icon: Github, step: '1', label: 'Zu GitHub pushen', desc: 'Im Code-Tab verbinden' },
+            { icon: Github, step: '1', label: 'Zu GitHub sichern (pushen)', desc: 'Im Code-Tab verbinden' },
             { icon: Rocket, step: '2', label: 'Vercel-Token hinzufügen', desc: 'Einstellungen → API-Keys' },
-            { icon: Globe,  step: '3', label: 'Auto-Deploy', desc: 'Vorschau erscheint hier' },
+            { icon: Globe,  step: '3', label: 'Automatisch live (deployen)', desc: 'Vorschau erscheint hier' },
           ].map(s => (
             <div key={s.step} style={{
               background: 'var(--surface-1)', border: '1px solid var(--rule)',

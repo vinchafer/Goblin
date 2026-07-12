@@ -404,8 +404,8 @@ export default function DashboardPage() {
               </h3>
               <p style={{ fontSize: 'var(--t-small-fs)', color: 'var(--ink-3)', margin: '0 0 20px', maxWidth: 360, marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.55 }}>
                 {t(lang,
-                  'Sag Goblin oben, was du bauen willst — Goblin schreibt den Code, du deployst.',
-                  'Tell Goblin above what you want to build — Goblin writes the code, you deploy.'
+                  'Sag Goblin oben, was du bauen willst — Goblin schreibt den Code, du stellst es live (deployst).',
+                  'Tell Goblin above what you want to build — Goblin writes the code, you go live (deploy).'
                 )}
               </p>
               <button type="button" className="gobl-btn primary" onClick={() => setShowNewProjectModal(true)}>
