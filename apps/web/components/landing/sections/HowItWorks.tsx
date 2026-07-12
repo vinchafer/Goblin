@@ -36,6 +36,13 @@ export function HowItWorks() {
               Ship in <span className="serif-italic">four</span> steps.
             </>
           }
+          lead={
+            <>
+              Describe what you want and the agent takes it from there — building, verifying, and
+              shipping while you watch. Prefer hands-on?{' '}
+              <span className="serif-italic">Take control at any step.</span>
+            </>
+          }
         />
         <div className="how-grid">
           {STEPS.map((s) => (
