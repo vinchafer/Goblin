@@ -102,7 +102,10 @@ export default function ChatsOverviewPage() {
             <GoblinLogo state="thinking" size={32} variant="green" />
           </div>
         ) : chats.length === 0 ? (
-          <p style={{ color: 'var(--text-faint)', fontStyle: 'italic', fontFamily: 'var(--font-sans)', fontSize: 'var(--t-small-fs)' }}>{L.noChats}</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <p style={{ color: 'var(--text-faint)', fontStyle: 'italic', fontFamily: 'var(--font-sans)', fontSize: 'var(--t-small-fs)', margin: 0 }}>{L.noChats}</p>
+            <a href="/dashboard" style={{ color: 'var(--text-meta)', fontFamily: 'var(--font-sans)', fontSize: 'var(--t-small-fs)', textDecoration: 'none' }}>{L.noChatsHint}</a>
+          </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             {chats.map((c) => (

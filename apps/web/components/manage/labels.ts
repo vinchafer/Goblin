@@ -44,6 +44,7 @@ export function manageLabels(lang: Lang) {
     selectedCount: (n: number) => `${n} ausgewählt`,
     noProjects: 'Noch keine Projekte',
     noChats: 'Noch keine Chats',
+    noChatsHint: 'Beginne auf dem Dashboard einen Build — dein Gesprächsverlauf erscheint hier.',
     openProject: 'Projekt öffnen',
     openChat: 'Chat öffnen',
   };
@@ -83,6 +84,7 @@ export function manageLabels(lang: Lang) {
     selectedCount: (n: number) => `${n} selected`,
     noProjects: 'No projects yet',
     noChats: 'No chats yet',
+    noChatsHint: 'Start a build on the dashboard — your chat history will appear here.',
     openProject: 'Open project',
     openChat: 'Open chat',
   };
