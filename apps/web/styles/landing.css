@@ -1276,12 +1276,16 @@
   border-radius: inherit;
 }
 
-/* Skip link */
+/* Skip link — hidden off-screen until focused. Uses translateY(-100%) rather
+   than a fixed negative `top` so the element is fully hidden regardless of its
+   own rendered height. (A fixed `top: -40px` left a ~4px dark sliver protruding
+   above the logo at scroll-top, because the element renders ~44px tall.) */
 .landing-root .skip-link {
-  position: absolute; top: -40px; left: 8px;
+  position: absolute; top: 0; left: 8px;
+  transform: translateY(-100%);
   background: var(--green); color: var(--bone);
   padding: 8px 14px; border-radius: var(--radius-sm);
   font-size: 13.5px; font-weight: 500;
   z-index: 200;
 }
-.landing-root .skip-link:focus { top: 8px; }
+.landing-root .skip-link:focus { transform: translateY(8px); }
