@@ -183,7 +183,7 @@ export const STR: Record<Lang, {
             + 'und du siehst jede Zeile.',
         },
         {
-          title: 'Du shipst',
+          title: 'Du bringst es live',
           body: 'Ansehen, anpassen, live stellen. Auf jedem Gerät, von überall.',
         },
       ],
@@ -445,7 +445,7 @@ export const STR: Record<Lang, {
             + 'every line.',
         },
         {
-          title: 'You ship',
+          title: 'You go live',
           body: 'Preview, tweak, go live. On any device, from anywhere.',
         },
       ],
