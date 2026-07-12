@@ -438,7 +438,10 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
 
   // ── M2 mobile card→reader→diff navigation ──
   const openReader = (path: string) => { detail.setActivePath(path); setReaderPath(path); setMobileMain("reader"); };
-  const openDiff = (path: string) => { detail.setActivePath(path); setDiffPath(path); };
+  // The Diff sheet lives in the work-surface column, so on mobile we must switch to
+  // it — otherwise "Änderungen ansehen" from the thread-column report card would set
+  // state behind a hidden column and appear to do nothing (F-18). No-op on desktop.
+  const openDiff = (path: string) => { detail.setActivePath(path); setDiffPath(path); setMobileView("editor"); };
   const backToCards = () => { setReaderPath(null); setMobileMain("cards"); };
   const editFromReader = () => { setMobileMain("editor"); };
 
@@ -673,7 +676,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
           plan={agentRun.plan}
           report={agentRun.report}
           elapsedSeconds={agentRun.streaming ? (workingSeconds ?? 0) : null}
-          onViewChanges={(p) => handleViewFile(p)}
+          onViewChanges={(p) => openDiff(p)}
           onGoLive={() => setDeployConfirm(true)}
           onConfirmPublish={() => agentRun.submit("Jetzt veröffentlichen.", session.model_id ?? undefined, { confirmPublish: true, onDone: async () => { await detail.refresh(); } })}
           onOpen={() => { const u = agentRun.report?.publishedUrl ?? liveUrl ?? detail.deployUrl; if (u) window.open(u, "_blank", "noopener"); }}
@@ -764,7 +767,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
                   plan={agentRun.plan}
                   report={agentRun.report}
                   elapsedSeconds={agentRun.streaming ? (workingSeconds ?? 0) : null}
-                  onViewChanges={(p) => handleViewFile(p)}
+                  onViewChanges={(p) => openDiff(p)}
                   onGoLive={() => setDeployConfirm(true)}
                   onConfirmPublish={() => agentRun.submit("Jetzt veröffentlichen.", session.model_id ?? undefined, { confirmPublish: true, onDone: async () => { await detail.refresh(); } })}
                   onOpen={() => { const u = agentRun.report?.publishedUrl ?? liveUrl ?? detail.deployUrl; if (u) window.open(u, "_blank", "noopener"); }}
