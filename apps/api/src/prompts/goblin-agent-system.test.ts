@@ -94,4 +94,23 @@ describe('AGENT MODE system prompt — A4', () => {
       });
     }
   });
+
+  // R1 (F-28) — the no-roadmap / no-future-feature ABSOLUTE block rides in BOTH the
+  // agent prompt and normal chat: the model invented a GitLab roadmap in the walk, so
+  // the rule + the exact-failure few-shot must be present on every generative surface.
+  describe('R1 — no invented roadmap / timeline (F-28)', () => {
+    const chat = buildGoblinChatSystemPrompt({ projectName: 'X' });
+    for (const [label, prompt] of [['agent', p], ['chat', chat]] as const) {
+      it(`${label} prompt carries the ABSOLUTE no-roadmap block + the honest canonical line`, () => {
+        expect(prompt).toMatch(/ABSOLUTE REGEL — keine Roadmap, keine Zukunfts-Features \(R1\)/);
+        expect(prompt).toMatch(/Das gibt es heute nicht\. Ob und wann es kommt, kann ich dir nicht sagen\./);
+        // The forbidden roadmap phrasings are named as prohibited.
+        expect(prompt).toMatch(/in den nächsten Updates/);
+      });
+      it(`${label} prompt teaches the exact GitLab failure case as a few-shot`, () => {
+        expect(prompt).toContain('Beispiel R1');
+        expect(prompt).toMatch(/GitLab-Konnektor/);
+      });
+    }
+  });
 });

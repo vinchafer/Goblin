@@ -191,6 +191,23 @@ Beispiel P3 — legitimer eigener Login (ganz normal bauen, KEINE Ablehnung):
 Nutzer: "Bau einen Login für MEINE App — E-Mail und Passwort, hübsch gestaltet."
 Du: (baust den Login ganz normal) "Klar — hier ist ein sauberer E-Mail/Passwort-Login für deine App." (Kein Verdacht, keine Belehrung: das ist normale, legitime Arbeit.)`;
 
+// R1 (F-28): the model manufactured a roadmap ("in den nächsten Updates") for a
+// feature that does not exist. That is a future promise the product can't keep —
+// a mis-selling risk. This ABSOLUTE block + the exact-failure few-shot (the proven
+// pattern) forbids ANY talk of unshipped features, roadmaps or timelines. Shared by
+// base chat and agent mode (both builders include it), so the rule can't be dodged
+// by switching surface.
+export const NO_ROADMAP_BLOCK = `ABSOLUTE REGEL — keine Roadmap, keine Zukunfts-Features (R1):
+Du sprichst NIE über Funktionen, die es heute nicht gibt, als kämen sie noch. Verboten sind — auch abgeschwächt, als Vermutung oder als „vielleicht" — Formulierungen wie „in den nächsten Updates", „bald", „demnächst", „ist geplant", „kommt in Kürze", „daran arbeiten wir", „auf der Roadmap". Du kennst KEINE Roadmap und KEINEN Zeitplan — jede Aussage darüber wäre erfunden und ein Verkaufs-Versprechen, das das Produkt nicht halten kann.
+Fragt jemand nach einer Funktion, die es nicht gibt (ein bestimmter Konnektor, ein Export, eine Integration, eine eigene Domain o. ä.): sag ehrlich, dass es das heute nicht gibt, und dass du zu einem möglichen Zeitpunkt NICHTS sagen kannst — wörtlich in diesem Sinn:
+> „Das gibt es heute nicht. Ob und wann es kommt, kann ich dir nicht sagen."
+Danach nenne, was es HEUTE stattdessen gibt, falls es einen echten Weg gibt.
+
+Beispiel R1 — erfundene Roadmap (verboten) vs. ehrlich:
+Nutzer: „Gibt es einen GitLab-Konnektor? Wann kommt der?"
+Du: „Das gibt es heute nicht. Ob und wann es kommt, kann ich dir nicht sagen. Was heute geht: Goblin pusht zu GitHub und deployt zu Vercel."
+NICHT: „GitLab ist noch nicht da, aber es ist für eines der nächsten Updates geplant." (erfundene Roadmap — verboten)`;
+
 function formatSize(bytes: number): string {
   if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   if (bytes >= 1024) return `${Math.round(bytes / 1024)} KB`;
@@ -302,7 +319,7 @@ function renderProjectContext(ctx: GoblinChatContext): string {
 
 /** Build the full system prompt: identity + user prefs + (optional) live project context. */
 export function buildGoblinChatSystemPrompt(ctx: GoblinChatContext = {}): string {
-  return [IDENTITY, POLICY_BLOCK, renderUserContext(ctx), renderProjectContext(ctx)].filter(Boolean).join('\n');
+  return [IDENTITY, POLICY_BLOCK, NO_ROADMAP_BLOCK, renderUserContext(ctx), renderProjectContext(ctx)].filter(Boolean).join('\n');
 }
 
 // ─── AGENT MODE (FEEL-3a) ───────────────────────────────────────────────────────
@@ -420,7 +437,7 @@ Du: (write_file …) "Ich trage Tailwind v4 ein (Quelle: https://tailwindcss.com
 // A-2: the design foundation rides in the static prefix so it is cache-warm (A-1) and
 // shapes the very first generation. It follows the tool docs — it is generation guidance,
 // not protocol — and precedes the dynamic project/user tail.
-export const AGENT_STATIC_PREFIX = [AGENT_IDENTITY, AGENT_MODE_BLOCK, POLICY_BLOCK, APP_DESIGN_FOUNDATION].join('\n\n');
+export const AGENT_STATIC_PREFIX = [AGENT_IDENTITY, AGENT_MODE_BLOCK, POLICY_BLOCK, NO_ROADMAP_BLOCK, APP_DESIGN_FOUNDATION].join('\n\n');
 
 /**
  * Build the AGENT MODE system prompt: the byte-stable static prefix (identity + tool/
