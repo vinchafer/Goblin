@@ -4,6 +4,7 @@ import { Smartphone, Tablet, Monitor, RotateCw, ExternalLink, Globe, Github, Roc
 import { GoblinLogo } from '@/components/brand/GoblinLogo';
 import { createClient } from '@/lib/supabase/client';
 import { useDemoMode } from '@/lib/demo/demo-mode-context';
+import { useLang, t } from '@/lib/use-lang';
 import Link from 'next/link';
 
 type Viewport = '375' | '768' | '1440';
@@ -18,6 +19,7 @@ interface PreviewTabProps {
 
 export function PreviewTab({ projectId, previewUrl, displayUrl }: PreviewTabProps) {
   const demoMode = useDemoMode();
+  const lang = useLang();
   const [viewport, setViewport] = useState<Viewport>('1440');
   const [reloadKey, setReloadKey] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -75,13 +77,15 @@ export function PreviewTab({ projectId, previewUrl, displayUrl }: PreviewTabProp
         <h3 style={{
           fontFamily: 'var(--font-sans)', fontSize: 'var(--t-h3-fs)', color: 'var(--brand-green)',
           fontWeight: 600, letterSpacing: '-0.01em', marginBottom: 8,
-        }}>Noch nichts zum Vorschauen.</h3>
+        }}>{t(lang, 'Noch nichts zum Vorschauen.', 'Nothing to preview yet.')}</h3>
         <p style={{
           fontSize: 'var(--t-small-fs)', color: 'var(--ink-2)', maxWidth: 400,
           lineHeight: 1.65, marginBottom: 28,
         }}>
-          Sichere dein Projekt zu GitHub (pushen), dann verbinde Vercel zum Live-Stellen (deployen).
-          Live-Vorschauen erscheinen hier automatisch.
+          {t(lang,
+            'Sichere dein Projekt zu GitHub (pushen), dann verbinde Vercel zum Live-Stellen (deployen). Live-Vorschauen erscheinen hier automatisch.',
+            'Save your project to GitHub (push), then connect Vercel to go live (deploy). Live previews show up here automatically.'
+          )}
         </p>
 
         {/* 3-Schritte-Anleitung */}
@@ -90,9 +94,9 @@ export function PreviewTab({ projectId, previewUrl, displayUrl }: PreviewTabProp
           gap: 10, width: '100%', maxWidth: 480, marginBottom: 24,
         }}>
           {[
-            { icon: Github, step: '1', label: 'Zu GitHub sichern (pushen)', desc: 'Im Code-Tab verbinden' },
-            { icon: Rocket, step: '2', label: 'Vercel-Token hinzufügen', desc: 'Einstellungen → API-Keys' },
-            { icon: Globe,  step: '3', label: 'Automatisch live (deployen)', desc: 'Vorschau erscheint hier' },
+            { icon: Github, step: '1', label: t(lang, 'Zu GitHub sichern (pushen)', 'Save to GitHub (push)'), desc: t(lang, 'Im Code-Tab verbinden', 'Connect in the Code tab') },
+            { icon: Rocket, step: '2', label: t(lang, 'Vercel-Token hinzufügen', 'Add a Vercel token'), desc: t(lang, 'Einstellungen → API-Keys', 'Settings → API keys') },
+            { icon: Globe,  step: '3', label: t(lang, 'Automatisch live (deployen)', 'Auto go-live (deploy)'), desc: t(lang, 'Vorschau erscheint hier', 'Preview shows up here') },
           ].map(s => (
             <div key={s.step} style={{
               background: 'var(--surface-1)', border: '1px solid var(--rule)',
@@ -103,7 +107,7 @@ export function PreviewTab({ projectId, previewUrl, displayUrl }: PreviewTabProp
                   fontSize: 10, fontWeight: 700, color: 'var(--gold-700)',
                   background: 'rgba(212,167,55,0.15)', padding: '1px 6px', borderRadius: 4,
                   letterSpacing: '0.04em',
-                }}>SCHRITT {s.step}</span>
+                }}>{t(lang, 'SCHRITT', 'STEP')} {s.step}</span>
                 <s.icon size={14} color="var(--ink-3)" />
               </div>
               <div style={{ fontSize: 'var(--t-caption-fs)', fontWeight: 600, color: 'var(--ink-1)', marginBottom: 2 }}>
@@ -134,8 +138,8 @@ export function PreviewTab({ projectId, previewUrl, displayUrl }: PreviewTabProp
           if (!conn || (!conn.github && !conn.vercel)) {
             return (
               <div style={{ display: 'flex', gap: 8 }}>
-                <Link href="/dashboard/settings/keys" style={primaryStyle}>Vercel-Token hinzufügen →</Link>
-                <Link href="/dashboard/settings/integrations" style={secondaryStyle}>GitHub verbinden</Link>
+                <Link href="/dashboard/settings/keys" style={primaryStyle}>{t(lang, 'Vercel-Token hinzufügen →', 'Add a Vercel token →')}</Link>
+                <Link href="/dashboard/settings/integrations" style={secondaryStyle}>{t(lang, 'GitHub verbinden', 'Connect GitHub')}</Link>
               </div>
             );
           }
@@ -143,8 +147,8 @@ export function PreviewTab({ projectId, previewUrl, displayUrl }: PreviewTabProp
           if (!conn.github) {
             return (
               <div style={{ display: 'flex', gap: 8 }}>
-                <Link href="/dashboard/settings/integrations" style={primaryStyle}>GitHub verbinden →</Link>
-                {!conn.vercel && <Link href="/dashboard/settings/keys" style={secondaryStyle}>Vercel-Token</Link>}
+                <Link href="/dashboard/settings/integrations" style={primaryStyle}>{t(lang, 'GitHub verbinden →', 'Connect GitHub →')}</Link>
+                {!conn.vercel && <Link href="/dashboard/settings/keys" style={secondaryStyle}>{t(lang, 'Vercel-Token', 'Vercel token')}</Link>}
               </div>
             );
           }
@@ -152,14 +156,14 @@ export function PreviewTab({ projectId, previewUrl, displayUrl }: PreviewTabProp
           if (!conn.vercel) {
             return (
               <div style={{ display: 'flex', gap: 8 }}>
-                <Link href="/dashboard/settings/keys" style={primaryStyle}>Vercel-Token hinzufügen →</Link>
+                <Link href="/dashboard/settings/keys" style={primaryStyle}>{t(lang, 'Vercel-Token hinzufügen →', 'Add a Vercel token →')}</Link>
               </div>
             );
           }
           // Both connected → the real next step is push + deploy from the Code tab.
           return (
             <div style={{ display: 'flex', gap: 8 }}>
-              <Link href={`/dashboard/project/${projectId}/work?tab=code`} style={primaryStyle}>Im Code-Tab deployen →</Link>
+              <Link href={`/dashboard/project/${projectId}/work?tab=code`} style={primaryStyle}>{t(lang, 'Im Code-Tab live stellen →', 'Go live from the Code tab →')}</Link>
             </div>
           );
         })()}
@@ -182,7 +186,7 @@ export function PreviewTab({ projectId, previewUrl, displayUrl }: PreviewTabProp
             <button
               key={v}
               onClick={() => setViewport(v)}
-              title={v === '375' ? 'Mobil (375px)' : v === '768' ? 'Tablet (768px)' : 'Desktop'}
+              title={v === '375' ? t(lang, 'Mobil (375px)', 'Mobile (375px)') : v === '768' ? 'Tablet (768px)' : 'Desktop'}
               style={{
                 padding: '4px 10px', borderRadius: 5,
                 border: 'none', cursor: 'pointer',
@@ -216,12 +220,12 @@ export function PreviewTab({ projectId, previewUrl, displayUrl }: PreviewTabProp
         <button
           onClick={() => { setLoading(true); setReloadKey(k => k + 1); }}
           style={{ background: 'none', border: 'none', color: 'var(--ink-3)', cursor: 'pointer', padding: '4px 6px', lineHeight: 1, display: 'flex', alignItems: 'center' }}
-          title="Neu laden"
+          title={t(lang, 'Neu laden', 'Reload')}
         ><RotateCw size={14} /></button>
         <a
           href={previewUrl} target="_blank" rel="noopener noreferrer"
           style={{ color: 'var(--ink-3)', fontSize: 13, textDecoration: 'none', padding: '4px 6px', lineHeight: 1, display: 'flex', alignItems: 'center' }}
-          title="In neuem Tab öffnen"
+          title={t(lang, 'In neuem Tab öffnen', 'Open in a new tab')}
         ><ExternalLink size={14} /></a>
       </div>
 
@@ -242,9 +246,10 @@ export function PreviewTab({ projectId, previewUrl, displayUrl }: PreviewTabProp
         display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap',
       }}>
         <span style={{ flex: 1, minWidth: 180 }}>
-          Siehst du statt deiner Seite eine Login-Wand? Dann ist die Vercel-Deployment-
-          Protection aktiv — auto-publish gelingt, wenn dein Vercel-Token vollen
-          Projekt-Zugriff hat. Öffne sie hier (du bist bei Vercel eingeloggt):
+          {t(lang,
+            'Siehst du statt deiner Seite eine Login-Wand? Dann ist die Vercel-Deployment-Protection aktiv — auto-publish gelingt, wenn dein Vercel-Token vollen Projekt-Zugriff hat. Öffne sie hier (du bist bei Vercel eingeloggt):',
+            'Seeing a login wall instead of your page? Vercel Deployment Protection is on — auto-publish succeeds when your Vercel token has full project access. Open it here (you are signed in to Vercel):'
+          )}
         </span>
         <a
           href={previewUrl}
@@ -255,7 +260,7 @@ export function PreviewTab({ projectId, previewUrl, displayUrl }: PreviewTabProp
             borderRadius: 8, fontSize: 12, fontWeight: 600, textDecoration: 'none',
             whiteSpace: 'nowrap', flexShrink: 0,
           }}
-        >In Vercel öffnen →</a>
+        >{t(lang, 'In Vercel öffnen →', 'Open in Vercel →')}</a>
       </div>
       )}
 
@@ -285,7 +290,7 @@ export function PreviewTab({ projectId, previewUrl, displayUrl }: PreviewTabProp
             }}>
               {/* Mark is the only loader (§A8 / §B1.6) — no spinner. */}
               <GoblinLogo state="breath" size={64} variant="green" />
-              Vorschau lädt…
+              {t(lang, 'Vorschau lädt…', 'Preview loading…')}
             </div>
           )}
           {/* Sandbox: previews are deployed to external origins (Vercel/Netlify),
@@ -301,7 +306,7 @@ export function PreviewTab({ projectId, previewUrl, displayUrl }: PreviewTabProp
             }}
             sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-modals"
             onLoad={() => setLoading(false)}
-            title="Projekt-Vorschau"
+            title={t(lang, 'Projekt-Vorschau', 'Project preview')}
           />
         </div>
       </div>
