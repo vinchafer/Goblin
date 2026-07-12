@@ -22,7 +22,7 @@ const STEPS = {
     },
     {
       title: 'Behalte deinen Verbrauch im Blick',
-      body: 'Sieh, wie viele Anfragen du diesen Monat genutzt hast. Upgrade oder eigener BYOK-Key jederzeit.',
+      body: 'Sieh, wie viele Anfragen du diesen Monat genutzt hast. Upgrade oder eigener KI-Schlüssel (BYOK) jederzeit.',
       icon: '📊',
     },
   ],
@@ -39,7 +39,7 @@ const STEPS = {
     },
     {
       title: 'Track your usage here',
-      body: "See how many requests you've used this month. Upgrade or add a BYOK key anytime.",
+      body: "See how many requests you've used this month. Upgrade or add your own AI key (BYOK) anytime.",
       icon: '📊',
     },
   ],

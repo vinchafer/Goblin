@@ -6,8 +6,29 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import { GoblinLogo } from '@/components/brand/GoblinLogo';
+import { t, type Lang } from '@/lib/use-lang';
 
 export const dynamic = 'force-dynamic';
+
+// Pre-auth language for the login/signup screen. UNLIKE the in-app useLang
+// (which defaults to 'de' because the user has already picked a language at
+// onboarding Step 0), a cold visitor here arrives from the ENGLISH marketing
+// landing and has no preference yet — so we default to 'en' and only switch to
+// German if they explicitly chose it earlier. Reads the same localStorage key
+// as lib/use-lang (goblin:preferred-lang). SSR renders 'en'; the client
+// corrects on mount at most a one-frame flip if 'de' was stored.
+function useAuthLang(): Lang {
+  const [lang, setLang] = useState<Lang>('en');
+  useEffect(() => {
+    try {
+      const v = window.localStorage.getItem('goblin:preferred-lang');
+      if (v === 'en' || v === 'de') setLang(v);
+    } catch {
+      /* ignore — keep the English default */
+    }
+  }, []);
+  return lang;
+}
 
 type Provider = 'google' | 'github';
 type Mode = 'signup' | 'login';
@@ -76,12 +97,12 @@ const PRIMARY_BTN: React.CSSProperties = {
   boxShadow: '0 1px 2px rgba(45,74,43,0.18)',
 };
 
-const OAUTH_CONFIG: Record<Provider, { label: string; icon: React.ReactNode; }> = {
-  google: { label: 'Continue with Google', icon: <GoogleIcon /> },
-  github: { label: 'Continue with GitHub', icon: <GitHubIcon /> },
+const OAUTH_CONFIG: Record<Provider, { de: string; en: string; icon: React.ReactNode; }> = {
+  google: { de: 'Weiter mit Google', en: 'Continue with Google', icon: <GoogleIcon /> },
+  github: { de: 'Weiter mit GitHub', en: 'Continue with GitHub', icon: <GitHubIcon /> },
 };
 
-function OAuthButton({ provider, onClick, loading }: { provider: Provider; onClick: () => void; loading: boolean }) {
+function OAuthButton({ provider, onClick, loading, lang }: { provider: Provider; onClick: () => void; loading: boolean; lang: Lang }) {
   const cfg = OAUTH_CONFIG[provider];
   const [hovered, setHovered] = useState(false);
   return (
@@ -105,7 +126,7 @@ function OAuthButton({ provider, onClick, loading }: { provider: Provider; onCli
       }}
     >
       {loading ? <Spinner /> : cfg.icon}
-      {cfg.label}
+      {t(lang, cfg.de, cfg.en)}
     </button>
   );
 }
@@ -121,14 +142,17 @@ function PasswordStrengthBar({ strength }: { strength: { score: number; label: s
   );
 }
 
-const VALUE_BULLETS = [
-  { title: 'Build from your phone', body: 'Real coding sessions on iPad, iPhone, anywhere. Not a watered-down chat.' },
-  { title: 'Bring your own keys', body: 'Anthropic, OpenAI, Groq, Mistral — encrypted at rest, never sent to us.' },
-  { title: 'Ship to GitHub + Vercel', body: 'One click from chat to a saved version to live preview.' },
-];
+function valueBullets(lang: Lang) {
+  return [
+    { title: t(lang, 'Bau von deinem Handy aus', 'Build from your phone'), body: t(lang, 'Echte Coding-Sessions auf iPad, iPhone, überall. Kein abgespeckter Chat.', 'Real coding sessions on iPad, iPhone, anywhere. Not a watered-down chat.') },
+    { title: t(lang, 'Bring deine eigenen Schlüssel mit', 'Bring your own keys'), body: t(lang, 'Anthropic, OpenAI, Groq, Mistral — verschlüsselt gespeichert, nie an uns gesendet.', 'Anthropic, OpenAI, Groq, Mistral — encrypted at rest, never sent to us.') },
+    { title: t(lang, 'Zu GitHub + Vercel bringen', 'Ship to GitHub + Vercel'), body: t(lang, 'Ein Klick vom Chat zur gesicherten Version zur Live-Vorschau.', 'One click from chat to a saved version to live preview.') },
+  ];
+}
 
 export default function LoginPage() {
   const router = useRouter();
+  const lang = useAuthLang();
   const searchParams = useSearchParams();
   const [mode, setMode] = useState<Mode>('login');
   const [authMethod, setAuthMethod] = useState<AuthMethod>('magic');
@@ -160,16 +184,16 @@ export default function LoginPage() {
     if (/[A-Z]/.test(pw)) score++;
     if (/[0-9]/.test(pw)) score++;
     if (/[^A-Za-z0-9]/.test(pw)) score++;
-    if (score <= 1) return { score, label: 'Weak', color: 'var(--danger)' };
-    if (score <= 3) return { score, label: 'Fair', color: 'var(--gold-700)' };
-    return { score, label: 'Strong', color: 'var(--success)' };
+    if (score <= 1) return { score, label: t(lang, 'Schwach', 'Weak'), color: 'var(--danger)' };
+    if (score <= 3) return { score, label: t(lang, 'Mittel', 'Fair'), color: 'var(--gold-700)' };
+    return { score, label: t(lang, 'Stark', 'Strong'), color: 'var(--success)' };
   };
 
   const signInWithPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !password || passwordLoading) return;
-    if (mode === 'signup' && !termsAccepted) { toast.error('Please accept the Terms to continue.'); return; }
-    if (mode === 'signup' && password.length < 8) { toast.error('Password must be at least 8 characters.'); return; }
+    if (mode === 'signup' && !termsAccepted) { toast.error(t(lang, 'Bitte akzeptiere die Nutzungsbedingungen, um fortzufahren.', 'Please accept the Terms to continue.')); return; }
+    if (mode === 'signup' && password.length < 8) { toast.error(t(lang, 'Das Passwort muss mindestens 8 Zeichen haben.', 'Password must be at least 8 characters.')); return; }
     setPasswordLoading(true);
     try {
       const supabase = createClient();
@@ -191,7 +215,7 @@ export default function LoginPage() {
           const lockout = await lockoutResp.json().catch(() => ({ locked: false }));
           if (lockout.locked) {
             const mins = Math.ceil((lockout.retryAfterSeconds ?? 0) / 60);
-            toast.error(`Account temporarily locked. Try again in ${mins} min.`);
+            toast.error(t(lang, `Konto vorübergehend gesperrt. Versuch es in ${mins} Min. erneut.`, `Account temporarily locked. Try again in ${mins} min.`));
             return;
           }
         } catch {
@@ -212,7 +236,7 @@ export default function LoginPage() {
         }).catch(() => undefined);
 
         if (error) {
-          if (error.message.toLowerCase().includes('invalid')) toast.error('Incorrect email or password.');
+          if (error.message.toLowerCase().includes('invalid')) toast.error(t(lang, 'E-Mail oder Passwort ist falsch.', 'Incorrect email or password.'));
           else throw error;
           return;
         }
@@ -244,12 +268,12 @@ export default function LoginPage() {
         router.push('/dashboard');
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Authentication failed.');
+      toast.error(err instanceof Error ? err.message : t(lang, 'Anmeldung fehlgeschlagen.', 'Authentication failed.'));
     } finally { setPasswordLoading(false); }
   };
 
   const sendPasswordReset = async () => {
-    if (!email.trim()) { toast.error('Enter your email first.'); return; }
+    if (!email.trim()) { toast.error(t(lang, 'Gib zuerst deine E-Mail ein.', 'Enter your email first.')); return; }
     const supabase = createClient();
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
       redirectTo: `${window.location.origin}/auth/reset-password`,
@@ -277,7 +301,7 @@ export default function LoginPage() {
       if (error) throw error;
     } catch (err) {
       setOauthLoading(null);
-      toast.error(err instanceof Error ? err.message : 'Sign in failed. Please try again.');
+      toast.error(err instanceof Error ? err.message : t(lang, 'Anmeldung fehlgeschlagen. Bitte versuch es erneut.', 'Sign in failed. Please try again.'));
     }
   };
 
@@ -293,13 +317,13 @@ export default function LoginPage() {
       });
       if (error) {
         if (error.message.toLowerCase().includes('signup') || error.message.toLowerCase().includes('not found')) {
-          toast.error('No account found. Switch to "Create account" to sign up.');
+          toast.error(t(lang, 'Kein Konto gefunden. Wechsle zu „Konto erstellen", um dich zu registrieren.', 'No account found. Switch to "Create account" to sign up.'));
         } else throw error;
         return;
       }
       setEmailSent(true);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to send magic link.');
+      toast.error(err instanceof Error ? err.message : t(lang, 'Magic-Link konnte nicht gesendet werden.', 'Failed to send magic link.'));
     } finally { setEmailLoading(false); }
   };
 
@@ -316,7 +340,7 @@ export default function LoginPage() {
         onClick={onBack}
         style={{ marginTop: 14, background: 'none', border: 'none', color: 'var(--meta)', fontSize: 'var(--t-caption-fs)', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}
       >
-        ← Use a different email
+        {t(lang, '← Andere E-Mail verwenden', '← Use a different email')}
       </button>
     </div>
   );
@@ -381,11 +405,11 @@ export default function LoginPage() {
             letterSpacing: '-1px', lineHeight: 1.15, marginBottom: 32,
             maxWidth: 380,
           }}>
-            The cloud workshop<br />
-            <span style={{ color: 'var(--brand-gold)', fontStyle: 'italic' }}>for builders.</span>
+            {t(lang, 'Die Cloud-Werkstatt', 'The cloud workshop')}<br />
+            <span style={{ color: 'var(--brand-gold)', fontStyle: 'italic' }}>{t(lang, 'für Builder.', 'for builders.')}</span>
           </h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 18, maxWidth: 380 }}>
-            {VALUE_BULLETS.map(b => (
+            {valueBullets(lang).map(b => (
               <div key={b.title} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                 <span style={{
                   flexShrink: 0, marginTop: 4,
@@ -416,7 +440,7 @@ export default function LoginPage() {
             <rect x="3" y="11" width="18" height="11" rx="2"/>
             <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
           </svg>
-          AES-256 encrypted · Keys never leave your account
+          {t(lang, 'AES-256-verschlüsselt · Schlüssel verlassen nie dein Konto', 'AES-256 encrypted · Keys never leave your account')}
         </div>
       </div>
 
@@ -447,25 +471,25 @@ export default function LoginPage() {
             fontFamily: 'var(--font-sans)', fontSize: 28, color: 'var(--brand-green)',
             fontWeight: 700, letterSpacing: '-0.6px', marginBottom: 6,
           }}>
-            {mode === 'signup' ? 'Create your account' : 'Welcome back'}
+            {mode === 'signup' ? t(lang, 'Erstelle dein Konto', 'Create your account') : t(lang, 'Willkommen zurück', 'Welcome back')}
           </h1>
           <p style={{ fontSize: 'var(--t-small-fs)', color: 'var(--meta)', marginBottom: 28, lineHeight: 1.5 }}>
             {mode === 'signup'
-              ? <>Free during beta · No credit card</>
-              : <>Sign in to continue building.</>}
+              ? <>{t(lang, 'Kostenlos in der Beta · Keine Kreditkarte', 'Free during beta · No credit card')}</>
+              : <>{t(lang, 'Melde dich an, um weiterzubauen.', 'Sign in to continue building.')}</>}
           </p>
 
           {/* OAuth first (preferred path) */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 18 }}>
-            <OAuthButton provider="google" onClick={() => signInWithOAuth('google')} loading={oauthLoading === 'google'} />
-            <OAuthButton provider="github" onClick={() => signInWithOAuth('github')} loading={oauthLoading === 'github'} />
+            <OAuthButton provider="google" onClick={() => signInWithOAuth('google')} loading={oauthLoading === 'google'} lang={lang} />
+            <OAuthButton provider="github" onClick={() => signInWithOAuth('github')} loading={oauthLoading === 'github'} lang={lang} />
           </div>
 
           {/* Divider */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '20px 0 18px' }}>
             <div style={{ flex: 1, height: 1, background: 'var(--div)' }} />
             <span style={{ fontSize: 11, color: 'var(--meta)', textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 }}>
-              or with email
+              {t(lang, 'oder mit E-Mail', 'or with email')}
             </span>
             <div style={{ flex: 1, height: 1, background: 'var(--div)' }} />
           </div>
@@ -493,7 +517,7 @@ export default function LoginPage() {
                   transition: 'all 0.15s',
                 }}
               >
-                {m === 'magic' ? 'Magic Link' : 'Password'}
+                {m === 'magic' ? 'Magic Link' : t(lang, 'Passwort', 'Password')}
               </button>
             ))}
           </div>
@@ -502,8 +526,11 @@ export default function LoginPage() {
           {authMethod === 'magic' && (emailSent ? (
             <SuccessBox
               icon="📬"
-              title="Magic link sent"
-              body={<>Check <strong style={{ color: 'var(--text)' }}>{email}</strong> and click the link.</>}
+              title={t(lang, 'Magic-Link gesendet', 'Magic link sent')}
+              body={t(lang,
+                <>Prüfe <strong style={{ color: 'var(--text)' }}>{email}</strong> und klick auf den Link.</>,
+                <>Check <strong style={{ color: 'var(--text)' }}>{email}</strong> and click the link.</>
+              )}
               onBack={() => setEmailSent(false)}
             />
           ) : (
@@ -528,7 +555,7 @@ export default function LoginPage() {
                 }}
               >
                 {emailLoading ? <Spinner /> : null}
-                {emailLoading ? 'Sending…' : 'Send magic link'}
+                {emailLoading ? t(lang, 'Wird gesendet…', 'Sending…') : t(lang, 'Magic-Link senden', 'Send magic link')}
               </button>
             </form>
           ))}
@@ -537,16 +564,22 @@ export default function LoginPage() {
           {authMethod === 'password' && emailSent && (
             <SuccessBox
               icon="📬"
-              title="Verify your email"
-              body={<>Check <strong style={{ color: 'var(--text)' }}>{email}</strong> and click the link.</>}
+              title={t(lang, 'Bestätige deine E-Mail', 'Verify your email')}
+              body={t(lang,
+                <>Prüfe <strong style={{ color: 'var(--text)' }}>{email}</strong> und klick auf den Link.</>,
+                <>Check <strong style={{ color: 'var(--text)' }}>{email}</strong> and click the link.</>
+              )}
               onBack={() => { setEmailSent(false); setResetSent(false); }}
             />
           )}
           {authMethod === 'password' && !emailSent && resetSent && (
             <SuccessBox
               icon="🔑"
-              title="Reset link sent"
-              body={<>Check <strong style={{ color: 'var(--text)' }}>{email}</strong>.</>}
+              title={t(lang, 'Link zum Zurücksetzen gesendet', 'Reset link sent')}
+              body={t(lang,
+                <>Prüfe <strong style={{ color: 'var(--text)' }}>{email}</strong>.</>,
+                <>Check <strong style={{ color: 'var(--text)' }}>{email}</strong>.</>
+              )}
               onBack={() => setResetSent(false)}
             />
           )}
@@ -566,7 +599,7 @@ export default function LoginPage() {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  placeholder={mode === 'signup' ? 'Create password (min. 8 chars)' : 'Password'}
+                  placeholder={mode === 'signup' ? t(lang, 'Passwort erstellen (mind. 8 Zeichen)', 'Create password (min. 8 chars)') : t(lang, 'Passwort', 'Password')}
                   required
                   autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
                   style={{ ...FIELD, paddingRight: 44 }}
@@ -583,7 +616,7 @@ export default function LoginPage() {
                   onMouseEnter={e => (e.currentTarget.style.color = 'var(--text)')}
                   onMouseLeave={e => (e.currentTarget.style.color = 'var(--meta)')}
                   tabIndex={-1}
-                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-label={showPassword ? t(lang, 'Passwort verbergen', 'Hide password') : t(lang, 'Passwort anzeigen', 'Show password')}
                 >
                   <EyeIcon open={showPassword} />
                 </button>
@@ -600,12 +633,13 @@ export default function LoginPage() {
                     style={{ accentColor: 'var(--brand-green)', width: 14, height: 14, marginTop: 2 }}
                   />
                   <span>
-                    I agree to the{' '}
-                    <a href="/terms" style={{ color: 'var(--brand-green)', textDecoration: 'none' }}>Terms</a>
+                    {t(lang, 'Ich stimme den', 'I agree to the')}{' '}
+                    <a href="/terms" style={{ color: 'var(--brand-green)', textDecoration: 'none' }}>{t(lang, 'Nutzungsbedingungen', 'Terms')}</a>
                     {', '}
-                    <a href="/acceptable-use" style={{ color: 'var(--brand-green)', textDecoration: 'none' }}>Acceptable Use</a>
-                    {' '}and{' '}
-                    <a href="/privacy" style={{ color: 'var(--brand-green)', textDecoration: 'none' }}>Privacy Policy</a>
+                    <a href="/acceptable-use" style={{ color: 'var(--brand-green)', textDecoration: 'none' }}>{t(lang, 'Nutzungsrichtlinien', 'Acceptable Use')}</a>
+                    {' '}{t(lang, 'und der', 'and')}{' '}
+                    <a href="/privacy" style={{ color: 'var(--brand-green)', textDecoration: 'none' }}>{t(lang, 'Datenschutzerklärung', 'Privacy Policy')}</a>
+                    {t(lang, ' zu', '')}
                   </span>
                 </label>
               )}
@@ -621,7 +655,7 @@ export default function LoginPage() {
                 }}
               >
                 {passwordLoading ? <Spinner /> : null}
-                {passwordLoading ? 'Please wait…' : mode === 'signup' ? 'Create account' : 'Sign in'}
+                {passwordLoading ? t(lang, 'Bitte warten…', 'Please wait…') : mode === 'signup' ? t(lang, 'Konto erstellen', 'Create account') : t(lang, 'Anmelden', 'Sign in')}
               </button>
               {mode === 'login' && (
                 <button
@@ -635,7 +669,7 @@ export default function LoginPage() {
                   onMouseEnter={e => (e.currentTarget.style.color = 'var(--brand-green)')}
                   onMouseLeave={e => (e.currentTarget.style.color = 'var(--meta)')}
                 >
-                  Forgot password?
+                  {t(lang, 'Passwort vergessen?', 'Forgot password?')}
                 </button>
               )}
             </form>
@@ -646,7 +680,7 @@ export default function LoginPage() {
             textAlign: 'center', marginTop: 28, fontSize: 13, color: 'var(--meta)',
             paddingTop: 20, borderTop: '1px solid var(--div)',
           }}>
-            {mode === 'signup' ? 'Already have an account? ' : 'New to Goblin? '}
+            {mode === 'signup' ? t(lang, 'Schon ein Konto? ', 'Already have an account? ') : t(lang, 'Neu bei Goblin? ', 'New to Goblin? ')}
             <button
               onClick={() => switchMode(mode === 'signup' ? 'login' : 'signup')}
               style={{
@@ -657,7 +691,7 @@ export default function LoginPage() {
               onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
               onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}
             >
-              {mode === 'signup' ? 'Sign in →' : 'Create an account →'}
+              {mode === 'signup' ? t(lang, 'Anmelden →', 'Sign in →') : t(lang, 'Konto erstellen →', 'Create an account →')}
             </button>
           </p>
 
@@ -666,12 +700,13 @@ export default function LoginPage() {
             marginTop: 24, fontSize: 11, color: 'var(--disabled)',
             textAlign: 'center', lineHeight: 1.7,
           }}>
-            By continuing you agree to our{' '}
-            <a href="/terms" style={{ color: 'var(--meta)', textDecoration: 'none' }}>Terms</a>
+            {t(lang, 'Mit dem Fortfahren stimmst du unseren', 'By continuing you agree to our')}{' '}
+            <a href="/terms" style={{ color: 'var(--meta)', textDecoration: 'none' }}>{t(lang, 'Nutzungsbedingungen', 'Terms')}</a>
             {' · '}
-            <a href="/acceptable-use" style={{ color: 'var(--meta)', textDecoration: 'none' }}>Acceptable Use</a>
+            <a href="/acceptable-use" style={{ color: 'var(--meta)', textDecoration: 'none' }}>{t(lang, 'Nutzungsrichtlinien', 'Acceptable Use')}</a>
             {' · '}
-            <a href="/privacy" style={{ color: 'var(--meta)', textDecoration: 'none' }}>Privacy</a>
+            <a href="/privacy" style={{ color: 'var(--meta)', textDecoration: 'none' }}>{t(lang, 'Datenschutz', 'Privacy')}</a>
+            {t(lang, ' zu', '')}
           </p>
         </div>
       </div>

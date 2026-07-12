@@ -404,8 +404,8 @@ export default function DashboardPage() {
               </h3>
               <p style={{ fontSize: 'var(--t-small-fs)', color: 'var(--ink-3)', margin: '0 0 20px', maxWidth: 360, marginLeft: 'auto', marginRight: 'auto', lineHeight: 1.55 }}>
                 {t(lang,
-                  'Sag Goblin oben, was du bauen willst — Goblin schreibt den Code, du deployst.',
-                  'Tell Goblin above what you want to build — Goblin writes the code, you deploy.'
+                  'Sag Goblin oben, was du bauen willst — Goblin schreibt den Code, du stellst es live (deployst).',
+                  'Tell Goblin above what you want to build — Goblin writes the code, you go live (deploy).'
                 )}
               </p>
               <button type="button" className="gobl-btn primary" onClick={() => setShowNewProjectModal(true)}>
@@ -548,10 +548,10 @@ export default function DashboardPage() {
         <section>
           <div className="gobl-section-title">
             <h2>{t(lang, 'Was ist neu', "What's new")}</h2>
-            {/* TODO: point to a dedicated changelog route once it exists
-                (e.g. /dashboard/changelog). /help is the closest real
-                destination today — no dead href="#". */}
-            <Link href="/help">{t(lang, 'Alle Updates →', 'All updates →')}</Link>
+            {/* Labelled for its real destination: the link goes to /help, so it
+                says Help & FAQ rather than promising a changelog it doesn't reach.
+                A dedicated changelog route can reclaim an "All updates" label later. */}
+            <Link href="/help">{t(lang, 'Hilfe & FAQ →', 'Help & FAQ →')}</Link>
           </div>
 
           <div className="gobl-panel" style={{ overflow: 'hidden' }}>

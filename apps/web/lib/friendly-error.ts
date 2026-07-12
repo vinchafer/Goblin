@@ -1,37 +1,56 @@
-// Sprint 9 P1: turn raw backend/model errors into plain German for users.
+// Sprint 9 P1: turn raw backend/model errors into plain, jargon-free copy.
 // The model layer surfaces developer strings like "Model not found in LiteLLM"
 // and "LLM Provider NOT provided" straight to the UI — fatal for non-dev users
-// (Max). This maps known failure shapes to calm, jargon-free copy and scrubs any
-// internal component names from anything that slips through.
+// (Max). This maps known failure shapes to calm copy and scrubs any internal
+// component names from anything that slips through.
+//
+// D-4 (launch): the built-in copy is bilingual (DE+EN) via readLang() so an EN
+// user gets English guidance, not German — the same source of truth the rest of
+// the app uses. It also white-labels the model-unavailable line: it no longer
+// names a raw upstream model to the user, it points them back to the picker.
 
-const RULES: Array<{ test: RegExp; msg: string }> = [
+import { readLang } from './use-lang';
+
+const RULES: Array<{ test: RegExp; de: string; en: string }> = [
   // model unavailable / misconfigured (LiteLLM "model not found", wrong provider prefix, etc.)
   { test: /litellm|model not found|provider not provided|no such model|unknown model|invalid model/i,
-    msg: 'Dieses KI-Modell ist gerade nicht verfügbar. Wähle oben ein anderes Modell (z. B. Llama 3.3 70B) und versuch es nochmal.' },
+    de: 'Dieses KI-Modell ist gerade nicht verfügbar. Wähle oben ein anderes Modell und versuch es nochmal.',
+    en: "This AI model isn't available right now. Pick another model above and try again." },
   // missing / invalid key
   { test: /api key|missing key|invalid key|unauthorized provider|no key/i,
-    msg: 'Für dieses Modell fehlt ein gültiger KI-Schlüssel. Füg in den Einstellungen einen Schlüssel hinzu oder wähle ein anderes Modell.' },
+    de: 'Für dieses Modell fehlt ein gültiger KI-Schlüssel. Füg in den Einstellungen einen Schlüssel hinzu oder wähle ein anderes Modell.',
+    en: 'This model needs a valid AI key. Add one in Settings, or pick another model.' },
   // rate limit / quota
   { test: /rate limit|429|quota|too many requests|exhausted/i,
-    msg: 'Zu viele Anfragen gerade. Kurz warten und nochmal versuchen.' },
+    de: 'Zu viele Anfragen gerade. Kurz warten und nochmal versuchen.',
+    en: 'Too many requests right now. Wait a moment and try again.' },
   // auth / session
   { test: /401|403|jwt|token expired|not authenticated|unauthor/i,
-    msg: 'Deine Sitzung ist abgelaufen. Bitte melde dich neu an.' },
+    de: 'Deine Sitzung ist abgelaufen. Bitte melde dich neu an.',
+    en: 'Your session has expired. Please sign in again.' },
   // network
   { test: /failed to fetch|network|econn|timeout|fetch failed|503|502|gateway/i,
-    msg: 'Keine Verbindung zum Server. Bitte erneut versuchen.' },
+    de: 'Keine Verbindung zum Server. Bitte erneut versuchen.',
+    en: "Can't reach the server. Please try again." },
 ];
+
+const DEFAULT_FALLBACK = {
+  de: 'Etwas ist schiefgelaufen — bitte nochmal versuchen.',
+  en: 'Something went wrong — please try again.',
+};
 
 // Tokens that should never reach a user; if a leftover message contains one,
 // fall back to a generic line instead of showing internals.
 const JARGON = /litellm|byok|endpoint|provider|traceback|stack|undefined|null|\bSQL\b|supabase|railway|hono/i;
 
-export function friendlyError(raw: unknown, fallback = 'Etwas ist schiefgelaufen — bitte nochmal versuchen.'): string {
+export function friendlyError(raw: unknown, fallback?: string): string {
+  const lang = readLang();
+  const fb = fallback ?? (lang === 'en' ? DEFAULT_FALLBACK.en : DEFAULT_FALLBACK.de);
   const text = raw instanceof Error ? raw.message : typeof raw === 'string' ? raw : '';
-  if (!text) return fallback;
-  for (const rule of RULES) if (rule.test.test(text)) return rule.msg;
+  if (!text) return fb;
+  for (const rule of RULES) if (rule.test.test(text)) return lang === 'en' ? rule.en : rule.de;
   // No rule matched: only surface the raw text if it's clean of internal jargon.
-  return JARGON.test(text) ? fallback : text;
+  return JARGON.test(text) ? fb : text;
 }
 
 // ─── P0.4 (feel-sprint-1): connection-class failures, honestly diagnosed ─────

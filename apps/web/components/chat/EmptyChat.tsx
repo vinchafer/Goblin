@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { GoblinLogo } from '@/components/brand/GoblinLogo';
 import { Globe, ListChecks, CalendarDays, KeyRound } from 'lucide-react';
+import { useLang, t } from '@/lib/use-lang';
 
 interface EmptyChatProps {
   userName: string;
@@ -12,17 +13,20 @@ interface EmptyChatProps {
 // Suggestions in plain user language — not dev jargon. Each describes
 // what the *result* is, not what tech sits behind it. Icons are lucide
 // glyphs, each semantically distinct (no emoji in product UI, §A6).
+// Bilingual (D-3): the label both renders and prefills the composer, so the
+// same language the user chose flows into the prompt they send.
 const SUGGESTIONS = [
-  { Icon: Globe,        text: 'Eine Landingpage mit Anmeldeformular' },
-  { Icon: ListChecks,   text: 'Eine Aufgabenliste, die meine Einträge merkt' },
-  { Icon: CalendarDays, text: 'Eine Seite, auf der Leute Termine buchen können' },
-  { Icon: KeyRound,     text: 'Magic-Link-Login für meine Next.js-App' },
+  { Icon: Globe,        de: 'Eine Landingpage mit Anmeldeformular',        en: 'A landing page with a signup form' },
+  { Icon: ListChecks,   de: 'Eine Aufgabenliste, die meine Einträge merkt', en: 'A to-do list that remembers my entries' },
+  { Icon: CalendarDays, de: 'Eine Seite, auf der Leute Termine buchen können', en: 'A page where people can book appointments' },
+  { Icon: KeyRound,     de: 'Magic-Link-Login für meine Next.js-App',      en: 'Magic-link login for my Next.js app' },
 ];
 
 // Screen 04 — empty state of a standalone chat. Calm, centered: one idle
 // mark, one greeting line, four suggestion pills that prefill the composer.
 // No hero card (that is screen-03 exclusive), no eyebrow, no subtitle.
 export function EmptyChat({ onSuggestionClick }: EmptyChatProps) {
+  const lang = useLang();
   // Chips read oversized on ~390px phones; tighten padding/font/icon below
   // 640px only. Desktop (built_04_v2 spec) is unchanged. matchMedia matches
   // the responsive pattern already used across the dashboard (Sidebar etc.).
@@ -61,7 +65,7 @@ export function EmptyChat({ onSuggestionClick }: EmptyChatProps) {
           textAlign: 'center',
           margin: '8px 0 0',
         }}>
-          Leg los.
+          {t(lang, 'Leg los.', "Let's go.")}
         </h2>
 
         {/* Suggestion pills — flex-wrap; the chips ARE the tip (no subtitle). */}
@@ -69,11 +73,13 @@ export function EmptyChat({ onSuggestionClick }: EmptyChatProps) {
           display: 'flex', flexWrap: 'wrap', gap: 8,
           justifyContent: 'center', marginTop: 24,
         }}>
-          {SUGGESTIONS.map(s => (
+          {SUGGESTIONS.map(s => {
+            const label = t(lang, s.de, s.en);
+            return (
             <button
-              key={s.text}
+              key={s.de}
               type="button"
-              onClick={() => onSuggestionClick(s.text)}
+              onClick={() => onSuggestionClick(label)}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 8,
                 background: 'var(--surface-1)', border: '1px solid var(--rule)',
@@ -86,9 +92,10 @@ export function EmptyChat({ onSuggestionClick }: EmptyChatProps) {
               onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface-1)'; }}
             >
               <s.Icon size={isMobile ? 14 : 16} />
-              <span>{s.text}</span>
+              <span>{label}</span>
             </button>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

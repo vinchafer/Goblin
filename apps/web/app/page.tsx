@@ -6,6 +6,7 @@ import { TrustedBy } from '@/components/landing/sections/TrustedBy';
 import { Problem } from '@/components/landing/sections/Problem';
 import { HowItWorks } from '@/components/landing/sections/HowItWorks';
 import { SendToCode } from '@/components/landing/sections/SendToCode';
+import { AgentFlow } from '@/components/landing/sections/AgentFlow';
 import { IslandFlow } from '@/components/landing/sections/IslandFlow';
 import { Proof } from '@/components/landing/sections/Proof';
 import { Pricing } from '@/components/landing/sections/Pricing';
@@ -68,6 +69,7 @@ export default function Home() {
           <Problem />
           <HowItWorks />
           <SendToCode />
+          <AgentFlow />
           <IslandFlow />
           <Proof />
           <Pricing />

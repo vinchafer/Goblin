@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { useLang, t } from '@/lib/use-lang';
 
 const STORAGE_KEY = 'goblin_first_chat_tip_dismissed';
 
 export function FirstChatTip() {
+  const lang = useLang();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -53,9 +55,12 @@ export function FirstChatTip() {
     }}>
       <span style={{ fontSize: 'var(--t-small-fs)', flexShrink: 0, marginTop: 1 }}>💡</span>
       <p style={{ flex: 1, fontSize: 'var(--t-caption-fs)', color: 'var(--meta)', fontFamily: 'var(--font-sans)', lineHeight: 1.5, margin: 0 }}>
-        Beschreib, was du bauen willst. Tipp{' '}
-        <span style={{ fontWeight: 600, color: 'var(--gold-700)' }}>[An Code senden →]</span>{' '}
-        bei einem Code-Block — er landet als Entwurf im Code-Tab, den du in Ruhe ansehen und sichern kannst.
+        {t(lang, 'Beschreib, was du bauen willst. Tipp', 'Describe what you want to build. Tap')}{' '}
+        <span style={{ fontWeight: 600, color: 'var(--gold-700)' }}>{t(lang, '[An Code senden →]', '[Send to Code →]')}</span>{' '}
+        {t(lang,
+          'bei einem Code-Block — er landet als Entwurf im Code-Tab, den du in Ruhe ansehen und sichern kannst.',
+          'on a code block — it lands as a draft in the Code tab, where you can review and save it in your own time.'
+        )}
       </p>
       <button
         onClick={dismiss}
@@ -63,7 +68,7 @@ export function FirstChatTip() {
           background: 'none', border: 'none', color: 'var(--text-faint)',
           cursor: 'pointer', fontSize: 'var(--t-body-fs)', lineHeight: 1, padding: '2px 4px', flexShrink: 0,
         }}
-        aria-label="Dismiss tip"
+        aria-label={t(lang, 'Tipp schließen', 'Dismiss tip')}
       >
         ×
       </button>
