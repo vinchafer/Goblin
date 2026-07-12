@@ -6,9 +6,29 @@ import Link from 'next/link';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import { GoblinLogo } from '@/components/brand/GoblinLogo';
-import { useLang, t, type Lang } from '@/lib/use-lang';
+import { t, type Lang } from '@/lib/use-lang';
 
 export const dynamic = 'force-dynamic';
+
+// Pre-auth language for the login/signup screen. UNLIKE the in-app useLang
+// (which defaults to 'de' because the user has already picked a language at
+// onboarding Step 0), a cold visitor here arrives from the ENGLISH marketing
+// landing and has no preference yet — so we default to 'en' and only switch to
+// German if they explicitly chose it earlier. Reads the same localStorage key
+// as lib/use-lang (goblin:preferred-lang). SSR renders 'en'; the client
+// corrects on mount at most a one-frame flip if 'de' was stored.
+function useAuthLang(): Lang {
+  const [lang, setLang] = useState<Lang>('en');
+  useEffect(() => {
+    try {
+      const v = window.localStorage.getItem('goblin:preferred-lang');
+      if (v === 'en' || v === 'de') setLang(v);
+    } catch {
+      /* ignore — keep the English default */
+    }
+  }, []);
+  return lang;
+}
 
 type Provider = 'google' | 'github';
 type Mode = 'signup' | 'login';
@@ -132,7 +152,7 @@ function valueBullets(lang: Lang) {
 
 export default function LoginPage() {
   const router = useRouter();
-  const lang = useLang();
+  const lang = useAuthLang();
   const searchParams = useSearchParams();
   const [mode, setMode] = useState<Mode>('login');
   const [authMethod, setAuthMethod] = useState<AuthMethod>('magic');
