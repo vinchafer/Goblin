@@ -25,9 +25,11 @@ export function Hero() {
         </h1>
 
         <p className="hero-lead">
-          The cloud workshop for builders who don&apos;t wait for a laptop. The AI is built in —
-          no keys, no setup, no token counter. Build on any device, push to GitHub, deploy in
-          ~34 seconds. Want the frontier? <span className="serif-italic">Bring your own key.</span>
+          The cloud workshop for builders who don&apos;t wait for a laptop. Describe what you
+          want and the agent builds, verifies, and ships it — you watch every step and{' '}
+          <span className="serif-italic">take control whenever you like.</span> The AI is built
+          in — no keys, no setup, no token counter. Build on any device, push to GitHub, deploy
+          in seconds.
         </p>
 
         <div className="hero-cta">

@@ -77,7 +77,7 @@ export function Footer() {
             ))}
           </div>
           <div className="footer-devices-note">
-            Browser today, on everything. Native desktop apps coming in 2026.
+            Browser today, on everything. Native desktop apps on the roadmap.
           </div>
         </div>
 

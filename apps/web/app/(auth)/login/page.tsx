@@ -191,7 +191,7 @@ export default function LoginPage() {
           const lockout = await lockoutResp.json().catch(() => ({ locked: false }));
           if (lockout.locked) {
             const mins = Math.ceil((lockout.retryAfterSeconds ?? 0) / 60);
-            toast.error(`Account vorübergehend gesperrt. Versuche es in ${mins} Min erneut.`);
+            toast.error(`Account temporarily locked. Try again in ${mins} min.`);
             return;
           }
         } catch {

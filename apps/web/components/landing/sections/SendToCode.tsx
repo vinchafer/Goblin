@@ -50,7 +50,7 @@ export function SendToCode() {
                 </svg>
               </span>
               <span className="name">Goblin Chat</span>
-              <span className="model">claude-sonnet-4-6</span>
+              <span className="model">Goblin Swift</span>
             </div>
             <div className="stc-body">
               <div className="msg-user">Add a dark mode toggle to the navbar</div>

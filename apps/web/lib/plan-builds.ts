@@ -34,8 +34,18 @@ export const PLAN_BUILDS: Record<'trial' | 'build' | 'pro' | 'power', number> = 
   power: Math.round(MONTHLY_ALLOWANCE.power / COST_UNITS_PER_BUILD),
 };
 
-/** Localized "≈ N Builds / month" feature line. DE/EN parity; "Builds" is a loanword. */
+/**
+ * Localized "≈ N Builds / month" feature line. DE/EN parity; "Builds" is a loanword.
+ *
+ * The figure is an ESTIMATE, not a guarantee: a build's real cost varies with its
+ * complexity (a one-file tweak and a full-stack scaffold draw very differently on the
+ * weighted allowance). The "≈" plus the explicit "varies by complexity" / "je nach
+ * Komplexität" qualifier keep the number honest so a heavy-usage builder who lands
+ * below the round figure was told up front, not surprised.
+ */
 export function buildsPerMonth(plan: keyof typeof PLAN_BUILDS, lang: 'de' | 'en'): string {
   const n = PLAN_BUILDS[plan].toLocaleString(lang === 'en' ? 'en-US' : 'de-DE');
-  return lang === 'en' ? `≈ ${n} Builds / month` : `≈ ${n} Builds / Monat`;
+  return lang === 'en'
+    ? `≈ ${n} Builds / month — varies by complexity`
+    : `≈ ${n} Builds / Monat — je nach Komplexität`;
 }

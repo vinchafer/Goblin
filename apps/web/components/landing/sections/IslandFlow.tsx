@@ -64,7 +64,7 @@ const STEPS: Step[] = [
   {
     num: '06',
     title: 'Deploy to Vercel',
-    body: '~34 seconds, every time',
+    body: 'Live in seconds',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
         <polygon points="12 2 22 20 2 20 12 2" />
