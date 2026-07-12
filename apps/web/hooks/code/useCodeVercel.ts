@@ -12,11 +12,18 @@ export function useCodeVercel(projectId: string, token: string | null) {
   // 10.9-6 — 'public' = Goblin made the project public; 'manual' = the team
   // protects deployments and the user must flip one setting once.
   const [protection, setProtection] = useState<'public' | 'manual' | null>(null);
+  // K3 (Wave-K) — a publish stopped by the deterministic safety scan. Carries the honest
+  // German message + the appeal metadata (surface + policy area) the UI wires to the
+  // Wave-J feedback affordance so a wrongly-blocked builder can reach a human.
+  const [policyBlock, setPolicyBlock] = useState<
+    { message: string; policyArea?: string; ruleIds?: string[]; surface: string; category: string } | null
+  >(null);
 
   const handleDeploy = useCallback(async () => {
     if (deploying || !token) return;
     setDeploying(true);
     setDeployMessage('Veröffentliche…');
+    setPolicyBlock(null);
     await startBuild('vercel_deploy', 'Veröffentliche…');
     try {
       const res = await fetch(`${API_URL}/api/deploy/vercel`, {
@@ -45,6 +52,17 @@ export function useCodeVercel(projectId: string, token: string | null) {
               );
               setTimeout(() => setDeployMessage(null), mode === 'manual' ? 15000 : 6000);
             }
+            if (event.type === 'blocked') {
+              // K3: safety-scan block. Show the honest message + offer the appeal path.
+              setPolicyBlock({
+                message: event.message ?? 'Veröffentlichung wurde aus Sicherheitsgründen gestoppt.',
+                policyArea: event.appeal?.policyArea,
+                ruleIds: event.appeal?.ruleIds,
+                surface: event.appeal?.surface ?? 'publish_block',
+                category: event.appeal?.category ?? 'other',
+              });
+              setDeployMessage(null);
+            }
             if (event.type === 'error') {
               if (typeof event.message === 'string' && event.message.includes('NO_VERCEL_TOKEN')) {
                 setNeedsVercel(true);
@@ -62,5 +80,5 @@ export function useCodeVercel(projectId: string, token: string | null) {
     } finally { setDeploying(false); }
   }, [deploying, projectId, token, startBuild]);
 
-  return { deploying, deployMessage, handleDeploy, activeBuilds, recentDone, needsVercel, protection, dismissNeedsVercel: () => setNeedsVercel(false) };
+  return { deploying, deployMessage, handleDeploy, activeBuilds, recentDone, needsVercel, protection, policyBlock, dismissPolicyBlock: () => setPolicyBlock(null), dismissNeedsVercel: () => setNeedsVercel(false) };
 }

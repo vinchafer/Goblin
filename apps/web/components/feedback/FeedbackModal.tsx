@@ -26,11 +26,13 @@ interface FeedbackModalProps {
   surface: string;
   /** Content-free auto-context. Only page/project_id/last_error are ever sent. */
   context?: FeedbackContext;
+  /** K3 appeal path: auto-set the category (e.g. a publish-block appeal opens as 'other'). */
+  initialCategory?: FeedbackCategory;
 }
 
-export function FeedbackModal({ open, onClose, surface, context }: FeedbackModalProps) {
+export function FeedbackModal({ open, onClose, surface, context, initialCategory }: FeedbackModalProps) {
   const lang = useLang();
-  const [category, setCategory] = useState<FeedbackCategory>('idea');
+  const [category, setCategory] = useState<FeedbackCategory>(initialCategory ?? 'idea');
   const [body, setBody] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
@@ -41,7 +43,7 @@ export function FeedbackModal({ open, onClose, surface, context }: FeedbackModal
     { id: 'other', label: t(lang, 'Sonstiges', 'Other') },
   ];
 
-  const reset = () => { setBody(''); setCategory('idea'); setDone(false); setSubmitting(false); };
+  const reset = () => { setBody(''); setCategory(initialCategory ?? 'idea'); setDone(false); setSubmitting(false); };
   const close = () => { onClose(); setTimeout(reset, 300); };
 
   const submit = async () => {

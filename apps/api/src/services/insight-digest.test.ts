@@ -34,6 +34,7 @@ function samplePayload(): InsightPayload {
       days: 7, dailyActives: [], runsStarted: 4, runsFinished: 3, runsSucceeded: 2, runSuccessPct: 66.7,
       publishVerified: 2, publishFailed: 1, publishSuccessPct: 66.7, feedbackCount: 1,
     },
+    safety: { days: 7, publishBlocked: 0, abuseSignals: 0, byKind: [], recent: [] },
   };
 }
 

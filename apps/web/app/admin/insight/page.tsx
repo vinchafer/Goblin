@@ -30,9 +30,14 @@ interface Pulse {
   publishVerified: number; publishFailed: number; publishSuccessPct: number | null;
   feedbackCount: number;
 }
+interface Safety {
+  days: number; publishBlocked: number; abuseSignals: number;
+  byKind: Array<{ kind: string; count: number }>;
+  recent: Array<{ type: 'publish_blocked' | 'abuse_signal'; kind: string | null; userId: string | null; at: string }>;
+}
 interface Insight {
   generatedAt: string; includeTest: boolean; testAccountCount: number;
-  funnel7: Funnel; funnel30: Funnel; journeys: Journey[]; pulse: Pulse;
+  funnel7: Funnel; funnel30: Funnel; journeys: Journey[]; pulse: Pulse; safety?: Safety;
 }
 
 function Card({ title, right, children }: { title: string; right?: React.ReactNode; children: React.ReactNode }) {
@@ -212,6 +217,40 @@ export default function AdminInsightPage() {
             <div style={{ fontSize: 11, color: 'var(--meta)', marginBottom: 6 }}>Tägliche Aktive</div>
             <ActivesBars data={data.pulse.dailyActives} />
           </Card>
+
+          {/* K4 (Wave-K) — safety signals. Flags INFORM: the founder sees them here and
+              decides; nothing punishes automatically. */}
+          {data.safety && (
+            <Card title={`Sicherheit · Missbrauchs-Signale · ${data.safety.days} Tage`}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18, rowGap: 14, marginBottom: 14 }}>
+                <Stat label="Publish blockiert (K3)" value={nf(data.safety.publishBlocked)} />
+                <Stat label="Verhaltens-Signale (K4)" value={nf(data.safety.abuseSignals)} />
+              </div>
+              {data.safety.byKind.length === 0 ? (
+                <div style={{ fontSize: 12, color: 'var(--meta)' }}>Keine Signale im Zeitraum — sauber.</div>
+              ) : (
+                <>
+                  <div style={{ fontSize: 11, color: 'var(--meta)', marginBottom: 6 }}>Nach Art</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+                    {data.safety.byKind.map((k) => (
+                      <span key={k.kind} style={{ fontFamily: mono, fontSize: 11, color: 'var(--ink-2)', background: 'var(--subtle)', borderRadius: 6, padding: '3px 8px' }}>
+                        {k.kind}: {nf(k.count)}
+                      </span>
+                    ))}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--meta)', marginBottom: 6 }}>Zuletzt</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    {data.safety.recent.slice(0, 12).map((r, i) => (
+                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontFamily: mono, fontSize: 11, color: 'var(--ink-3)' }}>
+                        <span>{r.type === 'publish_blocked' ? '⛔' : '⚑'} {r.kind ?? '—'} · {r.userId?.slice(0, 8) ?? 'anon'}</span>
+                        <span style={{ color: 'var(--meta)' }}>{new Date(r.at).toLocaleString('de-DE')}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </Card>
+          )}
 
           <div style={{ fontSize: 10.5, color: 'var(--meta)', marginTop: 4 }}>
             Stand {new Date(data.generatedAt).toLocaleString('de-DE')} · {data.testAccountCount} Test-Account(s) erkannt

@@ -284,6 +284,57 @@ export function computePulse(
   };
 }
 
+// ── Safety (K4 · Wave-K) ─────────────────────────────────────────────────────────
+// The behavioral-signal + publish-block view. Metadata only (kind, policy area, count,
+// user id, timestamp). Flags INFORM — this surface is where the founder SEES them and
+// decides; nothing here punishes automatically.
+export interface SafetyResult {
+  days: number;
+  publishBlocked: number;
+  abuseSignals: number;
+  byKind: Array<{ kind: string; count: number }>;
+  recent: Array<{ type: 'publish_blocked' | 'abuse_signal'; kind: string | null; userId: string | null; at: string }>;
+}
+
+export function computeSafety(
+  events: EventRow[],
+  days: number,
+  includeTest: boolean,
+  testUserIds: Set<string>,
+  now = Date.now(),
+): SafetyResult {
+  const cutoff = now - days * DAY_MS;
+  const inWindow = events.filter((e) => {
+    if (new Date(e.created_at).getTime() < cutoff) return false;
+    if (!includeTest && e.user_id && testUserIds.has(e.user_id)) return false;
+    return e.event_type === 'publish_blocked' || e.event_type === 'abuse_signal';
+  });
+
+  const byKind = new Map<string, number>();
+  const recent: SafetyResult['recent'] = [];
+  for (const e of inWindow) {
+    const kind = e.event_type === 'abuse_signal'
+      ? String((e.meta?.signal as string) ?? 'unknown')
+      : String((e.meta?.policy_area as string) ?? 'policy');
+    byKind.set(kind, (byKind.get(kind) ?? 0) + 1);
+    recent.push({
+      type: e.event_type as 'publish_blocked' | 'abuse_signal',
+      kind,
+      userId: e.user_id,
+      at: e.created_at,
+    });
+  }
+  recent.sort((a, b) => b.at.localeCompare(a.at));
+
+  return {
+    days,
+    publishBlocked: inWindow.filter((e) => e.event_type === 'publish_blocked').length,
+    abuseSignals: inWindow.filter((e) => e.event_type === 'abuse_signal').length,
+    byKind: [...byKind.entries()].map(([kind, count]) => ({ kind, count })).sort((a, b) => b.count - a.count),
+    recent: recent.slice(0, 50),
+  };
+}
+
 // ── Aggregate (one read serves the whole dashboard) ─────────────────────────────
 export interface InsightPayload {
   generatedAt: string;
@@ -292,6 +343,7 @@ export interface InsightPayload {
   funnel30: ReturnType<typeof computeFunnel>;
   journeys: JourneyRow[];
   pulse: PulseResult;
+  safety: SafetyResult;
   testAccountCount: number;
 }
 
@@ -309,6 +361,7 @@ export async function buildInsight(opts: { days: number; includeTest: boolean })
     funnel30: computeFunnel(users, events, 30, opts.includeTest, testEmails),
     journeys: computeJourneys(users, events, opts.includeTest, testEmails),
     pulse: computePulse(events, opts.days, opts.includeTest, testUserIds),
+    safety: computeSafety(events, opts.days, opts.includeTest, testUserIds),
     testAccountCount: testUserIds.size,
   };
 }

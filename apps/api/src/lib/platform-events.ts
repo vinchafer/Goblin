@@ -38,7 +38,14 @@ export type PlatformEventType =
   | 'help_opened'
   // — Wave-J-ready: emitted only once those surfaces exist —
   | 'support_chat_started'
-  | 'support_chat_escalated';
+  | 'support_chat_escalated'
+  // — Wave-K safety layers (metadata only: rule-ids, policy areas, counts — never
+  //   file contents or generated code) —
+  //   K3: a publish blocked by the deterministic scan (high-confidence hit).
+  | 'publish_blocked'
+  //   K4: a cheap behavioral flag (velocity / content fan-out / repeated refusals).
+  //   Flags INFORM — they never auto-punish; account actions stay founder decisions.
+  | 'abuse_signal';
 
 export interface PlatformEvent {
   eventType: PlatformEventType;

@@ -30,6 +30,8 @@ import {
   type PublishDeps,
   type PublishState,
 } from './publish';
+import { runPublishGuard } from '../safety/publish-scan';
+import { listFiles as realListFiles, downloadFile as realDownloadFile } from '../file-storage';
 import type { ToolSpec, ToolExecutor, ToolCall, ToolResult, ToolContext } from './types';
 import {
   remainingPlatformSearches,
@@ -532,6 +534,10 @@ export function buildToolExecutor(sb: Sb = getSupabaseAdmin(), opts: ExecutorOpt
             promoteDrafts: (c) => promoteDrafts(sb, c),
             projectName: (pid) => projectName(sb, pid),
             markDeployed: (pid, url) => markDeployed(sb, pid, url),
+            // K3: deterministic safety scan before the deploy (Option A: high-confidence
+            // phishing/malware blocks; softer signals are logged).
+            scanPublish: (uid, pid) =>
+              runPublishGuard({ listFiles: realListFiles, downloadFile: realDownloadFile }, uid, pid),
             sleep: opts.sleep,
           },
           ctx,

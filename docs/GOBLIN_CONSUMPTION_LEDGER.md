@@ -180,6 +180,25 @@ Deploy truth-gating (P0.2: HTTP checks only) · STC integrity checks (client/sha
 - **Cost:** ~6k tok × $0.162/M ≈ **$0.001/message**; at the 30/day cap ≈ **$0.03/user/day** worst case. Pure platform COGS; no user-allowance consumption. Escalations add zero model tokens (the email render + ticket insert are non-model).
 - **CFO dependency:** small variable **platform COGS** (like M3/M8/M11), NOT user allowance; add an A-row when prod support volume is measured (read from the `platform_cogs` log line / `platform_events`). | Status: FORMULA (constants VERIFIED in `support-agent.ts`) — measure prod support volume post-merge.
 
+### M13 — Wave-K safety layers (K2 prompt · K3 scan · K4 signals)
+- **Trigger:** every agent/chat completion (K2) + every publish attempt (K3) + every verified/blocked publish (K4).
+- **K2 (generation-time refusal, `POLICY_BLOCK` in `apps/api/src/prompts/goblin-chat-system.ts`):** a fixed
+  ~1.1k-char German block (ABSOLUTE rule + 3 few-shots) is appended to the agent static prefix and to normal
+  chat. Adds **~350 input tokens per completion** — and it rides in the **byte-stable static prefix**, so on
+  the DeepInfra prefix cache it is a **cache-warm prefix, effectively negligible** after the first call (M10
+  caching applies). **No output-token change.** Billing side: folds into the existing M10 (agent) / chat COGS;
+  no new mechanism, no new knob. **Negligible note — no A-row.**
+- **K3 (publish-time scan, `services/safety/publish-scan.ts`):** **zero model tokens.** Deterministic regex over
+  the project's HTML/JS, no external service, no LLM call. Cost is a bounded local file read (≤4 MB, capped) on
+  the publish path — negligible CPU, **no COGS, no allowance consumption.**
+- **K4 (behavioral signals, `services/safety/signals.ts`):** **zero model tokens.** A sha256 hash + a few
+  Supabase count queries on the publish path; emits `abuse_signal` / `publish_blocked` rows into the existing
+  `platform_events` table (same store as I1/I2 — no new billing surface).
+- **K2 real-model gate (one-off):** the `scripts/wave-k-refusal-gate.mts` eval ran **8 short completions** against
+  DeepSeek V3.2 (~$0.001 total) — a one-time verification cost, not a runtime path.
+- **CFO dependency:** none material. K2 adds a small fixed prompt-token increment already inside M10/chat COGS;
+  K3/K4 add none. | Status: FORMULA (constants VERIFIED in the K-modules) — no separate A-row warranted.
+
 ### M6 — Reserved (not yet built; add rows before shipping)
 Extended thinking · new third-party connectors beyond GitHub/Vercel/Brave. *FEEL-3a agent loop → **M10**;
 FEEL-3b publish/self-heal folded into M10; web search → **M11** above.*
