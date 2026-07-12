@@ -7,6 +7,7 @@ import { buildsPerMonth, PLAN_BUILDS } from '@/lib/plan-builds';
 import { storageLabelCloud, storageGbLabel } from '@/lib/plan-storage';
 import { CheckoutPanel } from '@/components/billing/CheckoutPanel';
 import { ChangePlanPanel } from '@/components/billing/ChangePlanPanel';
+import { useLang, t, type Lang } from '@/lib/use-lang';
 
 type PlanId = 'build' | 'pro' | 'power';
 
@@ -26,60 +27,70 @@ interface PlanCardData {
 // Build / Pro / Power, not the proposed Try / Build / Ship rename.
 // Per the design decision the design intent still applies — Power reads
 // as the user's NEXT step, NOT as a per-seat / Teams plan.
-const PLANS: PlanCardData[] = [
-  {
-    id: 'build',
-    name: 'Build',
-    price: 11,
-    monthlyBuilds: PLAN_BUILDS.build,
-    meta: 'FÜR DEN START',
-    pitch: 'Lern Goblin kennen. Großzügiges Kontingent für deine Builds, BYOK auf allen Providern — ohne Goblin-Limit.',
-    features: [
-      buildsPerMonth('build', 'de'),
-      'Unbegrenzte Projekte',
-      'BYOK — alle Provider, kein Goblin-Limit',
-      'Send to Code',
-      'GitHub-Push',
-      storageLabelCloud('build', 'de'),
-    ],
-  },
-  {
-    id: 'pro',
-    name: 'Pro',
-    price: 19,
-    monthlyBuilds: PLAN_BUILDS.pro,
-    meta: 'FÜR REGELMÄSSIGE BUILDER',
-    pitch: 'Mehr monatliches Kontingent für regelmäßige Builds.',
-    features: [
-      buildsPerMonth('pro', 'de'),
-      'Unbegrenzte Projekte',
-      'BYOK — alle Provider, kein Goblin-Limit',
-      storageLabelCloud('pro', 'de'),
-      'Send to Code',
-      'GitHub-Push',
-    ],
-  },
-  {
-    id: 'power',
-    name: 'Power',
-    price: 39,
-    monthlyBuilds: PLAN_BUILDS.power,
-    meta: 'WENN DU MEHR KONTINGENT BRAUCHST',
-    pitch: 'Mehr Durchsatz für Power-Builder.',
-    features: [
-      buildsPerMonth('power', 'de'),
-      'Unbegrenzte Projekte',
-      'BYOK — alle Provider, kein Goblin-Limit',
-      storageLabelCloud('power', 'de'),
-      'Send to Code',
-      'GitHub-Push',
-      'Priority Support',
-    ],
-    featured: true,
-  },
-];
+// D-3: built per-language so an EN user sees English cards, not German.
+function buildPlans(lang: Lang): PlanCardData[] {
+  const unlimitedProjects = t(lang, 'Unbegrenzte Projekte', 'Unlimited projects');
+  const byok = t(lang, 'BYOK — alle Provider, kein Goblin-Limit', 'BYOK — every provider, no Goblin limit');
+  const githubPush = t(lang, 'GitHub-Push', 'GitHub push');
+  return [
+    {
+      id: 'build',
+      name: 'Build',
+      price: 11,
+      monthlyBuilds: PLAN_BUILDS.build,
+      meta: t(lang, 'FÜR DEN START', 'TO GET STARTED'),
+      pitch: t(lang,
+        'Lern Goblin kennen. Großzügiges Kontingent für deine Builds, BYOK auf allen Providern — ohne Goblin-Limit.',
+        'Get to know Goblin. A generous allowance for your builds, BYOK on every provider — with no Goblin limit.'),
+      features: [
+        buildsPerMonth('build', lang),
+        unlimitedProjects,
+        byok,
+        'Send to Code',
+        githubPush,
+        storageLabelCloud('build', lang),
+      ],
+    },
+    {
+      id: 'pro',
+      name: 'Pro',
+      price: 19,
+      monthlyBuilds: PLAN_BUILDS.pro,
+      meta: t(lang, 'FÜR REGELMÄSSIGE BUILDER', 'FOR REGULAR BUILDERS'),
+      pitch: t(lang, 'Mehr monatliches Kontingent für regelmäßige Builds.', 'More monthly allowance for regular builds.'),
+      features: [
+        buildsPerMonth('pro', lang),
+        unlimitedProjects,
+        byok,
+        storageLabelCloud('pro', lang),
+        'Send to Code',
+        githubPush,
+      ],
+    },
+    {
+      id: 'power',
+      name: 'Power',
+      price: 39,
+      monthlyBuilds: PLAN_BUILDS.power,
+      meta: t(lang, 'WENN DU MEHR KONTINGENT BRAUCHST', 'WHEN YOU NEED MORE ALLOWANCE'),
+      pitch: t(lang, 'Mehr Durchsatz für Power-Builder.', 'More throughput for power builders.'),
+      features: [
+        buildsPerMonth('power', lang),
+        unlimitedProjects,
+        byok,
+        storageLabelCloud('power', lang),
+        'Send to Code',
+        githubPush,
+        t(lang, 'Priority Support', 'Priority support'),
+      ],
+      featured: true,
+    },
+  ];
+}
 
 export default function UpgradePage() {
+  const lang = useLang();
+  const PLANS = buildPlans(lang);
   const search = useSearchParams();
   const reason = search?.get('reason'); // ?reason=limit-hit emphasises requests
   const [currentPlan, setCurrentPlan] = useState<string | null>(null);
@@ -121,8 +132,8 @@ export default function UpgradePage() {
   // If the user got here because of a limit hit, emphasise the allowance in the
   // headline. Otherwise neutral.
   const reasonHeadline = reason === 'limit-hit'
-    ? 'Mehr Kontingent pro Monat — wenn du gerade an deine Grenze gestoßen bist.'
-    : 'Drei Pläne. BYOK auf jedem. Jederzeit kündbar.';
+    ? t(lang, 'Mehr Kontingent pro Monat — wenn du gerade an deine Grenze gestoßen bist.', 'More allowance each month — for when you have just hit your limit.')
+    : t(lang, 'Drei Pläne. BYOK auf jedem. Jederzeit kündbar.', 'Three plans. BYOK on each. Cancel anytime.');
 
   return (
     <div style={{ height: '100%', overflowY: 'auto', background: 'var(--d-surface)' }}>
@@ -131,7 +142,7 @@ export default function UpgradePage() {
         <header style={{ textAlign: 'center', marginBottom: 40 }}>
           <div className="gobl-eyebrow" style={{ justifyContent: 'center', marginBottom: 18 }}>
             <span className="tick" />
-            <span className="num">DEIN PLAN · {(currentPlan ?? '—').toUpperCase()}</span>
+            <span className="num">{t(lang, 'DEIN PLAN', 'YOUR PLAN')} · {(currentPlan ?? '—').toUpperCase()}</span>
           </div>
           <h1 style={{
             fontFamily: 'var(--font-dash-display), Manrope, sans-serif',
@@ -139,7 +150,7 @@ export default function UpgradePage() {
             letterSpacing: '-0.034em', lineHeight: 1.04,
             color: 'var(--ink-1)', margin: '0 auto 14px', maxWidth: '16ch',
           }}>
-            Mehr bauen, <span className="gobl-serif">weniger ausgeben.</span>
+            {t(lang, 'Mehr bauen,', 'Build more,')} <span className="gobl-serif">{t(lang, 'weniger ausgeben.', 'spend less.')}</span>
           </h1>
           <p style={{
             fontSize: 16.5, color: 'var(--ink-2)', maxWidth: '56ch',
@@ -176,7 +187,7 @@ export default function UpgradePage() {
                     letterSpacing: '0.16em', padding: '4px 9px', borderRadius: 'var(--radius-xs)',
                     background: 'var(--accent-bright)', color: 'var(--green)', fontWeight: 600,
                   }}>
-                    DEIN PLAN
+                    {t(lang, 'DEIN PLAN', 'YOUR PLAN')}
                   </span>
                 )}
                 <div>
@@ -214,7 +225,7 @@ export default function UpgradePage() {
                     letterSpacing: '0.10em', textTransform: 'uppercase',
                     color: featured ? 'rgba(244,236,216,.62)' : 'var(--ink-3)',
                   }}>
-                    / MONAT
+                    {t(lang, '/ MONAT', '/ MONTH')}
                   </span>
                 </div>
 
@@ -251,7 +262,7 @@ export default function UpgradePage() {
                         fontWeight: 600, fontSize: 'var(--t-small-fs)', cursor: 'not-allowed', opacity: 0.85,
                       }}
                     >
-                      Dein aktueller Plan
+                      {t(lang, 'Dein aktueller Plan', 'Your current plan')}
                     </button>
                   ) : (
                     <button
@@ -261,7 +272,7 @@ export default function UpgradePage() {
                       className={featured ? 'gobl-btn gold' : 'gobl-btn primary'}
                       style={{ width: '100%', justifyContent: 'center', padding: '12px 0' }}
                     >
-                      {`${p.name} wählen →`}
+                      {t(lang, `${p.name} wählen →`, `Choose ${p.name} →`)}
                     </button>
                   )}
                 </div>
@@ -277,20 +288,20 @@ export default function UpgradePage() {
             onClick={() => setMatrixOpen(o => !o)}
             className="gobl-btn ghost sm"
           >
-            {matrixOpen ? 'Vergleich schließen ↑' : 'Alle Features vergleichen →'}
+            {matrixOpen ? t(lang, 'Vergleich schließen ↑', 'Close comparison ↑') : t(lang, 'Alle Features vergleichen →', 'Compare all features →')}
           </button>
         </div>
 
         {matrixOpen && (
           <div className="gobl-panel" style={{ overflow: 'hidden', marginBottom: 32 }}>
             {[
-              { label: 'Builds / Monat (ca.)', values: [PLAN_BUILDS.build, PLAN_BUILDS.pro, PLAN_BUILDS.power].map(n => `≈ ${n.toLocaleString('de-DE')}`) },
-              { label: 'Projekte', values: ['∞', '∞', '∞'] },
-              { label: 'Cloud-Storage', values: [storageGbLabel('build'), storageGbLabel('pro'), storageGbLabel('power')] },
-              { label: 'BYOK (alle Provider, 2 Keys/Anbieter)', values: ['✓', '✓', '✓'] },
+              { label: t(lang, 'Builds / Monat (ca.)', 'Builds / month (approx.)'), values: [PLAN_BUILDS.build, PLAN_BUILDS.pro, PLAN_BUILDS.power].map(n => `≈ ${n.toLocaleString(lang === 'en' ? 'en-US' : 'de-DE')}`) },
+              { label: t(lang, 'Projekte', 'Projects'), values: ['∞', '∞', '∞'] },
+              { label: t(lang, 'Cloud-Storage', 'Cloud storage'), values: [storageGbLabel('build'), storageGbLabel('pro'), storageGbLabel('power')] },
+              { label: t(lang, 'BYOK (alle Provider, 2 Keys/Anbieter)', 'BYOK (every provider, 2 keys/provider)'), values: ['✓', '✓', '✓'] },
               { label: 'Send to Code', values: ['✓', '✓', '✓'] },
-              { label: 'GitHub-Push', values: ['✓', '✓', '✓'] },
-              { label: 'Priority Support', values: ['—', '—', '✓'] },
+              { label: t(lang, 'GitHub-Push', 'GitHub push'), values: ['✓', '✓', '✓'] },
+              { label: t(lang, 'Priority Support', 'Priority support'), values: ['—', '—', '✓'] },
             ].map((row, i, arr) => (
               <div key={row.label} style={{
                 display: 'grid', gridTemplateColumns: '1.4fr repeat(3, 1fr)',
@@ -323,7 +334,11 @@ export default function UpgradePage() {
           display: 'flex', justifyContent: 'center', gap: 24, flexWrap: 'wrap',
           marginTop: 24, paddingTop: 24, borderTop: '1px solid var(--line)',
         }}>
-          {['JEDERZEIT KÜNDBAR', 'BYOK AUF JEDEM TIER', 'STRIPE · KEIN LOCK-IN'].map(s => (
+          {[
+            t(lang, 'JEDERZEIT KÜNDBAR', 'CANCEL ANYTIME'),
+            t(lang, 'BYOK AUF JEDEM TIER', 'BYOK ON EVERY TIER'),
+            t(lang, 'STRIPE · KEIN LOCK-IN', 'STRIPE · NO LOCK-IN'),
+          ].map(s => (
             <span key={s} style={{
               fontFamily: 'JetBrains Mono, monospace', fontSize: 10.5,
               letterSpacing: '0.10em', textTransform: 'uppercase', color: 'var(--ink-3)',
