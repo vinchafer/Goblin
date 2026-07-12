@@ -21,6 +21,7 @@ import { hitRateLimit } from '../../middleware/rate-limit';
 import { publishesPerHour } from '../abuse-caps';
 import { isSoftDeletedPath, FILE_CONTENT_BUDGET_CHARS } from '../project-context';
 import { classifyFile, lineDelta, checkStcIntegrity } from '@goblin/shared';
+import { reconcileBlockPaths } from '../../lib/asset-reconcile';
 import logger from '../../lib/logger';
 import {
   runPublish,
@@ -254,7 +255,7 @@ async function toolWriteFile(sb: Sb, ctx: ToolContext, args: Record<string, unkn
   if (!checked.ok || !checked.path) {
     return { ok: false, summary: `${raw} · ungültiger Pfad`, error: { ...UNSAFE_PATH_ERROR } };
   }
-  const path = checked.path;
+  let path = checked.path;
   // D-1: secret/control files (.env, .git/*, credentials) may never be written into a
   // project — they would leak once deployed or subvert the build. Honest, specific copy.
   if (isForbiddenWriteTarget(path)) {
@@ -269,6 +270,33 @@ async function toolWriteFile(sb: Sb, ctx: ToolContext, args: Record<string, unkn
   }
   if (content.length > WRITE_FILE_MAX_CHARS) {
     return { ok: false, summary: `${path} · zu gross`, error: { code: 'too_large', message: `Inhalt über ${WRITE_FILE_MAX_CHARS / 1000}k Zeichen` } };
+  }
+
+  // F-17 (WALK2-1 ported to the agent path): a css/js edit must land on the asset the
+  // entry HTML actually links. The classic /messages pipeline reconciles this; the
+  // agent path did not — it trusted the model's guessed `args.path` verbatim. So a
+  // guessed `styles.css` (or a sibling) got written, ATTESTED and deployed as a
+  // matched set, while the live entry links `style.css` — the report said GEÄNDERT
+  // but the served page never changed, and the deploy truth-gate (which only verifies
+  // the entry) stayed green. Reconcile BEFORE classify/upsert so the attested path IS
+  // the written path IS the linked (and therefore shipped+served) asset. Same
+  // conservative rule as the classic path: only when the entry links exactly one asset
+  // of that type and the guessed path diverges from it.
+  if (/\.(?:s?css|m?js)$/i.test(path)) {
+    try {
+      const htmlPaths = (await listSessionPaths(sb, ctx.sessionId)).filter((p) => /\.html?$/i.test(p));
+      const htmlFiles = await Promise.all(
+        htmlPaths.map(async (p) => ({ path: p, content: (await readSessionFile(sb, ctx, p)) ?? '' })),
+      );
+      const block = { path };
+      reconcileBlockPaths([block], htmlFiles);
+      if (block.path !== path) {
+        logger.info({ from: path, to: block.path, sessionId: ctx.sessionId }, 'agent_write_reconciled_to_linked_asset');
+        path = block.path;
+      }
+    } catch (e) {
+      logger.warn({ err: (e as Error).message }, 'agent_write_reconcile_skipped');
+    }
   }
 
   // U2 classify against the CURRENT content (real ground truth for the report).
