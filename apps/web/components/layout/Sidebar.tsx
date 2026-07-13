@@ -431,7 +431,7 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
           display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
           padding: '12px 20px 8px 20px', flexShrink: 0,
         }}>
-          <button onClick={onClose} aria-label={t(lang, 'Seitenleiste schließen', 'Close sidebar')} style={{
+          <button onClick={onClose} className="tap-press-tint" aria-label={t(lang, 'Seitenleiste schließen', 'Close sidebar')} style={{
             background: 'rgba(0,0,0,0.04)', border: 'none', fontSize: 'var(--t-h4-fs)',
             color: '#8C857A', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',

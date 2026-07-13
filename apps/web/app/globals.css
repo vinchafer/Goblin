@@ -265,6 +265,16 @@ a[role="button"]:active {
   transition: transform 0.08s ease;
 }
 
+/* CW-6: borderless nav controls (bottom tab, sidebar close) deliberately
+   suppress the native tap-highlight for a clean look — which used to leave them
+   with NO touch feedback. CW-1's scale now covers them, but a 3% scale is a weak
+   cue on a transparent-background nav item, so add a tactile press TINT too.
+   currentColor adapts to each control's theme; `!important` beats the inline
+   `background` these buttons set. */
+.tap-press-tint:active:not(:disabled) {
+  background: color-mix(in srgb, currentColor 10%, transparent) !important;
+}
+
 /* ─── Button primitives ──────────────────────────────────── */
 .btn {
   display: inline-flex;
