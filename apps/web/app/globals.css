@@ -800,3 +800,28 @@ button, input, textarea, select {
     min-height: 44px !important;
   }
 }
+
+/* ─── F-39 — iOS input auto-zoom guard ────────────────────────────────────
+   iOS Safari zooms into any focused <input>/<textarea>/<select> whose
+   font-size computes below 16px — and then does NOT zoom back out, leaving
+   the help sheet (and every other form) stranded zoomed-in. The help
+   composer inherits --t-caption-fs (12px), so focusing it triggered the trap
+   (F-39). Fix systematically at the token/utility layer: on touch devices —
+   the ONLY place the zoom bug exists — force every text-entry control to
+   ≥16px. This covers chat / help / composer + login + settings + feedback in
+   one rule, so no individual field can reintroduce the trap. Desktop
+   (fine-pointer) keeps its intended smaller sizes; there is no zoom there.
+
+   Placed last in source order so it also wins over the desktop
+   .settings-section overrides above on coarse-pointer tablets (iPad), which
+   are >640px yet still zoom. */
+@media (pointer: coarse) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="button"]):not([type="submit"]):not([type="image"]),
+  textarea,
+  select,
+  .settings-section input:not([type="range"]):not([type="checkbox"]):not([type="radio"]),
+  .settings-section textarea,
+  .settings-section select {
+    font-size: 16px !important;
+  }
+}
