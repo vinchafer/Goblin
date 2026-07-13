@@ -116,7 +116,14 @@ export default function AdminInsightPage() {
     setError(null);
     try {
       const res = await fetch(`${ADMIN_BASE}/insight?days=${days}&includeTest=${includeTest}`, { headers: { 'Content-Type': 'application/json' } });
-      if (res.status === 403) { setError('403 — nur für Gründer.'); return; }
+      if (res.status === 403) { setError('403 — dieses Konto hat keinen Admin-Zugriff.'); return; }
+      if (res.status === 401) { setError('401 — Admin-API-Schlüssel stimmt nicht (ADMIN_API_KEY auf Web und API müssen übereinstimmen).'); return; }
+      if (res.status === 500) {
+        // Honest, actionable config error from the proxy (e.g. admin_key_unconfigured).
+        const body = await res.json().catch(() => null) as { detail?: string } | null;
+        setError(body?.detail ? `Konfigurationsfehler — ${body.detail}` : 'Fehler 500 — Admin-Konfiguration prüfen.');
+        return;
+      }
       if (!res.ok) { setError(`Fehler ${res.status}`); return; }
       setData(await res.json());
     } catch {
