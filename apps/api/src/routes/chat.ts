@@ -11,6 +11,7 @@ import { authMiddleware } from '../middleware/auth';
 import { chatStreamRateLimit } from '../middleware/rate-limit';
 import { trackEvent } from '../lib/platform-events';
 import { scrubString } from '../lib/scrub-secrets';
+import { runChatWebSearch } from '../services/search/augment';
 
 type Variables = { userId: string }
 const chat = new Hono<{ Variables: Variables }>();
@@ -55,7 +56,11 @@ chat.get('/:projectId/history', async (c) => {
 // allowance; BYOK has no Goblin-imposed limit, matching the UI promise.
 chat.post('/stream', chatStreamRateLimit, async (c) => {
   const userId = c.get('userId');
-  const { projectId, message, modelSlug, clientMessageId } = await c.req.json();
+  const { projectId, message, modelSlug, clientMessageId, websearch } = await c.req.json();
+  // F-43: the "Websuche" toggle. When ON, this send is routed through the real
+  // search service (search-augmented generation) instead of a tool-less
+  // completion — the toggle actually searches, or honestly reports it couldn't.
+  const wantsWebSearch = websearch === true;
 
   if (!projectId || !message) {
     return c.json({ error: 'Missing parameters' }, 400);
@@ -193,6 +198,42 @@ chat.post('/stream', chatStreamRateLimit, async (c) => {
     c.req.raw.signal.addEventListener('abort', () => {
       abortController.abort();
     });
+
+    // F-43 — search-augmented generation. When the toggle is ON, run one real
+    // web search BEFORE the completion and inject the hits into the system
+    // context so the model answers from live sources and cites them. Fully
+    // additive: off, or no provider configured → identical to the plain path.
+    // A `search` SSE event lets the client show the step actually fired.
+    if (wantsWebSearch) {
+      try {
+        const outcome = await runChatWebSearch(userId, message, abortController.signal);
+        await stream.writeSSE({
+          data: JSON.stringify({
+            type: 'search',
+            query: outcome.query,
+            ran: outcome.ran,
+            results: outcome.results.length,
+            source: outcome.source ?? null,
+            reason: outcome.reason ?? null,
+          }),
+        });
+        if (outcome.contextBlock) {
+          // Prepend the live results to the system prompt (and its reduced
+          // fallback) so both the primary and token-limit-retry paths cite them.
+          systemPrompt = `${outcome.contextBlock}\n\n${systemPrompt}`;
+          if (reducedSystemPrompt) reducedSystemPrompt = `${outcome.contextBlock}\n\n${reducedSystemPrompt}`;
+        }
+        trackEvent({
+          eventType: 'chat_web_search',
+          userId,
+          projectId,
+          meta: { ran: outcome.ran, results: outcome.results.length, reason: outcome.reason ?? null, source: outcome.source ?? null },
+        });
+      } catch (searchErr) {
+        // Search must never break the send — degrade to a normal completion.
+        console.error('[chat] web-search augmentation failed:', searchErr instanceof Error ? searchErr.message : searchErr);
+      }
+    }
 
     try {
       for await (const jsonToken of streamWithReducedContextRetry({

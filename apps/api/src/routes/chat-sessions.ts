@@ -10,6 +10,7 @@ import { loadProjectState, scheduleProjectStateUpdate } from '../services/projec
 import { loadUserPreferences } from '../services/user-preferences.js';
 import { truncateTitle } from '../lib/truncate-title.js';
 import { trackEvent } from '../lib/platform-events.js';
+import { runChatWebSearch } from '../services/search/augment.js';
 
 type Variables = { userId: string };
 const chatSessions = new Hono<{ Variables: Variables }>();
@@ -84,9 +85,11 @@ chatSessions.get('/:id', async (c) => {
 chatSessions.post('/:id/stream', async (c) => {
   const userId = c.get('userId');
   const sessionId = c.req.param('id');
-  const { message, modelSlug, clientMessageId } = await c.req.json() as {
-    message: string; modelSlug?: string; clientMessageId?: string;
+  const { message, modelSlug, clientMessageId, websearch } = await c.req.json() as {
+    message: string; modelSlug?: string; clientMessageId?: string; websearch?: boolean;
   };
+  // F-43: the "Websuche" toggle — route this send through the real search service.
+  const wantsWebSearch = websearch === true;
 
   if (!message?.trim()) return c.json({ error: 'Missing message' }, 400);
   // Optional idempotency key (P0.5) — UUID-validated so it can't smuggle
@@ -225,10 +228,10 @@ chatSessions.post('/:id/stream', async (c) => {
     // F4.2: global user preferences — injected in project AND standalone chats.
     userPreferences: await loadUserPreferences(supabase, userId),
   };
-  const systemPrompt = buildGoblinChatSystemPrompt(promptCtx);
+  let systemPrompt = buildGoblinChatSystemPrompt(promptCtx);
   // B2: fallback prompt (names+sizes only) for the token-limit retry; only set
   // when file contents were actually injected.
-  const reducedSystemPrompt = projectFiles?.some((f) => f.content != null)
+  let reducedSystemPrompt = projectFiles?.some((f) => f.content != null)
     ? buildGoblinChatSystemPrompt({
         ...promptCtx,
         files: projectFiles.map((f) => ({ path: f.path, size: f.size, notLoaded: f.notLoaded })),
@@ -243,6 +246,37 @@ chatSessions.post('/:id/stream', async (c) => {
 
     const abortController = new AbortController();
     c.req.raw.signal.addEventListener('abort', () => abortController.abort());
+
+    // F-43 — search-augmented generation (same real search path as the project
+    // chat). When the "Websuche" toggle is ON, run one live search and inject the
+    // hits so the base chat also answers from sources and cites them. Additive:
+    // off / no provider → identical to the plain completion.
+    if (wantsWebSearch) {
+      try {
+        const outcome = await runChatWebSearch(userId, message, abortController.signal);
+        await stream.writeSSE({
+          data: JSON.stringify({
+            type: 'search',
+            query: outcome.query,
+            ran: outcome.ran,
+            results: outcome.results.length,
+            source: outcome.source ?? null,
+            reason: outcome.reason ?? null,
+          }),
+        });
+        if (outcome.contextBlock) {
+          systemPrompt = `${outcome.contextBlock}\n\n${systemPrompt}`;
+          if (reducedSystemPrompt) reducedSystemPrompt = `${outcome.contextBlock}\n\n${reducedSystemPrompt}`;
+        }
+        trackEvent({
+          eventType: 'chat_web_search',
+          userId,
+          meta: { surface: 'standalone', ran: outcome.ran, results: outcome.results.length, reason: outcome.reason ?? null, source: outcome.source ?? null },
+        });
+      } catch (searchErr) {
+        console.error('[chat-sessions] web-search augmentation failed:', searchErr instanceof Error ? searchErr.message : searchErr);
+      }
+    }
 
     try {
       for await (const jsonToken of streamWithReducedContextRetry({

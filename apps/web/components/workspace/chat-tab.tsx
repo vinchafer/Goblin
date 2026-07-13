@@ -139,7 +139,7 @@ export function ChatTab({ projectId }: ChatTabProps) {
     );
   };
 
-  const handleSubmit = async (text: string, model: SelectedModel) => {
+  const handleSubmit = async (text: string, model: SelectedModel, opts?: { websearch?: boolean }) => {
     const userMsg: ChatMessage = {
       id: `temp-${Date.now()}`,
       project_id: projectId,
@@ -175,7 +175,7 @@ export function ChatTab({ projectId }: ChatTabProps) {
       abortControllerRef.current = new AbortController();
       await apiStream(
         '/api/chat/stream',
-        { projectId, message: text, modelSlug: model.slug },
+        { projectId, message: text, modelSlug: model.slug, websearch: opts?.websearch === true },
         (raw: unknown) => {
           const d = raw as StreamMessage;
 
