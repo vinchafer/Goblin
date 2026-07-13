@@ -327,6 +327,17 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
     return () => setChatProjectId(null);
   }, [projectId, setChatProjectId]);
 
+  // CW-2 (Speed & Haptik F-41): the back button ("← {projectName}") is the
+  // worst-felt offender — its router.push into a force-dynamic project route
+  // stalls on a cold RSC fetch, so the tap reads as dead. Warm that route on
+  // mount so the navigation resolves instantly (paints the project route's
+  // loading skeleton immediately, then hydrates). Keeps the guaranteed
+  // destination — no router.back() back-stack ambiguity. With CW-1 the tap now
+  // both presses and moves at once.
+  useEffect(() => {
+    if (projectId) router.prefetch(`/dashboard/project/${projectId}`);
+  }, [projectId, router]);
+
   // U0: auto-follow only while the user is at the bottom; scroll-up releases
   // the pin so reading during generation works (founder-reported iPhone bug).
   const { containerRef: scrollRef, atBottom, handleScroll, onContentChange, scrollToBottom } =
