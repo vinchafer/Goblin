@@ -240,6 +240,31 @@ button, input, textarea, select {
   font-family: inherit;
 }
 
+/* ─── Global tap ergonomics (Weltklasse haptics) ─────────────
+   Speed & Haptik CW-1. The app's controls are overwhelmingly hand-rolled,
+   inline-styled <button>s whose only feedback is mouse-hover — which does
+   nothing on touch, so taps "feel dead" (F-41). This gives EVERY interactive
+   control an immediate pressed state on finger-down, without touching each
+   call site. `touch-action: manipulation` also removes the double-tap-zoom
+   hesitation on repeated taps. Disabled / aria-disabled controls stay inert.
+   The prefers-reduced-motion block above collapses the transition to ~0 → an
+   honest instant snap, never a bounce.
+   Caveat: a control that sets an INLINE `transform` (higher specificity than a
+   stylesheet rule) won't take the scale — only the DS <Button> hover does that;
+   the inline-styled sheet/back/nav/send/model buttons set no inline transform,
+   so they all get the press cue. */
+button:not(:disabled):not([aria-disabled="true"]),
+[role="button"]:not([aria-disabled="true"]),
+a[role="button"] {
+  touch-action: manipulation;
+}
+button:not(:disabled):not([aria-disabled="true"]):active,
+[role="button"]:not([aria-disabled="true"]):active,
+a[role="button"]:active {
+  transform: scale(0.97);
+  transition: transform 0.08s ease;
+}
+
 /* ─── Button primitives ──────────────────────────────────── */
 .btn {
   display: inline-flex;
