@@ -33,6 +33,21 @@ const TEXT_EXTENSIONS = new Set([
   'toml', 'ini', 'env', 'log',
 ]);
 
+/**
+ * The file-picker `accept` string (F-42). MIME-only whitelisting (`text/*`)
+ * greyed out `.md`, `.csv`, `.json` etc. because the OS reports no/unknown MIME
+ * for them — so the founder couldn't even select a `.md`. We additionally list
+ * every whitelisted text/code EXTENSION explicitly so the picker offers them
+ * regardless of MIME, then classifyKind (below) reads them as text. Single
+ * source of truth: the extension list drives both the picker and classification.
+ */
+export const ATTACHMENT_ACCEPT = [
+  'image/*',
+  'application/pdf',
+  'text/*',
+  ...Array.from(TEXT_EXTENSIONS, (e) => `.${e}`),
+].join(',');
+
 function ext(name: string): string {
   const i = name.lastIndexOf('.');
   return i >= 0 ? name.slice(i + 1).toLowerCase() : '';

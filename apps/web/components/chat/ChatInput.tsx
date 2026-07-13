@@ -12,6 +12,7 @@ import {
   composeMessageWithAttachments,
   attachmentCharCount,
   ATTACH_BUDGET_CHARS,
+  ATTACHMENT_ACCEPT,
   type ChatAttachment,
 } from '@/lib/chat-attachments';
 import { GOBLIN_HOSTED_ENABLED } from '@/lib/goblin-hosted-models';
@@ -943,7 +944,7 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*,application/pdf,text/*"
+              accept={ATTACHMENT_ACCEPT}
               multiple
               onChange={(e) => {
                 handleFilesPicked(e.target.files);

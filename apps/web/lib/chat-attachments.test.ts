@@ -13,7 +13,7 @@ import { describe, it, expect, vi } from 'vitest';
 // branches under test never touch the network. Mock it so the import is inert.
 vi.mock('@/lib/api', () => ({ API_URL: 'http://localhost', getAuthHeaders: async () => ({}) }));
 
-import { classifyKind, buildAttachment, composeMessageWithAttachments, type ChatAttachment } from './chat-attachments';
+import { classifyKind, buildAttachment, composeMessageWithAttachments, ATTACHMENT_ACCEPT, type ChatAttachment } from './chat-attachments';
 
 const file = (name: string, type: string, body = 'x') => new File([body], name, { type });
 
@@ -29,6 +29,31 @@ describe('classifyKind', () => {
     expect(classifyKind(file('a.bin', 'application/octet-stream'))).toBe('unsupported');
     expect(classifyKind(file('weird', 'application/x-thing'))).toBe('unsupported');
   });
+
+  // F-42: the founder could not attach .md. These types must classify as text —
+  // crucially even when the OS reports NO MIME (the real-world .md/.csv case).
+  it('recognizes .md/.markdown/.csv/.json/.txt as text even with an empty MIME', () => {
+    for (const name of ['README.md', 'notes.markdown', 'data.csv', 'config.json', 'plain.txt']) {
+      expect(classifyKind(file(name, ''))).toBe('text');
+    }
+  });
+
+  it('recognizes .md via its reported text/markdown MIME too', () => {
+    expect(classifyKind(file('README.md', 'text/markdown'))).toBe('text');
+  });
+});
+
+describe('ATTACHMENT_ACCEPT (F-42 picker whitelist)', () => {
+  it('lists the new text/code extensions explicitly so a MIME-less .md is pickable', () => {
+    for (const ext of ['.md', '.markdown', '.txt', '.csv', '.json']) {
+      expect(ATTACHMENT_ACCEPT).toContain(ext);
+    }
+  });
+
+  it('still accepts images and PDF (regression)', () => {
+    expect(ATTACHMENT_ACCEPT).toContain('image/*');
+    expect(ATTACHMENT_ACCEPT).toContain('application/pdf');
+  });
 });
 
 describe('buildAttachment', () => {
@@ -37,6 +62,13 @@ describe('buildAttachment', () => {
     expect(a.kind).toBe('text');
     expect(a.state).toBe('ready');
     expect(a.content).toBe('hallo\nwelt');
+  });
+
+  it('parses a .md file into real context (F-42 — was unsupported before)', async () => {
+    const a = await buildAttachment(file('README.md', '', '# Titel\n\nInhalt'), 'md1', 'de');
+    expect(a.kind).toBe('text');
+    expect(a.state).toBe('ready');
+    expect(a.content).toBe('# Titel\n\nInhalt');
   });
 
   it('an unsupported type yields an HONEST, type-specific message — never a capability claim', async () => {
