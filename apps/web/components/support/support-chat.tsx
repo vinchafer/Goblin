@@ -13,6 +13,28 @@ function makeId() {
   return Math.random().toString(36).slice(2, 10);
 }
 
+// F-38 — render any email address in a message as a tappable mailto: link so
+// the fallback ("…schreib uns an support@justgoblin.com") is actionable, not
+// dead text. Splits on email tokens and keeps everything else verbatim.
+const EMAIL_SPLIT_RE = /([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g;
+const EMAIL_EXACT_RE = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+function renderWithMailto(text: string) {
+  const parts = text.split(EMAIL_SPLIT_RE);
+  return parts.map((part, i) =>
+    EMAIL_EXACT_RE.test(part)
+      ? (
+          <a
+            key={i}
+            href={`mailto:${part}`}
+            style={{ color: 'inherit', textDecoration: 'underline' }}
+          >
+            {part}
+          </a>
+        )
+      : part,
+  );
+}
+
 interface SupportChatProps {
   onClose: () => void;
 }
@@ -152,7 +174,7 @@ export function SupportChat({ onClose }: SupportChatProps) {
               fontFamily: 'var(--font-sans)',
               whiteSpace: 'pre-wrap',
             }}>
-              {msg.content}
+              {msg.role === 'assistant' ? renderWithMailto(msg.content) : msg.content}
             </div>
           </div>
         ))}
@@ -179,7 +201,7 @@ export function SupportChat({ onClose }: SupportChatProps) {
 
         {rateLimited && (
           <div style={{ fontSize: 11, color: 'var(--danger)', textAlign: 'center', padding: '4px 0', fontFamily: 'var(--font-sans)' }}>
-            {rateLimited}
+            {renderWithMailto(rateLimited)}
           </div>
         )}
 

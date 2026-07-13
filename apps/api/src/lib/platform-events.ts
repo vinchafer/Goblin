@@ -36,6 +36,9 @@ export type PlatformEventType =
   | 'trial_card_clicked'
   | 'feedback_submitted'
   | 'help_opened'
+  // F-43: a chat send routed through the real web-search service (the "Websuche"
+  // toggle). Metadata only — ran/results/reason/source, never the query text.
+  | 'chat_web_search'
   // — Wave-J-ready: emitted only once those surfaces exist —
   | 'support_chat_started'
   | 'support_chat_escalated'

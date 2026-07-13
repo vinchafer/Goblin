@@ -147,10 +147,15 @@ Deploy truth-gating (P0.2: HTTP checks only) · STC integrity checks (client/sha
   growth). | Status: FORMULA — reconcile with A6/M10 actuals 1 week post-merge (the standing telemetry
   protocol), using `agent_runs` + `completion_costs.run_id`.
 
-### M11 — Web search (FEEL-4 F4.3, `web_search` agent tool)
-- **Trigger:** the agent calls `web_search(query)` during an agent run (project chat, eligible Goblin tier).
-  Available ONLY in agent runs; base chat still cannot search. Advertised to the model only when a provider
-  is configured (`agentToolsFor({ search })`).
+### M11 — Web search (FEEL-4 F4.3 agent tool · FW2 F-43 chat toggle)
+- **Trigger (two surfaces, SAME budget/cap/provider):**
+  1. **Agent run** — the agent calls `web_search(query)` during a run (per-run cap 3), unchanged.
+  2. **FW2 F-43 — chat "Websuche" toggle** — when the toggle is ON, a project/base-chat send is routed
+     through `runChatWebSearch` (`services/search/augment.ts`), which runs **exactly ONE** live search
+     before the completion and injects the hits as system context (search-augmented generation). This is
+     the surface that lifts the old "base chat cannot search" limitation. Reuses `resolveSearchProvider` +
+     the SAME per-user daily cap — it does NOT add a new provider, key, or budget, only a new trigger.
+  Both surfaces advertise/search only when a provider is configured; off / no provider → zero cost, no phantom.
 - **Two cost components:**
   1. **Search API fee** — one Brave Web Search request per call.
      - **PLATFORM key** (`BRAVE_SEARCH_API_KEY`, bundled default) = **PLATFORM COGS**, protected by a
@@ -165,7 +170,9 @@ Deploy truth-gating (P0.2: HTTP checks only) · STC integrity checks (client/sha
      regardless of whose API key served the search.
 - **Billed to:** search fee = PLATFORM COGS (platform key, capped) OR zero (user key); result tokens = **user allowance** (always).
 - **Knobs:** `AGENT_MAX_SEARCHES` (per-run, default 3) + `SEARCH_DAILY_CAP` (per-user/day, default 25) —
-  `apps/api/src/services/search/index.ts`; provider key `BRAVE_SEARCH_API_KEY`; result count (5) `services/agent/tools.ts` `toolWebSearch`.
+  `apps/api/src/services/search/index.ts`; provider key `BRAVE_SEARCH_API_KEY`; result count (5) in both
+  `services/agent/tools.ts` `toolWebSearch` and `services/search/augment.ts` `runChatWebSearch` (chat toggle,
+  1 search/send — no per-run loop). The daily cap (25) is shared across BOTH surfaces per user.
 - **Accounting mechanism:** platform-key searches decrement the in-memory daily counter (abuse guard, not a
   billing ledger — resets on deploy, per-replica). Promote to a persisted counter / `platform_events` row if
   search volume grows and per-search COGS needs DB-level measurement.

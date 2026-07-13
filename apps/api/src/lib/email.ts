@@ -39,7 +39,13 @@ export async function sendEmail(input: SendEmailInput): Promise<{ ok: boolean; e
       ...(input.replyTo ? { replyTo: input.replyTo } : {}),
     });
     if (result.error) {
-      logger.warn({ to: input.to, error: result.error.message }, 'email send failed');
+      // Log the FULL Resend error (name + statusCode + message) — a 422 from an
+      // empty/invalid field or an unverified domain is otherwise a silent drop.
+      const e = result.error as { name?: string; statusCode?: number; message?: string };
+      logger.warn(
+        { to: input.to, from: input.from ?? FROM_DEFAULT, errorName: e.name, statusCode: e.statusCode, error: e.message },
+        'email send failed',
+      );
       return { ok: false, error: result.error.message };
     }
     return { ok: true };

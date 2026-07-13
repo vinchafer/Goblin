@@ -12,10 +12,10 @@ import {
   composeMessageWithAttachments,
   attachmentCharCount,
   ATTACH_BUDGET_CHARS,
+  ATTACHMENT_ACCEPT,
   type ChatAttachment,
 } from '@/lib/chat-attachments';
 import { GOBLIN_HOSTED_ENABLED } from '@/lib/goblin-hosted-models';
-import { isAgentModel } from '@/lib/agent-eligible';
 import { ComposerPlusPopover, type PlusAction } from './ComposerPlusPopover';
 import { Icon } from '@/components/ui/icon';
 import { GoblinLogo } from '@/components/brand/GoblinLogo';
@@ -49,8 +49,13 @@ export interface SelectedModel {
   displayName: string;
 }
 
+/** F-43: extra send options — carries the real "Websuche" flag to the server. */
+export interface ChatSendOptions {
+  websearch?: boolean;
+}
+
 interface ChatInputProps {
-  onSubmit: (message: string, model: SelectedModel) => void;
+  onSubmit: (message: string, model: SelectedModel, opts?: ChatSendOptions) => void;
   disabled?: boolean;
   selectedModel: SelectedModel;
   onModelChange: (model: SelectedModel) => void;
@@ -585,14 +590,12 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
       toast.error(error);
       return;
     }
-    // F4.3: when the user has "Websuche" on (agent-eligible chats only), append an
-    // explicit directive so the toggle is REAL — the agent is nudged to use web_search.
-    // Not a placebo: it changes the message the agent receives.
-    const finalMessage =
-      websearchOn && websearchAvailable
-        ? `${message}\n\n(Nutze bei Bedarf die Websuche für aktuelle Informationen und zitiere die Quelle.)`
-        : message;
-    onSubmit(finalMessage, selectedModel);
+    // F-43: the "Websuche" toggle is now REAL — instead of appending a placebo
+    // directive to a tool-less completion, we pass a structured flag and the
+    // server routes the send through the live search service (search-augmented
+    // generation: real search → real hits injected → model cites the source).
+    const useWebSearch = websearchOn && websearchAvailable;
+    onSubmit(message, selectedModel, { websearch: useWebSearch });
     setInput('');
     setAttachments([]);
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
@@ -629,11 +632,19 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
   const plusBtnRef = useRef<HTMLButtonElement>(null);
   const [plusOpen, setPlusOpen] = useState(false);
   const [websearchOn, setWebsearchOn] = useState(false);
-  // F4.3: web search is real only in agent-eligible chats (Goblin Swift/Forge). The
-  // composer affordance + the send-time directive both key off this.
-  const websearchAvailable = isAgentModel(selectedModel.slug);
+  // F-43: web search is now real in EVERY chat via server-side search-augmented
+  // generation — availability is whether a search provider is actually configured
+  // (platform Brave key OR the user's own BYOK key), not whether the model happens
+  // to be agent-eligible. We read the honest capability from the integrations
+  // endpoint; the toggle is only shown when search truly works (no phantom).
+  const [websearchAvailable, setWebsearchAvailable] = useState(false);
   useEffect(() => {
     try { setWebsearchOn(localStorage.getItem('goblin-websearch-on') === 'true'); } catch { /* ignore */ }
+    let alive = true;
+    apiGet<{ live?: boolean }>('/api/integrations/websearch')
+      .then((r) => { if (alive) setWebsearchAvailable(r?.live === true); })
+      .catch(() => { /* no capability signal → keep the toggle hidden (honest) */ });
+    return () => { alive = false; };
   }, []);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -943,7 +954,7 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
             <input
               ref={fileInputRef}
               type="file"
-              accept="image/*,application/pdf,text/*"
+              accept={ATTACHMENT_ACCEPT}
               multiple
               onChange={(e) => {
                 handleFilesPicked(e.target.files);

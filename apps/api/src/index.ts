@@ -207,7 +207,14 @@ const versionHandler = (c: import('hono').Context) => {
 app.get('/version', versionHandler)
 app.get('/api/version', versionHandler)
 
+// F-35 — health is dual-mounted, mirroring /version + /api/version above:
+//   • /health      — direct Railway origin (its own healthcheck / uptime probes)
+//   • /api/health  — reachable on the PRIMARY domain (justgoblin.com), which only
+//                    rewrites /api/* to the Railway API. Without this, both
+//                    justgoblin.com/api/health (rewritten → Railway /api/health,
+//                    unmounted) and justgoblin.com/health (never rewritten) 404'd.
 app.route('/health', health);
+app.route('/api/health', health);
 
 
 app.route('/api/chat', chat);
@@ -270,6 +277,11 @@ const server = serve({
 });
 
 console.log(`Goblin API listening on port ${port}`);
+
+// F-38 — surface the escalation-mail readiness at boot (never logs the key).
+import('./services/support-email.js')
+  .then(({ logResendStatus }) => logResendStatus())
+  .catch((e) => console.warn('[support-email] status log failed:', e));
 
 // Sprint 10.8 — refresh the model catalog from LiteLLM on boot (fire-and-forget;
 // no-op if LITELLM_BASE_URL is unset). Keeps the `models` cache aligned with what

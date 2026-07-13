@@ -16,7 +16,8 @@
     "test:e2e:auth": "dotenv -e .env -- playwright test --project=auth-desktop --project=auth-mobile",
     "test:e2e:local": "dotenv -e .env -- playwright test --project=local-only",
     "test:e2e:ci": "playwright test --project=public-desktop --project=public-mobile --project=auth-desktop --project=auth-mobile",
-    "test:isolation": "node tests/security/chat-secret-isolation.mjs"
+    "test:isolation": "node tests/security/chat-secret-isolation.mjs",
+    "test:rls": "node tests/security/rls-cross-account.mjs"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.11.3",

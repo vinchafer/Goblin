@@ -434,7 +434,13 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
 
   // P0.5 — `retry` re-sends an existing failed message: same clientMessageId
   // (server dedupes → no double-submit), no new user bubble.
-  const handleSubmit = async (text: string, model: SelectedModel, retry?: { id: string; clientMessageId: string }) => {
+  const handleSubmit = async (
+    text: string,
+    model: SelectedModel,
+    opts?: { websearch?: boolean; retry?: { id: string; clientMessageId: string } },
+  ) => {
+    const retry = opts?.retry;
+    const wantsWebSearch = opts?.websearch === true;
     if (retry && isStreaming) return; // one in-flight send at a time
     const clientMessageId = retry?.clientMessageId ?? crypto.randomUUID();
     const tempId = retry?.id ?? `temp-${Date.now()}`;
@@ -472,7 +478,7 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
       abortRef.current = new AbortController();
       await apiStream(
         `/api/chat-sessions/${sessionId}/stream`,
-        { message: text, modelSlug: model.slug, clientMessageId },
+        { message: text, modelSlug: model.slug, clientMessageId, websearch: wantsWebSearch },
         (raw: unknown) => {
           const d = raw as StreamChunk;
 
@@ -630,7 +636,7 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
                 }}>
                   <span>wartet auf Verbindung</span>
                   <button
-                    onClick={() => handleSubmit(m.content, selectedModel, { id: m.id, clientMessageId: m.clientMessageId! })}
+                    onClick={() => handleSubmit(m.content, selectedModel, { retry: { id: m.id, clientMessageId: m.clientMessageId! } })}
                     disabled={isStreaming}
                     style={{
                       background: "none", border: "1px solid var(--div)", borderRadius: 6,
