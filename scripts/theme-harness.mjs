@@ -140,13 +140,13 @@ function ratio(a, b) { const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m); re
 
 const pairs = [
   ['brand-fg on surface-page', 'light', '#1A3A2A', '#FBF7EC'],
-  ['brand-fg on surface-page', 'dark', '#87A998', '#133224'],
+  ['brand-fg on surface-page', 'dark', '#7FA98A', '#133224'],
   ['text-2 body on surface-page', 'light', '#3F3A2C', '#FBF7EC'],
   ['text-2 body on surface-page', 'dark', '#D8CBA8', '#133224'],
   ['text on panel (settings sheet)', 'light', '#0F2B1E', '#FFFFFF'],
   ['text on panel (settings sheet)', 'dark', '#FBF7EC', '#08170F'],
   ['brand-fg active label on subtle (sidebar)', 'light', '#1A3A2A', '#E8DEC2'],
-  ['brand-fg active label on subtle (sidebar)', 'dark', '#87A998', '#1A3A2A'],
+  ['brand-fg active label on subtle (sidebar)', 'dark', '#7FA98A', '#1A3A2A'],
   ['ink-1 quota % on card (mixed)', 'dark', '#FBF7EC', '#182b21'],
   ['text-2 pill on surface-3', 'dark', '#D8CBA8', '#1A3A2A'],
   ['ink-deep on gold notice card', 'light', '#0F2B1E', '#D4A737'],

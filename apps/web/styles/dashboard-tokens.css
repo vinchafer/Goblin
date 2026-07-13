@@ -31,7 +31,7 @@
   --green-deep:    #081710;
   --gold-soft:     #E8C572;
   --gold-deep:     #7A5A12;
-  --accent:        #B89535;
+  --accent:        var(--accent-primary);   /* D-B: sage primary accent (flips for contrast; was ochre #B89535) */
   --accent-rule:   rgba(212,167,55,.34);
   --accent-soft:   rgba(212,167,55,.10);
   /* --ink-2 / --ink-3 redefinitions removed: they shadowed the global warm

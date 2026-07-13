@@ -1,4 +1,4 @@
-<!doctype html><html lang="de" data-theme="dark"><head><meta charset="utf-8"><style>
+<!doctype html><html lang="de" data-theme="light"><head><meta charset="utf-8"><style>
 /* ─────────────────────────────────────────────────────────────────────
    Goblin · Design Tokens — GLOBAL SOURCE OF TRUTH
    Version 1.1 · synced with GOBLIN_DESIGN_SYSTEM.md v1.1
@@ -461,304 +461,120 @@
   --ed-deployed:  #D4A737;
 }
 
-/* ──────────────────────────────────────────────────────────────────────
-   Dashboard tokens — SCOPED to .gobl-dash wrapper.
-   PROMPT A / STAGE 3: dissolved into the global v1.1 system. The brand
-   ANCHORS below now alias the global tokens in design-tokens.css (one
-   source of truth). Remaining values are dashboard-specific derived
-   shades with no exact global equivalent — kept literal so screens
-   03-11 stay pixel-stable. The .gobl-dash wrapper class and the shared
-   component utilities below are retained (23 screen files depend on them).
-   ────────────────────────────────────────────────────────────────────── */
-
-.gobl-dash {
-  /* — anchors → global v1.1 tokens — */
-  --green:         var(--ink-deep);     /* #0F2B1E */
-  --gold:          var(--brand-gold);   /* #D4A737 */
-  --accent-bright: var(--brand-gold);   /* #D4A737 */
-  --brand-header:  var(--brand-green);  /* #1A3A2A — consolidated header, PRESERVED */
-  /* --bone / --ink-1 are NOT re-aliased here: `--bone: var(--bone)` inside this
-     scope is a self-reference (cycle) → resolves to an invalid value, so any
-     `color: var(--bone)` was being dropped and inherited ink-deep instead. That
-     made the primary "Chat öffnen" button render dark-green text on dark-green.
-     Inherit the valid global :root values (#F4ECD8 / #0F2B1E) directly. */
-  --bone-warm:     var(--paper);        /* #FBF7EC */
-  --d-surface:     var(--bone);         /* #F4ECD8 */
-  --d-surface-elev:var(--paper);        /* #FBF7EC */
-  --d-surface-deep:var(--ink-deep);     /* #0F2B1E */
-  --radius:        var(--radius-sm);    /* 10px */
-  --radius-lg:     var(--radius-md);    /* 14px */
-  --radius-xs:     var(--radius-xs);    /* 4px */
-
-  /* — dashboard-specific derived shades (no exact global match) — */
-  --green-deep:    #081710;
-  --gold-soft:     #E8C572;
-  --gold-deep:     #7A5A12;
-  --accent:        var(--accent-primary);   /* D-B: sage primary accent (flips for contrast; was ochre #B89535) */
-  --accent-rule:   rgba(212,167,55,.34);
-  --accent-soft:   rgba(212,167,55,.10);
-  /* --ink-2 / --ink-3 redefinitions removed: they shadowed the global warm
-     inks with dark-green tones, causing dark-on-dark text. Global
-     design-tokens.css values now apply on light; dark surfaces use
-     --ink-on-dark-* (§A2.5). */
-  --ink-4:         #7a8a80;
-  --line:          rgba(15,43,30,.10);
-  --line-strong:   rgba(15,43,30,.18);
-  --ok:            #2f6a47;
-  --ok-soft:       rgba(47,106,71,.12);
-  --warn:          #b88128;
-  --danger:        #a04230;
-  --danger-soft:   rgba(160,66,48,.10);
-  --d-surface-2:      #EFE6CB;
-  --d-surface-3:      #E8DEBE;
-  --d-surface-darkest:#091A11;
-  --radius-sm:     6px;
-  --shadow-card:   0 1px 0 rgba(15,43,30,.03), 0 14px 32px -22px rgba(15,43,30,.20);
-  --shadow-pop:    0 1px 0 rgba(15,43,30,.04), 0 24px 60px -28px rgba(15,43,30,.40);
-
-  background: var(--d-surface);
-  color: var(--ink-1);
-  font-family: var(--font-dash-display), 'Manrope', system-ui, sans-serif;
+.old{
+  --accent-primary: var(--brand-gold);
+  --accent-primary-soft: rgba(212,169,74,0.12);
+  --accent-primary-rule: rgba(212,169,74,0.20);
+  --accent-secondary: #B0432A;              /* terracotta */
+  --accent-secondary-soft: rgba(184,92,60,0.12);
+  --copper-strong: #7A5A12;                 /* old ochre ink */
+  --brand-fg: #87A998;                      /* U2 green-300 (pre-sage) */
 }
+*{box-sizing:border-box;} body{margin:0;font-family:Manrope,system-ui,sans-serif;background:#4a4a4a;}
+.wrap{display:flex;gap:20px;padding:20px;align-items:flex-start;}
+.surf-label{font-family:monospace;font-size:10px;color:var(--meta);opacity:.75;margin:0 0 6px;}
+</style></head><body><div class="wrap"><div class="old" style="width:360px;padding:16px;background:var(--surface-page);border-radius:14px;">
+    <div style="font-size:12px;font-weight:700;letter-spacing:.14em;color:var(--meta);margin-bottom:14px;">LIGHT · OLD (gold / ochre / terracotta)</div>
+  <div class="surf-label">accent swatches — anchor · primary · secondary · (logo kept)</div>
+  <div style="display:flex;gap:12px;margin-bottom:18px;">
+    <div style="text-align:center;">
+  <div style="width:44px;height:44px;border-radius:10px;background:var(--brand-green);margin:0 auto 4px;border:1px solid var(--border);"></div>
+  <div style="font-size:10px;color:var(--meta);">Deep green</div></div>
+    <div style="text-align:center;">
+  <div style="width:44px;height:44px;border-radius:10px;background:var(--accent-primary);margin:0 auto 4px;border:1px solid var(--border);"></div>
+  <div style="font-size:10px;color:var(--meta);">Sage</div></div>
+    <div style="text-align:center;">
+  <div style="width:44px;height:44px;border-radius:10px;background:var(--accent-secondary);margin:0 auto 4px;border:1px solid var(--border);"></div>
+  <div style="font-size:10px;color:var(--meta);">Copper</div></div>
+    <div style="text-align:center;">
+  <div style="width:44px;height:44px;border-radius:10px;background:var(--brand-gold);margin:0 auto 4px;border:1px solid var(--border);"></div>
+  <div style="font-size:10px;color:var(--meta);">Gold logo</div></div>
+  </div>
 
-/* The wrapper lives inside a 100dvh flex container already (DashboardShell).
-   Don't force min-height: 100vh — that adds an extra scroll axis. */
+  <div class="surf-label">code view — tabs (active underline = primary)</div>
+  <div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:18px;">
+    <div style="padding:8px 14px;font-size:13px;color:var(--text);position:relative;font-weight:600;">index.html
+      <div style="position:absolute;left:50%;bottom:-1px;transform:translateX(-50%);width:60%;height:2px;background:var(--accent-primary);border-radius:1px;"></div></div>
+    <div style="padding:8px 14px;font-size:13px;color:var(--meta);">styles.css</div>
+  </div>
 
-/* Heading + serif accents — used across all screens. */
-.gobl-dash .gobl-serif {
-  font-family: var(--font-dash-serif), 'Instrument Serif', Georgia, serif;
-  font-style: italic;
-  font-weight: 400;
-  padding-bottom: 0.04em;
-}
+  <div class="surf-label">dashboard — active project (primary tint) + status</div>
+  <div style="background:var(--panel);border:1px solid var(--div);border-radius:12px;padding:8px;margin-bottom:18px;">
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:var(--accent-primary-soft);border:1px solid var(--accent-primary-rule);">
+      <span style="width:8px;height:8px;border-radius:50%;background:var(--accent-secondary);"></span>
+      <span style="font-size:14px;font-weight:600;color:var(--text);flex:1;">Aktives Projekt</span>
+      <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--accent-secondary-soft);color:var(--copper-strong);">Beta</span>
+    </div>
+    <div style="height:6px;border-radius:999px;overflow:hidden;background:color-mix(in srgb, var(--text) 10%, transparent);margin:10px 6px 4px;"><div style="height:100%;width:58%;background:var(--accent-primary);border-radius:999px;"></div></div>
+  </div>
 
-.gobl-dash .gobl-mono {
-  font-family: var(--font-mono), 'JetBrains Mono', ui-monospace, monospace;
-  font-size: var(--t-eyebrow-fs);
-  font-weight: 500;
-  letter-spacing: 0.10em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-}
+  <div class="surf-label">chat — link + streaming cursor (primary)</div>
+  <div style="background:var(--panel);border:1px solid var(--div);border-radius:12px;padding:14px;margin-bottom:18px;font-size:14px;color:var(--text);line-height:1.5;">
+    Schau dir <a style="color:var(--accent-primary);text-decoration:underline;">die Vorschau</a> an<span style="display:inline-block;width:2px;height:1.05em;background:var(--accent-primary);vertical-align:text-bottom;margin-left:2px;"></span>
+  </div>
 
-/* Eyebrow (small label above headings — visible on 03/04/08/09/10/11). */
-.gobl-dash .gobl-eyebrow {
-  font-family: var(--font-mono), 'JetBrains Mono', monospace;
-  font-size: var(--t-eyebrow-fs);
-  font-weight: 500;
-  letter-spacing: var(--t-eyebrow-ls);
-  text-transform: uppercase;
-  color: var(--ink-3);
-  display: inline-flex; align-items: center; gap: 10px;
-}
-.gobl-dash .gobl-eyebrow .tick { width: 5px; height: 5px; background: var(--accent); transform: rotate(45deg); display: inline-block; }
-.gobl-dash .gobl-eyebrow .num  { color: var(--ink-1); font-weight: 600; }
+  <div class="surf-label">settings — focus ring (primary) on a control</div>
+  <div style="margin-bottom:18px;">
+    <button style="padding:10px 16px;border-radius:10px;border:1.5px solid var(--border);background:var(--panel);color:var(--text);font-size:14px;outline:2px solid var(--accent-primary);outline-offset:2px;">Fokussiertes Feld</button>
+  </div>
 
-/* Tags — pill labels (03 "What's new", 08 etc). */
-.gobl-dash .gobl-tag {
-  display: inline-flex; align-items: center; gap: 6px;
-  font-family: var(--font-mono), 'JetBrains Mono', monospace;
-  font-size: var(--t-eyebrow-fs); font-weight: 600; letter-spacing: var(--t-eyebrow-ls); text-transform: uppercase;
-  padding: 4px 8px; border-radius: var(--radius-sm);
-  background: var(--d-surface-2); color: var(--ink-2);
-  border: 1px solid var(--line);
-}
-.gobl-dash .gobl-tag.gold   { background: var(--accent-soft); color: var(--gold-deep); border-color: var(--accent-rule); }
-.gobl-dash .gobl-tag.ok     { background: var(--ok-soft); color: var(--ok); border-color: rgba(47,106,71,.30); }
-.gobl-dash .gobl-tag.warn   { background: rgba(184,129,40,.14); color: var(--warn); border-color: rgba(184,129,40,.32); }
+  <div class="surf-label">report card — primary accent edge + secondary badge</div>
+  <div style="background:var(--panel);border:1px solid var(--div);border-left:3px solid var(--accent-primary);border-radius:12px;padding:14px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+      <span style="font-size:15px;font-weight:600;color:var(--brand-fg);">Wochenbericht</span>
+      <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--accent-secondary-soft);color:var(--copper-strong);">Neu</span>
+    </div>
+    <div style="font-size:13px;color:var(--meta);">12 Builds · 3 Deployments diese Woche</div>
+  </div></div><div class="new" style="width:360px;padding:16px;background:var(--surface-page);border-radius:14px;">
+    <div style="font-size:12px;font-weight:700;letter-spacing:.14em;color:var(--meta);margin-bottom:14px;">LIGHT · NEW (sage + copper)</div>
+  <div class="surf-label">accent swatches — anchor · primary · secondary · (logo kept)</div>
+  <div style="display:flex;gap:12px;margin-bottom:18px;">
+    <div style="text-align:center;">
+  <div style="width:44px;height:44px;border-radius:10px;background:var(--brand-green);margin:0 auto 4px;border:1px solid var(--border);"></div>
+  <div style="font-size:10px;color:var(--meta);">Deep green</div></div>
+    <div style="text-align:center;">
+  <div style="width:44px;height:44px;border-radius:10px;background:var(--accent-primary);margin:0 auto 4px;border:1px solid var(--border);"></div>
+  <div style="font-size:10px;color:var(--meta);">Sage</div></div>
+    <div style="text-align:center;">
+  <div style="width:44px;height:44px;border-radius:10px;background:var(--accent-secondary);margin:0 auto 4px;border:1px solid var(--border);"></div>
+  <div style="font-size:10px;color:var(--meta);">Copper</div></div>
+    <div style="text-align:center;">
+  <div style="width:44px;height:44px;border-radius:10px;background:var(--brand-gold);margin:0 auto 4px;border:1px solid var(--border);"></div>
+  <div style="font-size:10px;color:var(--meta);">Gold logo</div></div>
+  </div>
 
-/* Buttons — used everywhere. Prefixed `gobl-` to avoid clashing with
-   any global `.btn` rules. */
-.gobl-dash .gobl-btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-  font-family: var(--font-dash-display), 'Manrope', sans-serif;
-  font-weight: 600; font-size: var(--t-button-fs); letter-spacing: -0.005em;
-  padding: 10px 16px; border-radius: var(--radius);
-  border: 1px solid transparent; white-space: nowrap; line-height: 1;
-  cursor: pointer;
-  transition: background-color .15s, border-color .15s, color .15s, transform .12s;
-  text-decoration: none;
-}
-.gobl-dash .gobl-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.gobl-dash .gobl-btn.lg { font-size: var(--t-button-fs); padding: 14px 20px; }
-.gobl-dash .gobl-btn.sm { font-size: var(--t-small-fs); padding: 8px 12px; border-radius: var(--radius-sm); }
-/* Primary uses --brand-green (#1A3A2A), the brand primary surface — NOT
-   --green (--ink-deep #0F2B1E), which read as a near-black "completely dark"
-   button next to the outlined secondary/ghost CTAs (§A5.4). */
-.gobl-dash .gobl-btn.primary { background: var(--brand-green); color: var(--bone); }
-.gobl-dash .gobl-btn.primary:hover { background: var(--green-deep); }
-.gobl-dash .gobl-btn.secondary { background: transparent; color: var(--ink-1); border-color: var(--line-strong); }
-.gobl-dash .gobl-btn.secondary:hover { border-color: var(--ink-1); }
-.gobl-dash .gobl-btn.ghost { background: transparent; color: var(--ink-2); }
-.gobl-dash .gobl-btn.ghost:hover { color: var(--ink-1); background: var(--d-surface-2); }
-.gobl-dash .gobl-btn.gold { background: var(--accent-bright); color: var(--green); border-color: var(--gold-deep); }
-.gobl-dash .gobl-btn.gold:hover { background: var(--gold-soft); }
-.gobl-dash .gobl-btn.danger { background: transparent; color: var(--danger); border-color: rgba(160,66,48,.30); }
-.gobl-dash .gobl-btn.danger:hover { background: var(--danger-soft); }
+  <div class="surf-label">code view — tabs (active underline = primary)</div>
+  <div style="display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:18px;">
+    <div style="padding:8px 14px;font-size:13px;color:var(--text);position:relative;font-weight:600;">index.html
+      <div style="position:absolute;left:50%;bottom:-1px;transform:translateX(-50%);width:60%;height:2px;background:var(--accent-primary);border-radius:1px;"></div></div>
+    <div style="padding:8px 14px;font-size:13px;color:var(--meta);">styles.css</div>
+  </div>
 
-/* Panels / cards — 03/08/09/10/11. */
-.gobl-dash .gobl-panel {
-  background: var(--d-surface-elev);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-}
-.gobl-dash .gobl-panel.deep {
-  background: var(--d-surface-darkest);
-  color: var(--bone);
-  border-color: rgba(244,236,216,.12);
-}
+  <div class="surf-label">dashboard — active project (primary tint) + status</div>
+  <div style="background:var(--panel);border:1px solid var(--div);border-radius:12px;padding:8px;margin-bottom:18px;">
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;background:var(--accent-primary-soft);border:1px solid var(--accent-primary-rule);">
+      <span style="width:8px;height:8px;border-radius:50%;background:var(--accent-secondary);"></span>
+      <span style="font-size:14px;font-weight:600;color:var(--text);flex:1;">Aktives Projekt</span>
+      <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--accent-secondary-soft);color:var(--copper-strong);">Beta</span>
+    </div>
+    <div style="height:6px;border-radius:999px;overflow:hidden;background:color-mix(in srgb, var(--text) 10%, transparent);margin:10px 6px 4px;"><div style="height:100%;width:58%;background:var(--accent-primary);border-radius:999px;"></div></div>
+  </div>
 
-/* Section title — "Your projects", "What's new", etc. */
-.gobl-dash .gobl-section-title {
-  display: flex; align-items: baseline; justify-content: space-between; gap: 16px;
-  padding-bottom: 12px; margin: 40px 0 16px;
-  border-bottom: 1px solid var(--line);
-}
-.gobl-dash .gobl-section-title h2 {
-  font-family: var(--font-dash-display), 'Manrope', sans-serif;
-  font-weight: 600; font-size: var(--t-h2-fs); line-height: var(--t-h2-lh);
-  letter-spacing: var(--t-h2-ls); color: var(--ink-1);
-}
-.gobl-dash .gobl-section-title .label {
-  font-family: var(--font-mono), 'JetBrains Mono', monospace;
-  font-size: var(--t-eyebrow-fs); letter-spacing: var(--t-eyebrow-ls); text-transform: uppercase; color: var(--ink-3);
-}
-.gobl-dash .gobl-section-title a {
-  font-family: var(--font-mono), 'JetBrains Mono', monospace;
-  font-size: var(--t-eyebrow-fs); letter-spacing: var(--t-eyebrow-ls); text-transform: uppercase; color: var(--ink-3);
-  text-decoration: none;
-}
-.gobl-dash .gobl-section-title a:hover { color: var(--ink-1); }
+  <div class="surf-label">chat — link + streaming cursor (primary)</div>
+  <div style="background:var(--panel);border:1px solid var(--div);border-radius:12px;padding:14px;margin-bottom:18px;font-size:14px;color:var(--text);line-height:1.5;">
+    Schau dir <a style="color:var(--accent-primary);text-decoration:underline;">die Vorschau</a> an<span style="display:inline-block;width:2px;height:1.05em;background:var(--accent-primary);vertical-align:text-bottom;margin-left:2px;"></span>
+  </div>
 
-/* Inputs */
-.gobl-dash .gobl-input, .gobl-dash .gobl-textarea {
-  width: 100%; background: var(--d-surface-elev);
-  border: 1px solid var(--line-strong); border-radius: var(--radius);
-  padding: 12px 14px; font-size: var(--t-small-fs); color: var(--ink-1);
-  font-family: var(--font-dash-display), 'Manrope', sans-serif;
-  transition: border-color .15s, background .15s;
-}
-.gobl-dash .gobl-input:focus, .gobl-dash .gobl-textarea:focus {
-  outline: none; border-color: var(--ink-1); background: var(--d-surface-elev);
-}
-.gobl-dash .gobl-textarea { resize: vertical; min-height: 96px; line-height: 1.5; }
-.gobl-dash .gobl-field-label {
-  display: block; font-family: var(--font-mono), 'JetBrains Mono', monospace;
-  font-size: var(--t-eyebrow-fs); letter-spacing: var(--t-eyebrow-ls); text-transform: uppercase;
-  color: var(--ink-3); margin-bottom: 8px; font-weight: 500;
-}
+  <div class="surf-label">settings — focus ring (primary) on a control</div>
+  <div style="margin-bottom:18px;">
+    <button style="padding:10px 16px;border-radius:10px;border:1.5px solid var(--border);background:var(--panel);color:var(--text);font-size:14px;outline:2px solid var(--accent-primary);outline-offset:2px;">Fokussiertes Feld</button>
+  </div>
 
-/* Focus ring + reduced-motion — additive, scoped */
-.gobl-dash :where(a, button, input, textarea, select, [tabindex], summary):focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
-  border-radius: var(--radius-xs);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .gobl-dash *,
-  .gobl-dash *::before,
-  .gobl-dash *::after {
-    animation-duration: .001ms !important;
-    transition-duration: .001ms !important;
-  }
-}
-
-/* ──────────────────────────────────────────────────────────────────────
-   P1.1 — DARK THEME for the scoped .gobl-dash dashboard surfaces.
-   The dashboard has its own surface set (--d-surface*, --line*) defined as
-   LIGHT literals/aliases that never flipped. Under [data-theme="dark"] the
-   inks flipped (global) but these surfaces stayed cream → ghost "Deine
-   Projekte" heading + cream project cards (founder-reproduced). Flip the
-   surfaces to the global dark primitives and invert the hairlines. The
-   inks (--ink-1/2/3) already flip via design-tokens.css; --bone stays a
-   light literal used as text ON dark buttons (correct in both themes).
-   ────────────────────────────────────────────────────────────────────── */
-[data-theme="dark"] .gobl-dash {
-  --d-surface:      var(--surface-2);   /* page content bg  → #0F2B1E */
-  --d-surface-elev: var(--surface-1);   /* cards/panels     → #133224 */
-  --d-surface-2:    var(--surface-3);   /* tags/ghost hover → #1A3A2A */
-  --d-surface-3:    var(--surface-4);   /*                  → #2A523E */
-  --bone-warm:      var(--surface-1);
-  --line:           rgba(247, 247, 236, 0.10);
-  --line-strong:    rgba(247, 247, 236, 0.22);
-  --shadow-card:    0 1px 0 rgba(0,0,0,.30), 0 14px 32px -22px rgba(0,0,0,.55);
-  --shadow-pop:     0 1px 0 rgba(0,0,0,.40), 0 24px 60px -28px rgba(0,0,0,.70);
-}
-
-
-:root{
-  --color-surface-0:#FFFFFF; --color-surface-1:#FBF7EC; --color-surface-2:#F4ECD8;
-  --color-surface-3:#E8DEC2; --color-surface-4:#D8CBA8; --color-paper:#FBF7EC; --color-bone:#F4ECD8;
-}
-
-.section-title{font-family:var(--font-sans);font-size:18px;font-weight:600;color:var(--brand-fg);letter-spacing:-0.3px;margin-bottom:var(--space-1);}
-.page-hero-title{font-size:28px;color:var(--brand-fg);font-weight:700;letter-spacing:-1px;margin-bottom:var(--space-2);}
-
-*{box-sizing:border-box;}
-body{margin:0;font-family:Manrope,system-ui,sans-serif;background:var(--surface-page);}
-.col{width:390px;padding:16px;margin:0 auto;background:var(--surface-page);}
-.col-head{font-size:12px;font-weight:700;letter-spacing:.14em;color:var(--meta);margin-bottom:14px;}
-.surf{margin-bottom:20px;}
-.surf-label{font-family:monospace;font-size:10px;color:var(--meta);opacity:.7;margin-bottom:6px;}
-</style></head><body><div class="col dark"><div class="col-head">DARK — data-theme on &lt;html&gt; (production-faithful)</div><div class="surf"><div class="surf-label">trial-gate-welcome</div>
-    <div style="min-height:auto;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--surface-page);border-radius:12px;">
-      <div style="width:100%;max-width:340px;text-align:center;">
-        <h1 style="font-size:24px;font-weight:700;color:var(--brand-fg);margin:0 0 8px;">Willkommen bei Goblin</h1>
-        <p style="font-size:15px;color:var(--text-2);margin:0 0 28px;line-height:1.5;">Wähle, wie du loslegst — kostenlose Testphase oder direkt ein Abo.</p>
-        <div style="display:flex;flex-direction:column;gap:12px;">
-          <button style="padding:14px 20px;background:var(--brand-green);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;">7 Tage kostenlos testen</button>
-          <button style="padding:14px 20px;background:transparent;color:var(--brand-fg);border:1.5px solid var(--brand-fg);border-radius:10px;font-size:15px;font-weight:600;">Abo abschließen</button>
-        </div>
-      </div>
-    </div></div><div class="surf"><div class="surf-label">trial-gate-expired</div>
-    <div style="display:flex;align-items:center;justify-content:center;padding:24px;background:var(--surface-page);border-radius:12px;">
-      <div style="width:100%;max-width:340px;text-align:center;">
-        <h1 style="font-size:24px;font-weight:700;color:var(--brand-fg);margin:0 0 8px;">Deine Testphase ist beendet</h1>
-        <p style="font-size:15px;color:var(--text-2);margin:0 0 28px;line-height:1.5;">Schließe ein Abo ab, um Goblin Cloud weiter zu nutzen.</p>
-        <p style="font-size:13px;color:var(--text-2);margin:-16px 0 28px;line-height:1.55;">Deine Projekte und bereits veröffentlichten Apps bleiben erhalten und online.</p>
-        <button style="padding:14px 20px;background:var(--brand-green);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;width:100%;">Abo abschließen</button>
-      </div>
-    </div></div><div class="surf"><div class="surf-label">settings-sheet</div>
-    <div style="background:var(--panel);border-radius:20px;overflow:hidden;box-shadow:var(--shadow-sheet);">
-      <div style="width:36px;height:4px;border-radius:2px;background:rgba(128,128,128,0.35);margin:8px auto 4px;"></div>
-      <header style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px 16px;min-height:56px;">
-        <span style="min-width:40px;"></span>
-        <span style="font-size:17px;font-weight:600;color:var(--text);flex:1;text-align:center;">Einstellungen</span>
-        <span style="min-width:40px;"></span>
-      </header>
-      <div style="padding:0 16px 20px;">
-        <div style="background:var(--surface-0);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
-          <div style="display:flex;align-items:center;padding:14px 20px;min-height:56px;border-bottom:1px solid var(--border);"><span style="flex:1;font-size:16px;color:var(--text);">Profil</span><span style="color:var(--meta);">›</span></div>
-          <div style="display:flex;align-items:center;padding:14px 20px;min-height:56px;border-bottom:1px solid var(--border);"><span style="flex:1;font-size:16px;color:var(--text);">Erscheinungsbild</span><span style="color:var(--meta);">Hell ›</span></div>
-          <div style="display:flex;align-items:center;padding:14px 20px;min-height:56px;"><span style="flex:1;font-size:16px;color:var(--text);">Abrechnung</span><span style="color:var(--meta);">›</span></div>
-        </div>
-      </div>
-    </div></div><div class="surf"><div class="surf-label">sidebar-open</div>
-    <div class="gobl-dash" style="width:260px;background:var(--subtle);border-right:1px solid var(--border);padding:12px 0;border-radius:12px;">
-      <div style="padding:0 12px;margin-bottom:12px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--meta);">Projekte</div>
-      <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;"><span style="width:8px;height:8px;border-radius:50%;background:var(--brand-gold);"></span><span style="font-size:14px;font-weight:600;color:var(--brand-fg);">Aktives Projekt</span></div>
-      <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;"><span style="width:8px;height:8px;border-radius:50%;background:#4A7A7A;"></span><span style="font-size:14px;color:var(--text);">Anderes Projekt</span></div>
-      <!-- quota card -->
-      <div style="margin:8px 12px;padding:10px 12px;border-radius:8px;background:color-mix(in srgb, var(--text) 5%, transparent);border:1px solid var(--border);">
-        <div style="display:flex;justify-content:space-between;margin-bottom:7px;"><span style="font-size:12px;font-weight:600;color:var(--ink-2);">Kontingent</span><span style="font-size:13px;font-weight:600;color:var(--ink-1);">42&nbsp;% verbraucht</span></div>
-        <div style="height:6px;border-radius:999px;overflow:hidden;background:color-mix(in srgb, var(--text) 10%, transparent);"><div style="height:100%;width:42%;border-radius:999px;background:var(--brand-fg);"></div></div>
-        <div style="display:flex;justify-content:space-between;margin-top:7px;font-size:12px;color:var(--ink-3);"><span>Build</span><span>Reset in 12 Tagen</span></div>
-      </div>
-      <!-- user pill -->
-      <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;margin-top:8px;">
-        <span style="width:32px;height:32px;border-radius:50%;background:var(--brand-green);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;">V</span>
-        <span style="font-size:14px;font-weight:500;color:var(--text);flex:1;">Vincent</span>
-        <span style="font-size:12px;font-weight:600;color:var(--text-2);background:var(--surface-3);border-radius:4px;padding:1px 6px;">Kein Abo</span>
-      </div>
-    </div></div><div class="surf"><div class="surf-label">error-notice-card</div>
-    <div class="gobl-dash" style="padding:16px;background:var(--d-surface-elev);border-radius:12px;">
-      <div style="display:flex;align-items:center;gap:8px;background:var(--accent-bright);border:1px solid var(--accent-rule);border-radius:10px;padding:10px 12px;font-size:13px;color:var(--ink-deep);line-height:1.4;">
-        <span aria-hidden style="color:var(--accent);">ⓘ</span>
-        <span>Basierend auf deiner Karte gilt ein anderer Preis. Du bestätigst den Betrag vor dem Abschluss.</span>
-      </div>
-    </div></div><div class="surf"><div class="surf-label">section-heading</div>
-    <div style="padding:24px;background:var(--panel);border:1px solid var(--div);border-radius:12px;">
-      <div class="section-title">Deine Projekte</div>
-      <div style="font-size:13px;color:var(--meta);">Alles, woran du gerade baust.</div>
-    </div></div></div></body></html>
+  <div class="surf-label">report card — primary accent edge + secondary badge</div>
+  <div style="background:var(--panel);border:1px solid var(--div);border-left:3px solid var(--accent-primary);border-radius:12px;padding:14px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;">
+      <span style="font-size:15px;font-weight:600;color:var(--brand-fg);">Wochenbericht</span>
+      <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--accent-secondary-soft);color:var(--copper-strong);">Neu</span>
+    </div>
+    <div style="font-size:13px;color:var(--meta);">12 Builds · 3 Deployments diese Woche</div>
+  </div></div></div></body></html>

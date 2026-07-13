@@ -45,6 +45,23 @@
   --gold-800: #7E5C1B;
   --gold-900: #5E4514;
 
+  /* ─── D-B · Sage & Copper (Option 2) — FIX-WAVE 3 ───────────────────
+     Founder-decided palette (2026-07-12). Deep green stays the anchor; the
+     ochre/terracotta warm accents are retired. Sage = PRIMARY accent (cool,
+     calm highlight), Copper = SECONDARY accent (warm pop, replaces the
+     ochre/terracotta the founder disliked). Applied via the semantic
+     --accent-primary/-secondary layer below so consumers shift from one place.
+     Dark variants are DARKER/desaturated so accents never lighten the dark
+     surfaces (the founder's hard condition: dark mode stays unmistakably dark). */
+  --sage:         #7FA98A;   /* primary accent */
+  --sage-strong:  #5E8973;   /* deeper sage — borders / on lighter surfaces */
+  --sage-soft:    rgba(127,169,138,0.12);
+  --sage-rule:    rgba(127,169,138,0.34);
+  --copper:       #C56B4A;   /* secondary accent (replaces ochre/terracotta) */
+  --copper-strong:#9C4E34;   /* copper INK (text) — light: darkened to clear AA (4.8:1) on the pale copper tint; flips lighter in dark */
+  --copper-soft:  rgba(197,107,74,0.12);
+  --copper-rule:  rgba(197,107,74,0.34);
+
   /* ─── Bone / surface ramp ──────────────────────────────────────── */
   --surface-0: #FFFFFF;
   --surface-1: #FBF7EC;  /* = --paper (LOCKED) */
@@ -206,7 +223,7 @@
 
 /* ─── Default focus ring (every interactive element) ──────────────── */
 :where(button, a, input, textarea, select, [tabindex]):focus-visible {
-  outline: 2px solid var(--brand-gold);
+  outline: 2px solid var(--accent-primary); /* D-B: sage primary accent (was gold) */
   outline-offset: 2px;
   border-radius: inherit;
 }
@@ -249,6 +266,19 @@
      foreground twin: brand green in light, a light sage in dark. Use --brand-fg
      wherever brand green was a FOREGROUND; keep --brand-green for fills. */
   --brand-fg:   var(--brand-green);
+
+  /* D-B · the semantic accent roles. Consumers reference these (not the raw
+     hues) so the palette is a one-place swap. Sage = primary, Copper = secondary.
+     CONTRAST NOTE: the base sage #7FA98A fails the 3:1 non-text-UI threshold on
+     the light cream surfaces (2.5:1), so LIGHT uses the deeper --sage-strong
+     (#5E8973 → 3.7–4.0:1); DARK uses base sage (5.3–7.0:1). Copper #C56B4A holds
+     ≥3.5:1 both ways as a dot/fill; copper TEXT uses --copper-strong. */
+  --accent-primary:        var(--sage-strong);  /* light: deeper sage for UI contrast */
+  --accent-secondary:      var(--copper);
+  --accent-primary-soft:   var(--sage-soft);
+  --accent-primary-rule:   var(--sage-rule);
+  --accent-secondary-soft: var(--copper-soft);
+
   --text-meta:  var(--ink-3);
   --text-faint: #665C42;   /* B11: decoupled from --ink-disabled so empty-state copy clears AA (5.6:1 on bone, 6.6:1 on white); --ink-disabled stays light for genuinely-disabled UI */
   --disabled:   var(--ink-disabled);
@@ -355,10 +385,22 @@
   --ink-muted:  var(--ink-muted-dark);   /* rgba(247,244,237,0.55) */
   --text-faint: #B8A988;                 /* was #665C42 */
 
-  /* F-03/04/06/08 — brand foreground flips to a light sage in dark so headings
-     and brand-coloured labels read clearly on dark surfaces while keeping the
-     green identity (measured ≥ AA on the surface-0..2 dark greens). */
-  --brand-fg:   var(--green-300);        /* #87A998 */
+  /* F-03/04/06/08 — brand foreground flips to sage in dark so headings and
+     brand-coloured labels read clearly on dark surfaces while keeping the green
+     identity (measured ≥ AA on the surface-0..2 dark greens). D-B: this is the
+     sage primary accent, so the foreground and the accent share one hue. */
+  --brand-fg:   var(--sage);             /* #7FA98A */
+
+  /* D-B dark variants — the founder's hard condition. Accents must not lighten
+     the dark surfaces, so sage/copper stay as ACCENT foregrounds/fills only; the
+     surfaces themselves remain the deep-green anchor. Sage is legible as-is on
+     the dark greens; copper darkens slightly so warm fills don't glow. */
+  --accent-primary:        var(--sage);        /* #7FA98A — reads on dark greens */
+  --accent-secondary:      var(--copper);      /* #C56B4A */
+  --accent-primary-soft:   rgba(127,169,138,0.16);
+  --accent-primary-rule:   rgba(127,169,138,0.40);
+  --accent-secondary-soft: rgba(197,107,74,0.18);
+  --copper-strong:         #DDA085;   /* copper ink flips lighter in dark (6.3:1 on the dark copper tint) */
 
   /* Structural gap A — the Tailwind @theme surface literals (--color-surface-*,
      --color-paper/-bone) are emitted at :root as LIGHT cream values with no dark
@@ -452,7 +494,7 @@
   --green-deep:    #081710;
   --gold-soft:     #E8C572;
   --gold-deep:     #7A5A12;
-  --accent:        #B89535;
+  --accent:        var(--accent-primary);   /* D-B: sage primary accent (flips for contrast; was ochre #B89535) */
   --accent-rule:   rgba(212,167,55,.34);
   --accent-soft:   rgba(212,167,55,.10);
   /* --ink-2 / --ink-3 redefinitions removed: they shadowed the global warm

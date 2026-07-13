@@ -12,7 +12,7 @@ import { refreshThenNavigate } from '@/lib/post-create-nav';
 const COLORS = [
   { name: 'Gold',   hex: '#D4A737' },
   { name: 'Green',  hex: '#1A3A2A' },
-  { name: 'Rust',   hex: '#B85C3C' },
+  { name: 'Copper', hex: '#C56B4A' }, // D-B: copper replaces the terracotta 'Rust'
   { name: 'Slate',  hex: '#3A2E1F' },
   { name: 'Purple', hex: '#7A4A8A' },
   { name: 'Teal',   hex: '#4A7A7A' },
