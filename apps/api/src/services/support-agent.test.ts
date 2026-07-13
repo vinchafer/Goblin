@@ -102,6 +102,56 @@ describe('escalation — honest structured handoff', () => {
     expect(sendSupportEscalation.mock.calls[0]![0]).toMatchObject({ escalationReason: expect.stringContaining('out_of_scope') });
   });
 
+  it('claims success ONLY on a confirmed 2xx (explicit human) — success path', async () => {
+    sendSupportEscalation.mockResolvedValueOnce({ ok: true });
+    const out = await collect(streamSupportAgent(base('Ich will mit einem Menschen sprechen.')));
+    const msg = out.find((e) => e.type === 'message')!;
+    // Confirmed send → the "you'll hear by email" claim IS allowed.
+    expect(String(msg.content)).toMatch(/du hörst per E-Mail von uns/);
+    expect(msg.escalated).toBe(true);
+  });
+
+  it('does NOT claim success on a NON-2xx send (explicit human) — honest failure, no false promise', async () => {
+    sendSupportEscalation.mockResolvedValueOnce({ ok: false, error: 'domain_not_verified' });
+    const out = await collect(streamSupportAgent(base('Ich will mit einem Menschen sprechen.')));
+    const msg = out.find((e) => e.type === 'message')!;
+    expect(sendSupportEscalation).toHaveBeenCalledTimes(1);
+    // The false success claim MUST NOT appear …
+    expect(String(msg.content)).not.toMatch(/du hörst per E-Mail von uns/);
+    // … and the honest degradation string MUST appear.
+    expect(String(msg.content)).toMatch(/konnte die Übergabe gerade nicht abschließen/);
+    expect(msg.escalated).toBe(false);
+  });
+
+  it('does NOT claim success on a NON-2xx send (model escalates) — strips a narrated confirmation', async () => {
+    sendSupportEscalation.mockResolvedValueOnce({ ok: false, error: 'resend_500' });
+    // The model itself narrates the (forbidden) confirmation — it must be stripped
+    // AND overridden by the honest failure, never shown alongside a success claim.
+    streamCompletionGuarded.mockReturnValue(modelStream([
+      'Das ist ein Abrechnungsthema, das ich nicht selbst lösen kann. ',
+      ESCALATION_CLOSING, ' [[ESCALATE:out_of_scope]]',
+    ]));
+    const out = await collect(streamSupportAgent(base('Ich wurde doppelt belastet, bitte erstatten.')));
+    const msg = out.find((e) => e.type === 'message')!;
+    expect(String(msg.content)).not.toContain('[[ESCALATE');
+    expect(String(msg.content)).not.toMatch(/du hörst per E-Mail von uns/);
+    expect(String(msg.content)).toMatch(/konnte die Übergabe gerade nicht abschließen/);
+    expect(msg.escalated).toBe(false);
+    expect(sendSupportEscalation).toHaveBeenCalledTimes(1);
+  });
+
+  it('claims success on a confirmed 2xx (model escalates) — success path', async () => {
+    sendSupportEscalation.mockResolvedValueOnce({ ok: true });
+    streamCompletionGuarded.mockReturnValue(modelStream([
+      'Das ist ein Abrechnungsthema, das ich nicht selbst lösen kann. ',
+      '[[ESCALATE:out_of_scope]]',
+    ]));
+    const out = await collect(streamSupportAgent(base('Ich wurde doppelt belastet, bitte erstatten.')));
+    const msg = out.find((e) => e.type === 'message')!;
+    expect(String(msg.content)).toMatch(/du hörst per E-Mail von uns/);
+    expect(msg.escalated).toBe(true);
+  });
+
   it('does NOT escalate a plain question', async () => {
     streamCompletionGuarded.mockReturnValue(modelStream(['Geh auf „Projekt anlegen". Siehe: Erste Schritte']));
     const out = await collect(streamSupportAgent(base('Wie lege ich ein Projekt an?')));

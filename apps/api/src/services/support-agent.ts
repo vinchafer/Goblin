@@ -6,6 +6,7 @@ import { renderHelpForAgent } from '@goblin/shared/src/help-content';
 import { resolveModel, streamCompletionGuarded } from './model-router';
 import { sendSupportEscalation } from './support-email';
 import { trackEvent } from '../lib/platform-events';
+import logger from '../lib/logger';
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 
@@ -164,10 +165,28 @@ function honest(lang: 'de' | 'en', de: string, en: string): string {
   return lang === 'de' ? de : en;
 }
 
+// Emitted ONLY after a confirmed 2xx from Resend (see escalate()). Never claim
+// this on an unverified send — that is the F-17 species on the support path.
 const ESCALATION_CLOSING = {
   de: 'Ich habe alles an einen Menschen übergeben — du hörst per E-Mail von uns.',
   en: "I've handed everything to a human — you'll hear from us by email.",
 };
+
+// Emitted when the handoff email could NOT be confirmed. Honest degradation in
+// the user's language — no false success, a concrete next step.
+const ESCALATION_FAILED = {
+  de: 'Ich konnte die Übergabe gerade nicht abschließen — bitte versuch es in Kürze nochmal, oder schreib uns direkt an support@justgoblin.com.',
+  en: "I couldn't complete the handoff just now — please try again shortly, or email us directly at support@justgoblin.com.",
+};
+
+// Defensive: the model must not narrate the handoff confirmation itself (the
+// system appends the truthful status). If it leaks the confirmation phrase anyway,
+// strip it so a FAILED send can never show a success claim.
+const CONFIRM_LEAK_RE =
+  /(?:ich habe alles an einen menschen übergeben|i'?ve handed everything to a human)[^.\n]*\.?|(?:du hörst per e-?mail von uns|you'?ll hear from us by e-?mail)\.?/gi;
+function stripConfirmLeak(text: string): string {
+  return text.replace(CONFIRM_LEAK_RE, '').replace(/\n{3,}/g, '\n\n').trim();
+}
 
 export async function* streamSupportAgent({
   userId,
@@ -216,11 +235,15 @@ export async function* streamSupportAgent({
 
   // 3) Explicit human request → escalate immediately, no model call.
   if (EXPLICIT_HUMAN_RE.test(userMessage)) {
-    const closing = honest(lang,
-      `Klar — ich gebe dich an einen Menschen weiter. ${ESCALATION_CLOSING.de}`,
-      `Of course — I'll pass you to a human. ${ESCALATION_CLOSING.en}`);
-    await escalate({ reason: 'human_requested', userId, userEmail, ctx, history, userMessage, assistantText: closing, supabase });
-    yield JSON.stringify({ type: 'message', content: closing });
+    const ack = honest(lang,
+      'Klar — ich gebe dich an einen Menschen weiter.',
+      "Of course — I'll pass you to a human.");
+    // The confirmation is claimed ONLY after the handoff email is confirmed sent.
+    const result = await escalate({ reason: 'human_requested', userId, userEmail, ctx, history, userMessage, assistantText: ack, supabase });
+    const status = result.ok
+      ? honest(lang, ESCALATION_CLOSING.de, ESCALATION_CLOSING.en)
+      : honest(lang, ESCALATION_FAILED.de, ESCALATION_FAILED.en);
+    yield JSON.stringify({ type: 'message', content: `${ack} ${status}`, escalated: result.ok });
     yield JSON.stringify({ type: 'done' });
     return;
   }
@@ -298,14 +321,25 @@ ${renderHelpForAgent(lang)}`;
   }
 
   const match = full.match(ESCALATE_RE);
-  const visible = full.replace(ESCALATE_RE, '').trim() || ESCALATION_CLOSING[lang];
 
   if (match) {
     const reason = match[1]!.toLowerCase() as EscalationReason;
-    await escalate({ reason, userId, userEmail, ctx, history, userMessage, assistantText: visible, supabase });
+    // Strip the marker AND any confirmation phrase the model narrated — the system
+    // appends the truthful handoff status, so a failed send can never show success.
+    const body = stripConfirmLeak(full.replace(ESCALATE_RE, '').trim())
+      || honest(lang, 'Einen Moment — ich gebe das an einen Menschen weiter.', 'One moment — I\'m passing this to a human.');
+    const result = await escalate({ reason, userId, userEmail, ctx, history, userMessage, assistantText: body, supabase });
+    const status = result.ok
+      ? honest(lang, ESCALATION_CLOSING.de, ESCALATION_CLOSING.en)
+      : honest(lang, ESCALATION_FAILED.de, ESCALATION_FAILED.en);
+    yield JSON.stringify({ type: 'message', content: `${body}\n\n${status}`, escalated: result.ok });
+    yield JSON.stringify({ type: 'done' });
+    return;
   }
 
-  yield JSON.stringify({ type: 'message', content: visible, escalated: !!match });
+  const visible = full.replace(ESCALATE_RE, '').trim()
+    || honest(lang, 'Kannst du das kurz genauer sagen? Dann helfe ich dir gezielt.', 'Could you say a bit more? Then I can help you specifically.');
+  yield JSON.stringify({ type: 'message', content: visible, escalated: false });
   yield JSON.stringify({ type: 'done' });
 }
 
@@ -321,7 +355,7 @@ interface EscalateParams {
   supabase: SupabaseClient;
 }
 
-async function escalate(p: EscalateParams): Promise<void> {
+async function escalate(p: EscalateParams): Promise<{ ok: boolean; error: string | null }> {
   const ticketId = crypto.randomUUID();
   const fullHistory = [...p.history, { role: 'user' as const, content: p.userMessage }, { role: 'assistant' as const, content: p.assistantText }];
   // Bounded, PII-stripped transcript for the founder handoff (the one legitimate
@@ -338,7 +372,9 @@ async function escalate(p: EscalateParams): Promise<void> {
   // support_chat_escalated — metadata only (reason), NEVER transcript content.
   trackEvent({ eventType: 'support_chat_escalated', userId: p.userId, meta: { reason: p.reason } });
 
-  // Email the founder (best-effort, never throws) — transcript + context + reply-to.
+  // Email the founder (never throws) — transcript + context + reply-to. The
+  // returned `ok` reflects a CONFIRMED 2xx from Resend and is what gates the
+  // user-facing success claim; on failure we degrade honestly instead of lying.
   let emailOk = false;
   let emailErr: string | null = null;
   try {
@@ -357,6 +393,16 @@ async function escalate(p: EscalateParams): Promise<void> {
     emailErr = e instanceof Error ? e.message : 'unknown';
   }
 
+  // A failed handoff email is an operational incident — a user was told (or would
+  // have been) that a human is coming. Log it with context so the founder sees the
+  // Resend error (e.g. an unverified sending domain) rather than a silent drop.
+  if (!emailOk) {
+    logger.error(
+      { ticketId, userId: p.userId, reason: p.reason, error: emailErr },
+      'support escalation email NOT confirmed — user degraded honestly',
+    );
+  }
+
   // Persist the ticket (fire-and-forget silent-fail; pre-migration tolerant).
   void p.supabase.from('support_tickets').insert({
     id: ticketId,
@@ -369,4 +415,6 @@ async function escalate(p: EscalateParams): Promise<void> {
     email_sent: emailOk,
     email_error: emailErr,
   }).then(() => {}, () => {});
+
+  return { ok: emailOk, error: emailErr };
 }

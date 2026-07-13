@@ -79,10 +79,13 @@ describe('F4.2 — user preferences inject globally and are non-placebo', () => 
 });
 
 describe('F4.3 — web capability is honest and conditional', () => {
-  it('base chat still declares it cannot search the web (regression)', () => {
+  it('base chat declines web search BY MODE (F-21) — never a blanket denial', () => {
     const p = buildGoblinChatSystemPrompt({ projectName: 'X' });
-    expect(p).toMatch(/Nicht im Web suchen/);
-    expect(p).not.toContain('web_search');
+    // F-21: the old blanket "Nicht im Web suchen oder Live-Daten abrufen" is gone;
+    // base chat now declines by mode and points to agent runs (honest, not a denial).
+    expect(p).not.toMatch(/Nicht im Web suchen oder Live-Daten abrufen/);
+    expect(p).toMatch(/in einem Agent-Run KANN Goblin das Web durchsuchen/);
+    expect(p).not.toContain('web_search'); // base chat still has no search TOOL
   });
 
   it('agent run WITHOUT a provider does not advertise web_search', () => {

@@ -50,7 +50,10 @@ export async function sendSupportEscalation(ticket: SupportTicket): Promise<{ ok
   // Recipient: the founder is the escalation. Unified with the Wave-I founder
   // envs so a single ADMIN_EMAIL configures both digests and escalations.
   const to = process.env.SUPPORT_EMAIL_TO ?? process.env.FOUNDER_DIGEST_EMAIL ?? process.env.ADMIN_EMAIL;
-  const from = process.env.SUPPORT_EMAIL_FROM ?? process.env.RESEND_FROM ?? 'Goblin Support <support@send.justgoblin.com>';
+  // Sender must be on a Resend-VERIFIED domain or the send 404s (the F-29 root
+  // cause). The verified domain is the root justgoblin.com — the same one the
+  // digest's noreply@justgoblin.com uses — not the send.justgoblin.com subdomain.
+  const from = process.env.SUPPORT_EMAIL_FROM ?? process.env.RESEND_FROM ?? 'Goblin Support <support@justgoblin.com>';
 
   if (!apiKey || !to) {
     return { ok: false, error: 'missing_config' };

@@ -158,6 +158,52 @@ describe('agent tools — A3', () => {
     expect(r.file?.classification).toBe('IDENTISCH');
   });
 
+  // F-17: a guessed css/js sibling must be retargeted to the asset the entry HTML
+  // links, so the attested path IS the written path IS the shipped/served asset.
+  it('write_file retargets a guessed css sibling to the linked asset (attested == shipped)', async () => {
+    const sb = makeFakeSb(
+      [
+        { path: 'index.html', content: '<!doctype html><link rel="stylesheet" href="style.css"><h1>Hi</h1>' },
+        { path: 'style.css', content: 'body{color:red}' },
+      ],
+      's1',
+    );
+    const exec = buildToolExecutor(sb as never);
+    // The model guesses `styles.css` (the parse-code-blocks default) — a sibling the
+    // entry never links.
+    const r = await exec({ id: 'c1', name: 'write_file', args: { path: 'styles.css', content: 'body{color:blue}' } }, ctx);
+    expect(r.ok).toBe(true);
+    // Attested path is the LINKED file, not the guessed sibling.
+    expect(r.file?.path).toBe('style.css');
+    // And it is classified as a real edit of THAT file (red -> blue), not NEU of a sibling.
+    expect(r.file?.classification).toBe('GEÄNDERT');
+    // The draft landed on the linked file; no orphan sibling was created.
+    expect(sb.rows().some((x) => x.path === 'styles.css')).toBe(false);
+    expect(sb.rows().find((x) => x.path === 'style.css')?.content).toBe('body{color:blue}');
+  });
+
+  it('write_file leaves an already-linked css path untouched, and does not reconcile when ambiguous', async () => {
+    // (a) exact linked path — no retarget.
+    const sb = makeFakeSb(
+      [{ path: 'index.html', content: '<link rel="stylesheet" href="style.css">' }, { path: 'style.css', content: 'a{}' }],
+      's1',
+    );
+    const exec = buildToolExecutor(sb as never);
+    const r = await exec({ id: 'c1', name: 'write_file', args: { path: 'style.css', content: 'a{color:green}' } }, ctx);
+    expect(r.file?.path).toBe('style.css');
+
+    // (b) two linked stylesheets → ambiguous → the guessed path is left as-is (NEU),
+    // never silently merged onto one of them.
+    const sb2 = makeFakeSb(
+      [{ path: 'index.html', content: '<link rel="stylesheet" href="a.css"><link rel="stylesheet" href="b.css">' }],
+      's1',
+    );
+    const exec2 = buildToolExecutor(sb2 as never);
+    const r2 = await exec2({ id: 'c2', name: 'write_file', args: { path: 'c.css', content: 'x{}' } }, ctx);
+    expect(r2.file?.path).toBe('c.css');
+    expect(r2.file?.classification).toBe('NEU');
+  });
+
   it('save_draft promotes drafts to storage and is idempotent', async () => {
     const sb = makeFakeSb([{ path: 'index.html', content: 'a', change_state: 'draft' }], 's1');
     const exec = buildToolExecutor(sb as never);

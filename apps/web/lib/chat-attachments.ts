@@ -12,7 +12,7 @@ import type { Lang } from '@/lib/use-lang';
 /** Separate attach budget, per message, across all text/PDF attachments. */
 export const ATTACH_BUDGET_CHARS = 24_000;
 
-export type AttachmentKind = 'text' | 'pdf' | 'image';
+export type AttachmentKind = 'text' | 'pdf' | 'image' | 'unsupported';
 export type AttachmentState = 'ready' | 'extracting' | 'error';
 
 export interface ChatAttachment {
@@ -42,9 +42,11 @@ export function classifyKind(file: File): AttachmentKind {
   if (file.type === 'application/pdf' || ext(file.name) === 'pdf') return 'pdf';
   if (file.type.startsWith('image/')) return 'image';
   if (file.type.startsWith('text/') || TEXT_EXTENSIONS.has(ext(file.name))) return 'text';
-  // Unknown non-text binary → treat as image-class (honest "can't read") so we
-  // never silently pretend to have read bytes we can't parse.
-  return 'image';
+  // F-24: an unknown type is NOT an image. The old fallback classified it as
+  // 'image', so the model got a "can't view images" note and paraphrased it into
+  // a false capability limit ("dazu fehlt mir die Funktion"). Mark it 'unsupported'
+  // so it gets an honest, type-specific message instead.
+  return 'unsupported';
 }
 
 /** Read a text-class file client-side. */
@@ -91,6 +93,20 @@ export async function buildAttachment(file: File, id: string, lang: Lang): Promi
     };
   }
 
+  if (kind === 'unsupported') {
+    // Honest, type-specific — never a false capability claim. Names the concrete
+    // type so the user knows exactly what wasn't read.
+    const type = ext(file.name);
+    return {
+      ...base,
+      state: 'error',
+      error:
+        lang === 'en'
+          ? `This file couldn't be read (${type ? `.${type} files are` : 'this file type is'} not supported yet).`
+          : `Diese Datei konnte nicht gelesen werden (${type ? `Typ .${type}` : 'dieser Dateityp'} wird derzeit nicht unterstützt).`,
+    };
+  }
+
   if (kind === 'text') {
     try {
       return { ...base, state: 'ready', content: await readTextFile(file) };
@@ -129,7 +145,10 @@ export function composeMessageWithAttachments(
   atts: ChatAttachment[],
   lang: Lang,
 ): ComposeResult {
-  const usable = atts.filter((a) => a.state === 'ready' || a.kind === 'image');
+  // Include every RESOLVED attachment (ready + errored) — only in-flight
+  // 'extracting' is excluded. F-24: a failed/unsupported read must inject an
+  // honest note, never be silently dropped (which let the model confabulate).
+  const usable = atts.filter((a) => a.state !== 'extracting');
   if (usable.length === 0) return { message: text };
 
   const chars = attachmentCharCount(usable);
@@ -145,12 +164,18 @@ export function composeMessageWithAttachments(
 
   const blocks: string[] = [];
   for (const a of usable) {
-    if (a.kind === 'image') {
-      const label = lang === 'en' ? 'Attached image' : 'Angehängtes Bild';
-      blocks.push(`[${label}: ${a.name} — ${a.error ?? (lang === 'en' ? "can't be viewed." : 'kann nicht angesehen werden.')}]`);
-    } else if (a.content) {
+    if (a.content) {
+      // Successfully read text/PDF → the real content as a file-card block.
       const label = lang === 'en' ? 'Attached file' : 'Angehängte Datei';
       blocks.push(`${label}: ${a.name}\n\`\`\`${a.name}\n${a.content}\n\`\`\``);
+    } else if (a.kind === 'image') {
+      const label = lang === 'en' ? 'Attached image' : 'Angehängtes Bild';
+      blocks.push(`[${label}: ${a.name} — ${a.error ?? (lang === 'en' ? "can't be viewed." : 'kann nicht angesehen werden.')}]`);
+    } else if (a.error) {
+      // Unsupported type or a failed read → inject the HONEST, type-specific
+      // reason so the model states it accurately instead of inventing a limit.
+      const label = lang === 'en' ? 'Attached file' : 'Angehängte Datei';
+      blocks.push(`[${label}: ${a.name} — ${a.error}]`);
     }
   }
 

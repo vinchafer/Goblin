@@ -85,7 +85,7 @@ const STEPS: Step[] = [
   {
     num: '08',
     title: 'Preview',
-    body: 'Tap to see your live site',
+    body: 'See your live site the moment it ships',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
         <circle cx="12" cy="12" r="10" />

@@ -569,7 +569,10 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
 
   const submit = () => {
     const trimmed = input.trim();
-    const usableAtts = attachments.filter((a) => a.state === 'ready' || a.kind === 'image');
+    // Resolved attachments (ready or errored/unsupported) count as sendable — an
+    // unsupported file still sends its honest note so the model responds truthfully
+    // (F-24). Only in-flight 'extracting' is excluded (handled below).
+    const usableAtts = attachments.filter((a) => a.state !== 'extracting');
     if ((!trimmed && usableAtts.length === 0) || disabled || isStreaming) return;
     // Don't send while an attachment is still being read/extracted.
     if (attachments.some((a) => a.state === 'extracting')) {
@@ -621,7 +624,7 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
     }
   }, []);
 
-  const hasUsableAttachment = attachments.some((a) => a.state === 'ready' || a.kind === 'image');
+  const hasUsableAttachment = attachments.some((a) => a.state !== 'extracting');
   const hasInput = input.trim().length > 0 || hasUsableAttachment;
   const plusBtnRef = useRef<HTMLButtonElement>(null);
   const [plusOpen, setPlusOpen] = useState(false);

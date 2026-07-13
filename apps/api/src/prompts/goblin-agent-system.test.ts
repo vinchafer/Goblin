@@ -94,4 +94,48 @@ describe('AGENT MODE system prompt — A4', () => {
       });
     }
   });
+
+  // F-21 — web-search capability map is honest and mode-scoped. In the walk the base
+  // chat blanket-denied ("Ich kann nicht im Web suchen") even though FEEL-4 shipped a
+  // real search adapter reachable in agent runs. Base chat must decline BY MODE (not
+  // deny the capability), and the agent prompt must tell the model it CAN search.
+  describe('F-21 — web search capability map is honest', () => {
+    const chat = buildGoblinChatSystemPrompt({ projectName: 'X' });
+
+    it('base chat declines by MODE and points to agent runs — never a blanket denial', () => {
+      expect(chat).toMatch(/in einem Agent-Run KANN Goblin das Web durchsuchen/);
+      expect(chat).toMatch(/In diesem Chat-Modus suche ich nicht live/);
+      // The old blanket "can't search at all" claim is gone.
+      expect(chat).not.toMatch(/Nicht im Web suchen oder Live-Daten abrufen/);
+      // The identity example no longer uses web search as an absolute limit.
+      expect(chat).toMatch(/Ich kann keine Bilder ansehen/);
+    });
+
+    it('agent prompt WITH a resolved provider tells the model it CAN search + cite', () => {
+      const agentWithSearch = buildAgentSystemPrompt({ projectName: 'X', searchAvailable: true });
+      expect(agentWithSearch).toMatch(/du KANNST in diesem Lauf im Web suchen/);
+      expect(agentWithSearch).toMatch(/Quelle/);
+      // Without a provider, the search block is absent (honest: no false capability).
+      expect(buildAgentSystemPrompt({ projectName: 'X' })).not.toMatch(/du KANNST in diesem Lauf im Web suchen/);
+    });
+  });
+
+  // R1 (F-28) — the no-roadmap / no-future-feature ABSOLUTE block rides in BOTH the
+  // agent prompt and normal chat: the model invented a GitLab roadmap in the walk, so
+  // the rule + the exact-failure few-shot must be present on every generative surface.
+  describe('R1 — no invented roadmap / timeline (F-28)', () => {
+    const chat = buildGoblinChatSystemPrompt({ projectName: 'X' });
+    for (const [label, prompt] of [['agent', p], ['chat', chat]] as const) {
+      it(`${label} prompt carries the ABSOLUTE no-roadmap block + the honest canonical line`, () => {
+        expect(prompt).toMatch(/ABSOLUTE REGEL — keine Roadmap, keine Zukunfts-Features \(R1\)/);
+        expect(prompt).toMatch(/Das gibt es heute nicht\. Ob und wann es kommt, kann ich dir nicht sagen\./);
+        // The forbidden roadmap phrasings are named as prohibited.
+        expect(prompt).toMatch(/in den nächsten Updates/);
+      });
+      it(`${label} prompt teaches the exact GitLab failure case as a few-shot`, () => {
+        expect(prompt).toContain('Beispiel R1');
+        expect(prompt).toMatch(/GitLab-Konnektor/);
+      });
+    }
+  });
 });
