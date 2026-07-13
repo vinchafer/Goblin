@@ -271,6 +271,11 @@ const server = serve({
 
 console.log(`Goblin API listening on port ${port}`);
 
+// F-38 — surface the escalation-mail readiness at boot (never logs the key).
+import('./services/support-email.js')
+  .then(({ logResendStatus }) => logResendStatus())
+  .catch((e) => console.warn('[support-email] status log failed:', e));
+
 // Sprint 10.8 — refresh the model catalog from LiteLLM on boot (fire-and-forget;
 // no-op if LITELLM_BASE_URL is unset). Keeps the `models` cache aligned with what
 // the proxy actually serves; Sprint 10.9 adds a cron on top of the same path.
