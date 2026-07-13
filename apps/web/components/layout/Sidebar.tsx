@@ -431,7 +431,7 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
           display: 'flex', alignItems: 'center', justifyContent: 'flex-end',
           padding: '12px 20px 8px 20px', flexShrink: 0,
         }}>
-          <button onClick={onClose} aria-label={t(lang, 'Seitenleiste schließen', 'Close sidebar')} style={{
+          <button onClick={onClose} className="tap-press-tint" aria-label={t(lang, 'Seitenleiste schließen', 'Close sidebar')} style={{
             background: 'rgba(0,0,0,0.04)', border: 'none', fontSize: 'var(--t-h4-fs)',
             color: '#8C857A', cursor: 'pointer',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -567,6 +567,11 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
 function RecentChats({ pathname, navigate, projects = [] }: { pathname: string; navigate: (path: string) => void; projects?: Project[] }) {
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [loading, setLoading] = useState(true);
+  // CW-4 (Speed & Haptik F-41): the "+" new-chat button awaits getSession + a
+  // POST before it navigates, with no feedback in between — a dead tap. Track a
+  // busy state so the press registers instantly (spinner + inert) and a
+  // double-tap can't fire two creates.
+  const [creatingChat, setCreatingChat] = useState(false);
   const lang = useLang();
   const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
 
@@ -587,6 +592,8 @@ function RecentChats({ pathname, navigate, projects = [] }: { pathname: string; 
 
   const handleNewChat = async () => {
     if (isDemoActive()) return; // Sprint 10 §6: inert in demo.
+    if (creatingChat) return;   // CW-4: guard against a double-tap firing two creates.
+    setCreatingChat(true);      // CW-4: register the press instantly (before the awaits).
     try {
       const supabase = createClient();
       const { data: { session } } = await supabase.auth.getSession();
@@ -602,7 +609,7 @@ function RecentChats({ pathname, navigate, projects = [] }: { pathname: string; 
         navigate(`/dashboard/chat/${s.id}`);
         loadSessions();
       }
-    } catch { /* ignore */ }
+    } catch { /* ignore */ } finally { setCreatingChat(false); }
   };
 
   function timeAgoShort(dateStr: string): string {
@@ -636,22 +643,34 @@ function RecentChats({ pathname, navigate, projects = [] }: { pathname: string; 
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); handleNewChat(); }}
+          disabled={creatingChat}
+          aria-busy={creatingChat}
           title={t(lang, 'Neuer Chat', 'New chat')}
           aria-label={t(lang, 'Neuer Chat', 'New chat')}
           data-testid="sidebar-chats-plus"
           style={{
-            background: 'var(--brand-header)', border: 'none', cursor: 'pointer',
+            background: 'var(--brand-header)', border: 'none',
+            cursor: creatingChat ? 'default' : 'pointer',
             padding: 0, borderRadius: 7, color: 'var(--bone, #F4ECD8)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
             width: 22, height: 22, transition: 'opacity 0.12s',
+            opacity: creatingChat ? 0.6 : 1,
             boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
           }}
-          onMouseEnter={e => { e.currentTarget.style.opacity = '0.88'; }}
-          onMouseLeave={e => { e.currentTarget.style.opacity = '1'; }}
+          onMouseEnter={e => { if (!creatingChat) e.currentTarget.style.opacity = '0.88'; }}
+          onMouseLeave={e => { if (!creatingChat) e.currentTarget.style.opacity = '1'; }}
         >
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
+          {creatingChat ? (
+            // CW-4: instant "working" cue — the press is acknowledged before the
+            // getSession + POST resolve. Honest: a chat is being created.
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" style={{ animation: 'spin 0.7s linear infinite' }}>
+              <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+            </svg>
+          ) : (
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+              <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+          )}
         </button>
       </div>
 

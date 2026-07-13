@@ -54,6 +54,7 @@ export function BottomTabBar({ hasProject = false }: { hasProject?: boolean }) {
         return (
           <button
             key={id}
+            className="tap-press-tint"
             onClick={() => !disabled && setActiveTab(id)}
             style={{
               flex: 1, background: 'none', border: 'none', cursor: disabled ? 'default' : 'pointer',
