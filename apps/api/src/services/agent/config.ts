@@ -21,6 +21,29 @@ export function agentMaxUnits(): number {
   return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 200_000;
 }
 
+/**
+ * F-40 orphan guard: hard wall-clock ceiling for a single run (default 10 min). A run
+ * now continues server-side after the client disconnects (it is no longer bound to the
+ * request), so an abandoned run could otherwise burn tokens until the iteration budget
+ * is spent. This timer aborts the run with an honest timeout landing. Env-overridable
+ * (`AGENT_MAX_RUNTIME_MS`) — the documented cost control for background runs (ledger M10).
+ */
+export function agentMaxRuntimeMs(): number {
+  const raw = Number(process.env.AGENT_MAX_RUNTIME_MS);
+  return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 600_000;
+}
+
+/**
+ * The AbortController reason the F-40 max-runtime guard uses, so it is distinguishable
+ * from an explicit user Stop (disconnect ≠ stop ≠ timeout — the three signals must be
+ * architecturally distinct). The orchestrator reads `stopSignal.reason` to land an honest
+ * "Zeitlimit erreicht" report instead of a plain user "gestoppt".
+ */
+export const MAX_RUNTIME_ABORT_REASON = 'max_runtime';
+
+/** The AbortController reason an explicit user Stop uses (F-23 stop-card semantics). */
+export const USER_STOP_ABORT_REASON = 'user_stop';
+
 /** The verified-capable model list for agent mode (D2): Swift (default) + Forge. */
 const AGENT_ELIGIBLE_TIERS: GoblinTierId[] = ['goblin/efficient', 'goblin/premium'];
 

@@ -15,7 +15,7 @@
 // sink are all injected, so it runs deterministically under unit test.
 
 import { trackCompletion } from '../../lib/track-completion';
-import { runWeightedUnits, agentMaxIterations, agentMaxUnits } from './config';
+import { runWeightedUnits, agentMaxIterations, agentMaxUnits, MAX_RUNTIME_ABORT_REASON } from './config';
 import { parseFallbackToolCall, buildRepairInstruction } from './protocol';
 import { getAgentModel } from './model-turn';
 import type { GoblinTierId } from '../goblin-hosted';
@@ -422,6 +422,20 @@ export async function runAgent(input: RunAgentInput): Promise<RunResult> {
 
   // Exhausted the iteration budget without a finish → truthful budget landing.
   if (outcome === null) outcome = 'budget';
+
+  // F-40 orphan guard: a 'stopped' outcome caused by the max-runtime abort is NOT a user
+  // Stop — tell the truth. The signal's reason distinguishes the guard (disconnect ≠ stop
+  // ≠ timeout). The outcome stays within the DB enum ('stopped'); the honest reason rides
+  // in the report + the completion push.
+  const stoppedByGuard =
+    outcome === 'stopped' && stop?.aborted === true && stop?.reason === MAX_RUNTIME_ABORT_REASON;
+  if (stoppedByGuard) {
+    failureReason =
+      'Der Lauf hat das Zeitlimit erreicht und wurde automatisch beendet, damit er nicht ' +
+      'endlos weiterläuft. Dein Teilstand ist gesichert — schau dir die Änderungen an oder ' +
+      'sag mir, wie ich weitermachen soll.';
+    modelText = modelText || failureReason;
+  }
 
   const fileList = [...files.values()];
   const report = assembleReport(outcome, fileList, savedDraft, units, modelText, publishedUrl, failureReason);

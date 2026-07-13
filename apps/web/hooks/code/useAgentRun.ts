@@ -81,6 +81,9 @@ export function useAgentRun(sessionId: string | null) {
   const [report, setReport] = useState<AgentReport | null>(null);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  // F-40: the live run id (from the meta frame). A disconnect no longer stops the run —
+  // Stop must call the server explicitly — so cancel() needs the id after the stream ends.
+  const runIdRef = useRef<string | null>(null);
 
   const reset = useCallback(() => {
     setSteps([]); setNarration(''); setPlan(null); setReport(null); setError(null);
@@ -117,7 +120,9 @@ export function useAgentRun(sessionId: string | null) {
           };
           if (d.type === 'meta') {
             // A-6: capture the run id so a stop/abort can recover the report via REST.
+            // F-40: also stash it in a ref so Stop can abort the run server-side.
             runId = d.run_id ?? null;
+            runIdRef.current = runId;
           } else if (d.type === 'agent_narration') {
             setNarration(d.text ?? '');
           } else if (d.type === 'agent_plan') {
@@ -164,9 +169,22 @@ export function useAgentRun(sessionId: string | null) {
   }, [sessionId, reset]);
 
   const cancel = useCallback(() => {
+    // F-40: since the run is now decoupled from the request, aborting the fetch only
+    // DISCONNECTS — the run would keep going. An explicit Stop must tell the server to
+    // abort the run (reason 'user_stop'); the orchestrator then ends the loop after the
+    // in-flight tool and persists the partial state. Best-effort + fire-and-forget.
+    const rid = runIdRef.current;
+    if (sessionId && rid) {
+      void (async () => {
+        try {
+          const headers = await getAuthHeaders();
+          await fetch(`${API_URL}/api/code-sessions/${sessionId}/agent/${rid}/stop`, { method: 'POST', headers });
+        } catch { /* best-effort — the max-runtime guard still bounds an unreachable run */ }
+      })();
+    }
     abortRef.current?.abort();
     setStreaming(false);
-  }, []);
+  }, [sessionId]);
 
   return { streaming, steps, narration, plan, report, error, submit, cancel, reset };
 }
