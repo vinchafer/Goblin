@@ -551,14 +551,22 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
   // published state before the checks pass.
   const liveStellen = async () => {
     setDeployConfirm(false);
+    // CW-3 (Speed & Haptik F-41): flip to the publishing state on the SAME tick as
+    // the confirm — BEFORE the Vercel pre-check round-trip. Previously the button
+    // sat inert until that apiGet returned, reading as a dead tap on a slow link.
+    // Honest copy ("Wird vorbereitet …"): we ARE preparing (checking the
+    // connection); the truth-gated flip to "Live" still happens only on success.
+    setDeploying(true);
+    setPublishStream({ phase: "publishing", message: "Wird vorbereitet …" });
     // P1.11: detect a missing Vercel connection BEFORE attempting the deploy — a
     // token-less publish must never dead-end. Open the connect JIT instead; it
-    // resumes this same flow (onConnected → liveStellen) after connecting.
+    // resumes this same flow (onConnected → liveStellen) after connecting. Revert
+    // the optimistic publishing state first so the JIT isn't shown behind a
+    // phantom "publishing" stream.
     try {
       const v = await apiGet<{ connected: boolean }>("/api/integrations/vercel");
-      if (!v?.connected) { setVercelJit(true); return; }
+      if (!v?.connected) { setDeploying(false); setPublishStream(null); setVercelJit(true); return; }
     } catch { /* status unreachable — fall through; the deploy path still guards NO_VERCEL_TOKEN */ }
-    setDeploying(true);
     setPublishStream({ phase: "publishing", message: "Sichere Änderungen …" });
     if (detail.draftCount > 0) {
       const ok = await detail.saveSession();
