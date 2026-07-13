@@ -1,0 +1,479 @@
+<!doctype html><html lang="de" data-theme="light"><head><meta charset="utf-8"><style>
+/* ─────────────────────────────────────────────────────────────────────
+   Goblin · Design Tokens — GLOBAL SOURCE OF TRUTH
+   Version 1.1 · synced with GOBLIN_DESIGN_SYSTEM.md v1.1
+   Installed by Brand Migration PROMPT A. This file REPLACES the retired
+   token set that previously lived here and in globals.css :root.
+
+   Structure:
+     1. v1.1 brand tokens (LOCKED anchors + ramps + scales + motion)
+     2. Dark theme
+     3. Mark animations + focus ring + reduced-motion
+     4. RETIRED-BRAND COMPAT SHIM  ← temporary, remove after PROMPT B
+   ───────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* ─── LOCKED brand anchors ─────────────────────────────────────── */
+  --brand-green:  #1A3A2A;   /* app header, primary brand surfaces */
+  --ink-deep:     #0F2B1E;   /* primary text, darkest surfaces, logo primary */
+  --brand-gold:   #D4A737;   /* logo mark, the single page accent */
+  --bone:         #F4ECD8;   /* light background — warm cream */
+  --paper:        #FBF7EC;   /* warmer paper variant of bone */
+
+  /* ─── Green ramp ───────────────────────────────────────────────── */
+  --green-50:  #EEF3EF;
+  --green-100: #D9E5DE;
+  --green-200: #B5CCC0;
+  --green-300: #87A998;
+  --green-400: #5E8973;
+  --green-500: #3D6D55;
+  --green-600: #2A523E;
+  --green-700: #1A3A2A;  /* = --brand-green (LOCKED) */
+  --green-800: #133224;
+  --green-900: #0F2B1E;  /* = --ink-deep (LOCKED) */
+  --green-950: #08170F;
+
+  /* ─── Gold ramp ────────────────────────────────────────────────── */
+  --gold-50:  #FBF3DF;
+  --gold-100: #F6E7C5;
+  --gold-200: #F0D9A4;
+  --gold-300: #E8C97F;
+  --gold-400: #DEB75A;
+  --gold-500: #D4A737;  /* = --brand-gold (LOCKED) */
+  --gold-600: #BC8E2E;
+  --gold-700: #A07726;
+  --gold-800: #7E5C1B;
+  --gold-900: #5E4514;
+
+  /* ─── D-B · Sage & Copper (Option 2) — FIX-WAVE 3 ───────────────────
+     Founder-decided palette (2026-07-12). Deep green stays the anchor; the
+     ochre/terracotta warm accents are retired. Sage = PRIMARY accent (cool,
+     calm highlight), Copper = SECONDARY accent (warm pop, replaces the
+     ochre/terracotta the founder disliked). Applied via the semantic
+     --accent-primary/-secondary layer below so consumers shift from one place.
+     Dark variants are DARKER/desaturated so accents never lighten the dark
+     surfaces (the founder's hard condition: dark mode stays unmistakably dark). */
+  --sage:         #7FA98A;   /* primary accent */
+  --sage-strong:  #5E8973;   /* deeper sage — borders / on lighter surfaces */
+  --sage-soft:    rgba(127,169,138,0.12);
+  --sage-rule:    rgba(127,169,138,0.34);
+  --copper:       #C56B4A;   /* secondary accent (replaces ochre/terracotta) */
+  --copper-strong:#9C4E34;   /* copper INK (text) — light: darkened to clear AA (4.8:1) on the pale copper tint; flips lighter in dark */
+  --copper-soft:  rgba(197,107,74,0.12);
+  --copper-rule:  rgba(197,107,74,0.34);
+
+  /* ─── Bone / surface ramp ──────────────────────────────────────── */
+  --surface-0: #FFFFFF;
+  --surface-1: #FBF7EC;  /* = --paper (LOCKED) */
+  --surface-2: #F4ECD8;  /* = --bone  (LOCKED) */
+  --surface-3: #E8DEC2;
+  --surface-4: #D8CBA8;
+  --rule-soft:   #E8DEC2;
+  --rule:        #D8CBA8;
+  --rule-strong: #B8A988;
+  --surface-ink-1: #3F3A2C;
+  --surface-ink-2: #28251D;
+
+  /* ─── Text inks ────────────────────────────────────────────────── */
+  --ink-1:        #0F2B1E;
+  --ink-2:        #3F3A2C;
+  --ink-3:        #5F5640;   /* B11: darkened from #74694F (4.04:1) → 5.4:1 on sand, clears WCAG AA */
+  --ink-disabled: #B8A988;
+
+  --ink-on-dark-1:        #FBF7EC;
+  --ink-on-dark-2:        #D8CBA8;
+  --ink-on-dark-3:        #968768;
+  --ink-on-dark-disabled: #5A523D;
+
+  /* ─── Semantic colours ─────────────────────────────────────────── */
+  --success:       #3D7A4F;
+  --success-soft:  #E1EDDE;
+  --warning:       #C7901A;
+  --warning-soft:  #F7E8C2;
+  --danger:        #B0432A;
+  --danger-soft:   #F0DACF;
+  --info:          #355B7A;
+  --info-soft:     #DCE6F0;
+
+  /* ─── Typography ───────────────────────────────────────────────── */
+  /* Manrope + Instrument Serif loaded globally in app/layout.tsx as the
+     named next/font variables below. --font-mono is owned by next/font
+     (JetBrains Mono, variable name --font-mono) — not redefined here. */
+  --font-sans:  var(--font-manrope), 'Manrope', system-ui, -apple-system, sans-serif;
+  --font-serif: var(--font-instrument-serif), 'Instrument Serif', Georgia, serif;
+
+  /* ─── Spacing scale (4 px base) ────────────────────────────────── */
+  --space-0:  0;
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-7:  32px;
+  --space-8:  40px;
+  --space-9:  48px;
+  --space-10: 64px;
+  --space-11: 80px;
+  --space-12: 120px;
+
+  /* ─── Radii ────────────────────────────────────────────────────── */
+  --radius-xs:     4px;
+  --radius-sm:     10px;
+  --radius-md:     14px;
+  --radius-lg:     20px;
+  --radius-pill:   9999px;
+  --radius-icon:   22.5%;
+  --radius-circle: 50%;
+
+  /* ─── Elevation ────────────────────────────────────────────────── */
+  --shadow-0: none;
+  --shadow-1: 0 1px 0 rgba(15, 43, 30, 0.06);
+  --shadow-2: 0 6px 16px -8px rgba(15, 43, 30, 0.18),
+              0 2px 4px  -2px rgba(15, 43, 30, 0.12);
+  --shadow-3: 0 24px 60px -20px rgba(15, 43, 30, 0.34),
+              0 8px  16px -8px  rgba(15, 43, 30, 0.18);
+
+  /* ─── Motion ───────────────────────────────────────────────────── */
+  --ease-out:    cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* ─── Type scale (mobile) ──────────────────────────────────────── */
+  --t-display-fs: 40px;   --t-display-lh: 1.04; --t-display-ls: -0.02em;
+  --t-h1-fs:      30px;   --t-h1-lh:      1.10; --t-h1-ls:      -0.02em;
+  --t-h2-fs:      24px;   --t-h2-lh:      1.15; --t-h2-ls:      -0.01em;
+  --t-h3-fs:      20px;   --t-h3-lh:      1.25; --t-h3-ls:      -0.01em;
+  --t-h4-fs:      17px;   --t-h4-lh:      1.30;
+  --t-body-lg-fs: 17px;   --t-body-lg-lh: 1.55;
+  --t-body-fs:    16px;   --t-body-lh:    1.55;
+  --t-small-fs:   14px;   --t-small-lh:   1.50;
+  --t-caption-fs: 12px;   --t-caption-lh: 1.40;
+  --t-button-fs:  15px;   --t-button-lh:  1.20;
+  --t-eyebrow-fs: 11px;   --t-eyebrow-lh: 1.20; --t-eyebrow-ls:  0.14em;
+  --t-mono-fs:    13px;   --t-mono-lh:    1.45;
+  --t-mono-sm-fs: 11px;   --t-mono-sm-lh: 1.40; --t-mono-sm-ls:  0.04em;
+}
+
+/* ─── Type scale (desktop ≥ 640 px) ────────────────────────────────── */
+@media (min-width: 640px) {
+  :root {
+    --t-display-fs: 72px;
+    --t-h1-fs:      48px;
+    --t-h2-fs:      32px;
+    --t-h3-fs:      22px;
+    --t-h4-fs:      18px;
+    --t-body-lg-fs: 18px;
+    --t-eyebrow-fs: 12px;
+  }
+}
+
+/* ─── Dark theme — flip surfaces/inks, keep gold & semantics ──────── */
+[data-theme="dark"] {
+  --surface-0: #08170F;
+  --surface-1: #133224;
+  --surface-2: #0F2B1E;
+  --surface-3: #1A3A2A;
+  --surface-4: #2A523E;
+  --rule-soft:   rgba(247, 247, 236, 0.06);
+  --rule:        rgba(247, 247, 236, 0.10);
+  --rule-strong: rgba(247, 247, 236, 0.22);
+
+  --ink-1:        #FBF7EC;
+  --ink-2:        #D8CBA8;
+  --ink-3:        #968768;
+  --ink-disabled: #5A523D;
+}
+
+/* ─── Reduced motion ──────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ─── Goblin mark animations ──────────────────────────────────────── */
+@keyframes goblin-thinking {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-3px); }
+}
+@keyframes goblin-working {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.6; }
+}
+@keyframes goblin-breath {
+  0%, 100% { opacity: 0.42; transform: scale(1); }
+  50%      { opacity: 0.85; transform: scale(1.025); }
+}
+.goblin-mark--thinking { animation: goblin-thinking 0.6s ease-in-out infinite; }
+.goblin-mark--working  { animation: goblin-working  1.8s ease-in-out infinite; }
+.goblin-mark--breath   { animation: goblin-breath   2.2s ease-in-out infinite;
+                          transform-origin: 50% 50%; }
+
+/* Reduced-motion resolution for the four mark states.
+   Spec reference: GOBLIN_DESIGN_SYSTEM.md §A5.10 — values below are
+   the single source of truth in code; do not edit independently of
+   the spec. */
+@media (prefers-reduced-motion: reduce) {
+  .goblin-mark--thinking,
+  .goblin-mark--working { opacity: 1 !important; transform: none !important; }
+  .goblin-mark--breath  { opacity: 0.65 !important; transform: none !important; }
+}
+
+/* ─── Default focus ring (every interactive element) ──────────────── */
+:where(button, a, input, textarea, select, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent-primary); /* D-B: sage primary accent (was gold) */
+  outline-offset: 2px;
+  border-radius: inherit;
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   SEMANTIC ALIAS LAYER — PERMANENT (not a shim, do not delete)
+   ───────────────────────────────────────────────────────────────────
+   Maps meaning-named tokens (--text, --border, --panel, --shadow-*, …)
+   onto the v1.1 primitives above. This is an intentional, permanent
+   architecture layer: components reference semantic names, the names
+   resolve to v1.1 primitives in one place. The retired-BRAND compat shim
+   that previously sat here (--moss/--ochre/--cream/--font-ui/--font-brand/
+   --goblin-*) was REMOVED in PROMPT B once the file sweep finished — no
+   file references those names anymore.
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  /* — surfaces / neutrals — */
+  --subtle:   var(--surface-3);
+  --div:      var(--rule-soft);
+  --white:    var(--surface-0);
+  --panel:    var(--surface-0);
+  /* P1.1: was var(--paper) — a LOCKED light anchor that never flips, so any
+     surface/control fill using --surface stayed cream under dark text
+     (founder-reproduced: project-create modal inputs invisible in dark).
+     --surface-1 is #FBF7EC in light (identical to --paper) and flips to
+     #133224 in [data-theme="dark"]. Same for --surface-page below. */
+  --surface:  var(--surface-1);
+  --border:   var(--rule);
+
+  /* — text inks — */
+  --text:       var(--ink-1);
+  --text-2:     var(--ink-2);
+  --meta:       var(--ink-3);
+  /* F-03/04/06/08 (FIX-WAVE 3) — the flip-aware BRAND FOREGROUND.
+     The theme cluster's dominant defect: components used the LOCKED brand anchor
+     `--brand-green` (#1A3A2A) directly as a TEXT/icon colour (headings, active
+     labels, the trial-gate headline, sidebar quota labels). --brand-green never
+     flips, so on a dark surface it rendered dark-green-on-dark → invisible. The
+     anchor must stay locked (it fills brand buttons/headers), so this is the
+     foreground twin: brand green in light, a light sage in dark. Use --brand-fg
+     wherever brand green was a FOREGROUND; keep --brand-green for fills. */
+  --brand-fg:   var(--brand-green);
+
+  /* D-B · the semantic accent roles. Consumers reference these (not the raw
+     hues) so the palette is a one-place swap. Sage = primary, Copper = secondary.
+     CONTRAST NOTE: the base sage #7FA98A fails the 3:1 non-text-UI threshold on
+     the light cream surfaces (2.5:1), so LIGHT uses the deeper --sage-strong
+     (#5E8973 → 3.7–4.0:1); DARK uses base sage (5.3–7.0:1). Copper #C56B4A holds
+     ≥3.5:1 both ways as a dot/fill; copper TEXT uses --copper-strong. */
+  --accent-primary:        var(--sage-strong);  /* light: deeper sage for UI contrast */
+  --accent-secondary:      var(--copper);
+  --accent-primary-soft:   var(--sage-soft);
+  --accent-primary-rule:   var(--sage-rule);
+  --accent-secondary-soft: var(--copper-soft);
+
+  --text-meta:  var(--ink-3);
+  --text-faint: #665C42;   /* B11: decoupled from --ink-disabled so empty-state copy clears AA (5.6:1 on bone, 6.6:1 on white); --ink-disabled stays light for genuinely-disabled UI */
+  --disabled:   var(--ink-disabled);
+  --sidebar-meta: var(--ink-3);
+
+  /* — status (semantic names → v1.1 semantic primitives) — */
+  --good:      var(--success);
+  --error:     var(--danger);
+  --rust:      var(--danger);
+  --rust-soft: var(--danger-soft);
+
+  /* — borders / tints — */
+  --border-hairline:   rgba(15, 43, 30, 0.06);
+  --border-subtle:     rgba(15, 43, 30, 0.10);
+  --border-strong:     rgba(15, 43, 30, 0.16);
+  --toggle-off:        rgba(120, 120, 128, 0.16);
+  --surface-overlay:   rgba(15, 43, 30, 0.40);
+
+  /* — spacing: three legacy step values kept stable for components that
+       reference them (1–6 identical to v1.1; 7/9/11 unused by legacy). — */
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* — layout dims — */
+  --topbar-height: 48px;
+  --sidebar-width: 240px;
+
+  /* — radii not present in the v1.1 primitive set → nearest — */
+  --radius-xl:    var(--radius-lg);
+  --radius-2xl:   var(--radius-lg);
+  --radius-full:  var(--radius-pill);
+  --radius-sheet: 24px;
+
+  /* — shadows — */
+  --shadow-sm:    0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:    0 4px 16px rgba(0,0,0,0.08);
+  --shadow-lg:    0 8px 32px rgba(0,0,0,0.12);
+  --shadow-gold:  0 2px 8px rgba(212,167,55,0.25);
+  --shadow-sheet:   0 -8px 32px rgba(0, 0, 0, 0.12);
+  --shadow-popover: 0 8px 24px rgba(0, 0, 0, 0.10);
+  --shadow-fab:     0 4px 12px rgba(212, 167, 55, 0.40);
+  --shadow-card:    0 1px 2px rgba(0, 0, 0, 0.04);
+
+  /* — auth screen (intentional dark card surface) — */
+  --auth-bg:     #1a1a18;
+  --auth-card:   #252521;
+  --auth-input:  rgba(255,255,255,0.06);
+  --auth-border: rgba(255,255,255,0.10);
+  --auth-text:   #ffffff;
+  --auth-meta:   rgba(255,255,255,0.38);
+
+  /* — code panels (dark surfaces) — */
+  --code-bg:      #1E2A1C;
+  --code-bg-dark: #1E3A1C;
+  --code-fg:      #8AAA85;
+  --code-root:    #141A12;
+  --code-root-2:  #0F1410;
+
+  /* — semantic surface / ink names — */
+  --surface-page:     var(--surface-1);   /* P1.1: flip in dark (was --paper) */
+  --surface-dark:     var(--brand-green);
+  --surface-elevated: var(--surface-0);
+  --ink-on-dark:      var(--ink-on-dark-1);
+  --ink-on-light:     var(--ink-1);
+  --ink-muted:        rgba(15, 43, 30, 0.58);
+  --ink-muted-dark:   rgba(247, 244, 237, 0.55);
+  --rule-on-dark:     rgba(244, 236, 216, 0.10);
+
+  /* — legacy px type scale (kept for components referencing these names) — */
+  --text-display: 88px;
+  --text-h1:      56px;
+  --text-h2:      40px;
+  --text-h3:      24px;
+  --text-body-l:  18px;
+  --text-body:    15px;
+  --text-small:   13px;
+  --text-mono:    12.5px;
+  --text-label:   11px;
+
+  /* — motion durations — */
+  --duration-fast: 150ms;
+  --duration-base: 200ms;
+  --duration-slow: 400ms;
+}
+
+/* Dark-mode: surfaces/inks are already flipped by the v1.1
+   [data-theme="dark"] block above (the semantic aliases point at those
+   primitives). Only the literal dark-surface specifics are set here. */
+[data-theme="dark"] {
+  --code-bg:      #111a0f;
+  --code-bg-dark: #0d140b;
+  --code-fg:      #a8d5a2;
+  --code-root:    #0a0f09;
+  --code-root-2:  #080c07;
+  --shadow-sm:    0 1px 3px rgba(0,0,0,0.2), 0 1px 2px rgba(0,0,0,0.15);
+  --shadow-md:    0 4px 16px rgba(0,0,0,0.3);
+  --shadow-lg:    0 8px 32px rgba(0,0,0,0.4);
+  --surface-overlay: rgba(0, 0, 0, 0.60);
+
+  /* P1.1: these two secondary-text tokens were LIGHT-only literals that never
+     flipped (dark green / dark brown) → invisible dark-on-dark. Flip to the
+     light-on-dark equivalents so captions/faint copy clear AA in dark. */
+  --ink-muted:  var(--ink-muted-dark);   /* rgba(247,244,237,0.55) */
+  --text-faint: #B8A988;                 /* was #665C42 */
+
+  /* F-03/04/06/08 — brand foreground flips to sage in dark so headings and
+     brand-coloured labels read clearly on dark surfaces while keeping the green
+     identity (measured ≥ AA on the surface-0..2 dark greens). D-B: this is the
+     sage primary accent, so the foreground and the accent share one hue. */
+  --brand-fg:   var(--sage);             /* #7FA98A */
+
+  /* D-B dark variants — the founder's hard condition. Accents must not lighten
+     the dark surfaces, so sage/copper stay as ACCENT foregrounds/fills only; the
+     surfaces themselves remain the deep-green anchor. Sage is legible as-is on
+     the dark greens; copper darkens slightly so warm fills don't glow. */
+  --accent-primary:        var(--sage);        /* #7FA98A — reads on dark greens */
+  --accent-secondary:      var(--copper);      /* #C56B4A */
+  --accent-primary-soft:   rgba(127,169,138,0.16);
+  --accent-primary-rule:   rgba(127,169,138,0.40);
+  --accent-secondary-soft: rgba(197,107,74,0.18);
+  --copper-strong:         #DDA085;   /* copper ink flips lighter in dark (6.3:1 on the dark copper tint) */
+
+  /* Structural gap A — the Tailwind @theme surface literals (--color-surface-*,
+     --color-paper/-bone) are emitted at :root as LIGHT cream values with no dark
+     override, so components reading them (e.g. the usage bars' card/track) stayed
+     cream in dark → cream-on-cream. Flip them to the dark surface primitives so
+     every @theme surface consumer heals at the root, not per-component. */
+  --color-surface-0: #08170F;
+  --color-surface-1: #133224;
+  --color-surface-2: #0F2B1E;
+  --color-surface-3: #1A3A2A;
+  --color-surface-4: #2A523E;
+  --color-paper:     #133224;
+  --color-bone:      #0F2B1E;
+}
+/* ════════════════ END SEMANTIC ALIAS LAYER ════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════
+   CODE-TAB EDITOR SURFACE — Sprint 6 (PROPOSED for v1.2)
+   ───────────────────────────────────────────────────────────────────
+   Scoped editor-surface tokens. The Code Tab root carries
+   data-editor-theme="light|dark"; every Code-Tab chrome component reads
+   these --ed-* vars so the whole surface flips from ONE place. LIGHT is
+   the new default (founder: the old #28251D/#08170F dark was unusable).
+   Dark is a retuned WARM-dark (surface-ink-1 #3F3A2C), not the black hole.
+   ═══════════════════════════════════════════════════════════════════ */
+.gb-codetab[data-editor-theme="light"] {
+  --ed-canvas:    #FBF7EC;  /* editor area / main surface (paper) */
+  --ed-chrome:    #F4ECD8;  /* bars, gutters, panels (bone) */
+  --ed-chrome-2:  #FBF7EC;  /* secondary panel */
+  --ed-fg-1:      #0F2B1E;  /* primary text */
+  --ed-fg-2:      #3F3A2C;  /* secondary text */
+  --ed-fg-3:      #5F5640;  /* faint text */
+  --ed-rule:      #D8CBA8;  /* hairlines */
+  --ed-rule-soft: #E8DEC2;
+  --ed-accent:    #D4A737;  /* gold — single accent */
+  --ed-primary:   #1A3A2A;  /* green — primary action fill */
+  --ed-on-primary:#FBF7EC;  /* text on green */
+  --ed-hover:     rgba(26,58,42,0.05);
+  --ed-draft:     #BC8E2E;  /* Entwurf */
+  --ed-saved:     #3D7A4F;  /* Gesichert */
+  --ed-deployed:  #D4A737;  /* Veröffentlicht (live URL) */
+}
+.gb-codetab[data-editor-theme="dark"] {
+  --ed-canvas:    #3F3A2C;
+  --ed-chrome:    #28251D;
+  --ed-chrome-2:  #34301F;
+  --ed-fg-1:      #FBF7EC;
+  --ed-fg-2:      #D8CBA8;
+  --ed-fg-3:      #968768;
+  --ed-rule:      rgba(247,247,236,0.14);
+  --ed-rule-soft: rgba(247,247,236,0.08);
+  --ed-accent:    #D4A737;
+  --ed-primary:   #D4A737;
+  --ed-on-primary:#28251D;
+  --ed-hover:     rgba(212,167,55,0.08);
+  --ed-draft:     #E8C97F;
+  --ed-saved:     #87C098;
+  --ed-deployed:  #D4A737;
+}
+
+*{box-sizing:border-box;} body{margin:0;font-family:Manrope,system-ui,sans-serif;}
+.bg{min-height:100vh;background:var(--surface-page);display:flex;align-items:center;justify-content:center;padding:40px 24px;}
+.scrim{position:relative;}
+</style></head><body><div class="bg">
+  <div style="position:relative;width:100%;max-width:420px;background:var(--panel);border:1px solid var(--border);border-radius:20px;box-shadow:var(--shadow-3);padding:32px 28px;text-align:center;">
+    <div style="width:56px;height:56px;border-radius:50%;background:var(--accent-primary-soft);border:1px solid var(--accent-primary-rule);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <h2 style="font-size:24px;font-weight:700;color:var(--brand-fg);margin:0 0 8px;">Willkommen im Pro-Plan</h2>
+    <p style="font-size:15px;color:var(--text-2);margin:0 0 22px;line-height:1.5;">Dein Abo ist aktiv. Kein Countdown mehr — bau einfach weiter.</p>
+    <div style="text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:24px;">
+      <div style="font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--meta);margin-bottom:10px;">Jetzt freigeschaltet</div>
+      <div style="display:flex;align-items:flex-start;gap:8px;margin:6px 0;font-size:14px;color:var(--text);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><polyline points="20 6 9 17 4 12"/></svg><span>≈ 200 Builds / Monat — je nach Komplexität</span></div><div style="display:flex;align-items:flex-start;gap:8px;margin:6px 0;font-size:14px;color:var(--text);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><polyline points="20 6 9 17 4 12"/></svg><span>40 GB Cloud-Speicher</span></div><div style="display:flex;align-items:flex-start;gap:8px;margin:6px 0;font-size:14px;color:var(--text);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><polyline points="20 6 9 17 4 12"/></svg><span>Unbegrenzte Projekte</span></div><div style="display:flex;align-items:flex-start;gap:8px;margin:6px 0;font-size:14px;color:var(--text);"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:2px;"><polyline points="20 6 9 17 4 12"/></svg><span>BYOK — alle Provider, kein Goblin-Limit</span></div>
+    </div>
+    <button style="width:100%;padding:14px 20px;background:var(--brand-green);color:#fff;border:none;border-radius:14px;font-size:15px;font-weight:600;">Los geht's</button>
+  </div></div></body></html>
