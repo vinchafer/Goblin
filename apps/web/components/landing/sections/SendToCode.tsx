@@ -90,11 +90,11 @@ export function SendToCode() {
             <div className="stc-editor-head">
               <span className="file">Navbar.tsx</span>
               <span className="badge">
-                <span className="blip" aria-hidden="true" /> Injected
+                <span className="blip" aria-hidden="true" /> Draft
               </span>
             </div>
             <div className="stc-editor-body">
-              <div className="comment">// injected via Send to Code</div>
+              <div className="comment">// draft from Send to Code — review before you ship</div>
               <div>
                 <span className="kw">import</span> &#123; useState &#125; <span className="kw">from</span>{' '}
                 <span className="str">&apos;react&apos;</span>
