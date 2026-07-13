@@ -196,6 +196,42 @@ describe('run-registry — F-40 U2 decouple execution from the request', () => {
     expect(frames[frames.length - 1]!.type).toBe('done');
   });
 
+  it('U5 push gate: hadSubscriber is TRUE when a client stays attached through completion', async () => {
+    let metaAttached: { hadSubscriber: boolean; timedOut: boolean } | null = null;
+    startRun<string>({
+      runId: 'run-att', ...meta,
+      execute: async ({ emit }) => {
+        emit({ type: 'agent_step', tool: 'write_file', summary: 'x', ok: true, ms: 1 });
+        await tick(15);
+        emit({ type: 'agent_report', report: {} });
+        return 'ok';
+      },
+      onComplete: (_r, m) => { metaAttached = m; },
+      onError: () => {},
+    });
+    const { sink, terminated } = collector();
+    const streamP = streamRunEvents('run-att', 'u1', 0, sink); // stays attached until done
+    await Promise.race([terminated, tick(200)]);
+    await streamP;
+    // The push gate in the route fires notify ONLY when !hadSubscriber — here a client was
+    // watching to the end, so no push should be sent.
+    expect(metaAttached).not.toBeNull();
+    expect(metaAttached!.hadSubscriber).toBe(true);
+  });
+
+  it('U5 push gate: hadSubscriber is FALSE when nobody ever attached (→ push fires)', async () => {
+    let metaUnattached: { hadSubscriber: boolean; timedOut: boolean } | null = null;
+    startRun<string>({
+      runId: 'run-unatt', ...meta,
+      execute: async ({ emit }) => { emit({ type: 'agent_report', report: {} }); return 'ok'; },
+      onComplete: (_r, m) => { metaUnattached = m; },
+      onError: () => {},
+    });
+    await tick(30);
+    expect(metaUnattached).not.toBeNull();
+    expect(metaUnattached!.hadSubscriber).toBe(false); // → the route pushes "dein Ping vom Strand"
+  });
+
   it('a re-attach with sinceSeq replays only newer events (the resume cursor)', async () => {
     startRun<string>({
       runId: 'run-5', ...meta,

@@ -226,7 +226,22 @@ notifications.post('/send', async (c) => {
  */
 export async function notifyAgentRunFinished(
   userId: string,
-  run: { outcome: 'finished' | 'stopped' | 'budget' | 'error'; publishedUrl?: string | null; projectName?: string | null },
+  run: {
+    outcome: 'finished' | 'stopped' | 'budget' | 'error';
+    publishedUrl?: string | null;
+    projectName?: string | null;
+    /**
+     * F-40: the run ended via the max-runtime guard (not a user Stop). Distinct honest copy
+     * — "Zeitlimit erreicht" — so a timed-out run never reads as a plain user "gestoppt".
+     */
+    timedOut?: boolean;
+    /**
+     * F-40: deep-link the push INTO the run surface (the project work page), so tapping the
+     * notification lands where the client re-attaches and the report card is waiting. Used
+     * only for the non-published variants (a published run opens its verified live URL).
+     */
+    deepLinkUrl?: string | null;
+  },
 ): Promise<void> {
   try {
     if (!vapidPublicKey || !vapidPrivateKey) return; // key-agnostic: nothing to send without VAPID
@@ -244,11 +259,15 @@ export async function notifyAgentRunFinished(
     const proj = run.projectName ? ` (${run.projectName})` : '';
     let title: string;
     let body: string;
-    let url = '/dashboard';
+    let url = run.deepLinkUrl || '/dashboard';
     if (run.publishedUrl) {
       title = 'Deine App ist live ✓';
       body = `Veröffentlicht und geprüft${proj}.`;
       url = run.publishedUrl;
+    } else if (run.timedOut) {
+      // F-40 guard: honest — it hit the time limit, and the partial state is safe.
+      title = 'Goblin hat pausiert';
+      body = `Zeitlimit erreicht${proj} — dein Teilstand ist gesichert. Schau im Chat, wie es weitergeht.`;
     } else {
       title = 'Goblin ist fertig';
       body =

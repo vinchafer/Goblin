@@ -742,7 +742,7 @@ codeSessions.post('/:sessionId/agent', async (c) => {
         stopSignal,
         emit: (evt) => { emit(evt); },
       }),
-    onComplete: async (result) => {
+    onComplete: async (result, metaInfo) => {
       // Persist the run row (step log + outcome + report) and the final assistant message.
       await finalizeAgentRun(runId ?? '', {
         status: result.status,
@@ -777,16 +777,23 @@ codeSessions.post('/:sessionId/agent', async (c) => {
         },
       });
 
-      // A-5: "dein Ping vom Strand" — push the run outcome (or the verified live URL) to
-      // the user's devices so they need not watch the tab. Gated by notify_build_complete,
-      // no-op without VAPID/subscription. Because the run now completes server-side after a
-      // disconnect, this fires even when the founder left the browser (closes B.4 gap-1).
-      // U5 refines this to fire ONLY when no client is attached, with honest per-outcome copy.
-      void notifyAgentRunFinished(userId, {
-        outcome: result.outcome,
-        publishedUrl: result.report.publishedUrl,
-        projectName,
-      });
+      // A-5 / F-40 U5: "dein Ping vom Strand" — push the run outcome (or the verified live
+      // URL) to the user's devices. Fire ONLY when NO client was attached at completion: a
+      // client that watched the run to the end already has the report on screen, so a push
+      // would be noise. When the founder left the browser, the run completed server-side and
+      // this fires (closes B.4 gap-1: an abandoned run used to reach no push at all). Gated
+      // by notify_build_complete; silent no-op without VAPID/subscription. Honest per-outcome
+      // copy incl. the timeout-guard variant; deep-links into the run surface so the tap
+      // lands where the client re-attaches and the report card is waiting.
+      if (!metaInfo.hadSubscriber) {
+        void notifyAgentRunFinished(userId, {
+          outcome: result.outcome,
+          publishedUrl: result.report.publishedUrl,
+          projectName,
+          timedOut: metaInfo.timedOut,
+          deepLinkUrl: `/dashboard/project/${session.project_id}/work`,
+        });
+      }
     },
     onError: async (err) => {
       // A fatal execute() throw (rare — runAgent itself lands model errors as outcome
