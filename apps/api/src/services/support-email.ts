@@ -1,5 +1,13 @@
-import { Resend } from 'resend';
 import logger from '../lib/logger';
+import { sendEmail } from '../lib/email';
+
+/** A minimally-valid email for use as a Resend reply-to. An empty/garbage value
+ *  passed as `replyTo` is a classic Resend 422 — so we omit it unless it passes. */
+function validReplyTo(email: string | undefined | null): string | undefined {
+  if (!email) return undefined;
+  const e = email.trim();
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) ? e : undefined;
+}
 
 // ── Address construction (F-38) ─────────────────────────────────────────────
 // A malformed `from` is a classic Resend 422. Two traps we defend against:
@@ -166,37 +174,19 @@ export async function sendSupportEscalation(ticket: SupportTicket): Promise<{ ok
 </body>
 </html>`;
 
-  try {
-    const resend = new Resend(apiKey);
-    const result = await resend.emails.send({
-      from,
-      to,
-      replyTo: ticket.userEmail,
-      subject,
-      html,
-    });
-
-    if (result.error) {
-      // Log the FULL Resend error — name + statusCode + message — so a 422
-      // (unverified domain, malformed from, empty recipient) is diagnosable
-      // from the logs instead of a silent drop. (F-38.)
-      const e = result.error as { name?: string; statusCode?: number; message?: string };
-      logger.error(
-        {
-          ticketId: ticket.ticketId,
-          from,
-          errorName: e.name,
-          statusCode: e.statusCode,
-          resendError: e.message,
-        },
-        'Resend rejected the support escalation',
-      );
-      return { ok: false, error: result.error.message };
-    }
-    return { ok: true };
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : 'unknown';
-    logger.error({ ticketId: ticket.ticketId, from, error: msg }, 'Resend send threw for support escalation');
-    return { ok: false, error: msg };
+  // Send through the SAME hardened path the founder-digest uses (lib/email.ts) —
+  // NOT a parallel Resend client. J2 built this file with its own `new Resend()`
+  // send that ALWAYS set `replyTo: ticket.userEmail`; the support route defaults
+  // that email to '' when the user lookup misses, and Resend 422s on an empty
+  // reply-to — the regression vs. the digest, which conditionally omits it. We
+  // guard the reply-to and delegate; lib/email.ts logs the full Resend error.
+  const replyTo = validReplyTo(ticket.userEmail);
+  const result = await sendEmail({ from, to, subject, html, ...(replyTo ? { replyTo } : {}) });
+  if (!result.ok) {
+    logger.error(
+      { ticketId: ticket.ticketId, from, hadReplyTo: Boolean(replyTo), error: result.error },
+      'support escalation NOT sent — Resend rejected it (see the email-layer log for name/statusCode)',
+    );
   }
+  return result;
 }

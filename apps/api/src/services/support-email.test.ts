@@ -1,7 +1,8 @@
-// F-38 (FIX-WAVE 2) GATE: the escalation-mail construction + error-logging path.
-// A malformed `from` or an empty recipient is a classic Resend 422 that today
-// drops silently — these tests pin the address construction (incl. the
-// display-name form) and prove the failure path logs the full Resend error.
+// F-38 (FIX-WAVE 2) GATE: the escalation-mail construction + send delegation.
+// Pins the address construction (incl. the display-name form + quote-stripping)
+// and the send path: it delegates to the hardened lib/email.ts and GUARDS the
+// reply-to (an empty/invalid `replyTo` is a classic Resend 422 — the J2
+// regression vs. the founder-digest path, which the founder confirms works).
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { resolveFromAddress, resolveToAddress } from './support-email';
@@ -59,11 +60,13 @@ describe('resolveToAddress', () => {
   });
 });
 
-// ── error-logging path: a mocked 4xx must be logged in full, not swallowed ──
-const sendMock = vi.fn();
-vi.mock('resend', () => ({
-  Resend: vi.fn().mockImplementation(() => ({ emails: { send: sendMock } })),
-}));
+// ── send path: delegates to the hardened lib/email.ts, guards the reply-to ──
+// The J2 regression was a PARALLEL Resend client that always set
+// `replyTo: ticket.userEmail`; the support route defaults that to '' and Resend
+// 422s on an empty reply-to (the digest path, lib/email.ts, guards it). These
+// probes lock the delegation + the guard.
+const sendEmailMock = vi.fn();
+vi.mock('../lib/email', () => ({ sendEmail: (...a: unknown[]) => sendEmailMock(...a) }));
 
 const logErrorMock = vi.fn();
 vi.mock('../lib/logger', () => ({
@@ -80,39 +83,64 @@ const baseTicket = {
   timestamp: '2026-07-13T00:00:00.000Z',
 };
 
-describe('sendSupportEscalation error logging', () => {
+describe('sendSupportEscalation send path', () => {
   const OLD_ENV = process.env;
   beforeEach(() => {
-    sendMock.mockReset();
+    sendEmailMock.mockReset().mockResolvedValue({ ok: true });
     logErrorMock.mockReset();
     process.env = { ...OLD_ENV, RESEND_API_KEY: 'test-key', SUPPORT_EMAIL_TO: 'founder@justgoblin.com' };
   });
   afterEach(() => { process.env = OLD_ENV; });
 
-  it('logs the full Resend error (name + statusCode + message) on a 4xx', async () => {
-    sendMock.mockResolvedValue({
-      error: { name: 'validation_error', statusCode: 422, message: 'The from address is not verified' },
-      data: null,
-    });
+  it('delegates to the hardened sendEmail with resolved from/to', async () => {
     const { sendSupportEscalation } = await import('./support-email');
-    const res = await sendSupportEscalation({ ...baseTicket, userId: `u-${Date.now()}-a` });
-    expect(res.ok).toBe(false);
-    expect(logErrorMock).toHaveBeenCalled();
-    const lastCall = logErrorMock.mock.calls[logErrorMock.mock.calls.length - 1] as unknown[];
-    const meta = lastCall[0] as Record<string, unknown>;
-    expect(meta).toMatchObject({ statusCode: 422, errorName: 'validation_error' });
-    expect(meta.resendError as string).toContain('not verified');
+    const res = await sendSupportEscalation({ ...baseTicket, userId: `u-${Date.now()}-ok` });
+    expect(res.ok).toBe(true);
+    expect(sendEmailMock).toHaveBeenCalledTimes(1);
+    const arg = (sendEmailMock.mock.calls[0]?.[0] ?? {}) as Record<string, unknown>;
+    expect(arg.to).toBe('founder@justgoblin.com');
+    expect(arg.from).toBe('Goblin Support <support@justgoblin.com>');
+    expect(typeof arg.html).toBe('string');
   });
 
-  it('logs missing-config when the recipient env is empty', async () => {
+  it('passes a VALID reply-to through', async () => {
+    const { sendSupportEscalation } = await import('./support-email');
+    await sendSupportEscalation({ ...baseTicket, userId: `u-${Date.now()}-r`, userEmail: 'real@user.com' });
+    const arg = (sendEmailMock.mock.calls[0]?.[0] ?? {}) as Record<string, unknown>;
+    expect(arg.replyTo).toBe('real@user.com');
+  });
+
+  it('OMITS the reply-to when the user email is empty (the 422 regression)', async () => {
+    const { sendSupportEscalation } = await import('./support-email');
+    await sendSupportEscalation({ ...baseTicket, userId: `u-${Date.now()}-e`, userEmail: '' });
+    const arg = (sendEmailMock.mock.calls[0]?.[0] ?? {}) as Record<string, unknown>;
+    expect('replyTo' in arg).toBe(false);
+  });
+
+  it('OMITS the reply-to when the user email is malformed', async () => {
+    const { sendSupportEscalation } = await import('./support-email');
+    await sendSupportEscalation({ ...baseTicket, userId: `u-${Date.now()}-m`, userEmail: 'not-an-email' });
+    const arg = (sendEmailMock.mock.calls[0]?.[0] ?? {}) as Record<string, unknown>;
+    expect('replyTo' in arg).toBe(false);
+  });
+
+  it('logs and returns not-ok when sendEmail rejects (e.g. Resend 422)', async () => {
+    sendEmailMock.mockResolvedValue({ ok: false, error: 'validation_error: reply_to is invalid' });
+    const { sendSupportEscalation } = await import('./support-email');
+    const res = await sendSupportEscalation({ ...baseTicket, userId: `u-${Date.now()}-f` });
+    expect(res.ok).toBe(false);
+    expect(logErrorMock).toHaveBeenCalled();
+  });
+
+  it('returns missing_config (and never calls sendEmail) when the recipient env is empty', async () => {
     process.env = { ...OLD_ENV, RESEND_API_KEY: 'test-key' };
     delete process.env.SUPPORT_EMAIL_TO;
     delete process.env.FOUNDER_DIGEST_EMAIL;
     delete process.env.ADMIN_EMAIL;
     const { sendSupportEscalation } = await import('./support-email');
-    const res = await sendSupportEscalation({ ...baseTicket, userId: `u-${Date.now()}-b` });
+    const res = await sendSupportEscalation({ ...baseTicket, userId: `u-${Date.now()}-c` });
     expect(res.ok).toBe(false);
     expect(res.error).toBe('missing_config');
-    expect(logErrorMock).toHaveBeenCalled();
+    expect(sendEmailMock).not.toHaveBeenCalled();
   });
 });
