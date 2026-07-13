@@ -21,12 +21,15 @@ import { runAgent } from '../services/agent/orchestrator';
 import { trackEvent } from '../lib/platform-events';
 import { loadUserPreferences } from '../services/user-preferences';
 import { grantsPublish } from '../services/agent/intent';
-import { createAgentRun, finalizeAgentRun } from '../services/agent/run-store';
+import { createAgentRun, finalizeAgentRun, findActiveRun } from '../services/agent/run-store';
+import { startRun, stopRun, streamRunEvents } from '../services/agent/run-registry';
+import { agentMaxRuntimeMs } from '../services/agent/config';
 import { notifyAgentRunFinished } from './notifications';
 import { scrubString, safeErrorMessage } from '../lib/scrub-secrets';
 import { hitRateLimit } from '../middleware/rate-limit';
 import { agentRunsPerHour } from '../services/abuse-caps';
-import type { AgentMessage } from '../services/agent/types';
+import { randomUUID } from 'node:crypto';
+import type { AgentMessage, RunResult } from '../services/agent/types';
 
 type Variables = { userId: string };
 const codeSessions = new Hono<{ Variables: Variables }>();
@@ -533,6 +536,51 @@ codeSessions.post('/:sessionId/messages', async (c) => {
   });
 });
 
+// ─── GET /api/code-sessions/:sessionId/runs/active — F-40 re-attach mount probe ──────
+// The client calls this on mount of a chat/session. If a run is still in flight for this
+// session it returns { activeRun: { runId, status } } and the client re-attaches (below);
+// otherwise { activeRun: null }. Reads the DB (not the in-memory registry) so it works
+// across a process restart / a different replica, and ignores zombie 'running' rows older
+// than 2× the max-runtime guard (a process that died mid-run leaves status='running').
+// Registered BEFORE the /:runId routes so "active" is never parsed as a run id.
+codeSessions.get('/:sessionId/runs/active', async (c) => {
+  const userId = c.get('userId');
+  const sessionId = c.req.param('sessionId');
+  const sb = getSupabaseAdmin();
+  if (!(await ownSession(sb, sessionId, userId))) return c.json({ error: 'Session not found' }, 404);
+  const active = await findActiveRun(sessionId, userId, agentMaxRuntimeMs() * 2);
+  return c.json({ activeRun: active });
+});
+
+// ─── GET /api/code-sessions/:sessionId/runs/:runId/events?since=N — F-40 re-attach ───
+// The resumable stream. Replays the run's events after seq N (from the durable log 0091,
+// or the in-process ring for a local run), then live-tails until the run reaches a terminal
+// frame or the client disconnects. This is what rehydrates a returning client's run UI —
+// step history + live progress — and, for a run that finished while the client was away,
+// replays the persisted agent_report frame so the report card renders. Ownership-scoped.
+codeSessions.get('/:sessionId/runs/:runId/events', async (c) => {
+  const userId = c.get('userId');
+  const sessionId = c.req.param('sessionId');
+  const runId = c.req.param('runId');
+  const since = Math.max(0, Number(c.req.query('since')) || 0);
+  const sb = getSupabaseAdmin();
+  if (!(await ownSession(sb, sessionId, userId))) return c.json({ error: 'Session not found' }, 404);
+  // Ownership: the run must belong to this user. A real re-attachable run always has an
+  // agent_runs row (createAgentRun succeeded); an intruder guessing a runId gets 404 here
+  // instead of a hung, empty stream.
+  const { data: runRow } = await sb.from('agent_runs').select('id').eq('id', runId).eq('user_id', userId).maybeSingle();
+  if (!runRow) return c.json({ error: 'Run not found' }, 404);
+  return streamSSE(c, async (stream) => {
+    await streamRunEvents(
+      runId,
+      userId,
+      since,
+      async (ev) => { await stream.writeSSE({ data: JSON.stringify({ type: ev.type, seq: ev.seq, ...ev.payload }) }); },
+      { signal: c.req.raw.signal },
+    );
+  });
+});
+
 // ─── GET /api/code-sessions/:sessionId/runs/:runId/report — A-6 stop-report recovery ──
 // After a stop mid-run the client aborts the fetch, so the SSE closes before the final
 // agent_report frame arrives. The server still finalizes the run with a truthful partial
@@ -644,22 +692,38 @@ codeSessions.post('/:sessionId/agent', async (c) => {
 
   const runId = await createAgentRun({
     userId, projectId: session.project_id, model: modelSlug!, sourceTier: 'goblin_hosted',
+    sessionId,
+  });
+  // F-40: the registry keys on a stable id. If the run row couldn't be created (DB down),
+  // fall back to an ephemeral key so the LIVE stream still works this session; persistence
+  // and re-attach then degrade honestly (there is no agent_runs row to find).
+  const runKey = runId ?? randomUUID();
+  const runStartedAt = Date.now();
+  const projectName = proj?.name ?? null;
+
+  // I1 funnel (rider): agent_run_started — the twin of agent_run_finished. Emitted the
+  // instant the run begins so Pulse can show started-vs-finished; metadata only (model
+  // slug), never the prompt or generated code.
+  trackEvent({
+    eventType: 'agent_run_started',
+    userId,
+    projectId: session.project_id,
+    meta: { model_slug: modelSlug },
   });
 
-  return streamSSE(c, async (stream) => {
-    await stream.writeSSE({ data: JSON.stringify({ type: 'meta', model_slug: modelSlug, run_id: runId }) });
-    const runStartedAt = Date.now();
-    // I1 funnel (rider): agent_run_started — the twin of agent_run_finished.
-    // Emitted the instant the run begins so Pulse can show started-vs-finished;
-    // metadata only (model slug), never the prompt or generated code.
-    trackEvent({
-      eventType: 'agent_run_started',
-      userId,
-      projectId: session.project_id,
-      meta: { model_slug: modelSlug },
-    });
-    try {
-      const result = await runAgent({
+  // F-40 (U2): start the run DETACHED in the process-level registry. It owns its OWN stop
+  // signal (a client disconnect ≠ a user Stop) and a max-runtime guard, so leaving the tab
+  // no longer kills the run. Every emitted event flows through the registry's one path
+  // (ring → durable event log → live subscribers) — the same path this request streams
+  // below and a returning client re-attaches to.
+  startRun<RunResult>({
+    runId: runKey,
+    userId,
+    projectId: session.project_id,
+    sessionId,
+    modelSlug,
+    execute: ({ emit, stopSignal }) =>
+      runAgent({
         runId,
         userId,
         projectId: session.project_id,
@@ -673,11 +737,13 @@ codeSessions.post('/:sessionId/agent', async (c) => {
         model: getAgentModel(tier),
         // D1: publish is granted only on explicit intent in THIS message, or a chip tap.
         publishGranted: confirmPublish || grantsPublish(prompt),
-        stopSignal: c.req.raw.signal,
-        emit: async (evt) => { await stream.writeSSE({ data: JSON.stringify(evt) }); },
-      });
-
-      // Persist the run row (step log + outcome) and the final assistant message.
+        // The registry's controller — NOT c.req.raw.signal. A disconnect ends the stream
+        // below; only an explicit Stop (or the guard) aborts this signal.
+        stopSignal,
+        emit: (evt) => { emit(evt); },
+      }),
+    onComplete: async (result, metaInfo) => {
+      // Persist the run row (step log + outcome + report) and the final assistant message.
       await finalizeAgentRun(runId ?? '', {
         status: result.status,
         outcome: result.outcome,
@@ -697,9 +763,8 @@ codeSessions.post('/:sessionId/agent', async (c) => {
       });
       await sb.from('code_sessions').update({ updated_at: new Date().toISOString() }).eq('id', sessionId);
 
-      // I1 funnel: agent_run_finished (metadata only — outcome/status/timing,
-      // NEVER the generated code or model text). first-per-user timestamp feeds
-      // the first_agent_run_finished funnel stage.
+      // I1 funnel: agent_run_finished (metadata only — outcome/status/timing, NEVER the
+      // generated code or model text). first-per-user timestamp feeds the funnel.
       trackEvent({
         eventType: 'agent_run_finished',
         userId,
@@ -712,32 +777,69 @@ codeSessions.post('/:sessionId/agent', async (c) => {
         },
       });
 
-      // A-5: "dein Ping vom Strand" — push the run outcome (or the verified live URL) to
-      // the user's devices so they need not watch the tab. Gated by notify_build_complete,
-      // no-op without VAPID/subscription. Fire-and-forget — never blocks the response.
-      void notifyAgentRunFinished(userId, {
-        outcome: result.outcome,
-        publishedUrl: result.report.publishedUrl,
-        projectName: proj?.name ?? null,
-      });
-
-      await stream.writeSSE({ data: JSON.stringify({ type: 'done', outcome: result.outcome, run_id: runId }) });
-    } catch (err) {
-      // Fatal orchestration error — persist what we can, tell the truth.
+      // A-5 / F-40 U5: "dein Ping vom Strand" — push the run outcome (or the verified live
+      // URL) to the user's devices. Fire ONLY when NO client was attached at completion: a
+      // client that watched the run to the end already has the report on screen, so a push
+      // would be noise. When the founder left the browser, the run completed server-side and
+      // this fires (closes B.4 gap-1: an abandoned run used to reach no push at all). Gated
+      // by notify_build_complete; silent no-op without VAPID/subscription. Honest per-outcome
+      // copy incl. the timeout-guard variant; deep-links into the run surface so the tap
+      // lands where the client re-attaches and the report card is waiting.
+      if (!metaInfo.hadSubscriber) {
+        void notifyAgentRunFinished(userId, {
+          outcome: result.outcome,
+          publishedUrl: result.report.publishedUrl,
+          projectName,
+          timedOut: metaInfo.timedOut,
+          deepLinkUrl: `/dashboard/project/${session.project_id}/work`,
+        });
+      }
+    },
+    onError: async (err) => {
+      // A fatal execute() throw (rare — runAgent itself lands model errors as outcome
+      // 'error' without throwing). Persist what we can and record the drop-off.
       await finalizeAgentRun(runId ?? '', {
         status: 'failed', outcome: 'error', steps: [], toolsUsed: [], iterations: 0,
       }).catch(() => {});
-      // I1 funnel: still record the finish (failed outcome) — a crashed run is a
-      // drop-off signal, and hiding it would inflate the success rate.
       trackEvent({
         eventType: 'agent_run_finished',
         userId,
         projectId: session.project_id,
         meta: { status: 'failed', outcome: 'error', duration_ms: Date.now() - runStartedAt },
       });
-      await stream.writeSSE({ data: JSON.stringify({ type: 'error', message: safeErrorMessage(err, 'Agent-Lauf fehlgeschlagen') }) });
-    }
+      logger.warn({ err: safeErrorMessage(err, 'agent run failed'), runId: runKey }, 'agent_run_execute_failed');
+    },
   });
+
+  // Attach THIS request as a subscriber and stream the run's events. A disconnect ends
+  // this stream (c.req.raw.signal) but not the run — that is the whole point.
+  return streamSSE(c, async (stream) => {
+    await streamRunEvents(
+      runKey,
+      userId,
+      0,
+      async (ev) => { await stream.writeSSE({ data: JSON.stringify({ type: ev.type, seq: ev.seq, ...ev.payload }) }); },
+      { signal: c.req.raw.signal },
+    );
+  });
+});
+
+// ─── POST /api/code-sessions/:sessionId/agent/:runId/stop — explicit user Stop ────
+// F-40 (U2): the architecturally-distinct STOP. A disconnect merely ends the stream and
+// the run continues; THIS aborts the run's own controller (reason 'user_stop'), so the
+// orchestrator ends the loop after the in-flight tool and persists the partial state
+// (preserves the FEEL-3a / F-23 stop-card semantics now that the client no longer stops a
+// run just by closing the socket). Ownership-scoped. `stopped:false` means the run was not
+// live in this process (already finished, or on another replica — the max-runtime guard
+// still bounds a cross-replica run).
+codeSessions.post('/:sessionId/agent/:runId/stop', async (c) => {
+  const userId = c.get('userId');
+  const sessionId = c.req.param('sessionId');
+  const runId = c.req.param('runId');
+  const sb = getSupabaseAdmin();
+  if (!(await ownSession(sb, sessionId, userId))) return c.json({ error: 'Session not found' }, 404);
+  const stopped = stopRun(runId, userId);
+  return c.json({ stopped });
 });
 
 export { codeSessions };

@@ -170,6 +170,31 @@ export async function apiStream(
     const err = await res.json().catch(() => ({ message: res.statusText }))
     throw new Error(err.message || err.error || `Stream error ${res.status}`)
   }
+  await readSSE(res, onChunk)
+}
+
+/**
+ * F-40: GET-based SSE reader for re-attaching to an in-flight run
+ * (GET …/runs/:runId/events?since=N). Same wire format as apiStream, but no body — the
+ * server replays the run's events then live-tails. A 404 (run not found / not ours) throws
+ * so the caller can fall back to whatever it already renders.
+ */
+export async function apiStreamGet(
+  path: string,
+  onChunk: (data: unknown) => void,
+  signal?: AbortSignal
+): Promise<void> {
+  const headers = await getAuthHeaders()
+  const res = await fetch(`${API_URL}${path}`, { method: 'GET', headers, signal })
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ message: res.statusText }))
+    throw new Error(err.message || err.error || `Stream error ${res.status}`)
+  }
+  await readSSE(res, onChunk)
+}
+
+/** Read an SSE response body, dispatching each `data:` line's JSON to onChunk. */
+async function readSSE(res: Response, onChunk: (data: unknown) => void): Promise<void> {
   const reader = res.body!.getReader()
   const decoder = new TextDecoder()
   let buffer = ''

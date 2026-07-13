@@ -4,6 +4,7 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { runAgent } from './orchestrator';
+import { MAX_RUNTIME_ABORT_REASON } from './config';
 import type { AgentModel, ModelTurn, ToolExecutor, ToolResult, ToolSpec, EmitEvent, AgentEvent } from './types';
 
 const TOOLS: ToolSpec[] = [
@@ -212,6 +213,43 @@ describe('orchestrator — A2 loop', () => {
     // the in-flight write completed and is attested; the run did not reach finish.
     expect(res.report.files).toEqual([{ path: 'index.html', classification: 'NEU' }]);
     expect(res.steps).toHaveLength(1);
+  });
+
+  it('F-40 max-runtime guard: abort with the max_runtime reason lands an honest timeout report (not a bare user stop)', async () => {
+    const { emit } = collector();
+    const controller = new AbortController();
+    // The guard aborts with its DISTINCT reason (disconnect ≠ stop ≠ timeout).
+    const guardExecutor: ToolExecutor = async (call, ctx) => {
+      const r = await executor(call, ctx);
+      controller.abort(MAX_RUNTIME_ABORT_REASON);
+      return r;
+    };
+    const res = await runAgent({
+      ...base,
+      executor: guardExecutor,
+      userMessage: 'Baue endlos',
+      model: scriptedModel([
+        nativeTurn('write_file', { path: 'index.html', content: '<html>' }),
+        nativeTurn('write_file', { path: 'app.js', content: 'x' }),
+      ]),
+      stopSignal: controller.signal,
+      emit,
+    });
+    // Outcome stays within the DB enum ('stopped'), but the report tells the honest truth:
+    // it was the timeout guard, and the partial state is saved.
+    expect(res.outcome).toBe('stopped');
+    expect(res.report.failureReason).toBeTruthy();
+    expect(res.report.failureReason).toMatch(/Zeitlimit/);
+    // A plain user stop (no reason) does NOT get the timeout copy.
+    const plain = new AbortController();
+    const plainExecutor: ToolExecutor = async (call, ctx) => { const r = await executor(call, ctx); plain.abort(); return r; };
+    const res2 = await runAgent({
+      ...base, executor: plainExecutor, userMessage: 'x',
+      model: scriptedModel([nativeTurn('write_file', { path: 'index.html', content: '<html>' })]),
+      stopSignal: plain.signal, emit,
+    });
+    expect(res2.outcome).toBe('stopped');
+    expect(res2.report.failureReason).toBeUndefined();
   });
 });
 

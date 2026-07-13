@@ -143,9 +143,27 @@ Deploy truth-gating (P0.2: HTTP checks only) · STC integrity checks (client/sha
 - **A19 note:** step history accumulates per turn WITHIN a run; the iteration cap (8) bounds it — a run can
   never silently grow context without limit. Persisted to `agent_runs.step_log` (0081) for post-merge
   reconciliation.
+- **F-40 NOTE (resumable runs — consumption reality, NO new token mechanism):** F-40 decouples a run from
+  the HTTP request (`run-registry.ts`): the run now **continues server-side after the client disconnects**
+  and finalizes normally. **No new per-turn cost** — the per-run token model above is unchanged (same turns,
+  same tools, same weighting, same `AGENT_MAX_ITERATIONS`/`AGENT_MAX_UNITS` budgets). What changes is the
+  **completion rate**: runs that previously **died with the tab** (client disconnect aborted the run via
+  `stopSignal = c.req.raw.signal`) now **run to completion**, so tokens that used to be *abandoned mid-run*
+  are now *fully spent*. Direction of the effect: realized units/run trend **up toward the formula ceiling**
+  (fewer truncated-early runs), not a new charge. Still billed to **user allowance**, still summable via
+  `completion_costs.run_id` — the reconciliation path is unchanged.
+  - **The cost control is the max-runtime guard:** `AGENT_MAX_RUNTIME_MS` (default **600_000 = 10 min**,
+    `config.ts` `agentMaxRuntimeMs`) — a hard wall-clock ceiling that aborts an **abandoned** run so a
+    detached run can never burn tokens forever. It bounds the *new* risk F-40 introduces (a run with no
+    client watching): worst case per orphaned run is still capped by whichever of `AGENT_MAX_ITERATIONS` /
+    `AGENT_MAX_UNITS` / `AGENT_MAX_RUNTIME_MS` binds first. Lower it to tighten the orphan ceiling.
+  - **Post-merge reconciliation:** the "runs die on disconnect" truncation was an *invisible* discount on
+    realized units/run; expect measured units/run to rise modestly after F-40. Re-measure A6/A19 against
+    `agent_runs` + `completion_costs.run_id` on the standing 1-week cadence and note any material shift.
 - **CFO dependency:** A6 (exhaustion — agent runs are the heaviest single user action), A19 (step-history
   growth). | Status: FORMULA — reconcile with A6/M10 actuals 1 week post-merge (the standing telemetry
-  protocol), using `agent_runs` + `completion_costs.run_id`.
+  protocol), using `agent_runs` + `completion_costs.run_id`. **F-40 adds `AGENT_MAX_RUNTIME_MS` as the
+  orphan-run cost control (default 10 min); no new token mechanism.**
 
 ### M11 — Web search (FEEL-4 F4.3 agent tool · FW2 F-43 chat toggle)
 - **Trigger (two surfaces, SAME budget/cap/provider):**

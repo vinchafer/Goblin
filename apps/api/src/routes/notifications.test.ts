@@ -80,4 +80,24 @@ describe('A-5 notifyAgentRunFinished', () => {
     const p = sent[0]!.payload as { body: string };
     expect(p.body).toMatch(/nicht geklappt|nichts kaputt/i);
   });
+
+  it('F-40 timeout guard → honest "Zeitlimit" copy, not a plain user "gestoppt"', async () => {
+    await notifyAgentRunFinished('u1', { outcome: 'stopped', timedOut: true, projectName: 'Zähler' });
+    const p = sent[0]!.payload as { title: string; body: string };
+    expect(p.body).toMatch(/Zeitlimit/);
+    expect(p.body).toMatch(/gesichert/); // partial state is safe
+    expect(p.title).not.toMatch(/live/i);
+  });
+
+  it('F-40 deep-links the non-published push into the run surface (so the tap lands on the report)', async () => {
+    await notifyAgentRunFinished('u1', { outcome: 'finished', deepLinkUrl: '/dashboard/project/p1/work' });
+    const p = sent[0]!.payload as { url: string };
+    expect(p.url).toBe('/dashboard/project/p1/work');
+  });
+
+  it('a published run still opens its VERIFIED url, ignoring the deep link', async () => {
+    await notifyAgentRunFinished('u1', { outcome: 'finished', publishedUrl: 'https://app.vercel.app', deepLinkUrl: '/dashboard/project/p1/work' });
+    const p = sent[0]!.payload as { url: string };
+    expect(p.url).toBe('https://app.vercel.app'); // the live app wins over the deep link
+  });
 });

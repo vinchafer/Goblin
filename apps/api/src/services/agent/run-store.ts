@@ -29,6 +29,15 @@ export interface CreateRunInput {
   model: string;
   /** Must satisfy the agent_runs.source_tier CHECK: goblin_hosted | free_api | byok. */
   sourceTier?: 'goblin_hosted' | 'free_api' | 'byok' | null;
+  /** F-40: the code session this run belongs to (0092) — the re-attach probe keys on it. */
+  sessionId?: string | null;
+}
+
+/** F-40: a run the re-attach mount probe found still in flight for a session. */
+export interface ActiveRun {
+  runId: string;
+  status: string;
+  createdAt: string | null;
 }
 
 export interface FinalizeRunInput {
@@ -57,24 +66,72 @@ export interface FinalizeRunInput {
 export async function createAgentRun(input: CreateRunInput): Promise<string | null> {
   try {
     const sb = getSupabaseAdmin();
+    const base = {
+      user_id: input.userId,
+      project_id: input.projectId,
+      model_used: input.model,
+      source_tier: input.sourceTier ?? null,
+      status: 'running',
+    };
+    // F-40: write the session link (0092) so the re-attach probe can find this run.
     const { data, error } = await sb
       .from('agent_runs')
-      .insert({
-        user_id: input.userId,
-        project_id: input.projectId,
-        model_used: input.model,
-        source_tier: input.sourceTier ?? null,
-        status: 'running',
-      })
+      .insert({ ...base, session_id: input.sessionId ?? null })
       .select('id')
       .single();
     if (error || !data) {
-      logger.warn({ err: error?.message }, 'agent_run_create_failed');
-      return null;
+      // Pre-0092 tolerance: retry WITHOUT session_id when the column is absent, so a
+      // run is still recorded (it simply offers no re-attach on a pre-migration DB).
+      const { data: d2, error: e2 } = await sb
+        .from('agent_runs')
+        .insert(base)
+        .select('id')
+        .single();
+      if (e2 || !d2) {
+        logger.warn({ err: (error ?? e2)?.message }, 'agent_run_create_failed');
+        return null;
+      }
+      return d2.id as string;
     }
     return data.id as string;
   } catch (e) {
     logger.warn({ err: (e as Error).message }, 'agent_run_create_failed');
+    return null;
+  }
+}
+
+/**
+ * F-40 re-attach probe: the newest still-running run for a (session, user). Survives a
+ * process restart / a different replica because it reads the DB, not the in-memory
+ * registry. A run older than `staleAfterMs` is treated as a zombie (a process that died
+ * mid-run leaves status='running' forever — DIAGNOSIS B.2) and is NOT offered for
+ * re-attach. Returns null on a pre-0092 DB (no session_id column) or any error.
+ */
+export async function findActiveRun(
+  sessionId: string,
+  userId: string,
+  staleAfterMs: number,
+): Promise<ActiveRun | null> {
+  try {
+    const sb = getSupabaseAdmin();
+    const { data, error } = await sb
+      .from('agent_runs')
+      .select('id, status, created_at')
+      .eq('session_id', sessionId)
+      .eq('user_id', userId)
+      .eq('status', 'running')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if (error || !data) return null;
+    const createdAt = (data.created_at as string | null) ?? null;
+    if (createdAt) {
+      const age = Date.now() - new Date(createdAt).getTime();
+      if (Number.isFinite(age) && age > staleAfterMs) return null; // zombie — do not offer
+    }
+    return { runId: data.id as string, status: data.status as string, createdAt };
+  } catch (e) {
+    logger.warn({ err: (e as Error).message, sessionId }, 'agent_run_find_active_failed');
     return null;
   }
 }

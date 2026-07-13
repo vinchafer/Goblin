@@ -162,6 +162,14 @@ export const HELP_ARTICLES: HelpArticle[] = [
         },
       },
       {
+        anchor: 'im-hintergrund',
+        heading: { de: 'Läuft weiter, auch wenn du weggehst', en: 'Keeps running when you leave' },
+        body: {
+          de: 'Ein gestarteter Agenten-Lauf läuft auf dem Server weiter — auch wenn du den Tab schließt, das Handy weglegst oder kurz das Netz verlierst. Kommst du zurück (oder lädst neu), verbindet sich Goblin automatisch wieder mit dem laufenden Lauf: du siehst den bisherigen Schritt-Verlauf und wie es live weitergeht, ohne etwas anzutippen. War der Lauf in der Zwischenzeit fertig, siehst du direkt die Abschluss-Karte. Nur dein ausdrückliches „Stopp" beendet einen Lauf — das Weggehen nicht. Damit ein vergessener Lauf nicht endlos weiterläuft, gibt es ein Zeitlimit; danach beendet Goblin ihn und sichert den Teilstand ehrlich. Wenn Push-Benachrichtigungen für dein Konto eingerichtet sind (Einstellungen → Benachrichtigungen), kann Goblin dir zusätzlich Bescheid geben, sobald der Lauf fertig ist — „dein Ping vom Strand".',
+          en: 'A started agent run continues on the server — even if you close the tab, put your phone away, or briefly lose the network. When you come back (or reload), Goblin automatically re-attaches to the running job: you see the step history so far and the live progress continuing, with no tap needed. If the run finished while you were away, you land straight on its summary card. Only your explicit “Stop” ends a run — leaving does not. So a forgotten run can’t run forever, there’s a time limit; after it Goblin ends the run and honestly saves the partial state. If push notifications are set up for your account (Settings → Notifications), Goblin can also ping you the moment the run is done — “your ping from the beach”.',
+        },
+      },
+      {
         anchor: 'noch-nicht',
         heading: { de: 'Was (noch) nicht geht', en: 'What isn’t there (yet)' },
         body: {
