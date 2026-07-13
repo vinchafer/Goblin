@@ -676,91 +676,108 @@
   align-items: stretch; max-width: 1080px; margin: 0 auto;
   gap: 0;
 }
+/* Both panels are "product screenshots" rendered in CSS: they carry the real
+   product's own (light) surface colors so they read identically on light or
+   dark landing themes — a light product shot on a dark section, by design. */
 .landing-root .stc-card-chat,
-.landing-root .stc-card-editor {
+.landing-root .stc-card-code {
   border-radius: var(--radius-lg);
   overflow: hidden;
   display: flex; flex-direction: column;
-  border: 1px solid var(--line);
-}
-.landing-root .stc-card-chat {
-  background: var(--surface-elev);
+  border: 1px solid rgba(15,43,30,.14);
   box-shadow: var(--shadow-card);
 }
-:is(html.lp2-dark .landing-root, .landing-root[data-theme="dark"]) .stc-card-chat {
-  background: var(--surface-elev);
-  border-color: var(--line-strong);
+.landing-root .stc-card-chat { background: #FBF7EC; }            /* --ed-canvas */
+.landing-root .stc-card-code { background: #FBF7EC; }            /* --ed-canvas (code tab paper) */
+:is(html.lp2-dark .landing-root, .landing-root[data-theme="dark"]) .stc-card-chat,
+:is(html.lp2-dark .landing-root, .landing-root[data-theme="dark"]) .stc-card-code {
   box-shadow: var(--shadow-card-dark);
 }
-.landing-root .stc-card-editor {
-  background: var(--forest);
-  border-color: rgba(244,236,216,.10);
-  box-shadow: var(--shadow-card-dark);
+/* Optional real-screenshot slot */
+.landing-root .stc-shot {
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(15,43,30,.14);
+  box-shadow: var(--shadow-card);
+  width: 100%; height: auto; display: block; align-self: start;
 }
+/* Chat header — brand-green bar with the real model chip (model-switcher.tsx) */
 .landing-root .stc-chat-head {
-  background: var(--green);
-  padding: 14px 18px;
-  display: flex; align-items: center; gap: 10px;
+  background: #1A3A2A;                 /* --brand-green */
+  padding: 11px 14px;
+  display: flex; align-items: center; gap: 9px;
   border-bottom: 1px solid rgba(0,0,0,.20);
 }
 .landing-root .stc-chat-head .mark-tag {
-  width: 22px; height: 22px; border-radius: 4px;
-  background: var(--bone); display: grid; place-items: center;
+  width: 22px; height: 22px; border-radius: 5px;
+  background: #F4ECD8; display: grid; place-items: center;
 }
-.landing-root .stc-chat-head .mark-tag svg { width: 14px; height: 14px; color: var(--green); }
-.landing-root .stc-chat-head .name { color: var(--bone); font-size: 13px; font-weight: 600; letter-spacing: -0.01em; }
-.landing-root .stc-chat-head .model {
+.landing-root .stc-chat-head .mark-tag svg { width: 14px; height: 14px; color: #1A3A2A; }
+.landing-root .stc-chat-head .name { color: #F4ECD8; font-size: 13px; font-weight: 600; letter-spacing: -0.01em; }
+.landing-root .stc-chat-head .model-chip {
   margin-left: auto;
-  font-family: var(--lp2-font-mono), monospace;
-  font-size: 10.5px; font-weight: 500;
-  color: rgba(244,236,216,.70);
-  letter-spacing: 0.04em;
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 5px 11px; border-radius: 8px;
+  border: 1px solid rgba(255,255,255,.20);
+  background: rgba(255,255,255,.06);
+  color: rgba(255,255,255,.85);
+  font-size: 12.5px; font-weight: 500; white-space: nowrap;
 }
-.landing-root .stc-body { padding: 22px; display: flex; flex-direction: column; gap: 14px; flex: 1; }
+.landing-root .stc-chat-head .model-chip .tier { color: rgba(255,255,255,.45); font-size: 11px; }
+.landing-root .stc-chat-head .model-chip .caret { color: rgba(255,255,255,.45); font-size: 9px; margin-left: 2px; }
+
+.landing-root .stc-body { padding: 18px; display: flex; flex-direction: column; gap: 14px; flex: 1; }
+/* User bubble — brand-green, white, the real 16/4/16/16 radius (ChatMessage.tsx) */
 .landing-root .msg-user {
-  align-self: flex-end; background: var(--green); color: var(--bone);
-  border-radius: 10px; padding: 9px 13px;
-  font-size: 13.5px; max-width: 80%;
+  align-self: flex-end; background: #1A3A2A; color: #fff;
+  border-radius: 16px 4px 16px 16px; padding: 10px 14px;
+  font-size: 13.5px; line-height: 1.65; max-width: 76%;
 }
-.landing-root .msg-row { display: flex; gap: 10px; }
+/* AI message — bare Goblin mark, no bubble (ChatMessage.tsx) */
+.landing-root .msg-row { display: flex; gap: 10px; align-items: flex-start; }
 .landing-root .msg-avatar {
-  width: 26px; height: 26px; border-radius: 5px;
-  background: var(--green);
-  display: grid; place-items: center; flex-shrink: 0;
+  width: 24px; height: 24px; flex-shrink: 0; margin-top: 2px;
+  display: grid; place-items: center;
 }
-.landing-root .msg-avatar svg { width: 16px; height: 16px; color: var(--bone); }
-.landing-root .msg-ai {
-  border: 1px solid var(--line);
-  border-radius: 10px; padding: 12px 14px;
-  font-size: 13.5px;
-  color: var(--ink-2); line-height: 1.5;
-  flex: 1; background: transparent;
+.landing-root .msg-avatar svg { width: 22px; height: 22px; color: #1A3A2A; }
+.landing-root .msg-ai { flex: 1; min-width: 0; }
+.landing-root .msg-ai p { color: #0F2B1E; font-size: 13.5px; line-height: 1.7; margin: 0; }
+
+/* Chat code block — dark chrome, verbatim from CodeBlock.tsx */
+.landing-root .stc-codeblock {
+  margin: 10px 0 0; border-radius: 10px; overflow: hidden;
+  border: 1px solid #0F2B1E;
 }
-:is(html.lp2-dark .landing-root, .landing-root[data-theme="dark"]) .msg-ai { border-color: rgba(244,236,216,.16); color: rgba(244,236,216,.85); }
-.landing-root .code-pre {
-  background: var(--forest);
-  border: 1px solid rgba(244,236,216,.10);
-  border-radius: 6px; padding: 12px 14px; margin: 10px 0;
-  font-family: var(--lp2-font-mono), monospace; font-size: 11.5px;
-  color: rgba(244,236,216,.85); line-height: 1.75;
-  white-space: pre-wrap; overflow-x: auto;
+.landing-root .stc-codeblock .cb-head {
+  background: #1e1e1e; padding: 7px 14px;
+  border-bottom: 1px solid rgba(255,255,255,.06);
 }
-.landing-root .code-pre .kw { color: var(--gold-soft); }
-.landing-root .code-pre .fn { color: #8ee2b2; }
-.landing-root .code-pre .str { color: #e2c98e; }
-.landing-root .send-btn {
-  display: inline-flex; align-items: center; gap: 8px;
-  background: var(--green); color: var(--bone);
-  border-radius: 8px; padding: 8px 14px;
-  font-size: 12.5px; font-weight: 600; letter-spacing: -0.005em;
-  border: 1px solid var(--green-deep);
+.landing-root .stc-codeblock .cb-lang {
+  font-family: var(--lp2-font-mono), monospace; font-size: 11px;
+  color: rgba(230,237,243,.55); letter-spacing: 0.03em;
 }
-:is(html.lp2-dark .landing-root, .landing-root[data-theme="dark"]) .send-btn {
-  background: var(--bone); color: var(--green); border-color: rgba(244,236,216,.30);
+.landing-root .stc-codeblock .cb-body { background: #0d1117; padding: 14px 16px; overflow-x: auto; }
+.landing-root .stc-codeblock .cb-body pre {
+  margin: 0; font-family: var(--lp2-font-mono), monospace;
+  font-size: 12.5px; color: #e6edf3; line-height: 1.65; white-space: pre;
 }
-.landing-root .send-btn .arrow {
-  width: 5px; height: 5px; border-top: 1.5px solid currentColor; border-right: 1.5px solid currentColor;
-  transform: rotate(45deg);
+.landing-root .stc-codeblock .cb-actions {
+  background: #161b22; border-top: 1px solid rgba(255,255,255,.06);
+  display: flex; align-items: center; justify-content: flex-end; gap: 8px;
+  padding: 8px 12px;
+}
+.landing-root .stc-codeblock .cb-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  height: 32px; padding: 0 13px; border-radius: 8px; white-space: nowrap;
+  font-size: 12.5px; font-family: var(--lp2-font-sans), sans-serif;
+}
+.landing-root .stc-codeblock .cb-copy {
+  background: transparent; border: 1px solid rgba(255,255,255,.16);
+  color: rgba(230,237,243,.78); font-weight: 500;
+}
+.landing-root .stc-codeblock .cb-send {
+  padding: 0 14px;
+  background: rgba(212,167,55,.16); border: 1px solid rgba(212,167,55,.55);
+  color: #D4A737; font-weight: 600;                /* --brand-gold */
 }
 .landing-root .stc-arrow {
   display: grid; place-items: center;
@@ -781,84 +798,74 @@
   font-family: var(--lp2-font-mono), monospace; font-size: 13px; font-weight: 600;
 }
 
-.landing-root .stc-editor-head {
-  background: var(--green-deep);
-  padding: 12px 16px;
+/* Code tab — light editor paper + draft file cards, verbatim from FileCardList.tsx */
+.landing-root .stc-code-head {
+  background: #F4ECD8;                 /* --ed-chrome */
+  padding: 11px 14px;
   display: flex; align-items: center; gap: 10px;
-  border-bottom: 1px solid rgba(244,236,216,.08);
+  border-bottom: 1px solid #D8CBA8;   /* --ed-rule */
 }
-.landing-root .stc-editor-head .file {
-  font-family: var(--lp2-font-mono), monospace; font-size: 11px;
-  padding: 3px 9px; border-radius: 4px;
-  background: rgba(244,236,216,.06);
-  color: rgba(244,236,216,.78);
-  border: 1px solid rgba(244,236,216,.10);
-  letter-spacing: 0.02em;
+.landing-root .stc-code-head .tab {
+  font-size: 13px; font-weight: 600; color: #0F2B1E;   /* --ed-fg-1 */
 }
-.landing-root .stc-editor-head .badge {
+.landing-root .stc-code-head .draft-pill {
   margin-left: auto;
-  font-family: var(--lp2-font-mono), monospace; font-size: 10px;
-  color: var(--accent);
-  letter-spacing: 0.18em; text-transform: uppercase;
-  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 11px; font-weight: 600;
+  color: #A07726;                     /* --gold-700 */
+  background: rgba(212,167,55,.14); border: 1px solid rgba(212,167,55,.32);
+  border-radius: 999px; padding: 3px 10px;
 }
-.landing-root .stc-editor-head .badge .blip {
-  width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
-  box-shadow: 0 0 0 3px rgba(212,167,55,.18);
+.landing-root .stc-code-body {
+  background: #FBF7EC;                 /* --ed-canvas */
+  padding: 12px; display: flex; flex-direction: column; gap: 8px; flex: 1;
 }
-.landing-root .stc-editor-body {
-  padding: 18px 18px;
-  font-family: var(--lp2-font-mono), monospace; font-size: 11.5px; line-height: 1.95;
+.landing-root .file-card {
+  display: flex; align-items: center; gap: 10px;
+  background: #F4ECD8;                 /* --ed-chrome */
+  border: 1px solid #D8CBA8;          /* --ed-rule */
+  border-radius: 12px; padding: 12px 14px; min-height: 44px;
 }
-.landing-root .stc-editor-body .comment { color: rgba(244,236,216,.42); }
-.landing-root .stc-editor-body .injected {
-  background: rgba(212,167,55,.05);
-  border-left: 2px solid var(--accent);
-  margin: 0 -18px; padding: 1px 18px; color: rgba(244,236,216,.92);
-  display: block;
+.landing-root .file-card .fc-icon { color: #5F5640; display: grid; place-items: center; flex-shrink: 0; }
+.landing-root .file-card .fc-meta { flex: 1; min-width: 0; display: block; }
+.landing-root .file-card .fc-name {
+  display: block; color: #0F2B1E;     /* --ed-fg-1 */
+  font-family: var(--lp2-font-mono), monospace; font-size: 13.5px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.landing-root .stc-editor-body .injected.first { border-top: 1px solid rgba(212,167,55,.18); padding-top: 3px; }
-.landing-root .stc-editor-body .injected.last  { border-bottom: 1px solid rgba(212,167,55,.18); padding-bottom: 3px; }
-.landing-root .stc-editor-body .kw  { color: var(--gold-soft); }
-.landing-root .stc-editor-body .fn  { color: #8ee2b2; }
-.landing-root .stc-editor-body .str { color: #e2c98e; }
+.landing-root .file-card .fc-sub {
+  display: block; color: #5F5640;     /* --ed-fg-3 */
+  font-size: 11.5px; margin-top: 2px;
+}
+.landing-root .file-card .fc-badge {
+  flex-shrink: 0; display: inline-flex; align-items: center; gap: 5px;
+  border-radius: 4px; padding: 2px 7px; font-size: 11px; font-weight: 600;
+}
+.landing-root .file-card .badge-new {
+  background: #E1EDDE; color: #3D7A4F;          /* --success-soft / --success */
+}
+.landing-root .file-card .badge-changed {
+  background: #F7E8C2; color: #C7901A;          /* --warning-soft / --warning */
+}
+.landing-root .file-card .badge-changed .delta { font-family: var(--lp2-font-mono), monospace; font-weight: 500; }
+.landing-root .file-card .fc-chevron { color: #5F5640; flex-shrink: 0; display: grid; place-items: center; }
 
-/* Motion — send-to-code */
-.landing-root .stc-editor-body .injected {
-  opacity: 0;
-  transform: translateX(-6px);
-  transition: opacity .42s cubic-bezier(.2,.7,.2,1), transform .42s cubic-bezier(.2,.7,.2,1);
+/* Reveal — a gentle fade-up of both panels when the section scrolls in */
+.landing-root .stc-card-chat,
+.landing-root .stc-card-code,
+.landing-root .stc-shot {
+  opacity: 0; transform: translateY(10px);
+  transition: opacity .5s cubic-bezier(.2,.7,.2,1), transform .5s cubic-bezier(.2,.7,.2,1);
 }
-.landing-root .stc-illust.is-active .stc-editor-body .injected { opacity: 1; transform: none; }
-.landing-root .stc-illust.is-active .stc-editor-body .injected:nth-child(3) { transition-delay: .12s; }
-.landing-root .stc-illust.is-active .stc-editor-body .injected:nth-child(4) { transition-delay: .22s; }
-.landing-root .stc-illust.is-active .stc-editor-body .injected:nth-child(5) { transition-delay: .32s; }
-.landing-root .stc-illust.is-active .stc-editor-body .injected:nth-child(6) { transition-delay: .42s; }
-.landing-root .stc-illust.is-active .stc-editor-body .injected:nth-child(7) { transition-delay: .52s; }
-.landing-root .stc-editor-body .cursor {
-  display: inline-block;
-  width: 7px; height: 1.05em;
-  vertical-align: -2px;
-  margin-left: 2px;
-  background: var(--accent);
-  opacity: 0;
-  transition: opacity .3s ease .8s;
-}
-.landing-root .stc-illust.is-active .stc-editor-body .cursor {
-  opacity: 1;
-  animation: lp2-stc-blink 1.1s steps(2) .9s infinite;
-}
-@keyframes lp2-stc-blink { 50% { opacity: 0; } }
-
-.landing-root .stc-illust.is-active .msg-avatar svg {
-  animation: lp2-stc-pulse 1400ms ease-in-out infinite;
-}
-@keyframes lp2-stc-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .82; } }
+.landing-root .stc-illust.is-active .stc-card-chat,
+.landing-root .stc-illust.is-active .stc-card-code,
+.landing-root .stc-illust.is-active .stc-shot { opacity: 1; transform: none; }
+.landing-root .stc-illust.is-active .stc-card-code,
+.landing-root .stc-illust.is-active .stc-shot { transition-delay: .12s; }
 
 @media (prefers-reduced-motion: reduce) {
-  .landing-root .stc-editor-body .injected { opacity: 1; transform: none; transition: none; }
-  .landing-root .stc-editor-body .cursor { opacity: 1; animation: none; }
-  .landing-root .stc-illust.is-active .msg-avatar svg { animation: none; }
+  .landing-root .stc-card-chat,
+  .landing-root .stc-card-code,
+  .landing-root .stc-shot { opacity: 1; transform: none; transition: none; }
 }
 
 @media (max-width: 860px) {
@@ -866,6 +873,19 @@
   .landing-root .stc-arrow { height: 56px; }
   .landing-root .stc-arrow-line { left: 50%; right: auto; top: 0; bottom: 0; width: 1px; height: 100%; transform: translateX(-0.5px); }
   .landing-root .stc-arrow-mark { transform: rotate(90deg); }
+}
+/* Narrow phones: the cards are ~300px wide (vs a full-width phone in-app), so
+   give the model chip room, stack the two chat actions, and tighten file cards
+   so the filename never truncates. */
+@media (max-width: 480px) {
+  .landing-root .stc-chat-head .name { display: none; }
+  .landing-root .stc-codeblock .cb-actions { flex-direction: column; align-items: stretch; gap: 6px; }
+  .landing-root .stc-codeblock .cb-btn { flex: none; width: 100%; }
+  .landing-root .file-card { gap: 8px; padding: 11px 12px; }
+  .landing-root .file-card .fc-name { font-size: 12.5px; }
+  .landing-root .file-card .fc-sub { white-space: nowrap; }
+  .landing-root .file-card .fc-badge { font-size: 10px; padding: 2px 6px; }
+  .landing-root .file-card .fc-chevron { display: none; }
 }
 
 /* =========================================================
