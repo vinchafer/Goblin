@@ -214,7 +214,7 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
                 background: 'rgba(45,74,43,0.08)',
                 border: 'none',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                cursor: 'pointer', color: 'var(--brand-green)', flexShrink: 0,
+                cursor: 'pointer', color: 'var(--brand-fg)', flexShrink: 0,
                 transition: 'background 0.15s',
               }}
               onMouseEnter={e => (e.currentTarget.style.background = 'rgba(45,74,43,0.14)')}
@@ -328,7 +328,7 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
                       <>
                         <span style={{
                           fontSize: 'var(--t-small-fs)', fontWeight: active ? 600 : 400,
-                          color: active ? 'var(--brand-green)' : 'var(--text)',
+                          color: active ? 'var(--brand-fg)' : 'var(--text)',
                           flex: 1, overflow: 'hidden', textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
                           fontFamily: 'var(--font-sans)',
@@ -497,7 +497,7 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
                   <div style={{ width: 8, height: 8, borderRadius: '50%', background: dotColor, flexShrink: 0 }} />
                   <span style={{
                     fontSize: 'var(--t-small-fs)', fontWeight: active ? 600 : 400,
-                    color: active ? 'var(--brand-green)' : 'var(--text)',
+                    color: active ? 'var(--brand-fg)' : 'var(--text)',
                     flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                     fontFamily: 'var(--font-sans)',
                   }}>{p.name}</span>
@@ -545,8 +545,10 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
               {displayName}
             </span>
             <span style={{
-              fontSize: 'var(--t-caption-fs)', fontWeight: 600, color: 'var(--green-700)',
-              background: 'var(--accent-soft)', borderRadius: 'var(--radius-xs)',
+              // F-06: was --green-700 (locked) on --accent-soft (faint gold, no
+              // dark override) → near-invisible pill on dark. Neutral chip flips cleanly.
+              fontSize: 'var(--t-caption-fs)', fontWeight: 600, color: 'var(--text-2)',
+              background: 'var(--surface-3)', borderRadius: 'var(--radius-xs)',
               padding: '1px 6px', flexShrink: 0,
             }}>{plan.name}</span>
             <Gear size={16} style={{ color: 'var(--text-faint)', flexShrink: 0 }} />

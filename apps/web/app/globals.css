@@ -435,7 +435,7 @@ a[role="button"]:active {
   font-family: var(--font-sans);
   font-size: 18px;
   font-weight: 600; /* density: 700 read heavy on app surfaces; 600 = calm-dense (Linear/Vercel sit here) */
-  color: var(--brand-green);
+  color: var(--brand-fg); /* F-03/04: was --brand-green (locked → ghost heading on dark) */
   letter-spacing: -0.3px;
   margin-bottom: var(--space-1);
 }
@@ -473,7 +473,7 @@ a[role="button"]:active {
 .page-hero-title {
   font-family: var(--font-sans);
   font-size: clamp(28px, 5vw, 36px);
-  color: var(--brand-green);
+  color: var(--brand-fg); /* F-03/04: was --brand-green (locked → ghost heading on dark) */
   font-weight: 700;
   letter-spacing: -1px;
   margin-bottom: var(--space-2);
@@ -701,7 +701,7 @@ a[role="button"]:active {
   word-break: break-word;
 }
 .msg-asst { display: flex; gap: 12px; align-items: flex-start; min-width: 0; max-width: 100%; }
-.msg-mark { width: 24px; height: 24px; color: var(--ink-deep); flex-shrink: 0; }
+.msg-mark { width: 24px; height: 24px; color: var(--text); flex-shrink: 0; } /* F-cluster: was --ink-deep (locked) → invisible mark on dark */
 .msg-content { flex: 1; min-width: 0; max-width: 100%; color: var(--ink-1); font-size: var(--t-body-fs); line-height: 1.55; }
 .msg-content p { margin: 0 0 10px; }
 .msg-content p:last-child { margin-bottom: 0; }

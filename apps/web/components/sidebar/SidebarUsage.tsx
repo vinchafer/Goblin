@@ -61,7 +61,7 @@ export function SidebarUsage() {
         margin: '0 12px 8px',
         height: 52,
         borderRadius: 8,
-        background: 'rgba(15,43,30,0.05)',
+        background: 'color-mix(in srgb, var(--text) 5%, transparent)', // F-06: was rgba(15,43,30,.05) → invisible on dark
       }} />
     );
   }
@@ -72,8 +72,8 @@ export function SidebarUsage() {
   const labelStyle: React.CSSProperties = {
     display: 'block', textDecoration: 'none',
     margin: '0 12px 8px', padding: '10px 12px', borderRadius: 8,
-    background: 'rgba(15,43,30,0.05)',
-    border: '1px solid var(--line, rgba(15,43,30,.10))',
+    background: 'color-mix(in srgb, var(--text) 5%, transparent)', // F-06: was rgba(15,43,30,.05) → invisible on dark
+    border: '1px solid var(--border)',
     fontFamily: 'var(--font-dash-display), Manrope, sans-serif',
     color: 'var(--ink-1, #0F2B1E)',
   };
@@ -90,7 +90,9 @@ export function SidebarUsage() {
     // (H-4 — gold is a filled surface only, never a border). State comes from the
     // server cap logic, not an ad-hoc pct threshold.
     const hot = data.goblinCap.state === 'warn' || data.goblinCap.state === 'over';
-    const barColor = hot ? 'var(--brand-gold, #D4A737)' : 'var(--brand-green, #1A3A2A)';
+    // F-06: ok fill was --brand-green (locked) → same hue as the dark track,
+    // giving no visible bar in dark. --brand-fg flips to a light sage.
+    const barColor = hot ? 'var(--brand-gold, #D4A737)' : 'var(--brand-fg)';
     // Keep a sliver visible once any allowance is used, so low percentages still read
     // as a bar rather than an empty track.
     const fillWidth = pct > 0 ? Math.max(pct, 2) : 0;
@@ -103,7 +105,8 @@ export function SidebarUsage() {
           <span style={{
             fontFamily: 'var(--font-mono, JetBrains Mono), monospace',
             fontSize: 'var(--t-mono-fs)', fontWeight: 600,
-            color: hot ? 'var(--brand-gold-ink, #7A5A12)' : 'var(--ink-1, #0F2B1E)',
+            // F-06: hot ink was #7A5A12 (dark gold) → invisible on dark; --warning reads on both.
+            color: hot ? 'var(--warning)' : 'var(--ink-1, #0F2B1E)',
           }}>
             {/* P1.10: "0 %" alone read ambiguously (0% left? 0% used?). Say it
                 plainly — this is percent CONSUMED, matching the usage page. */}
@@ -111,7 +114,7 @@ export function SidebarUsage() {
           </span>
         </div>
         <div
-          style={{ height: 6, borderRadius: 999, overflow: 'hidden', background: 'rgba(15,43,30,0.10)' }}
+          style={{ height: 6, borderRadius: 999, overflow: 'hidden', background: 'color-mix(in srgb, var(--text) 10%, transparent)' }} /* F-06: was rgba(15,43,30,.10) → invisible track on dark */
           role="progressbar"
           aria-valuemin={0}
           aria-valuemax={100}
@@ -146,7 +149,7 @@ export function SidebarUsage() {
         <span style={{ fontSize: 'var(--t-caption-fs)', fontWeight: 600, color: 'var(--ink-2, #2c4538)' }}>
           {t(lang, 'Verbrauch', 'Usage')}
         </span>
-        <span style={{ fontSize: 'var(--t-caption-fs)', fontWeight: 600, color: 'var(--brand-green, #0F2B1E)' }}>
+        <span style={{ fontSize: 'var(--t-caption-fs)', fontWeight: 600, color: 'var(--brand-fg)' }}>
           {planLabel(data.plan, isComped)}
         </span>
       </div>

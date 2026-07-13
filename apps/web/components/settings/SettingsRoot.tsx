@@ -9,6 +9,7 @@ import { ProfileCard } from './ProfileCard';
 import { ProfilePage } from './ProfilePage';
 import { FeaturesPage } from './FeaturesPage';
 import { AppearancePage } from './AppearancePage';
+import { useTheme, type Theme } from '@/lib/theme';
 import { LanguagePage } from './LanguagePage';
 import { AboutPage } from './AboutPage';
 import { BillingPage } from './BillingPage';
@@ -48,6 +49,9 @@ const I = {
 
 type Appearance = 'System' | 'Hell' | 'Dunkel';
 
+const toAppearance = (t: Theme): Appearance => (t === 'light' ? 'Hell' : t === 'dark' ? 'Dunkel' : 'System');
+const toTheme = (a: Appearance): Theme => (a === 'Hell' ? 'light' : a === 'Dunkel' ? 'dark' : 'system');
+
 export function SettingsRoot() {
   const user = useUser();
   const lang = useLang();
@@ -55,14 +59,13 @@ export function SettingsRoot() {
   const { push } = useSheetStack();
   const { settingsInitialItem, setSettingsInitialItem } = useApp();
   const [hapticEnabled, setHapticEnabled] = useState<boolean>(true);
-  const [appearance, setAppearance] = useState<Appearance>('System');
+  // F-07: appearance is driven by the ONE ThemeProvider (applies data-theme live),
+  // not a local localStorage-only mirror.
+  const { theme, setTheme } = useTheme();
+  const appearance = toAppearance(theme);
 
   useEffect(() => {
     setHapticEnabled(localStorage.getItem('goblin-haptic') !== 'false');
-    const stored = localStorage.getItem('goblin_theme');
-    if (stored === 'light') setAppearance('Hell');
-    else if (stored === 'dark') setAppearance('Dunkel');
-    else setAppearance('System');
   }, []);
 
   // WALK2-3 (Phase 3): honour the deep-link section on MOBILE too. The desktop
@@ -101,9 +104,7 @@ export function SettingsRoot() {
   };
 
   const handleAppearanceChange = (v: Appearance) => {
-    setAppearance(v);
-    const key = v === 'Hell' ? 'light' : v === 'Dunkel' ? 'dark' : 'system';
-    localStorage.setItem('goblin_theme', key);
+    setTheme(toTheme(v));
   };
 
   return (

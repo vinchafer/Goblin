@@ -1,25 +1,17 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { AppearancePage } from './AppearancePage';
+import { useTheme, type Theme } from '@/lib/theme';
 
 type Appearance = 'System' | 'Hell' | 'Dunkel';
 
-// Self-contained theme-state wrapper so AppearancePage (a canonical section
-// component) renders unchanged inside the desktop SettingsModal. Mirrors the
-// theme state SettingsRoot manages inline on mobile. AppearancePage untouched.
+const toAppearance = (t: Theme): Appearance => (t === 'light' ? 'Hell' : t === 'dark' ? 'Dunkel' : 'System');
+const toTheme = (a: Appearance): Theme => (a === 'Hell' ? 'light' : a === 'Dunkel' ? 'dark' : 'system');
+
+// F-07: drive the appearance toggle through the ONE ThemeProvider so a pick
+// applies `data-theme` live (setTheme) and stays the single source of truth —
+// instead of writing goblin_theme to localStorage and never applying it.
 export function AppearanceSection() {
-  const [appearance, setAppearance] = useState<Appearance>('System');
-
-  useEffect(() => {
-    const stored = localStorage.getItem('goblin_theme');
-    setAppearance(stored === 'light' ? 'Hell' : stored === 'dark' ? 'Dunkel' : 'System');
-  }, []);
-
-  const onChange = (v: Appearance) => {
-    setAppearance(v);
-    localStorage.setItem('goblin_theme', v === 'Hell' ? 'light' : v === 'Dunkel' ? 'dark' : 'system');
-  };
-
-  return <AppearancePage value={appearance} onChange={onChange} />;
+  const { theme, setTheme } = useTheme();
+  return <AppearancePage value={toAppearance(theme)} onChange={(v) => setTheme(toTheme(v))} />;
 }

@@ -1,0 +1,98 @@
+[
+  {
+    "name": "brand-fg on surface-page",
+    "mode": "light",
+    "fg": "#1A3A2A",
+    "bg": "#FBF7EC",
+    "ratio": "11.66",
+    "AA": "PASS"
+  },
+  {
+    "name": "brand-fg on surface-page",
+    "mode": "dark",
+    "fg": "#87A998",
+    "bg": "#133224",
+    "ratio": "5.41",
+    "AA": "PASS"
+  },
+  {
+    "name": "text-2 body on surface-page",
+    "mode": "light",
+    "fg": "#3F3A2C",
+    "bg": "#FBF7EC",
+    "ratio": "10.59",
+    "AA": "PASS"
+  },
+  {
+    "name": "text-2 body on surface-page",
+    "mode": "dark",
+    "fg": "#D8CBA8",
+    "bg": "#133224",
+    "ratio": "8.63",
+    "AA": "PASS"
+  },
+  {
+    "name": "text on panel (settings sheet)",
+    "mode": "light",
+    "fg": "#0F2B1E",
+    "bg": "#FFFFFF",
+    "ratio": "15.17",
+    "AA": "PASS"
+  },
+  {
+    "name": "text on panel (settings sheet)",
+    "mode": "dark",
+    "fg": "#FBF7EC",
+    "bg": "#08170F",
+    "ratio": "17.21",
+    "AA": "PASS"
+  },
+  {
+    "name": "brand-fg active label on subtle (sidebar)",
+    "mode": "light",
+    "fg": "#1A3A2A",
+    "bg": "#E8DEC2",
+    "ratio": "9.31",
+    "AA": "PASS"
+  },
+  {
+    "name": "brand-fg active label on subtle (sidebar)",
+    "mode": "dark",
+    "fg": "#87A998",
+    "bg": "#1A3A2A",
+    "ratio": "4.85",
+    "AA": "PASS"
+  },
+  {
+    "name": "ink-1 quota % on card (mixed)",
+    "mode": "dark",
+    "fg": "#FBF7EC",
+    "bg": "#182b21",
+    "ratio": "13.95",
+    "AA": "PASS"
+  },
+  {
+    "name": "text-2 pill on surface-3",
+    "mode": "dark",
+    "fg": "#D8CBA8",
+    "bg": "#1A3A2A",
+    "ratio": "7.74",
+    "AA": "PASS"
+  },
+  {
+    "name": "ink-deep on gold notice card",
+    "mode": "light",
+    "fg": "#0F2B1E",
+    "bg": "#D4A737",
+    "ratio": "6.78",
+    "AA": "PASS"
+  },
+  {
+    "name": "ink-deep on gold notice card",
+    "mode": "dark",
+    "fg": "#0F2B1E",
+    "bg": "#D4A737",
+    "ratio": "6.78",
+    "AA": "PASS"
+  }
+]
