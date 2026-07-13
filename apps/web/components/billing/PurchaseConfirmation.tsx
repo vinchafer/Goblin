@@ -30,11 +30,12 @@ const SEEN_KEY = 'goblin_confirmed_plan';
 
 export function PurchaseConfirmation() {
   const lang = useLang();
+  // `plan` is only ever set inside the client effect below, so both the server
+  // render and the first client render return null (no hydration mismatch) — no
+  // separate "mounted" flag needed to guard the portal.
   const [plan, setPlan] = useState<PaidPlan | null>(null);
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
     if (isDemoActive()) return;
     let alive = true;
     apiGet<BillingStatusLite>('/api/billing/status')
@@ -61,7 +62,7 @@ export function PurchaseConfirmation() {
     setPlan(null);
   };
 
-  if (!mounted || !plan) return null;
+  if (!plan || typeof document === 'undefined') return null;
 
   const features = unlockedFeatures(plan, lang);
 

@@ -24,9 +24,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const resolved = resolveTheme(theme, window.matchMedia('(prefers-color-scheme: dark)').matches);
-    setResolvedTheme(resolved);
-    document.documentElement.setAttribute('data-theme', resolved);
+    const applyTheme = (t: Theme) => {
+      const resolved = resolveTheme(t, window.matchMedia('(prefers-color-scheme: dark)').matches);
+      setResolvedTheme(resolved);
+      document.documentElement.setAttribute('data-theme', resolved);
+    };
+    applyTheme(theme);
   }, [theme]);
 
   useEffect(() => {
