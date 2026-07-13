@@ -207,7 +207,14 @@ const versionHandler = (c: import('hono').Context) => {
 app.get('/version', versionHandler)
 app.get('/api/version', versionHandler)
 
+// F-35 — health is dual-mounted, mirroring /version + /api/version above:
+//   • /health      — direct Railway origin (its own healthcheck / uptime probes)
+//   • /api/health  — reachable on the PRIMARY domain (justgoblin.com), which only
+//                    rewrites /api/* to the Railway API. Without this, both
+//                    justgoblin.com/api/health (rewritten → Railway /api/health,
+//                    unmounted) and justgoblin.com/health (never rewritten) 404'd.
 app.route('/health', health);
+app.route('/api/health', health);
 
 
 app.route('/api/chat', chat);
