@@ -12,6 +12,7 @@ import { useState } from 'react';
 import { IArrowL, IArrowR } from '../_components/icons';
 import { patchOnboardingState } from '../_components/onboarding-state';
 import { useOnbLang, STR } from '../_components/i18n';
+import { onboardedCookieString } from '@/lib/onboarding-gate';
 
 export default function BuildStepPage() {
   const router = useRouter();
@@ -22,6 +23,11 @@ export default function BuildStepPage() {
   async function finish() {
     if (busy) return;
     setBusy(true);
+    // F-05: set the synchronous completion handshake FIRST, so it rides the very
+    // next navigation into the dashboard. This closes the stale-read window — the
+    // server guard trusts the cookie even while the DB write (below) is still
+    // replicating or RLS-hidden, so it can never bounce us back into /welcome.
+    if (typeof document !== 'undefined') document.cookie = onboardedCookieString();
     // Mark onboarding complete (best-effort) before entering the dashboard, so
     // the returning-user guard won't bounce the user back into /welcome.
     await patchOnboardingState({ current_step: 4, completed: true });

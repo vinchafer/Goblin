@@ -1,7 +1,9 @@
 import type { Viewport } from "next";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { Manrope, Instrument_Serif } from "next/font/google";
 import { createClient } from "@/lib/supabase/server";
+import { resolveOnboardingGate, ONBOARDED_COOKIE } from "@/lib/onboarding-gate";
 import { AppProvider } from "@/contexts/app-context";
 import { DashboardShell } from "@/components/app-shell/dashboard-shell";
 import { filterVisibleProjects } from "@/lib/project-visibility";
@@ -63,13 +65,26 @@ export default async function DashboardLayout({
   const isReactivated = user.user_metadata?.deletion_status === 'cancelled';
 
   if (isNewUser && !isReactivated) {
+    // F-05: the synchronous completion handshake. Set by welcome/build (and the
+    // chrome guard) the instant onboarding finishes — trusted here regardless of
+    // DB replication lag / RLS read-asymmetry, so a stale `completed === false`
+    // read can never bounce a just-finished user back into /welcome (the loop).
+    const justOnboarded = (await cookies()).get(ONBOARDED_COOKIE.name)?.value === ONBOARDED_COOKIE.value;
+
     const { data: onboardingState } = await supabase
       .from('onboarding_steps')
       .select('completed')
       .eq('user_id', user.id)
       .single() as { data: { completed: boolean } | null };
 
-    if (!onboardingState?.completed) {
+    const { redirectToOnboarding } = resolveOnboardingGate({
+      isNewUser,
+      isReactivated,
+      onboardingCompleted: !!onboardingState?.completed,
+      justOnboarded,
+    });
+
+    if (redirectToOnboarding) {
       redirect('/welcome/language');
     }
   }
