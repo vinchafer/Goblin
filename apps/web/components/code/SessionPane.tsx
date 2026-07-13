@@ -269,6 +269,18 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
     }
   }, [agentRun.streaming]);
 
+  // F-40: when a RE-ATTACHED run (one this tab didn't start — a returning session) finishes,
+  // pull the fresh files + thread it produced while we were away, so the workspace reflects
+  // what the run actually did in the background.
+  const wasReattachingRef = useRef(false);
+  useEffect(() => {
+    if (agentRun.reattached && agentRun.streaming) { wasReattachingRef.current = true; }
+    else if (wasReattachingRef.current && !agentRun.streaming) {
+      wasReattachingRef.current = false;
+      void detail.refresh();
+    }
+  }, [agentRun.reattached, agentRun.streaming, detail.refresh]);
+
   // Any streaming work in flight (classic or agent) — drives the composer's
   // busy/cancel affordances so Stopp ends whichever path is running.
   const busy = agent.streaming || agentRun.streaming;

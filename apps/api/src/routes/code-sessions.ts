@@ -21,8 +21,9 @@ import { runAgent } from '../services/agent/orchestrator';
 import { trackEvent } from '../lib/platform-events';
 import { loadUserPreferences } from '../services/user-preferences';
 import { grantsPublish } from '../services/agent/intent';
-import { createAgentRun, finalizeAgentRun } from '../services/agent/run-store';
+import { createAgentRun, finalizeAgentRun, findActiveRun } from '../services/agent/run-store';
 import { startRun, stopRun, streamRunEvents } from '../services/agent/run-registry';
+import { agentMaxRuntimeMs } from '../services/agent/config';
 import { notifyAgentRunFinished } from './notifications';
 import { scrubString, safeErrorMessage } from '../lib/scrub-secrets';
 import { hitRateLimit } from '../middleware/rate-limit';
@@ -532,6 +533,51 @@ codeSessions.post('/:sessionId/messages', async (c) => {
       }).then(() => {}, () => {});
       await stream.writeSSE({ data: JSON.stringify({ type: 'error', message: safeErrorMessage(err, 'Stream failed') }) });
     }
+  });
+});
+
+// ─── GET /api/code-sessions/:sessionId/runs/active — F-40 re-attach mount probe ──────
+// The client calls this on mount of a chat/session. If a run is still in flight for this
+// session it returns { activeRun: { runId, status } } and the client re-attaches (below);
+// otherwise { activeRun: null }. Reads the DB (not the in-memory registry) so it works
+// across a process restart / a different replica, and ignores zombie 'running' rows older
+// than 2× the max-runtime guard (a process that died mid-run leaves status='running').
+// Registered BEFORE the /:runId routes so "active" is never parsed as a run id.
+codeSessions.get('/:sessionId/runs/active', async (c) => {
+  const userId = c.get('userId');
+  const sessionId = c.req.param('sessionId');
+  const sb = getSupabaseAdmin();
+  if (!(await ownSession(sb, sessionId, userId))) return c.json({ error: 'Session not found' }, 404);
+  const active = await findActiveRun(sessionId, userId, agentMaxRuntimeMs() * 2);
+  return c.json({ activeRun: active });
+});
+
+// ─── GET /api/code-sessions/:sessionId/runs/:runId/events?since=N — F-40 re-attach ───
+// The resumable stream. Replays the run's events after seq N (from the durable log 0091,
+// or the in-process ring for a local run), then live-tails until the run reaches a terminal
+// frame or the client disconnects. This is what rehydrates a returning client's run UI —
+// step history + live progress — and, for a run that finished while the client was away,
+// replays the persisted agent_report frame so the report card renders. Ownership-scoped.
+codeSessions.get('/:sessionId/runs/:runId/events', async (c) => {
+  const userId = c.get('userId');
+  const sessionId = c.req.param('sessionId');
+  const runId = c.req.param('runId');
+  const since = Math.max(0, Number(c.req.query('since')) || 0);
+  const sb = getSupabaseAdmin();
+  if (!(await ownSession(sb, sessionId, userId))) return c.json({ error: 'Session not found' }, 404);
+  // Ownership: the run must belong to this user. A real re-attachable run always has an
+  // agent_runs row (createAgentRun succeeded); an intruder guessing a runId gets 404 here
+  // instead of a hung, empty stream.
+  const { data: runRow } = await sb.from('agent_runs').select('id').eq('id', runId).eq('user_id', userId).maybeSingle();
+  if (!runRow) return c.json({ error: 'Run not found' }, 404);
+  return streamSSE(c, async (stream) => {
+    await streamRunEvents(
+      runId,
+      userId,
+      since,
+      async (ev) => { await stream.writeSSE({ data: JSON.stringify({ type: ev.type, seq: ev.seq, ...ev.payload }) }); },
+      { signal: c.req.raw.signal },
+    );
   });
 });
 
