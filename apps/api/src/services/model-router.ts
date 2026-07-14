@@ -752,16 +752,48 @@ export async function* streamCompletion({
 // content/done event against a short deadline; on timeout it cancels the
 // upstream fetch (via the chained AbortController) and emits a friendly error
 // the chat UI already knows how to render.
-const FIRST_TOKEN_TIMEOUT_MS = 45_000;
+export const FIRST_TOKEN_TIMEOUT_MS = 45_000;
+
+/**
+ * F-22: Forge (Goblin Forge = `goblin/premium`, Kimi K2.6 on DeepInfra) is
+ * meaningfully slower to FIRST token on large prompts (e.g. a 5-subpage build) than
+ * Swift — the flat 45s watchdog cut it off mid-think ("Das Modell hat nicht
+ * rechtzeitig geantwortet"). This is a Forge-appropriate first-token budget; it is
+ * NOT a total-duration cap — the deadline still drops the instant any content flows,
+ * so a long legitimate reply is never truncated. Env-overridable.
+ */
+export function forgeFirstTokenTimeoutMs(): number {
+  const raw = Number(process.env.FORGE_FIRST_TOKEN_TIMEOUT_MS);
+  return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 90_000;
+}
+
+/**
+ * The first-token deadline for the RESOLVED model. Forge widens to its own budget;
+ * every other model keeps the base deadline. A larger caller-supplied base always
+ * wins (a caller may only widen, never narrow, below its own request). Pure +
+ * deterministic — the F-22 gate unit-tests this directly.
+ */
+export function firstTokenDeadlineMs(baseMs: number, resolvedModel?: string | null): number {
+  if (resolvedModel === 'goblin/premium') return Math.max(baseMs, forgeFirstTokenTimeoutMs());
+  return baseMs;
+}
 
 export async function* streamCompletionGuarded(
   params: StreamCompletionParams,
+  // Test seam (mirrors token-limit-retry's `streamFn`): inject the underlying source
+  // so the F-22 first-token timing is unit-testable without the network. Defaults to
+  // the real router stream.
+  source: (p: StreamCompletionParams) => AsyncGenerator<string, void, unknown> = streamCompletion,
 ): AsyncGenerator<string, void, unknown> {
   const abort = new AbortController();
   params.signal?.addEventListener('abort', () => abort.abort());
 
-  const it = streamCompletion({ ...params, signal: abort.signal })[Symbol.asyncIterator]();
+  const it = source({ ...params, signal: abort.signal })[Symbol.asyncIterator]();
   let sawContent = false;
+  // Starts at the base (Swift/default) budget; the `meta` frame carries the resolved
+  // model, so once we learn it's Forge we widen the deadline for the still-pending
+  // first-token wait (meta arrives before the provider's first token).
+  let deadline = params.timeoutMs ?? FIRST_TOKEN_TIMEOUT_MS;
 
   try {
     while (true) {
@@ -774,7 +806,7 @@ export async function* streamCompletionGuarded(
             new Promise<never>((_, reject) => {
               timer = setTimeout(
                 () => reject(new GoblinError('timeout', 'first-token-timeout')),
-                params.timeoutMs ?? FIRST_TOKEN_TIMEOUT_MS,
+                deadline,
               );
             }),
           ]);
@@ -789,11 +821,15 @@ export async function* streamCompletionGuarded(
       if (res.done) break;
 
       // Once any real content (or a terminal event) has flowed, drop the
-      // first-token deadline — long replies are legitimate.
+      // first-token deadline — long replies are legitimate. The `meta` frame (which
+      // precedes the first token) tells us the resolved model, so a Forge run widens
+      // its first-token budget before the slow first delta is awaited.
       try {
-        const parsed = JSON.parse(res.value) as { type?: string };
+        const parsed = JSON.parse(res.value) as { type?: string; model?: string };
         if (parsed.type === 'delta' || parsed.type === 'done' || parsed.type === 'error') {
           sawContent = true;
+        } else if (parsed.type === 'meta') {
+          deadline = firstTokenDeadlineMs(deadline, parsed.model);
         }
       } catch { /* non-JSON token — treat as content */ sawContent = true; }
 
