@@ -194,3 +194,41 @@ describe('funnel signal', () => {
 });
 
 const ESCALATION_CLOSING = 'Ich habe alles an einen Menschen übergeben — du hörst per E-Mail von uns.';
+
+// ─── FW4 U6 (F-27): shorter + faster help agent ─────────────────────────────────
+describe('F-27 — help agent length + streaming', () => {
+  it('(a) the persona enforces a hard length cap (3–6 lines + one citation)', async () => {
+    streamCompletionGuarded.mockReturnValue(modelStream(['ok']));
+    await collect(streamSupportAgent(base('Wie stelle ich meine Seite live?')));
+    const sys = String((streamCompletionGuarded.mock.calls[0]![0] as Record<string, unknown>).systemPrompt);
+    expect(sys).toMatch(/3–6 Zeilen/);
+    expect(sys).toMatch(/Textwand|Textwände/);
+  });
+
+  it('(b) streams a normal reply as deltas; the final message matches the streamed text', async () => {
+    streamCompletionGuarded.mockReturnValue(modelStream([
+      'Drei Schritte: Vercel verbinden, offene Entwürfe sichern, dann „Live stellen". ',
+      'Goblin deployt und prüft, bevor es „Live" sagt. Siehe: Live stellen & Vercel verbinden.',
+    ]));
+    const out = await collect(streamSupportAgent(base('Wie stelle ich meine Seite live?')));
+    const deltas = out.filter((e) => e.type === 'delta').map((e) => String(e.content)).join('');
+    expect(deltas.length).toBeGreaterThan(0); // it actually streamed (not one buffered blob)
+    const msg = out.find((e) => e.type === 'message')!;
+    // the streamed prefix is consistent with the authoritative final message
+    expect(String(msg.content).startsWith(deltas)).toBe(true);
+    expect(String(msg.content)).toContain('Live stellen & Vercel verbinden');
+  });
+
+  it('(b) a trailing [[ESCALATE]] marker NEVER appears in a streamed delta (held back)', async () => {
+    streamCompletionGuarded.mockReturnValue(modelStream([
+      'Das ist ein Abrechnungsthema, das ich nicht selbst lösen kann und weitergebe. ',
+      '[[ESCALATE:out_of_scope]]',
+    ]));
+    const out = await collect(streamSupportAgent(base('Ich wurde doppelt belastet, bitte erstatten.')));
+    for (const d of out.filter((e) => e.type === 'delta')) {
+      expect(String(d.content)).not.toContain('[[');
+    }
+    const msg = out.find((e) => e.type === 'message')!;
+    expect(String(msg.content)).not.toContain('[[ESCALATE'); // final is clean, marker stripped
+  });
+});

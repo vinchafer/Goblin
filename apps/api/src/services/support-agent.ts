@@ -282,9 +282,16 @@ ${renderHelpForAgent(lang)}`;
 
   yield JSON.stringify({ type: 'meta' });
 
-  // 5) Buffer the reply (short by design), so the [[ESCALATE]] marker can be
-  // stripped cleanly before anything is shown — no marker ever leaks to the user.
+  // 5) F-27(b): STREAM the reply for perceived latency (the help agent used to buffer
+  // the whole answer, so the user stared at nothing until it finished). We emit delta
+  // frames as tokens arrive — but hold back a safe tail so a forming [[ESCALATE:…]]
+  // marker never flashes. The authoritative final `message` below (marker-stripped,
+  // with the truthful escalation status appended) then REPLACES the streamed text on
+  // the client, so the committed reply is byte-identical to the old buffered path —
+  // the marker/confirmation honesty guarantee is fully preserved, only faster.
+  const MARKER_HOLDBACK = 48; // ≥ "[[ESCALATE:human_requested]]".length + margin
   let full = '';
+  let streamedLen = 0;
   try {
     for await (const jsonToken of streamCompletionGuarded({
       userId,
@@ -297,8 +304,16 @@ ${renderHelpForAgent(lang)}`;
       supabase,
     })) {
       const parsed = JSON.parse(jsonToken) as { type?: string; content?: string; message?: string };
-      if (parsed.type === 'delta') full += parsed.content ?? '';
-      else if (parsed.type === 'error') {
+      if (parsed.type === 'delta') {
+        full += parsed.content ?? '';
+        // Stream everything except the last MARKER_HOLDBACK chars (a forming marker
+        // must never appear, even transiently).
+        const safeEnd = full.length - MARKER_HOLDBACK;
+        if (safeEnd > streamedLen) {
+          yield JSON.stringify({ type: 'delta', content: full.slice(streamedLen, safeEnd) });
+          streamedLen = safeEnd;
+        }
+      } else if (parsed.type === 'error') {
         yield JSON.stringify({
           type: 'message',
           content: honest(lang,
