@@ -266,16 +266,11 @@ function renderProjectContext(ctx: GoblinChatContext): string {
     // honest (E7: these files count as not loaded) without a hard error.
     if (ctx.contextNote) lines.push(`- ${ctx.contextNote}`);
 
-    // F4.1: user-authored project instructions — standing rules for THIS
-    // project, above the rolling memory and marked as the user's own words so
-    // the model treats them as binding without needing them repeated per turn.
-    const instr = ctx.projectInstructions?.trim();
-    if (instr) {
-      lines.push(
-        '- Projekt-Anweisungen des Nutzers (verbindliche Vorgaben für dieses Projekt — befolge sie in jeder Antwort, auch ohne erneute Nennung):',
-        ...instr.split('\n').map((l) => `  ${l}`),
-      );
-    }
+    // F4.1/F-20: project instructions are NO LONGER rendered here (buried mid-context,
+    // and — worse — gated behind projectName via the early return above, so a nameless
+    // project silently dropped them). They now render in their own prominent block
+    // (renderProjectInstructions), placed LAST in the assembled prompt (nearest the
+    // user's task) and independent of projectName.
 
     // U3: rolling memory — lets a NEW chat answer "Wo waren wir?" truthfully.
     if (ctx.projectState && (ctx.projectState.summary || ctx.projectState.decisions)) {
@@ -317,9 +312,25 @@ function renderProjectContext(ctx: GoblinChatContext): string {
   }
 }
 
+/**
+ * F-20: the project's user-authored instructions as a prominent, binding block —
+ * rendered independently of projectName (a nameless project must NOT drop them) and
+ * placed LAST in the assembled prompt, nearest the user's task, so the model is far
+ * likelier to actually apply them. Empty/absent → '' (no placebo header). Shared
+ * verbatim by normal chat and agent runs, so the instructions bind BOTH paths.
+ */
+function renderProjectInstructions(ctx: GoblinChatContext): string {
+  const instr = ctx.projectInstructions?.trim();
+  if (!instr) return '';
+  return [
+    'Projekt-Anweisungen des Nutzers — VERBINDLICH: Dies sind die eigenen, für dieses Projekt festgelegten Vorgaben des Nutzers. Sie haben Vorrang und gelten für JEDE Antwort und JEDE Änderung in diesem Projekt, auch ohne erneute Nennung. Halte dich strikt daran; nur wenn eine konkrete Aufgabe ihnen klar widerspricht, weise kurz darauf hin, statt sie stillschweigend zu übergehen.',
+    ...instr.split('\n').map((l) => `• ${l}`),
+  ].join('\n');
+}
+
 /** Build the full system prompt: identity + user prefs + (optional) live project context. */
 export function buildGoblinChatSystemPrompt(ctx: GoblinChatContext = {}): string {
-  return [IDENTITY, POLICY_BLOCK, NO_ROADMAP_BLOCK, renderUserContext(ctx), renderProjectContext(ctx)].filter(Boolean).join('\n');
+  return [IDENTITY, POLICY_BLOCK, NO_ROADMAP_BLOCK, renderUserContext(ctx), renderProjectContext(ctx), renderProjectInstructions(ctx)].filter(Boolean).join('\n');
 }
 
 // ─── AGENT MODE (FEEL-3a) ───────────────────────────────────────────────────────
@@ -340,7 +351,8 @@ Verfügbare Werkzeuge:
 - plan(steps) — NUR bei einer mehrschrittigen oder mehrdeutigen Aufgabe: nenne als ALLERERSTES einen kurzen Plan (2–5 knappe Schritte), bevor du andere Werkzeuge benutzt. Du wartest NICHT auf Bestätigung — direkt nach dem Plan fängst du an. Bei einer einfachen, eindeutigen Einzeländerung rufe plan NICHT auf.
 - list_files() — zeigt alle Projektdateien (ohne gelöschte). Zur Orientierung.
 - read_file(path) — liest den ECHTEN Inhalt einer Datei. Lies eine Datei, BEVOR du sie änderst.
-- write_file(path, content) — schreibt die Datei als ENTWURF (komplett, nicht nur der Ausschnitt). Das Ergebnis nennt dir die echte Einstufung: NEU / GEÄNDERT +n −m / IDENTISCH — übernimm genau diese Zahlen in deinen Bericht, erfinde keine.
+- write_file(path, content) — schreibt die KOMPLETTE Datei als ENTWURF. Nutze dies für NEUE Dateien oder eine vollständige Neufassung. Das Ergebnis nennt dir die echte Einstufung: NEU / GEÄNDERT +n −m / IDENTISCH — übernimm genau diese Zahlen in deinen Bericht, erfinde keine.
+- edit_file(path, old_str, new_str) — ändert eine BESTEHENDE Datei GEZIELT: ersetzt den wörtlichen Ausschnitt old_str durch new_str, der Rest bleibt unverändert. Für KLEINE Änderungen (Titel, eine Farbe, ein Textstück) IMMER edit_file statt write_file — das spart viel und ist präziser. old_str muss exakt und eindeutig in der Datei stehen (nimm genügend Kontext). Bekommst du „nicht gefunden"/„mehrdeutig", mach den Ausschnitt eindeutiger oder schreibe die ganze Datei mit write_file.
 - save_draft() — sichert alle Entwürfe (idempotent).
 - publish() — veröffentlicht das Projekt: sichert, baut, stellt live und PRÜFT (n/6), ob die Seite und alle referenzierten Dateien wirklich erreichbar sind. Das Ergebnis ist ehrlich: bei Erfolg die GEPRÜFTE Live-URL, bei einem Fehler die konkret fehlgeschlagene Prüfung. Rufe publish NUR auf, wenn der Nutzer das Veröffentlichen in DIESER Nachricht ausdrücklich verlangt hat.
 - read_deploy_status() — liest den aktuellen Veröffentlichungs-Status (live + URL / nicht veröffentlicht / fehlgeschlagen + letzter Fehler). Nützlich nach einem fehlgeschlagenen publish.
@@ -360,9 +372,9 @@ Du: (plan { "steps": ["settings.html anlegen", "Toggle-Logik in script.js", "im 
 → Ergebnis: { ok: true }
 Du: (write_file settings.html) "Ich lege settings.html an." … (weiter mit den restlichen Schritten)
 
-Beispiel Plan B — triviale Einzeländerung (KEIN Plan):
+Beispiel Plan B — triviale Einzeländerung (KEIN Plan, gezielter edit_file):
 Nutzer: "Mach die Überschrift in index.html größer."
-Du: (read_file "index.html") "Ich sehe mir index.html an." → (write_file …) "Ich vergrößere die Überschrift." (direkt, ohne plan)
+Du: (read_file "index.html") "Ich sehe mir index.html an." → (edit_file "index.html", old_str: "<h1 class=\\"title\\">", new_str: "<h1 class=\\"title\\" style=\\"font-size:2.5rem\\">") "Ich vergrößere die Überschrift." (direkt, ohne plan, nur die eine Stelle)
 
 Veröffentlichen — die D1-Regel: Du darfst veröffentlichen, WENN der Nutzer es in DIESER Nachricht verlangt hat ("stell es live", "veröffentliche", "deploy", "sag mir wenn es live ist"). Dann: bauen → save_draft() → publish(). Hat der Nutzer NICHT ausdrücklich darum gebeten: baue und sichere nur den Entwurf, rufe publish NICHT auf und schließe mit finish() ab — die Plattform bietet dem Nutzer danach von selbst einen Bestätigungs-Chip ("Bereit — jetzt veröffentlichen?") an. Im Zweifel: nicht veröffentlichen. "Live" gilt AUSSCHLIESSLICH nach einem grünen publish-Ergebnis — erfinde NIE eine Live-URL.
 
@@ -452,6 +464,8 @@ export function buildAgentSystemPrompt(ctx: GoblinChatContext = {}): string {
     // ── dynamic tail (per-run; never part of the cached prefix) ──
     renderUserContext(ctx, { agent: true }),
     renderProjectContext(ctx),
+    // F-20: binding project instructions LAST — nearest the task, on the agent path too.
+    renderProjectInstructions(ctx),
   ]
     .filter(Boolean)
     .join('\n\n');

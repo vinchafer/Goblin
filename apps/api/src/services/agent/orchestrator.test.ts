@@ -253,6 +253,85 @@ describe('orchestrator — A2 loop', () => {
   });
 });
 
+// ─── FW4 U2 (F-23): stop → coherent partial CARD, never a raw code dump ───────────
+
+describe('orchestrator — F-23 stop is an honest card, not a code dump', () => {
+  // A turn where the model dumped the file body into its PROSE content (protocol
+  // drift). Pre-fix this became report.modelText → pasted into chat verbatim on stop.
+  const RAW_DUMP = '```html\n<!DOCTYPE html>\n<html><body><h1>Habit Tracker</h1><ul><li>Tag 1</li></ul></body></html>\n```';
+
+  it('user Stop mid-run → report prose is a summary (no <!DOCTYPE/```), draft intact, log coherent', async () => {
+    const { emit, events } = collector();
+    const controller = new AbortController();
+    const stopExecutor: ToolExecutor = async (call, ctx) => { const r = await executor(call, ctx); controller.abort(); return r; };
+    const res = await runAgent({
+      ...base,
+      executor: stopExecutor,
+      userMessage: 'Baue mir einen Habit-Tracker',
+      model: scriptedModel([
+        nativeTurn('write_file', { path: 'index.html', content: '<html>' }, RAW_DUMP), // dumps raw HTML as prose
+        nativeTurn('write_file', { path: 'app.js', content: 'x' }),
+        nativeTurn('finish', { report: 'sollte nie erreicht werden' }),
+      ]),
+      stopSignal: controller.signal,
+      emit,
+    });
+    expect(res.outcome).toBe('stopped');
+    expect(res.report.state).toBe('stopped');
+    // THE fix: the raw partial is NOT the chat text — the card carries an honest summary.
+    expect(res.report.modelText).not.toContain('<!DOCTYPE');
+    expect(res.report.modelText).not.toContain('```');
+    expect(res.report.modelText).toMatch(/gestoppt/i);
+    expect(res.report.modelText).toMatch(/index\.html/); // names what completed, from the log
+    // draft intact (the in-flight write is attested) + honest next actions on the card.
+    expect(res.report.files).toEqual([{ path: 'index.html', classification: 'NEU' }]);
+    expect(res.report.followUps).toContain('view-changes');
+    // event log coherent: exactly one closing report frame.
+    expect(events.filter((e) => e.type === 'agent_report')).toHaveLength(1);
+  });
+
+  it('guard-timeout stop → honest summary card WITH the Zeitlimit reason (regression, no dump)', async () => {
+    const { emit } = collector();
+    const controller = new AbortController();
+    const guardExecutor: ToolExecutor = async (call, ctx) => { const r = await executor(call, ctx); controller.abort(MAX_RUNTIME_ABORT_REASON); return r; };
+    const res = await runAgent({
+      ...base,
+      executor: guardExecutor,
+      userMessage: 'Baue endlos',
+      model: scriptedModel([
+        nativeTurn('write_file', { path: 'index.html', content: '<html>' }, RAW_DUMP),
+        nativeTurn('write_file', { path: 'app.js', content: 'x' }),
+      ]),
+      stopSignal: controller.signal,
+      emit,
+    });
+    expect(res.outcome).toBe('stopped');
+    // The guard keeps its distinct honest reason (push/telemetry rely on it)…
+    expect(res.report.failureReason).toMatch(/Zeitlimit/);
+    // …and the prose is still a clean summary, never the raw dump.
+    expect(res.report.modelText).not.toContain('<!DOCTYPE');
+    expect(res.report.modelText).toMatch(/Zeitlimit/);
+  });
+
+  it('a plain user Stop still keeps failureReason undefined (F-40 signal unchanged)', async () => {
+    const { emit } = collector();
+    const controller = new AbortController();
+    const stopExecutor: ToolExecutor = async (call, ctx) => { const r = await executor(call, ctx); controller.abort(); return r; };
+    const res = await runAgent({
+      ...base,
+      executor: stopExecutor,
+      userMessage: 'x',
+      model: scriptedModel([nativeTurn('write_file', { path: 'index.html', content: '<html>' })]),
+      stopSignal: controller.signal,
+      emit,
+    });
+    expect(res.outcome).toBe('stopped');
+    expect(res.report.failureReason).toBeUndefined();
+    // Even with no dump, the prose is the honest stop summary (not empty, not code).
+    expect(res.report.modelText).toMatch(/gestoppt/i);
+  });
+});
+
 // ─── FEEL-3b B2: the explicit-intent publish gate (D1) ───────────────────────────
 
 /** Executor that also serves a green `publish` and records which tools actually ran. */

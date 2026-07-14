@@ -160,6 +160,28 @@ Deploy truth-gating (P0.2: HTTP checks only) · STC integrity checks (client/sha
   - **Post-merge reconciliation:** the "runs die on disconnect" truncation was an *invisible* discount on
     realized units/run; expect measured units/run to rise modestly after F-40. Re-measure A6/A19 against
     `agent_runs` + `completion_costs.run_id` on the standing 1-week cadence and note any material shift.
+- **FW4-U1 NOTE (F-11 publish/build-intent routing — VOLUME shift, NO new token mechanism):** U1 makes a
+  project-chat message with clear build/publish intent (`classifyRunIntent`, `services/agent/intent.ts`)
+  hand off from the **tool-less chat lane (M1/M2 — one completion)** into an **agent run (this M10)**. Per
+  *routed* message the per-run token model above is unchanged (same turns/tools/weighting/budgets); what
+  shifts is the **mix**: a build/publish message that used to cost ~1 chat completion now costs one full
+  agent run (60–260k units, Forge 4.4×). Direction: a modest **up-shift in agent-run volume** (more
+  eligible sessions started from chat), bounded per run by the same `AGENT_MAX_ITERATIONS`/`AGENT_MAX_UNITS`/
+  `AGENT_MAX_RUNTIME_MS` guards and per user by `agentRunsPerHour` (`abuse-caps.ts`). **Guardrails contain the
+  volume:** routing fires ONLY when (project chat) AND (Swift/Forge model selected) AND (explicit
+  build/publish intent — a bare "live" mention stays chat), so a normal conversation never silently becomes a
+  billed run. Still user allowance, still summable via `completion_costs.run_id`. Re-measure the chat→agent
+  routed fraction against `platform_events` (`agent_run_started`) on the standing 1-week cadence.
+- **FW4-U4 NOTE (F-19 targeted edits — OUTPUT-token REDUCTION on the edit path):** the new `edit_file`
+  tool (`services/agent/tools.ts`) lets the model change a small part of an existing file by emitting only
+  the anchored snippet (old_str + new_str) instead of re-emitting the WHOLE file via `write_file`. For a
+  small edit of a large file this cuts the turn's **output** tokens from ~O(file size) to ~O(change size) —
+  a real reduction in the A19 output driver (output tokens dominate cost at the goblin-hosted blended rate).
+  No new billing mechanism: `edit_file` produces the full content internally and flows through the SAME
+  `finalizeDraftWrite` (classify → upsert draft) as `write_file`, so weighting/accounting/`run_id` are
+  unchanged — only fewer tokens are generated per small edit. Direction: realized units/edit trend **down**
+  (model compliance-dependent — measured by the F-19 prod probe: emitted bytes ≪ file size, 4/5). Input side
+  is unchanged (read_file still returns the full file). Reconcile with A19 on the standing cadence.
 - **CFO dependency:** A6 (exhaustion — agent runs are the heaviest single user action), A19 (step-history
   growth). | Status: FORMULA — reconcile with A6/M10 actuals 1 week post-merge (the standing telemetry
   protocol), using `agent_runs` + `completion_costs.run_id`. **F-40 adds `AGENT_MAX_RUNTIME_MS` as the

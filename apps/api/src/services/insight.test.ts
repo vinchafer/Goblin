@@ -8,7 +8,13 @@ import { computeFunnel, computeJourneys, computePulse } from './insight';
 
 const HOUR = 60 * 60 * 1000;
 const DAY = 24 * HOUR;
-const NOW = Date.parse('2026-07-10T12:00:00.000Z');
+// Anchor fixtures to the REAL clock, not a frozen date. computeFunnel has no
+// injectable "now" — it computes its 7-day cohort window against Date.now() — so a
+// frozen NOW let the oldest fixture (NOW − 3 days) drift out of the window as
+// wall-clock time advanced, flaking cohortSize by one in the afternoon (pre-existing,
+// orthogonal to FIX-WAVE 4). Real-clock offsets keep every fixture safely inside the
+// window regardless of time-of-day (nearest boundary has ~4 days of margin).
+const NOW = Date.now();
 const iso = (msAgo: number) => new Date(NOW - msAgo).toISOString();
 
 // Four real testers + one founder/test account.

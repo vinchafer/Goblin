@@ -93,8 +93,10 @@ export const AGENT_TOOLS: ToolSpec[] = [
     name: 'write_file',
     description:
       'Schreibt eine Datei als ENTWURF (wird noch nicht veröffentlicht). Gib den KOMPLETTEN ' +
-      'neuen Dateiinhalt an. Das Ergebnis nennt dir die echte Einstufung (NEU / GEÄNDERT +n −m / ' +
-      'IDENTISCH) — verwende genau diese Zahlen in deinem Bericht, erfinde keine.',
+      'neuen Dateiinhalt an. Nutze dies für NEUE Dateien oder eine komplette Neufassung — für eine ' +
+      'KLEINE Änderung an einer bestehenden Datei nimm stattdessen edit_file (viel effizienter). ' +
+      'Das Ergebnis nennt dir die echte Einstufung (NEU / GEÄNDERT +n −m / IDENTISCH) — verwende ' +
+      'genau diese Zahlen in deinem Bericht, erfinde keine.',
     parameters: {
       type: 'object',
       properties: {
@@ -102,6 +104,31 @@ export const AGENT_TOOLS: ToolSpec[] = [
         content: { type: 'string', description: 'Der vollständige neue Inhalt der Datei' },
       },
       required: ['path', 'content'],
+      additionalProperties: false,
+    },
+  },
+  {
+    // F-19: gezielte Bearbeitung statt Ganzdatei-Neuschreiben. Ersetzt einen wörtlichen
+    // Ausschnitt — der Rest der Datei bleibt byte-identisch. Intern entsteht der volle
+    // neue Inhalt, der durch DIESELBE Prüf-/Attest-Pipeline wie write_file läuft
+    // (klassifiziert, reconciled, als Entwurf persistiert), also bleibt attested==shipped.
+    name: 'edit_file',
+    description:
+      'Ändert eine BESTEHENDE Datei GEZIELT: ersetzt einen wörtlichen Ausschnitt (old_str) durch ' +
+      'new_str. Für kleine Änderungen (Titel, eine Farbe, ein Textstück) VIEL effizienter als die ' +
+      'ganze Datei neu zu schreiben — der Rest der Datei bleibt unverändert. old_str MUSS exakt und ' +
+      'EINDEUTIG in der aktuellen Datei vorkommen; nimm genügend umgebenden Kontext. Kommt er nicht ' +
+      'oder mehrfach vor, bekommst du einen ehrlichen Hinweis — dann den Ausschnitt eindeutiger machen ' +
+      'oder die ganze Datei mit write_file schreiben. Für NEUE Dateien: immer write_file.',
+    parameters: {
+      type: 'object',
+      properties: {
+        path: { type: 'string', description: 'Dateipfad der BESTEHENDEN Datei, z.B. index.html' },
+        old_str: { type: 'string', description: 'Der exakte, wörtliche Ausschnitt aus der aktuellen Datei, der ersetzt wird (mit genügend Kontext, damit er eindeutig ist)' },
+        new_str: { type: 'string', description: 'Der neue Text an dieser Stelle (leerer String = den Ausschnitt löschen)' },
+        replace_all: { type: 'boolean', description: 'Optional: ALLE Vorkommen ersetzen (Standard false: nur das eine eindeutige Vorkommen)' },
+      },
+      required: ['path', 'old_str', 'new_str'],
       additionalProperties: false,
     },
   },
@@ -272,6 +299,19 @@ async function toolWriteFile(sb: Sb, ctx: ToolContext, args: Record<string, unkn
     return { ok: false, summary: `${path} · zu gross`, error: { code: 'too_large', message: `Inhalt über ${WRITE_FILE_MAX_CHARS / 1000}k Zeichen` } };
   }
 
+  return finalizeDraftWrite(sb, ctx, path, content);
+}
+
+/**
+ * The shared write tail: reconcile → classify → upsert-as-draft → integrity → attested
+ * result. F-19: edit_file reuses this UNCHANGED (it just produces `content` via an
+ * anchored replace instead of the model re-emitting the whole file), so the whole
+ * attestation chain (attested path == written path == linked/shipped asset, real
+ * NEU/GEÄNDERT/IDENTISCH classification from the persisted bytes) is identical whether
+ * the content arrived as a full write or a targeted edit — FW1 U2's attested==shipped
+ * cure is never bypassed.
+ */
+async function finalizeDraftWrite(sb: Sb, ctx: ToolContext, path: string, content: string): Promise<ToolResult> {
   // F-17 (WALK2-1 ported to the agent path): a css/js edit must land on the asset the
   // entry HTML actually links. The classic /messages pipeline reconciles this; the
   // agent path did not — it trusted the model's guessed `args.path` verbatim. So a
@@ -349,6 +389,96 @@ async function toolWriteFile(sb: Sb, ctx: ToolContext, args: Record<string, unkn
     },
     data: { classification: label, added: delta.added, removed: delta.removed, integrity: integrityNote ?? 'ok' },
   };
+}
+
+/** Count non-overlapping occurrences of `needle` in `hay`. */
+function countOccurrences(hay: string, needle: string): number {
+  if (!needle) return 0;
+  let n = 0;
+  let i = hay.indexOf(needle);
+  while (i !== -1) { n += 1; i = hay.indexOf(needle, i + needle.length); }
+  return n;
+}
+
+/**
+ * F-19 — a targeted, anchored edit of an EXISTING file. The model supplies only the
+ * literal snippet to replace (old_str) + its replacement (new_str), not the whole file
+ * — so a one-line change costs a handful of output tokens instead of the whole file.
+ * The anchored replace produces the full new content, which then flows through the
+ * SAME finalizeDraftWrite pipeline as write_file (so the reconcile + attestation chain
+ * is identical). Honest, actionable errors on a missing/ambiguous anchor point the
+ * model back to a unique snippet or a full write_file — never a silent wrong edit.
+ */
+async function toolEditFile(sb: Sb, ctx: ToolContext, args: Record<string, unknown>): Promise<ToolResult> {
+  const raw = typeof args.path === 'string' ? args.path.trim() : '';
+  const oldStr = typeof args.old_str === 'string' ? args.old_str : '';
+  const newStr = typeof args.new_str === 'string' ? args.new_str : '';
+  const replaceAll = args.replace_all === true;
+  if (!raw) return { ok: false, summary: 'Pfad fehlt', error: { code: 'bad_args', message: 'path erforderlich' } };
+  if (!oldStr) {
+    return {
+      ok: false,
+      summary: 'old_str fehlt',
+      error: { code: 'bad_args', message: 'old_str erforderlich — der exakte, wörtliche Ausschnitt, der ersetzt werden soll.' },
+    };
+  }
+  const checked = checkProjectPath(raw);
+  if (!checked.ok || !checked.path) {
+    return { ok: false, summary: `${raw} · ungültiger Pfad`, error: { ...UNSAFE_PATH_ERROR } };
+  }
+  const path = checked.path;
+  if (isSoftDeletedPath(path)) {
+    return { ok: false, summary: `${path} · gelöscht`, error: { code: 'not_found', message: 'Datei ist gelöscht' } };
+  }
+  const existing = await readSessionFile(sb, ctx, path);
+  if (existing == null) {
+    return {
+      ok: false,
+      summary: `${path} · nicht gefunden`,
+      error: { code: 'not_found', message: `${path} existiert noch nicht — für eine neue Datei nutze write_file mit dem vollständigen Inhalt.` },
+    };
+  }
+
+  const occurrences = countOccurrences(existing, oldStr);
+  if (occurrences === 0) {
+    return {
+      ok: false,
+      summary: `${path} · Ausschnitt nicht gefunden`,
+      error: {
+        code: 'anchor_not_found',
+        message:
+          'Der zu ersetzende Text wurde nicht exakt gefunden. Lies die Datei mit read_file und gib einen ' +
+          'wörtlichen Ausschnitt (mit genügend Kontext) an — oder schreibe die ganze Datei mit write_file.',
+      },
+    };
+  }
+  if (occurrences > 1 && !replaceAll) {
+    return {
+      ok: false,
+      summary: `${path} · Ausschnitt mehrdeutig (${occurrences}×)`,
+      error: {
+        code: 'anchor_ambiguous',
+        message:
+          `Der Ausschnitt kommt ${occurrences}× vor. Mach ihn eindeutig (mehr umgebenden Kontext) oder ` +
+          'setze replace_all=true, wenn wirklich alle Vorkommen geändert werden sollen.',
+      },
+    };
+  }
+
+  // Apply the anchored replace WITHOUT regex/`$`-pattern interpretation (index-based).
+  let newContent: string;
+  if (replaceAll) {
+    newContent = existing.split(oldStr).join(newStr);
+  } else {
+    const idx = existing.indexOf(oldStr);
+    newContent = existing.slice(0, idx) + newStr + existing.slice(idx + oldStr.length);
+  }
+
+  if (newContent.length > WRITE_FILE_MAX_CHARS) {
+    return { ok: false, summary: `${path} · zu gross`, error: { code: 'too_large', message: `Inhalt über ${WRITE_FILE_MAX_CHARS / 1000}k Zeichen` } };
+  }
+
+  return finalizeDraftWrite(sb, ctx, path, newContent);
 }
 
 /**
@@ -539,6 +669,8 @@ export function buildToolExecutor(sb: Sb = getSupabaseAdmin(), opts: ExecutorOpt
         return toolReadFile(sb, ctx, call.args ?? {});
       case 'write_file':
         return toolWriteFile(sb, ctx, call.args ?? {});
+      case 'edit_file':
+        return toolEditFile(sb, ctx, call.args ?? {});
       case 'save_draft':
         return toolSaveDraft(sb, ctx);
       case 'publish': {

@@ -162,6 +162,38 @@ function defaultBill(input: RunAgentInput): BillTurn {
   };
 }
 
+/**
+ * F-23: an honest, code-free STOP summary, assembled from run ground truth (the step
+ * log + the attested file map) — NEVER the raw partial model output. Both stop paths
+ * (user Stop + the max-runtime guard) land this as the report's prose, so a no-code
+ * user sees a coherent partial card — what finished, where the drafts are, what's
+ * missing — instead of a `<!DOCTYPE …>` dump pasted into chat. The raw partial stays
+ * where it belongs: the draft files + the event/step log.
+ */
+function assembleStopSummary(
+  steps: RunResult['steps'],
+  files: ReportFile[],
+  savedDraft: boolean,
+  timedOut: boolean,
+): string {
+  const doneCount = steps.filter((s) => s.outcome === 'ok').length;
+  const paths = files.map((f) => f.path);
+  const lead = timedOut
+    ? 'Der Lauf hat das Zeitlimit erreicht und wurde automatisch beendet, damit er nicht endlos weiterläuft.'
+    : 'Ich habe den Lauf gestoppt.';
+  const progress = doneCount > 0
+    ? ` Bis dahin erledigt: ${doneCount} Schritt${doneCount === 1 ? '' : 'e'}` +
+      (paths.length ? ` (${paths.slice(0, 4).join(', ')}${paths.length > 4 ? ' …' : ''})` : '') + '.'
+    : ' Es wurde noch kein Schritt abgeschlossen.';
+  const fileState = paths.length
+    ? (savedDraft
+        ? ' Deine Änderungen sind als Entwurf gesichert.'
+        : ' Deine Änderungen liegen als Entwurf bereit (noch nicht gesichert).')
+    : '';
+  const next = ' Schau dir die Änderungen an oder sag mir, wie ich weitermachen soll.';
+  return `${lead}${progress}${fileState}${next}`;
+}
+
 /** Assemble the final report from ground truth (files map + saved flag), quoting model text. */
 function assembleReport(
   outcome: RunOutcome,
@@ -423,21 +455,26 @@ export async function runAgent(input: RunAgentInput): Promise<RunResult> {
   // Exhausted the iteration budget without a finish → truthful budget landing.
   if (outcome === null) outcome = 'budget';
 
-  // F-40 orphan guard: a 'stopped' outcome caused by the max-runtime abort is NOT a user
-  // Stop — tell the truth. The signal's reason distinguishes the guard (disconnect ≠ stop
-  // ≠ timeout). The outcome stays within the DB enum ('stopped'); the honest reason rides
-  // in the report + the completion push.
-  const stoppedByGuard =
-    outcome === 'stopped' && stop?.aborted === true && stop?.reason === MAX_RUNTIME_ABORT_REASON;
-  if (stoppedByGuard) {
-    failureReason =
-      'Der Lauf hat das Zeitlimit erreicht und wurde automatisch beendet, damit er nicht ' +
-      'endlos weiterläuft. Dein Teilstand ist gesichert — schau dir die Änderungen an oder ' +
-      'sag mir, wie ich weitermachen soll.';
-    modelText = modelText || failureReason;
+  const fileList = [...files.values()];
+
+  // F-23 + F-40 orphan guard: a stopped run (user Stop OR the max-runtime guard) lands a
+  // coherent partial CARD, never the raw partial model text. The report prose is the
+  // honest, code-free summary above (assembled from steps + the attested file map). The
+  // guard additionally keeps its DISTINCT honest failureReason (Zeitlimit) so the
+  // completion push + telemetry can tell a timeout from a plain user Stop (disconnect ≠
+  // stop ≠ timeout); a plain user Stop keeps failureReason undefined — that F-40 signal
+  // is unchanged. Either way the raw partial output stays in the draft files + step log.
+  if (outcome === 'stopped') {
+    const timedOut = stop?.aborted === true && stop?.reason === MAX_RUNTIME_ABORT_REASON;
+    if (timedOut) {
+      failureReason =
+        'Der Lauf hat das Zeitlimit erreicht und wurde automatisch beendet, damit er nicht ' +
+        'endlos weiterläuft. Dein Teilstand ist gesichert — schau dir die Änderungen an oder ' +
+        'sag mir, wie ich weitermachen soll.';
+    }
+    modelText = assembleStopSummary(steps, fileList, savedDraft, timedOut);
   }
 
-  const fileList = [...files.values()];
   const report = assembleReport(outcome, fileList, savedDraft, units, modelText, publishedUrl, failureReason);
   const status: RunResult['status'] = outcome === 'error' ? 'failed' : 'success';
 

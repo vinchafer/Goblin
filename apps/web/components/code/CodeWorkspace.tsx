@@ -42,6 +42,30 @@ export function CodeWorkspace({ projectId, pendingCode, onPendingConsumed }: Pro
   const [stashPayload, setStashPayload] = useState<{ content?: string; filename?: string; files?: { path: string; content: string }[]; prompt?: string } | null>(null);
   const stashChecked = useRef(false);
 
+  // FW4 U1 (F-11): the agent-run seed. StandaloneChat stashes a build/publish-intent
+  // prompt here and navigates in (D1 hand-off). We create a fresh titled session on
+  // the eligible model and auto-run the prompt through it once — the run engages the
+  // agent (its live steps + attested report render in SessionPane), so the founder's
+  // "…und stell ihn live" actually publishes instead of returning manual steps.
+  const [agentSeed, setAgentSeed] = useState<{ prompt: string; modelSlug?: string } | null>(null);
+  const agentSeedChecked = useRef(false);
+  const agentSeedConsumed = useRef(false);
+  const [autoRun, setAutoRun] = useState<{ sessionId: string; prompt: string } | null>(null);
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("goblin:agent-pending");
+      if (raw) {
+        sessionStorage.removeItem("goblin:agent-pending");
+        const p = JSON.parse(raw) as { projectId?: string; prompt?: string; modelSlug?: string };
+        // Only honour a seed meant for THIS project (a stale seed from another tab
+        // must never auto-run here).
+        if (p?.prompt && (!p.projectId || p.projectId === projectId)) {
+          setAgentSeed({ prompt: p.prompt, modelSlug: p.modelSlug });
+        }
+      }
+    } catch { /* ignore */ } finally { agentSeedChecked.current = true; }
+  }, [projectId]);
+
   // Intent → first-paint foreground. Seed synchronously from the localStorage hint
   // (correct even pre-migration), then let the persisted DB value override.
   const [intent, setIntent] = useState<Intent>(() => getStoredIntent(projectId) ?? DEFAULT_INTENT);
@@ -84,11 +108,29 @@ export function CodeWorkspace({ projectId, pendingCode, onPendingConsumed }: Pro
   // until the stash has been checked and while any payload is pending — so a fresh
   // Send-to-Code task never lands on an auto-created empty session.
   useEffect(() => {
-    if (s.available && !s.loading && s.sessions.length === 0 && !autoCreated.current && !incoming && stashChecked.current) {
+    if (s.available && !s.loading && s.sessions.length === 0 && !autoCreated.current && !incoming && stashChecked.current
+        && !agentSeed && agentSeedChecked.current) {
       autoCreated.current = true;
       s.createSession({ name: "Neue Session" });
     }
-  }, [s.available, s.loading, s.sessions.length, s, incoming]);
+  }, [s.available, s.loading, s.sessions.length, s, incoming, agentSeed]);
+
+  // FW4 U1: consume the agent seed exactly once — a fresh titled session on the
+  // eligible model, then arm the auto-run for that session id (SessionPane fires it
+  // through its existing agent-routing handleSubmit).
+  useEffect(() => {
+    if (!agentSeed || agentSeedConsumed.current || s.loading || !s.available) return;
+    agentSeedConsumed.current = true;
+    (async () => {
+      const title = titleFromPrompt(agentSeed.prompt) ?? "Aus dem Chat";
+      const ns = await s.createSession({ name: title, modelId: agentSeed.modelSlug });
+      if (ns?.id) {
+        s.setActiveSessionId(ns.id);
+        setAutoRun({ sessionId: ns.id, prompt: agentSeed.prompt });
+      }
+      setAgentSeed(null);
+    })();
+  }, [agentSeed, s]);
 
   const injectIntoSession = useCallback(async (sessionId: string, content: string, filename?: string) => {
     const t = await getToken();
@@ -196,6 +238,8 @@ export function CodeWorkspace({ projectId, pendingCode, onPendingConsumed }: Pro
           onModelChange={handleModelChange}
           onDraftCountChange={handleDraftCount}
           onAutoTitle={handleAutoTitle}
+          autoRunPrompt={autoRun && autoRun.sessionId === active.id ? autoRun.prompt : null}
+          onAutoRunConsumed={() => setAutoRun(null)}
         />
       ) : (
         <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>

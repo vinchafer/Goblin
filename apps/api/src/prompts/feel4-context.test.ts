@@ -8,17 +8,19 @@
 import { describe, it, expect } from 'vitest';
 import { buildAgentSystemPrompt, buildGoblinChatSystemPrompt } from './goblin-chat-system';
 
-describe('F4.1 — project instructions injection', () => {
-  it('renders instructions marked as user-authored, ABOVE the rolling memory', () => {
+describe('F4.1 / F-20 — project instructions injection (both paths, prominent placement)', () => {
+  it('renders instructions as a VERBINDLICH block placed LAST (nearest the task)', () => {
     const p = buildGoblinChatSystemPrompt({
       projectName: 'Shop',
       projectInstructions: 'Immer deutsches UI. Farbschema: violett.',
       projectState: { summary: 'Landing page steht.', decisions: 'Stack: HTML/CSS.' },
     });
     expect(p).toContain('Projekt-Anweisungen des Nutzers');
+    expect(p).toContain('VERBINDLICH');
     expect(p).toContain('Immer deutsches UI. Farbschema: violett.');
-    // Ordering: instructions block must precede the rolling-memory block.
-    expect(p.indexOf('Projekt-Anweisungen des Nutzers')).toBeLessThan(
+    // F-20 placement: the binding instructions now come AFTER the project context /
+    // rolling memory — nearest the user's task — not buried mid-context.
+    expect(p.indexOf('Projekt-Anweisungen des Nutzers')).toBeGreaterThan(
       p.indexOf('Bisheriger Stand & Entscheidungen'),
     );
   });
@@ -28,9 +30,22 @@ describe('F4.1 — project instructions injection', () => {
     expect(p).not.toContain('Projekt-Anweisungen des Nutzers');
   });
 
-  it('flows into agent runs (probe 6.1 path)', () => {
+  // F-20 (the injection bug): instructions were gated behind projectName (the
+  // renderProjectContext early return). A nameless project must STILL inject them.
+  it('injects instructions even when the project has no name (chat AND agent)', () => {
+    const chat = buildGoblinChatSystemPrompt({ projectName: null, projectInstructions: 'Alle Buttons abgerundet.' });
+    expect(chat).toContain('Alle Buttons abgerundet.');
+    expect(chat).toContain('VERBINDLICH');
+    const agent = buildAgentSystemPrompt({ projectName: null, projectInstructions: 'Alle Buttons abgerundet.' });
+    expect(agent).toContain('Alle Buttons abgerundet.');
+    expect(agent).toContain('VERBINDLICH');
+  });
+
+  it('flows into agent runs with the binding framing (probe 6.1 path)', () => {
     const p = buildAgentSystemPrompt({ projectName: 'Shop', projectInstructions: 'Keine externen Fonts.' });
     expect(p).toContain('Keine externen Fonts.');
+    expect(p).toContain('Projekt-Anweisungen des Nutzers');
+    expect(p).toContain('VERBINDLICH');
   });
 });
 
