@@ -44,6 +44,20 @@ export const MAX_RUNTIME_ABORT_REASON = 'max_runtime';
 /** The AbortController reason an explicit user Stop uses (F-23 stop-card semantics). */
 export const USER_STOP_ABORT_REASON = 'user_stop';
 
+/**
+ * FW5-U6 (Forge heartbeat): how long the FIRST agent turn may run silently before the
+ * run surface shows an honest in-progress line. The agent turn is non-streaming (no
+ * first-token delta to hook), so a big Forge run would otherwise sit visually silent
+ * between the `meta` frame and the first narration/step. Default 6s — long enough that
+ * a quick Swift turn never shows it, short enough that a slow Forge wait feels attended.
+ * Env-overridable (`AGENT_FORGE_HEARTBEAT_MS`). No token cost — a local timer + one
+ * event through the existing stream.
+ */
+export function forgeHeartbeatDelayMs(): number {
+  const raw = Number(process.env.AGENT_FORGE_HEARTBEAT_MS);
+  return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 6_000;
+}
+
 /** The verified-capable model list for agent mode (D2): Swift (default) + Forge. */
 const AGENT_ELIGIBLE_TIERS: GoblinTierId[] = ['goblin/efficient', 'goblin/premium'];
 
