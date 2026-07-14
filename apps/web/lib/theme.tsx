@@ -1,8 +1,8 @@
 "use client";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { resolveTheme, type Theme, type ResolvedTheme } from "./theme-resolve";
 
-export type Theme = 'light' | 'dark' | 'system';
-export type ResolvedTheme = 'light' | 'dark';
+export type { Theme, ResolvedTheme };
 
 interface ThemeContextType {
   theme: Theme;
@@ -25,9 +25,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const applyTheme = (t: Theme) => {
-      const resolved = t === 'system'
-        ? window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-        : t;
+      const resolved = resolveTheme(t, window.matchMedia('(prefers-color-scheme: dark)').matches);
       setResolvedTheme(resolved);
       document.documentElement.setAttribute('data-theme', resolved);
     };
@@ -37,8 +35,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
     const handler = () => {
+      // F-08: only `system` follows the OS live; an explicit choice ignores it.
       if (theme === 'system') {
-        const resolved = mq.matches ? 'dark' : 'light';
+        const resolved = resolveTheme('system', mq.matches);
         setResolvedTheme(resolved);
         document.documentElement.setAttribute('data-theme', resolved);
       }

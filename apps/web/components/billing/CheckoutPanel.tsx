@@ -16,6 +16,7 @@ import { loadStripe, type Stripe, type Appearance } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { getAuthHeaders, API_URL } from '@/lib/api';
 import { useLang, t, type Lang } from '@/lib/use-lang';
+import { useTheme } from '@/lib/theme';
 
 type PlanId = 'build' | 'pro' | 'power';
 
@@ -47,16 +48,21 @@ function unavailableMsg(lang: Lang): string {
   );
 }
 
-const appearance: Appearance = {
-  theme: 'flat',
-  variables: {
-    colorPrimary: '#1f6f43',
-    colorText: '#13231b',
-    colorBackground: '#ffffff',
-    fontFamily: 'Manrope, system-ui, sans-serif',
-    borderRadius: '8px',
-  },
-};
+// W2-7: the Stripe Elements form was pinned to a light card (#ffffff bg, dark
+// text) → a white payment form inside a dark modal. Build it from the resolved
+// theme so it flips with the app.
+function buildAppearance(dark: boolean): Appearance {
+  return {
+    theme: dark ? 'night' : 'flat',
+    variables: {
+      colorPrimary: dark ? '#87A998' : '#1f6f43',
+      colorText: dark ? '#F4ECD8' : '#13231b',
+      colorBackground: dark ? '#133224' : '#ffffff',
+      fontFamily: 'Manrope, system-ui, sans-serif',
+      borderRadius: '8px',
+    },
+  };
+}
 
 export function CheckoutPanel({
   plan,
@@ -72,6 +78,8 @@ export function CheckoutPanel({
   onSuccess: () => void;
 }) {
   const lang = useLang();
+  const { resolvedTheme } = useTheme();
+  const appearance = buildAppearance(resolvedTheme === 'dark');
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
@@ -263,7 +271,9 @@ function CheckoutForm({
           display: 'flex', alignItems: 'center', gap: 8,
           background: 'var(--accent-bright)', border: '1px solid var(--accent-rule)',
           borderRadius: 'var(--radius)', padding: '10px 12px',
-          fontSize: 13, color: 'var(--ink-1)', lineHeight: 1.4,
+          // W2-7: text sits on the LOCKED gold notice bg → must use a locked dark
+          // ink (was --ink-1, which flips to cream in dark → cream-on-gold wash-out).
+          fontSize: 13, color: 'var(--ink-deep)', lineHeight: 1.4,
         }}>
           <span aria-hidden style={{ color: 'var(--accent)' }}>ⓘ</span>
           <span>{note}</span>

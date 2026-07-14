@@ -69,7 +69,8 @@ export default function TrialGatePage() {
           style={{
             fontSize: 'var(--t-h2-fs, 24px)',
             fontWeight: 700,
-            color: 'var(--brand-green, #2d4a2b)',
+            // F-03/04: was --brand-green (locked → invisible headline on dark).
+            color: 'var(--brand-fg)',
             margin: '0 0 8px',
           }}
         >
@@ -80,7 +81,7 @@ export default function TrialGatePage() {
         <p
           style={{
             fontSize: 'var(--t-body-fs, 15px)',
-            color: 'rgba(0,0,0,0.6)',
+            color: 'var(--text-2)', // F-03/04: was rgba(0,0,0,0.6) → black-on-dark
             margin: '0 0 28px',
             lineHeight: 1.5,
           }}
@@ -99,7 +100,7 @@ export default function TrialGatePage() {
           <p
             style={{
               fontSize: 'var(--t-small-fs, 13px)',
-              color: 'rgba(0,0,0,0.55)',
+              color: 'var(--text-2)', // F-03: was rgba(0,0,0,0.55) → black-on-dark
               margin: '-16px 0 28px',
               lineHeight: 1.55,
             }}
@@ -141,8 +142,10 @@ export default function TrialGatePage() {
             style={{
               padding: '14px 20px',
               background: expired ? 'var(--brand-green, #2d4a2b)' : 'transparent',
-              color: expired ? '#fff' : 'var(--brand-green, #2d4a2b)',
-              border: expired ? 'none' : '1.5px solid var(--brand-green, #2d4a2b)',
+              // F-04: secondary (non-expired) button was locked --brand-green text
+              // + border on a flipping surface → invisible on dark. Flip both.
+              color: expired ? '#fff' : 'var(--brand-fg)',
+              border: expired ? 'none' : '1.5px solid var(--brand-fg)',
               borderRadius: 10,
               fontSize: 'var(--t-body-fs, 15px)',
               fontWeight: 600,

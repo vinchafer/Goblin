@@ -15,6 +15,7 @@ import { ShortcutsHelp } from "@/components/ui/ShortcutsHelp";
 import { ShortcutsTooltip } from "@/components/ui/ShortcutsTooltip";
 import { SettingsSheet } from "@/components/settings/settings-sheet";
 import { NewProjectModal } from "@/components/projects/new-project-modal";
+import { PurchaseConfirmation } from "@/components/billing/PurchaseConfirmation";
 import { SettingsModal } from "@/components/settings/SettingsModal";
 import { SETTINGS_SECTIONS } from "@/components/settings/sections";
 import dynamic from "next/dynamic";
@@ -294,6 +295,10 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
           initialModel={newProjectModel || undefined}
         />
       )}
+
+      {/* F-32: the post-purchase confirmation moment. Self-gating off the VERIFIED
+          billing state; renders nothing unless a fresh paid plan is confirmed. */}
+      <PurchaseConfirmation />
 
       {/* WALK3-1: GitHub OAuth outcome toast — replaces the silent "settings just
           reopened" with a legible success / actionable failure. */}

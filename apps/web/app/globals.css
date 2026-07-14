@@ -113,7 +113,7 @@ body {
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--meta); }
 
-:focus-visible { outline: 2px solid var(--brand-gold); outline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--accent-primary); outline-offset: 2px; } /* D-B: sage primary accent (was gold) */
 
 /* ─── Keyframes ─────────────────────────────────────────── */
 @keyframes pulse        { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
@@ -152,7 +152,7 @@ body {
 .streaming-cursor::after {
   content: '▋';
   display: inline-block;
-  color: var(--brand-gold);
+  color: var(--accent-primary); /* D-B: sage (was gold) */
   animation: cursor-blink 1s ease-in-out infinite;
   margin-left: 1px;
   font-size: 0.85em;
@@ -399,8 +399,8 @@ a[role="button"]:active {
 }
 .sidebar-item:hover { background: var(--subtle); color: var(--text); }
 .sidebar-item.active {
-  background: rgba(212,169,74,0.12);
-  border-color: rgba(212,169,74,0.2);
+  background: var(--accent-primary-soft);   /* D-B: sage tint (was gold) */
+  border-color: var(--accent-primary-rule);
   color: var(--text);
   font-weight: 500;
 }
@@ -413,7 +413,7 @@ a[role="button"]:active {
   flex-shrink: 0;
 }
 .status-dot.green  { background: var(--success); }
-.status-dot.ochre  { background: var(--brand-gold); }
+.status-dot.ochre  { background: var(--accent-secondary); } /* D-B: copper (was gold) */
 .status-dot.red    { background: var(--danger); }
 .status-dot.gray   { background: var(--disabled); }
 
@@ -427,7 +427,7 @@ a[role="button"]:active {
   font-weight: 600;
 }
 .badge-green  { background: rgba(74,124,59,0.12); color: var(--success); }
-.badge-ochre  { background: rgba(212,169,74,0.12); color: var(--gold-700); }
+.badge-ochre  { background: var(--accent-secondary-soft); color: var(--copper-strong); } /* D-B: copper (was ochre) */
 .badge-gray   { background: var(--subtle); color: var(--meta); }
 
 /* ─── Section heading ────────────────────────────────────── */
@@ -435,7 +435,7 @@ a[role="button"]:active {
   font-family: var(--font-sans);
   font-size: 18px;
   font-weight: 600; /* density: 700 read heavy on app surfaces; 600 = calm-dense (Linear/Vercel sit here) */
-  color: var(--brand-green);
+  color: var(--brand-fg); /* F-03/04: was --brand-green (locked → ghost heading on dark) */
   letter-spacing: -0.3px;
   margin-bottom: var(--space-1);
 }
@@ -473,7 +473,7 @@ a[role="button"]:active {
 .page-hero-title {
   font-family: var(--font-sans);
   font-size: clamp(28px, 5vw, 36px);
-  color: var(--brand-green);
+  color: var(--brand-fg); /* F-03/04: was --brand-green (locked → ghost heading on dark) */
   font-weight: 700;
   letter-spacing: -1px;
   margin-bottom: var(--space-2);
@@ -642,7 +642,7 @@ a[role="button"]:active {
 
 /* ─── Project card hover ─────────────────────────────────── */
 .project-card-hover {
-  border-left: 3px solid var(--brand-gold) !important;
+  border-left: 3px solid var(--accent-primary) !important; /* D-B: sage (was gold) */
   box-shadow: var(--shadow-md);
   transform: translateY(-1px);
 }
@@ -657,7 +657,7 @@ a[role="button"]:active {
   bottom: -2px; left: 50%;
   transform: translateX(-50%) scaleX(1);
   width: 60%; height: 2px;
-  background: var(--brand-gold);
+  background: var(--accent-primary); /* D-B: sage active underline (was gold) */
   border-radius: 1px;
   transform-origin: center;
   animation: tab-underline 0.2s ease-out;
@@ -701,7 +701,7 @@ a[role="button"]:active {
   word-break: break-word;
 }
 .msg-asst { display: flex; gap: 12px; align-items: flex-start; min-width: 0; max-width: 100%; }
-.msg-mark { width: 24px; height: 24px; color: var(--ink-deep); flex-shrink: 0; }
+.msg-mark { width: 24px; height: 24px; color: var(--text); flex-shrink: 0; } /* F-cluster: was --ink-deep (locked) → invisible mark on dark */
 .msg-content { flex: 1; min-width: 0; max-width: 100%; color: var(--ink-1); font-size: var(--t-body-fs); line-height: 1.55; }
 .msg-content p { margin: 0 0 10px; }
 .msg-content p:last-child { margin-bottom: 0; }

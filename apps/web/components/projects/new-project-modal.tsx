@@ -7,11 +7,12 @@ import { INTENTS, setStoredIntent, type Intent } from '@/lib/intent';
 import { pendingStcTab } from '@/lib/stc-pending';
 import { useLang } from '@/lib/use-lang';
 import { friendlyError, isConnectionError, connectionErrorMessage } from '@/lib/friendly-error';
+import { refreshThenNavigate } from '@/lib/post-create-nav';
 
 const COLORS = [
   { name: 'Gold',   hex: '#D4A737' },
   { name: 'Green',  hex: '#1A3A2A' },
-  { name: 'Rust',   hex: '#B85C3C' },
+  { name: 'Copper', hex: '#C56B4A' }, // D-B: copper replaces the terracotta 'Rust'
   { name: 'Slate',  hex: '#3A2E1F' },
   { name: 'Purple', hex: '#7A4A8A' },
   { name: 'Teal',   hex: '#4A7A7A' },
@@ -156,16 +157,19 @@ export function NewProjectModal({ onClose, initialMode, initialIdea, initialMode
               if (initialModel) sessionStorage.setItem(`goblin:seedModel:${sess.id}`, initialModel);
             } catch { /* ignore */ }
             onClose();
-            router.push(`/dashboard/chat/${sess.id}`);
+            // F-09: refresh the dashboard layout (sidebar prop) before navigating.
+            refreshThenNavigate(router, `/dashboard/chat/${sess.id}`);
             return;
           }
         } catch { /* fall through to the hub below */ }
       }
 
       onClose();
+      // F-09: re-run the dashboard layout's project fetch so the new project
+      // appears in the sidebar (a server-prop) without a manual reload.
       // B-S4 / 10.6-4: if code is waiting from a project-less chat, land in the Code
       // tab so CodeWorkspace rehydrates the stashed payload (the hub never mounts it).
-      router.push(`/dashboard/project/${project.id}${pendingStcTab()}`);
+      refreshThenNavigate(router, `/dashboard/project/${project.id}${pendingStcTab()}`);
     } catch (err) {
       // P0.4 — honest German copy: offline vs. server-down instead of the raw
       // English "Failed to fetch".
@@ -192,7 +196,8 @@ export function NewProjectModal({ onClose, initialMode, initialIdea, initialMode
       if (!res.ok) throw new Error((await res.json()).error || 'Projekt konnte nicht erstellt werden.');
       const project = await res.json();
       onClose();
-      router.push(`/dashboard/project/${project.id}${pendingStcTab()}`);
+      // F-09: same sidebar re-fetch for the template-create path.
+      refreshThenNavigate(router, `/dashboard/project/${project.id}${pendingStcTab()}`);
     } catch (err) {
       setError(isConnectionError(err) ? await connectionErrorMessage() : friendlyError(err, 'Projekt konnte nicht erstellt werden.'));
     } finally {
