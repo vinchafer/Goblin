@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { GitBranch, Github, X } from "lucide-react";
 import { GoblinLogo } from "@/components/brand/GoblinLogo";
 import { API_URL, getToken } from "@/hooks/code/getToken";
@@ -106,7 +107,12 @@ export function SessionGitPill({ projectId }: { projectId: string }) {
         <span style={{ maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{label}</span>
       </button>
 
-      {open && (
+      {/* F-14: render the scrim + panel through a PORTAL to <body>. The code surface has
+          position:relative / transformed ancestors (split-screen panes), which turn a
+          `position: fixed` child into one positioned relative to that ancestor — so the
+          panel's top:0 landed at the top of the (off-screen) pane, not the viewport. In
+          the body it is truly viewport-fixed and always reachable. */}
+      {open && typeof document !== "undefined" && createPortal(
         <>
           <div onClick={() => setOpen(false)} className="gb-git-scrim" style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 120 }} />
           <div className="gb-git-panel" role="dialog" aria-label="Git">
@@ -184,7 +190,8 @@ export function SessionGitPill({ projectId }: { projectId: string }) {
               {note && <div style={{ fontSize: 12.5, color: "var(--ed-fg-2)", fontFamily: "var(--font-sans)", padding: "8px 10px", background: "var(--ed-canvas)", borderRadius: 8, border: "1px solid var(--ed-rule)" }}>{note}</div>}
             </div>
           </div>
-        </>
+        </>,
+        document.body,
       )}
     </>
   );

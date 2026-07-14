@@ -723,6 +723,9 @@ a[role="button"]:active {
 /* Code block — Variant A (Paper) only */
 .codeblock { border-radius: var(--radius-md); margin: 12px 0; overflow: hidden; max-width: 100%; }
 .cb-head { display: flex; align-items: center; justify-content: space-between; padding: 8px 12px; }
+/* F-12: the gold "send to code" pill keeps its label on roomy widths and degrades to
+   icon-only when the code card is cramped, so it never crowds the header. */
+@media (max-width: 480px) { .cb-stc-label { display: none; } }
 .cb-fname { font-family: 'JetBrains Mono', monospace; font-size: var(--t-mono-sm-fs); letter-spacing: 0.04em; }
 .cb-copy { background: none; border: none; display: flex; cursor: pointer; padding: 2px; }
 .cb-body { padding: 14px 16px; font-family: 'JetBrains Mono', monospace; font-size: var(--t-mono-fs); line-height: 1.55; overflow-x: auto; }

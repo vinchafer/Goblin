@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Copy, Check, ChevronDown, ChevronRight, FileCode2, FolderInput, Download, FileText } from 'lucide-react';
+import { Copy, Check, ChevronDown, ChevronRight, FileCode2, FolderInput, Download, FileText, ArrowUpRight } from 'lucide-react';
 import { highlight } from '@/lib/syntax/highlighter';
 import { useLang } from '@/lib/use-lang';
 import { useExistingFiles } from '@/contexts/existing-files-context';
@@ -111,6 +111,21 @@ export function CodeBlock({ code, lang, filename, asCard }: CodeBlockProps) {
     e?.stopPropagation();
     if (stcTarget && onCardStc) onCardStc({ path: stcTarget, content: code });
   };
+  // F-12: the brand mechanic ("send this code into the Code-Bereich") must be VISIBLE and
+  // gold — consistent with the real gold CodeBlock affordance — not a faint green icon.
+  // The header pill is gold + labeled (label hides under narrow widths via .cb-stc-label);
+  // a matching affordance is repeated at the END of a long block so it stays reachable
+  // after scrolling. Gold recipe mirrors workspace/CodeBlock.tsx (rgba(212,167,55,…)).
+  const lineCount = code === '' ? 0 : code.split('\n').length;
+  const goldPill: React.CSSProperties = {
+    flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 5, lineHeight: 1,
+    padding: '5px 10px', borderRadius: 7, background: 'rgba(212,167,55,0.16)',
+    border: '1px solid rgba(212,167,55,0.55)', color: 'var(--brand-gold)', cursor: 'pointer',
+    fontSize: 12, fontWeight: 600, fontFamily: 'var(--font-sans)',
+  };
+  const goldHover = (on: boolean) => (e: React.MouseEvent<HTMLElement>) => {
+    e.currentTarget.style.background = on ? 'rgba(212,167,55,0.26)' : 'rgba(212,167,55,0.16)';
+  };
   const StcAction = canStc ? (
     <span
       role="button"
@@ -120,10 +135,48 @@ export function CodeBlock({ code, lang, filename, asCard }: CodeBlockProps) {
       onKeyDown={(e) => { if (e.key === 'Enter') handleStc(e); }}
       aria-label={stcLabel}
       title={stcLabel}
-      style={{ flexShrink: 0, display: 'inline-flex', color: 'var(--brand-green)', cursor: 'pointer' }}
+      style={goldPill}
+      onMouseEnter={goldHover(true)}
+      onMouseLeave={goldHover(false)}
     >
-      <FolderInput size={14} />
+      <ArrowUpRight size={13} /> <span className="cb-stc-label">{stcLabel}</span>
     </span>
+  ) : null;
+  // Compact gold icon variant for the collapsed card header (no room for a label).
+  const StcActionIcon = canStc ? (
+    <span
+      role="button"
+      tabIndex={0}
+      data-testid="cb-add-to-project"
+      onClick={handleStc}
+      onKeyDown={(e) => { if (e.key === 'Enter') handleStc(e); }}
+      aria-label={stcLabel}
+      title={stcLabel}
+      style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 26, height: 22, borderRadius: 6, background: 'rgba(212,167,55,0.16)', border: '1px solid rgba(212,167,55,0.55)', color: 'var(--brand-gold)', cursor: 'pointer' }}
+      onMouseEnter={goldHover(true)}
+      onMouseLeave={goldHover(false)}
+    >
+      <ArrowUpRight size={13} />
+    </span>
+  ) : null;
+  // F-12: repeated affordance at the end of a long block (reachable at file end).
+  const StcFooter = canStc && lineCount > 24 ? (
+    <div style={{ display: 'flex', justifyContent: 'flex-end', padding: '8px 12px', borderTop: '1px solid var(--div, rgba(0,0,0,0.08))' }}>
+      <span
+        role="button"
+        tabIndex={0}
+        data-testid="cb-add-to-project-end"
+        onClick={handleStc}
+        onKeyDown={(e) => { if (e.key === 'Enter') handleStc(e); }}
+        aria-label={stcLabel}
+        title={stcLabel}
+        style={goldPill}
+        onMouseEnter={goldHover(true)}
+        onMouseLeave={goldHover(false)}
+      >
+        <ArrowUpRight size={13} /> {stcLabel}
+      </span>
+    </div>
   ) : null;
 
   // C4a: per-card download in the card's native format + correct MIME.
@@ -190,7 +243,6 @@ export function CodeBlock({ code, lang, filename, asCard }: CodeBlockProps) {
     </span>
   ) : null;
 
-  const lineCount = code === '' ? 0 : code.split('\n').length;
   const title = filename || lang || 'code';
 
   if (asCard && !expanded) {
@@ -216,7 +268,7 @@ export function CodeBlock({ code, lang, filename, asCard }: CodeBlockProps) {
           </span>
           {PdfAction}
           {DownloadAction}
-          {StcAction}
+          {StcActionIcon}
           <span
             role="button"
             tabIndex={0}
@@ -273,6 +325,7 @@ export function CodeBlock({ code, lang, filename, asCard }: CodeBlockProps) {
           ? <div dangerouslySetInnerHTML={{ __html: html }} />
           : <pre><code>{code}</code></pre>}
       </div>
+      {StcFooter}
     </div>
     {changeNote}
     </>
