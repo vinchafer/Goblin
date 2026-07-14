@@ -37,6 +37,15 @@
 
 ## Verification
 - `tsc --noEmit` clean across all three files.
-- Visual gate: see evidence/fw5-shots/ (local render). Where the real authed code-view can't
-  be driven headless in this environment, the fix is structural (portal / line-height /
-  token) and proven by the diff + tsc; noted honestly.
+- **F-12 visual gate (live local render):** `evidence/fw5-shots/u1-f12-codeblock-720.png`
+  and `-375.png`. A temporary `/demo-fw5codeblock` route rendered the REAL
+  `chat/CodeBlock` with a mock send-to-code handler; screenshots confirm the gold labeled
+  pill in the header AND a repeated gold pill at the END of a long (>24-line) block, with
+  the header pill degrading to icon-only at 375px (label hidden). DOM assert from the same
+  run: header affordances=2 (both blocks), file-end affordances=1 (long block only). The
+  temp route was deleted after capture (not shipped).
+- **F-13 / F-14 (screenshotBlocked: true):** the header model-switcher and the code-view
+  "…"/git panel live inside the authenticated workspace, which can't be driven headless in
+  this environment (no test-account backend). Both are structural fixes proven by the diff
+  + `tsc`: F-13 is a line-height + SVG-chevron alignment change; F-14 is a `createPortal`
+  + max-height change. Founder eye confirms in the re-walk.
