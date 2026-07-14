@@ -9,6 +9,25 @@ import {
   Pencil, FolderPlus, FilePlus, MoreVertical, Copy, Share2, FolderInput, FolderSymlink, Code2, FileArchive,
 } from "lucide-react";
 import { API_URL, getToken } from "@/hooks/code/getToken";
+import { useLang, t, type Lang } from "@/lib/use-lang";
+
+// FW5-U3 (D-D): honest, localized per-failure upload errors. The server returns a
+// distinct `error` code per guard (too_big / wrong_type / daily_cap / unsafe_path /
+// storage_cap / storage_unavailable); the client maps each to a DE/EN message rather
+// than the old catch-all "Upload fehlgeschlagen".
+function uploadErrorMessage(code: string, lang: Lang, ext?: string): string {
+  switch (code) {
+    case "too_big": return t(lang, "Datei zu groß (max 10 MB). Bitte teile sie auf.", "File too large (max 10 MB). Please split it up.");
+    case "wrong_type": return t(lang, `Dateityp${ext ? ` „.${ext}"` : ""} wird nicht unterstützt. Erlaubt: Text/Code, Bilder, PDF, Dokumente.`, `File type${ext ? ` ".${ext}"` : ""} isn't supported. Allowed: text/code, images, PDF, documents.`);
+    case "daily_cap": return t(lang, "Tageslimit für Uploads erreicht — bitte morgen wieder.", "Daily upload limit reached — please try again tomorrow.");
+    case "unsafe_path": return t(lang, "Ungültiger Ziel-Pfad — bitte in einen normalen Ordner laden.", "Invalid target path — please upload into a normal folder.");
+    case "storage_cap": return t(lang, "Cloud-Speicher voll. Lösche etwas oder erweitere deinen Plan.", "Cloud storage is full. Delete something or upgrade your plan.");
+    case "storage_unavailable": return t(lang, "Speicher gerade nicht erreichbar — gleich nochmal versuchen.", "Storage temporarily unavailable — please retry shortly.");
+    case "empty_file": return t(lang, "Die Datei ist leer.", "The file is empty.");
+    case "no_file": return t(lang, "Keine Datei empfangen.", "No file received.");
+    default: return t(lang, "Upload fehlgeschlagen. Bitte nochmal versuchen.", "Upload failed. Please try again.");
+  }
+}
 
 const CodeEditor = dynamic(
   () => import("@/components/editor/code-editor").then((m) => ({ default: m.CodeEditor })),
@@ -63,7 +82,9 @@ function ago(iso: string | null) {
 }
 
 export function FileExplorer({ projectId, projectName }: Props) {
+  const lang = useLang();
   const [entries, setEntries] = useState<FileMeta[]>([]);
+  const [dragOver, setDragOver] = useState(false);   // FW5-U3: drag-drop upload target
   const [loading, setLoading] = useState(true);
   const [cwd, setCwd] = useState("");                       // current folder, "" = root
   const [selected, setSelected] = useState<string | null>(null);
@@ -259,17 +280,32 @@ export function FileExplorer({ projectId, projectName }: Props) {
   }, [authFetch, projectId, selected, load]);
 
   const onUpload = useCallback(async (file: File) => {
-    if (file.size > 10 * 1024 * 1024) { flash("Datei zu gross (max 10MB)"); return; }
+    // Instant size feedback client-side; the server is the authority for type + the rest.
+    if (file.size > 10 * 1024 * 1024) { flash(uploadErrorMessage("too_big", lang)); return; }
     setBusy(true);
     try {
       const fd = new FormData();
       fd.append("file", file);
       fd.append("path", cwd);
       const r = await authFetch(`/api/projects/${projectId}/files/upload`, { method: "POST", body: fd });
-      if (!r.ok) throw new Error();
-      await load(); flash(`${file.name} hochgeladen`);
-    } catch { flash("Upload fehlgeschlagen"); } finally { setBusy(false); }
-  }, [authFetch, projectId, cwd, load]);
+      if (!r.ok) {
+        let code = "", ext: string | undefined;
+        try { const j = await r.json(); code = j?.error ?? ""; ext = j?.ext; } catch { /* non-JSON */ }
+        flash(uploadErrorMessage(code, lang, ext));
+        return;
+      }
+      await load(); flash(t(lang, `${file.name} hochgeladen`, `${file.name} uploaded`));
+    } catch { flash(uploadErrorMessage("", lang)); } finally { setBusy(false); }
+  }, [authFetch, projectId, cwd, load, lang]);
+
+  // FW5-U3: drag-drop upload. Dropping files anywhere in the explorer uploads them into
+  // the current folder, one at a time through the same hardened onUpload path.
+  const onDrop = useCallback(async (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const files = Array.from(e.dataTransfer?.files ?? []);
+    for (const f of files) await onUpload(f);
+  }, [onUpload]);
 
   // ── Slice 6 ops: rename/move, new file, new folder, folder delete ──
   const submitPrompt = useCallback(async () => {
@@ -326,7 +362,24 @@ export function FileExplorer({ projectId, projectName }: Props) {
   const crumbs = cwd ? cwd.split("/") : [];
 
   return (
-    <div style={{ height: "100%", display: "flex", flexDirection: "column", background: "var(--d-surface)" }}>
+    <div
+      style={{ position: "relative", height: "100%", display: "flex", flexDirection: "column", background: "var(--d-surface)" }}
+      onDragOver={(e) => { e.preventDefault(); if (!dragOver) setDragOver(true); }}
+      onDragEnter={(e) => { e.preventDefault(); setDragOver(true); }}
+      onDragLeave={(e) => { if (e.currentTarget === e.target) setDragOver(false); }}
+      onDrop={onDrop}
+    >
+      {/* FW5-U3: drag-drop overlay — honest hint, shown only while dragging files over. */}
+      {dragOver && (
+        <div style={{
+          position: "absolute", inset: 8, zIndex: 80, borderRadius: 14,
+          border: "2px dashed var(--green)", background: "rgba(0,0,0,0.04)",
+          display: "flex", alignItems: "center", justifyContent: "center", pointerEvents: "none",
+          color: "var(--ink-1)", fontSize: 15, fontWeight: 600, fontFamily: "var(--font-sans)", textAlign: "center", padding: 24,
+        }}>
+          <span><Upload size={20} style={{ verticalAlign: "middle", marginRight: 8 }} />{t(lang, "Dateien hier ablegen zum Hochladen", "Drop files here to upload")}</span>
+        </div>
+      )}
       <style>{`
         .gb-fx-body { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.1fr); gap: 0; flex: 1; min-height: 0; }
         .gb-fx-preview { border-left: 1px solid var(--line); }
@@ -359,7 +412,7 @@ export function FileExplorer({ projectId, projectName }: Props) {
           <FileArchive size={14} /> {zipping ? "…" : "ZIP"}
         </button>
         <button onClick={() => fileInput.current?.click()} disabled={busy} style={btnPrimary}>
-          <Upload size={14} /> Hochladen
+          <Upload size={14} /> {t(lang, "Hochladen", "Upload")}
         </button>
         <input ref={fileInput} type="file" style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(f); e.target.value = ""; }} />
       </div>
@@ -382,7 +435,7 @@ export function FileExplorer({ projectId, projectName }: Props) {
             <div style={{ padding: 24, color: "var(--ink-3)", fontSize: 13 }}>Lädt…</div>
           ) : folders.length === 0 && files.length === 0 ? (
             <div style={{ padding: 32, textAlign: "center", color: "var(--ink-3)", fontSize: 13.5 }}>
-              Dieser Ordner ist leer.<br />Lade oben rechts eine Datei hoch.
+              {t(lang, "Dieser Ordner ist leer.", "This folder is empty.")}<br />{t(lang, "Lade oben rechts eine Datei hoch — oder zieh sie hierher.", "Upload a file top-right — or drag it here.")}
             </div>
           ) : (
             <div>
