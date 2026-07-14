@@ -72,6 +72,18 @@ Phase 0 (state-first, Law 10): FW3 merged at `874c986` ✅ · F-40 registry at `
 - **U6 streaming honesty.** The committed reply is byte-identical to the old buffered path (final `message` replacement), so the F-29 confirmation guarantee is preserved. The marker holdback (48 chars) is unit-tested; the perceived first-token latency win is real-model/founder-observed.
 - **F-37 = verified accurate, not rewritten.** The corpus already claimed exactly what the code checks; the deliverable is the file:line verdict + a drift-guard test, not a copy change.
 
+## Orthogonal CI fix (NOT part of FIX-WAVE 4 — own commit, independently revertable)
+During the merge run, the PR's CI went red on **`src/services/insight.test.ts`** — 2 `computeFunnel`
+cohort-size assertions off by one (`4→3`, `5→4`). Root cause: the test anchored its fixtures to a
+**frozen** `NOW = 2026-07-10T12:00Z`, but `computeFunnel` has no injectable clock and computes its
+7-day cohort window against the real `Date.now()`; as wall-clock passed ~2026-07-14 midday, the oldest
+fixture (`NOW − 3 days`) drifted out of the window. This file is **byte-identical to master and untouched
+by FW4** — a pre-existing latent time-boundary flake, not a wave regression (the FW4 commit passed the
+full API suite 786/786 locally; E2E, Performance, and the CI Typecheck+Build job were all green). Fixed
+**test-only** (anchor fixtures to `Date.now()` so every fixture stays inside the live window regardless of
+time-of-day) as a **separate, clearly-labelled commit** so it can be reverted independently of the six
+FW4 units. Verified green at 20:11 UTC — a time-of-day that previously failed.
+
 ## Founder actions
 1. **Re-walk gates (real model, prod, test account `vinc.hafner3@`):** F-11 (verbatim habit-tracker prompt → count interactions to a live URL — the felt W10), F-23 (stop mid-run → card not dump), F-22 (5 Forge runs of the recipe-site prompt → N/5 + durations, ≥4/5), F-19 ("ändere NUR den Titel" on a ~10KB file → emitted bytes ≪ file size, 4/5), F-20 (instructions set → generated code carries them, 4/5), F-27 ("Wie stelle ich meine Seite live?" → ≤6 lines + citation, streaming visible).
 2. **Migrations:** none authored this wave.
