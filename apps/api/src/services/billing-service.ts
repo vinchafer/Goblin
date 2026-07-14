@@ -13,6 +13,7 @@ import {
 } from '../config/geo-pricing';
 import logger from '../lib/logger';
 import { trackEvent } from '../lib/platform-events';
+import { withTimeout, envTimeoutMs } from '../lib/with-timeout';
 
 // Stripe statuses where the subscription still exists and bills → "has an active
 // subscription" for the double-create guard + the change-plan path.
@@ -600,6 +601,122 @@ export async function handleSubscriptionUpdated(subscription: Stripe.Subscriptio
   await supabase.from('users').update(patch).eq('stripe_subscription_id', subscription.id);
 }
 
+// ──────────────────────────────────────────────────────────────────────────
+// D-F (FW5-U5) — downgrade fairness: auto-refund any remaining credit on cancel.
+//
+// A downgrade leaves a prorated CREDIT on the customer's Stripe balance toward FUTURE
+// invoices (Stripe stores a customer credit as a NEGATIVE `customer.balance`, in cents).
+// If the user then CANCELS, there are no future invoices — we would sit on money for
+// service never rendered. Founder decision (c): keep the credit, and on cancellation
+// auto-refund any remaining positive credit to the original payment method.
+//
+// Mechanics: Stripe balance credit can't be refunded directly (refunds attach to a
+// charge), so we refund the credit amount against the customer's most recent refundable
+// succeeded charge (= the original card), then ZERO the refunded credit with a balance
+// transaction so it isn't ALSO consumed elsewhere. Idempotency-keyed on the subscription
+// so a webhook RETRY never double-refunds. Non-throwing: a refund failure is logged for
+// admin visibility and NEVER surfaced as a user-facing success (F-29 species) — it must
+// not fail the whole subscription.deleted handler (entitlement reset already succeeded).
+//
+// COST NOTE (verified 2026-07-15, ledger): Stripe does NOT return the original processing
+// fee on refunds (any method, EU incl.) — the ~1.4% + €0.25 of the refunded amount is an
+// accepted brand/fairness cost, documented in the ledger, not recovered from the user.
+// ──────────────────────────────────────────────────────────────────────────
+
+const refundTimeoutMs = () => envTimeoutMs('STRIPE_WEBHOOK_STRIPE_TIMEOUT_MS', 10_000);
+
+export type CancelRefundStatus =
+  | 'noop' // no credit (zero/positive balance) → nothing to refund
+  | 'refunded' // credit refunded to the card AND the balance zeroed
+  | 'refunded_balance_unadjusted' // money refunded, but zeroing the balance failed (admin)
+  | 'skipped' // no customer / Stripe not configured
+  | 'failed'; // could not refund (no refundable charge / Stripe error) — admin-visible
+
+export interface CancelRefundResult {
+  status: CancelRefundStatus;
+  creditCents?: number;
+  refundedCents?: number;
+  refundId?: string;
+  reason?: string;
+}
+
+export async function refundRemainingCreditOnCancel(
+  subscription: Stripe.Subscription,
+): Promise<CancelRefundResult> {
+  if (!process.env.STRIPE_SECRET_KEY) return { status: 'skipped', reason: 'stripe_not_configured' };
+  const customerId = typeof subscription.customer === 'string'
+    ? subscription.customer
+    : subscription.customer?.id;
+  if (!customerId) return { status: 'skipped', reason: 'no_customer' };
+
+  const stripe = getStripe();
+  try {
+    // 1. Read the current credit balance (fresh from Stripe, so payload shape is moot).
+    const customer = await withTimeout(stripe.customers.retrieve(customerId), refundTimeoutMs(), 'cancelRefund:retrieveCustomer');
+    if (!customer || (customer as Stripe.DeletedCustomer).deleted) return { status: 'skipped', reason: 'no_customer' };
+    const balance = (customer as Stripe.Customer).balance ?? 0;
+    const currency = (customer as Stripe.Customer).currency ?? 'eur';
+    const credit = balance < 0 ? -balance : 0; // negative balance = credit owed to the user
+    if (credit <= 0) return { status: 'noop', creditCents: 0 };
+
+    // 2. Find the most recent refundable succeeded charge (the original payment method).
+    const charges = await withTimeout(stripe.charges.list({ customer: customerId, limit: 10 }), refundTimeoutMs(), 'cancelRefund:listCharges');
+    const charge = charges.data.find(
+      (ch) => ch.status === 'succeeded' && !ch.refunded && ch.amount - ch.amount_refunded > 0,
+    );
+    if (!charge) {
+      logger.error({ customerId, subId: subscription.id, creditCents: credit }, 'cancel_refund_no_refundable_charge');
+      return { status: 'failed', reason: 'no_refundable_charge', creditCents: credit };
+    }
+
+    // 3. Refund the remaining credit (capped at the charge's refundable room) to the card.
+    //    Idempotency-keyed on the subscription so a webhook retry can't double-refund.
+    const amount = Math.min(credit, charge.amount - charge.amount_refunded);
+    let refund: Stripe.Refund;
+    try {
+      refund = await withTimeout(
+        stripe.refunds.create(
+          { charge: charge.id, amount, reason: 'requested_by_customer' },
+          { idempotencyKey: `goblin-cancel-credit-refund-${subscription.id}` },
+        ),
+        refundTimeoutMs(),
+        'cancelRefund:create',
+      );
+    } catch (err) {
+      logger.error({ customerId, subId: subscription.id, creditCents: credit, err: err instanceof Error ? err.message : String(err) }, 'cancel_refund_failed');
+      return { status: 'failed', reason: 'refund_error', creditCents: credit };
+    }
+
+    // 4. Zero the refunded credit so it is not ALSO applied to some later invoice. A
+    //    POSITIVE balance transaction reduces the customer's credit (balance → 0).
+    try {
+      await withTimeout(
+        stripe.customers.createBalanceTransaction(customerId, {
+          amount,
+          currency,
+          description: `Goblin: auto-refund of remaining credit on cancellation (refund ${refund.id})`,
+        }),
+        refundTimeoutMs(),
+        'cancelRefund:balanceTxn',
+      );
+    } catch (err) {
+      // The money WAS returned; only the ledger adjust failed. Admin-visible, not a user
+      // success claim — and NOT retried automatically (the refund is idempotent, so a
+      // manual replay is safe).
+      logger.error({ customerId, subId: subscription.id, refundId: refund.id, refundedCents: amount, err: err instanceof Error ? err.message : String(err) }, 'cancel_refund_balance_adjust_failed');
+      return { status: 'refunded_balance_unadjusted', refundId: refund.id, refundedCents: amount };
+    }
+
+    logger.info({ customerId, subId: subscription.id, refundId: refund.id, refundedCents: amount }, 'cancel_refund_succeeded');
+    return { status: 'refunded', refundId: refund.id, refundedCents: amount, creditCents: credit };
+  } catch (err) {
+    // Any unexpected error (e.g. the customer retrieve timed out) is admin-visible and
+    // swallowed — never fail the entitlement reset over a best-effort refund.
+    logger.error({ customerId, subId: subscription.id, err: err instanceof Error ? err.message : String(err) }, 'cancel_refund_unexpected_error');
+    return { status: 'failed', reason: 'unexpected_error' };
+  }
+}
+
 export async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Promise<void> {
   const supabase = getSupabaseAdmin();
 
@@ -624,6 +741,11 @@ export async function handleSubscriptionDeleted(subscription: Stripe.Subscriptio
       next_payment_attempt: null,
     })
     .eq('stripe_subscription_id', subscription.id);
+
+  // D-F (FW5-U5): after entitlement is reset, auto-refund any remaining credit to the
+  // card. Non-throwing — a refund failure is logged for admin visibility and must not
+  // fail this handler (which would retry the whole event); the refund is idempotent.
+  await refundRemainingCreditOnCancel(subscription);
 }
 
 // ──────────────────────────────────────────────────────────────────────────

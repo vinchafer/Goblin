@@ -197,9 +197,15 @@ export function BillingPage() {
                   </div>
                 )}
                 {!isComped && status?.planState === 'paid' && status?.cancelAtPeriodEnd && status?.endsAt && (
-                  <div style={{ marginTop: 8, fontSize: 13, color: 'var(--brand-gold)' }}>
-                    {t(lang, `${planName} — läuft aus am`, `${planName} — ends on`)} {new Date(status.endsAt).toLocaleDateString(lang === 'de' ? 'de-DE' : 'en-US')}
-                  </div>
+                  <>
+                    <div style={{ marginTop: 8, fontSize: 13, color: 'var(--brand-gold)' }}>
+                      {t(lang, `${planName} — läuft aus am`, `${planName} — ends on`)} {new Date(status.endsAt).toLocaleDateString(lang === 'de' ? 'de-DE' : 'en-US')}
+                    </div>
+                    {/* D-F (FW5-U5): honest note — any leftover downgrade credit is auto-refunded on cancel. */}
+                    <div style={{ marginTop: 4, fontSize: 12.5, color: 'var(--text-meta)' }}>
+                      {t(lang, 'Restguthaben wird dir bei Kündigung automatisch zurückerstattet.', 'Any remaining credit is automatically refunded when you cancel.')}
+                    </div>
+                  </>
                 )}
                 {!isComped && status?.planState === 'paid' && !status?.cancelAtPeriodEnd && status?.currentPeriodEnd && (
                   <div style={{ marginTop: 8, fontSize: 13, color: 'var(--text-meta)' }}>
