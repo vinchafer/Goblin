@@ -228,6 +228,22 @@ billing.get('/status', authMiddleware, async (c) => {
   // the raw column (a default/cancelled user resolves to 'none' → paywall).
   const truth = derivePlanTruth(user);
 
+  // F-32: server-side "purchase confirmation seen" flag. Read in a SEPARATE best-effort
+  // query so a pre-migration DB (column absent, migration 0093) can NEVER break /status
+  // — exactly the failure the fixed select above warns about. `lastConfirmedPlan` stays
+  // null and `planConfirmationServer` false when the column is dark; the web component
+  // then falls back to its device-local localStorage, preserving today's behavior.
+  let lastConfirmedPlan: string | null = null;
+  let planConfirmationServer = false;
+  try {
+    const { data: flagRow, error: flagErr } = await supabase
+      .from('users').select('last_confirmed_plan').eq('id', userId).single();
+    if (!flagErr && flagRow) {
+      lastConfirmedPlan = (flagRow as { last_confirmed_plan: string | null }).last_confirmed_plan ?? null;
+      planConfirmationServer = true;
+    }
+  } catch { /* column absent pre-migration → client uses localStorage fallback */ }
+
   // Card info (best-effort, don't fail status if Stripe is down)
   let cardLast4: string | null = null;
   let cardBrand: string | null = null;
@@ -265,7 +281,40 @@ billing.get('/status', authMiddleware, async (c) => {
     cardBrand,
     isComped: !!user.is_comped,
     compReason: user.comp_reason ?? null,
+    // F-32: the resolved plan key already seen/celebrated on this account (server-side,
+    // cross-device). `planConfirmationServer` tells the client whether the server flag
+    // is live yet — when false it falls back to localStorage.
+    lastConfirmedPlan,
+    planConfirmationServer,
   });
+});
+
+// POST /api/billing/confirm-plan — F-32: mark the current plan's purchase confirmation
+// as seen for this user (server-side, so it doesn't re-fire on another device). Reads
+// the plan truth server-side (never trusts a client-supplied plan) and stores the
+// resolved planKey. Tolerant: a pre-migration DB (column 0093 absent) returns
+// {ok:false, reason:'flag_unavailable'} — NOT a 500 — so the client keeps its
+// localStorage fallback and the celebration is never falsely reported as persisted.
+billing.post('/confirm-plan', authMiddleware, async (c) => {
+  const userId = c.get('userId');
+  const supabase = getSupabaseAdmin();
+
+  const { data: user, error } = await supabase
+    .from('users')
+    .select('plan, subscription_current_period_end, cloud_trial_ends_at, is_comped, comp_reason, stripe_customer_id, stripe_subscription_id, cancel_at_period_end, trial_consumed_at, payment_state, next_payment_attempt')
+    .eq('id', userId)
+    .single();
+  if (error || !user) return c.json({ error: 'User not found' }, 404);
+
+  const planKey = derivePlanTruth(user).planKey;
+  try {
+    const { error: updErr } = await supabase
+      .from('users').update({ last_confirmed_plan: planKey }).eq('id', userId);
+    if (updErr) return c.json({ ok: false, reason: 'flag_unavailable' });
+    return c.json({ ok: true, plan: planKey });
+  } catch {
+    return c.json({ ok: false, reason: 'flag_unavailable' });
+  }
 });
 
 // GET /api/billing/invoices — last 12 Stripe invoices

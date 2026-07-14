@@ -11,7 +11,7 @@
 
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { apiGet } from '@/lib/api';
+import { apiGet, apiPost } from '@/lib/api';
 import { useLang, t } from '@/lib/use-lang';
 import { isDemoActive } from '@/lib/demo/demo-flag';
 import {
@@ -24,6 +24,10 @@ import {
 interface BillingStatusLite {
   plan?: string | null;
   planState?: 'comped' | 'paid' | 'trial' | 'none';
+  // F-32: server-side "seen" flag (migration 0093). `planConfirmationServer` is true once
+  // the column is live; until then it is absent/false and we fall back to localStorage.
+  lastConfirmedPlan?: string | null;
+  planConfirmationServer?: boolean;
 }
 
 const SEEN_KEY = 'goblin_confirmed_plan';
@@ -41,9 +45,14 @@ export function PurchaseConfirmation() {
     apiGet<BillingStatusLite>('/api/billing/status')
       .then((s) => {
         if (!alive) return;
-        const lastConfirmedPlan = (() => {
+        // F-32: the "already celebrated" marker is now server-side (cross-device). When
+        // the server flag is live (planConfirmationServer), it is authoritative; until
+        // the 0093 column is applied we fall back to device-local localStorage so the
+        // pre-migration per-device behavior is preserved with no regression.
+        const localSeen = (() => {
           try { return localStorage.getItem(SEEN_KEY); } catch { return null; }
         })();
+        const lastConfirmedPlan = s.planConfirmationServer ? (s.lastConfirmedPlan ?? null) : localSeen;
         // Trigger off the VERIFIED state only. shouldShow returns false for trial /
         // none / comped / an undefined (pending or failed checkout) state.
         const { show, plan: p } = shouldShowPurchaseConfirmation({
@@ -58,7 +67,13 @@ export function PurchaseConfirmation() {
   }, []);
 
   const dismiss = () => {
-    if (plan) { try { localStorage.setItem(SEEN_KEY, plan); } catch { /* ignore */ } }
+    if (plan) {
+      // Persist to BOTH: the server flag (so it doesn't re-fire on another device) and
+      // localStorage (the fallback while migration 0093 is still dark). The server call
+      // is fire-and-forget — a failure just leaves the localStorage marker in charge.
+      void apiPost('/api/billing/confirm-plan').catch(() => { /* localStorage covers it */ });
+      try { localStorage.setItem(SEEN_KEY, plan); } catch { /* ignore */ }
+    }
     setPlan(null);
   };
 
