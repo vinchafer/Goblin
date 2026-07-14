@@ -68,12 +68,16 @@ interface Props {
   intent?: Intent;
   /** For the footer git pill (Slice 4). */
   projectId?: string;
+  /** FW4 U1 (F-11): a chat message that routed here on build/publish intent. Fired
+   *  once through handleSubmit (→ agent run on the eligible session). */
+  autoRunPrompt?: string | null;
+  onAutoRunConsumed?: () => void;
 }
 
 /** One session = thread (talk) + work surface (the file in play). Desktop split,
  *  mobile single-column. The change-state spine (Entwurf → Gesichert → Veröffentlicht)
  *  lives in the work-surface status line; deploy is gated on Saved. */
-export function SessionPane({ session, theme, onModelChange, onDraftCountChange, onAutoTitle, intent, projectId }: Props) {
+export function SessionPane({ session, theme, onModelChange, onDraftCountChange, onAutoTitle, intent, projectId, autoRunPrompt, onAutoRunConsumed }: Props) {
   const lang = useLang();
   const detail = useCodeSessionDetail(session.id);
   const agent = useCodeAgent(session.id);
@@ -350,6 +354,20 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
       if (changed > 0) setChangeSummary(changed);
     }, detail.activePath);
   };
+
+  // FW4 U1 (F-11): fire the routed-in chat prompt once, as soon as the session
+  // detail is ready. handleSubmit sends an agent-eligible session into the agent run
+  // (its live steps + attested report render below); grantsPublish server-side
+  // honours an explicit "…stell ihn live", so the D1 hand-off actually publishes
+  // instead of the tool-less lane's manual instructions (the W10 failure).
+  const autoRanRef = useRef(false);
+  useEffect(() => {
+    if (autoRanRef.current || !autoRunPrompt || detail.loading) return;
+    autoRanRef.current = true;
+    handleSubmit(autoRunPrompt);
+    onAutoRunConsumed?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoRunPrompt, detail.loading]);
 
   // B: a chat turn → reviewable edits. Every produced block whose path matches an
   // EXISTING, non-empty file that actually changed becomes a review item. Covers

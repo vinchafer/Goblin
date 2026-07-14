@@ -19,6 +19,8 @@ import { useStickToBottom } from "@/hooks/useStickToBottom";
 import { ScrollToEndChip } from "@/components/chat/ScrollToEndChip";
 import { ExistingFilesContext } from "@/contexts/existing-files-context";
 import { SendToCodeContext, type CardStcFile } from "@/contexts/send-to-code-context";
+import { isAgentModel } from "@/lib/agent-eligible";
+import { shouldRouteToAgent, AGENT_HANDOFF_NARRATION } from "@/lib/run-intent";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -453,6 +455,38 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
     const retry = opts?.retry;
     const wantsWebSearch = opts?.websearch === true;
     if (retry && isStreaming) return; // one in-flight send at a time
+
+    // FW4 U1 (F-11) — publish/build-intent routing (the W10 fix). Founder decision
+    // D1: "explicit intent executes directly." A project-bound chat on an
+    // agent-eligible model (Swift/Forge) whose message clearly asks to build or
+    // publish must engage the server-driven AGENT (tools → files → save → publish),
+    // not a tool-less chat completion that can only hand back manual instructions.
+    // Ambiguous messages (and a bare "live" mention) fall through to normal chat, so
+    // the FW1-U4 honest mode-decline still governs the conversational path.
+    // Not for a retry (that re-sends an existing tool-less message) or a web search.
+    if (!retry && !wantsWebSearch && hasProject && projectId && isAgentModel(model.slug) && shouldRouteToAgent(text)) {
+      // Honest hand-off, no silent mode switch: show the user their message + the
+      // "Ich starte dafür einen Agent-Lauf …" first step, stash the prompt as an
+      // agent seed, and route into the Code work surface where the agent run (its
+      // live step stream + attested report card) actually renders and publishes.
+      const nowIso = new Date().toISOString();
+      const userMsg: typeof messages[0] = {
+        id: `temp-${Date.now()}`, role: "user", content: text,
+        has_code: false, created_at: nowIso,
+      };
+      const handoffMsg: typeof messages[0] = {
+        id: `handoff-${Date.now()}`, role: "assistant", content: AGENT_HANDOFF_NARRATION,
+        has_code: false, created_at: nowIso,
+      };
+      setMessages([...messages, userMsg, handoffMsg]);
+      try {
+        sessionStorage.setItem("goblin:agent-pending", JSON.stringify({ projectId, prompt: text, modelSlug: model.slug }));
+        sessionStorage.setItem(`goblin:lastChat:${projectId}`, sessionId);
+      } catch { /* sessionStorage unavailable — navigation below still carries intent */ }
+      router.push(`/dashboard/project/${projectId}/work?tab=code`);
+      return;
+    }
+
     const clientMessageId = retry?.clientMessageId ?? crypto.randomUUID();
     const tempId = retry?.id ?? `temp-${Date.now()}`;
 
