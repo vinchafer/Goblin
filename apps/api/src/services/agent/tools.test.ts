@@ -218,6 +218,82 @@ describe('agent tools — A3', () => {
     expect(storage.uploadFile).toHaveBeenCalledTimes(1);
   });
 
+  // ── F-19: edit_file — targeted anchored replace, same attestation pipeline ──
+  it('edit_file replaces ONLY the anchor; the rest of the file stays byte-identical', async () => {
+    const original = '<!doctype html>\n<title>Alt</title>\n<h1>Willkommen</h1>\n<p>Text bleibt.</p>\n';
+    const sb = makeFakeSb([{ path: 'index.html', content: original }], 's1');
+    const exec = buildToolExecutor(sb as never);
+    const r = await exec(
+      { id: 'c1', name: 'edit_file', args: { path: 'index.html', old_str: '<title>Alt</title>', new_str: '<title>Neu</title>' } },
+      ctx,
+    );
+    expect(r.ok).toBe(true);
+    expect(r.file?.classification).toBe('GEÄNDERT'); // real classification from persisted bytes
+    // The persisted draft is the FULL file with only the anchor changed (attested==shipped).
+    const row = sb.rows().find((x) => x.path === 'index.html');
+    expect(row?.content).toBe('<!doctype html>\n<title>Neu</title>\n<h1>Willkommen</h1>\n<p>Text bleibt.</p>\n');
+    expect(row?.change_state).toBe('draft');
+  });
+
+  it('edit_file: a missing anchor is an honest error pointing back to write_file — no write', async () => {
+    const sb = makeFakeSb([{ path: 'index.html', content: '<h1>Hi</h1>' }], 's1');
+    const exec = buildToolExecutor(sb as never);
+    const r = await exec(
+      { id: 'c1', name: 'edit_file', args: { path: 'index.html', old_str: '<h2>Nope</h2>', new_str: 'x' } },
+      ctx,
+    );
+    expect(r.ok).toBe(false);
+    expect(r.error?.code).toBe('anchor_not_found');
+    expect(r.error?.message).toMatch(/write_file/);
+    expect(sb.rows().find((x) => x.path === 'index.html')?.content).toBe('<h1>Hi</h1>'); // untouched
+  });
+
+  it('edit_file: an ambiguous anchor (>1) without replace_all is refused — no silent wrong edit', async () => {
+    const sb = makeFakeSb([{ path: 'a.css', content: '.a{color:red}\n.b{color:red}\n' }], 's1');
+    const exec = buildToolExecutor(sb as never);
+    const r = await exec(
+      { id: 'c1', name: 'edit_file', args: { path: 'a.css', old_str: 'color:red', new_str: 'color:blue' } },
+      ctx,
+    );
+    expect(r.ok).toBe(false);
+    expect(r.error?.code).toBe('anchor_ambiguous');
+    expect(sb.rows().find((x) => x.path === 'a.css')?.content).toBe('.a{color:red}\n.b{color:red}\n'); // untouched
+  });
+
+  it('edit_file: replace_all changes every occurrence', async () => {
+    const sb = makeFakeSb([{ path: 'a.css', content: '.a{color:red}\n.b{color:red}\n' }], 's1');
+    const exec = buildToolExecutor(sb as never);
+    const r = await exec(
+      { id: 'c1', name: 'edit_file', args: { path: 'a.css', old_str: 'color:red', new_str: 'color:blue', replace_all: true } },
+      ctx,
+    );
+    expect(r.ok).toBe(true);
+    expect(sb.rows().find((x) => x.path === 'a.css')?.content).toBe('.a{color:blue}\n.b{color:blue}\n');
+  });
+
+  it('edit_file on a non-existent file returns not_found pointing to write_file', async () => {
+    const sb = makeFakeSb([], 's1');
+    const exec = buildToolExecutor(sb as never);
+    const r = await exec(
+      { id: 'c1', name: 'edit_file', args: { path: 'new.html', old_str: 'a', new_str: 'b' } },
+      ctx,
+    );
+    expect(r.ok).toBe(false);
+    expect(r.error?.code).toBe('not_found');
+    expect(r.error?.message).toMatch(/write_file/);
+  });
+
+  it('edit_file does NOT interpret $-replacement patterns in new_str (literal replace)', async () => {
+    const sb = makeFakeSb([{ path: 'a.txt', content: 'price: PLACEHOLDER end' }], 's1');
+    const exec = buildToolExecutor(sb as never);
+    const r = await exec(
+      { id: 'c1', name: 'edit_file', args: { path: 'a.txt', old_str: 'PLACEHOLDER', new_str: '$5.00 ($&/unit)' } },
+      ctx,
+    );
+    expect(r.ok).toBe(true);
+    expect(sb.rows().find((x) => x.path === 'a.txt')?.content).toBe('price: $5.00 ($&/unit) end');
+  });
+
   it('finish is a terminator; unknown tools return a structured error', async () => {
     const exec = buildToolExecutor(makeFakeSb([], 's1') as never);
     const fin = await exec({ id: 'c1', name: 'finish', args: { report: 'done' } }, ctx);
