@@ -266,16 +266,11 @@ function renderProjectContext(ctx: GoblinChatContext): string {
     // honest (E7: these files count as not loaded) without a hard error.
     if (ctx.contextNote) lines.push(`- ${ctx.contextNote}`);
 
-    // F4.1: user-authored project instructions — standing rules for THIS
-    // project, above the rolling memory and marked as the user's own words so
-    // the model treats them as binding without needing them repeated per turn.
-    const instr = ctx.projectInstructions?.trim();
-    if (instr) {
-      lines.push(
-        '- Projekt-Anweisungen des Nutzers (verbindliche Vorgaben für dieses Projekt — befolge sie in jeder Antwort, auch ohne erneute Nennung):',
-        ...instr.split('\n').map((l) => `  ${l}`),
-      );
-    }
+    // F4.1/F-20: project instructions are NO LONGER rendered here (buried mid-context,
+    // and — worse — gated behind projectName via the early return above, so a nameless
+    // project silently dropped them). They now render in their own prominent block
+    // (renderProjectInstructions), placed LAST in the assembled prompt (nearest the
+    // user's task) and independent of projectName.
 
     // U3: rolling memory — lets a NEW chat answer "Wo waren wir?" truthfully.
     if (ctx.projectState && (ctx.projectState.summary || ctx.projectState.decisions)) {
@@ -317,9 +312,25 @@ function renderProjectContext(ctx: GoblinChatContext): string {
   }
 }
 
+/**
+ * F-20: the project's user-authored instructions as a prominent, binding block —
+ * rendered independently of projectName (a nameless project must NOT drop them) and
+ * placed LAST in the assembled prompt, nearest the user's task, so the model is far
+ * likelier to actually apply them. Empty/absent → '' (no placebo header). Shared
+ * verbatim by normal chat and agent runs, so the instructions bind BOTH paths.
+ */
+function renderProjectInstructions(ctx: GoblinChatContext): string {
+  const instr = ctx.projectInstructions?.trim();
+  if (!instr) return '';
+  return [
+    'Projekt-Anweisungen des Nutzers — VERBINDLICH: Dies sind die eigenen, für dieses Projekt festgelegten Vorgaben des Nutzers. Sie haben Vorrang und gelten für JEDE Antwort und JEDE Änderung in diesem Projekt, auch ohne erneute Nennung. Halte dich strikt daran; nur wenn eine konkrete Aufgabe ihnen klar widerspricht, weise kurz darauf hin, statt sie stillschweigend zu übergehen.',
+    ...instr.split('\n').map((l) => `• ${l}`),
+  ].join('\n');
+}
+
 /** Build the full system prompt: identity + user prefs + (optional) live project context. */
 export function buildGoblinChatSystemPrompt(ctx: GoblinChatContext = {}): string {
-  return [IDENTITY, POLICY_BLOCK, NO_ROADMAP_BLOCK, renderUserContext(ctx), renderProjectContext(ctx)].filter(Boolean).join('\n');
+  return [IDENTITY, POLICY_BLOCK, NO_ROADMAP_BLOCK, renderUserContext(ctx), renderProjectContext(ctx), renderProjectInstructions(ctx)].filter(Boolean).join('\n');
 }
 
 // ─── AGENT MODE (FEEL-3a) ───────────────────────────────────────────────────────
@@ -453,6 +464,8 @@ export function buildAgentSystemPrompt(ctx: GoblinChatContext = {}): string {
     // ── dynamic tail (per-run; never part of the cached prefix) ──
     renderUserContext(ctx, { agent: true }),
     renderProjectContext(ctx),
+    // F-20: binding project instructions LAST — nearest the task, on the agent path too.
+    renderProjectInstructions(ctx),
   ]
     .filter(Boolean)
     .join('\n\n');
