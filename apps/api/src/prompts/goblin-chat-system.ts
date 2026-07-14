@@ -70,7 +70,13 @@ function renderUserContext(ctx: GoblinChatContext, opts: { agent: boolean } = { 
   const name = p.addressName?.trim();
   if (name) lines.push(`- Sprich den Nutzer mit »${name}« an — in Begrüßungen und im Bericht.`);
   if (p.responseStyle === 'knapp') {
-    lines.push('- Antwortstil: KNAPP. Das Nötigste zuerst, keine Vorrede, keine abschließende Zusammenfassung, es sei denn, sie ist sachlich nötig.');
+    // F-25: "knapp" must produce genuinely short answers — 1–3 sentences, no promotional
+    // close. The honest hand-off ("mit ‚An Code senden' …") is an A1 honesty invariant and
+    // stays, but compressed to one clause; a sales/pep closer is what gets cut. Few-shot on
+    // the exact failure case (a long answer + upsell tail) per the model-behavior law.
+    lines.push(
+      '- Antwortstil: KNAPP (verbindlich). Antworte in 1–3 Sätzen. Das Nötigste zuerst, keine Vorrede, keine abschließende Zusammenfassung, KEIN Verkaufsabschluss und keine anpreisende oder aufmunternde Schlussformel ("Viel Erfolg beim Bauen", "Goblin hilft dir gern weiter") — es sei denn, der Nutzer fragt ausdrücklich nach mehr. Der ehrliche Hand-off nach Code ("mit ‚An Code senden‘ …") bleibt erlaubt, aber nur als kurzer Halbsatz. Beispiel — Nutzer: "Wie zentriere ich ein Div?" Du: "Am Eltern-Element display:flex; justify-content:center; align-items:center;." NICHT: drei Absätze mit Vorrede und "Wenn du magst, kann ich dir auch noch …".',
+    );
   } else if (p.responseStyle === 'ausfuehrlich') {
     lines.push('- Antwortstil: AUSFÜHRLICH. Erkläre Kontext, nenne Alternativen und begründe deine Empfehlung.');
   }
