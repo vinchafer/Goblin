@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="de" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<style>
+  /* SAFEAREA-U1 render harness. Headless Chromium reports env(safe-area-inset-*)
+     as 0 (no notch), so this harness SIMULATES the iOS inset by feeding a fixed
+     47px through --sat and applying it the EXACT way Header.tsx does:
+       padding-top: var(--sat);  height: calc(56px + var(--sat));  (border-box)
+     A translucent status-bar band (clock · battery) is overlaid so the overlap
+     — and its removal — is visible. Honest limit: this is an emulation of the
+     mechanism; the real env() value on device is the founder's final gate. */
+  :root { --sat: 47px; --brand-green:#1A3A2A; --brand-gold:#D4A737; --bone:#F4ECD8; --paper:#FBF7EC; }
+  * { box-sizing: border-box; margin:0; padding:0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  body { background:#0b0d0c; color:#e8e4d8; padding:28px; }
+  h1 { font-size:17px; font-weight:700; margin-bottom:4px; color:#f4ecd8; }
+  .sub { font-size:12.5px; color:#9aa39d; margin-bottom:22px; max-width:760px; line-height:1.5; }
+  .row { display:flex; gap:40px; flex-wrap:wrap; }
+  .case { }
+  .caselabel { font-size:12px; font-weight:600; letter-spacing:.3px; margin-bottom:10px; }
+  .bad { color:#e6795f; } .good { color:#7fc9a0; }
+
+  /* phone frame */
+  .phone { width:390px; border-radius:34px; overflow:hidden; border:1px solid #2a2f2c;
+           box-shadow:0 12px 40px rgba(0,0,0,.5); background:#101512; position:relative; }
+  .phone.landscape { width:740px; }
+
+  /* the simulated iOS status bar band, drawn OVER the app to show whether the
+     header content collides with it */
+  .statusband { position:absolute; top:0; left:0; right:0; height:var(--sat); z-index:99;
+    display:flex; align-items:flex-end; justify-content:space-between; padding:0 22px 6px;
+    pointer-events:none; font-size:13px; font-weight:600; color:#fff;
+    background:linear-gradient(180deg, rgba(255,120,90,.20), rgba(255,120,90,.06)); }
+  .statusband .ico { display:flex; gap:5px; align-items:center; }
+  .statusband .bar { width:17px; height:11px; border:1.5px solid #fff; border-radius:3px; position:relative; }
+  .statusband .bar::after { content:""; position:absolute; inset:1.5px; right:5px; background:#fff; border-radius:1px; }
+
+  /* faithful reproduction of goblin-header */
+  .goblin-header { background:var(--brand-green); display:flex; align-items:center; gap:8px;
+    border-bottom:1px solid rgba(247,247,236,0.10); position:relative; z-index:50;
+    padding-left:12px; padding-right:12px; padding-bottom:0; height:56px; }
+  .goblin-header.fixed { padding-top:var(--sat); height:calc(56px + var(--sat)); }
+  .logo { width:26px; height:26px; border-radius:7px; background:var(--brand-gold);
+    display:flex; align-items:center; justify-content:center; color:#1A3A2A; font-weight:800; flex-shrink:0; }
+  .wordmark { font-weight:700; font-size:18.66px; letter-spacing:-.02em; color:var(--brand-gold); }
+  .spacer { flex:1; }
+  .modetile { display:flex; align-items:center; gap:6px; padding:6px 10px; border-radius:9px;
+    background:rgba(0,0,0,.18); color:#e9efe9; font-weight:600; font-size:12.5px; }
+  .plus { width:30px; height:30px; border-radius:50%; border:1px solid rgba(255,255,255,.35);
+    color:rgba(255,255,255,.9); display:flex; align-items:center; justify-content:center; }
+  .avatar { width:30px; height:30px; border-radius:50%; background:#2A523E; color:#fff;
+    display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; }
+
+  .appbody { padding:22px 16px; }
+  .appbody h2 { font-size:20px; color:#f4ecd8; margin-bottom:6px; }
+  .appbody p { font-size:13px; color:#9aa39d; }
+  .callout { position:absolute; z-index:100; font-size:11px; font-weight:600; padding:3px 8px; border-radius:6px; }
+</style>
+</head>
+<body>
+  <h1>Goblin App-Header · Safe-Area (SAFEAREA-U1)</h1>
+  <div class="sub">Simulierter iPhone-Status-Bar-Streifen (47&nbsp;px, rot getönt) über dem echten Header-Markup.
+    <b>Vorher</b>: Logo/Modus/Konto liegen unter der Statusleiste (Uhr/Akku überlappen).
+    <b>Nachher</b>: <code>padding-top: env(safe-area-inset-top)</code> schiebt den Inhalt darunter, das Header-Grün füllt die Zone.</div>
+
+  <div class="row">
+    <div class="case">
+      <div class="caselabel bad">✗ VORHER — ohne Safe-Area (der Bug)</div>
+      <div class="phone">
+        <div class="statusband"><span>9:41</span><span class="ico">5G <span class="bar"></span></span></div>
+        <header class="goblin-header">
+          <div class="logo">g</div>
+          <div class="modetile">◆ Chat ▾</div>
+          <div class="spacer"></div>
+          <div class="plus">+</div>
+          <div class="avatar">V</div>
+        </header>
+        <div class="appbody"><h2>Dashboard</h2><p>Header-Inhalt kollidiert mit der Statusleiste.</p></div>
+      </div>
+    </div>
+
+    <div class="case">
+      <div class="caselabel good">✓ NACHHER — mit Safe-Area (der Fix)</div>
+      <div class="phone">
+        <div class="statusband" style="background:linear-gradient(180deg, rgba(255,255,255,.14), rgba(255,255,255,.02))"><span>9:41</span><span class="ico">5G <span class="bar"></span></span></div>
+        <header class="goblin-header fixed">
+          <div class="logo">g</div>
+          <div class="modetile">◆ Chat ▾</div>
+          <div class="spacer"></div>
+          <div class="plus">+</div>
+          <div class="avatar">V</div>
+        </header>
+        <div class="appbody"><h2>Dashboard</h2><p>Header-Inhalt sitzt frei unter der Statusleiste.</p></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

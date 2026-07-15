@@ -94,9 +94,23 @@ export function Header({
     <header className="goblin-header" style={{
       background: 'var(--brand-header)',
       display: 'flex', alignItems: 'center',
-      padding: '0 12px', gap: 8, flexShrink: 0,
+      gap: 8, flexShrink: 0,
       borderBottom: '1px solid rgba(247,247,236,0.10)',
       position: 'relative', zIndex: 50,
+      // PWA safe-area (SAFEAREA-U1): in an installed standalone PWA the viewport
+      // is edge-to-edge (viewport-fit=cover), so a header at document-top renders
+      // UNDER the iOS status bar (clock/battery over the logo — the founder's
+      // screenshot bug). Padding the top by env(safe-area-inset-top) drops the
+      // content below the status bar; the header's deep-green background fills the
+      // inset zone (matching the #1A3A2A theme-color, so it blends). All env()
+      // values are 0 in a normal browser tab, so tab rendering is unchanged.
+      // Left/right insets keep the logo and account controls clear of the
+      // landscape notch. Content height stays 56/60px (see <style> below): with
+      // border-box, height = content + inset, so paddingTop never squeezes the row.
+      paddingTop: 'env(safe-area-inset-top, 0px)',
+      paddingBottom: 0,
+      paddingLeft: 'max(12px, env(safe-area-inset-left, 0px))',
+      paddingRight: 'max(12px, env(safe-area-inset-right, 0px))',
     }}>
       {/* Hamburger — mobile only */}
       <button
@@ -361,8 +375,10 @@ export function Header({
       <AvatarMenu />
 
       <style>{`
-        .goblin-header { height: 56px; }
-        @media (min-width: 769px) { .goblin-header { height: 60px; } }
+        /* Height carries the safe-area inset so the CONTENT row stays 56/60px
+           (border-box): height − paddingTop = content. env() is 0 in browsers. */
+        .goblin-header { height: calc(56px + env(safe-area-inset-top, 0px)); }
+        @media (min-width: 769px) { .goblin-header { height: calc(60px + env(safe-area-inset-top, 0px)); } }
         @media (max-width: 768px) {
           .goblin-hamburger { display: flex !important; }
           .goblin-breadcrumb { display: none !important; }
