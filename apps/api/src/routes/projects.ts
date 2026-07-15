@@ -11,6 +11,8 @@ import { createProjectFromTemplate } from './templates';
 import { teardownVercelProject } from '../services/vercel-service';
 import logger from '../lib/logger';
 import { trackEvent } from '../lib/platform-events';
+import { checkUploadType, MAX_UPLOAD_BYTES } from '../services/upload-policy';
+import { consumeDailyBytes, attachmentBytesPerDay } from '../services/abuse-caps';
 
 type Variables = { userId: string }
 const projects = new Hono<{ Variables: Variables }>();
@@ -614,7 +616,11 @@ projects.get('/:id/files-raw/*', async (c) => {
   });
 });
 
-// POST /:id/files/upload — multipart upload of any file type (max 10MB).
+// POST /:id/files/upload — multipart upload into the workspace Explorer (D-D, FW5-U3).
+// Routed through the FULL hardened guard chain, reusing existing services (F-29 lesson —
+// no parallel path): type whitelist (upload-policy) → size ceiling (413) → D-2 daily-bytes
+// cap (429) → storageKey prefix-jail (unsafe_path → 400) → guardedPut plan cap (413/503).
+// Every failure returns a distinct, honest error code so the client can localise DE/EN.
 projects.post('/:id/files/upload', async (c) => {
   const userId = c.get('userId');
   const projectId = c.req.param('id');
@@ -624,15 +630,53 @@ projects.post('/:id/files/upload', async (c) => {
   const form = await c.req.formData().catch(() => null);
   const file = form?.get('file');
   const targetDir = (form?.get('path') as string | null)?.replace(/^\/+|\/+$/g, '') ?? '';
-  if (!file || typeof file === 'string') return c.json({ error: 'No file' }, 400);
+  if (!file || typeof file === 'string') return c.json({ error: 'no_file', message: 'Keine Datei empfangen.' }, 400);
+  if (file.size === 0) return c.json({ error: 'empty_file', message: 'Die Datei ist leer.' }, 400);
 
-  const MAX = 10 * 1024 * 1024;
-  if (file.size > MAX) return c.json({ error: 'Datei zu gross (max 10MB)' }, 413);
+  // Size ceiling (per-file). Honest 413.
+  if (file.size > MAX_UPLOAD_BYTES) {
+    return c.json({ error: 'too_big', message: 'Datei zu groß (max 10 MB). Bitte teile sie auf oder lade eine kleinere Version hoch.' }, 413);
+  }
 
+  // Type whitelist — reject anything outside the allowed set with a type-specific message.
+  const typeCheck = checkUploadType(file.name);
+  if (!typeCheck.ok) {
+    const message = typeCheck.reason === 'no_extension'
+      ? 'Diese Datei hat keine Dateiendung — ich kann den Typ nicht sicher bestimmen. Bitte gib ihr eine Endung (z.B. .txt, .pdf, .png).'
+      : `Dateityp „.${typeCheck.ext}" wird hier nicht unterstützt. Erlaubt sind Text- und Code-Dateien, Bilder, PDFs und gängige Dokumente.`;
+    return c.json({ error: 'wrong_type', ext: typeCheck.ext, message }, 415);
+  }
+
+  // D-2 daily-bytes cap (shared 'attachment' bucket — bounds a per-user upload flood the
+  // per-file ceiling alone can't). Denied requests do NOT consume budget.
+  const bytesCap = consumeDailyBytes('attachment', userId, file.size, attachmentBytesPerDay());
+  if (!bytesCap.allowed) {
+    c.header('Retry-After', '3600');
+    return c.json({ error: 'daily_cap', message: 'Du hast heute schon viele Dateien hochgeladen. Bitte morgen wieder — oder lade weniger auf einmal hoch.' }, 429);
+  }
+
+  // Sanitize the basename (flat, safe chars). The storageKey prefix-jail is the real
+  // boundary; this just keeps filenames tidy. A traversal-style targetDir composes an
+  // unsafe key that assertSafeStoragePath rejects (unsafe_path) → honest 400 below.
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
   const relPath = targetDir ? `${targetDir}/${safeName}` : safeName;
   const bytes = Buffer.from(await file.arrayBuffer());
-  await uploadProjectFileBytes(projectId, relPath, bytes, file.type || 'application/octet-stream', { userId });
+  try {
+    await uploadProjectFileBytes(projectId, relPath, bytes, file.type || 'application/octet-stream', { userId });
+  } catch (err) {
+    const code = (err as { code?: string }).code;
+    if (code === 'unsafe_path') {
+      return c.json({ error: 'unsafe_path', message: 'Ungültiger Ziel-Pfad. Bitte lade in einen normalen Projektordner hoch.' }, 400);
+    }
+    if (code === 'storage_cap_exceeded') {
+      return c.json({ error: 'storage_cap', message: 'Dein Cloud-Speicher ist voll. Lösche etwas oder erweitere deinen Plan.' }, 413);
+    }
+    if (code === 'storage_unavailable') {
+      return c.json({ error: 'storage_unavailable', message: 'Der Speicher ist gerade nicht erreichbar. Bitte versuch es gleich nochmal.' }, 503);
+    }
+    logger.warn({ err: err instanceof Error ? err.message : String(err), projectId }, 'explorer_upload_failed');
+    return c.json({ error: 'upload_failed', message: 'Upload fehlgeschlagen. Bitte versuch es nochmal.' }, 500);
+  }
   await trackFileCreated(sb, projectId, userId, relPath).catch(() => {});
   return c.json({ ok: true, path: relPath, size: bytes.length });
 });

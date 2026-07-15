@@ -23,19 +23,24 @@ test.describe('9C — Help cleanup (BUG-014, BUG-015)', { tag: '@auth' }, () => 
     await expect(menu.getByText('Hilfe', { exact: true }).first()).toBeVisible();
   });
 
-  test('/help page renders the article index + email CTA', async ({ page }) => {
+  test('/help page renders the article index + agent-first support (no one-click human path)', async ({ page }) => {
     await page.goto('/help');
     await page.waitForLoadState('domcontentloaded');
 
-    // WAVE-J (e9ce1c0) redesigned /help: it is no longer a flat FAQ list but an
-    // ARTICLE INDEX (HELP_ARTICLES → /help/<slug> cards) plus a help-agent CTA. This
-    // spec previously asserted the old FAQ question ("Was ist Goblin?"), which now
-    // lives inside the articles, not on the index — a stale expectation, not a page
-    // bug. Assert the real CONTRACT by structure/role (language-agnostic — /help is
-    // bilingual and defaults to German unauthenticated): a top heading, at least one
-    // article link into /help/<slug>, and a real support contact.
+    // WAVE-J redesigned /help into an ARTICLE INDEX (HELP_ARTICLES → /help/<slug> cards)
+    // plus a help-agent CTA. FW5-U4 (D-E) then made support AGENT-FIRST: the one-click
+    // "I need a human" link and the plaintext support address were REMOVED from the
+    // above-the-fold card — the agent is the single entry point and a human handoff
+    // happens through it. So the contract is: a top heading, at least one article link,
+    // the agent-chat CTA present, and NO plaintext support-email link on the card. The
+    // honest-failure mailto fallback still lives INSIDE the chat (support-chat.tsx) and
+    // the legal contact stays on the Impressum — neither is on this page's card.
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     await expect(page.locator('a[href^="/help/"]').first()).toBeVisible();
-    await expect(page.getByRole('link', { name: /support@justgoblin\.com/i })).toBeVisible();
+    // The agent CTA is the entry point (bilingual — matches DE + EN label).
+    await expect(page.getByRole('button', { name: /Goblin.?(Hilfe|help)/i }).first()).toBeVisible();
+    // Agent-first: no one-click mailto and no plaintext support address on the card.
+    await expect(page.locator('a[href="mailto:support@justgoblin.com"]')).toHaveCount(0);
+    await expect(page.getByRole('link', { name: /support@justgoblin\.com/i })).toHaveCount(0);
   });
 });

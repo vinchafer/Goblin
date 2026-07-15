@@ -1114,7 +1114,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
                 {moreMenu && (
                   <>
                     <div onClick={() => setMoreMenu(false)} style={{ position: "fixed", inset: 0, zIndex: 40 }} />
-                    <div data-testid="more-menu" style={{ position: "absolute", bottom: "calc(100% + 6px)", right: 0, zIndex: 41, minWidth: 220, background: "var(--ed-chrome-2, var(--ed-canvas))", border: "1px solid var(--ed-rule)", borderRadius: 12, padding: 8, boxShadow: "0 12px 32px rgba(15,43,30,0.24)", display: "flex", flexDirection: "column", gap: 6 }}>
+                    <div data-testid="more-menu" style={{ position: "absolute", bottom: "calc(100% + 6px)", right: 0, zIndex: 41, minWidth: 220, maxHeight: "min(70vh, calc(100dvh - 24px))", overflowY: "auto", background: "var(--ed-chrome-2, var(--ed-canvas))", border: "1px solid var(--ed-rule)", borderRadius: 12, padding: 8, boxShadow: "0 12px 32px rgba(15,43,30,0.24)", display: "flex", flexDirection: "column", gap: 6 }}>
                       <button
                         onClick={() => { setMoreMenu(false); doSave(); }}
                         disabled={!canSave || detail.saving}

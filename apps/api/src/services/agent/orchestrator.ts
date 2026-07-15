@@ -15,7 +15,7 @@
 // sink are all injected, so it runs deterministically under unit test.
 
 import { trackCompletion } from '../../lib/track-completion';
-import { runWeightedUnits, agentMaxIterations, agentMaxUnits, MAX_RUNTIME_ABORT_REASON } from './config';
+import { runWeightedUnits, agentMaxIterations, agentMaxUnits, MAX_RUNTIME_ABORT_REASON, forgeHeartbeatDelayMs } from './config';
 import { parseFallbackToolCall, buildRepairInstruction } from './protocol';
 import { getAgentModel } from './model-turn';
 import type { GoblinTierId } from '../goblin-hosted';
@@ -43,6 +43,14 @@ export type BillTurn = (usage: { inputTokens: number; outputTokens: number }) =>
  * retry, never an infinite loop.
  */
 const MAX_HEAL_CYCLES = 2;
+
+/**
+ * FW5-U6: the honest in-progress line shown during a slow Forge first-token wait. No
+ * fake progress percentage — just honest presence. Emitted through the existing
+ * narration stream and replaced the moment real content/steps land.
+ */
+const FORGE_HEARTBEAT_TEXT =
+  'Goblin Forge arbeitet an einem größeren Wurf — das kann einen Moment dauern.';
 
 /**
  * The single repair reprompt after a mixed-mode turn (a native call + a fenced
@@ -265,15 +273,33 @@ export async function runAgent(input: RunAgentInput): Promise<RunResult> {
     if (units >= maxUnits) { outcome = 'budget'; break; }
     iterations += 1;
 
+    // FW5-U6 Forge heartbeat: the agent turn is non-streaming (no first-token delta),
+    // so a slow Forge first turn would sit visually silent between `meta` and the first
+    // narration/step. Arm a one-shot timer that emits an honest presence line if this
+    // FIRST turn runs long. Only on iteration 1 and only for Forge; cleared the moment
+    // the turn returns. `heartbeatFired` lets us tidy the slot if the turn resolved into
+    // a pure tool call (no content to overwrite the line).
+    const isForge = input.modelSlug === 'goblin/premium';
+    let heartbeatFired = false;
+    let heartbeatTimer: ReturnType<typeof setTimeout> | undefined;
+    if (iterations === 1 && isForge) {
+      heartbeatTimer = setTimeout(() => {
+        heartbeatFired = true;
+        void input.emit({ type: 'agent_narration', text: FORGE_HEARTBEAT_TEXT });
+      }, forgeHeartbeatDelayMs());
+    }
+
     let turn;
     try {
       turn = await model.turn({ messages, tools: input.tools, signal: stop });
     } catch (e) {
+      if (heartbeatTimer) clearTimeout(heartbeatTimer);
       if (stop?.aborted) { outcome = 'stopped'; break; }
       outcome = 'error';
       failureReason = humanizeModelError(e instanceof Error ? e.message : undefined);
       break;
     }
+    if (heartbeatTimer) clearTimeout(heartbeatTimer);
 
     tokensIn += turn.usage.inputTokens;
     tokensOut += turn.usage.outputTokens;
@@ -283,6 +309,11 @@ export async function runAgent(input: RunAgentInput): Promise<RunResult> {
     if (turn.content.trim()) {
       modelText = turn.content;
       await input.emit({ type: 'agent_narration', text: turn.content });
+    } else if (heartbeatFired) {
+      // The first turn resolved into a pure tool call — no content to overwrite the
+      // heartbeat line. Reset the narration slot so the surface falls back to the
+      // generic "Goblin arbeitet" (honest) rather than pinning the Forge wait line.
+      await input.emit({ type: 'agent_narration', text: '' });
     }
     messages.push({ role: 'assistant', content: turn.content, raw: turn.assistantMessage });
 

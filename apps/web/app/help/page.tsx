@@ -91,7 +91,6 @@ export default function HelpPage() {
 
 function HelpAgentCTA({ lang }: { lang: Lang }) {
   const [chatOpen, setChatOpen] = useState(false);
-  const [escalateOpen, setEscalateOpen] = useState(false);
 
   return (
     <div style={{
@@ -127,23 +126,19 @@ function HelpAgentCTA({ lang }: { lang: Lang }) {
         </svg>
         {t(lang, 'Mit dem Goblin-Hilfe-Agenten chatten', 'Chat with Goblin help')}
       </button>
-      <div style={{ marginTop: 14, fontSize: 'var(--t-caption-fs)', opacity: 0.7 }}>
-        {!escalateOpen ? (
-          <button
-            onClick={() => setEscalateOpen(true)}
-            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', cursor: 'pointer', textDecoration: 'underline', fontSize: 'var(--t-caption-fs)', fontFamily: 'var(--font-sans)' }}
-          >
-            {t(lang, 'Ich komme nicht weiter – ich brauche einen Menschen', "I'm stuck — I need a human")}
-          </button>
-        ) : (
-          <span>{t(lang, 'Schreib „Mensch“ in den Chat und der Agent leitet automatisch an einen Menschen weiter.', 'Type “human” in the chat and the agent escalates automatically.')}</span>
+      {/* D-E (FW5-U4) — agent-first support. The one-click "I need a human" link and the
+          plaintext support address were removed from this above-the-fold card: the human
+          path was the path of least resistance, so people took it before the agent had a
+          chance to help. The agent is now the single entry point; a human handoff happens
+          THROUGH the agent (which reliably sends — FW2) once it has actually tried, and the
+          honest-failure mailto fallback still surfaces inside the chat when a send fails
+          (support-chat.tsx). The Impressum keeps the legal contact address untouched. */}
+      <div style={{ marginTop: 14, fontSize: 'var(--t-caption-fs)', opacity: 0.7, fontFamily: 'var(--font-sans)', lineHeight: 1.5 }}>
+        {t(
+          lang,
+          'Kommst du nicht weiter? Schreib „Mensch“ in den Chat — der Agent übergibt an einen Menschen, sobald er selbst nicht mehr weiterhilft.',
+          'Stuck? Type “human” in the chat — the agent hands off to a person once it can’t take you further itself.',
         )}
-      </div>
-      <div style={{ marginTop: 12, fontSize: 'var(--t-caption-fs)', opacity: 0.7, fontFamily: 'var(--font-sans)' }}>
-        {t(lang, 'Oder per E-Mail:', 'Or by email:')}{' '}
-        <a href="mailto:support@justgoblin.com" style={{ color: 'rgba(255,255,255,0.92)', textDecoration: 'underline' }}>
-          support@justgoblin.com
-        </a>
       </div>
 
       {chatOpen && (

@@ -338,15 +338,19 @@ export function ModelSwitcher() {
           border: `1px solid ${isNoModel ? 'var(--brand-gold)' : 'rgba(255,255,255,0.2)'}`,
           background: 'rgba(255,255,255,0.06)',
           color: isNoModel ? 'var(--brand-gold)' : 'rgba(255,255,255,0.85)',
-          fontSize: 13, fontWeight: 500, cursor: 'pointer',
+          fontSize: 13, fontWeight: 500, cursor: 'pointer', lineHeight: 1,
           fontFamily: 'var(--font-sans)', transition: 'background 0.1s',
         }}
         onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.1)')}
         onMouseLeave={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.06)')}
       >
-        <span>{activeModel.name}</span>
-        {!isNoModel && <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11 }}>· {tierLabel}</span>}
-        <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.45)', marginLeft: 2 }}>▾</span>
+        {/* F-13: tight line-heights + an SVG chevron (baseline-neutral, unlike the raw
+            "▾" glyph whose asymmetric metrics made "Goblin Swift" read off-centre). */}
+        <span style={{ lineHeight: 1 }}>{activeModel.name}</span>
+        {!isNoModel && <span style={{ color: 'rgba(255,255,255,0.45)', fontSize: 11, lineHeight: 1 }}>· {tierLabel}</span>}
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ display: 'block', marginLeft: 2 }}>
+          <polyline points="6 9 12 15 18 9" />
+        </svg>
       </button>
 
       {open && (

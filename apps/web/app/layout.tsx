@@ -44,15 +44,21 @@ export const metadata: Metadata = {
     'format-detection': 'telephone=no',
   },
   icons: {
+    // F-34: SVG favicons first (crisp, modern browsers), then real gold-on-green PNG
+    // fallbacks (regenerated from the logo lockup — the old ones were empty placeholders).
     icon: [
       { url: '/brand/icons/goblin-favicon.svg', type: 'image/svg+xml' },
       { url: '/brand/icons/goblin-icon-32.svg', sizes: '32x32', type: 'image/svg+xml' },
       { url: '/brand/icons/goblin-icon-16.svg', sizes: '16x16', type: 'image/svg+xml' },
+      { url: '/icons/favicon-32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/icons/favicon-16.png', sizes: '16x16', type: 'image/png' },
       { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
       { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
     ],
+    // F-34: iOS ignores SVG apple-touch icons (why the home-screen mark was plain green).
+    // The real 180×180 PNG lockup must come first.
     apple: [
-      { url: '/brand/icons/goblin-icon-256.svg', sizes: '256x256', type: 'image/svg+xml' },
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
       { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
       { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
     ],
@@ -98,7 +104,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         {/* No Google Fonts preconnect: next/font self-hosts fonts under /_next/static/media,
             so connections to fonts.googleapis.com / fonts.gstatic.com are never made at runtime. */}
-        <link rel="mask-icon" href="/icons/icon-512.png" color="#1A3A2A" />
+        {/* F-34: Safari pinned-tab mask needs a monochrome silhouette SVG (not a PNG) —
+            the transparent gold mark is a single path Safari tints with `color`. */}
+        <link rel="mask-icon" href="/brand/logo/goblin-logo-gold.svg" color="#1A3A2A" />
         {/* no-flash theme init — must run before first paint */}
         <script dangerouslySetInnerHTML={{ __html: `
           (function(){
