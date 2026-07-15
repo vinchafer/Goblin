@@ -493,20 +493,30 @@ export async function hardDeleteUser(userId: string): Promise<HardDeleteOutcome>
   if (projErr) throw new Error(`projects lookup failed: ${projErr.message}`);
   const projectIds = (userProjects ?? []).map((p) => p.id as string);
 
-  // D-5 (WAVE-D): tear down each project's LIVE Vercel resource BEFORE the DB cascade
-  // drops the rows. Without this, a deleted user's <slug>.vercel.app deployments stay
-  // public (and billable on the user's own connected token) forever — a real-user
-  // data-retention gap the storage/DB purge did not cover. teardownVercelProject is
-  // best-effort by design (never throws; 404 / no-token = already gone), so a failure
-  // is logged for the next cron pass but never blocks the user's PII deletion.
+  // D-5 (WAVE-D) / DD-hardening FW6-U3: tear down each project's LIVE Vercel
+  // resource BEFORE the DB cascade drops the rows. Without this, a deleted user's
+  // <slug>.vercel.app deployments stay public (and billable on the user's own
+  // connected token) forever — a real-user data-retention gap the storage/DB purge
+  // did not cover.
+  //
+  // FW6-U3 makes this the SAME blocking-throw its sibling storage-purge (below)
+  // already uses: a teardown that is not confirmed gone BLOCKS the cascade so the
+  // projects rows — and thus the slugs we need to retry — survive, and the delete
+  // stays 'pending' for the next cron pass. teardownVercelProject is idempotent
+  // (404 / no-token = already gone → ok:true), so re-running is safe, and a
+  // deployment the token can genuinely no longer reach (no token stored) never
+  // reaches this list. Net effect: a deleted user's site is GUARANTEED to come
+  // down before their PII rows are dropped, not merely attempted once.
+  const failedTeardowns: string[] = [];
   for (const proj of userProjects ?? []) {
     const name = (proj as { name?: string }).name;
     if (!name) continue;
     const td = await teardownVercelProject(userId, name);
     if (!td.ok) {
+      failedTeardowns.push(name);
       logger.warn(
         { userIdHash: sha256(userId), status: td.status, reason: td.error },
-        'account-deletion: vercel teardown not confirmed (will retry next cron pass)',
+        'account-deletion: vercel teardown not confirmed — purge held, retry next cron pass',
       );
     }
   }
@@ -531,6 +541,17 @@ export async function hardDeleteUser(userId: string): Promise<HardDeleteOutcome>
         + `(${purge.failed.map((f) => f.projectId).join(', ')})`,
       );
     }
+  }
+
+  // FW6-U3: a deleted user's SITE must come down. If any Vercel teardown was not
+  // confirmed, BLOCK the cascade (same posture as the storage purge above) so the
+  // projects rows survive and the cron re-runs the teardown next pass. Only once
+  // every live deployment is gone do we drop the PII rows below.
+  if (failedTeardowns.length > 0) {
+    throw new Error(
+      `vercel teardown incomplete: ${failedTeardowns.length}/${(userProjects ?? []).length} project(s) still live `
+      + `(${failedTeardowns.join(', ')}) — site must come down before the PII cascade; cron will retry`,
+    );
   }
 
   // D-5 (WAVE-D): purge the user's BYOK KEK from Vault. byok_keys rows cascade from
