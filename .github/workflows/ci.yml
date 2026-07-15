@@ -58,5 +58,15 @@ jobs:
 
       # No STORAGE_* env → file-storage uses its in-memory backend, which is the
       # real deploy source the build-loop net asserts on (build-loop.test.ts).
+      #
+      # FW6-U2: the real-Stripe money suites (proration/subscribe/tier) run only
+      # when these test-mode secrets are present; money-suite-guard.test.ts FAILS
+      # this job if they are missing, so a green build can never hide a silent
+      # money-test skip. Add them under repo Settings → Secrets and variables →
+      # Actions. GitHub sets CI=true automatically, which arms the guard.
       - name: Run API vitest
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_PRICE_BUILD_TIER1: ${{ secrets.STRIPE_PRICE_BUILD_TIER1 }}
+          STRIPE_PRICE_PRO_TIER1: ${{ secrets.STRIPE_PRICE_PRO_TIER1 }}
         run: pnpm --filter @goblin/api test
