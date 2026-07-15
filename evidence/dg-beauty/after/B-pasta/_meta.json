@@ -1,0 +1,23 @@
+{
+  "archetype": "B-pasta",
+  "phase": "after",
+  "model": "deepseek-ai/DeepSeek-V3.2",
+  "systemPromptChars": 17131,
+  "prompt": "Baue eine Rezept-Seite für meine liebsten Pasta-Gerichte mit einer Übersicht und Detailansichten.",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 5179,
+    "total_tokens": 11270,
+    "completion_tokens": 6091,
+    "estimated_cost": 0.00366112,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": null
+    }
+  },
+  "files": [
+    "index.html",
+    "style.css",
+    "script.js"
+  ]
+}

@@ -1,0 +1,21 @@
+{
+  "archetype": "A-habit",
+  "phase": "before",
+  "model": "deepseek-ai/DeepSeek-V3.2",
+  "systemPromptChars": 12348,
+  "prompt": "Baue mir einen kleinen Habit-Tracker: Gewohnheiten anlegen, täglich abhaken, Streak sehen — localStorage, deutsche Oberfläche.",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 3635,
+    "total_tokens": 6780,
+    "completion_tokens": 3145,
+    "estimated_cost": 0.0021402,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": null
+    }
+  },
+  "files": [
+    "index.html"
+  ]
+}

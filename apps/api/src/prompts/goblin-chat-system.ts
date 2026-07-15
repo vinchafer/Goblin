@@ -161,6 +161,7 @@ Du: "Der Code-Bereich gehört zur Plattform, aber diese Datei ist nicht in meine
 Sprachregister:
 - Antworte auf Deutsch, wenn der Nutzer Deutsch schreibt; sonst in seiner Sprache.
 - Länge proportional zur Frage: kurze Frage, kurze Antwort.
+- Ton: Sprich wie ein ruhiger, kompetenter Kollege — konkret, freundlich, ohne Vorrede. Komm zur Sache, statt die Frage einzuleiten. Keine anpreisenden oder aufmunternden Schlussformeln aus Gewohnheit ("Viel Erfolg beim Bauen!", "Goblin hilft dir gern weiter!", "Frag mich jederzeit!", "Happy Coding!") — sie klingen wie ein Verkaufsabschluss statt wie ein Kollege. Ist die Antwort fertig, hör auf. Ein echter nächster Schritt (welcher Klick, welche Datei als Nächstes) gehört dazu; eine Werbefloskel nicht.
 - Architektur- und Technikempfehlungen am tatsächlichen Umfang des Projekts ausrichten — eine kleine localStorage-App braucht localStorage-Antworten, keine Enterprise-Architektur.
 - Wenn du Dateien als Code ausgibst, nenne im Codeblock-Infostring den Dateinamen (z. B. \`\`\`html index.html).`;
 
@@ -334,9 +335,15 @@ function renderProjectInstructions(ctx: GoblinChatContext): string {
   ].join('\n');
 }
 
-/** Build the full system prompt: identity + user prefs + (optional) live project context. */
+/** Build the full system prompt: identity + user prefs + (optional) live project context.
+ *
+ * WAVE D-G (U2): APP_DESIGN_FOUNDATION now rides in the base chat prompt too — a
+ * "Baue mir …" chat message is a first-class code-gen path, and it previously had ZERO
+ * design guidance (WAVE-A kept the foundation agent-only). It sits in the static region
+ * (after the identity/policy/roadmap blocks, before the per-run dynamic tail), so it stays
+ * in the byte-stable cached prefix and never leaks a per-run value into the cache. */
 export function buildGoblinChatSystemPrompt(ctx: GoblinChatContext = {}): string {
-  return [IDENTITY, POLICY_BLOCK, NO_ROADMAP_BLOCK, renderUserContext(ctx), renderProjectContext(ctx), renderProjectInstructions(ctx)].filter(Boolean).join('\n');
+  return [IDENTITY, POLICY_BLOCK, NO_ROADMAP_BLOCK, APP_DESIGN_FOUNDATION, renderUserContext(ctx), renderProjectContext(ctx), renderProjectInstructions(ctx)].filter(Boolean).join('\n');
 }
 
 // ─── AGENT MODE (FEEL-3a) ───────────────────────────────────────────────────────

@@ -1,0 +1,107 @@
+{
+  "A-habit": {
+    "score": 2,
+    "checks": [
+      {
+        "key": "a",
+        "label": "no banned default-blue",
+        "pass": true,
+        "detail": "clean"
+      },
+      {
+        "key": "b",
+        "label": "intentional fonts (Google Fonts or real typeface)",
+        "pass": false,
+        "detail": "system stack only"
+      },
+      {
+        "key": "c",
+        "label": ":root custom-property palette, referenced",
+        "pass": false,
+        "detail": ":root-vars=false var()-used=false"
+      },
+      {
+        "key": "d",
+        "label": "consistent border-radius",
+        "pass": false,
+        "detail": "distinct radii: [20px, 15px, 10px] (3)"
+      },
+      {
+        "key": "e",
+        "label": "transitions on interactive elements",
+        "pass": true,
+        "detail": "transition present"
+      }
+    ]
+  },
+  "B-pasta": {
+    "score": 2,
+    "checks": [
+      {
+        "key": "a",
+        "label": "no banned default-blue",
+        "pass": true,
+        "detail": "clean"
+      },
+      {
+        "key": "b",
+        "label": "intentional fonts (Google Fonts or real typeface)",
+        "pass": false,
+        "detail": "system stack only"
+      },
+      {
+        "key": "c",
+        "label": ":root custom-property palette, referenced",
+        "pass": false,
+        "detail": ":root-vars=false var()-used=false"
+      },
+      {
+        "key": "d",
+        "label": "consistent border-radius",
+        "pass": false,
+        "detail": "distinct radii: [16px, 50px, 12px] (3)"
+      },
+      {
+        "key": "e",
+        "label": "transitions on interactive elements",
+        "pass": true,
+        "detail": "transition present"
+      }
+    ]
+  },
+  "C-hundeverein": {
+    "score": 2,
+    "checks": [
+      {
+        "key": "a",
+        "label": "no banned default-blue",
+        "pass": true,
+        "detail": "clean"
+      },
+      {
+        "key": "b",
+        "label": "intentional fonts (Google Fonts or real typeface)",
+        "pass": false,
+        "detail": "system stack only"
+      },
+      {
+        "key": "c",
+        "label": ":root custom-property palette, referenced",
+        "pass": false,
+        "detail": ":root-vars=false var()-used=false"
+      },
+      {
+        "key": "d",
+        "label": "consistent border-radius",
+        "pass": false,
+        "detail": "distinct radii: [10px, 8px, 50%] (3)"
+      },
+      {
+        "key": "e",
+        "label": "transitions on interactive elements",
+        "pass": true,
+        "detail": "transition present"
+      }
+    ]
+  }
+}

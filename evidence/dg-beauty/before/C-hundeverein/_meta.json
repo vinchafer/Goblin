@@ -1,0 +1,21 @@
+{
+  "archetype": "C-hundeverein",
+  "phase": "before",
+  "model": "deepseek-ai/DeepSeek-V3.2",
+  "systemPromptChars": 12346,
+  "prompt": "Baue eine Seite für meinen Hundeverein: Startseite mit den nächsten Terminen und einer Kontakt-Sektion.",
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 3629,
+    "total_tokens": 6509,
+    "completion_tokens": 2880,
+    "estimated_cost": 0.00159698,
+    "prompt_tokens_details": {
+      "cached_tokens": 3392,
+      "cache_write_tokens": null
+    }
+  },
+  "files": [
+    "index.html"
+  ]
+}

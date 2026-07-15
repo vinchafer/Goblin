@@ -1,0 +1,107 @@
+{
+  "A-habit": {
+    "score": 5,
+    "checks": [
+      {
+        "key": "a",
+        "label": "no banned default-blue",
+        "pass": true,
+        "detail": "clean"
+      },
+      {
+        "key": "b",
+        "label": "intentional fonts (Google Fonts or real typeface)",
+        "pass": true,
+        "detail": "Google Fonts link"
+      },
+      {
+        "key": "c",
+        "label": ":root custom-property palette, referenced",
+        "pass": true,
+        "detail": ":root-vars=true var()-used=true"
+      },
+      {
+        "key": "d",
+        "label": "consistent border-radius",
+        "pass": true,
+        "detail": "--radius var"
+      },
+      {
+        "key": "e",
+        "label": "transitions on interactive elements",
+        "pass": true,
+        "detail": "transition present"
+      }
+    ]
+  },
+  "B-pasta": {
+    "score": 5,
+    "checks": [
+      {
+        "key": "a",
+        "label": "no banned default-blue",
+        "pass": true,
+        "detail": "clean"
+      },
+      {
+        "key": "b",
+        "label": "intentional fonts (Google Fonts or real typeface)",
+        "pass": true,
+        "detail": "Google Fonts link"
+      },
+      {
+        "key": "c",
+        "label": ":root custom-property palette, referenced",
+        "pass": true,
+        "detail": ":root-vars=true var()-used=true"
+      },
+      {
+        "key": "d",
+        "label": "consistent border-radius",
+        "pass": true,
+        "detail": "--radius var"
+      },
+      {
+        "key": "e",
+        "label": "transitions on interactive elements",
+        "pass": true,
+        "detail": "transition present"
+      }
+    ]
+  },
+  "C-hundeverein": {
+    "score": 5,
+    "checks": [
+      {
+        "key": "a",
+        "label": "no banned default-blue",
+        "pass": true,
+        "detail": "clean"
+      },
+      {
+        "key": "b",
+        "label": "intentional fonts (Google Fonts or real typeface)",
+        "pass": true,
+        "detail": "Google Fonts link"
+      },
+      {
+        "key": "c",
+        "label": ":root custom-property palette, referenced",
+        "pass": true,
+        "detail": ":root-vars=true var()-used=true"
+      },
+      {
+        "key": "d",
+        "label": "consistent border-radius",
+        "pass": true,
+        "detail": "--radius var"
+      },
+      {
+        "key": "e",
+        "label": "transitions on interactive elements",
+        "pass": true,
+        "detail": "transition present"
+      }
+    ]
+  }
+}
