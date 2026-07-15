@@ -4,6 +4,7 @@ import { hardDeletePendingAccounts } from '../jobs/hard-delete-pending-accounts'
 import { expireStaleSessions } from '../jobs/expire-stale-sessions';
 import { reconcileStorage } from '../jobs/reconcile-storage';
 import { recoverStuckWebhookJobs } from '../services/stripe-webhook-processor';
+import { retryFailedRefunds } from '../services/billing-service';
 import { sendFounderDigest } from '../services/insight-digest';
 import { sendFeedbackDigest } from '../services/feedback';
 
@@ -26,6 +27,7 @@ export function startCron(): void {
   let lastSessionSweepHour = -1;
   let lastStorageReconcileDay = -1;
   let lastWebhookRecoverySlot = -1;
+  let lastRefundRetrySlot = -1;
   let lastDigestDay = -1;
   let lastFeedbackDigestDay = -1;
 
@@ -44,6 +46,19 @@ export function startCron(): void {
       lastWebhookRecoverySlot = recoverySlot;
       recoverStuckWebhookJobs().catch((e) =>
         logger.error({ error: (e as Error).message }, 'cron stripe-webhook recovery failed'),
+      );
+    }
+
+    // Refund retry (DD-hardening FW6-U1) — every 5 minutes. Re-runs failed / pending
+    // credit-refund jobs (refund_jobs) so a refund that couldn't complete on the
+    // subscription.deleted webhook (no refundable charge yet, a Stripe hiccup) is not
+    // silently lost — the money owed to a churned user is returned on a later sweep.
+    // Idempotency-keyed per subscription in Stripe, so replay never double-refunds.
+    const refundRetrySlot = Math.floor(utcMinute / 5);
+    if (lastRefundRetrySlot !== refundRetrySlot) {
+      lastRefundRetrySlot = refundRetrySlot;
+      retryFailedRefunds().catch((e) =>
+        logger.error({ error: (e as Error).message }, 'cron refund-retry failed'),
       );
     }
 
@@ -107,5 +122,5 @@ export function startCron(): void {
   }, 60_000);
 
   scheduled = true;
-  logger.info('cron scheduled — rankings 6h, hard-delete daily 03:00 UTC, storage reconcile daily 03:30 UTC, session sweep hourly, stripe-webhook recovery every 5min, founder digest daily 07:00 UTC (opt-in)');
+  logger.info('cron scheduled — rankings 6h, hard-delete daily 03:00 UTC, storage reconcile daily 03:30 UTC, session sweep hourly, stripe-webhook recovery every 5min, refund-retry every 5min, founder digest daily 07:00 UTC (opt-in)');
 }
