@@ -54,6 +54,8 @@ export const metadata: Metadata = {
       { url: '/icons/favicon-16.png', sizes: '16x16', type: 'image/png' },
       { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
       { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+      // Classic /favicon.ico fallback (16+32+48 packed) for legacy requests.
+      { url: '/favicon.ico', sizes: '16x16 32x32 48x48' },
     ],
     // F-34: iOS ignores SVG apple-touch icons (why the home-screen mark was plain green).
     // The real 180×180 PNG lockup must come first.
