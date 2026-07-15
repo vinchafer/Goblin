@@ -334,9 +334,15 @@ function renderProjectInstructions(ctx: GoblinChatContext): string {
   ].join('\n');
 }
 
-/** Build the full system prompt: identity + user prefs + (optional) live project context. */
+/** Build the full system prompt: identity + user prefs + (optional) live project context.
+ *
+ * WAVE D-G (U2): APP_DESIGN_FOUNDATION now rides in the base chat prompt too — a
+ * "Baue mir …" chat message is a first-class code-gen path, and it previously had ZERO
+ * design guidance (WAVE-A kept the foundation agent-only). It sits in the static region
+ * (after the identity/policy/roadmap blocks, before the per-run dynamic tail), so it stays
+ * in the byte-stable cached prefix and never leaks a per-run value into the cache. */
 export function buildGoblinChatSystemPrompt(ctx: GoblinChatContext = {}): string {
-  return [IDENTITY, POLICY_BLOCK, NO_ROADMAP_BLOCK, renderUserContext(ctx), renderProjectContext(ctx), renderProjectInstructions(ctx)].filter(Boolean).join('\n');
+  return [IDENTITY, POLICY_BLOCK, NO_ROADMAP_BLOCK, APP_DESIGN_FOUNDATION, renderUserContext(ctx), renderProjectContext(ctx), renderProjectInstructions(ctx)].filter(Boolean).join('\n');
 }
 
 // ─── AGENT MODE (FEEL-3a) ───────────────────────────────────────────────────────
