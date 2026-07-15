@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="de" data-theme="light">
+<head>
+<meta charset="utf-8">
+<style>
+  /* INSTALL-U4 render harness — reproduces the two InstallAppHint states so the
+     "no phantom install button on iOS" invariant is visible. The button logic is
+     also locked deterministically in lib/pwa-install.test.ts (showNativeInstallButton). */
+  :root { --panel:#fff; --border:#e6ded0; --text:#22201a; --meta:#7a7568; --brand-green:#1A3A2A; --bone:#F4ECD8; }
+  * { box-sizing:border-box; margin:0; padding:0; font-family:system-ui,-apple-system,"Segoe UI",sans-serif; }
+  body { background:#f4ecd8; padding:28px; }
+  h1 { font-size:16px; margin-bottom:16px; color:#22201a; }
+  .label { font-size:12px; font-weight:600; color:#5f5640; margin:16px 0 8px; }
+  .phone { width:390px; background:#faf6ec; border:1px solid #ded3bd; border-radius:20px; padding:16px; }
+  .hint { display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:12px;
+    background:var(--panel); border:1px solid var(--border); }
+  .glyph { font-size:22px; flex-shrink:0; }
+  .body { flex:1; min-width:0; }
+  .title { display:block; font-size:14px; font-weight:600; color:var(--text); }
+  .line { display:block; font-size:12.5px; color:var(--meta); margin-top:2px; line-height:1.4; }
+  .btn-install { flex-shrink:0; padding:8px 12px; border-radius:8px; background:var(--brand-green);
+    color:var(--bone); border:none; font-size:13px; font-weight:600; }
+  .btn-howto { flex-shrink:0; padding:8px 12px; border-radius:8px; background:transparent;
+    color:var(--brand-green); border:1px solid var(--border); font-size:13px; font-weight:600; }
+  .x { flex-shrink:0; width:32px; height:32px; border-radius:8px; background:transparent; border:none;
+    color:var(--meta); font-size:18px; }
+</style>
+</head>
+<body>
+  <h1>InstallAppHint — Plattform-erkannte Zustände (INSTALL-U4)</h1>
+
+  <div class="label">iPhone (Safari) — nur Anleitung, KEIN Installieren-Knopf (iOS hat keinen programmatischen Prompt)</div>
+  <div class="phone">
+    <div class="hint" data-testid="install-app-hint">
+      <span class="glyph">📲</span>
+      <span class="body">
+        <span class="title">Goblin als App installieren</span>
+        <span class="line">Teilen → „Zum Home-Bildschirm“ — eigenes Icon, Vollbild, kein App-Store.</span>
+      </span>
+      <a class="btn-howto">Anleitung</a>
+      <button class="x">×</button>
+    </div>
+  </div>
+
+  <div class="label">Android (Chrome, beforeinstallprompt vorhanden) — echter Installieren-Knopf</div>
+  <div class="phone">
+    <div class="hint" data-testid="install-app-hint">
+      <span class="glyph">📲</span>
+      <span class="body">
+        <span class="title">Goblin als App installieren</span>
+        <span class="line">Aufs Handy legen — eigenes Icon, Vollbild, kein App-Store.</span>
+      </span>
+      <button class="btn-install">Installieren</button>
+      <button class="x">×</button>
+    </div>
+  </div>
+</body>
+</html>
