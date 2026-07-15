@@ -1,0 +1,407 @@
+Ich baue dir einen kleinen Habit-Tracker mit localStorage und deutscher Oberfläche. Die App wird Gewohnheiten anlegen, täglich abhaken und den aktuellen Streak anzeigen.
+
+Hier ist der vollständige Code aus einer Datei (`index.html`), der alles enthält: HTML, CSS und JavaScript.
+
+```html index.html
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mein Habit-Tracker</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+        }
+        header {
+            background: linear-gradient(to right, #4b6cb7, #182848);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+        main {
+            padding: 30px;
+        }
+        .add-habit-section {
+            background-color: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+        .add-habit-section h2 {
+            color: #182848;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+        input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #4b6cb7;
+        }
+        button {
+            background: linear-gradient(to right, #4b6cb7, #182848);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(75, 108, 183, 0.3);
+        }
+        .habits-list {
+            margin-top: 20px;
+        }
+        .habits-list h2 {
+            color: #182848;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .habit-item {
+            background-color: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border-left: 5px solid #4b6cb7;
+            transition: transform 0.3s;
+        }
+        .habit-item:hover {
+            transform: translateX(5px);
+        }
+        .habit-info {
+            flex: 1;
+        }
+        .habit-name {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: #182848;
+            margin-bottom: 5px;
+        }
+        .habit-streak {
+            font-size: 0.95rem;
+            color: #666;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .streak-count {
+            font-weight: 700;
+            color: #4b6cb7;
+        }
+        .habit-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .check-button {
+            background-color: #28a745;
+            padding: 12px 20px;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .check-button.checked {
+            background-color: #6c757d;
+        }
+        .delete-button {
+            background-color: #dc3545;
+            padding: 12px;
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+        .empty-state i {
+            font-size: 3rem;
+            color: #c3cfe2;
+            margin-bottom: 15px;
+        }
+        .today-info {
+            background-color: #e8f4ff;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 500;
+            color: #182848;
+        }
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9rem;
+            border-top: 1px solid #eee;
+        }
+        @media (max-width: 600px) {
+            .input-group {
+                flex-direction: column;
+            }
+            .habit-item {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            .habit-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-chart-line"></i> Habit-Tracker</h1>
+            <p>Baue gute Gewohnheiten auf und verfolge deine Erfolge</p>
+        </header>
+        <main>
+            <div class="today-info">
+                <i class="fas fa-calendar-day"></i> Heute: <span id="today-date"></span>
+            </div>
+            
+            <section class="add-habit-section">
+                <h2><i class="fas fa-plus-circle"></i> Neue Gewohnheit hinzufügen</h2>
+                <div class="input-group">
+                    <input type="text" id="habit-input" placeholder="z.B. 30 Minuten Sport, 10 Seiten lesen, meditieren...">
+                    <button id="add-habit-btn">
+                        <i class="fas fa-plus"></i> Hinzufügen
+                    </button>
+                </div>
+            </section>
+            
+            <section class="habits-list">
+                <h2><i class="fas fa-list-check"></i> Meine Gewohnheiten</h2>
+                <div id="habits-container">
+                    <!-- Gewohnheiten werden hier dynamisch eingefügt -->
+                </div>
+            </section>
+        </main>
+        <footer>
+            <p>Deine Daten werden lokal in deinem Browser gespeichert (localStorage).</p>
+            <p>© Habit-Tracker – Made with <i class="fas fa-heart" style="color:#e74c3c;"></i></p>
+        </footer>
+    </div>
+
+    <script>
+        // Heutiges Datum anzeigen
+        function formatDate(date) {
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            return date.toLocaleDateString('de-DE', options);
+        }
+        
+        document.getElementById('today-date').textContent = formatDate(new Date());
+        
+        // Habit-Tracker Logik
+        const STORAGE_KEY = 'habitTrackerData';
+        let habits = [];
+        
+        // Daten aus localStorage laden
+        function loadHabits() {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                habits = JSON.parse(stored);
+            }
+            renderHabits();
+        }
+        
+        // Daten in localStorage speichern
+        function saveHabits() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(habits));
+        }
+        
+        // Gewohnheit hinzufügen
+        function addHabit(name) {
+            if (!name.trim()) return;
+            
+            const newHabit = {
+                id: Date.now(),
+                name: name.trim(),
+                streak: 0,
+                lastChecked: null,
+                checkedToday: false
+            };
+            
+            habits.push(newHabit);
+            saveHabits();
+            renderHabits();
+            document.getElementById('habit-input').value = '';
+        }
+        
+        // Gewohnheit als heute erledigt markieren
+        function checkHabit(id) {
+            const habit = habits.find(h => h.id === id);
+            if (!habit) return;
+            
+            const today = new Date().toDateString();
+            
+            if (habit.checkedToday) {
+                // Rückgängig machen
+                habit.checkedToday = false;
+                habit.streak--;
+                if (habit.streak < 0) habit.streak = 0;
+            } else {
+                // Markieren
+                habit.checkedToday = true;
+                habit.lastChecked = today;
+                
+                // Streak erhöhen, wenn nicht schon heute markiert
+                if (habit.lastChecked !== today || !habit.checkedToday) {
+                    habit.streak++;
+                }
+            }
+            
+            saveHabits();
+            renderHabits();
+        }
+        
+        // Gewohnheit löschen
+        function deleteHabit(id) {
+            if (confirm('Möchtest du diese Gewohnheit wirklich löschen?')) {
+                habits = habits.filter(h => h.id !== id);
+                saveHabits();
+                renderHabits();
+            }
+        }
+        
+        // Gewohnheiten anzeigen
+        function renderHabits() {
+            const container = document.getElementById('habits-container');
+            const today = new Date().toDateString();
+            
+            // Reset checkedToday für neuen Tag
+            habits.forEach(habit => {
+                if (habit.lastChecked !== today) {
+                    habit.checkedToday = false;
+                }
+            });
+            saveHabits();
+            
+            if (habits.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-clipboard-list"></i>
+                        <h3>Noch keine Gewohnheiten</h3>
+                        <p>Füge oben deine erste Gewohnheit hinzu und starte deine Erfolgsreise!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = habits.map(habit => `
+                <div class="habit-item">
+                    <div class="habit-info">
+                        <div class="habit-name">${habit.name}</div>
+                        <div class="habit-streak">
+                            <i class="fas fa-fire"></i>
+                            Aktueller Streak: <span class="streak-count">${habit.streak} Tag${habit.streak !== 1 ? 'e' : ''}</span>
+                        </div>
+                    </div>
+                    <div class="habit-actions">
+                        <button class="check-button ${habit.checkedToday ? 'checked' : ''}" onclick="checkHabit(${habit.id})">
+                            <i class="fas fa-${habit.checkedToday ? 'check-circle' : 'circle'}"></i>
+                            ${habit.checkedToday ? 'Erledigt' : 'Heute erledigt'}
+                        </button>
+                        <button class="delete-button" onclick="deleteHabit(${habit.id})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Event Listener
+        document.getElementById('add-habit-btn').addEventListener('click', () => {
+            const input = document.getElementById('habit-input');
+            addHabit(input.value);
+        });
+        
+        document.getElementById('habit-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                addHabit(e.target.value);
+            }
+        });
+        
+        // Initialisierung
+        document.addEventListener('DOMContentLoaded', () => {
+            loadHabits();
+        });
+    </script>
+</body>
+</html>
+```
+
+Die App bietet:
+- **Deutsche Oberfläche** mit klaren Texten
+- **Gewohnheiten anlegen** über Eingabefeld + Button (oder Enter-Taste)
+- **Täglich abhaken** mit Klick auf "Heute erledigt" (wird zu "Erledigt" mit Haken)
+- **Streak anzeigen** für jede Gewohnheit (wie viele Tage in Folge)
+- **Löschen** einzelner Gewohnheiten mit Bestätigung
+- **LocalStorage** speichert alle Daten lokal im Browser
+- **Responsive Design** für Mobilgeräte
+- **Visuelles Feedback** mit Animationen und Farben
+
+Der Code ist fertig. Übernimm ihn mit "An Code senden", dann "Sichern" und "Veröffentlichen" – danach ist dein Habit-Tracker unter deiner Projekt-URL live.

@@ -1,0 +1,399 @@
+Ich baue dir eine Rezept-Seite für Pasta-Gerichte mit Übersicht und Detailansichten. Die App wird eine Startseite mit allen Rezepten und eine Detailseite für jedes einzelne Rezept haben – alles in einer einzigen HTML-Datei mit etwas CSS und JavaScript für die Navigation.
+
+Hier ist der Code:
+
+```html index.html
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meine liebsten Pasta-Rezepte</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        body {
+            background-color: #fef9f3;
+            color: #333;
+            line-height: 1.6;
+        }
+        header {
+            background: linear-gradient(135deg, #ff9a3c 0%, #ff6b6b 100%);
+            color: white;
+            padding: 2rem 1rem;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 0.5rem;
+        }
+        .tagline {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+        .recipes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+        .recipe-card {
+            background: white;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+        }
+        .recipe-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 28px rgba(0,0,0,0.15);
+        }
+        .recipe-img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        .recipe-content {
+            padding: 1.5rem;
+        }
+        .recipe-title {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: #d35400;
+        }
+        .recipe-desc {
+            color: #666;
+            margin-bottom: 1rem;
+            font-size: 0.95rem;
+        }
+        .recipe-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: #888;
+        }
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+        .detail-view {
+            display: none;
+            background: white;
+            border-radius: 16px;
+            padding: 2.5rem;
+            margin-top: 2rem;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+            animation: fadeIn 0.5s ease;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .detail-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+        }
+        .detail-title {
+            font-size: 2.5rem;
+            color: #d35400;
+        }
+        .back-btn {
+            background: #ff9a3c;
+            color: white;
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 50px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: background 0.3s;
+        }
+        .back-btn:hover {
+            background: #ff7c1f;
+        }
+        .detail-body {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3rem;
+        }
+        .detail-img {
+            width: 100%;
+            border-radius: 12px;
+            box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+        }
+        .ingredients-list, .steps-list {
+            list-style: none;
+            margin-top: 1rem;
+        }
+        .ingredients-list li, .steps-list li {
+            padding: 0.7rem 0;
+            border-bottom: 1px dashed #eee;
+            display: flex;
+            align-items: flex-start;
+        }
+        .ingredients-list li:last-child, .steps-list li:last-child {
+            border-bottom: none;
+        }
+        .ingredients-list i, .steps-list i {
+            color: #ff9a3c;
+            margin-right: 0.8rem;
+            margin-top: 0.2rem;
+        }
+        h2, h3 {
+            color: #333;
+            margin-bottom: 1rem;
+        }
+        h2 {
+            font-size: 1.8rem;
+            border-left: 5px solid #ff9a3c;
+            padding-left: 1rem;
+        }
+        h3 {
+            font-size: 1.4rem;
+            margin-top: 2rem;
+        }
+        footer {
+            text-align: center;
+            padding: 2rem;
+            margin-top: 3rem;
+            color: #888;
+            border-top: 1px solid #eee;
+        }
+        @media (max-width: 768px) {
+            .detail-body {
+                grid-template-columns: 1fr;
+            }
+            .detail-title {
+                font-size: 2rem;
+            }
+            h1 {
+                font-size: 2.2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1><i class="fas fa-pasta"></i> Meine liebsten Pasta-Rezepte</h1>
+        <p class="tagline">Entdecke meine persönliche Sammlung der leckersten Nudelgerichte – von klassisch bis kreativ.</p>
+    </header>
+
+    <div class="container">
+        <div id="overview">
+            <h2>Alle Rezepte</h2>
+            <div class="recipes-grid" id="recipes-container">
+                <!-- Rezeptkarten werden hier per JavaScript eingefügt -->
+            </div>
+        </div>
+
+        <div class="detail-view" id="detail-view">
+            <!-- Detailansicht wird hier per JavaScript eingefügt -->
+        </div>
+    </div>
+
+    <footer>
+        <p>© 2023 Pasta‑Leidenschaft – Mit ❤️ gekocht und geteilt.</p>
+    </footer>
+
+    <script>
+        // Rezept-Daten
+        const recipes = [
+            {
+                id: 1,
+                title: "Spaghetti Carbonara",
+                description: "Cremig, würzig und in 20 Minuten fertig – der italienische Klassiker.",
+                image: "https://images.unsplash.com/photo-1608756687912-50c5c594d8f8?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+                cookTime: "20 min",
+                difficulty: "Mittel",
+                servings: 2,
+                ingredients: [
+                    "200 g Spaghetti",
+                    "100 g Pancetta oder Guanciale",
+                    "2 Eigelb",
+                    "50 g Pecorino (gerieben)",
+                    "Schwarzer Pfeffer (frisch gemahlen)",
+                    "Salz"
+                ],
+                steps: [
+                    "Nudeln in reichlich Salzwasser al dente kochen.",
+                    "Pancetta in kleine Würfel schneiden und in einer Pfanne knusprig braten.",
+                    "Eigelb mit Pecorino und viel Pfeffer verrühren.",
+                    "Nudeln abgießen, sofort mit Pancetta mischen.",
+                    "Pfanne vom Herd nehmen, Ei‑Käse‑Masse unterrühren – die Hitze der Nudeln stockt die Creme.",
+                    "Sofort servieren – zusätzlichen Pecorino und Pfeffer darüber."
+                ]
+            },
+            {
+                id: 2,
+                title: "Pesto alla Genovese",
+                description: "Frisches Basilikum‑Pesto mit Pinienkernen und Parmesan – einfach unwiderstehlich.",
+                image: "https://images.unsplash.com/photo-1563379091339-03246963cc52?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+                cookTime: "15 min",
+                difficulty: "Einfach",
+                servings: 4,
+                ingredients: [
+                    "100 g frisches Basilikum",
+                    "50 g Pinienkerne",
+                    "80 g Parmesan (gerieben)",
+                    "1 Knoblauchzehe",
+                    "150 ml Olivenöl",
+                    "Salz",
+                    "400 g Linguine oder Trofie"
+                ],
+                steps: [
+                    "Basilikumblätter waschen und trocken tupfen.",
+                    "Pinienkerne in einer Pfanne ohne Fett leicht rösten.",
+                    "Basilikum, Pinienkerne, Parmesan und Knoblauch im Mixer pürieren.",
+                    "Olivenöl langsam einlaufen lassen, bis eine cremige Sauce entsteht.",
+                    "Mit Salz abschmecken.",
+                    "Nudeln al dente kochen, mit Pesto vermengen und servieren."
+                ]
+            },
+            {
+                id: 3,
+                title: "Lasagne Bolognese",
+                description: "Schicht für Schicht voller Geschmack – die Königin der Nudelgerichte.",
+                image: "https://images.unsplash.com/photo-1574894709920-11b28e7367e3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+                cookTime: "2 h",
+                difficulty: "Anspruchsvoll",
+                servings: 6,
+                ingredients: [
+                    "500 g Rinderhack",
+                    "1 Zwiebel",
+                    "2 Karotten",
+                    "2 Stangen Sellerie",
+                    "800 ml passierte Tomaten",
+                    "200 ml Milch",
+                    "250 g Lasagneblätter",
+                    "100 g Parmesan",
+                    "Béchamelsoße (aus 50 g Butter, 50 g Mehl, 500 ml Milch)",
+                    "Olivenöl, Salz, Pfeffer"
+                ],
+                steps: [
+                    "Zwiebel, Karotten, Sellerie fein hacken und in Olivenöl anschwitzen.",
+                    "Hackfleisch dazugeben und krümelig braten.",
+                    "Tomaten und Milch zugießen, 1,5 Stunden köcheln lassen.",
+                    "Béchamelsoße zubereiten: Butter schmelzen, Mehl einrühren, Milch zugießen und dickköcheln lassen.",
+                    "Eine Auflaufform mit Öl ausstreichen, abwechselnd Nudeln, Ragù und Béchamel schichten.",
+                    "Mit Parmesan bestreuen und 40 Minuten bei 180°C goldbraun backen."
+                ]
+            },
+            {
+                id: 4,
+                title: "Aglio e Olio",
+                description: "Minimalistisch, aber voller Aroma – mit Knoblauch, Chili und Petersilie.",
+                image: "https://images.unsplash.com/photo-1612874742237-6526221588e3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80",
+                cookTime: "15 min",
+                difficulty: "Einfach",
+                servings: 2,
+                ingredients: [
+                    "200 g Spaghetti",
+                    "4 Knoblauchzehen",
+                    "1 rote Chili",
+                    "Eine Handvoll Petersilie",
+                    "100 ml Olivenöl",
+                    "Salz"
+                ],
+                steps: [
+                    "Spaghetti in Salzwasser al dente kochen.",
+                    "Knoblauch in dünne Scheiben schneiden, Chili fein hacken.",
+                    "Olivenöl in einer Pfanne erhitzen, Knoblauch und Chili darin langsam goldbraun braten.",
+                    "Petersilie hacken und zum Öl geben.",
+                    "Nudeln abgießen, in die Pfanne geben und gut mit dem aromatischen Öl vermengen.",
+                    "Mit Salz abschmecken und sofort servieren."
+                ]
+            }
+        ];
+
+        // DOM‑Elemente
+        const recipesContainer = document.getElementById('recipes-container');
+        const overview = document.getElementById('overview');
+        const detailView = document.getElementById('detail-view');
+
+        // Rezeptkarten rendern
+        recipes.forEach(recipe => {
+            const card = document.createElement('div');
+            card.className = 'recipe-card';
+            card.innerHTML = `
+                <img src="${recipe.image}" alt="${recipe.title}" class="recipe-img">
+                <div class="recipe-content">
+                    <h3 class="recipe-title">${recipe.title}</h3>
+                    <p class="recipe-desc">${recipe.description}</p>
+                    <div class="recipe-meta">
+                        <span class="meta-item"><i class="fas fa-clock"></i> ${recipe.cookTime}</span>
+                        <span class="meta-item"><i class="fas fa-signal"></i> ${recipe.difficulty}</span>
+                        <span class="meta-item"><i class="fas fa-user-friends"></i> ${recipe.servings} Pers.</span>
+                    </div>
+                </div>
+            `;
+            card.addEventListener('click', () => showRecipeDetail(recipe.id));
+            recipesContainer.appendChild(card);
+        });
+
+        // Detailansicht anzeigen
+        function showRecipeDetail(id) {
+            const recipe = recipes.find(r => r.id === id);
+            if (!recipe) return;
+
+            overview.style.display = 'none';
+            detailView.style.display = 'block';
+            detailView.innerHTML = `
+                <div class="detail-header">
+                    <h1 class="detail-title">${recipe.title}</h1>
+                    <button class="back-btn" onclick="showOverview()"><i class="fas fa-arrow-left"></i> Zurück</button>
+                </div>
+                <div class="detail-body">
+                    <div>
+                        <img src="${recipe.image}" alt="${recipe.title}" class="detail-img">
+                        <div class="recipe-meta" style="margin-top: 1rem;">
+                            <span class="meta-item"><i class="fas fa-clock"></i> ${recipe.cookTime}</span>
+                            <span class="meta-item"><i class="fas fa-signal"></i> ${recipe.difficulty}</span>
+                            <span class="meta-item"><i class="fas fa-user-friends"></i> ${recipe.servings} Personen</span>
+                        </div>
+                    </div>
+                    <div>
+                        <h2><i class="fas fa-list"></i> Zutaten</h2>
+                        <ul class="ingredients-list">
+                            ${recipe.ingredients.map(ing => `<li><i class="fas fa-check-circle"></i> ${ing}</li>`).join('')}
+                        </ul>
+                        <h3><i class="fas fa-mortar-pestle"></i> Zubereitung</h3>
+                        <ol class="steps-list">
+                            ${recipe.steps.map((step, idx) => `<li><i class="fas fa-utensils"></i> <strong>Schritt ${idx + 1}:</strong> ${step}</li>`).join('')}
+                        </ol>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Zurück zur Übersicht
+        window.showOverview = function() {
+            overview.style.display = 'block';
+            detailView.style.display = 'none';
+        };
+    </script>
+</body>
+</html>
+```
+
+Die Seite zeigt vier vorgeschlagene Pasta-Rezepte in einer schönen Kachelübersicht. Klicke auf eine Kachel, um zur Detailansicht mit Zutaten und Schritt‑für‑Schritt‑Anleitung zu gelangen.
+
+Übernimm den Code mit „An Code senden“, dann „Sichern“ und „Veröffentlichen“ – danach ist die Rezept‑Seite unter deiner Projekt‑URL live.
