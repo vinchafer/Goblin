@@ -80,7 +80,13 @@ class Query {
   maybeSingle() { this._single = true; return this._run(); }
   then(res: any, rej: any) { return this._run().then(res, rej); }
   async _run(): Promise<any> {
-    const store = tables[this.table as keyof Tables];
+    // The real Supabase query builder accepts ANY table name. The production
+    // deletion service purges tables this fake doesn't pre-declare in `Tables`
+    // (e.g. support_tickets, feedback). Resolve the backing store tolerant of
+    // unknown tables — lazily create an empty array — so a delete/select on an
+    // un-seeded table returns a well-formed result instead of `undefined.filter`.
+    const registry = tables as unknown as Record<string, Row[]>;
+    const store = (registry[this.table] ??= []);
     if (this.op === 'select') {
       const rows = store.filter((r) => match(r, this.filters));
       if (this._single) return { data: rows[0] ?? null, error: null };
@@ -99,10 +105,10 @@ class Query {
       return { error: null };
     }
     if (this.op === 'delete') {
-      tables[this.table as keyof Tables] = store.filter((r) => !match(r, this.filters));
-      return { error: null };
+      registry[this.table] = store.filter((r) => !match(r, this.filters));
+      return { data: [], error: null };
     }
-    return { error: null };
+    return { data: [], error: null };
   }
 }
 
