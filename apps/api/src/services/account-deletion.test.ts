@@ -7,7 +7,7 @@
  * Supabase + email + storage: in-memory fakes, so the production DB is never
  * touched and nothing real is deleted.
  */
-import { describe, it, expect, beforeAll, vi } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { existsSync, readFileSync } from 'fs';
 import { resolve } from 'path';
 import Stripe from 'stripe';
@@ -80,7 +80,13 @@ class Query {
   maybeSingle() { this._single = true; return this._run(); }
   then(res: any, rej: any) { return this._run().then(res, rej); }
   async _run(): Promise<any> {
-    const store = tables[this.table as keyof Tables];
+    // The real Supabase query builder accepts ANY table name. The production
+    // deletion service purges tables this fake doesn't pre-declare in `Tables`
+    // (e.g. support_tickets, feedback). Resolve the backing store tolerant of
+    // unknown tables — lazily create an empty array — so a delete/select on an
+    // un-seeded table returns a well-formed result instead of `undefined.filter`.
+    const registry = tables as unknown as Record<string, Row[]>;
+    const store = (registry[this.table] ??= []);
     if (this.op === 'select') {
       const rows = store.filter((r) => match(r, this.filters));
       if (this._single) return { data: rows[0] ?? null, error: null };
@@ -99,10 +105,10 @@ class Query {
       return { error: null };
     }
     if (this.op === 'delete') {
-      tables[this.table as keyof Tables] = store.filter((r) => !match(r, this.filters));
-      return { error: null };
+      registry[this.table] = store.filter((r) => !match(r, this.filters));
+      return { data: [], error: null };
     }
-    return { error: null };
+    return { data: [], error: null };
   }
 }
 
@@ -149,11 +155,13 @@ const stripe = new Stripe(STRIPE_KEY, { apiVersion: '2024-06-20' });
 
 // ── Test fixtures: real throwaway test-mode customer + subscription ──────────
 let priceId = '';
+let createdProductId = '';
 const createdCustomers: string[] = [];
 
 async function ensurePrice(): Promise<string> {
   if (priceId) return priceId;
   const product = await stripe.products.create({ name: 'Goblin DELETE-TEST (throwaway)' });
+  createdProductId = product.id;
   const price = await stripe.prices.create({
     product: product.id,
     unit_amount: 1900,
@@ -193,6 +201,40 @@ const skip = HAS_TEST_KEY ? describe : describe.skip;
 skip('account-deletion canonical service (real test-mode Stripe)', () => {
   beforeAll(async () => {
     await ensurePrice();
+  }, 30_000);
+
+  // Hygiene: the change-plan suites clean up their throwaway Stripe objects in an
+  // afterAll; this suite previously had none, so every run leaked its PROOF
+  // customers/products (PROOF 1/3/4/5/6) into the test account. Mirror that pattern.
+  // Best-effort, fire-and-forget: cleanup failures are logged, never fail the suite.
+  afterAll(async () => {
+    // Deleting a customer cascades cancellation + deletion of its subscriptions.
+    for (const id of createdCustomers) {
+      try {
+        await stripe.customers.del(id);
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.warn(`[account-deletion cleanup] customer ${id} not deleted: ${(e as Error).message}`);
+      }
+    }
+    // The one throwaway product+price backing those subs. A price can't be hard-
+    // deleted (only archived); a product can only be deleted once no price blocks
+    // it, so fall back to archiving. All best-effort.
+    if (priceId) {
+      try { await stripe.prices.update(priceId, { active: false }); } catch { /* best-effort */ }
+    }
+    if (createdProductId) {
+      try {
+        await stripe.products.del(createdProductId);
+      } catch {
+        try {
+          await stripe.products.update(createdProductId, { active: false });
+        } catch (e) {
+          // eslint-disable-next-line no-console
+          console.warn(`[account-deletion cleanup] product ${createdProductId} not deleted/archived: ${(e as Error).message}`);
+        }
+      }
+    }
   }, 30_000);
 
   it('PROOF 1: request → sub set to cancel_at_period_end; soft-delete + 10d schedule; account banned', async () => {

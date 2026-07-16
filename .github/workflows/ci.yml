@@ -69,4 +69,5 @@ jobs:
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
           STRIPE_PRICE_BUILD_TIER1: ${{ secrets.STRIPE_PRICE_BUILD_TIER1 }}
           STRIPE_PRICE_PRO_TIER1: ${{ secrets.STRIPE_PRICE_PRO_TIER1 }}
+          STRIPE_PRICE_POWER_TIER1: ${{ secrets.STRIPE_PRICE_POWER_TIER1 }}
         run: pnpm --filter @goblin/api test
