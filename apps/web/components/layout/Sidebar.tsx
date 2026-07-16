@@ -207,6 +207,17 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
           position: 'relative',
           zIndex: 40,
           flexShrink: 0,
+          // PWA safe-area (SAFEAREA-U-BOTTOM): in an installed standalone PWA the
+          // viewport is edge-to-edge (viewport-fit=cover). In LANDSCAPE the phone
+          // is ≥769px wide, so this desktop rail — not the drawer — is what renders,
+          // and its footer (SidebarUsage quota card + the account/"Vincent" pill)
+          // sits flush to the screen bottom, UNDER the iOS home-indicator zone that
+          // clips it (the founder's bug). Padding the bottom by
+          // env(safe-area-inset-bottom) lifts the whole flex column — the pill, and
+          // the quota card above it — clear of the indicator; the rail's --subtle
+          // background fills the inset zone. env() is 0 in a normal browser tab, so
+          // desktop and mobile-Safari-tab rendering is unchanged.
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         }}
         className="goblin-sidebar-desktop"
       >

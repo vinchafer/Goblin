@@ -76,7 +76,10 @@ export function DiffSheet({ path, base, proposed, added, removed, onClose, onWho
 
         {/* Actions — spec §4: dismiss (stays in draft) · whole file (Reader) ·
             re-anchor (Tier 2). */}
-        <div style={{ flexShrink: 0, borderTop: "1px solid var(--ed-rule)", background: "var(--ed-chrome)", padding: "10px 14px", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+        {/* SAFEAREA-U-BOTTOM: bottom-anchored sheet — pad the actions row by the
+            iOS home-indicator inset so the buttons stay tappable in a standalone
+            PWA. env() is 0 in a normal browser. */}
+        <div style={{ flexShrink: 0, borderTop: "1px solid var(--ed-rule)", background: "var(--ed-chrome)", padding: "10px 14px calc(10px + env(safe-area-inset-bottom, 0px))", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           {onReanchor && (
             <button onClick={() => onReanchor({ from: 1, to: proposed.split("\n").length })} data-testid="diff-sheet-reanchor"
               style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "transparent", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-2)", borderRadius: 9, padding: "9px 12px", fontSize: 13, cursor: "pointer", fontFamily: "var(--font-sans)" }}>

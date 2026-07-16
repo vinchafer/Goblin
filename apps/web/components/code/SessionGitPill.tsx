@@ -125,7 +125,10 @@ export function SessionGitPill({ projectId }: { projectId: string }) {
               @media (max-width: 680px) {
                 .gb-git-panel { top: auto; bottom: 0; right: 0; left: 0; height: auto; max-height: 80dvh; width: 100%;
                   max-width: 100%; border-left: none; border-top: 1px solid var(--ed-rule);
-                  border-radius: 16px 16px 0 0; animation: gbGitInM 0.18s ease-out; }
+                  border-radius: 16px 16px 0 0; animation: gbGitInM 0.18s ease-out;
+                  /* SAFEAREA-U-BOTTOM: docked to the screen bottom on mobile — pad
+                     the panel by the iOS home-indicator inset (0 in a browser). */
+                  padding-bottom: env(safe-area-inset-bottom, 0px); }
                 @keyframes gbGitInM { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
               }
             `}</style>

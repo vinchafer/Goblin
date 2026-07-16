@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="de" data-theme="light">
+<head>
+<meta charset="utf-8">
+<style>
+  /* SAFEAREA-U-BOTTOM render harness. Headless Chromium reports
+     env(safe-area-inset-bottom) as 0 (no home indicator), so this harness
+     SIMULATES the iOS bottom inset by feeding a fixed 34px through --sab and
+     applying it the EXACT way the shipped code does:
+       Sidebar rail:  padding-bottom: var(--sab);
+       Composer:      padding: 10px 16px calc(12px + var(--sab));
+     A translucent home-indicator pill band is overlaid at the bottom so the
+     clip — and its removal — is visible. Honest limit: this is an emulation of
+     the mechanism; the real env() value on device is the founder's final gate. */
+  :root { --sab: 34px;
+    --brand-green:#1A3A2A; --brand-gold:#D4A737; --bone:#F4ECD8; --paper:#FBF7EC;
+    --subtle:#F1ECE0; --border:#E3DBCA; --panel:#ffffff; --text:#2b2b26;
+    --ink-3:#8C857A; --surface-2:#F6F1E6; }
+  * { box-sizing: border-box; margin:0; padding:0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+  body { background:#0b0d0c; color:#e8e4d8; padding:28px; }
+  h1 { font-size:17px; font-weight:700; margin-bottom:4px; color:#f4ecd8; }
+  .sub { font-size:12.5px; color:#9aa39d; margin-bottom:22px; max-width:820px; line-height:1.55; }
+  .row { display:flex; gap:44px; flex-wrap:wrap; align-items:flex-start; }
+  .caselabel { font-size:12px; font-weight:600; letter-spacing:.3px; margin-bottom:10px; }
+  .bad { color:#e6795f; } .good { color:#7fc9a0; }
+
+  /* phone frame — portrait */
+  .phone { width:300px; height:560px; border-radius:34px; overflow:hidden; border:1px solid #2a2f2c;
+           box-shadow:0 12px 40px rgba(0,0,0,.5); background:var(--paper); position:relative;
+           display:flex; }
+  .phone.landscape { width:640px; height:300px; }
+
+  /* the simulated iOS home-indicator zone, drawn OVER the app to show whether
+     bottom content collides with it */
+  .homezone { position:absolute; bottom:0; left:0; right:0; height:var(--sab); z-index:99;
+    display:flex; align-items:center; justify-content:center; pointer-events:none;
+    background:linear-gradient(0deg, rgba(255,120,90,.20), rgba(255,120,90,.03)); }
+  .homezone::after { content:""; width:120px; height:5px; border-radius:3px; background:rgba(20,20,20,.55); }
+
+  /* ── faithful reproduction of the desktop rail (goblin-sidebar-desktop) ── */
+  .rail { width:100%; background:var(--subtle); border-right:1px solid var(--border);
+    display:flex; flex-direction:column; height:100%; overflow:hidden; position:relative; }
+  .rail.fixed { padding-bottom:var(--sab); }           /* THE FIX */
+  .rail .eyebrow { font-size:10px; font-weight:700; letter-spacing:1.1px; text-transform:uppercase;
+    color:var(--ink-3); padding:14px 16px 6px; }
+  .rail .proj { padding:6px 12px; font-size:12.5px; color:var(--text); display:flex; gap:8px; align-items:center; }
+  .rail .proj .dot { width:8px; height:8px; border-radius:50%; background:var(--brand-gold); }
+  .rail .fill { flex:1; }
+  /* quota card */
+  .quota { margin:10px 12px 0; padding:10px 12px; border-radius:12px; background:var(--panel);
+    border:1px solid var(--border); }
+  .quota .qh { font-size:10px; font-weight:700; letter-spacing:.6px; color:var(--ink-3); text-transform:uppercase; }
+  .quota .qbar { height:6px; border-radius:999px; background:#E7E0D0; margin-top:7px; overflow:hidden; }
+  .quota .qbar i { display:block; height:100%; width:62%; background:var(--brand-green); }
+  .quota .qn { font-size:11px; color:var(--text); margin-top:6px; }
+  /* account / Vincent pill */
+  .pillwrap { padding:10px 12px; border-top:1px solid var(--border); }
+  .pill { display:flex; align-items:center; gap:10px; width:100%; padding:8px 10px; border-radius:24px;
+    background:var(--panel); border:1px solid var(--border); }
+  .pill .av { width:28px; height:28px; border-radius:50%; background:#2A523E; color:#fff;
+    display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12px; }
+  .pill .nm { font-size:12.5px; font-weight:500; color:var(--text); flex:1; }
+  .pill .gear { color:var(--ink-3); font-size:13px; }
+
+  /* ── faithful reproduction of the chat composer (ChatInput non-hero root) ── */
+  .chatcol { display:flex; flex-direction:column; width:100%; height:100%; background:var(--paper); }
+  .chatcol .thread { flex:1; padding:16px; overflow:hidden; }
+  .chatcol .bubble { background:#EFE8D8; border-radius:12px; padding:8px 12px; font-size:12px;
+    color:var(--text); max-width:80%; margin-bottom:8px; }
+  .chatcol .bubble.me { background:var(--brand-green); color:#fff; margin-left:auto; }
+  .composer { background:var(--panel); border-top:1px solid var(--border);
+    padding:10px 16px 12px; }
+  .composer.fixed { padding:10px 16px calc(12px + var(--sab)); }   /* THE FIX */
+  .composer .box { display:flex; align-items:center; gap:8px; border:1px solid var(--border);
+    border-radius:16px; padding:8px 12px; background:#fff; }
+  .composer .box .ph { flex:1; font-size:12.5px; color:#9c948660; }
+  .composer .box .send { width:28px; height:28px; border-radius:50%; background:var(--brand-green);
+    color:#fff; display:flex; align-items:center; justify-content:center; font-size:13px; }
+
+  .callout { position:absolute; z-index:100; font-size:10.5px; font-weight:600; padding:3px 7px; border-radius:6px;
+    color:#fff; }
+</style>
+</head>
+<body>
+  <h1>SAFEAREA-U-BOTTOM — the app's bottom clears the iOS home indicator</h1>
+  <p class="sub">
+    Emulated installed-PWA (viewport-fit=cover). The peach band + grey pill is the simulated
+    home-indicator zone (<code>env(safe-area-inset-bottom)</code> ≈ 34px). BEFORE, the sidebar footer
+    (quota card + account/&ldquo;Vincent&rdquo; pill) and the chat composer render <span class="bad">under</span>
+    the indicator. AFTER, the rail pads its bottom and the composer pads its root, lifting both
+    <span class="good">clear</span>. env() is 0 in a normal browser tab, so desktop/mobile-Safari is unchanged.
+  </p>
+
+  <!-- PORTRAIT — composer (portrait phone shows the drawer/rail full-bleed chat) -->
+  <div class="caselabel">Portrait · chat composer</div>
+  <div class="row">
+    <div class="case">
+      <div class="caselabel bad">BEFORE — composer under the indicator</div>
+      <div class="phone">
+        <div class="chatcol">
+          <div class="thread">
+            <div class="bubble">Bau mir eine Landingpage für meinen Kaffee&shy;stand.</div>
+            <div class="bubble me">Klar — hier ist ein erster Entwurf …</div>
+          </div>
+          <div class="composer">
+            <div class="box"><span class="ph">Schreib eine Nachricht …</span><span class="send">↑</span></div>
+          </div>
+        </div>
+        <div class="homezone"></div>
+      </div>
+    </div>
+    <div class="case">
+      <div class="caselabel good">AFTER — composer lifted clear</div>
+      <div class="phone">
+        <div class="chatcol">
+          <div class="thread">
+            <div class="bubble">Bau mir eine Landingpage für meinen Kaffee&shy;stand.</div>
+            <div class="bubble me">Klar — hier ist ein erster Entwurf …</div>
+          </div>
+          <div class="composer fixed">
+            <div class="box"><span class="ph">Schreib eine Nachricht …</span><span class="send">↑</span></div>
+          </div>
+        </div>
+        <div class="homezone"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LANDSCAPE — the desktop rail is what renders ≥769px; its footer is the report -->
+  <div class="caselabel" style="margin-top:30px;">Landscape (≥769px → desktop rail) · sidebar footer: quota card + account pill</div>
+  <div class="row">
+    <div class="case">
+      <div class="caselabel bad">BEFORE — quota card + pill under the indicator</div>
+      <div class="phone landscape">
+        <div class="rail">
+          <div class="eyebrow">Projekte</div>
+          <div class="proj"><span class="dot"></span>Kaffeestand</div>
+          <div class="proj"><span class="dot"></span>Vereinsseite</div>
+          <div class="fill"></div>
+          <div class="quota"><div class="qh">Guthaben</div><div class="qbar"><i></i></div><div class="qn">6.20 € übrig</div></div>
+          <div class="pillwrap"><div class="pill"><span class="av">V</span><span class="nm">Vincent</span><span class="gear">⚙</span></div></div>
+        </div>
+        <div class="homezone"></div>
+      </div>
+    </div>
+    <div class="case">
+      <div class="caselabel good">AFTER — footer lifted clear</div>
+      <div class="phone landscape">
+        <div class="rail fixed">
+          <div class="eyebrow">Projekte</div>
+          <div class="proj"><span class="dot"></span>Kaffeestand</div>
+          <div class="proj"><span class="dot"></span>Vereinsseite</div>
+          <div class="fill"></div>
+          <div class="quota"><div class="qh">Guthaben</div><div class="qbar"><i></i></div><div class="qn">6.20 € übrig</div></div>
+          <div class="pillwrap"><div class="pill"><span class="av">V</span><span class="nm">Vincent</span><span class="gear">⚙</span></div></div>
+        </div>
+        <div class="homezone"></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1256,7 +1256,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
 
       {/* Toast */}
       {toast && (
-        <div style={{ position: "absolute", bottom: 16, left: "50%", transform: "translateX(-50%)", background: "var(--ed-primary)", color: "var(--ed-on-primary)", borderRadius: 9, padding: "9px 16px", fontSize: 12.5, fontFamily: "var(--font-sans)", zIndex: 90, maxWidth: 460, textAlign: "center", boxShadow: "0 6px 24px rgba(15,43,30,0.3)" }}>
+        <div style={{ position: "absolute", bottom: "calc(16px + env(safe-area-inset-bottom, 0px))", left: "50%", transform: "translateX(-50%)", background: "var(--ed-primary)", color: "var(--ed-on-primary)", borderRadius: 9, padding: "9px 16px", fontSize: 12.5, fontFamily: "var(--font-sans)", zIndex: 90, maxWidth: 460, textAlign: "center", boxShadow: "0 6px 24px rgba(15,43,30,0.3)" }}>
           {toast}
         </div>
       )}

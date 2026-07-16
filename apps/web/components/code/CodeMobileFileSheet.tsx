@@ -24,6 +24,10 @@ export function CodeMobileFileSheet({
           position: 'absolute', left: 0, top: 0, bottom: 0, width: 280,
           background: 'var(--ed-chrome)', borderRight: '1px solid var(--ed-rule)', overflowY: 'auto',
           boxShadow: '4px 0 20px rgba(15,43,30,0.18)',
+          // SAFEAREA-U-BOTTOM: full-height drawer — pad the scroll container's
+          // bottom so the last file rows clear the iOS home indicator (0 in a
+          // browser tab).
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         }}
       >
         <div style={{ padding: 16 }}>
