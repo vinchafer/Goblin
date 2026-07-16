@@ -10,6 +10,7 @@ import { filterVisibleProjects } from '@/lib/project-visibility';
 import { fetchWithRetryOn429 } from '@/lib/api';
 import { friendlyError } from '@/lib/friendly-error';
 import { useLang, readLang, t } from '@/lib/use-lang';
+import { InstallAppHint } from '@/components/mobile/InstallAppHint';
 
 interface Project {
   id: string;
@@ -293,6 +294,10 @@ export default function DashboardPage() {
             .gobl-hero-title { margin-bottom: 14px !important; }
           }
         `}</style>
+
+        {/* INSTALL-U4: discreet, dismissible "install as app" hint. Renders only on
+            iOS/Android and only until installed or dismissed (platform-detected). */}
+        <InstallAppHint />
 
         {/* Composer head (Variant B from mockup — dark card, prominent prompt entry). */}
         {/* P0-1 (DD): NO `overflow: hidden` here. The hero hosts the shared

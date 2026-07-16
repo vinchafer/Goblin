@@ -111,6 +111,9 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
 
   const [userCollapsed, setUserCollapsed] = useState(false);
   const [viewportNarrow, setViewportNarrow] = useState(false);
+  // LANDSCAPE-U2: once the user explicitly toggles in the narrow band, honour
+  // their choice instead of the forced-collapse default (see `collapsed` below).
+  const [narrowOverride, setNarrowOverride] = useState(false);
   const [mounted, setMounted] = useState(false);
   const initialized = useRef(false);
 
@@ -136,12 +139,22 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
     return () => mq.removeEventListener('change', on);
   }, []);
 
-  // Forced collapsed when the viewport is narrow; otherwise user-controlled.
-  const collapsed = userCollapsed || viewportNarrow;
+  // LANDSCAPE-U2: the narrow band (768–959px, which every landscape phone lands
+  // in) DEFAULTS to the collapsed strip so the 280px rail doesn't crowd the main
+  // pane — but this must be a default, not a lock. Before, `userCollapsed ||
+  // viewportNarrow` hard-forced collapse and the expand toggle (which flipped
+  // userCollapsed) could never win against the OR, so the sidebar was
+  // un-expandable in landscape (the founder's bug). Now: until the user acts,
+  // the narrow band is collapsed; once they toggle, `narrowOverride` hands
+  // control back to their explicit choice. On true desktop (≥960) viewportNarrow
+  // is false, so behaviour is unchanged either way. Drawer mode (<768, CSS) is
+  // unaffected.
+  const collapsed = narrowOverride ? userCollapsed : (userCollapsed || viewportNarrow);
 
   const toggle = () => {
-    const next = !userCollapsed;
+    const next = !collapsed;            // flip the EFFECTIVE state, not just the stored flag
     setUserCollapsed(next);
+    setNarrowOverride(true);            // the user has spoken — honour it even in the narrow band
     localStorage.setItem(STORAGE_KEY, String(next));
   };
 

@@ -35,6 +35,9 @@ export function OfflineBanner() {
         position: 'fixed', top: 0, left: 0, right: 0,
         background: 'var(--success)', color: '#fff',
         padding: '8px 16px', textAlign: 'center',
+        // SAFEAREA-U1: fixed top:0 banner sits under the status bar in a
+        // standalone PWA — pad the top by the inset (0 in a normal browser).
+        paddingTop: 'calc(8px + env(safe-area-inset-top, 0px))',
         fontSize: 13, fontFamily: 'var(--font-sans)', fontWeight: 500,
         zIndex: 1000, animation: 'slideDown 0.2s ease',
       }}>
@@ -48,6 +51,9 @@ export function OfflineBanner() {
       position: 'fixed', top: 0, left: 0, right: 0,
       background: 'var(--danger)', color: '#fff',
       padding: '8px 16px',
+      // SAFEAREA-U1: fixed top:0 banner sits under the status bar in a
+      // standalone PWA — pad the top by the inset (0 in a normal browser).
+      paddingTop: 'calc(8px + env(safe-area-inset-top, 0px))',
       display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
       fontSize: 13, fontFamily: 'var(--font-sans)', fontWeight: 500,
       zIndex: 1000,

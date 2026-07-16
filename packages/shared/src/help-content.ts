@@ -386,6 +386,57 @@ export const HELP_ARTICLES: HelpArticle[] = [
       },
     ],
   },
+  {
+    slug: 'als-app-installieren',
+    icon: '📲',
+    title: { de: 'Goblin als App installieren', en: 'Install Goblin as an app' },
+    summary: {
+      de: 'Goblin aufs Handy legen — eigenes Icon, Vollbild, kein App-Store. In zwei Schritten erklärt.',
+      en: 'Put Goblin on your phone — own icon, full screen, no app store. Explained in two steps.',
+    },
+    sections: [
+      {
+        anchor: 'was-das-ist',
+        heading: { de: 'Was heißt „installieren“ hier?', en: 'What does “install” mean here?' },
+        body: {
+          de: 'Goblin ist eine Web-App, die sich wie eine echte App aufs Handy legen lässt — ohne Umweg über den App Store, ohne Download, kostenlos. Dein Browser legt ein Goblin-Icon auf den Startbildschirm; ein Tipp öffnet Goblin im Vollbild, ohne Adressleiste. Technisch heißt das „PWA“ (Progressive Web App) — du musst dir den Begriff nicht merken, nur den Weg unten.',
+          en: 'Goblin is a web app that can sit on your phone like a real app — no detour through the App Store, no download, free. Your browser drops a Goblin icon on your home screen; a tap opens Goblin full-screen, without the address bar. The technical name is “PWA” (Progressive Web App) — you don’t need to remember the term, just the steps below.',
+        },
+      },
+      {
+        anchor: 'iphone',
+        heading: { de: 'Auf dem iPhone (Safari)', en: 'On iPhone (Safari)' },
+        body: {
+          de: 'Öffne justgoblin.com in Safari (nicht in Chrome — auf dem iPhone kann nur Safari zum Home-Bildschirm hinzufügen). Tippe unten auf das Teilen-Symbol (das Viereck mit dem Pfeil nach oben), scrolle im Menü nach unten und wähle „Zum Home-Bildschirm“. Bestätige oben rechts mit „Hinzufügen“. Fertig — das Goblin-Icon liegt jetzt auf deinem Startbildschirm. Hinweis: Auf dem iPhone gibt es keinen automatischen „Installieren“-Knopf; dieser Weg über Teilen ist der richtige und einzige.',
+          en: 'Open justgoblin.com in Safari (not Chrome — on iPhone only Safari can add to the home screen). Tap the Share icon at the bottom (the square with an up arrow), scroll down the menu and choose “Add to Home Screen”. Confirm with “Add” at the top right. Done — the Goblin icon is now on your home screen. Note: iPhone has no automatic “Install” button; this Share route is the correct and only way.',
+        },
+      },
+      {
+        anchor: 'android',
+        heading: { de: 'Auf Android (Chrome)', en: 'On Android (Chrome)' },
+        body: {
+          de: 'Öffne justgoblin.com in Chrome. Oft schlägt Chrome von selbst „App installieren“ vor — dann genügt ein Tipp. Erscheint kein Vorschlag, tippe oben rechts auf das Menü (drei Punkte) und wähle „App installieren“ bzw. „Zum Startbildschirm hinzufügen“. Bestätige mit „Installieren“. Das Goblin-Icon landet in deiner App-Liste und auf dem Startbildschirm.',
+          en: 'Open justgoblin.com in Chrome. Chrome often offers “Install app” on its own — one tap is enough. If no prompt appears, tap the menu (three dots) at the top right and choose “Install app” or “Add to Home screen”. Confirm with “Install”. The Goblin icon lands in your app list and on your home screen.',
+        },
+      },
+      {
+        anchor: 'was-du-bekommst',
+        heading: { de: 'Was du dadurch bekommst', en: 'What you get from it' },
+        body: {
+          de: 'Ein eigenes Goblin-Icon auf dem Startbildschirm, Vollbild ohne Browser-Leisten, und einen App-Start, der sich anfühlt wie eine native App. Die Grundhülle wird zwischengespeichert, sodass Goblin auch bei wackligem Netz sauber startet. Und: Push-Benachrichtigungen. Auf dem iPhone funktionieren Push-Nachrichten überhaupt erst, wenn Goblin so installiert ist (ab iOS 16.4) — im normalen Safari-Tab nicht. Auf Android und am Desktop geht Push auch ohne Installation.',
+          en: 'Your own Goblin icon on the home screen, full screen without browser bars, and an app launch that feels native. The base shell is cached, so Goblin starts cleanly even on a shaky connection. And: push notifications. On iPhone, push works only once Goblin is installed this way (iOS 16.4+) — not in a normal Safari tab. On Android and desktop, push works without installing too.',
+        },
+      },
+      {
+        anchor: 'ehrlich',
+        heading: { de: 'Ehrlich gesagt', en: 'To be honest' },
+        body: {
+          de: 'Es ist kein App-Store-Download und keine separate App, die du aktualisieren musst — es ist dieselbe Goblin-Web-App, nur als Icon und im Vollbild. Updates kommen automatisch, weil Goblin im Kern eine Website bleibt. Du kannst das Icon jederzeit wie jede App wieder vom Startbildschirm entfernen; dein Konto und deine Projekte bleiben davon unberührt.',
+          en: 'It is not an App Store download and not a separate app you have to update — it is the same Goblin web app, just as an icon and full screen. Updates arrive automatically because Goblin stays a website at its core. You can remove the icon from your home screen anytime like any app; your account and projects are unaffected.',
+        },
+      },
+    ],
+  },
 ];
 
 /** Look up one article by slug. */

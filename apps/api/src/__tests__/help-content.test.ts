@@ -13,11 +13,11 @@ import {
 } from '@goblin/shared/src/help-content';
 
 describe('help corpus — structure', () => {
-  it('has the 9 canonical articles with unique slugs', () => {
-    expect(HELP_ARTICLES).toHaveLength(9);
+  it('has the 10 canonical articles with unique slugs', () => {
+    expect(HELP_ARTICLES).toHaveLength(10);
     const slugs = HELP_ARTICLES.map((a) => a.slug);
-    expect(new Set(slugs).size).toBe(9);
-    for (const s of ['erste-schritte', 'live-stellen', 'trial-und-plaene', 'konto-und-daten']) {
+    expect(new Set(slugs).size).toBe(10);
+    for (const s of ['erste-schritte', 'live-stellen', 'trial-und-plaene', 'konto-und-daten', 'als-app-installieren']) {
       expect(slugs).toContain(s);
     }
   });
@@ -42,7 +42,7 @@ describe('help corpus — structure', () => {
   it('helpArticleBySlug + helpArticleTitles resolve', () => {
     expect(helpArticleBySlug('live-stellen')?.title.de).toContain('Live stellen');
     expect(helpArticleBySlug('does-not-exist')).toBeUndefined();
-    expect(helpArticleTitles()).toHaveLength(9);
+    expect(helpArticleTitles()).toHaveLength(10);
   });
 
   it('renderHelpForAgent flattens the whole corpus with citable anchors', () => {
