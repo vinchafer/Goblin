@@ -4,8 +4,11 @@
  * The real-Stripe money suites (proration / subscribe / tier) self-skip via
  * `describe.skip` when no test-mode Stripe key is present:
  *   - account-deletion.test.ts       needs a sk_test_ key
- *   - change-plan.test.ts            needs a key + BUILD/PRO tier-1 price ids
- *   - change-plan-immediate.test.ts  needs a key + BUILD/PRO tier-1 price ids
+ *   - change-plan.test.ts            needs a key + BUILD/PRO/POWER tier-1 price ids
+ *   - change-plan-immediate.test.ts  needs a key + BUILD/PRO/POWER tier-1 price ids
+ * All four are required because config/plans.ts throws at import unless BUILD, PRO
+ * and POWER tier-1 price ids are all present — so a missing POWER reddens the money
+ * suites just as surely as a missing key. The guard therefore requires all four.
  * That skip was SILENT — a green CI run could mean "money paths proven" OR
  * "money paths never ran", indistinguishable. This guard closes that gap: in CI
  * it FAILS LOUDLY, naming the exact missing secrets, so the money suites can
@@ -35,6 +38,7 @@ const STRIPE_KEY = process.env.STRIPE_SECRET_KEY ?? '';
 const HAS_TEST_KEY = STRIPE_KEY.startsWith('sk_test_');
 const PRICE_BUILD_T1 = process.env.STRIPE_PRICE_BUILD_TIER1 ?? '';
 const PRICE_PRO_T1 = process.env.STRIPE_PRICE_PRO_TIER1 ?? '';
+const PRICE_POWER_T1 = process.env.STRIPE_PRICE_POWER_TIER1 ?? '';
 
 describe('money-suite guard (FW6-U2)', () => {
   it('the real-Stripe money suites must RUN in CI — no silent skip', () => {
@@ -48,6 +52,7 @@ describe('money-suite guard (FW6-U2)', () => {
     }
     if (!PRICE_BUILD_T1) missing.push('STRIPE_PRICE_BUILD_TIER1');
     if (!PRICE_PRO_T1) missing.push('STRIPE_PRICE_PRO_TIER1');
+    if (!PRICE_POWER_T1) missing.push('STRIPE_PRICE_POWER_TIER1');
 
     // Everything present → the money suites will run. Guard passes.
     if (missing.length === 0) return;
