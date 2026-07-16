@@ -64,6 +64,22 @@ jobs:
       # this job if they are missing, so a green build can never hide a silent
       # money-test skip. Add them under repo Settings → Secrets and variables →
       # Actions. GitHub sets CI=true automatically, which arms the guard.
+      # TEMPORARY DIAGNOSTIC (remove before merge): prints only presence + length
+      # of each Stripe secret — never the value (and GitHub masks secret values in
+      # logs regardless). Confirms whether the runner resolves each ${{ secrets.* }},
+      # distinguishing a name mismatch / environment-scoping issue from an empty value.
+      - name: DEBUG — Stripe secret presence (no values)
+        env:
+          STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+          STRIPE_PRICE_BUILD_TIER1: ${{ secrets.STRIPE_PRICE_BUILD_TIER1 }}
+          STRIPE_PRICE_PRO_TIER1: ${{ secrets.STRIPE_PRICE_PRO_TIER1 }}
+          STRIPE_PRICE_POWER_TIER1: ${{ secrets.STRIPE_PRICE_POWER_TIER1 }}
+        run: |
+          echo "STRIPE_SECRET_KEY        present=${STRIPE_SECRET_KEY:+yes} len=${#STRIPE_SECRET_KEY}"
+          echo "STRIPE_PRICE_BUILD_TIER1 present=${STRIPE_PRICE_BUILD_TIER1:+yes} len=${#STRIPE_PRICE_BUILD_TIER1}"
+          echo "STRIPE_PRICE_PRO_TIER1   present=${STRIPE_PRICE_PRO_TIER1:+yes} len=${#STRIPE_PRICE_PRO_TIER1}"
+          echo "STRIPE_PRICE_POWER_TIER1 present=${STRIPE_PRICE_POWER_TIER1:+yes} len=${#STRIPE_PRICE_POWER_TIER1}"
+
       - name: Run API vitest
         env:
           STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
