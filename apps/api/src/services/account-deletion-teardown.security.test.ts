@@ -117,10 +117,31 @@ describe('D-5 · hardDeleteUser tears down Vercel + purges the Vault KEK', () =>
     expect(deletedAuthIds).toContain(VICTIM);
   });
 
-  it('a failed Vercel teardown does not block the user\'s PII deletion', async () => {
+  // FW6-U3: a failed teardown now BLOCKS the cascade (was best-effort/non-blocking).
+  // A deleted user's site MUST come down before we drop the project rows we need to
+  // retry — mirroring the storage-purge blocking-throw in the same function.
+  it('a failed Vercel teardown BLOCKS the PII cascade (site must come down first)', async () => {
     teardownResult = { ok: false, status: 500, alreadyGone: false, error: 'vercel 500' };
+    await expect(hardDeleteUser(VICTIM)).rejects.toThrow(/vercel teardown incomplete/i);
+    // The user is NOT auth-deleted and the project rows survive for the retry.
+    expect(deletedAuthIds).not.toContain(VICTIM);
+    expect(tables.projects.map((p) => p.id)).toEqual(['p1', 'p2']);
+  });
+
+  it('site comes down on a later pass → THEN the PII cascade proceeds (evidence)', async () => {
+    // Pass 1: Vercel is erroring → teardown not confirmed → purge blocked, no delete.
+    teardownResult = { ok: false, status: 500, alreadyGone: false, error: 'vercel 500' };
+    await expect(hardDeleteUser(VICTIM)).rejects.toThrow(/vercel teardown incomplete/i);
+    expect(deletedAuthIds).not.toContain(VICTIM);
+
+    // Pass 2 (next cron run): the site is now gone (204/404) → teardown confirmed →
+    // the cascade completes and the PII is finally dropped.
+    teardownResult = { ok: true, status: 204, alreadyGone: false };
     const outcome = await hardDeleteUser(VICTIM);
     expect(outcome.purged).toBe(true);
     expect(deletedAuthIds).toContain(VICTIM);
+    // Both live deployments were torn down across the two passes.
+    expect(teardownCalls.filter((c) => c.name === 'Mein Shop').length).toBeGreaterThanOrEqual(1);
+    expect(teardownCalls.filter((c) => c.name === 'Portfolio').length).toBeGreaterThanOrEqual(1);
   });
 });

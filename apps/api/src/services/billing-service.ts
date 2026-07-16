@@ -640,7 +640,7 @@ export interface CancelRefundResult {
   reason?: string;
 }
 
-export async function refundRemainingCreditOnCancel(
+async function computeCancelRefund(
   subscription: Stripe.Subscription,
 ): Promise<CancelRefundResult> {
   if (!process.env.STRIPE_SECRET_KEY) return { status: 'skipped', reason: 'stripe_not_configured' };
@@ -715,6 +715,166 @@ export async function refundRemainingCreditOnCancel(
     logger.error({ customerId, subId: subscription.id, err: err instanceof Error ? err.message : String(err) }, 'cancel_refund_unexpected_error');
     return { status: 'failed', reason: 'unexpected_error' };
   }
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// DD-hardening FW6-U1 — refund RESILIENCE: a failed refund becomes a durable,
+// retryable job (0094_refund_jobs.sql), the pattern 0084 established for webhook
+// side-effects. `computeCancelRefund` above still NEVER throws and its return
+// value is UNCHANGED (F-29: the subscription.deleted handler's success semantics
+// and any user-facing string are untouched) — persistence is a pure side-effect
+// layered on top by the exported wrapper below.
+//
+//   failed status  → upsert a releasable job (attempts++), LOUD operator alert
+//                    once it has failed N times.
+//   success/noop   → resolve (mark done) any job left over from an earlier
+//                    failed attempt, so the retry sweep converges.
+//
+// Pre-migration tolerant: if refund_jobs is absent the persistence log-and-no-ops,
+// so cancellation refunds behave exactly as they did in FW5-U5 until 0094 lands.
+// ──────────────────────────────────────────────────────────────────────────
+
+const REFUND_JOB_ALERT_ATTEMPTS = () =>
+  Math.max(1, Number(process.env.REFUND_JOB_ALERT_ATTEMPTS ?? 3) || 3);
+
+// A refund attempt is "unresolved" (needs a retry job) only when it FAILED. Every
+// other terminal status means there is nothing (more) to return: refunded (done),
+// refunded_balance_unadjusted (money returned; only the ledger nudge is admin-
+// manual, NOT a money retry), noop (no credit), skipped (no customer / Stripe off).
+function refundNeedsRetry(status: CancelRefundStatus): boolean {
+  return status === 'failed';
+}
+
+/** Best-effort: persist the outcome of a refund attempt as a durable job. Never throws. */
+async function persistRefundOutcome(
+  subscription: Stripe.Subscription,
+  result: CancelRefundResult,
+): Promise<void> {
+  const subId = subscription.id;
+  const customerId = typeof subscription.customer === 'string'
+    ? subscription.customer
+    : subscription.customer?.id ?? null;
+  try {
+    const supabase = getSupabaseAdmin();
+
+    if (!refundNeedsRetry(result.status)) {
+      // Resolve any job a prior failed attempt left behind (cheap no-op if none).
+      await supabase
+        .from('refund_jobs')
+        .update({ status: 'done', last_error: null, updated_at: new Date().toISOString() })
+        .eq('subscription_id', subId)
+        .neq('status', 'done');
+      return;
+    }
+
+    // Failed → upsert a releasable job, incrementing attempts across retries.
+    let attempts = 1;
+    try {
+      const { data } = await supabase
+        .from('refund_jobs')
+        .select('attempts')
+        .eq('subscription_id', subId)
+        .maybeSingle();
+      if (data && typeof (data as { attempts?: number }).attempts === 'number') {
+        attempts = (data as { attempts: number }).attempts + 1;
+      }
+    } catch { /* first failure → attempts = 1 */ }
+
+    const { error } = await supabase
+      .from('refund_jobs')
+      .upsert(
+        {
+          subscription_id: subId,
+          customer_id: customerId,
+          status: 'failed',
+          attempts,
+          last_reason: result.reason ?? null,
+          last_error: result.reason ?? 'refund_failed',
+          credit_cents: result.creditCents ?? null,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'subscription_id' },
+      );
+    if (error) throw new Error(error.message);
+
+    if (attempts >= REFUND_JOB_ALERT_ATTEMPTS()) {
+      // Operator-visible: this refund has now failed N times and needs a human.
+      logger.error(
+        { subId, customerId, attempts, reason: result.reason, creditCents: result.creditCents },
+        'cancel_refund_job_alert — refund still failing after retries, MANUAL refund required',
+      );
+    }
+  } catch (err) {
+    // Persistence itself failed (e.g. table absent pre-migration, or Supabase off in
+    // a unit test) — log and swallow. A lost job row is strictly better than failing
+    // the cancel; the money owed is still logged on every attempt by computeCancelRefund.
+    logger.warn(
+      { subId, err: err instanceof Error ? err.message : String(err) },
+      'cancel_refund_job_persist_failed (non-fatal — refund_jobs may be pre-migration)',
+    );
+  }
+}
+
+/**
+ * Auto-refund any remaining downgrade credit on cancellation, and PERSIST the
+ * outcome so a failed refund is retried on a cron sweep instead of silently lost.
+ * The returned {@link CancelRefundResult} is identical to computeCancelRefund's —
+ * callers (and the user-facing handler) see no behavioural change (F-29).
+ */
+export async function refundRemainingCreditOnCancel(
+  subscription: Stripe.Subscription,
+): Promise<CancelRefundResult> {
+  const result = await computeCancelRefund(subscription);
+  await persistRefundOutcome(subscription, result);
+  return result;
+}
+
+/**
+ * CRON durability backstop for U1. Re-runs every releasable refund job (pending or
+ * previously-failed) by replaying computeCancelRefund from the stored subscription
+ * id — everything else (credit balance, refundable charge) is re-read fresh from
+ * Stripe, and the refund is idempotency-keyed per subscription, so replay can never
+ * double-refund. A job that finally succeeds is marked done; one that fails again
+ * increments attempts (and re-alerts past the threshold).
+ */
+export async function retryFailedRefunds(limit = 25): Promise<{ resolved: number; stillFailing: number }> {
+  const supabase = getSupabaseAdmin();
+  let rows: Array<{ subscription_id: string; customer_id: string | null }> = [];
+  try {
+    const { data, error } = await supabase
+      .from('refund_jobs')
+      .select('subscription_id, customer_id')
+      .in('status', ['pending', 'failed'])
+      .order('updated_at', { ascending: true })
+      .limit(limit);
+    if (error) {
+      // 42P01 = table absent (pre-migration): nothing to sweep, not an error.
+      if (error.code !== '42P01' && !/does not exist/i.test(error.message)) {
+        logger.error({ error: error.message }, 'refund-retry sweep: query failed');
+      }
+      return { resolved: 0, stillFailing: 0 };
+    }
+    rows = (data ?? []) as Array<{ subscription_id: string; customer_id: string | null }>;
+  } catch (err) {
+    logger.error({ err: err instanceof Error ? err.message : String(err) }, 'refund-retry sweep: query threw');
+    return { resolved: 0, stillFailing: 0 };
+  }
+
+  let resolved = 0;
+  let stillFailing = 0;
+  for (const row of rows) {
+    // Reconstruct the minimal subscription computeCancelRefund needs (id + customer);
+    // it re-reads the live credit/charge state from Stripe, so this is sufficient.
+    const sub = { id: row.subscription_id, customer: row.customer_id ?? undefined } as unknown as Stripe.Subscription;
+    const result = await refundRemainingCreditOnCancel(sub);
+    if (refundNeedsRetry(result.status)) stillFailing++;
+    else resolved++;
+  }
+
+  if (resolved > 0 || stillFailing > 0) {
+    logger.info({ resolved, stillFailing }, 'refund-retry sweep: complete');
+  }
+  return { resolved, stillFailing };
 }
 
 export async function handleSubscriptionDeleted(subscription: Stripe.Subscription): Promise<void> {
