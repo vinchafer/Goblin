@@ -713,9 +713,12 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
 
       </div>
 
-      {/* Input area — sticky bottom of the flex column. Clears the iOS
-          bottom safe area (gesture zone) so the composer stays thumb-reachable. */}
-      <div style={{ borderTop: "1px solid var(--rule)", background: "var(--surface-2)", paddingBottom: "env(safe-area-inset-bottom)" }}>
+      {/* Input area — sticky bottom of the flex column. The iOS bottom safe-area
+          (home-indicator gesture zone) is now cleared by ChatInput itself
+          (SAFEAREA-U-BOTTOM: its non-hero root pads paddingBottom by the inset),
+          so this wrapper no longer duplicates it — a double inset would leave a
+          dead --surface-2 strip below the composer. */}
+      <div style={{ borderTop: "1px solid var(--rule)", background: "var(--surface-2)" }}>
         <div style={{ position: "relative" }}>
           {/* U0: shown when the user scrolled away from the bottom; tap → back
               to live-follow. Sits centered above the composer, clear of the

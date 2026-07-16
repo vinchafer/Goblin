@@ -45,7 +45,9 @@ check('OfflineBanner: both variants pad the top inset (2)', offlineHits === 2);
 // assert they STILL do (regression guard for the composer/home-indicator zone).
 const already = [
   ['Sidebar mobile drawer: top+bottom inset', 'components/layout/Sidebar.tsx', /paddingTop:\s*['"]env\(safe-area-inset-top/],
-  ['Chat composer: bottom inset', 'components/chat/standalone-chat.tsx', /paddingBottom:\s*["']env\(safe-area-inset-bottom/],
+  // Composer inset moved into ChatInput's non-hero root in SAFEAREA-U-BOTTOM
+  // (single source of truth for every bottom-anchored use); guard it there now.
+  ['Chat composer: bottom inset', 'components/chat/ChatInput.tsx', /env\(safe-area-inset-bottom/],
   ['Code session composer: bottom inset', 'components/code/SessionPromptInput.tsx', /env\(safe-area-inset-bottom/],
   ['Code session tab sheet: bottom inset', 'components/code/SessionTabs.tsx', /env\(safe-area-inset-bottom/],
   ['BottomSheet: bottom inset', 'components/ui/BottomSheet.tsx', /paddingBottom:\s*['"]env\(safe-area-inset-bottom/],

@@ -780,7 +780,15 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
   return (
     <div style={hero
       ? { padding: 0, background: 'transparent', flexShrink: 0 }
-      : { padding: '10px 16px 12px', background: 'var(--panel)', borderTop: '1px solid var(--border-subtle)', flexShrink: 0 }}>
+      // PWA safe-area (SAFEAREA-U-BOTTOM): in the bottom-anchored (non-hero)
+      // arrangement the composer is the element that touches the screen bottom,
+      // so in an installed standalone PWA it renders IN the iOS home-indicator
+      // gesture zone and gets clipped. Owning the inset here (rather than in each
+      // caller) means every bottom-anchored use — standalone chat AND the
+      // workspace chat tab — clears the indicator; the composer's own --panel
+      // background fills the inset zone. The hero arrangement is centered, never
+      // at the edge, so it takes no inset. env() is 0 in a normal browser tab.
+      : { padding: '10px 16px calc(12px + env(safe-area-inset-bottom, 0px))', background: 'var(--panel)', borderTop: '1px solid var(--border-subtle)', flexShrink: 0 }}>
       <div ref={hubRef} style={{ position: 'relative' }}>
         {hubOpen && (
           <ModelHub

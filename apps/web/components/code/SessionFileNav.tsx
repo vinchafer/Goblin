@@ -59,6 +59,9 @@ export function SessionFileNav({ open, files, activePath, onClose, onSelect, onN
           background: 'var(--ed-chrome)', borderRight: '1px solid var(--ed-rule)',
           display: 'flex', flexDirection: 'column', boxShadow: '4px 0 24px rgba(15,43,30,0.18)',
           fontFamily: 'var(--font-sans)',
+          // SAFEAREA-U-BOTTOM: full-height drawer — reserve the iOS home-indicator
+          // inset at the bottom so the file list's tail clears it (0 in a browser).
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
         }}
       >
         {/* Header */}

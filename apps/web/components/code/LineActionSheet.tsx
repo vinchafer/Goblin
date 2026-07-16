@@ -29,7 +29,9 @@ export function LineActionSheet({ file, from, to, onChange, onCopy, onClose }: P
         style={{
           position: "absolute", left: 0, right: 0, bottom: 0, zIndex: 71,
           background: "var(--ed-canvas)", borderTop: "1px solid var(--ed-rule)",
-          borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: "10px 12px 16px",
+          // SAFEAREA-U-BOTTOM: bottom-sheet — extend the bottom pad by the iOS
+          // home-indicator inset so the last action clears it (0 in a browser).
+          borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: "10px 12px calc(16px + env(safe-area-inset-bottom, 0px))",
           boxShadow: "0 -12px 40px rgba(15,43,30,0.28)", display: "flex", flexDirection: "column", gap: 6,
         }}
       >

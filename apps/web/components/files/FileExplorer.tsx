@@ -624,7 +624,7 @@ export function FileExplorer({ projectId, projectName }: Props) {
       )}
 
       {toast && (
-        <div style={{ position: "fixed", bottom: 20, left: "50%", transform: "translateX(-50%)", background: "var(--green)", color: "#fff", padding: "9px 16px", borderRadius: 9, fontSize: 12.5, zIndex: 95 }}>{toast}</div>
+        <div style={{ position: "fixed", bottom: "calc(20px + env(safe-area-inset-bottom, 0px))", left: "50%", transform: "translateX(-50%)", background: "var(--green)", color: "#fff", padding: "9px 16px", borderRadius: 9, fontSize: 12.5, zIndex: 95 }}>{toast}</div>
       )}
     </div>
   );

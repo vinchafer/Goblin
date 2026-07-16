@@ -344,6 +344,9 @@ export function StcPreviewSheet({
             top: auto; bottom: 0; left: 0; transform: none;
             width: 100%; max-height: 82dvh;
             border-radius: 18px 18px 0 0;
+            /* SAFEAREA-U-BOTTOM: docked to the screen bottom in the mobile layout,
+               so pad by the iOS home-indicator inset (0 in a normal browser). */
+            padding-bottom: env(safe-area-inset-bottom, 0px);
           }
         }
       `}</style>
