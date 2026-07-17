@@ -466,12 +466,15 @@ export async function deleteProject(
     continuationToken = response.NextContinuationToken;
   } while (continuationToken);
 
-  // Delete in batches of 1000 (S3 limit)
-  if (keys.length > 0) {
+  // Delete in batches of 1000 (S3/B2 hard-cap DeleteObjects at 1000 keys/request).
+  // #18: previously the whole `keys` array was passed in ONE call, so any project
+  // with >1000 objects rejected (or silently dropped) on delete. Chunk it, matching
+  // deleteKeys/deleteUserStorage/purgeProjectStorage.
+  for (let i = 0; i < keys.length; i += 1000) {
     await s3.send(
       new DeleteObjectsCommand({
         Bucket: getBucket(),
-        Delete: { Objects: keys },
+        Delete: { Objects: keys.slice(i, i + 1000), Quiet: true },
       })
     );
   }
