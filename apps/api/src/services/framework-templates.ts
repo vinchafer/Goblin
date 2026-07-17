@@ -322,3 +322,23 @@ export function getFrameworkTemplate(id: string): FrameworkTemplate | null {
 export function buildFrameworkFiles(id: FrameworkId, appName: string): Record<string, string> {
   return FRAMEWORK_TEMPLATES[id].build(appName && appName.trim() ? appName.trim() : 'Meine App');
 }
+
+/**
+ * WAVE-E E3 — detect the Vercel `projectSettings.framework` value from a project's
+ * package.json content, or null when it isn't a framework we build from source. Drives
+ * the deploy path: null → the existing static POST (byte-identical); a value → Vercel
+ * builds from source. v1 recognizes Vite (react-vite). Best-effort + safe: any parse
+ * problem or unknown stack → null (fall back to the unchanged static behavior).
+ */
+export function detectVercelFramework(packageJsonContent: string | null | undefined): string | null {
+  if (!packageJsonContent) return null;
+  let pkg: { dependencies?: Record<string, string>; devDependencies?: Record<string, string> };
+  try {
+    pkg = JSON.parse(packageJsonContent);
+  } catch {
+    return null;
+  }
+  const deps = { ...(pkg.dependencies ?? {}), ...(pkg.devDependencies ?? {}) };
+  if ('vite' in deps) return 'vite';
+  return null;
+}

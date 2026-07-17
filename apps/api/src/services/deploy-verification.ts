@@ -49,17 +49,25 @@ export async function verifyDeployment(
   projectId: string,
   projectFiles: string[],
   onProgress?: (msg: string) => void | Promise<void>,
-  opts?: { attempts?: number; retryDelayMs?: number },
+  opts?: { attempts?: number; retryDelayMs?: number; builtOutput?: boolean },
 ): Promise<DeployVerification> {
   const attempts = opts?.attempts ?? ATTEMPTS;
   const retryDelayMs = opts?.retryDelayMs ?? RETRY_DELAY_MS;
   const entryPath = pickEntryFile(projectFiles);
   const base = baseUrl.replace(/\/$/, '');
 
+  // WAVE-E E3: for a framework build (D-E1=A), Vercel serves the BUILT output (dist/
+  // index.html referencing hashed /assets/*), which legitimately differs from the SOURCE
+  // index.html in storage. So the byte-equality compare below must be SKIPPED for a built
+  // deploy — otherwise a perfectly good Vite build fails the gate as "entspricht nicht dem
+  // gespeicherten Stand". We still fully verify the deploy: the entry answers 200 with real
+  // HTML AND every asset the SERVED page references answers 200 (the built JS/CSS bundles).
+  const builtOutput = opts?.builtOutput ?? false;
+
   // Expected entry content for the byte-truth comparison. Best-effort: if the
-  // read fails we still check reachability + assets.
+  // read fails we still check reachability + assets. Not read at all for a built deploy.
   let expectedEntry: string | null = null;
-  if (entryPath) {
+  if (entryPath && !builtOutput) {
     try {
       expectedEntry = await downloadFile(projectId, entryPath);
     } catch { /* verify without content compare */ }
@@ -81,6 +89,12 @@ export async function verifyDeployment(
     const servedHtml = entry.body ?? '';
     if (expectedEntry !== null && servedHtml !== expectedEntry) {
       lastReason = 'Die veröffentlichte Seite entspricht noch nicht dem gespeicherten Stand.';
+      continue;
+    }
+    // Built deploy (no byte-compare): still require a real HTML document, not an empty
+    // 200 or an error page Vercel might briefly serve while the build settles.
+    if (builtOutput && !/<html|<!doctype|<div|<script/i.test(servedHtml)) {
+      lastReason = 'Der Build ist noch nicht fertig — die Seite liefert noch keinen Inhalt.';
       continue;
     }
 

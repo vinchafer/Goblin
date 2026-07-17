@@ -35,6 +35,7 @@ import { runPublishGuard } from '../safety/publish-scan';
 import { listFiles as realListFiles, downloadFile as realDownloadFile } from '../file-storage';
 import { snapshotProject, listCheckpoints, restoreCheckpoint } from '../checkpoints/checkpoint-store';
 import { getFrameworkTemplate, buildFrameworkFiles, SUPPORTED_FRAMEWORKS, FRAMEWORK_TEMPLATES } from '../framework-templates';
+import { validatePackageJson, dependencyRejectionMessage } from '../deps-allowlist';
 import type { ToolSpec, ToolExecutor, ToolCall, ToolResult, ToolContext } from './types';
 import {
   remainingPlatformSearches,
@@ -373,6 +374,24 @@ async function toolWriteFile(sb: Sb, ctx: ToolContext, args: Record<string, unkn
  * cure is never bypassed.
  */
 async function finalizeDraftWrite(sb: Sb, ctx: ToolContext, path: string, content: string): Promise<ToolResult> {
+  // WAVE-E E3 (D-E2): dependency safety gate. Any write of a package.json is validated
+  // against the allowlist + exact-pin policy BEFORE it is persisted. A non-allowlisted or
+  // unpinned dependency is BLOCKED with an honest DE+EN edge naming the offenders — the
+  // malicious/typosquatted manifest never lands as a draft, never reaches the user's
+  // Vercel build. This is the point the E3 adversarial test attacks (write_file AND
+  // edit_file both funnel here, so editing a package.json is gated identically).
+  if (path === 'package.json' || path.endsWith('/package.json')) {
+    const verdict = validatePackageJson(content);
+    if (!verdict.ok) {
+      return {
+        ok: false,
+        summary: `${path} · Abhängigkeit abgelehnt`,
+        error: { code: 'dependency_rejected', message: dependencyRejectionMessage(verdict.rejected) },
+        data: { rejected: verdict.rejected },
+      };
+    }
+  }
+
   // F-17 (WALK2-1 ported to the agent path): a css/js edit must land on the asset the
   // entry HTML actually links. The classic /messages pipeline reconciles this; the
   // agent path did not — it trusted the model's guessed `args.path` verbatim. So a
