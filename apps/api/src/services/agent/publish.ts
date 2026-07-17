@@ -49,6 +49,11 @@ export function newPublishState(): PublishState {
 }
 
 const POLL_DEADLINE_MS = 90_000;
+// WAVE-E E3: a framework project is BUILT by Vercel (install + build), which takes longer
+// than serving static files. A Vite build is typically 1–3 min, so a build deploy gets a
+// wider poll deadline. Static deploys are unaffected — they reach READY in seconds and the
+// loop breaks immediately, so the higher ceiling is never hit on the static path.
+const BUILD_POLL_DEADLINE_MS = 240_000;
 const POLL_INTERVAL_MS = 3_000;
 
 const STATE_DE: Record<string, string> = {
@@ -72,9 +77,11 @@ async function pollUntilReady(
   startUrl: string,
   onProgress: (msg: string) => Promise<void> | void,
   sleep: (ms: number) => Promise<void>,
+  deadlineMs: number = POLL_DEADLINE_MS,
+  builtOutput: boolean = false,
 ): Promise<string> {
   let finalUrl = startUrl;
-  const deadline = Date.now() + POLL_DEADLINE_MS;
+  const deadline = Date.now() + deadlineMs;
   while (Date.now() < deadline) {
     await sleep(POLL_INTERVAL_MS);
     let status: { state: string; url?: string };
@@ -90,11 +97,35 @@ async function pollUntilReady(
       throw new Error(
         status.state === 'CANCELED'
           ? 'Veröffentlichung wurde abgebrochen.'
-          : 'Veröffentlichung fehlgeschlagen (Build-Fehler bei Vercel).',
+          : buildFailureMessage(builtOutput),
       );
     }
   }
   return finalUrl;
+}
+
+/**
+ * WAVE-E E5 — honest build-failure copy (DE + EN), build-aware. For a framework project
+ * (Vercel builds from source) a failure is usually a code/dependency error in the build;
+ * for a static deploy it's the generic Vercel error. Actionable, never a raw trace.
+ */
+export function buildFailureMessage(builtOutput: boolean): string {
+  if (builtOutput) {
+    return (
+      'Der Build ist bei Vercel fehlgeschlagen — meist ein Fehler im Code oder in einer Abhängigkeit ' +
+      '(z.B. ein Tippfehler, ein fehlender Import oder ein TypeScript-Fehler). Deine bisherigen Dateien ' +
+      'sind gesichert. Sag mir, was die App tun soll, dann suche ich den Fehler und baue erneut.' +
+      '\n\n[EN] The build failed on Vercel — usually a code or dependency error (a typo, a missing import, ' +
+      'or a TypeScript error). Your files are saved. Tell me what the app should do and I will find the ' +
+      'error and rebuild.'
+    );
+  }
+  return (
+    'Veröffentlichung fehlgeschlagen (Build-Fehler bei Vercel). Deine Dateien sind gesichert — ' +
+    'versuch es gleich noch einmal, oder sag mir, was zuletzt geändert wurde.' +
+    '\n\n[EN] Publish failed (build error at Vercel). Your files are saved — try again, or tell me ' +
+    'what changed last.'
+  );
 }
 
 interface PublishRunDeps {
@@ -155,6 +186,14 @@ export async function runPublish(
     }
   }
 
+  // WAVE-E E3: detect a framework project ONCE (drafts are now promoted, so storage
+  // reflects the final file set). A package.json means Vercel BUILDS from source, which
+  // (a) needs a wider poll deadline and (b) makes the served output differ from source →
+  // the truth-gate skips its byte-compare. A static project has no package.json → both
+  // behaviors are byte-identical to before (live-user path unchanged).
+  const deployedPaths = await deps.listFiles(ctx.projectId).catch(() => [] as string[]);
+  const builtOutput = deployedPaths.some((p) => p === 'package.json' || p.endsWith('/package.json'));
+
   // 2) Kick the deploy (may throw NO_VERCEL_TOKEN / build error → structured failure).
   let deploymentId: string;
   let startUrl: string;
@@ -171,10 +210,14 @@ export async function runPublish(
     return { ok: false, summary: 'Veröffentlichen fehlgeschlagen', error: { code, message: msg } };
   }
 
-  // 3) Poll until READY (or a build error).
+  // 3) Poll until READY (or a build error). Framework builds get the wider deadline.
   let finalUrl: string;
   try {
-    finalUrl = await pollUntilReady(deps, ctx.userId, deploymentId, startUrl, onProgress, sleep);
+    finalUrl = await pollUntilReady(
+      deps, ctx.userId, deploymentId, startUrl, onProgress, sleep,
+      builtOutput ? BUILD_POLL_DEADLINE_MS : POLL_DEADLINE_MS,
+      builtOutput,
+    );
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Veröffentlichung fehlgeschlagen';
     state.lastError = msg;
@@ -182,10 +225,11 @@ export async function runPublish(
   }
 
   // 4) P0.2 truth-gate — the deployed URL must serve the artifact + every referenced asset.
-  const deployedPaths = await deps.listFiles(ctx.projectId).catch(() => [] as string[]);
+  //    For a framework build, verify reachability + built assets without the source
+  //    byte-compare (which would false-fail on Vercel's built dist/ output).
   const verdict = await deps.verifyDeployment(finalUrl, ctx.projectId, deployedPaths, (m) => {
     void onProgress(m);
-  });
+  }, { builtOutput });
   if (!verdict.ok) {
     const reason = verdict.reason ?? 'Veröffentlichung konnte nicht bestätigt werden.';
     state.lastError = reason;

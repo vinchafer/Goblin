@@ -1,0 +1,65 @@
+.shell {
+  width: 100%;
+  max-width: 34rem;
+  margin-inline: auto;
+  padding: 32px;
+  background: color-mix(in srgb, var(--cream) 92%, white);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.badge {
+  display: inline-block;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 500;
+  font-size: 0.8rem;
+  color: var(--sage-deep);
+  background: color-mix(in srgb, var(--sage) 18%, transparent);
+  padding: 6px 12px;
+  border-radius: 999px;
+}
+
+h1 {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: clamp(2rem, 6vw, 3rem);
+  line-height: 1.1;
+  margin: 16px 0 4px;
+}
+
+.lead { color: var(--muted); margin: 0 0 24px; }
+
+.add { display: flex; gap: 8px; margin-bottom: 24px; }
+.add__input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 1px solid color-mix(in srgb, var(--ink) 15%, transparent);
+  border-radius: var(--radius);
+  font: inherit;
+  background: transparent;
+  color: var(--ink);
+}
+.add__input:focus-visible { outline: 2px solid var(--copper); outline-offset: 2px; }
+.add__button {
+  padding: 12px 20px;
+  background: var(--copper);
+  color: white;
+  border: none;
+  border-radius: var(--radius);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 150ms ease;
+}
+.add__button:hover { filter: brightness(1.05); }
+.add__button:active { filter: brightness(0.95); }
+
+.task-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.task { padding: 4px 0; }
+.task__label { display: flex; align-items: center; gap: 12px; cursor: pointer; min-height: 44px; }
+.task__checkbox { width: 20px; height: 20px; accent-color: var(--copper); }
+.task--done .task__title { text-decoration: line-through; opacity: 0.55; }
+
+@media (prefers-color-scheme: dark) {
+  .shell { background: color-mix(in srgb, var(--cream) 82%, black); }
+}

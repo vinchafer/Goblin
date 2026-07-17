@@ -1,0 +1,18 @@
+
+> aufgabenliste@0.1.0 build
+> tsc && vite build
+
+vite v5.4.11 building for production...
+transforming...
+✓ 33 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                   0.71 kB │ gzip:  0.40 kB
+dist/assets/index--6D5p97a.css    2.22 kB │ gzip:  0.97 kB
+dist/assets/index-D3LPtUvs.js   143.84 kB │ gzip: 46.37 kB
+✓ built in 689ms
+build exit: 0
+=== dist/ ===
+-rw-r--r-- 1 root root 143845 Jul 17 20:05 dist/assets/index-D3LPtUvs.js
+-rw-r--r-- 1 root root 2223 Jul 17 20:05 dist/assets/index--6D5p97a.css
+-rw-r--r-- 1 root root 707 Jul 17 20:05 dist/index.html

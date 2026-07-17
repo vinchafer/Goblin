@@ -6,6 +6,7 @@
 import { listFiles, downloadFile } from './file-storage';
 import { guardVercelCall } from '../lib/vercel-guard';
 import { getActiveKeyByProvider } from './byok-service';
+import { detectVercelFramework } from './framework-templates';
 
 const _vercelTokenCache = new Map<string, string>();
 
@@ -218,7 +219,26 @@ export async function deployToVercel(
   // Dev-safety shield: refuse to create/touch any Vercel project except synapse-platform
   // or test-* throwaways while GOBLIN_DEV_MODE=true. No-op in prod.
   guardVercelCall(deployName, 'deploy');
-  const res = await fetch('https://api.vercel.com/v13/deployments', {
+
+  // WAVE-E E3 (D-E1=A): "deploy source → Vercel builds". If the project carries a
+  // package.json for a framework we recognize (v1: Vite), we send the SOURCE and set
+  // projectSettings.framework so Vercel runs install + build on the USER'S OWN account.
+  // A project WITHOUT such a package.json keeps framework:null and the request body is
+  // BYTE-IDENTICAL to before — the static path (live users) does not regress.
+  const pkgEntry = vercelFiles.find((f) => f.file === 'package.json');
+  const pkgContent = pkgEntry ? Buffer.from(pkgEntry.data, 'base64').toString('utf8') : null;
+  const framework = detectVercelFramework(pkgContent);
+  if (framework) {
+    onProgress?.(`Framework erkannt (${framework}) — Vercel baut das Projekt aus dem Quellcode…`);
+  }
+
+  // Static path: identical body + URL as before (framework:null, no extra query param).
+  // Framework path: set framework + skipAutoDetectionConfirmation=1 so an auto-detect
+  // mismatch never returns a 400 in this automated deploy.
+  const deployUrl = framework
+    ? 'https://api.vercel.com/v13/deployments?skipAutoDetectionConfirmation=1'
+    : 'https://api.vercel.com/v13/deployments';
+  const res = await fetch(deployUrl, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
@@ -227,7 +247,7 @@ export async function deployToVercel(
     body: JSON.stringify({
       name: deployName,
       files: vercelFiles,
-      projectSettings: { framework: null },
+      projectSettings: { framework },
       target: 'production',
     }),
   });
