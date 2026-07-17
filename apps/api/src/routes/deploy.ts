@@ -7,6 +7,7 @@ import { deployToVercel, getDeployStatus } from '../services/vercel-service';
 import { verifyDeployment, pickEntryFile } from '../services/deploy-verification';
 import { listFiles, downloadFile } from '../services/file-storage';
 import { trackEvent } from '../lib/platform-events';
+import logger from '../lib/logger';
 import { runPublishGuard } from '../services/safety/publish-scan';
 import { collectPublishSignals, evalRepeatedBlocks, emitAbuseSignal, hashContent, NEW_ACCOUNT_WINDOW_MS } from '../services/safety/signals';
 
@@ -157,10 +158,21 @@ deploy.post('/vercel', deployRateLimit, async (c) => {
         return;
       }
 
-      await supabase
-        .from('projects')
-        .update({ preview_url: finalUrl, last_deployed_at: new Date().toISOString() })
-        .eq('id', projectId);
+      // E-5: the truth-gate has ALREADY confirmed the site is live. Persisting the URL
+      // is a best-effort follow-up — a DB blip here must NEVER surface a genuinely-live
+      // site as an `error` to the user (which is what the outer catch below would do if
+      // this write threw). Isolate it: log the failure loudly, then still emit success.
+      try {
+        await supabase
+          .from('projects')
+          .update({ preview_url: finalUrl, last_deployed_at: new Date().toISOString() })
+          .eq('id', projectId);
+      } catch (persistErr) {
+        logger.error(
+          { userId, projectId, url: finalUrl, err: persistErr instanceof Error ? persistErr.message : String(persistErr) },
+          'deploy: preview_url persist failed AFTER verified-live deploy — site is live, URL not persisted',
+        );
+      }
 
       // K4: content fingerprint of the deployed entry HTML (metadata only — a hash).
       // Rides in publish_verified.meta so the fan-out flag can compare across projects.
