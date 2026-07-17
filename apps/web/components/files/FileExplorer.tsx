@@ -57,6 +57,16 @@ function iconFor(name: string) {
   return FileIcon;
 }
 
+// C-2: new-file templates. "leer" = empty; "md" = a Markdown note starter;
+// "html" = a minimal, valid HTML5 skeleton. Content is UTF-8 (umlaut-safe).
+type Template = "leer" | "md" | "html";
+function templateContent(tpl: Template | undefined, filename: string): string {
+  const base = filename.replace(/\.[^.]+$/, "");
+  if (tpl === "md") return `# ${base}\n\n`;
+  if (tpl === "html") return `<!doctype html>\n<html lang="de">\n<head>\n  <meta charset="utf-8" />\n  <meta name="viewport" content="width=device-width, initial-scale=1" />\n  <title>${base}</title>\n</head>\n<body>\n  \n</body>\n</html>\n`;
+  return "";
+}
+
 function fmtSize(n: number) {
   if (n < 1024) return `${n} B`;
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} kb`;
@@ -90,12 +100,15 @@ export function FileExplorer({ projectId, projectName }: Props) {
   const [filter, setFilter] = useState("");                 // C-1: instant name filter (whole tree)
   const [selected, setSelected] = useState<string | null>(null);
   const [preview, setPreview] = useState<{ kind: "text" | "image" | "binary"; text?: string; dataUrl?: string } | null>(null);
+  const [editing, setEditing] = useState(false);           // C-2: in-Explorer edit mode
+  const [draft, setDraft] = useState("");                  // C-2: editable buffer
+  const [saving, setSaving] = useState(false);
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
   const [confirmFolderDel, setConfirmFolderDel] = useState<string | null>(null);
   // Name prompt for rename / new file / new folder (Slice 6).
-  const [namePrompt, setNamePrompt] = useState<{ kind: "rename" | "newfile" | "newfolder"; from?: string; value: string } | null>(null);
+  const [namePrompt, setNamePrompt] = useState<{ kind: "rename" | "newfile" | "newfolder"; from?: string; value: string; template?: Template } | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const [menuFor, setMenuFor] = useState<string | null>(null);   // WALK3-3.2: per-file ⋮ menu
   // WS-B.1: cross-project move picker — file path being moved + target list.
@@ -175,6 +188,7 @@ export function FileExplorer({ projectId, projectName }: Props) {
   const openFile = useCallback(async (path: string) => {
     setSelected(path);
     setPreview(null);
+    setEditing(false);
     const e = ext(path);
     try {
       if (IMAGE_EXT.has(e)) {
@@ -190,6 +204,32 @@ export function FileExplorer({ projectId, projectName }: Props) {
       }
     } catch { setPreview({ kind: "binary" }); }
   }, [authFetch, projectId]);
+
+  // C-2: enter edit mode on the currently-previewed text file.
+  const startEdit = useCallback(() => {
+    if (preview?.kind === "text") { setDraft(preview.text ?? ""); setEditing(true); }
+  }, [preview]);
+
+  // C-2: save the draft back to the file via the direct project-file save endpoint
+  // (PUT /:id/files/*). This is the one editor everywhere — the same CodeEditor the
+  // Code tab uses — writing straight to project storage (distinct from the code-session
+  // draft/deploy flow). Ctrl/Cmd-S in the editor also triggers this.
+  const saveEdit = useCallback(async (content?: string) => {
+    if (!selected) return;
+    const body = content ?? draft;
+    setSaving(true);
+    try {
+      const r = await authFetch(`/api/projects/${projectId}/files/${selected.split("/").map(encodeURIComponent).join("/")}`, {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: body }),
+      });
+      if (!r.ok) throw new Error();
+      setPreview({ kind: "text", text: body });
+      setEditing(false);
+      flash(t(lang, "Gespeichert", "Saved"));
+      load();
+    } catch { flash(t(lang, "Speichern fehlgeschlagen", "Save failed")); } finally { setSaving(false); }
+  }, [authFetch, projectId, selected, draft, load, lang]);
 
   // WS-B.1: open the cross-project move picker — load the user's OTHER projects.
   const openMovePicker = useCallback(async (path: string) => {
@@ -328,6 +368,8 @@ export function FileExplorer({ projectId, projectName }: Props) {
     const raw = namePrompt.value.trim();
     if (!raw) return;
     setBusy(true);
+    // C-2: when a new file is created, open it straight in the editor (seeded by template).
+    let openAfter: { path: string; content: string } | null = null;
     try {
       if (namePrompt.kind === "rename" && namePrompt.from) {
         // Allow a bare name (rename in place) or a relative path (move).
@@ -341,11 +383,13 @@ export function FileExplorer({ projectId, projectName }: Props) {
         flash("Umbenannt");
       } else if (namePrompt.kind === "newfile") {
         const path = cwd ? `${cwd}/${raw}` : raw;
+        const content = templateContent(namePrompt.template, raw);
         const r = await authFetch(`/api/projects/${projectId}/files`, {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ path, content: "" }),
+          body: JSON.stringify({ path, content }),
         });
         if (!r.ok) throw new Error();
+        openAfter = { path, content };
         flash("Datei erstellt");
       } else if (namePrompt.kind === "newfolder") {
         const path = cwd ? `${cwd}/${raw}` : raw;
@@ -358,6 +402,14 @@ export function FileExplorer({ projectId, projectName }: Props) {
       }
       setNamePrompt(null);
       await load();
+      if (openAfter) {
+        // Open the freshly-created file directly in the editor (spec §2: "opens empty
+        // in the editor"). Skip the fetch — we already know the seeded content.
+        setSelected(openAfter.path);
+        setPreview({ kind: "text", text: openAfter.content });
+        setDraft(openAfter.content);
+        setEditing(true);
+      }
     } catch { flash("Aktion fehlgeschlagen"); } finally { setBusy(false); }
   }, [namePrompt, cwd, authFetch, projectId, selected, load]);
 
@@ -577,13 +629,26 @@ export function FileExplorer({ projectId, projectName }: Props) {
           ) : (
             <>
               <div style={{ padding: "10px 16px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ flex: 1, minWidth: 0, fontFamily: "JetBrains Mono, monospace", fontSize: 12.5, color: "var(--ink-1)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selected}</span>
-                <button onClick={() => download(selected)} title="Herunterladen" style={iconBtn}><Download size={15} /></button>
-                <button onClick={() => { setSelected(null); setPreview(null); }} title="Schliessen" style={iconBtn}><X size={15} /></button>
+                <span style={{ flex: 1, minWidth: 0, fontFamily: "JetBrains Mono, monospace", fontSize: 12.5, color: "var(--ink-1)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selected}{editing && <span style={{ color: "var(--gold)" }}> ●</span>}</span>
+                {preview?.kind === "text" && !editing && (
+                  <button onClick={startEdit} title={t(lang, "Bearbeiten", "Edit")} data-testid="fx-edit" style={btnGhost}><Pencil size={14} /> {t(lang, "Bearbeiten", "Edit")}</button>
+                )}
+                {editing && (
+                  <>
+                    <button onClick={() => setEditing(false)} title={t(lang, "Verwerfen", "Discard")} style={btnGhost}>{t(lang, "Verwerfen", "Discard")}</button>
+                    <button onClick={() => saveEdit()} disabled={saving} title={t(lang, "Speichern", "Save")} data-testid="fx-save" style={{ ...btnPrimary, opacity: saving ? 0.6 : 1 }}>{saving ? "…" : t(lang, "Speichern", "Save")}</button>
+                  </>
+                )}
+                {!editing && <button onClick={() => download(selected)} title="Herunterladen" style={iconBtn}><Download size={15} /></button>}
+                <button onClick={() => { setSelected(null); setPreview(null); setEditing(false); }} title="Schliessen" style={iconBtn}><X size={15} /></button>
               </div>
               <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
                 {preview?.kind === "text" ? (
-                  <CodeEditor content={preview.text ?? ""} filename={selected} readOnly theme="light" />
+                  editing ? (
+                    <CodeEditor content={draft} filename={selected} theme="light" onChange={setDraft} onSave={(c) => saveEdit(c)} />
+                  ) : (
+                    <CodeEditor content={preview.text ?? ""} filename={selected} readOnly theme="light" />
+                  )
                 ) : preview?.kind === "image" ? (
                   <div style={{ padding: 20, display: "flex", justifyContent: "center" }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -667,6 +732,35 @@ export function FileExplorer({ projectId, projectName }: Props) {
             <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 14 }}>
               {namePrompt.kind === "rename" ? "Name oder Pfad (z.B. src/app.ts zum Verschieben)." : `Wird in ${cwd || "/"} erstellt.`}
             </div>
+            {namePrompt.kind === "newfile" && (
+              <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
+                {([
+                  { key: "leer" as Template, label: t(lang, "Leer", "Empty"), ext: "" },
+                  { key: "md" as Template, label: "Markdown", ext: ".md" },
+                  { key: "html" as Template, label: "HTML", ext: ".html" },
+                ]).map((tpl) => {
+                  const active = (namePrompt.template ?? "leer") === tpl.key;
+                  return (
+                    <button
+                      key={tpl.key}
+                      onClick={() => {
+                        const cur = namePrompt.value.trim();
+                        const hasExt = /\.[^.]+$/.test(cur);
+                        const base = cur.replace(/\.[^.]+$/, "");
+                        const value = tpl.ext && !hasExt ? `${base || (tpl.key === "md" ? "notiz" : "seite")}${tpl.ext}` : cur;
+                        setNamePrompt({ ...namePrompt, template: tpl.key, value });
+                      }}
+                      style={{
+                        ...btnGhost, padding: "6px 12px", fontSize: 12.5,
+                        borderColor: active ? "var(--green)" : "var(--line)",
+                        color: active ? "var(--green)" : "var(--ink-2)",
+                        background: active ? "rgba(127,169,138,0.10)" : "transparent",
+                      }}
+                    >{tpl.label}</button>
+                  );
+                })}
+              </div>
+            )}
             <input
               autoFocus value={namePrompt.value}
               onChange={(e) => setNamePrompt({ ...namePrompt, value: e.target.value })}
