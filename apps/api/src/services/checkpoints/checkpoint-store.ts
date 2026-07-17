@@ -373,7 +373,10 @@ export async function restoreCheckpoint(
         logger.error({ projectId, checkpointId, path: f.path, hash: f.hash }, 'checkpoint_restore_blob_missing');
         return { ok: false, error: 'failed' };
       }
-      await uploadFile(projectId, f.path, content, { userId });
+      // enforce:false — a restore rewrites the user's OWN prior state (already accounted
+      // once); it must update the storage counter but NEVER throw a cap error mid-replay
+      // and leave the project half-restored. Same posture as net-zero moves.
+      await uploadFile(projectId, f.path, content, { userId, enforce: false });
       restored += 1;
     }
 
