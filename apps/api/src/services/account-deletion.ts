@@ -3,6 +3,7 @@ import Stripe from 'stripe';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { sendEmail } from '../lib/email';
 import { deleteUserStorage, purgeProjectStorage } from './file-storage';
+import { purgeProjectCheckpoints } from './checkpoints/retention';
 import { teardownVercelProject } from './vercel-service';
 import logger from '../lib/logger';
 
@@ -541,6 +542,16 @@ export async function hardDeleteUser(userId: string): Promise<HardDeleteOutcome>
         + `(${purge.failed.map((f) => f.projectId).join(', ')})`,
       );
     }
+
+    // WAVE-F F5: the same GDPR reasoning extends to CHECKPOINTS — a deleted user's
+    // snapshot blobs under checkpoints/<projectId>/ would otherwise outlive them (the DB
+    // rows cascade on the FK, but the B2 blobs do not). Purge them alongside the project
+    // files, before the cascade. Idempotent + pre-0095 tolerant (no rows/blobs → no-op).
+    const cpPurge = await purgeProjectCheckpoints(projectIds);
+    logger.info(
+      { userIdHash: sha256(userId), purgedProjects: cpPurge.purgedProjects.length, blobs: cpPurge.deletedBlobs },
+      'account-deletion: project checkpoints purged',
+    );
   }
 
   // FW6-U3: a deleted user's SITE must come down. If any Vercel teardown was not
