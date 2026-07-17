@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { API_URL, getToken } from "@/hooks/code/getToken";
 import { useLang, t, type Lang } from "@/lib/use-lang";
+import { projectFileDataSource, type FileDataSource } from "@/lib/file-data-source";
 
 // FW5-U3 (D-D): honest, localized per-failure upload errors. The server returns a
 // distinct `error` code per guard (too_big / wrong_type / daily_cap / unsafe_path /
@@ -47,7 +48,13 @@ interface TrashEntry {
   trashPath: string; originalPath: string | null; deletedAt: number | null;
   legacy: boolean; size: number; modified: string | null;
 }
-interface Props { projectId: string; projectName: string; }
+interface Props {
+  projectId: string;
+  projectName: string;
+  // C-6 (spec §3): swappable data source. Defaults to the per-project source; a
+  // global "Meine Dateien" source (v1.1) can be injected without a second component.
+  dataSource?: FileDataSource;
+}
 
 const TEXT_EXT = new Set(["tsx","ts","js","jsx","mjs","cjs","css","scss","sass","less","html","htm","json","md","markdown","txt","csv","xml","svg","vue","svelte","py","rb","go","rs","java","c","h","cpp","yml","yaml","toml","env","sh","sql"]);
 const IMAGE_EXT = new Set(["png","jpg","jpeg","gif","webp","ico","bmp","avif"]);
@@ -98,9 +105,11 @@ function ago(iso: string | null) {
   return `vor ${Math.floor(dd / 30)} mon`;
 }
 
-export function FileExplorer({ projectId, projectName }: Props) {
+export function FileExplorer({ projectId, projectName, dataSource }: Props) {
   const lang = useLang();
   const router = useRouter();
+  // C-6: the listing comes from the (swappable) data source — project by default.
+  const ds = useMemo(() => dataSource ?? projectFileDataSource(projectId), [dataSource, projectId]);
   const [entries, setEntries] = useState<FileMeta[]>([]);
   const [dragOver, setDragOver] = useState(false);   // FW5-U3: drag-drop upload target
   const [loading, setLoading] = useState(true);
@@ -152,14 +161,12 @@ export function FileExplorer({ projectId, projectName }: Props) {
     (async () => {
       setLoading(true);
       try {
-        const t = await getToken();
-        const r = await fetch(`${API_URL}/api/projects/${projectId}/files-tree`, { headers: { Authorization: `Bearer ${t}` } });
-        const d = await r.json();
-        if (alive) setEntries((d.entries ?? []).filter((e: FileMeta) => !e.path.startsWith(".trash/")));
+        const list = await ds.listTree();
+        if (alive) setEntries(list.filter((e) => !e.path.startsWith(".trash/")));
       } catch { /* */ } finally { if (alive) setLoading(false); }
     })();
     return () => { alive = false; };
-  }, [projectId, reloadKey]);
+  }, [ds, reloadKey]);
 
   const load = useCallback(() => setReloadKey((k) => k + 1), []);
 
