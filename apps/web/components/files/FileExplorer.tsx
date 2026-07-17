@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   FileCode, FileJson, FileText, Image as ImageIcon, Palette, File as FileIcon,
   Folder, ChevronRight, Upload, Download, Trash2, ArrowLeft, X,
-  Pencil, FolderPlus, FilePlus, MoreVertical, Copy, Share2, FolderInput, FolderSymlink, Code2, FileArchive, Search, RotateCcw, Files as FilesIcon,
+  Pencil, FolderPlus, FilePlus, MoreVertical, Copy, Share2, FolderInput, FolderSymlink, Code2, FileArchive, Search, RotateCcw, Files as FilesIcon, CheckCircle2,
 } from "lucide-react";
 import { API_URL, getToken } from "@/hooks/code/getToken";
 import { useLang, t, type Lang } from "@/lib/use-lang";
@@ -516,6 +516,43 @@ export function FileExplorer({ projectId, projectName }: Props) {
     } catch { flash(t(lang, "Duplizieren fehlgeschlagen", "Duplicate failed")); } finally { setBusy(false); }
   }, [entries, fetchText, authFetch, projectId, load, lang]);
 
+  // ── C-3: long-press multi-select ──
+  const [selectMode, setSelectMode] = useState(false);
+  const [checked, setChecked] = useState<Set<string>>(new Set());
+  const lpTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const startLongPress = useCallback((path: string) => {
+    lpTimer.current = setTimeout(() => {
+      setSelectMode(true);
+      setChecked((prev) => new Set(prev).add(path));
+      lpTimer.current = null;
+    }, 500);
+  }, []);
+  const cancelLongPress = useCallback(() => {
+    if (lpTimer.current) { clearTimeout(lpTimer.current); lpTimer.current = null; }
+  }, []);
+  const toggleCheck = useCallback((path: string) => {
+    setChecked((prev) => { const n = new Set(prev); if (n.has(path)) n.delete(path); else n.add(path); return n; });
+  }, []);
+  const exitSelect = useCallback(() => { setSelectMode(false); setChecked(new Set()); }, []);
+
+  const batchDelete = useCallback(async () => {
+    const paths = [...checked];
+    if (paths.length === 0) return;
+    setBusy(true);
+    try {
+      for (const p of paths) {
+        await authFetch(`/api/projects/${projectId}/files/${p.split("/").map(encodeURIComponent).join("/")}`, { method: "DELETE" });
+      }
+      if (selected && paths.includes(selected)) { setSelected(null); setPreview(null); }
+      exitSelect(); await load(); flash(t(lang, `${paths.length} gelöscht`, `${paths.length} deleted`));
+    } catch { flash(t(lang, "Löschen fehlgeschlagen", "Delete failed")); } finally { setBusy(false); }
+  }, [checked, authFetch, projectId, selected, exitSelect, load, lang]);
+
+  const batchDownload = useCallback(async () => {
+    for (const p of [...checked]) { await download(p); }
+  }, [checked, download]);
+
   const crumbs = cwd ? cwd.split("/") : [];
 
   return (
@@ -724,9 +761,19 @@ export function FileExplorer({ projectId, projectName }: Props) {
                 const name = file.path.split("/").pop() ?? file.path;
                 const Ico = iconFor(name);
                 const isSel = selected === file.path;
+                const isChecked = checked.has(file.path);
                 return (
-                  <div key={file.path} style={{ ...row, position: "relative", background: isSel ? "var(--d-surface-elev)" : "transparent" }}>
-                    <button onClick={() => openFile(file.path)} style={{ ...rowInner }}>
+                  <div key={file.path} style={{ ...row, position: "relative", background: isChecked ? "var(--d-surface-elev)" : isSel ? "var(--d-surface-elev)" : "transparent" }}>
+                    <button
+                      onClick={() => (selectMode ? toggleCheck(file.path) : openFile(file.path))}
+                      onPointerDown={() => startLongPress(file.path)}
+                      onPointerUp={cancelLongPress}
+                      onPointerLeave={cancelLongPress}
+                      style={{ ...rowInner }}
+                    >
+                      {selectMode && (
+                        <CheckCircle2 size={17} style={{ color: isChecked ? "var(--green)" : "var(--ink-3)", flexShrink: 0, opacity: isChecked ? 1 : 0.5 }} />
+                      )}
                       <Ico size={17} style={{ color: "var(--ink-2)", flexShrink: 0 }} />
                       <span style={{ flex: 1, textAlign: "left", color: "var(--ink-1)", fontSize: 13.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
                       <span className="gb-fx-col-created" style={{ ...colCell, width: 80 }} title={file.createdAt ? new Date(file.createdAt).toLocaleString("de-CH") : "nicht erfasst"}>{fmtDate(file.createdAt)}</span>
@@ -936,6 +983,21 @@ export function FileExplorer({ projectId, projectName }: Props) {
             </div>
           </div>
         </>
+      )}
+
+      {/* C-3: multi-select action bar (long-press to enter). Batch delete + download
+          reuse the per-file endpoints; batch move / zip-of-selection are v1.1. */}
+      {selectMode && (
+        <div style={{
+          position: "fixed", bottom: "calc(16px + env(safe-area-inset-bottom, 0px))", left: "50%", transform: "translateX(-50%)",
+          display: "flex", alignItems: "center", gap: 10, background: "var(--d-surface-elev)", border: "1px solid var(--line)",
+          borderRadius: 12, padding: "9px 12px", zIndex: 94, boxShadow: "0 12px 32px rgba(0,0,0,0.22)", maxWidth: "calc(100vw - 24px)", flexWrap: "wrap",
+        }} data-testid="select-bar">
+          <span style={{ fontSize: 13, color: "var(--ink-1)", fontWeight: 600 }}>{t(lang, `${checked.size} ausgewählt`, `${checked.size} selected`)}</span>
+          <button onClick={batchDownload} disabled={busy || checked.size === 0} style={{ ...btnGhost, padding: "7px 11px", opacity: checked.size === 0 ? 0.5 : 1 }}><Download size={14} /> {t(lang, "Download", "Download")}</button>
+          <button onClick={batchDelete} disabled={busy || checked.size === 0} style={{ ...btnGhost, padding: "7px 11px", color: "var(--danger)", borderColor: "var(--danger)", opacity: checked.size === 0 ? 0.5 : 1 }}><Trash2 size={14} /> {t(lang, "Löschen", "Delete")}</button>
+          <button onClick={exitSelect} style={{ ...btnGhost, padding: "7px 11px" }}>{t(lang, "Fertig", "Done")}</button>
+        </div>
       )}
 
       {toast && (
