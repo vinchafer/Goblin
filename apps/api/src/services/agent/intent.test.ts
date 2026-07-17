@@ -3,7 +3,7 @@
 // Two phrasings per class, DE + EN, case/Umlaut/diacritic-robust.
 
 import { describe, it, expect } from 'vitest';
-import { classifyPublishIntent, classifyRunIntent, hasBuildIntent, shouldRouteToAgent } from './intent';
+import { classifyPublishIntent, classifyRunIntent, hasBuildIntent, shouldRouteToAgent, hasRestoreIntent, grantsRestore } from './intent';
 
 describe('publish intent — D1 matrix', () => {
   it('EXPLICIT (DE): a clear "live/veröffentlichen" request grants publish', () => {
@@ -83,5 +83,38 @@ describe('run intent — routing to the agent (D1, the W10 gate)', () => {
   it('robust to casing + Umlaut spelling on the build path', () => {
     expect(classifyRunIntent('BAUE MIR EINE WEBSITE')).toBe('agent');
     expect(classifyRunIntent('erstelle eine zaehler-app')).toBe('agent'); // ä as ae
+  });
+});
+
+describe('WAVE-F F2 — restore/undo intent', () => {
+  it('GRANTS restore on clear undo/restore phrasing (DE + EN)', () => {
+    for (const m of [
+      'mach die letzte Änderung rückgängig',
+      'Mach das bitte rückgängig',
+      'stell den letzten Stand wieder her',
+      'kannst du das wiederherstellen?',
+      'geh zurück zur vorherigen Version',
+      'undo the last change',
+      'please revert that',
+      'roll back to the previous version',
+      'can you rollback?',
+    ]) {
+      expect(hasRestoreIntent(m)).toBe(true);
+      expect(grantsRestore(m)).toBe(true);
+      expect(classifyRunIntent(m)).toBe('agent'); // routes into an agent run
+    }
+  });
+
+  it('does NOT confuse SAVE ("Stand sichern") with restore', () => {
+    // The critical false-positive: saving is not undoing.
+    expect(hasRestoreIntent('Stand sichern')).toBe(false);
+    expect(hasRestoreIntent('sichere bitte den aktuellen Stand')).toBe(false);
+    expect(hasRestoreIntent('Kannst du den Stand speichern?')).toBe(false);
+  });
+
+  it('does NOT grant restore on unrelated messages', () => {
+    expect(hasRestoreIntent('Baue mir eine Website')).toBe(false);
+    expect(hasRestoreIntent('stell die Seite live')).toBe(false);
+    expect(hasRestoreIntent('Wie funktioniert das Deployment?')).toBe(false);
   });
 });

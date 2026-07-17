@@ -120,16 +120,61 @@ export function hasBuildIntent(message: string): boolean {
   return BUILD_REGEXES.some((re) => re.test(n));
 }
 
+// ─── WAVE-F F2 — restore/undo intent (the chat "rückgängig" gate) ─────────────────
+//
+// Like the publish gate: only a CLEAR undo/restore action grants restore_checkpoint for
+// the run (the tool is advertised only when this is true, and the message routes into an
+// agent run). Conservative — a bare "Stand sichern" (SAVE) must never read as restore, so
+// no bare "stand" match; the strong signals are "rückgängig", "wiederherstellen",
+// "wieder her", "zurück zu … Stand/Version", and the English undo/revert/rollback.
+
+// Normalized phrases that each independently signal a restore/undo request.
+const RESTORE_PHRASES: string[] = [
+  'ruckgangig',       // ü-folded: rückgängig ("mach die letzte Änderung rückgängig")
+  'wiederherstell',   // wiederherstellen / wiederhergestellt
+  'wieder herstell',  // "stell es wieder her" (split spelling)
+  'undo',
+  'revert',
+  'rollback',
+  'roll back',
+  'go back to',
+];
+
+// Verb-anchored patterns that need a little structure to avoid false positives.
+const RESTORE_REGEXES: RegExp[] = [
+  // "stell(e) es/das/die Seite … wieder her" — optional object + adverb window before "wieder her".
+  /\b(stell|stelle)\s+(?:\w+\s+){0,4}wieder\s+her\b/,
+  // "zurück zum/zur letzten Stand/Version/Fassung" — going back to a prior state.
+  /\bzuruck\b[^.!?]{0,20}\b(stand|version|fassung)\b/,
+  // "früheren/vorherigen/vorigen/alten/letzten Stand wiederherstellen/laden/haben"
+  /\b(fruheren|vorherigen|vorigen|alten|letzten)\s+stand\b[^.!?]{0,20}\b(wieder|herstell|zuruck|laden|haben|holen)\b/,
+];
+
+/** True when a message clearly asks to UNDO / restore a previous project state. */
+export function hasRestoreIntent(message: string): boolean {
+  const n = normalize(message);
+  if (!n) return false;
+  if (RESTORE_PHRASES.some((p) => n.includes(p))) return true;
+  return RESTORE_REGEXES.some((re) => re.test(n));
+}
+
+/** Convenience: does this message grant restore_checkpoint for the run? */
+export function grantsRestore(message: string): boolean {
+  return hasRestoreIntent(message);
+}
+
 /**
  * Route a project-chat message to an agent run ('agent') or keep it as a tool-less
  * chat completion ('chat'). 'agent' iff the message has explicit publish intent OR
- * clear build intent. The eligibility gate (project chat + Swift/Forge + flag) is a
- * SEPARATE, caller-applied check (agentEligibility) — this function answers only
- * "does the user's message ask to build/publish?". Never guesses on ambiguity.
+ * clear build intent OR clear restore/undo intent. The eligibility gate (project chat +
+ * Swift/Forge + flag) is a SEPARATE, caller-applied check (agentEligibility) — this
+ * function answers only "does the user's message ask to build/publish/undo?". Never
+ * guesses on ambiguity.
  */
 export function classifyRunIntent(message: string): RunIntent {
   if (classifyPublishIntent(message) === 'explicit') return 'agent';
   if (hasBuildIntent(message)) return 'agent';
+  if (hasRestoreIntent(message)) return 'agent';
   return 'chat';
 }
 

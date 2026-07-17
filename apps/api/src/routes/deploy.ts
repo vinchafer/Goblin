@@ -9,6 +9,7 @@ import { listFiles, downloadFile } from '../services/file-storage';
 import { trackEvent } from '../lib/platform-events';
 import logger from '../lib/logger';
 import { runPublishGuard } from '../services/safety/publish-scan';
+import { snapshotProject } from '../services/checkpoints/checkpoint-store';
 import { collectPublishSignals, evalRepeatedBlocks, emitAbuseSignal, hashContent, NEW_ACCOUNT_WINDOW_MS } from '../services/safety/signals';
 
 type Variables = { userId: string };
@@ -173,6 +174,14 @@ deploy.post('/vercel', deployRateLimit, async (c) => {
           'deploy: preview_url persist failed AFTER verified-live deploy — site is live, URL not persisted',
         );
       }
+
+      // WAVE-F F1/F4: record the VERIFIED publish as a checkpoint (the "frühere Versionen"
+      // history). The truth-gate above has already confirmed the live URL, so this is a
+      // verified state, never a claim. Best-effort + pre-0095 tolerant — a snapshot failure
+      // must never surface a genuinely-live deploy as an error.
+      void snapshotProject({
+        projectId, userId, label: 'Veröffentlicht', createdBy: 'publish', deployedUrl: finalUrl,
+      });
 
       // K4: content fingerprint of the deployed entry HTML (metadata only — a hash).
       // Rides in publish_verified.meta so the fan-out flag can compare across projects.

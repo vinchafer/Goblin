@@ -20,7 +20,8 @@ import { getAgentModel } from '../services/agent/model-turn';
 import { runAgent } from '../services/agent/orchestrator';
 import { trackEvent } from '../lib/platform-events';
 import { loadUserPreferences } from '../services/user-preferences';
-import { grantsPublish } from '../services/agent/intent';
+import { grantsPublish, grantsRestore } from '../services/agent/intent';
+import { snapshotProject } from '../services/checkpoints/checkpoint-store';
 import { createAgentRun, finalizeAgentRun, findActiveRun } from '../services/agent/run-store';
 import { startRun, stopRun, streamRunEvents } from '../services/agent/run-registry';
 import { agentMaxRuntimeMs } from '../services/agent/config';
@@ -36,6 +37,20 @@ const codeSessions = new Hono<{ Variables: Variables }>();
 codeSessions.use('*', authMiddleware);
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * WAVE-F F1: a short, honest one-line summary of the run's prompt for the pre-run
+ * checkpoint label ("Vor: <summary>"). First non-empty line, whitespace-collapsed, cut to
+ * a UI-friendly length on a WORD boundary (never a byte-truncated Umlaut — anti-pattern).
+ */
+function runSummaryLabel(prompt: string): string {
+  const firstLine = (prompt.split('\n').find((l) => l.trim()) ?? prompt).replace(/\s+/g, ' ').trim();
+  const MAX = 60;
+  if (firstLine.length <= MAX) return firstLine || 'Agent-Lauf';
+  const cut = firstLine.slice(0, MAX);
+  const lastSpace = cut.lastIndexOf(' ');
+  return `${(lastSpace > 20 ? cut.slice(0, lastSpace) : cut).trim()} …`;
+}
 
 /** Verify the project belongs to the user. Returns project row or null. */
 async function ownProject(sb: ReturnType<typeof getSupabaseAdmin>, projectId: string, userId: string) {
@@ -701,6 +716,21 @@ codeSessions.post('/:sessionId/agent', async (c) => {
   const runStartedAt = Date.now();
   const projectName = proj?.name ?? null;
 
+  // WAVE-F F1: AUTO pre-run checkpoint — the safety net's most important trigger. Snapshot
+  // the project's current files BEFORE the agent mutates anything, so "mach die letzte
+  // Änderung rückgängig" always has a clean pre-state to return to. Awaited (the guarantee
+  // is worth a small latency at run start) but NON-FATAL and pre-0095 tolerant: a null
+  // result never blocks the run. Linked to the F-40 run via runId.
+  const preRunCheckpointId = await snapshotProject({
+    userId, projectId: session.project_id, createdBy: 'agent-run', runId,
+    label: `Vor: ${runSummaryLabel(prompt)}`,
+  }).catch(() => null);
+
+  // WAVE-F F2: does THIS message ask to undo/restore? Only then is restore_checkpoint
+  // advertised to the run (intent-gated exactly like publish) — so "mach die letzte
+  // Änderung rückgängig" works via chat, but a build run can never undo the project.
+  const restoreGranted = grantsRestore(prompt);
+
   // I1 funnel (rider): agent_run_started — the twin of agent_run_finished. Emitted the
   // instant the run begins so Pulse can show started-vs-finished; metadata only (model
   // slug), never the prompt or generated code.
@@ -732,8 +762,14 @@ codeSessions.post('/:sessionId/agent', async (c) => {
         systemPrompt,
         userMessage: prompt,
         history,
-        tools: agentToolsFor({ search: !!search }),
-        executor: buildToolExecutor(sb, { search, maxSearchesPerRun: agentMaxSearchesPerRun() }),
+        tools: agentToolsFor({ search: !!search, restore: restoreGranted }),
+        executor: buildToolExecutor(sb, {
+          search,
+          maxSearchesPerRun: agentMaxSearchesPerRun(),
+          // F2: the undo default restores the newest checkpoint EXCLUDING this run's own
+          // pre-run snapshot, so "letzte Änderung rückgängig" undoes the previous run.
+          restoreExcludeCheckpointId: preRunCheckpointId,
+        }),
         model: getAgentModel(tier),
         // D1: publish is granted only on explicit intent in THIS message, or a chip tap.
         publishGranted: confirmPublish || grantsPublish(prompt),

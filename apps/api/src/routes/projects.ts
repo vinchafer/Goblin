@@ -12,6 +12,11 @@ import { teardownVercelProject } from '../services/vercel-service';
 import logger from '../lib/logger';
 import { trackEvent } from '../lib/platform-events';
 import { checkUploadType, MAX_UPLOAD_BYTES } from '../services/upload-policy';
+import {
+  snapshotProject, listCheckpoints, listPublishVersions, diffCheckpointVsCurrent,
+  getCheckpointFileContent, restoreCheckpoint, checkpointsFeatureAvailable,
+} from '../services/checkpoints/checkpoint-store';
+import { purgeProjectCheckpoints } from '../services/checkpoints/retention';
 import { consumeDailyBytes, attachmentBytesPerDay } from '../services/abuse-caps';
 
 type Variables = { userId: string }
@@ -432,6 +437,12 @@ projects.delete('/:id', async (c) => {
   // Best-effort storage cleanup — don't block response on failure
   deleteProject(projectId, { userId }).catch((err) =>
     logger.error({ project_id: projectId, err: err instanceof Error ? err.message : String(err) }, 'storage_cleanup_failed')
+  );
+
+  // WAVE-F F5: the project's checkpoint blobs (checkpoints/<id>/) don't cascade with the
+  // DB rows — purge them too, so a deleted project's snapshots don't linger in B2.
+  purgeProjectCheckpoints([projectId]).catch((err) =>
+    logger.error({ project_id: projectId, err: err instanceof Error ? err.message : String(err) }, 'checkpoint_cleanup_failed')
   );
 
   return c.json({ success: true, orphanUrl: orphan });
@@ -1086,6 +1097,101 @@ projects.post('/:id/files/purge-trash', async (c) => {
     purged++;
   }
   return c.json({ success: true, purged });
+});
+
+// ─── WAVE-F (Versionierung & Zeit) — checkpoints / Zeitleiste ────────────────────
+// Goblin's internal undo safety net. All endpoints ownership-scoped + pre-0095 tolerant
+// (the store no-ops when the table is absent → the UI honest-hides). Static sub-paths
+// (/checkpoints, /checkpoints/publish) are registered BEFORE the :checkpointId param
+// routes so they are never parsed as an id.
+
+// GET /:id/checkpoints — the F3 timeline (newest first, each with ±n vs previous).
+projects.get('/:id/checkpoints', async (c) => {
+  const userId = c.get('userId');
+  const projectId = c.req.param('id');
+  const supabase = getSupabaseAdmin();
+  if (!await verifyProjectOwnership(supabase, projectId, userId)) return c.json({ error: 'Not found' }, 404);
+  const checkpoints = await listCheckpoints(projectId, userId);
+  // `available` lets the client honest-hide the whole surface pre-0095 (empty list could
+  // otherwise read as "no history yet" — this disambiguates).
+  return c.json({ available: await checkpointsFeatureAvailable(), checkpoints });
+});
+
+// POST /:id/checkpoints — the user "Stand sichern" trigger. Optional { label }.
+projects.post('/:id/checkpoints', async (c) => {
+  const userId = c.get('userId');
+  const projectId = c.req.param('id');
+  const supabase = getSupabaseAdmin();
+  if (!await verifyProjectOwnership(supabase, projectId, userId)) return c.json({ error: 'Not found' }, 404);
+  const body = await c.req.json().catch(() => ({}));
+  const parsed = z.object({ label: z.string().max(120).optional() }).safeParse(body);
+  const label = (parsed.success && parsed.data.label?.trim()) || 'Stand gesichert';
+  const id = await snapshotProject({ projectId, userId, label, createdBy: 'user' });
+  if (!id) return c.json({ error: 'checkpoint_unavailable' }, 409); // pre-0095 / write failed
+  return c.json({ success: true, checkpointId: id });
+});
+
+// GET /:id/checkpoints/publish — the F4 publish-history ("frühere Versionen").
+projects.get('/:id/checkpoints/publish', async (c) => {
+  const userId = c.get('userId');
+  const projectId = c.req.param('id');
+  const supabase = getSupabaseAdmin();
+  if (!await verifyProjectOwnership(supabase, projectId, userId)) return c.json({ error: 'Not found' }, 404);
+  const versions = await listPublishVersions(projectId, userId);
+  return c.json({ versions });
+});
+
+// GET /:id/checkpoints/:checkpointId/diff — F3 file-change list vs current.
+projects.get('/:id/checkpoints/:checkpointId/diff', async (c) => {
+  const userId = c.get('userId');
+  const projectId = c.req.param('id');
+  const checkpointId = c.req.param('checkpointId');
+  const supabase = getSupabaseAdmin();
+  if (!await verifyProjectOwnership(supabase, projectId, userId)) return c.json({ error: 'Not found' }, 404);
+  const diff = await diffCheckpointVsCurrent(projectId, userId, checkpointId);
+  if (!diff) return c.json({ error: 'Not found' }, 404);
+  return c.json(diff);
+});
+
+// GET /:id/checkpoints/:checkpointId/file?path= — the checkpoint's version of ONE file
+// plus the current version, so the client can render a DiffSheet (base=checkpoint, proposed
+// =current). A file absent from the snapshot returns base=null (restore would delete it).
+projects.get('/:id/checkpoints/:checkpointId/file', async (c) => {
+  const userId = c.get('userId');
+  const projectId = c.req.param('id');
+  const checkpointId = c.req.param('checkpointId');
+  const path = c.req.query('path') ?? '';
+  if (!isSafePath(path)) return c.json({ error: 'Invalid file path' }, 400);
+  const supabase = getSupabaseAdmin();
+  if (!await verifyProjectOwnership(supabase, projectId, userId)) return c.json({ error: 'Not found' }, 404);
+  const [base, current] = await Promise.all([
+    getCheckpointFileContent(projectId, userId, checkpointId, path),
+    getFile(projectId, path),
+  ]);
+  return c.json({ path, base, current: current ?? null });
+});
+
+// POST /:id/checkpoints/:checkpointId/restore — F2 restore ("rückgängig").
+projects.post('/:id/checkpoints/:checkpointId/restore', async (c) => {
+  const userId = c.get('userId');
+  const projectId = c.req.param('id');
+  const checkpointId = c.req.param('checkpointId');
+  const supabase = getSupabaseAdmin();
+  if (!await verifyProjectOwnership(supabase, projectId, userId)) return c.json({ error: 'Not found' }, 404);
+  const res = await restoreCheckpoint(projectId, userId, checkpointId);
+  if (res.ok) {
+    return c.json({ success: true, restored: res.restored, removed: res.removed, newCheckpointId: res.newCheckpointId });
+  }
+  // Honest, per-reason responses — never a generic 500.
+  if (res.error === 'not_found') return c.json({ error: 'Not found' }, 404);
+  if (res.error === 'run_active') {
+    return c.json({
+      error: 'run_active',
+      message: 'Es läuft gerade ein Agent-Lauf für dieses Projekt. Warte, bis er fertig ist, dann kannst du wiederherstellen.',
+    }, 409);
+  }
+  if (res.error === 'unavailable') return c.json({ error: 'checkpoint_unavailable' }, 409);
+  return c.json({ error: 'restore_failed', message: 'Wiederherstellung fehlgeschlagen. Es wurde nichts verändert.' }, 500);
 });
 
 // Diff endpoint — compute unified diff between current and proposed content
