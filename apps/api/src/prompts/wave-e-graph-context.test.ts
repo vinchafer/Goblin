@@ -17,18 +17,24 @@ const REACT_FILES = [
   { path: 'src/components/TaskItem.tsx', size: 80, content: "export function TaskItem() { return <li>task</li>; }" },
 ];
 
-describe('E1 — static-path byte-identical guarantee', () => {
-  it('a vanilla static project renders NO graph block (byte-identical to pre-Wave-E)', () => {
+describe('E1 — static-path: no graph BLOCK renders (per-project context byte-identical)', () => {
+  // Sentinels are the RENDERED graph block, not the instructional prose: the block
+  // header + a rendered edge line (`path · nutzt: …`, with the middot). The static
+  // instructional text about frameworks is a uniform capability addition (like the
+  // web_search / restore_checkpoint tool docs) and is present for all runs — it is NOT
+  // the per-project graph render, which is what must stay absent for a static project.
+  it('a vanilla static project renders NO graph block in chat', () => {
     const chat = buildGoblinChatSystemPrompt({ projectName: 'Static', files: STATIC_FILES });
     expect(chat).not.toContain('Projektstruktur (Abhängigkeitsgraph');
+    expect(chat).not.toContain(' · nutzt:');
+    expect(chat).not.toContain(' · exportiert:');
   });
 
-  it('the graph block is exactly absent — the prompt equals one built without a graph concept', () => {
-    // Reconstruct the expectation: with no module edges, adding the graph feature must
-    // not change a single byte. We assert the sentinel header never appears for static.
+  it('a vanilla static project renders NO graph block in the agent prompt', () => {
     const agent = buildAgentSystemPrompt({ projectName: 'Static', files: STATIC_FILES });
-    expect(agent).not.toContain('Abhängigkeitsgraph');
-    expect(agent).not.toContain('nutzt:');
+    expect(agent).not.toContain('Projektstruktur (Abhängigkeitsgraph');
+    expect(agent).not.toContain(' · nutzt:');
+    expect(agent).not.toContain(' · exportiert:');
   });
 });
 

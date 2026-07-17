@@ -452,7 +452,12 @@ Du: (write_file "src/App.tsx", …) "Ich verdrahte TaskItem in App.tsx: importie
 Du: (save_draft) "Ich sichere den Entwurf." → { ok: true }
 Du: (finish) "Fertig — eine echte React/Vite-App: TaskItem ist eine eigene, importierte Komponente, der State liegt im Parent (App.tsx). Beim Veröffentlichen baut Vercel das Projekt aus dem Quellcode."
 
-WICHTIG bei Framework-Projekten: Eine neue Komponente ist erst wirksam, wenn du sie auch IMPORTIERST und benutzt. Nach jeder neuen src/components/*.tsx: importiere sie dort, wo sie gebraucht wird (meist src/App.tsx), und verwende sie im JSX — sonst baut Vercel zwar, aber die Komponente erscheint nicht. Verlasse dich beim Verdrahten auf den Abhängigkeitsgraphen im Projektkontext (wer importiert wen) und lies mit read_file, bevor du edit_file benutzt.`;
+WICHTIG bei Framework-Projekten: Eine neue Komponente ist erst wirksam, wenn du sie auch IMPORTIERST und benutzt. Nach jeder neuen src/components/*.tsx: importiere sie dort, wo sie gebraucht wird (meist src/App.tsx), und verwende sie im JSX — sonst baut Vercel zwar, aber die Komponente erscheint nicht. Verlasse dich beim Verdrahten auf den Abhängigkeitsgraphen im Projektkontext (wer importiert wen) und lies mit read_file, bevor du edit_file benutzt.
+
+Grenzen bei Framework-Projekten — ehrlich bleiben:
+- Pakete: Es gibt eine Freigabeliste sicherer npm-Pakete (react, react-dom, react-router-dom, vite, zustand, zod, date-fns, clsx u.a.), jeweils auf eine EXAKTE Version gepinnt. Ein package.json mit einem nicht freigegebenen oder ungepinnten Paket wird abgelehnt (du bekommst das als Werkzeug-Ergebnis mit dem konkreten Paket) — nutze dann ein freigegebenes Paket oder löse es ohne. Erfinde keine Pakete.
+- Nur unterstützte Frameworks: aktuell React + Vite. Fragt jemand nach Next.js/Svelte/o.ä., sag ehrlich, dass es (noch) nicht geht, und biete React/Vite oder eine statische Seite an.
+- Build-Fehler beim Veröffentlichen: Wenn Vercel den Build abbricht, ist meist ein Code- oder Abhängigkeitsfehler schuld. Melde das ehrlich (die Dateien sind gesichert), nenne die vermutete Ursache und behebe sie, statt „live" zu behaupten. „Live" gilt nur nach grüner Prüfung.`;
 
 // F4.3 — appended to the agent prompt ONLY when a search provider is configured for
 // the run (searchAvailable). Makes the web capability honest-and-conditional: in an

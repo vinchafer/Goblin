@@ -78,6 +78,7 @@ async function pollUntilReady(
   onProgress: (msg: string) => Promise<void> | void,
   sleep: (ms: number) => Promise<void>,
   deadlineMs: number = POLL_DEADLINE_MS,
+  builtOutput: boolean = false,
 ): Promise<string> {
   let finalUrl = startUrl;
   const deadline = Date.now() + deadlineMs;
@@ -96,11 +97,35 @@ async function pollUntilReady(
       throw new Error(
         status.state === 'CANCELED'
           ? 'Veröffentlichung wurde abgebrochen.'
-          : 'Veröffentlichung fehlgeschlagen (Build-Fehler bei Vercel).',
+          : buildFailureMessage(builtOutput),
       );
     }
   }
   return finalUrl;
+}
+
+/**
+ * WAVE-E E5 — honest build-failure copy (DE + EN), build-aware. For a framework project
+ * (Vercel builds from source) a failure is usually a code/dependency error in the build;
+ * for a static deploy it's the generic Vercel error. Actionable, never a raw trace.
+ */
+export function buildFailureMessage(builtOutput: boolean): string {
+  if (builtOutput) {
+    return (
+      'Der Build ist bei Vercel fehlgeschlagen — meist ein Fehler im Code oder in einer Abhängigkeit ' +
+      '(z.B. ein Tippfehler, ein fehlender Import oder ein TypeScript-Fehler). Deine bisherigen Dateien ' +
+      'sind gesichert. Sag mir, was die App tun soll, dann suche ich den Fehler und baue erneut.' +
+      '\n\n[EN] The build failed on Vercel — usually a code or dependency error (a typo, a missing import, ' +
+      'or a TypeScript error). Your files are saved. Tell me what the app should do and I will find the ' +
+      'error and rebuild.'
+    );
+  }
+  return (
+    'Veröffentlichung fehlgeschlagen (Build-Fehler bei Vercel). Deine Dateien sind gesichert — ' +
+    'versuch es gleich noch einmal, oder sag mir, was zuletzt geändert wurde.' +
+    '\n\n[EN] Publish failed (build error at Vercel). Your files are saved — try again, or tell me ' +
+    'what changed last.'
+  );
 }
 
 interface PublishRunDeps {
@@ -191,6 +216,7 @@ export async function runPublish(
     finalUrl = await pollUntilReady(
       deps, ctx.userId, deploymentId, startUrl, onProgress, sleep,
       builtOutput ? BUILD_POLL_DEADLINE_MS : POLL_DEADLINE_MS,
+      builtOutput,
     );
   } catch (e) {
     const msg = e instanceof Error ? e.message : 'Veröffentlichung fehlgeschlagen';
