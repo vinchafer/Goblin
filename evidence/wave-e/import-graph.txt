@@ -1,0 +1,11 @@
+Projektstruktur (Abhängigkeitsgraph — wer importiert wen). Nutze dies zur Orientierung; den vollständigen Inhalt einer Datei bekommst du mit read_file:
+- src/App.tsx · nutzt: src/App.css, src/components/TaskItem.tsx, src/types.ts · Pakete: react · exportiert: default
+- src/components/TaskItem.tsx · nutzt: src/types.ts · exportiert: TaskItem
+- src/main.tsx · nutzt: src/App.tsx, src/index.css · Pakete: react, react-dom
+- vite.config.ts · Pakete: @vitejs/plugin-react, vite · exportiert: default
+
+--- EDGE CHECK ---
+App.tsx imports TaskItem file: true
+App.tsx imports Task type file: true
+TaskItem exports: [ 'TaskItem' ]
+TaskItem imports: [ 'src/types.ts' ]

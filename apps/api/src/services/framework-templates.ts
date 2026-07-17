@@ -122,22 +122,7 @@ export default defineConfig({
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"],
-  "references": [{ "path": "./tsconfig.node.json" }]
-}
-`,
-
-    'tsconfig.node.json': `{
-  "compilerOptions": {
-    "composite": true,
-    "skipLibCheck": true,
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "allowSyntheticDefaultImports": true,
-    "strict": true,
-    "noEmit": true
-  },
-  "include": ["vite.config.ts"]
+  "include": ["src"]
 }
 `,
 

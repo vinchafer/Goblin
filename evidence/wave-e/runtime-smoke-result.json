@@ -1,0 +1,14 @@
+{
+  "heading": "Meine Aufgaben",
+  "taskCount": 2,
+  "checkboxes": 2,
+  "firstTaskTitle": "Wave E fertig bauen",
+  "toggleWorks": true,
+  "taskCountAfterAdd": 3,
+  "jsErrors": [],
+  "externalResourceErrors": [
+    "Failed to load resource: net::ERR_CONNECTION_RESET",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ],
+  "ok": true
+}

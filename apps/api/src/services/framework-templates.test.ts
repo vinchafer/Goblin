@@ -49,6 +49,14 @@ describe('react-vite files', () => {
     expect(pkg.scripts.build).toContain('vite build');
   });
 
+  it('tsconfig does not use a composite/noEmit project reference (regression: E4 build caught TS6310)', () => {
+    // A referenced project that disables emit fails `tsc` with TS6310. The E4 real build
+    // caught this; the template now uses a single tsconfig with no references.
+    const tsconfig = JSON.parse(files['tsconfig.json']!);
+    expect(tsconfig.references).toBeUndefined();
+    expect(Object.keys(files)).not.toContain('tsconfig.node.json');
+  });
+
   it('personalizes the app name into the title and package name', () => {
     expect(files['index.html']).toContain('<title>Aufgabenliste</title>');
     expect(JSON.parse(files['package.json']!).name).toBe('aufgabenliste');
