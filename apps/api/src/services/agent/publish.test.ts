@@ -6,9 +6,17 @@
 // Also proves publish saves drafts BEFORE deploying (we publish what was written) and
 // that a NO_VERCEL_TOKEN deploy is a structured, honest failure — not a throw.
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+// Capture logger.error so the E-5 "never silent-swallow" assertion can prove the
+// markDeployed failure is logged loudly (not dropped by `.catch(()=>{})`).
+const H = vi.hoisted(() => ({ logErr: vi.fn() }));
+vi.mock('../../lib/logger', () => ({ default: { info() {}, warn() {}, error: H.logErr } }));
+
 import { runPublish, readDeployStatus, newPublishState, type PublishDeps } from './publish';
 import type { ToolContext } from './types';
+
+beforeEach(() => { H.logErr.mockClear(); });
 
 const ctx: ToolContext = { userId: 'u1', projectId: 'p1', sessionId: 's1' };
 const noSleep = async () => {};
@@ -56,6 +64,24 @@ describe('publish — B1', () => {
       () => {},
     );
     expect(marked).toEqual({ pid: 'p1', url: 'https://p1.vercel.app' });
+  });
+
+  it('markDeployed failure after a verified deploy → still reported live, error logged (E-5)', async () => {
+    const state = newPublishState();
+    const res = await runPublish(
+      deps(async () => ({ ok: true, failedAssets: [] })),
+      run({ markDeployed: async () => { throw new Error('db down'); } }),
+      ctx,
+      state,
+      () => {},
+    );
+    // The truth-gate passed → the site IS live; a persist blip must not downgrade it.
+    expect(res.ok).toBe(true);
+    expect(res.summary).toContain('Live ✓');
+    expect(state.verifiedUrl).toBe('https://p1.vercel.app');
+    expect(state.lastError).toBeUndefined();
+    // …but the failure is logged loudly, never silent-swallowed.
+    expect(H.logErr).toHaveBeenCalledTimes(1);
   });
 
   it('red truth-gate for a missing asset → structured failure naming the asset', async () => {

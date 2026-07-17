@@ -64,6 +64,24 @@ function getStripe(): Stripe {
   return _stripe;
 }
 
+// E-6: per-call timeout budget for the synchronous, user-facing money calls
+// (checkout / subscribe / change-plan / proration preview). The webhook processor
+// already bounds every Stripe call in time (stripe-webhook-processor.ts); these
+// request-path calls were the last raw `stripe.*` awaits with no ceiling. On a
+// stalled Stripe upstream the caller now gets an honest TimeoutError (surfaced as a
+// 500 by the route) instead of hanging until the SDK's own default. Env-overridable.
+const moneyCallTimeoutMs = () => envTimeoutMs('STRIPE_MONEY_TIMEOUT_MS', 15_000);
+
+// E-4: a post-charge entitlement write failure is NON-FATAL. Once the money has moved
+// (subscription created / plan changed + charged), we must NEVER report a failed charge
+// to the user (F-29 species, chargeback vector). We log loudly, return an honest
+// success carrying this note, and let the webhook (customer.subscription.created /
+// updated) reconcile the plan. German UI + EN i18n.
+const ENTITLEMENT_PENDING_NOTE = {
+  de: 'Zahlung erhalten — dein Plan wird gerade aktiviert.',
+  en: 'Payment received — your plan is being activated.',
+};
+
 export async function createCheckoutSession(
   userId: string,
   targetPlan: string,
@@ -110,7 +128,7 @@ export async function createCheckoutSession(
   // Pricier than what the user saw → show the transparency notice on checkout.
   const reTieredUp = tier < ipTier;
 
-  const session = await stripe.checkout.sessions.create({
+  const session = await withTimeout(stripe.checkout.sessions.create({
     customer: user.stripe_customer_id ?? undefined,
     customer_email: !user.stripe_customer_id ? user.email : undefined,
     mode: 'subscription',
@@ -122,7 +140,7 @@ export async function createCheckoutSession(
     cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing?canceled=true`,
     metadata: { userId, plan: targetPlan, geo_tier: String(tier), ip_tier: String(ipTier) },
     ...(reTieredUp ? { custom_text: { submit: { message: RETIER_NOTICE } } } : {}),
-  });
+  }), moneyCallTimeoutMs(), 'checkout.sessions.create');
 
   return session.url!;
 }
@@ -239,7 +257,7 @@ export async function resolveCheckoutPrice(
 }
 
 export type CreateSubscriptionResult =
-  | { ok: true; plan: string; tier: GeoTier; amount: number; subscriptionId: string; status: string }
+  | { ok: true; plan: string; tier: GeoTier; amount: number; subscriptionId: string; status: string; entitlementPending?: boolean; note?: { en: string; de: string } }
   | { ok: false; needsReconfirm: true; resolved: ResolvedPrice }
   | { ok: false; hasActiveSubscription: true };
 
@@ -291,7 +309,7 @@ export async function createSubscriptionAtTier(
     invoice_settings: { default_payment_method: paymentMethodId },
   });
 
-  const subscription = await stripe.subscriptions.create({
+  const subscription = await withTimeout(stripe.subscriptions.create({
     customer: customerId,
     items: [{ price: resolved.priceId, quantity: 1 }],
     default_payment_method: paymentMethodId,
@@ -303,11 +321,23 @@ export async function createSubscriptionAtTier(
       card_country: resolved.cardCountry ?? 'unknown',
     },
     expand: ['latest_invoice.payment_intent'],
-  });
+  }), moneyCallTimeoutMs(), 'subscriptions.create');
 
   // Entitlement: set the plan from the resolved price id immediately (the webhook
-  // customer.subscription.created keeps it in sync, but we don't block on it).
-  await handleSubscriptionCreated(subscription);
+  // customer.subscription.created keeps it in sync, but we don't block on it). The
+  // charge has ALREADY happened above (subscriptions.create), so a failure here is
+  // NON-FATAL (E-4): never report a failed charge after money moved. Log loudly and
+  // return an honest pending-success; the webhook reconciles the plan.
+  let entitlementPending = false;
+  try {
+    await handleSubscriptionCreated(subscription);
+  } catch (err) {
+    entitlementPending = true;
+    logger.error(
+      { userId, subId: subscription.id, err: err instanceof Error ? err.message : String(err) },
+      'createSubscriptionAtTier: entitlement write failed AFTER charge — webhook will reconcile (E-4)',
+    );
+  }
 
   return {
     ok: true,
@@ -316,6 +346,7 @@ export async function createSubscriptionAtTier(
     amount: resolved.amount,
     subscriptionId: subscription.id,
     status: subscription.status,
+    ...(entitlementPending ? { entitlementPending: true, note: ENTITLEMENT_PENDING_NOTE } : {}),
   };
 }
 
@@ -386,12 +417,12 @@ export async function previewPlanChange(
   let creditAmount = 0;
   let currency = 'usd';
   if (!samePlan && item) {
-    const upcoming = await stripe.invoices.retrieveUpcoming({
+    const upcoming = await withTimeout(stripe.invoices.retrieveUpcoming({
       customer: customerId,
       subscription: sub.id,
       subscription_items: [{ id: item.id, price: newPriceId }],
       subscription_proration_behavior: 'create_prorations',
-    });
+    }), moneyCallTimeoutMs(), 'invoices.retrieveUpcoming');
     currency = upcoming.currency ?? 'usd';
     // Sum only the proration line items so the figure reflects the change itself,
     // not the full next-cycle total.
@@ -416,7 +447,7 @@ export async function previewPlanChange(
 }
 
 export type ChangePlanResult =
-  | { ok: true; samePlan: boolean; plan: string; tier: GeoTier; amount: number; subscriptionId: string; status: string }
+  | { ok: true; samePlan: boolean; plan: string; tier: GeoTier; amount: number; subscriptionId: string; status: string; entitlementPending?: boolean; note?: { en: string; de: string } }
   | { ok: false; needsReconfirm: true; newPriceId: string; newAmount: number }
   | { ok: false; hasActiveSubscription: false };
 
@@ -466,16 +497,29 @@ export async function changePlan(
   // prorated difference is billed immediately. error_if_incomplete: if that immediate
   // charge can't be paid (declined card), the update FAILS and the subscription is
   // left UNCHANGED — never changed-but-unpaid.
-  const updated = await stripe.subscriptions.update(sub.id, {
+  const updated = await withTimeout(stripe.subscriptions.update(sub.id, {
     items: [{ id: item.id, price: newPriceId }],
     proration_behavior: 'always_invoice',
     payment_behavior: 'error_if_incomplete',
     expand: ['latest_invoice.payment_intent'],
-  });
+  }), moneyCallTimeoutMs(), 'subscriptions.update');
 
-  // Persist entitlement immediately (webhook customer.subscription.updated keeps
-  // it in sync, but we don't block on it).
-  await handleSubscriptionUpdated(updated);
+  // Persist entitlement immediately (webhook customer.subscription.updated keeps it in
+  // sync, but we don't block on it). The prorated charge has ALREADY cleared above
+  // (always_invoice + error_if_incomplete means a declined card would have thrown from
+  // subscriptions.update, before this point), so a failure here is NON-FATAL (E-4):
+  // never report a failed charge after money moved. Log loudly and return an honest
+  // pending-success; the webhook reconciles the plan.
+  let entitlementPending = false;
+  try {
+    await handleSubscriptionUpdated(updated);
+  } catch (err) {
+    entitlementPending = true;
+    logger.error(
+      { userId, subId: updated.id, err: err instanceof Error ? err.message : String(err) },
+      'changePlan: entitlement write failed AFTER charge — webhook will reconcile (E-4)',
+    );
+  }
 
   return {
     ok: true,
@@ -485,6 +529,7 @@ export async function changePlan(
     amount: tierAmount(targetPlan, tier),
     subscriptionId: updated.id,
     status: updated.status,
+    ...(entitlementPending ? { entitlementPending: true, note: ENTITLEMENT_PENDING_NOTE } : {}),
   };
 }
 
@@ -650,6 +695,39 @@ async function computeCancelRefund(
   if (!customerId) return { status: 'skipped', reason: 'no_customer' };
 
   const stripe = getStripe();
+  // Idempotency keys: BOTH sides of the refund are keyed per subscription so a webhook
+  // retry / cron replay can never double-refund the card NOR double-adjust (over-zero)
+  // the balance (E-2). We also stamp the refund with metadata so a replay can recognise
+  // its OWN prior refund and resume at the balance-zero step instead of re-refunding.
+  const idemRefundKey = `goblin-cancel-credit-refund-${subscription.id}`;
+  const idemZeroKey = `goblin-cancel-credit-zero-${subscription.id}`;
+
+  // Zero the already-refunded credit with a POSITIVE balance transaction so it isn't
+  // ALSO applied to a later invoice. Idempotency-keyed → a retry of the zeroing can
+  // never push the balance past 0 into a customer-owes state. Shared by the fresh-refund
+  // path and the resume path so "thought-failed-but-succeeded" zeroing is a safe no-op.
+  const zeroCredit = async (amount: number, currency: string, refundId: string): Promise<CancelRefundResult> => {
+    try {
+      await withTimeout(
+        stripe.customers.createBalanceTransaction(
+          customerId,
+          { amount, currency, description: `Goblin: auto-refund of remaining credit on cancellation (refund ${refundId})` },
+          { idempotencyKey: idemZeroKey },
+        ),
+        refundTimeoutMs(),
+        'cancelRefund:balanceTxn',
+      );
+    } catch (err) {
+      // The money WAS returned; only the balance adjust failed. Admin-visible, and now
+      // RETRYABLE (refundNeedsRetry) — the cron sweep resumes here, keyed so it can't
+      // over-zero, so the retained-credit double-benefit converges away.
+      logger.error({ customerId, subId: subscription.id, refundId, refundedCents: amount, err: err instanceof Error ? err.message : String(err) }, 'cancel_refund_balance_adjust_failed');
+      return { status: 'refunded_balance_unadjusted', refundId, refundedCents: amount, reason: 'balance_unadjusted' };
+    }
+    logger.info({ customerId, subId: subscription.id, refundId, refundedCents: amount }, 'cancel_refund_succeeded');
+    return { status: 'refunded', refundId, refundedCents: amount };
+  };
+
   try {
     // 1. Read the current credit balance (fresh from Stripe, so payload shape is moot).
     const customer = await withTimeout(stripe.customers.retrieve(customerId), refundTimeoutMs(), 'cancelRefund:retrieveCustomer');
@@ -659,8 +737,28 @@ async function computeCancelRefund(
     const credit = balance < 0 ? -balance : 0; // negative balance = credit owed to the user
     if (credit <= 0) return { status: 'noop', creditCents: 0 };
 
-    // 2. Find the most recent refundable succeeded charge (the original payment method).
     const charges = await withTimeout(stripe.charges.list({ customer: customerId, limit: 10 }), refundTimeoutMs(), 'cancelRefund:listCharges');
+
+    // 2. RESUME detection (E-2): did a PRIOR attempt already refund for THIS cancellation
+    //    (e.g. the balance-zero failed → refunded_balance_unadjusted)? If so the money is
+    //    already back on the card — never refund again; just (re)zero that exact refund's
+    //    amount. We recognise our own refund by the metadata stamped on create. Recompute
+    //    is unsafe (the refundable room shrank after our refund), so this is the only
+    //    correct way to resume to consistency without recharging.
+    for (const ch of charges.data) {
+      if (ch.status !== 'succeeded' || (ch.amount_refunded ?? 0) <= 0) continue;
+      let priorRefund: Stripe.Refund | undefined;
+      try {
+        const refunds = await withTimeout(stripe.refunds.list({ charge: ch.id, limit: 10 }), refundTimeoutMs(), 'cancelRefund:listRefunds');
+        priorRefund = refunds.data.find(
+          (r) => (r.metadata as Record<string, string> | null)?.goblin_cancel_sub === subscription.id
+            && r.status !== 'failed' && r.status !== 'canceled',
+        );
+      } catch { /* refunds.list unavailable → fall through; the keyed create below is the safety net */ }
+      if (priorRefund) return zeroCredit(priorRefund.amount, currency, priorRefund.id);
+    }
+
+    // 3. Fresh path: find the most recent refundable succeeded charge (the original card).
     const charge = charges.data.find(
       (ch) => ch.status === 'succeeded' && !ch.refunded && ch.amount - ch.amount_refunded > 0,
     );
@@ -669,15 +767,16 @@ async function computeCancelRefund(
       return { status: 'failed', reason: 'no_refundable_charge', creditCents: credit };
     }
 
-    // 3. Refund the remaining credit (capped at the charge's refundable room) to the card.
-    //    Idempotency-keyed on the subscription so a webhook retry can't double-refund.
+    // 4. Refund the remaining credit (capped at the charge's refundable room) to the card.
+    //    Idempotency-keyed AND metadata-stamped so a retry can't double-refund and a
+    //    resume can find this refund.
     const amount = Math.min(credit, charge.amount - charge.amount_refunded);
     let refund: Stripe.Refund;
     try {
       refund = await withTimeout(
         stripe.refunds.create(
-          { charge: charge.id, amount, reason: 'requested_by_customer' },
-          { idempotencyKey: `goblin-cancel-credit-refund-${subscription.id}` },
+          { charge: charge.id, amount, reason: 'requested_by_customer', metadata: { goblin_cancel_sub: subscription.id } },
+          { idempotencyKey: idemRefundKey },
         ),
         refundTimeoutMs(),
         'cancelRefund:create',
@@ -687,28 +786,9 @@ async function computeCancelRefund(
       return { status: 'failed', reason: 'refund_error', creditCents: credit };
     }
 
-    // 4. Zero the refunded credit so it is not ALSO applied to some later invoice. A
-    //    POSITIVE balance transaction reduces the customer's credit (balance → 0).
-    try {
-      await withTimeout(
-        stripe.customers.createBalanceTransaction(customerId, {
-          amount,
-          currency,
-          description: `Goblin: auto-refund of remaining credit on cancellation (refund ${refund.id})`,
-        }),
-        refundTimeoutMs(),
-        'cancelRefund:balanceTxn',
-      );
-    } catch (err) {
-      // The money WAS returned; only the ledger adjust failed. Admin-visible, not a user
-      // success claim — and NOT retried automatically (the refund is idempotent, so a
-      // manual replay is safe).
-      logger.error({ customerId, subId: subscription.id, refundId: refund.id, refundedCents: amount, err: err instanceof Error ? err.message : String(err) }, 'cancel_refund_balance_adjust_failed');
-      return { status: 'refunded_balance_unadjusted', refundId: refund.id, refundedCents: amount };
-    }
-
-    logger.info({ customerId, subId: subscription.id, refundId: refund.id, refundedCents: amount }, 'cancel_refund_succeeded');
-    return { status: 'refunded', refundId: refund.id, refundedCents: amount, creditCents: credit };
+    // 5. Zero the refunded credit (idempotency-keyed). Carries creditCents for the surface.
+    const zeroed = await zeroCredit(amount, currency, refund.id);
+    return zeroed.status === 'refunded' ? { ...zeroed, creditCents: credit } : zeroed;
   } catch (err) {
     // Any unexpected error (e.g. the customer retrieve timed out) is admin-visible and
     // swallowed — never fail the entitlement reset over a best-effort refund.
@@ -718,31 +798,34 @@ async function computeCancelRefund(
 }
 
 // ──────────────────────────────────────────────────────────────────────────
-// DD-hardening FW6-U1 — refund RESILIENCE: a failed refund becomes a durable,
-// retryable job (0094_refund_jobs.sql), the pattern 0084 established for webhook
-// side-effects. `computeCancelRefund` above still NEVER throws and its return
-// value is UNCHANGED (F-29: the subscription.deleted handler's success semantics
-// and any user-facing string are untouched) — persistence is a pure side-effect
-// layered on top by the exported wrapper below.
+// DD-hardening FW6-U1 (+ DD-backlog U1/E-2) — refund RESILIENCE: an unresolved
+// refund becomes a durable, retryable job (0094_refund_jobs.sql), the pattern 0084
+// established for webhook side-effects. `computeCancelRefund` above still NEVER throws
+// and remains F-29-safe (the subscription.deleted handler ignores the return value, so
+// no user-facing success/string changes) — persistence is a pure side-effect layered
+// on top by the exported wrapper below.
 //
-//   failed status  → upsert a releasable job (attempts++), LOUD operator alert
-//                    once it has failed N times.
-//   success/noop   → resolve (mark done) any job left over from an earlier
-//                    failed attempt, so the retry sweep converges.
+//   failed / refunded_balance_unadjusted → upsert a releasable job (attempts++), LOUD
+//                    operator alert once it has failed N times. The sweep replays it:
+//                    a failed one re-tries the whole (idempotent) refund; a balance-
+//                    unadjusted one resumes at the idempotency-keyed balance zero.
+//   refunded / noop / skipped           → resolve (mark done) any job left over from an
+//                    earlier unresolved attempt, so the retry sweep converges.
 //
-// Pre-migration tolerant: if refund_jobs is absent the persistence log-and-no-ops,
-// so cancellation refunds behave exactly as they did in FW5-U5 until 0094 lands.
+// Pre-migration tolerant: if refund_jobs is absent the persistence log-and-no-ops, so
+// cancellation refunds behave exactly as they did in FW5-U5 until 0094 lands.
 // ──────────────────────────────────────────────────────────────────────────
 
 const REFUND_JOB_ALERT_ATTEMPTS = () =>
   Math.max(1, Number(process.env.REFUND_JOB_ALERT_ATTEMPTS ?? 3) || 3);
 
-// A refund attempt is "unresolved" (needs a retry job) only when it FAILED. Every
-// other terminal status means there is nothing (more) to return: refunded (done),
-// refunded_balance_unadjusted (money returned; only the ledger nudge is admin-
-// manual, NOT a money retry), noop (no credit), skipped (no customer / Stripe off).
+// A refund attempt is "unresolved" (needs a retry job) when it FAILED (no money out yet)
+// or landed in refunded_balance_unadjusted (money out, but the credit was NOT zeroed →
+// a retained-credit double-benefit, E-2). The sweep replays both: a failed one re-tries
+// the whole refund; a balance-unadjusted one resumes at the idempotency-keyed balance
+// zero (never re-refunding). refunded / noop / skipped are terminal (nothing more owed).
 function refundNeedsRetry(status: CancelRefundStatus): boolean {
-  return status === 'failed';
+  return status === 'failed' || status === 'refunded_balance_unadjusted';
 }
 
 /** Best-effort: persist the outcome of a refund attempt as a durable job. Never throws. */

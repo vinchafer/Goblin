@@ -13,13 +13,24 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 type Charge = { id: string; status: string; refunded: boolean; amount: number; amount_refunded: number };
 
 // vi.hoisted → shared, mutable Stripe state that the hoisted vi.mock factory can see.
+// The fake models Stripe idempotency (same key → cached response, NO second effect) and
+// records each refund on its charge, so the U1/E-2 replay + resume paths are exercisable.
 const S = vi.hoisted(() => ({
   balance: 0,
   currency: 'eur',
   charges: [] as { id: string; status: string; refunded: boolean; amount: number; amount_refunded: number }[],
+  refundsByCharge: {} as Record<string, any[]>,
   refundThrows: false,
   balanceTxnThrows: false,
-  calls: { retrieve: 0, listCharges: 0, refundCreate: [] as { params: any; opts: any }[], balanceTxn: [] as any[] },
+  _refundKeys: {} as Record<string, any>, // idempotencyKey → cached refund
+  _zeroKeys: {} as Record<string, any>,   // idempotencyKey → cached balance txn
+  calls: {
+    retrieve: 0, listCharges: 0, listRefunds: 0,
+    refundCreate: [] as { params: any; opts: any }[],        // every invocation
+    refundCreateEffective: [] as { params: any; opts: any }[], // only non-idempotent-hits
+    balanceTxn: [] as any[],                                  // every invocation
+    balanceTxnEffective: [] as any[],                         // only non-idempotent-hits
+  },
 }));
 
 vi.mock('stripe', () => {
@@ -27,19 +38,31 @@ vi.mock('stripe', () => {
     constructor(_k: string, _o: unknown) {}
     customers = {
       retrieve: async (id: string) => { S.calls.retrieve++; return { id, balance: S.balance, currency: S.currency, deleted: false }; },
-      createBalanceTransaction: async (id: string, params: any) => {
-        S.calls.balanceTxn.push({ id, params });
+      createBalanceTransaction: async (id: string, params: any, opts?: any) => {
+        S.calls.balanceTxn.push({ id, params, opts });
+        const key = opts?.idempotencyKey;
+        if (key && S._zeroKeys[key]) return S._zeroKeys[key]; // idempotent replay → no second effect
         if (S.balanceTxnThrows) throw new Error('balance txn failed');
-        return { id: 'cbtxn_1', ...params };
+        const txn = { id: 'cbtxn_1', ...params };
+        if (key) S._zeroKeys[key] = txn;
+        S.calls.balanceTxnEffective.push({ id, params, opts });
+        return txn;
       },
     };
     charges = { list: async (_p: unknown) => { S.calls.listCharges++; return { data: S.charges }; } };
     refunds = {
       create: async (params: any, opts: any) => {
         S.calls.refundCreate.push({ params, opts });
+        const key = opts?.idempotencyKey;
+        if (key && S._refundKeys[key]) return S._refundKeys[key]; // idempotent replay → no second refund
         if (S.refundThrows) throw new Error('refund failed');
-        return { id: 're_1', ...params };
+        const refund = { id: 're_1', ...params };
+        if (key) S._refundKeys[key] = refund;
+        S.calls.refundCreateEffective.push({ params, opts });
+        (S.refundsByCharge[params.charge] ??= []).push({ id: refund.id, amount: params.amount, status: 'succeeded', metadata: params.metadata ?? null });
+        return refund;
       },
+      list: async ({ charge }: { charge: string }) => { S.calls.listRefunds++; return { data: S.refundsByCharge[charge] ?? [] }; },
     };
   }
   return { default: FakeStripe };
@@ -58,8 +81,13 @@ const succeededCharge = (amount: number, refunded = 0): Charge =>
   ({ id: 'ch_1', status: 'succeeded', refunded: false, amount, amount_refunded: refunded });
 
 beforeEach(() => {
-  S.balance = 0; S.currency = 'eur'; S.charges = []; S.refundThrows = false; S.balanceTxnThrows = false;
-  S.calls = { retrieve: 0, listCharges: 0, refundCreate: [], balanceTxn: [] };
+  S.balance = 0; S.currency = 'eur'; S.charges = []; S.refundsByCharge = {};
+  S.refundThrows = false; S.balanceTxnThrows = false;
+  S._refundKeys = {}; S._zeroKeys = {};
+  S.calls = {
+    retrieve: 0, listCharges: 0, listRefunds: 0,
+    refundCreate: [], refundCreateEffective: [], balanceTxn: [], balanceTxnEffective: [],
+  };
 });
 
 describe('refundRemainingCreditOnCancel (D-F)', () => {
@@ -69,7 +97,7 @@ describe('refundRemainingCreditOnCancel (D-F)', () => {
     const r = await refundRemainingCreditOnCancel(sub());
     expect(r.status).toBe('refunded');
     expect(r.refundedCents).toBe(1500);
-    expect(S.calls.refundCreate[0].params).toMatchObject({ charge: 'ch_1', amount: 1500 });
+    expect(S.calls.refundCreate[0]?.params).toMatchObject({ charge: 'ch_1', amount: 1500 });
     // Balance zeroed with a POSITIVE offset so the credit isn't also applied elsewhere.
     expect(S.calls.balanceTxn[0].params).toMatchObject({ amount: 1500, currency: 'eur' });
   });
@@ -132,7 +160,47 @@ describe('refundRemainingCreditOnCancel (D-F)', () => {
   it('idempotency key is stable per subscription (retry-safe, no double refund)', async () => {
     S.balance = -1500; S.charges = [succeededCharge(3000)];
     await refundRemainingCreditOnCancel(sub({ id: 'sub_42' } as Partial<Stripe.Subscription>));
-    expect(S.calls.refundCreate[0].opts).toMatchObject({ idempotencyKey: 'goblin-cancel-credit-refund-sub_42' });
+    expect(S.calls.refundCreate[0]?.opts).toMatchObject({ idempotencyKey: 'goblin-cancel-credit-refund-sub_42' });
+  });
+
+  it('balance-zero is idempotency-keyed (E-2)', async () => {
+    S.balance = -1500; S.charges = [succeededCharge(3000)];
+    await refundRemainingCreditOnCancel(sub({ id: 'sub_9' } as Partial<Stripe.Subscription>));
+    expect(S.calls.balanceTxn[0]?.opts).toMatchObject({ idempotencyKey: 'goblin-cancel-credit-zero-sub_9' });
+    // …and the refund is metadata-stamped so a later attempt can recognise its own refund.
+    expect(S.calls.refundCreate[0]?.params?.metadata).toMatchObject({ goblin_cancel_sub: 'sub_9' });
+  });
+
+  it('webhook replay → exactly one refund + one balance adjustment (idempotent, E-2)', async () => {
+    S.balance = -1500; S.charges = [succeededCharge(3000)];
+    const r1 = await refundRemainingCreditOnCancel(sub());
+    expect(r1.status).toBe('refunded');
+    // Replay: Stripe redelivers subscription.deleted while still reporting the credit
+    // (stale read / concurrent delivery); our refund already consumed the charge room.
+    S.charges = [succeededCharge(3000, 1500)];
+    const r2 = await refundRemainingCreditOnCancel(sub());
+    expect(r2.status).toBe('refunded');
+    // The refund key and the balance-zero key both dedupe → no double card refund and
+    // no double (over-)adjustment of the balance.
+    expect(S.calls.refundCreateEffective).toHaveLength(1);
+    expect(S.calls.balanceTxnEffective).toHaveLength(1);
+  });
+
+  it('refunded_balance_unadjusted retries to consistency — resumes the zero, never re-refunds (E-2)', async () => {
+    S.balance = -1500; S.charges = [succeededCharge(3000)]; S.balanceTxnThrows = true;
+    const r1 = await refundRemainingCreditOnCancel(sub());
+    expect(r1.status).toBe('refunded_balance_unadjusted');
+    expect(S.calls.refundCreateEffective).toHaveLength(1);
+    expect(S.calls.balanceTxnEffective).toHaveLength(0); // the zero threw → nothing committed
+
+    // Cron sweep replays. The refund already happened (charge room now consumed); the
+    // credit is still on the balance because the zero threw. This time the zero succeeds.
+    S.balanceTxnThrows = false;
+    S.charges = [succeededCharge(3000, 1500)];
+    const r2 = await refundRemainingCreditOnCancel(sub());
+    expect(r2.status).toBe('refunded');
+    expect(S.calls.refundCreateEffective).toHaveLength(1); // STILL one — never re-refunded
+    expect(S.calls.balanceTxnEffective).toHaveLength(1);   // the resumed zero committed once
   });
 
   it('no Stripe customer → skipped', async () => {

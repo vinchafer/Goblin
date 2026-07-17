@@ -14,6 +14,7 @@
 import { deployToVercel as realDeploy, getDeployStatus as realStatus } from '../vercel-service';
 import { verifyDeployment as realVerify } from '../deploy-verification';
 import { listFiles as realListFiles } from '../file-storage';
+import logger from '../../lib/logger';
 import type { ToolContext, ToolResult } from './types';
 
 /** Injectable deploy dependencies so publish is unit-testable without Vercel/network. */
@@ -197,8 +198,16 @@ export async function runPublish(
     };
   }
 
-  // 5) Verified live — persist + return the attested URL.
-  await run.markDeployed(ctx.projectId, finalUrl).catch(() => {});
+  // 5) Verified live — persist + return the attested URL. The truth-gate has ALREADY
+  //    passed, so a failure to persist the URL must NOT downgrade the result: the site
+  //    is live. But never silent-swallow on a publish path (E-5) — log the persist
+  //    failure loudly so a lost URL write is operator-visible.
+  await run.markDeployed(ctx.projectId, finalUrl).catch((e) => {
+    logger.error(
+      { projectId: ctx.projectId, url: finalUrl, err: e instanceof Error ? e.message : String(e) },
+      'publish: markDeployed failed AFTER verified-live deploy — site is live, URL not persisted',
+    );
+  });
   state.verifiedUrl = finalUrl;
   state.lastError = undefined;
   state.lastFailedAssets = undefined;
