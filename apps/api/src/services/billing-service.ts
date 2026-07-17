@@ -64,6 +64,14 @@ function getStripe(): Stripe {
   return _stripe;
 }
 
+// E-6: per-call timeout budget for the synchronous, user-facing money calls
+// (checkout / subscribe / change-plan / proration preview). The webhook processor
+// already bounds every Stripe call in time (stripe-webhook-processor.ts); these
+// request-path calls were the last raw `stripe.*` awaits with no ceiling. On a
+// stalled Stripe upstream the caller now gets an honest TimeoutError (surfaced as a
+// 500 by the route) instead of hanging until the SDK's own default. Env-overridable.
+const moneyCallTimeoutMs = () => envTimeoutMs('STRIPE_MONEY_TIMEOUT_MS', 15_000);
+
 export async function createCheckoutSession(
   userId: string,
   targetPlan: string,
@@ -110,7 +118,7 @@ export async function createCheckoutSession(
   // Pricier than what the user saw → show the transparency notice on checkout.
   const reTieredUp = tier < ipTier;
 
-  const session = await stripe.checkout.sessions.create({
+  const session = await withTimeout(stripe.checkout.sessions.create({
     customer: user.stripe_customer_id ?? undefined,
     customer_email: !user.stripe_customer_id ? user.email : undefined,
     mode: 'subscription',
@@ -122,7 +130,7 @@ export async function createCheckoutSession(
     cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/billing?canceled=true`,
     metadata: { userId, plan: targetPlan, geo_tier: String(tier), ip_tier: String(ipTier) },
     ...(reTieredUp ? { custom_text: { submit: { message: RETIER_NOTICE } } } : {}),
-  });
+  }), moneyCallTimeoutMs(), 'checkout.sessions.create');
 
   return session.url!;
 }
@@ -291,7 +299,7 @@ export async function createSubscriptionAtTier(
     invoice_settings: { default_payment_method: paymentMethodId },
   });
 
-  const subscription = await stripe.subscriptions.create({
+  const subscription = await withTimeout(stripe.subscriptions.create({
     customer: customerId,
     items: [{ price: resolved.priceId, quantity: 1 }],
     default_payment_method: paymentMethodId,
@@ -303,7 +311,7 @@ export async function createSubscriptionAtTier(
       card_country: resolved.cardCountry ?? 'unknown',
     },
     expand: ['latest_invoice.payment_intent'],
-  });
+  }), moneyCallTimeoutMs(), 'subscriptions.create');
 
   // Entitlement: set the plan from the resolved price id immediately (the webhook
   // customer.subscription.created keeps it in sync, but we don't block on it).
@@ -386,12 +394,12 @@ export async function previewPlanChange(
   let creditAmount = 0;
   let currency = 'usd';
   if (!samePlan && item) {
-    const upcoming = await stripe.invoices.retrieveUpcoming({
+    const upcoming = await withTimeout(stripe.invoices.retrieveUpcoming({
       customer: customerId,
       subscription: sub.id,
       subscription_items: [{ id: item.id, price: newPriceId }],
       subscription_proration_behavior: 'create_prorations',
-    });
+    }), moneyCallTimeoutMs(), 'invoices.retrieveUpcoming');
     currency = upcoming.currency ?? 'usd';
     // Sum only the proration line items so the figure reflects the change itself,
     // not the full next-cycle total.
@@ -466,12 +474,12 @@ export async function changePlan(
   // prorated difference is billed immediately. error_if_incomplete: if that immediate
   // charge can't be paid (declined card), the update FAILS and the subscription is
   // left UNCHANGED — never changed-but-unpaid.
-  const updated = await stripe.subscriptions.update(sub.id, {
+  const updated = await withTimeout(stripe.subscriptions.update(sub.id, {
     items: [{ id: item.id, price: newPriceId }],
     proration_behavior: 'always_invoice',
     payment_behavior: 'error_if_incomplete',
     expand: ['latest_invoice.payment_intent'],
-  });
+  }), moneyCallTimeoutMs(), 'subscriptions.update');
 
   // Persist entitlement immediately (webhook customer.subscription.updated keeps
   // it in sync, but we don't block on it).

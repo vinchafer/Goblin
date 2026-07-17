@@ -258,7 +258,11 @@ billing.get('/status', authMiddleware, async (c) => {
         cardLast4 = pm.card.last4;
         cardBrand = pm.card.brand;
       }
-    } catch { /* silent */ }
+    } catch (e) {
+      // E-7: don't fail /status if Stripe is down, but surface the outage at warn so
+      // a Stripe/DB incident is visible instead of silently degrading to "no card".
+      logger.warn({ userId, err: e instanceof Error ? e.message : String(e) }, 'billing/status: card-info read failed — returning null card');
+    }
   }
 
   return c.json({
@@ -312,7 +316,10 @@ billing.post('/confirm-plan', authMiddleware, async (c) => {
       .from('users').update({ last_confirmed_plan: planKey }).eq('id', userId);
     if (updErr) return c.json({ ok: false, reason: 'flag_unavailable' });
     return c.json({ ok: true, plan: planKey });
-  } catch {
+  } catch (e) {
+    // E-7: an unexpected throw here (not the pre-migration column-absent path, which
+    // returns above without throwing) is a real DB fault — log it at warn.
+    logger.warn({ userId, err: e instanceof Error ? e.message : String(e) }, 'billing/confirm-plan: flag write threw — returning flag_unavailable');
     return c.json({ ok: false, reason: 'flag_unavailable' });
   }
 });
@@ -356,7 +363,9 @@ billing.get('/invoices', authMiddleware, async (c) => {
       has_more: invoices.has_more,
       next_cursor: invoices.has_more && formatted.length > 0 ? (formatted.at(-1)?.id ?? null) : null,
     });
-  } catch {
+  } catch (e) {
+    // E-7: an empty invoice list on a Stripe outage should be operator-visible.
+    logger.warn({ userId, err: e instanceof Error ? e.message : String(e) }, 'billing/invoices: Stripe list failed — returning empty');
     return c.json({ invoices: [], has_more: false, next_cursor: null });
   }
 });
@@ -395,7 +404,9 @@ billing.get('/payment-method', authMiddleware, async (c) => {
         exp_year: pm.card.exp_year,
       }
     });
-  } catch {
+  } catch (e) {
+    // E-7: surface a Stripe outage instead of silently reporting "no payment method".
+    logger.warn({ userId, err: e instanceof Error ? e.message : String(e) }, 'billing/payment-method: Stripe read failed — returning null');
     return c.json({ payment_method: null });
   }
 });
@@ -439,8 +450,10 @@ billing.get('/usage', authMiddleware, async (c) => {
       else if (t === 'free_api') free_count++;
       else if (t === 'goblin_hosted') hosted_count++;
     }
-  } catch {
+  } catch (e) {
     // Best-effort breakdown — on any read failure show zero, never a frozen counter.
+    // E-7: still surface the DB read failure at warn so an outage isn't invisible.
+    logger.warn({ userId, err: e instanceof Error ? e.message : String(e) }, 'billing/usage: agent_runs read failed — returning zero breakdown');
   }
 
   return c.json({
