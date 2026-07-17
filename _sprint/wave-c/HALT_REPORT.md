@@ -1,7 +1,14 @@
 # WAVE C (Workspace-Explorer) — HALT at Phase 0
 
+> ✅ **RESOLVED — this HALT was lifted the same session.** The founder supplied the
+> missing `docs/GOBLIN_WORKSPACE1_SPEC.md` (committed `d60fd08`), confirmed "extend
+> the existing FileExplorer in place," and authorized the `deleteProject` fix. The
+> wave then proceeded — see `_sprint/wave-c/MERGE_REPORT.md` for what shipped. This
+> file is kept as the honest record of the Phase-0 HALT and the state-first deltas it
+> surfaced (all three deltas below proved correct and are addressed in the report).
+
 **Date:** 2026-07-17 · **Branch:** `claude/titel-wave-c-m9p942` (from `master` @ `8af3589`) · **Author:** CC/Opus
-**Status:** 🛑 HALT — mandated by Phase 0 gate. No units built. No PR. Control returned to founder.
+**Status:** 🛑→✅ HALT (Phase 0) then RESOLVED — spec supplied, wave executed, PR opened.
 
 ---
 
