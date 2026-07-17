@@ -4,7 +4,8 @@ import { z } from 'zod';
 import { randomUUID } from 'crypto';
 import { authMiddleware } from '../middleware/auth';
 import { generateProject } from '../services/project-generator';
-import { createZip, listFiles, getFile, uploadFile, deleteFile, deleteProject, listFilesWithMeta, getFileBytes, uploadProjectFileBytes } from '../services/file-storage';
+import { createZip, listFiles, getFile, uploadFile, deleteFile, deleteProject, listFilesWithMeta, getFileBytes, uploadProjectFileBytes, listTrashFiles, purgeTrash } from '../services/file-storage';
+import { makeTrashPath, parseTrashPath } from '../services/trash-path';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { createTwoFilesPatch } from 'diff';
 import { createProjectFromTemplate } from './templates';
@@ -910,8 +911,9 @@ projects.delete('/:id/files/*', async (c) => {
   // Soft delete: move to .trash/. Net-zero for the cap (copy then remove original),
   // so the trash write is account-only (enforce:false) — a delete must never be
   // blocked by the cap, even for an over-cap user. .trash bytes still count until
-  // purged (see POST /:id/files/purge-trash).
-  const trashPath = `.trash/${Date.now()}_${filePath.replace(/\//g, '_')}`;
+  // purged (see POST /:id/files/purge-trash). Reversible key scheme so the
+  // Papierkorb can restore to the exact original path (see trash-path.ts).
+  const trashPath = makeTrashPath(filePath);
   const content = await getFile(projectId, filePath);
   if (content !== null) {
     await uploadFile(projectId, trashPath, content, { userId, enforce: false });
@@ -1068,7 +1070,7 @@ projects.post('/:id/files/folder', async (c) => {
   for (const path of victims) {
     const content = await getFile(projectId, path);
     if (content !== null) {
-      await uploadFile(projectId, `.trash/${Date.now()}_${path.replace(/\//g, '_')}`, content, { userId, enforce: false });
+      await uploadFile(projectId, makeTrashPath(path), content, { userId, enforce: false });
       await deleteFile(projectId, path, { userId });
       deleted++;
     }
@@ -1089,14 +1091,82 @@ projects.post('/:id/files/purge-trash', async (c) => {
     return c.json({ error: 'Not found' }, 404);
   }
 
-  const all = await listFiles(projectId);
-  const trashed = all.filter((p) => p === '.trash' || p.startsWith('.trash/'));
-  let purged = 0;
-  for (const path of trashed) {
-    await deleteFile(projectId, path, { userId }); // frees B2 + decrements the counter
-    purged++;
-  }
+  // Batched purge (the #18 fix, applied to trash too): chunks DeleteObjects to
+  // ≤1000/req and decrements the counter by the exact freed bytes. Frees B2 for good.
+  const purged = await purgeTrash(projectId, { userId });
   return c.json({ success: true, purged });
+});
+
+// List the Papierkorb — soft-deleted entries with their recovered original path.
+// New-scheme entries carry `originalPath`; legacy flattened entries are flagged
+// `legacy:true` with `originalPath:null` (listable + purgeable, not auto-restorable).
+projects.get('/:id/trash', async (c) => {
+  const userId = c.get('userId');
+  const projectId = c.req.param('id');
+
+  const supabase = getSupabaseAdmin();
+  if (!await verifyProjectOwnership(supabase, projectId, userId)) {
+    return c.json({ error: 'Not found' }, 404);
+  }
+
+  const entries = (await listTrashFiles(projectId))
+    .filter((f) => f.path !== '.trash') // ignore the bare folder marker if present
+    .map((f) => {
+      const parsed = parseTrashPath(f.path);
+      return {
+        trashPath: f.path,
+        originalPath: parsed?.originalPath ?? null,
+        deletedAt: parsed?.deletedAt ?? null,
+        legacy: parsed?.legacy ?? true,
+        size: f.size,
+        modified: f.modified,
+      };
+    })
+    .sort((a, b) => (b.deletedAt ?? 0) - (a.deletedAt ?? 0)); // newest first
+
+  return c.json({ entries });
+});
+
+// Restore a soft-deleted file back to its original path. Net-zero for the cap
+// (copy back with enforce:false, then remove the trash copy). 409 if a live file
+// already occupies the original path; 400 for legacy entries whose path is lost.
+projects.post('/:id/files/restore', async (c) => {
+  const userId = c.get('userId');
+  const projectId = c.req.param('id');
+  const body = await c.req.json().catch(() => null);
+
+  const schema = z.object({ trashPath: z.string().min(1).max(600) });
+  const result = schema.safeParse(body);
+  if (!result.success) return c.json({ error: 'Invalid request' }, 400);
+
+  const trashPath = result.data.trashPath;
+  if (!trashPath.startsWith('.trash/') || !isSafePath(trashPath)) {
+    return c.json({ error: 'Invalid trash path' }, 400);
+  }
+
+  const supabase = getSupabaseAdmin();
+  if (!await verifyProjectOwnership(supabase, projectId, userId)) {
+    return c.json({ error: 'Not found' }, 404);
+  }
+
+  const parsed = parseTrashPath(trashPath);
+  if (!parsed || parsed.legacy || !parsed.originalPath) {
+    return c.json({ error: 'legacy_unrestorable', message: 'Diese Datei stammt aus einem älteren Papierkorb und kann nicht automatisch wiederhergestellt werden.' }, 400);
+  }
+  const originalPath = parsed.originalPath;
+  if (!isSafePath(originalPath)) return c.json({ error: 'Invalid target path' }, 400);
+
+  const content = await getFile(projectId, trashPath);
+  if (content === null) return c.json({ error: 'Trash entry not found' }, 404);
+
+  // Refuse to silently overwrite a live file that reclaimed the original path.
+  if (await getFile(projectId, originalPath) !== null) {
+    return c.json({ error: 'conflict', conflict: true, path: originalPath }, 409);
+  }
+
+  await uploadFile(projectId, originalPath, content, { userId, enforce: false });
+  await deleteFile(projectId, trashPath, { userId });
+  return c.json({ success: true, restoredTo: originalPath });
 });
 
 // ─── WAVE-F (Versionierung & Zeit) — checkpoints / Zeitleiste ────────────────────

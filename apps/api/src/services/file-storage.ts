@@ -482,6 +482,53 @@ export async function deleteProject(
   if (opts.userId && freed) await applyStorageDelta(opts.userId, -freed);
 }
 
+/** Soft-deleted entries (project-relative `.trash/...` paths) with size + mtime. */
+export async function listTrashFiles(projectId: string): Promise<FileMeta[]> {
+  const all = await listFilesWithMeta(projectId);
+  return all.filter((f) => f.path === '.trash' || f.path.startsWith('.trash/'));
+}
+
+/**
+ * Permanently delete every object under a project's `.trash/`, batched (≤1000/req)
+ * and counter-honest. Returns the number of objects purged. This is the "endgültig
+ * löschen" / free-space action — soft-deleted bytes count against the cap until this
+ * runs. Mirrors deleteProject's chunking (the #18 fix) so a >1000-file trash purges.
+ */
+export async function purgeTrash(projectId: string, opts: { userId?: string } = {}): Promise<number> {
+  const prefix = `${projectPrefix(projectId)}.trash/`;
+  const s3 = getS3Client();
+
+  if (!s3) {
+    let purged = 0;
+    for (const key of [...memoryStorage.keys()]) {
+      if (key.startsWith(prefix)) { memoryStorage.delete(key); purged++; }
+    }
+    return purged;
+  }
+
+  const keys: { Key: string }[] = [];
+  let freed = 0;
+  let continuationToken: string | undefined;
+  do {
+    const response = await s3.send(new ListObjectsV2Command({
+      Bucket: getBucket(), Prefix: prefix, ContinuationToken: continuationToken,
+    }));
+    for (const obj of response.Contents ?? []) {
+      if (obj.Key) { keys.push({ Key: obj.Key }); freed += obj.Size ?? 0; }
+    }
+    continuationToken = response.NextContinuationToken;
+  } while (continuationToken);
+
+  for (let i = 0; i < keys.length; i += 1000) {
+    await s3.send(new DeleteObjectsCommand({
+      Bucket: getBucket(), Delete: { Objects: keys.slice(i, i + 1000), Quiet: true },
+    }));
+  }
+
+  if (opts.userId && freed) await applyStorageDelta(opts.userId, -freed);
+  return keys.length;
+}
+
 /**
  * Upload arbitrary bytes at a given storage key with explicit content type
  * and a long cache-control. Returns the public URL if STORAGE_PUBLIC_URL is
