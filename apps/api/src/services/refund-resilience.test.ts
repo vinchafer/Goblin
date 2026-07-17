@@ -19,7 +19,9 @@ const S = vi.hoisted(() => ({
   balance: 0,
   currency: 'eur',
   charges: [] as { id: string; status: string; refunded: boolean; amount: number; amount_refunded: number }[],
+  refundsByCharge: {} as Record<string, any[]>,
   refundThrows: false,
+  balanceTxnThrows: false,
   refundCreateCount: 0,
 }));
 
@@ -28,15 +30,21 @@ vi.mock('stripe', () => {
     constructor(_k: string, _o: unknown) {}
     customers = {
       retrieve: async (id: string) => ({ id, balance: S.balance, currency: S.currency, deleted: false }),
-      createBalanceTransaction: async (id: string, params: any) => ({ id: 'cbtxn_1', ...params }),
+      createBalanceTransaction: async (id: string, params: any, _opts?: any) => {
+        if (S.balanceTxnThrows) throw new Error('balance txn failed');
+        return { id: 'cbtxn_1', ...params };
+      },
     };
     charges = { list: async (_p: unknown) => ({ data: S.charges }) };
     refunds = {
       create: async (params: any, _opts: any) => {
         S.refundCreateCount++;
         if (S.refundThrows) throw new Error('refund failed');
-        return { id: 're_1', ...params };
+        const refund = { id: 're_1', ...params };
+        (S.refundsByCharge[params.charge] ??= []).push({ id: refund.id, amount: params.amount, status: 'succeeded', metadata: params.metadata ?? null });
+        return refund;
       },
+      list: async ({ charge }: { charge: string }) => ({ data: S.refundsByCharge[charge] ?? [] }),
     };
   }
   return { default: FakeStripe };
@@ -109,7 +117,8 @@ const succeededCharge = (amount: number, refunded = 0): Charge =>
 beforeEach(() => {
   jobs.length = 0;
   errorLogs.length = 0;
-  S.balance = 0; S.currency = 'eur'; S.charges = []; S.refundThrows = false; S.refundCreateCount = 0;
+  S.balance = 0; S.currency = 'eur'; S.charges = []; S.refundsByCharge = {};
+  S.refundThrows = false; S.balanceTxnThrows = false; S.refundCreateCount = 0;
 });
 
 describe('refund resilience (FW6-U1)', () => {
@@ -179,6 +188,26 @@ describe('refund resilience (FW6-U1)', () => {
       (a) => typeof a[1] === 'string' && a[1].includes('cancel_refund_job_alert'),
     );
     expect(alerted).toBe(true);
+  });
+
+  it('a refunded_balance_unadjusted outcome persists a job and the sweep resumes the zero to done (E-2)', async () => {
+    // Refund succeeds, but zeroing the balance throws → money out, credit retained.
+    S.balance = -1500; S.charges = [succeededCharge(3000)]; S.balanceTxnThrows = true;
+    const r1 = await refundRemainingCreditOnCancel(sub('sub_BU'));
+    expect(r1.status).toBe('refunded_balance_unadjusted');
+    const job = jobs.find((j) => j.subscription_id === 'sub_BU')!;
+    expect(job.status).toBe('failed'); // now releasable (was terminal before U1)
+
+    // Sweep: the zero now succeeds. The refund already happened (charge room consumed);
+    // resume must NOT re-refund — it recognises its own refund via metadata.
+    S.balanceTxnThrows = false;
+    S.charges = [succeededCharge(3000, 1500)];
+    const swept = await retryFailedRefunds();
+
+    expect(swept.resolved).toBe(1);
+    expect(swept.stillFailing).toBe(0);
+    expect(job.status).toBe('done');
+    expect(S.refundCreateCount).toBe(1); // exactly one refund across the whole sequence
   });
 
   it('sweep is a no-op when there are no releasable jobs', async () => {
