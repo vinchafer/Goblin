@@ -7,6 +7,7 @@ import { recoverStuckWebhookJobs } from '../services/stripe-webhook-processor';
 import { retryFailedRefunds } from '../services/billing-service';
 import { sendFounderDigest } from '../services/insight-digest';
 import { sendFeedbackDigest } from '../services/feedback';
+import { pruneAgentAutoCheckpoints } from '../services/checkpoints/retention';
 
 let scheduled = false;
 
@@ -30,6 +31,7 @@ export function startCron(): void {
   let lastRefundRetrySlot = -1;
   let lastDigestDay = -1;
   let lastFeedbackDigestDay = -1;
+  let lastCheckpointPruneDay = -1;
 
   setInterval(() => {
     const now = new Date();
@@ -100,6 +102,18 @@ export function startCron(): void {
         );
     }
 
+    // WAVE-F F5 — checkpoint retention prune, daily 03:45 UTC (after storage reconcile).
+    // Deletes stale agent-AUTO checkpoints (older than CHECKPOINT_RETENTION_DAYS, default
+    // 30) except the pre-run snapshot of the last CHECKPOINT_KEEP_LAST_RUNS runs, then GCs
+    // orphan blobs — the storage-COGS control for the safety net. Pre-0095 tolerant (no
+    // table → no-op). Keeps ALL user + publish checkpoints forever.
+    if (utcHour === 3 && utcMinute >= 45 && utcMinute < 47 && lastCheckpointPruneDay !== utcDay) {
+      lastCheckpointPruneDay = utcDay;
+      pruneAgentAutoCheckpoints()
+        .then((r) => logger.info(r, 'checkpoint prune cron: completed'))
+        .catch((e) => logger.error({ error: (e as Error).message }, 'cron checkpoint prune failed'));
+    }
+
     // I4 (WAVE-I) — founder insight digest, daily 07:00 UTC. Self-gates on
     // GOBLIN_FOUNDER_DIGEST=true + a recipient (silent no-op otherwise), so this
     // tick is free unless the founder opts in. One send/day, existing Resend.
@@ -122,5 +136,5 @@ export function startCron(): void {
   }, 60_000);
 
   scheduled = true;
-  logger.info('cron scheduled — rankings 6h, hard-delete daily 03:00 UTC, storage reconcile daily 03:30 UTC, session sweep hourly, stripe-webhook recovery every 5min, refund-retry every 5min, founder digest daily 07:00 UTC (opt-in)');
+  logger.info('cron scheduled — rankings 6h, hard-delete daily 03:00 UTC, storage reconcile daily 03:30 UTC, checkpoint prune daily 03:45 UTC, session sweep hourly, stripe-webhook recovery every 5min, refund-retry every 5min, founder digest daily 07:00 UTC (opt-in)');
 }

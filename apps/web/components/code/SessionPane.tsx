@@ -12,6 +12,7 @@ import { StreamingDiffView } from "./StreamingDiffView";
 import { SessionThread } from "./SessionThread";
 import { SessionPromptInput } from "./SessionPromptInput";
 import { SessionGitPill } from "./SessionGitPill";
+import { SessionHistoryPill } from "./SessionHistoryPill";
 import { CodeFileTabs } from "./CodeFileTabs";
 import { SessionFileNav } from "./SessionFileNav";
 import { CommandBar } from "./CommandBar";
@@ -1124,7 +1125,9 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
                         <Icon name="save" size={15} /> {t(lang, "Nur sichern", "Save only")}
                       </button>
                       {projectId && (
-                        <div style={{ borderTop: "1px solid var(--ed-rule)", paddingTop: 6 }}>
+                        <div style={{ borderTop: "1px solid var(--ed-rule)", paddingTop: 6, display: "flex", flexDirection: "column", gap: 6 }}>
+                          {/* WAVE-F: Zeitleiste (version history). Honest-hides itself pre-0095. */}
+                          <SessionHistoryPill projectId={projectId} onRestored={() => { setMoreMenu(false); void detail.refresh(); }} />
                           <SessionGitPill projectId={projectId} />
                         </div>
                       )}

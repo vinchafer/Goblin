@@ -33,6 +33,7 @@ import {
 } from './publish';
 import { runPublishGuard } from '../safety/publish-scan';
 import { listFiles as realListFiles, downloadFile as realDownloadFile } from '../file-storage';
+import { snapshotProject, listCheckpoints, restoreCheckpoint } from '../checkpoints/checkpoint-store';
 import type { ToolSpec, ToolExecutor, ToolCall, ToolResult, ToolContext } from './types';
 import {
   remainingPlatformSearches,
@@ -191,9 +192,37 @@ export const WEB_SEARCH_TOOL: ToolSpec = {
   },
 };
 
-/** The tool set advertised to a run: base tools, plus web_search when search is available. */
-export function agentToolsFor(opts: { search: boolean }): ToolSpec[] {
-  return opts.search ? [...AGENT_TOOLS, WEB_SEARCH_TOOL] : AGENT_TOOLS;
+// WAVE-F F2 — restore_checkpoint is advertised ONLY on a run the user's message granted
+// restore intent for (classifyRestoreIntent), exactly as web_search is gated by provider
+// availability and publish by explicit intent. A normal build run never sees it, so the
+// model can't undo a project it was asked to build.
+export const RESTORE_CHECKPOINT_TOOL: ToolSpec = {
+  name: 'restore_checkpoint',
+  description:
+    'Macht eine frühere Änderung am Projekt RÜCKGÄNGIG: stellt einen früheren gespeicherten ' +
+    'Stand wieder her. OHNE Argument stellst du den letzten Stand VOR der letzten Änderung ' +
+    'wieder her (das übliche „mach die letzte Änderung rückgängig"). Das ist NICHT zerstörerisch — ' +
+    'der aktuelle Stand wird vorher automatisch gesichert, du kannst es also wieder zurücknehmen. ' +
+    'Rufe dies NUR auf, wenn der Nutzer ausdrücklich etwas rückgängig machen / einen früheren ' +
+    'Stand wiederherstellen will. Danach mit finish kurz berichten, WAS wiederhergestellt wurde.',
+  parameters: {
+    type: 'object',
+    properties: {
+      checkpointId: { type: 'string', description: 'Optional: die ID eines bestimmten Stands aus der Zeitleiste. Weglassen = letzte Änderung rückgängig.' },
+    },
+    additionalProperties: false,
+  },
+};
+
+/**
+ * The tool set advertised to a run: base tools, plus web_search when search is available,
+ * plus restore_checkpoint ONLY when the message granted restore intent.
+ */
+export function agentToolsFor(opts: { search: boolean; restore?: boolean }): ToolSpec[] {
+  const tools = [...AGENT_TOOLS];
+  if (opts.search) tools.push(WEB_SEARCH_TOOL);
+  if (opts.restore) tools.push(RESTORE_CHECKPOINT_TOOL);
+  return tools;
 }
 
 // ─── Session file helpers (the agent's coherent view of its own edits) ──────────
@@ -563,6 +592,54 @@ async function toolReadDeployStatus(sb: Sb, ctx: ToolContext, state: PublishStat
   return readDeployStatus(state, { previewUrl: row.preview_url, lastDeployedAt: row.last_deployed_at });
 }
 
+/**
+ * WAVE-F F2 — the restore_checkpoint tool (chat-undo). With an explicit checkpointId it
+ * restores that state; without one it restores the newest checkpoint EXCLUDING the current
+ * run's own pre-run snapshot (`excludeId`) — the "letzte Änderung rückgängig" default. The
+ * restore is non-destructive (it snapshots the current state first) and refuses honestly
+ * while a run is active. Every failure is a structured German tool result the model sees.
+ */
+async function toolRestoreCheckpoint(
+  ctx: ToolContext,
+  args: Record<string, unknown>,
+  excludeId?: string | null,
+): Promise<ToolResult> {
+  const explicitId = typeof args.checkpointId === 'string' && args.checkpointId.trim() ? args.checkpointId.trim() : null;
+
+  let targetId = explicitId;
+  if (!targetId) {
+    // Default: the newest checkpoint that is NOT this undo-run's own pre-snapshot.
+    const list = await listCheckpoints(ctx.projectId, ctx.userId);
+    const candidate = list.find((c) => c.id !== excludeId);
+    if (!candidate) {
+      return {
+        ok: false,
+        summary: 'Kein früherer Stand vorhanden',
+        error: { code: 'no_checkpoint', message: 'Es gibt noch keinen früheren Stand, den ich wiederherstellen könnte.' },
+      };
+    }
+    targetId = candidate.id;
+  }
+
+  const res = await restoreCheckpoint(ctx.projectId, ctx.userId, targetId);
+  if (res.ok) {
+    return {
+      ok: true,
+      summary: `Wiederhergestellt: „${res.label}" (${res.restored} Datei${res.restored === 1 ? '' : 'en'}${res.removed ? `, ${res.removed} entfernt` : ''})`,
+      data: { restored: res.restored, removed: res.removed, label: res.label },
+    };
+  }
+  const message =
+    res.error === 'run_active'
+      ? 'Es läuft gerade ein anderer Lauf für dieses Projekt — bitte kurz warten.'
+      : res.error === 'not_found'
+      ? 'Diesen Stand konnte ich nicht finden.'
+      : res.error === 'unavailable'
+      ? 'Die Versionierung ist gerade nicht verfügbar.'
+      : 'Die Wiederherstellung ist fehlgeschlagen — es wurde nichts verändert.';
+  return { ok: false, summary: 'Wiederherstellen fehlgeschlagen', error: { code: `restore_${res.error}`, message } };
+}
+
 /** Options for the executor — the B1 publish deps + the run's shared publish state. */
 export interface ExecutorOptions {
   publishDeps?: PublishDeps;
@@ -573,6 +650,13 @@ export interface ExecutorOptions {
   search?: ResolvedSearch | null;
   /** F4.3: max web searches this run may make (orchestrator-enforced knob, default 3). */
   maxSearchesPerRun?: number;
+  /**
+   * WAVE-F F2: the current run's OWN pre-run checkpoint id. restore_checkpoint with no
+   * argument restores the newest checkpoint EXCLUDING this one — i.e. the state before the
+   * last change, so "mach die letzte Änderung rückgängig" undoes the previous run, not the
+   * snapshot this very undo-run just took.
+   */
+  restoreExcludeCheckpointId?: string | null;
 }
 
 // F4.3 — the web_search tool. Enforces the per-run cap (counter lives in the run's
@@ -688,7 +772,7 @@ export function buildToolExecutor(sb: Sb = getSupabaseAdmin(), opts: ExecutorOpt
             },
           };
         }
-        return runPublish(
+        const pubResult = await runPublish(
           publishDeps,
           {
             promoteDrafts: (c) => promoteDrafts(sb, c),
@@ -704,9 +788,24 @@ export function buildToolExecutor(sb: Sb = getSupabaseAdmin(), opts: ExecutorOpt
           publishState,
           (msg) => ctx.emitProgress?.(msg),
         );
+        // WAVE-F F1/F4: a VERIFIED-live publish is a checkpoint. The deploy truth-gate has
+        // already passed (pubResult.ok), so this records the deployed state + URL into the
+        // "frühere Versionen" history — never an unverified claim. Best-effort + pre-0095
+        // tolerant: a snapshot failure must NEVER downgrade a genuinely-live publish, so it
+        // is fire-and-forget and the result is returned unchanged.
+        if (pubResult.ok) {
+          const url = (pubResult.data as { url?: string } | undefined)?.url ?? null;
+          void snapshotProject({
+            projectId: ctx.projectId, userId: ctx.userId,
+            label: 'Veröffentlicht', createdBy: 'publish', deployedUrl: url,
+          });
+        }
+        return pubResult;
       }
       case 'read_deploy_status':
         return toolReadDeployStatus(sb, ctx, publishState);
+      case 'restore_checkpoint':
+        return toolRestoreCheckpoint(ctx, call.args ?? {}, opts.restoreExcludeCheckpointId);
       case 'finish':
         return { ok: true, summary: 'fertig', terminate: true, report: String(call.args?.report ?? '') };
       default:
