@@ -69,7 +69,7 @@ describe('refundRemainingCreditOnCancel (D-F)', () => {
     const r = await refundRemainingCreditOnCancel(sub());
     expect(r.status).toBe('refunded');
     expect(r.refundedCents).toBe(1500);
-    expect(S.calls.refundCreate[0].params).toMatchObject({ charge: 'ch_1', amount: 1500 });
+    expect(S.calls.refundCreate[0]?.params).toMatchObject({ charge: 'ch_1', amount: 1500 });
     // Balance zeroed with a POSITIVE offset so the credit isn't also applied elsewhere.
     expect(S.calls.balanceTxn[0].params).toMatchObject({ amount: 1500, currency: 'eur' });
   });
@@ -132,7 +132,7 @@ describe('refundRemainingCreditOnCancel (D-F)', () => {
   it('idempotency key is stable per subscription (retry-safe, no double refund)', async () => {
     S.balance = -1500; S.charges = [succeededCharge(3000)];
     await refundRemainingCreditOnCancel(sub({ id: 'sub_42' } as Partial<Stripe.Subscription>));
-    expect(S.calls.refundCreate[0].opts).toMatchObject({ idempotencyKey: 'goblin-cancel-credit-refund-sub_42' });
+    expect(S.calls.refundCreate[0]?.opts).toMatchObject({ idempotencyKey: 'goblin-cancel-credit-refund-sub_42' });
   });
 
   it('no Stripe customer → skipped', async () => {

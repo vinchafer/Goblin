@@ -33,7 +33,9 @@ import { projects } from './projects';
 
 function upload(projectId: string, name: string, bytes: Uint8Array, targetPath = '') {
   const fd = new FormData();
-  fd.append('file', new File([bytes], name), name);
+  // Copy into a fresh ArrayBuffer-backed view so the value is a `Uint8Array<ArrayBuffer>`
+  // (a valid BlobPart) rather than the parameter's `Uint8Array<ArrayBufferLike>`.
+  fd.append('file', new File([new Uint8Array(bytes)], name), name);
   fd.append('path', targetPath);
   return projects.request(`/${projectId}/files/upload`, { method: 'POST', body: fd });
 }
