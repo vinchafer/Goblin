@@ -624,6 +624,62 @@ export async function purgeProjectStorage(projectIds: string[]): Promise<Project
   return result;
 }
 
+// ── Raw-key blob primitives (WAVE-F checkpoints) ─────────────────────────────
+// The checkpoint store keeps file BYTES once-per-unique-content as content-addressed
+// blobs OUTSIDE the `projects/<id>/` prefix (under `checkpoints/<id>/blobs/<sha256>`),
+// so these operate on a RAW key, not a project-relative path. They mirror
+// uploadFile/downloadFile but skip storageKey() (which would jail the key under
+// projects/…). Blobs hold text file content as a string — the same representation
+// every other consumer (zip, context injection, diff) already treats project files as.
+
+/** True if an object exists at a raw storage key (blob-dedup probe — skip re-uploading). */
+export async function keyExists(key: string): Promise<boolean> {
+  const s3 = getS3Client();
+  if (!s3) return memoryStorage.has(key);
+  return (await headSize(s3, key)) !== null;
+}
+
+/** Write a string at a raw storage key (checkpoint blob). Unmetered — platform COGS. */
+export async function putStringAtKey(key: string, content: string): Promise<void> {
+  const s3 = getS3Client();
+  if (!s3) {
+    memoryStorageSet(key, content);
+    return;
+  }
+  await s3.send(new PutObjectCommand({ Bucket: getBucket(), Key: key, Body: content, ContentType: 'text/plain' }));
+}
+
+/** Read a string at a raw storage key (checkpoint blob replay), or null if absent. */
+export async function getStringAtKey(key: string): Promise<string | null> {
+  const s3 = getS3Client();
+  if (!s3) return memoryStorage.get(key) ?? null;
+  try {
+    const response = await s3.send(new GetObjectCommand({ Bucket: getBucket(), Key: key }));
+    if (!response.Body) return null;
+    return await response.Body.transformToString('utf-8');
+  } catch (err: unknown) {
+    const code = (err as { $metadata?: { httpStatusCode?: number } })?.$metadata?.httpStatusCode;
+    if (code === 404) return null;
+    throw err;
+  }
+}
+
+/** Delete a set of raw storage keys, batched (S3 caps DeleteObjects at 1000). Best-effort. */
+export async function deleteKeys(keys: string[]): Promise<void> {
+  if (keys.length === 0) return;
+  const s3 = getS3Client();
+  if (!s3) {
+    for (const key of keys) memoryStorage.delete(key);
+    return;
+  }
+  for (let i = 0; i < keys.length; i += 1000) {
+    await s3.send(new DeleteObjectsCommand({
+      Bucket: getBucket(),
+      Delete: { Objects: keys.slice(i, i + 1000).map((Key) => ({ Key })), Quiet: true },
+    }));
+  }
+}
+
 /**
  * Create a ZIP file containing all project files.
  * Returns a Buffer of the ZIP data.
