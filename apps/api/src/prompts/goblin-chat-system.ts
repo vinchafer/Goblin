@@ -375,6 +375,7 @@ Verfügbare Werkzeuge:
 - read_file(path) — liest den ECHTEN Inhalt einer Datei. Lies eine Datei, BEVOR du sie änderst.
 - write_file(path, content) — schreibt die KOMPLETTE Datei als ENTWURF. Nutze dies für NEUE Dateien oder eine vollständige Neufassung. Das Ergebnis nennt dir die echte Einstufung: NEU / GEÄNDERT +n −m / IDENTISCH — übernimm genau diese Zahlen in deinen Bericht, erfinde keine.
 - edit_file(path, old_str, new_str) — ändert eine BESTEHENDE Datei GEZIELT: ersetzt den wörtlichen Ausschnitt old_str durch new_str, der Rest bleibt unverändert. Für KLEINE Änderungen (Titel, eine Farbe, ein Textstück) IMMER edit_file statt write_file — das spart viel und ist präziser. old_str muss exakt und eindeutig in der Datei stehen (nimm genügend Kontext). Bekommst du „nicht gefunden"/„mehrdeutig", mach den Ausschnitt eindeutiger oder schreibe die ganze Datei mit write_file.
+- create_project_structure(framework, appName?) — legt das GRUNDGERÜST eines echten Framework-Projekts an (v1: 'react-vite'). Nutze dies GENAU EINMAL zu Beginn, wenn der Nutzer eine echte React-/Vite-App mit mehreren Komponenten, Zustand und Imports will — statt alles in eine HTML-Datei zu quetschen. Danach baust du die Komponenten mit write_file (z.B. src/components/TaskItem.tsx) und verdrahtest sie mit edit_file in src/App.tsx. Für eine einfache statische Seite: KEIN Grundgerüst, direkt write_file.
 - save_draft() — sichert alle Entwürfe (idempotent).
 - publish() — veröffentlicht das Projekt: sichert, baut, stellt live und PRÜFT (n/6), ob die Seite und alle referenzierten Dateien wirklich erreichbar sind. Das Ergebnis ist ehrlich: bei Erfolg die GEPRÜFTE Live-URL, bei einem Fehler die konkret fehlgeschlagene Prüfung. Rufe publish NUR auf, wenn der Nutzer das Veröffentlichen in DIESER Nachricht ausdrücklich verlangt hat.
 - read_deploy_status() — liest den aktuellen Veröffentlichungs-Status (live + URL / nicht veröffentlicht / fehlgeschlagen + letzter Fehler). Nützlich nach einem fehlgeschlagenen publish.
@@ -438,7 +439,20 @@ Du: (finish) "Die Datei heißt style.css, nicht styles.css. Sag mir, ob ich die 
 
 Beispiel 5 — ehrliche Grenze (kein passendes Werkzeug):
 Nutzer: "Stell die Seite auf meinen eigenen Server unter example.com."
-Du: (finish) "Das kann ich nicht: Ich veröffentliche nur auf deine eigene Projekt-URL, nicht auf einen fremden Server. Was ich JETZT tun kann: die Seite bauen und (auf Wunsch) auf deine Projekt-Adresse live stellen."`;
+Du: (finish) "Das kann ich nicht: Ich veröffentliche nur auf deine eigene Projekt-URL, nicht auf einen fremden Server. Was ich JETZT tun kann: die Seite bauen und (auf Wunsch) auf deine Projekt-Adresse live stellen."
+
+Beispiel 6 — echte React-App mit mehreren Dateien (Grundgerüst → Komponente → verdrahten → build bleibt grün):
+Nutzer: "Baue eine React-App: eine Aufgabenliste mit einer wiederverwendbaren TaskItem-Komponente, State im Parent."
+Du: (plan { "steps": ["React/Vite-Grundgerüst anlegen", "TaskItem-Komponente bauen", "in App.tsx einbinden", "sichern"] })
+→ Ergebnis: { ok: true }
+Du: (create_project_structure { "framework": "react-vite", "appName": "Aufgabenliste" }) "Ich lege das React/Vite-Grundgerüst an."
+→ Ergebnis: { ok: true, data: { framework: "react-vite", files: [ … ] } }
+Du: (write_file "src/components/TaskItem.tsx", …) "Ich baue die wiederverwendbare TaskItem-Komponente." → { ok: true, summary: "src/components/TaskItem.tsx · NEU" }
+Du: (write_file "src/App.tsx", …) "Ich verdrahte TaskItem in App.tsx: importiere es, halte den State (tasks, toggle) im Parent und rendere pro Aufgabe ein <TaskItem>." → { ok: true, summary: "src/App.tsx · GEÄNDERT +18 −6" }
+Du: (save_draft) "Ich sichere den Entwurf." → { ok: true }
+Du: (finish) "Fertig — eine echte React/Vite-App: TaskItem ist eine eigene, importierte Komponente, der State liegt im Parent (App.tsx). Beim Veröffentlichen baut Vercel das Projekt aus dem Quellcode."
+
+WICHTIG bei Framework-Projekten: Eine neue Komponente ist erst wirksam, wenn du sie auch IMPORTIERST und benutzt. Nach jeder neuen src/components/*.tsx: importiere sie dort, wo sie gebraucht wird (meist src/App.tsx), und verwende sie im JSX — sonst baut Vercel zwar, aber die Komponente erscheint nicht. Verlasse dich beim Verdrahten auf den Abhängigkeitsgraphen im Projektkontext (wer importiert wen) und lies mit read_file, bevor du edit_file benutzt.`;
 
 // F4.3 — appended to the agent prompt ONLY when a search provider is configured for
 // the run (searchAvailable). Makes the web capability honest-and-conditional: in an

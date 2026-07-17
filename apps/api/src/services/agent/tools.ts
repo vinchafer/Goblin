@@ -34,6 +34,7 @@ import {
 import { runPublishGuard } from '../safety/publish-scan';
 import { listFiles as realListFiles, downloadFile as realDownloadFile } from '../file-storage';
 import { snapshotProject, listCheckpoints, restoreCheckpoint } from '../checkpoints/checkpoint-store';
+import { getFrameworkTemplate, buildFrameworkFiles, SUPPORTED_FRAMEWORKS, FRAMEWORK_TEMPLATES } from '../framework-templates';
 import type { ToolSpec, ToolExecutor, ToolCall, ToolResult, ToolContext } from './types';
 import {
   remainingPlatformSearches,
@@ -130,6 +131,37 @@ export const AGENT_TOOLS: ToolSpec[] = [
         replace_all: { type: 'boolean', description: 'Optional: ALLE Vorkommen ersetzen (Standard false: nur das eine eindeutige Vorkommen)' },
       },
       required: ['path', 'old_str', 'new_str'],
+      additionalProperties: false,
+    },
+  },
+  {
+    // WAVE-E E2: scaffold a real framework project (v1: React + Vite). Writes the
+    // buildable baseline (package.json, vite.config, index.html, src/*) as drafts
+    // through the SAME write pipeline as write_file, so every file is classified and
+    // attested. After this, add components with write_file and wire them with edit_file.
+    name: 'create_project_structure',
+    description:
+      'Legt das GRUNDGERÜST eines echten Framework-Projekts an (v1: React + Vite mit TypeScript). ' +
+      'Nutze dies GENAU EINMAL zu Beginn, wenn der Nutzer eine echte React-/Vite-App will (mehrere ' +
+      'Komponenten, Zustand, Imports) — statt eine einzelne HTML-Datei zu schreiben. Es entstehen ' +
+      'mehrere Dateien als Entwurf (package.json mit fest gepinnten Versionen, vite.config.ts, ' +
+      'index.html, src/main.tsx, src/App.tsx, CSS). Danach baust du die eigentlichen Komponenten mit ' +
+      'write_file (z.B. src/components/TaskItem.tsx) und verdrahtest sie mit edit_file in App.tsx. ' +
+      'Beim Veröffentlichen baut Vercel das Projekt aus dem Quellcode. Für eine einfache statische ' +
+      'Seite (eine HTML-Datei) nimm KEIN Grundgerüst, sondern direkt write_file.',
+    parameters: {
+      type: 'object',
+      properties: {
+        framework: {
+          type: 'string',
+          description: "Das Framework. Aktuell unterstützt: 'react-vite'.",
+        },
+        appName: {
+          type: 'string',
+          description: 'Optionaler Name der App (kommt in den <title> und package.json). Weglassen = "Meine App".',
+        },
+      },
+      required: ['framework'],
       additionalProperties: false,
     },
   },
@@ -417,6 +449,83 @@ async function finalizeDraftWrite(sb: Sb, ctx: ToolContext, path: string, conten
       ...(label === 'GEÄNDERT' ? { added: delta.added, removed: delta.removed } : {}),
     },
     data: { classification: label, added: delta.added, removed: delta.removed, integrity: integrityNote ?? 'ok' },
+  };
+}
+
+// WAVE-E E2 — the supported-framework honest list, reused by the tool and the E5 edge.
+function supportedFrameworkList(): string {
+  return SUPPORTED_FRAMEWORKS.map((id) => `'${id}' (${FRAMEWORK_TEMPLATES[id].label})`).join(', ');
+}
+
+/**
+ * WAVE-E E2 — create_project_structure: scaffold a framework baseline (v1 react-vite).
+ * Reuses finalizeDraftWrite per file so every scaffold file is classified/attested
+ * exactly like a write_file (no parallel write capability — OS reuse law). Returns an
+ * aggregate result the orchestrator lists as NEU files.
+ *
+ * E5 honest edges: an unsupported framework → a structured, DE+EN, actionable refusal
+ * naming what IS supported (never a silent fallback to a wrong scaffold).
+ */
+async function toolCreateProjectStructure(sb: Sb, ctx: ToolContext, args: Record<string, unknown>): Promise<ToolResult> {
+  const frameworkArg = typeof args.framework === 'string' ? args.framework.trim() : '';
+  const appName = typeof args.appName === 'string' ? args.appName : '';
+  if (!frameworkArg) {
+    return {
+      ok: false,
+      summary: 'Framework fehlt',
+      error: { code: 'bad_args', message: `framework erforderlich. Unterstützt: ${supportedFrameworkList()}.` },
+    };
+  }
+
+  const tpl = getFrameworkTemplate(frameworkArg);
+  if (!tpl) {
+    // E5: unsupported-framework honest limit (DE + EN, actionable).
+    return {
+      ok: false,
+      summary: `Framework '${frameworkArg}' wird nicht unterstützt`,
+      error: {
+        code: 'framework_unsupported',
+        message:
+          `Das Framework „${frameworkArg}" kann ich (noch) nicht als Grundgerüst anlegen. ` +
+          `Aktuell unterstützt: ${supportedFrameworkList()}. ` +
+          `Du kannst stattdessen eine React/Vite-App bauen — oder eine klassische statische Seite mit write_file. ` +
+          `\n\n[EN] Framework "${frameworkArg}" is not supported yet. Currently available: ${supportedFrameworkList()}. ` +
+          `Build a React/Vite app instead, or a plain static page with write_file.`,
+      },
+      data: { supported: SUPPORTED_FRAMEWORKS },
+    };
+  }
+
+  const files = buildFrameworkFiles(tpl.id, appName);
+  const created: Array<{ path: string; classification: string }> = [];
+  for (const [rawPath, content] of Object.entries(files)) {
+    // Defensive D-1 path check (template paths are constant + safe; keep the invariant).
+    const checked = checkProjectPath(rawPath);
+    if (!checked.ok || !checked.path) {
+      return { ok: false, summary: `${rawPath} · ungültiger Pfad`, error: { ...UNSAFE_PATH_ERROR } };
+    }
+    const res = await finalizeDraftWrite(sb, ctx, checked.path, content);
+    if (!res.ok) {
+      return {
+        ok: false,
+        summary: `Grundgerüst unvollständig — ${checked.path} fehlgeschlagen`,
+        error: res.error ?? { code: 'scaffold_failed', message: `${checked.path} konnte nicht angelegt werden.` },
+        data: { created },
+      };
+    }
+    created.push({ path: checked.path, classification: (res.file?.classification ?? 'NEU') as string });
+  }
+
+  const allNew = created.every((f) => f.classification === 'NEU');
+  return {
+    ok: true,
+    summary: `${tpl.label}-Grundgerüst angelegt · ${created.length} Dateien${allNew ? ' (alle NEU)' : ''}`,
+    data: {
+      framework: tpl.id,
+      vercelFramework: tpl.vercelFramework,
+      files: created,
+      hint: 'Baue jetzt die Komponenten in src/components/ mit write_file und verdrahte sie mit edit_file in src/App.tsx.',
+    },
   };
 }
 
@@ -755,6 +864,8 @@ export function buildToolExecutor(sb: Sb = getSupabaseAdmin(), opts: ExecutorOpt
         return toolWriteFile(sb, ctx, call.args ?? {});
       case 'edit_file':
         return toolEditFile(sb, ctx, call.args ?? {});
+      case 'create_project_structure':
+        return toolCreateProjectStructure(sb, ctx, call.args ?? {});
       case 'save_draft':
         return toolSaveDraft(sb, ctx);
       case 'publish': {
