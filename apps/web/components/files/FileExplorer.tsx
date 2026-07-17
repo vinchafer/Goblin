@@ -621,10 +621,10 @@ export function FileExplorer({ projectId, projectName, dataSource }: Props) {
         <span style={{ color: "var(--ink-3)" }}>/</span>
         <span style={{ fontWeight: 600, color: "var(--ink-1)", fontFamily: "var(--font-dash-display), Manrope, sans-serif" }}>Dateien</span>
         <div style={{ flex: 1 }} />
-        <button onClick={() => setNamePrompt({ kind: "newfolder", value: "" })} disabled={busy} style={btnGhost} title="Neuer Ordner">
+        <button onClick={() => setNamePrompt({ kind: "newfolder", value: "" })} disabled={busy} style={btnGhost} title="Neuer Ordner" data-testid="fx-new-folder">
           <FolderPlus size={14} /> Ordner
         </button>
-        <button onClick={() => setNamePrompt({ kind: "newfile", value: "" })} disabled={busy} style={btnGhost} title="Neue Datei">
+        <button onClick={() => setNamePrompt({ kind: "newfile", value: "" })} disabled={busy} style={btnGhost} title="Neue Datei" data-testid="fx-new-file">
           <FilePlus size={14} /> Datei
         </button>
         <button onClick={downloadZip} disabled={busy || zipping} style={btnGhost} title="Projekt als ZIP herunterladen" data-testid="download-zip">
@@ -1003,11 +1003,12 @@ export function FileExplorer({ projectId, projectName, dataSource }: Props) {
               onChange={(e) => setNamePrompt({ ...namePrompt, value: e.target.value })}
               onKeyDown={(e) => { if (e.key === "Enter") submitPrompt(); if (e.key === "Escape") setNamePrompt(null); }}
               placeholder={namePrompt.kind === "newfolder" ? "ordnername" : "datei.txt"}
+              data-testid="fx-name-input"
               style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid var(--line)", background: "var(--d-surface)", color: "var(--ink-1)", fontSize: 13.5, fontFamily: "JetBrains Mono, monospace", outline: "none", boxSizing: "border-box", marginBottom: 18 }}
             />
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
               <button onClick={() => setNamePrompt(null)} style={btnGhost}>Abbrechen</button>
-              <button onClick={submitPrompt} disabled={busy || !namePrompt.value.trim()} style={{ ...btnPrimary, opacity: !namePrompt.value.trim() ? 0.5 : 1 }}>Speichern</button>
+              <button onClick={submitPrompt} disabled={busy || !namePrompt.value.trim()} data-testid="fx-name-submit" style={{ ...btnPrimary, opacity: !namePrompt.value.trim() ? 0.5 : 1 }}>Speichern</button>
             </div>
           </div>
         </>
