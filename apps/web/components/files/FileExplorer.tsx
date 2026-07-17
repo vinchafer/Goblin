@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   FileCode, FileJson, FileText, Image as ImageIcon, Palette, File as FileIcon,
   Folder, ChevronRight, Upload, Download, Trash2, ArrowLeft, X,
-  Pencil, FolderPlus, FilePlus, MoreVertical, Copy, Share2, FolderInput, FolderSymlink, Code2, FileArchive,
+  Pencil, FolderPlus, FilePlus, MoreVertical, Copy, Share2, FolderInput, FolderSymlink, Code2, FileArchive, Search,
 } from "lucide-react";
 import { API_URL, getToken } from "@/hooks/code/getToken";
 import { useLang, t, type Lang } from "@/lib/use-lang";
@@ -87,6 +87,7 @@ export function FileExplorer({ projectId, projectName }: Props) {
   const [dragOver, setDragOver] = useState(false);   // FW5-U3: drag-drop upload target
   const [loading, setLoading] = useState(true);
   const [cwd, setCwd] = useState("");                       // current folder, "" = root
+  const [filter, setFilter] = useState("");                 // C-1: instant name filter (whole tree)
   const [selected, setSelected] = useState<string | null>(null);
   const [preview, setPreview] = useState<{ kind: "text" | "image" | "binary"; text?: string; dataUrl?: string } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -156,6 +157,20 @@ export function FileExplorer({ projectId, projectName }: Props) {
       files: fileList.sort((a, b) => a.path.localeCompare(b.path)),
     };
   }, [entries, cwd]);
+
+  // C-1: instant name filter across the WHOLE tree. When a query is present the
+  // folder view is replaced by a flat list of every file whose name (or path)
+  // matches — so the filter doubles as a fast name search. Case-insensitive.
+  const q = filter.trim().toLowerCase();
+  const filtered = useMemo(() => {
+    if (!q) return [];
+    return entries
+      .filter((e) => {
+        const name = (e.path.split("/").pop() ?? e.path).toLowerCase();
+        return name.includes(q) || e.path.toLowerCase().includes(q);
+      })
+      .sort((a, b) => a.path.localeCompare(b.path));
+  }, [entries, q]);
 
   const openFile = useCallback(async (path: string) => {
     setSelected(path);
@@ -417,7 +432,7 @@ export function FileExplorer({ projectId, projectName }: Props) {
         <input ref={fileInput} type="file" style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(f); e.target.value = ""; }} />
       </div>
 
-      {/* Path breadcrumb */}
+      {/* Path breadcrumb + C-1 name filter */}
       <div style={{ padding: "10px 20px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "var(--ink-2)", fontFamily: "JetBrains Mono, monospace", flexWrap: "wrap" }}>
         <button onClick={() => { setCwd(""); setSelected(null); setPreview(null); }} style={crumbBtn}>/ Projekt</button>
         {crumbs.map((seg, i) => (
@@ -426,6 +441,22 @@ export function FileExplorer({ projectId, projectName }: Props) {
             <button onClick={() => { setCwd(crumbs.slice(0, i + 1).join("/")); setSelected(null); setPreview(null); }} style={crumbBtn}>{seg}</button>
           </span>
         ))}
+        <div style={{ flex: 1, minWidth: 12 }} />
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, border: "1px solid var(--line)", borderRadius: 8, padding: "5px 9px", background: "var(--d-surface-elev)", minWidth: 0 }}>
+          <Search size={13} style={{ color: "var(--ink-3)", flexShrink: 0 }} />
+          <input
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Escape") setFilter(""); }}
+            placeholder={t(lang, "Dateien filtern…", "Filter files…")}
+            aria-label={t(lang, "Dateien nach Name filtern", "Filter files by name")}
+            data-testid="fx-filter"
+            style={{ border: "none", outline: "none", background: "transparent", color: "var(--ink-1)", fontSize: 12.5, fontFamily: "var(--font-sans)", width: 150, maxWidth: "40vw", minWidth: 0 }}
+          />
+          {filter && (
+            <button onClick={() => setFilter("")} title={t(lang, "Filter löschen", "Clear filter")} aria-label={t(lang, "Filter löschen", "Clear filter")} style={{ ...iconBtn, padding: 0 }}><X size={13} /></button>
+          )}
+        </div>
       </div>
 
       <div className="gb-fx-body">
@@ -433,6 +464,34 @@ export function FileExplorer({ projectId, projectName }: Props) {
         <div className="gb-fx-list" style={{ overflowY: "auto" }}>
           {loading ? (
             <div style={{ padding: 24, color: "var(--ink-3)", fontSize: 13 }}>Lädt…</div>
+          ) : q ? (
+            // C-1 filter mode: flat, whole-tree name matches (folders bypassed).
+            filtered.length === 0 ? (
+              <div style={{ padding: 32, textAlign: "center", color: "var(--ink-3)", fontSize: 13.5 }}>
+                {t(lang, `Keine Datei passt zu „${filter}".`, `No file matches "${filter}".`)}
+              </div>
+            ) : (
+              <div>
+                {filtered.map((file) => {
+                  const name = file.path.split("/").pop() ?? file.path;
+                  const Ico = iconFor(name);
+                  const isSel = selected === file.path;
+                  const dir = file.path.includes("/") ? file.path.slice(0, file.path.lastIndexOf("/")) : "";
+                  return (
+                    <div key={"f" + file.path} style={{ ...row, position: "relative", background: isSel ? "var(--d-surface-elev)" : "transparent" }}>
+                      <button onClick={() => openFile(file.path)} style={rowInner}>
+                        <Ico size={17} style={{ color: "var(--ink-2)", flexShrink: 0 }} />
+                        <span style={{ flex: 1, textAlign: "left", minWidth: 0, overflow: "hidden" }}>
+                          <span style={{ display: "block", color: "var(--ink-1)", fontSize: 13.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
+                          {dir && <span style={{ display: "block", color: "var(--ink-3)", fontSize: 11, fontFamily: "JetBrains Mono, monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{dir}/</span>}
+                        </span>
+                        <span className="gb-fx-col-size" style={{ ...colCell, width: 60 }}>{fmtSize(file.size)}</span>
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )
           ) : folders.length === 0 && files.length === 0 ? (
             <div style={{ padding: 32, textAlign: "center", color: "var(--ink-3)", fontSize: 13.5 }}>
               {t(lang, "Dieser Ordner ist leer.", "This folder is empty.")}<br />{t(lang, "Lade oben rechts eine Datei hoch — oder zieh sie hierher.", "Upload a file top-right — or drag it here.")}
