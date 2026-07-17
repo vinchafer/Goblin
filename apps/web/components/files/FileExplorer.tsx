@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   FileCode, FileJson, FileText, Image as ImageIcon, Palette, File as FileIcon,
   Folder, ChevronRight, Upload, Download, Trash2, ArrowLeft, X,
-  Pencil, FolderPlus, FilePlus, MoreVertical, Copy, Share2, FolderInput, FolderSymlink, Code2, FileArchive, Search,
+  Pencil, FolderPlus, FilePlus, MoreVertical, Copy, Share2, FolderInput, FolderSymlink, Code2, FileArchive, Search, RotateCcw, Files as FilesIcon,
 } from "lucide-react";
 import { API_URL, getToken } from "@/hooks/code/getToken";
 import { useLang, t, type Lang } from "@/lib/use-lang";
@@ -39,6 +39,12 @@ interface FileMeta {
   // WS-B.2 — per-file timestamps from project_file_meta (migration 0066).
   // null until the migration is applied / for files created before tracking.
   createdAt?: string | null; lastPushedAt?: string | null;
+}
+// C-3: a Papierkorb entry as returned by GET /:id/trash. `originalPath` is the
+// recovered path for restore; legacy (pre-Wave-C) entries carry null + legacy:true.
+interface TrashEntry {
+  trashPath: string; originalPath: string | null; deletedAt: number | null;
+  legacy: boolean; size: number; modified: string | null;
 }
 interface Props { projectId: string; projectName: string; }
 
@@ -110,6 +116,11 @@ export function FileExplorer({ projectId, projectName }: Props) {
   // Name prompt for rename / new file / new folder (Slice 6).
   const [namePrompt, setNamePrompt] = useState<{ kind: "rename" | "newfile" | "newfolder"; from?: string; value: string; template?: Template } | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  // C-3: Papierkorb (trash) view.
+  const [trashView, setTrashView] = useState(false);
+  const [trashEntries, setTrashEntries] = useState<TrashEntry[]>([]);
+  const [trashLoading, setTrashLoading] = useState(false);
+  const [confirmPurge, setConfirmPurge] = useState(false);
   const [menuFor, setMenuFor] = useState<string | null>(null);   // WALK3-3.2: per-file ⋮ menu
   // WS-B.1: cross-project move picker — file path being moved + target list.
   const [moveFor, setMoveFor] = useState<string | null>(null);
@@ -426,6 +437,85 @@ export function FileExplorer({ projectId, projectName }: Props) {
     } catch { flash("Löschen fehlgeschlagen"); } finally { setBusy(false); }
   }, [authFetch, projectId, cwd, load]);
 
+  // ── C-3: Papierkorb (trash) ops ──
+  const fetchTrash = useCallback(async () => {
+    setTrashLoading(true);
+    try {
+      const r = await authFetch(`/api/projects/${projectId}/trash`);
+      const d = await r.json();
+      setTrashEntries(Array.isArray(d.entries) ? d.entries : []);
+    } catch { setTrashEntries([]); } finally { setTrashLoading(false); }
+  }, [authFetch, projectId]);
+
+  const openTrash = useCallback(() => { setTrashView(true); setSelected(null); setPreview(null); setEditing(false); fetchTrash(); }, [fetchTrash]);
+
+  const restoreTrashed = useCallback(async (entry: TrashEntry) => {
+    setBusy(true);
+    try {
+      const r = await authFetch(`/api/projects/${projectId}/files/restore`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ trashPath: entry.trashPath }),
+      });
+      if (r.status === 409) { flash(t(lang, "Es existiert schon eine Datei an diesem Pfad", "A file already exists at that path")); return; }
+      if (!r.ok) { flash(t(lang, "Wiederherstellen fehlgeschlagen", "Restore failed")); return; }
+      flash(t(lang, "Wiederhergestellt", "Restored"));
+      await fetchTrash();
+      load();
+    } catch { flash(t(lang, "Wiederherstellen fehlgeschlagen", "Restore failed")); } finally { setBusy(false); }
+  }, [authFetch, projectId, fetchTrash, load, lang]);
+
+  const purgeTrash = useCallback(async () => {
+    setConfirmPurge(false); setBusy(true);
+    try {
+      const r = await authFetch(`/api/projects/${projectId}/files/purge-trash`, { method: "POST" });
+      if (!r.ok) throw new Error();
+      flash(t(lang, "Papierkorb geleert", "Trash emptied"));
+      await fetchTrash();
+      load();
+    } catch { flash(t(lang, "Leeren fehlgeschlagen", "Emptying failed")); } finally { setBusy(false); }
+  }, [authFetch, projectId, fetchTrash, load, lang]);
+
+  // C-3: duplicate a file to a non-colliding "<name>-kopie" path. Text goes through
+  // POST /:id/files; binary is re-uploaded through the hardened multipart chain.
+  const duplicateFile = useCallback(async (path: string) => {
+    setBusy(true);
+    try {
+      const dir = path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "";
+      const baseName = path.split("/").pop() ?? path;
+      const dot = baseName.lastIndexOf(".");
+      const stem = dot > 0 ? baseName.slice(0, dot) : baseName;
+      const extPart = dot > 0 ? baseName.slice(dot) : "";
+      const existing = new Set(entries.map((e) => e.path));
+      let n = 0, copyPath = "";
+      do {
+        const suffix = n === 0 ? "-kopie" : `-kopie-${n + 1}`;
+        copyPath = `${dir ? dir + "/" : ""}${stem}${suffix}${extPart}`;
+        n++;
+      } while (existing.has(copyPath));
+
+      if (TEXT_EXT.has(ext(path))) {
+        const text = await fetchText(path);
+        const r = await authFetch(`/api/projects/${projectId}/files`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ path: copyPath, content: text ?? "" }),
+        });
+        if (!r.ok) throw new Error();
+      } else {
+        const raw = await authFetch(`/api/projects/${projectId}/files-raw/${path.split("/").map(encodeURIComponent).join("/")}`);
+        const d = await raw.json();
+        const bin = atob(d.base64);
+        const arr = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+        const fd = new FormData();
+        fd.append("file", new File([arr], copyPath.split("/").pop() ?? "kopie", { type: d.contentType }));
+        fd.append("path", dir);
+        const r = await authFetch(`/api/projects/${projectId}/files/upload`, { method: "POST", body: fd });
+        if (!r.ok) { let code = ""; try { code = (await r.json())?.error ?? ""; } catch { /* */ } flash(uploadErrorMessage(code, lang)); return; }
+      }
+      await load(); flash(t(lang, "Dupliziert", "Duplicated"));
+    } catch { flash(t(lang, "Duplizieren fehlgeschlagen", "Duplicate failed")); } finally { setBusy(false); }
+  }, [entries, fetchText, authFetch, projectId, load, lang]);
+
   const crumbs = cwd ? cwd.split("/") : [];
 
   return (
@@ -478,6 +568,9 @@ export function FileExplorer({ projectId, projectName }: Props) {
         <button onClick={downloadZip} disabled={busy || zipping} style={btnGhost} title="Projekt als ZIP herunterladen" data-testid="download-zip">
           <FileArchive size={14} /> {zipping ? "…" : "ZIP"}
         </button>
+        <button onClick={openTrash} disabled={busy} style={btnGhost} title={t(lang, "Papierkorb", "Trash")} data-testid="open-trash">
+          <Trash2 size={14} /> {t(lang, "Papierkorb", "Trash")}
+        </button>
         <button onClick={() => fileInput.current?.click()} disabled={busy} style={btnPrimary}>
           <Upload size={14} /> {t(lang, "Hochladen", "Upload")}
         </button>
@@ -511,7 +604,61 @@ export function FileExplorer({ projectId, projectName }: Props) {
         </div>
       </div>
 
-      <div className="gb-fx-body">
+      {/* C-3: Papierkorb view — replaces the browser while open. */}
+      {trashView && (
+        <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", background: "var(--d-surface)" }}>
+          <div style={{ padding: "12px 20px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", gap: 10 }}>
+            <button onClick={() => setTrashView(false)} style={{ ...btnGhost }}><ArrowLeft size={14} /> {t(lang, "Zurück", "Back")}</button>
+            <span style={{ fontWeight: 600, color: "var(--ink-1)", fontFamily: "var(--font-dash-display), Manrope, sans-serif" }}>{t(lang, "Papierkorb", "Trash")}</span>
+            <div style={{ flex: 1 }} />
+            <button
+              onClick={() => setConfirmPurge(true)}
+              disabled={busy || trashEntries.length === 0}
+              style={{ ...btnGhost, color: "var(--danger)", borderColor: "var(--danger)", opacity: trashEntries.length === 0 ? 0.5 : 1 }}
+              data-testid="purge-trash"
+            ><Trash2 size={14} /> {t(lang, "Endgültig löschen", "Delete permanently")}</button>
+          </div>
+          <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
+            {trashLoading ? (
+              <div style={{ padding: 24, color: "var(--ink-3)", fontSize: 13 }}>Lädt…</div>
+            ) : trashEntries.length === 0 ? (
+              <div style={{ padding: 32, textAlign: "center", color: "var(--ink-3)", fontSize: 13.5 }}>
+                {t(lang, "Der Papierkorb ist leer.", "The trash is empty.")}
+              </div>
+            ) : (
+              <div>
+                {trashEntries.map((e) => {
+                  const shownName = (e.originalPath ?? e.trashPath).split("/").pop() ?? e.trashPath;
+                  const Ico = iconFor(shownName);
+                  return (
+                    <div key={e.trashPath} style={row}>
+                      <div style={{ ...rowInner, cursor: "default" }}>
+                        <Ico size={17} style={{ color: "var(--ink-3)", flexShrink: 0 }} />
+                        <span style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
+                          <span style={{ display: "block", color: "var(--ink-1)", fontSize: 13.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{shownName}</span>
+                          <span style={{ display: "block", color: "var(--ink-3)", fontSize: 11, fontFamily: "JetBrains Mono, monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {e.legacy ? t(lang, "älterer Papierkorb — nicht automatisch wiederherstellbar", "older trash — not auto-restorable") : (e.originalPath ?? "")}
+                          </span>
+                        </span>
+                        <span style={{ ...colCell, width: 60 }}>{fmtSize(e.size)}</span>
+                      </div>
+                      <button
+                        onClick={() => restoreTrashed(e)}
+                        disabled={busy || e.legacy}
+                        title={e.legacy ? t(lang, "Nicht automatisch wiederherstellbar", "Not auto-restorable") : t(lang, "Wiederherstellen", "Restore")}
+                        style={{ ...btnGhost, padding: "6px 10px", fontSize: 12.5, opacity: e.legacy ? 0.5 : 1 }}
+                        data-testid="restore-file"
+                      ><RotateCcw size={13} /> {t(lang, "Wiederherstellen", "Restore")}</button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="gb-fx-body" style={{ display: trashView ? "none" : undefined }}>
         {/* LIST */}
         <div className="gb-fx-list" style={{ overflowY: "auto" }}>
           {loading ? (
@@ -603,6 +750,7 @@ export function FileExplorer({ projectId, projectName }: Props) {
                         }}
                       >
                         <Link href={`/dashboard/project/${projectId}/work?tab=code&file=${encodeURIComponent(file.path)}`} style={menuItem} role="menuitem"><Code2 size={14} /> Im Editor öffnen</Link>
+                        <button onClick={() => { setMenuFor(null); duplicateFile(file.path); }} style={menuItem} role="menuitem"><FilesIcon size={14} /> {t(lang, "Duplizieren", "Duplicate")}</button>
                         <button onClick={() => { setMenuFor(null); copyContent(file.path); }} style={menuItem} role="menuitem"><Copy size={14} /> Kopieren</button>
                         <button onClick={() => { setMenuFor(null); shareFile(file.path); }} style={menuItem} role="menuitem"><Share2 size={14} /> Teilen</button>
                         <button onClick={() => { setMenuFor(null); setNamePrompt({ kind: "rename", from: file.path, value: name }); }} style={menuItem} role="menuitem"><Pencil size={14} /> Umbenennen</button>
@@ -717,6 +865,20 @@ export function FileExplorer({ projectId, projectName }: Props) {
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
               <button onClick={() => setConfirmFolderDel(null)} style={btnGhost}>Abbrechen</button>
               <button onClick={() => deleteFolder(confirmFolderDel)} style={{ ...btnPrimary, background: "var(--danger)" }}><Trash2 size={14} /> Löschen</button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {confirmPurge && (
+        <>
+          <div onClick={() => setConfirmPurge(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 90 }} />
+          <div style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "var(--d-surface-elev)", border: "1px solid var(--line)", borderRadius: 14, padding: "22px 24px", zIndex: 91, minWidth: 300, maxWidth: 380 }}>
+            <div style={{ fontSize: 16, fontWeight: 600, color: "var(--ink-1)", marginBottom: 8, fontFamily: "var(--font-dash-display), Manrope, sans-serif" }}>{t(lang, "Papierkorb endgültig leeren?", "Empty trash permanently?")}</div>
+            <div style={{ fontSize: 13, color: "var(--ink-2)", marginBottom: 18 }}>{t(lang, "Alle Dateien im Papierkorb werden unwiderruflich gelöscht und der Speicher wird freigegeben.", "All files in the trash are permanently deleted and their storage is freed.")}</div>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button onClick={() => setConfirmPurge(false)} style={btnGhost}>{t(lang, "Abbrechen", "Cancel")}</button>
+              <button onClick={purgeTrash} style={{ ...btnPrimary, background: "var(--danger)" }}><Trash2 size={14} /> {t(lang, "Endgültig löschen", "Delete permanently")}</button>
             </div>
           </div>
         </>
