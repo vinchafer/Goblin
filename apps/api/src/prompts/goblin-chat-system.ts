@@ -1,4 +1,5 @@
 import { APP_DESIGN_FOUNDATION } from './app-design-foundation';
+import { renderProjectGraph } from '../services/import-graph';
 
 // F1.1 (feel-sprint-1): the Goblin chat system prompt. Every chat completion
 // carries this so the model speaks AS the platform (never "textbasiertes
@@ -272,6 +273,14 @@ function renderProjectContext(ctx: GoblinChatContext): string {
     // B2: reduced-context retry marks WHY no contents follow — keeps the model
     // honest (E7: these files count as not loaded) without a hard error.
     if (ctx.contextNote) lines.push(`- ${ctx.contextNote}`);
+
+    // WAVE-E E1: the compact import/export graph — the model sees the project as a
+    // dependency graph (who imports whom), not just a flat list. Additive behind
+    // detection: renderProjectGraph returns '' for a project with no module edges
+    // (a vanilla static HTML/CSS/JS project), so the static-path prompt stays
+    // BYTE-IDENTICAL. Only a project with real module structure gets this block.
+    const graphBlock = renderProjectGraph(ctx.files ?? []);
+    if (graphBlock) lines.push('', graphBlock);
 
     // F4.1/F-20: project instructions are NO LONGER rendered here (buried mid-context,
     // and — worse — gated behind projectName via the early return above, so a nameless
