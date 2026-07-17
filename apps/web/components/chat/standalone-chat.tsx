@@ -6,6 +6,7 @@ import { ArrowUpRight, Copy, Download, Code2 } from "lucide-react";
 import { apiStream } from "@/lib/api";
 import { ChatInput, useChatModel } from "@/components/chat/ChatInput";
 import type { SelectedModel } from "@/components/chat/ChatInput";
+import type { ChatAttachment } from "@/lib/chat-attachments";
 import { EmptyChat } from "@/components/chat/EmptyChat";
 import Message from "./Message";
 import { useUser } from "@/lib/hooks/useUser";
@@ -339,6 +340,22 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
   useEffect(() => {
     if (projectId) router.prefetch(`/dashboard/project/${projectId}`);
   }, [projectId, router]);
+
+  // C-4: a file sent from the Explorer ("Im Chat anhängen" / "Goblin dazu fragen")
+  // is stashed in sessionStorage and picked up here, then seeded into the composer
+  // as a ready attachment (same budget + honest-error path as a picked file).
+  const [seededAttachments, setSeededAttachments] = useState<ChatAttachment[]>([]);
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem("goblin:attach-file");
+      if (!raw) return;
+      const data = JSON.parse(raw) as { projectId?: string | null; name?: string; content?: string };
+      if (data && data.name && typeof data.content === "string" && (!data.projectId || data.projectId === projectId)) {
+        sessionStorage.removeItem("goblin:attach-file");
+        setSeededAttachments([{ id: `seed-${data.name}`, name: data.name, kind: "text", state: "ready", content: data.content }]);
+      }
+    } catch { /* ignore */ }
+  }, [projectId]);
 
   // U0: auto-follow only while the user is at the bottom; scroll-up releases
   // the pin so reading during generation works (founder-reported iPhone bug).
@@ -740,6 +757,7 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
             onStop={handleStop}
             selectedModel={selectedModel}
             onModelChange={setSelectedModel}
+            initialAttachments={seededAttachments}
           />
         </div>
       </div>

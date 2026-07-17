@@ -3,13 +3,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   FileCode, FileJson, FileText, Image as ImageIcon, Palette, File as FileIcon,
   Folder, ChevronRight, Upload, Download, Trash2, ArrowLeft, X,
-  Pencil, FolderPlus, FilePlus, MoreVertical, Copy, Share2, FolderInput, FolderSymlink, Code2, FileArchive,
+  Pencil, FolderPlus, FilePlus, MoreVertical, Copy, Share2, FolderInput, FolderSymlink, Code2, FileArchive, Search, RotateCcw, Files as FilesIcon, CheckCircle2, Paperclip, MessageSquarePlus,
 } from "lucide-react";
 import { API_URL, getToken } from "@/hooks/code/getToken";
 import { useLang, t, type Lang } from "@/lib/use-lang";
+import { projectFileDataSource, type FileDataSource } from "@/lib/file-data-source";
 
 // FW5-U3 (D-D): honest, localized per-failure upload errors. The server returns a
 // distinct `error` code per guard (too_big / wrong_type / daily_cap / unsafe_path /
@@ -40,7 +42,19 @@ interface FileMeta {
   // null until the migration is applied / for files created before tracking.
   createdAt?: string | null; lastPushedAt?: string | null;
 }
-interface Props { projectId: string; projectName: string; }
+// C-3: a Papierkorb entry as returned by GET /:id/trash. `originalPath` is the
+// recovered path for restore; legacy (pre-Wave-C) entries carry null + legacy:true.
+interface TrashEntry {
+  trashPath: string; originalPath: string | null; deletedAt: number | null;
+  legacy: boolean; size: number; modified: string | null;
+}
+interface Props {
+  projectId: string;
+  projectName: string;
+  // C-6 (spec §3): swappable data source. Defaults to the per-project source; a
+  // global "Meine Dateien" source (v1.1) can be injected without a second component.
+  dataSource?: FileDataSource;
+}
 
 const TEXT_EXT = new Set(["tsx","ts","js","jsx","mjs","cjs","css","scss","sass","less","html","htm","json","md","markdown","txt","csv","xml","svg","vue","svelte","py","rb","go","rs","java","c","h","cpp","yml","yaml","toml","env","sh","sql"]);
 const IMAGE_EXT = new Set(["png","jpg","jpeg","gif","webp","ico","bmp","avif"]);
@@ -55,6 +69,16 @@ function iconFor(name: string) {
   if (IMAGE_EXT.has(e)) return ImageIcon;
   if (["html","htm","md","markdown","txt","xml","yml","yaml"].includes(e)) return FileText;
   return FileIcon;
+}
+
+// C-2: new-file templates. "leer" = empty; "md" = a Markdown note starter;
+// "html" = a minimal, valid HTML5 skeleton. Content is UTF-8 (umlaut-safe).
+type Template = "leer" | "md" | "html";
+function templateContent(tpl: Template | undefined, filename: string): string {
+  const base = filename.replace(/\.[^.]+$/, "");
+  if (tpl === "md") return `# ${base}\n\n`;
+  if (tpl === "html") return `<!doctype html>\n<html lang="de">\n<head>\n  <meta charset="utf-8" />\n  <meta name="viewport" content="width=device-width, initial-scale=1" />\n  <title>${base}</title>\n</head>\n<body>\n  \n</body>\n</html>\n`;
+  return "";
 }
 
 function fmtSize(n: number) {
@@ -81,21 +105,33 @@ function ago(iso: string | null) {
   return `vor ${Math.floor(dd / 30)} mon`;
 }
 
-export function FileExplorer({ projectId, projectName }: Props) {
+export function FileExplorer({ projectId, projectName, dataSource }: Props) {
   const lang = useLang();
+  const router = useRouter();
+  // C-6: the listing comes from the (swappable) data source — project by default.
+  const ds = useMemo(() => dataSource ?? projectFileDataSource(projectId), [dataSource, projectId]);
   const [entries, setEntries] = useState<FileMeta[]>([]);
   const [dragOver, setDragOver] = useState(false);   // FW5-U3: drag-drop upload target
   const [loading, setLoading] = useState(true);
   const [cwd, setCwd] = useState("");                       // current folder, "" = root
+  const [filter, setFilter] = useState("");                 // C-1: instant name filter (whole tree)
   const [selected, setSelected] = useState<string | null>(null);
   const [preview, setPreview] = useState<{ kind: "text" | "image" | "binary"; text?: string; dataUrl?: string } | null>(null);
+  const [editing, setEditing] = useState(false);           // C-2: in-Explorer edit mode
+  const [draft, setDraft] = useState("");                  // C-2: editable buffer
+  const [saving, setSaving] = useState(false);
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [confirmDel, setConfirmDel] = useState<string | null>(null);
   const [confirmFolderDel, setConfirmFolderDel] = useState<string | null>(null);
   // Name prompt for rename / new file / new folder (Slice 6).
-  const [namePrompt, setNamePrompt] = useState<{ kind: "rename" | "newfile" | "newfolder"; from?: string; value: string } | null>(null);
+  const [namePrompt, setNamePrompt] = useState<{ kind: "rename" | "newfile" | "newfolder"; from?: string; value: string; template?: Template } | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  // C-3: Papierkorb (trash) view.
+  const [trashView, setTrashView] = useState(false);
+  const [trashEntries, setTrashEntries] = useState<TrashEntry[]>([]);
+  const [trashLoading, setTrashLoading] = useState(false);
+  const [confirmPurge, setConfirmPurge] = useState(false);
   const [menuFor, setMenuFor] = useState<string | null>(null);   // WALK3-3.2: per-file ⋮ menu
   // WS-B.1: cross-project move picker — file path being moved + target list.
   const [moveFor, setMoveFor] = useState<string | null>(null);
@@ -125,14 +161,12 @@ export function FileExplorer({ projectId, projectName }: Props) {
     (async () => {
       setLoading(true);
       try {
-        const t = await getToken();
-        const r = await fetch(`${API_URL}/api/projects/${projectId}/files-tree`, { headers: { Authorization: `Bearer ${t}` } });
-        const d = await r.json();
-        if (alive) setEntries((d.entries ?? []).filter((e: FileMeta) => !e.path.startsWith(".trash/")));
+        const list = await ds.listTree();
+        if (alive) setEntries(list.filter((e) => !e.path.startsWith(".trash/")));
       } catch { /* */ } finally { if (alive) setLoading(false); }
     })();
     return () => { alive = false; };
-  }, [projectId, reloadKey]);
+  }, [ds, reloadKey]);
 
   const load = useCallback(() => setReloadKey((k) => k + 1), []);
 
@@ -157,9 +191,24 @@ export function FileExplorer({ projectId, projectName }: Props) {
     };
   }, [entries, cwd]);
 
+  // C-1: instant name filter across the WHOLE tree. When a query is present the
+  // folder view is replaced by a flat list of every file whose name (or path)
+  // matches — so the filter doubles as a fast name search. Case-insensitive.
+  const q = filter.trim().toLowerCase();
+  const filtered = useMemo(() => {
+    if (!q) return [];
+    return entries
+      .filter((e) => {
+        const name = (e.path.split("/").pop() ?? e.path).toLowerCase();
+        return name.includes(q) || e.path.toLowerCase().includes(q);
+      })
+      .sort((a, b) => a.path.localeCompare(b.path));
+  }, [entries, q]);
+
   const openFile = useCallback(async (path: string) => {
     setSelected(path);
     setPreview(null);
+    setEditing(false);
     const e = ext(path);
     try {
       if (IMAGE_EXT.has(e)) {
@@ -175,6 +224,32 @@ export function FileExplorer({ projectId, projectName }: Props) {
       }
     } catch { setPreview({ kind: "binary" }); }
   }, [authFetch, projectId]);
+
+  // C-2: enter edit mode on the currently-previewed text file.
+  const startEdit = useCallback(() => {
+    if (preview?.kind === "text") { setDraft(preview.text ?? ""); setEditing(true); }
+  }, [preview]);
+
+  // C-2: save the draft back to the file via the direct project-file save endpoint
+  // (PUT /:id/files/*). This is the one editor everywhere — the same CodeEditor the
+  // Code tab uses — writing straight to project storage (distinct from the code-session
+  // draft/deploy flow). Ctrl/Cmd-S in the editor also triggers this.
+  const saveEdit = useCallback(async (content?: string) => {
+    if (!selected) return;
+    const body = content ?? draft;
+    setSaving(true);
+    try {
+      const r = await authFetch(`/api/projects/${projectId}/files/${selected.split("/").map(encodeURIComponent).join("/")}`, {
+        method: "PUT", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: body }),
+      });
+      if (!r.ok) throw new Error();
+      setPreview({ kind: "text", text: body });
+      setEditing(false);
+      flash(t(lang, "Gespeichert", "Saved"));
+      load();
+    } catch { flash(t(lang, "Speichern fehlgeschlagen", "Save failed")); } finally { setSaving(false); }
+  }, [authFetch, projectId, selected, draft, load, lang]);
 
   // WS-B.1: open the cross-project move picker — load the user's OTHER projects.
   const openMovePicker = useCallback(async (path: string) => {
@@ -313,6 +388,8 @@ export function FileExplorer({ projectId, projectName }: Props) {
     const raw = namePrompt.value.trim();
     if (!raw) return;
     setBusy(true);
+    // C-2: when a new file is created, open it straight in the editor (seeded by template).
+    let openAfter: { path: string; content: string } | null = null;
     try {
       if (namePrompt.kind === "rename" && namePrompt.from) {
         // Allow a bare name (rename in place) or a relative path (move).
@@ -326,11 +403,13 @@ export function FileExplorer({ projectId, projectName }: Props) {
         flash("Umbenannt");
       } else if (namePrompt.kind === "newfile") {
         const path = cwd ? `${cwd}/${raw}` : raw;
+        const content = templateContent(namePrompt.template, raw);
         const r = await authFetch(`/api/projects/${projectId}/files`, {
           method: "POST", headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ path, content: "" }),
+          body: JSON.stringify({ path, content }),
         });
         if (!r.ok) throw new Error();
+        openAfter = { path, content };
         flash("Datei erstellt");
       } else if (namePrompt.kind === "newfolder") {
         const path = cwd ? `${cwd}/${raw}` : raw;
@@ -343,6 +422,14 @@ export function FileExplorer({ projectId, projectName }: Props) {
       }
       setNamePrompt(null);
       await load();
+      if (openAfter) {
+        // Open the freshly-created file directly in the editor (spec §2: "opens empty
+        // in the editor"). Skip the fetch — we already know the seeded content.
+        setSelected(openAfter.path);
+        setPreview({ kind: "text", text: openAfter.content });
+        setDraft(openAfter.content);
+        setEditing(true);
+      }
     } catch { flash("Aktion fehlgeschlagen"); } finally { setBusy(false); }
   }, [namePrompt, cwd, authFetch, projectId, selected, load]);
 
@@ -358,6 +445,138 @@ export function FileExplorer({ projectId, projectName }: Props) {
       await load(); flash("Ordner gelöscht");
     } catch { flash("Löschen fehlgeschlagen"); } finally { setBusy(false); }
   }, [authFetch, projectId, cwd, load]);
+
+  // ── C-3: Papierkorb (trash) ops ──
+  const fetchTrash = useCallback(async () => {
+    setTrashLoading(true);
+    try {
+      const r = await authFetch(`/api/projects/${projectId}/trash`);
+      const d = await r.json();
+      setTrashEntries(Array.isArray(d.entries) ? d.entries : []);
+    } catch { setTrashEntries([]); } finally { setTrashLoading(false); }
+  }, [authFetch, projectId]);
+
+  const openTrash = useCallback(() => { setTrashView(true); setSelected(null); setPreview(null); setEditing(false); fetchTrash(); }, [fetchTrash]);
+
+  const restoreTrashed = useCallback(async (entry: TrashEntry) => {
+    setBusy(true);
+    try {
+      const r = await authFetch(`/api/projects/${projectId}/files/restore`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ trashPath: entry.trashPath }),
+      });
+      if (r.status === 409) { flash(t(lang, "Es existiert schon eine Datei an diesem Pfad", "A file already exists at that path")); return; }
+      if (!r.ok) { flash(t(lang, "Wiederherstellen fehlgeschlagen", "Restore failed")); return; }
+      flash(t(lang, "Wiederhergestellt", "Restored"));
+      await fetchTrash();
+      load();
+    } catch { flash(t(lang, "Wiederherstellen fehlgeschlagen", "Restore failed")); } finally { setBusy(false); }
+  }, [authFetch, projectId, fetchTrash, load, lang]);
+
+  const purgeTrash = useCallback(async () => {
+    setConfirmPurge(false); setBusy(true);
+    try {
+      const r = await authFetch(`/api/projects/${projectId}/files/purge-trash`, { method: "POST" });
+      if (!r.ok) throw new Error();
+      flash(t(lang, "Papierkorb geleert", "Trash emptied"));
+      await fetchTrash();
+      load();
+    } catch { flash(t(lang, "Leeren fehlgeschlagen", "Emptying failed")); } finally { setBusy(false); }
+  }, [authFetch, projectId, fetchTrash, load, lang]);
+
+  // C-3: duplicate a file to a non-colliding "<name>-kopie" path. Text goes through
+  // POST /:id/files; binary is re-uploaded through the hardened multipart chain.
+  const duplicateFile = useCallback(async (path: string) => {
+    setBusy(true);
+    try {
+      const dir = path.includes("/") ? path.slice(0, path.lastIndexOf("/")) : "";
+      const baseName = path.split("/").pop() ?? path;
+      const dot = baseName.lastIndexOf(".");
+      const stem = dot > 0 ? baseName.slice(0, dot) : baseName;
+      const extPart = dot > 0 ? baseName.slice(dot) : "";
+      const existing = new Set(entries.map((e) => e.path));
+      let n = 0, copyPath = "";
+      do {
+        const suffix = n === 0 ? "-kopie" : `-kopie-${n + 1}`;
+        copyPath = `${dir ? dir + "/" : ""}${stem}${suffix}${extPart}`;
+        n++;
+      } while (existing.has(copyPath));
+
+      if (TEXT_EXT.has(ext(path))) {
+        const text = await fetchText(path);
+        const r = await authFetch(`/api/projects/${projectId}/files`, {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ path: copyPath, content: text ?? "" }),
+        });
+        if (!r.ok) throw new Error();
+      } else {
+        const raw = await authFetch(`/api/projects/${projectId}/files-raw/${path.split("/").map(encodeURIComponent).join("/")}`);
+        const d = await raw.json();
+        const bin = atob(d.base64);
+        const arr = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+        const fd = new FormData();
+        fd.append("file", new File([arr], copyPath.split("/").pop() ?? "kopie", { type: d.contentType }));
+        fd.append("path", dir);
+        const r = await authFetch(`/api/projects/${projectId}/files/upload`, { method: "POST", body: fd });
+        if (!r.ok) { let code = ""; try { code = (await r.json())?.error ?? ""; } catch { /* */ } flash(uploadErrorMessage(code, lang)); return; }
+      }
+      await load(); flash(t(lang, "Dupliziert", "Duplicated"));
+    } catch { flash(t(lang, "Duplizieren fehlgeschlagen", "Duplicate failed")); } finally { setBusy(false); }
+  }, [entries, fetchText, authFetch, projectId, load, lang]);
+
+  // ── C-3: long-press multi-select ──
+  const [selectMode, setSelectMode] = useState(false);
+  const [checked, setChecked] = useState<Set<string>>(new Set());
+  const lpTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const startLongPress = useCallback((path: string) => {
+    lpTimer.current = setTimeout(() => {
+      setSelectMode(true);
+      setChecked((prev) => new Set(prev).add(path));
+      lpTimer.current = null;
+    }, 500);
+  }, []);
+  const cancelLongPress = useCallback(() => {
+    if (lpTimer.current) { clearTimeout(lpTimer.current); lpTimer.current = null; }
+  }, []);
+  const toggleCheck = useCallback((path: string) => {
+    setChecked((prev) => { const n = new Set(prev); if (n.has(path)) n.delete(path); else n.add(path); return n; });
+  }, []);
+  const exitSelect = useCallback(() => { setSelectMode(false); setChecked(new Set()); }, []);
+
+  const batchDelete = useCallback(async () => {
+    const paths = [...checked];
+    if (paths.length === 0) return;
+    setBusy(true);
+    try {
+      for (const p of paths) {
+        await authFetch(`/api/projects/${projectId}/files/${p.split("/").map(encodeURIComponent).join("/")}`, { method: "DELETE" });
+      }
+      if (selected && paths.includes(selected)) { setSelected(null); setPreview(null); }
+      exitSelect(); await load(); flash(t(lang, `${paths.length} gelöscht`, `${paths.length} deleted`));
+    } catch { flash(t(lang, "Löschen fehlgeschlagen", "Delete failed")); } finally { setBusy(false); }
+  }, [checked, authFetch, projectId, selected, exitSelect, load, lang]);
+
+  const batchDownload = useCallback(async () => {
+    for (const p of [...checked]) { await download(p); }
+  }, [checked, download]);
+
+  // ── C-4: files → work. Stash the file's content and open the project chat with
+  // it pre-attached (routes into the existing C2 attach path: budgets + honest
+  // errors apply on send; nothing is billed until the user actually sends).
+  const sendToChat = useCallback(async (path: string) => {
+    if (!TEXT_EXT.has(ext(path))) {
+      flash(t(lang, "Nur Text-/Code-Dateien können an den Chat angehängt werden.", "Only text/code files can be attached to chat."));
+      return;
+    }
+    const content = await fetchText(path);
+    if (content == null) { flash(t(lang, "Datei konnte nicht gelesen werden", "Could not read file")); return; }
+    try {
+      sessionStorage.setItem("goblin:attach-file", JSON.stringify({ projectId, name: path.split("/").pop() ?? path, content }));
+    } catch { /* sessionStorage unavailable — nav still opens chat, just unseeded */ }
+    router.push(`/dashboard/project/${projectId}/work?tab=chat`);
+  }, [fetchText, projectId, router, lang]);
 
   const crumbs = cwd ? cwd.split("/") : [];
 
@@ -402,14 +621,17 @@ export function FileExplorer({ projectId, projectName }: Props) {
         <span style={{ color: "var(--ink-3)" }}>/</span>
         <span style={{ fontWeight: 600, color: "var(--ink-1)", fontFamily: "var(--font-dash-display), Manrope, sans-serif" }}>Dateien</span>
         <div style={{ flex: 1 }} />
-        <button onClick={() => setNamePrompt({ kind: "newfolder", value: "" })} disabled={busy} style={btnGhost} title="Neuer Ordner">
+        <button onClick={() => setNamePrompt({ kind: "newfolder", value: "" })} disabled={busy} style={btnGhost} title="Neuer Ordner" data-testid="fx-new-folder">
           <FolderPlus size={14} /> Ordner
         </button>
-        <button onClick={() => setNamePrompt({ kind: "newfile", value: "" })} disabled={busy} style={btnGhost} title="Neue Datei">
+        <button onClick={() => setNamePrompt({ kind: "newfile", value: "" })} disabled={busy} style={btnGhost} title="Neue Datei" data-testid="fx-new-file">
           <FilePlus size={14} /> Datei
         </button>
         <button onClick={downloadZip} disabled={busy || zipping} style={btnGhost} title="Projekt als ZIP herunterladen" data-testid="download-zip">
           <FileArchive size={14} /> {zipping ? "…" : "ZIP"}
+        </button>
+        <button onClick={openTrash} disabled={busy} style={btnGhost} title={t(lang, "Papierkorb", "Trash")} data-testid="open-trash">
+          <Trash2 size={14} /> {t(lang, "Papierkorb", "Trash")}
         </button>
         <button onClick={() => fileInput.current?.click()} disabled={busy} style={btnPrimary}>
           <Upload size={14} /> {t(lang, "Hochladen", "Upload")}
@@ -417,7 +639,7 @@ export function FileExplorer({ projectId, projectName }: Props) {
         <input ref={fileInput} type="file" style={{ display: "none" }} onChange={(e) => { const f = e.target.files?.[0]; if (f) onUpload(f); e.target.value = ""; }} />
       </div>
 
-      {/* Path breadcrumb */}
+      {/* Path breadcrumb + C-1 name filter */}
       <div style={{ padding: "10px 20px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, color: "var(--ink-2)", fontFamily: "JetBrains Mono, monospace", flexWrap: "wrap" }}>
         <button onClick={() => { setCwd(""); setSelected(null); setPreview(null); }} style={crumbBtn}>/ Projekt</button>
         {crumbs.map((seg, i) => (
@@ -426,13 +648,111 @@ export function FileExplorer({ projectId, projectName }: Props) {
             <button onClick={() => { setCwd(crumbs.slice(0, i + 1).join("/")); setSelected(null); setPreview(null); }} style={crumbBtn}>{seg}</button>
           </span>
         ))}
+        <div style={{ flex: 1, minWidth: 12 }} />
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, border: "1px solid var(--line)", borderRadius: 8, padding: "5px 9px", background: "var(--d-surface-elev)", minWidth: 0 }}>
+          <Search size={13} style={{ color: "var(--ink-3)", flexShrink: 0 }} />
+          <input
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Escape") setFilter(""); }}
+            placeholder={t(lang, "Dateien filtern…", "Filter files…")}
+            aria-label={t(lang, "Dateien nach Name filtern", "Filter files by name")}
+            data-testid="fx-filter"
+            style={{ border: "none", outline: "none", background: "transparent", color: "var(--ink-1)", fontSize: 12.5, fontFamily: "var(--font-sans)", width: 150, maxWidth: "40vw", minWidth: 0 }}
+          />
+          {filter && (
+            <button onClick={() => setFilter("")} title={t(lang, "Filter löschen", "Clear filter")} aria-label={t(lang, "Filter löschen", "Clear filter")} style={{ ...iconBtn, padding: 0 }}><X size={13} /></button>
+          )}
+        </div>
       </div>
 
-      <div className="gb-fx-body">
+      {/* C-3: Papierkorb view — replaces the browser while open. */}
+      {trashView && (
+        <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", background: "var(--d-surface)" }}>
+          <div style={{ padding: "12px 20px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", gap: 10 }}>
+            <button onClick={() => setTrashView(false)} style={{ ...btnGhost }}><ArrowLeft size={14} /> {t(lang, "Zurück", "Back")}</button>
+            <span style={{ fontWeight: 600, color: "var(--ink-1)", fontFamily: "var(--font-dash-display), Manrope, sans-serif" }}>{t(lang, "Papierkorb", "Trash")}</span>
+            <div style={{ flex: 1 }} />
+            <button
+              onClick={() => setConfirmPurge(true)}
+              disabled={busy || trashEntries.length === 0}
+              style={{ ...btnGhost, color: "var(--danger)", borderColor: "var(--danger)", opacity: trashEntries.length === 0 ? 0.5 : 1 }}
+              data-testid="purge-trash"
+            ><Trash2 size={14} /> {t(lang, "Endgültig löschen", "Delete permanently")}</button>
+          </div>
+          <div style={{ flex: 1, minHeight: 0, overflowY: "auto" }}>
+            {trashLoading ? (
+              <div style={{ padding: 24, color: "var(--ink-3)", fontSize: 13 }}>Lädt…</div>
+            ) : trashEntries.length === 0 ? (
+              <div style={{ padding: 32, textAlign: "center", color: "var(--ink-3)", fontSize: 13.5 }}>
+                {t(lang, "Der Papierkorb ist leer.", "The trash is empty.")}
+              </div>
+            ) : (
+              <div>
+                {trashEntries.map((e) => {
+                  const shownName = (e.originalPath ?? e.trashPath).split("/").pop() ?? e.trashPath;
+                  const Ico = iconFor(shownName);
+                  return (
+                    <div key={e.trashPath} style={row}>
+                      <div style={{ ...rowInner, cursor: "default" }}>
+                        <Ico size={17} style={{ color: "var(--ink-3)", flexShrink: 0 }} />
+                        <span style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
+                          <span style={{ display: "block", color: "var(--ink-1)", fontSize: 13.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{shownName}</span>
+                          <span style={{ display: "block", color: "var(--ink-3)", fontSize: 11, fontFamily: "JetBrains Mono, monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {e.legacy ? t(lang, "älterer Papierkorb — nicht automatisch wiederherstellbar", "older trash — not auto-restorable") : (e.originalPath ?? "")}
+                          </span>
+                        </span>
+                        <span style={{ ...colCell, width: 60 }}>{fmtSize(e.size)}</span>
+                      </div>
+                      <button
+                        onClick={() => restoreTrashed(e)}
+                        disabled={busy || e.legacy}
+                        title={e.legacy ? t(lang, "Nicht automatisch wiederherstellbar", "Not auto-restorable") : t(lang, "Wiederherstellen", "Restore")}
+                        style={{ ...btnGhost, padding: "6px 10px", fontSize: 12.5, opacity: e.legacy ? 0.5 : 1 }}
+                        data-testid="restore-file"
+                      ><RotateCcw size={13} /> {t(lang, "Wiederherstellen", "Restore")}</button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="gb-fx-body" style={{ display: trashView ? "none" : undefined }}>
         {/* LIST */}
         <div className="gb-fx-list" style={{ overflowY: "auto" }}>
           {loading ? (
             <div style={{ padding: 24, color: "var(--ink-3)", fontSize: 13 }}>Lädt…</div>
+          ) : q ? (
+            // C-1 filter mode: flat, whole-tree name matches (folders bypassed).
+            filtered.length === 0 ? (
+              <div style={{ padding: 32, textAlign: "center", color: "var(--ink-3)", fontSize: 13.5 }}>
+                {t(lang, `Keine Datei passt zu „${filter}".`, `No file matches "${filter}".`)}
+              </div>
+            ) : (
+              <div>
+                {filtered.map((file) => {
+                  const name = file.path.split("/").pop() ?? file.path;
+                  const Ico = iconFor(name);
+                  const isSel = selected === file.path;
+                  const dir = file.path.includes("/") ? file.path.slice(0, file.path.lastIndexOf("/")) : "";
+                  return (
+                    <div key={"f" + file.path} style={{ ...row, position: "relative", background: isSel ? "var(--d-surface-elev)" : "transparent" }}>
+                      <button onClick={() => openFile(file.path)} style={rowInner}>
+                        <Ico size={17} style={{ color: "var(--ink-2)", flexShrink: 0 }} />
+                        <span style={{ flex: 1, textAlign: "left", minWidth: 0, overflow: "hidden" }}>
+                          <span style={{ display: "block", color: "var(--ink-1)", fontSize: 13.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
+                          {dir && <span style={{ display: "block", color: "var(--ink-3)", fontSize: 11, fontFamily: "JetBrains Mono, monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{dir}/</span>}
+                        </span>
+                        <span className="gb-fx-col-size" style={{ ...colCell, width: 60 }}>{fmtSize(file.size)}</span>
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )
           ) : folders.length === 0 && files.length === 0 ? (
             <div style={{ padding: 32, textAlign: "center", color: "var(--ink-3)", fontSize: 13.5 }}>
               {t(lang, "Dieser Ordner ist leer.", "This folder is empty.")}<br />{t(lang, "Lade oben rechts eine Datei hoch — oder zieh sie hierher.", "Upload a file top-right — or drag it here.")}
@@ -466,9 +786,19 @@ export function FileExplorer({ projectId, projectName }: Props) {
                 const name = file.path.split("/").pop() ?? file.path;
                 const Ico = iconFor(name);
                 const isSel = selected === file.path;
+                const isChecked = checked.has(file.path);
                 return (
-                  <div key={file.path} style={{ ...row, position: "relative", background: isSel ? "var(--d-surface-elev)" : "transparent" }}>
-                    <button onClick={() => openFile(file.path)} style={{ ...rowInner }}>
+                  <div key={file.path} style={{ ...row, position: "relative", background: isChecked ? "var(--d-surface-elev)" : isSel ? "var(--d-surface-elev)" : "transparent" }}>
+                    <button
+                      onClick={() => (selectMode ? toggleCheck(file.path) : openFile(file.path))}
+                      onPointerDown={() => startLongPress(file.path)}
+                      onPointerUp={cancelLongPress}
+                      onPointerLeave={cancelLongPress}
+                      style={{ ...rowInner }}
+                    >
+                      {selectMode && (
+                        <CheckCircle2 size={17} style={{ color: isChecked ? "var(--green)" : "var(--ink-3)", flexShrink: 0, opacity: isChecked ? 1 : 0.5 }} />
+                      )}
                       <Ico size={17} style={{ color: "var(--ink-2)", flexShrink: 0 }} />
                       <span style={{ flex: 1, textAlign: "left", color: "var(--ink-1)", fontSize: 13.5, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{name}</span>
                       <span className="gb-fx-col-created" style={{ ...colCell, width: 80 }} title={file.createdAt ? new Date(file.createdAt).toLocaleString("de-CH") : "nicht erfasst"}>{fmtDate(file.createdAt)}</span>
@@ -492,6 +822,10 @@ export function FileExplorer({ projectId, projectName }: Props) {
                         }}
                       >
                         <Link href={`/dashboard/project/${projectId}/work?tab=code&file=${encodeURIComponent(file.path)}`} style={menuItem} role="menuitem"><Code2 size={14} /> Im Editor öffnen</Link>
+                        <button onClick={() => { setMenuFor(null); sendToChat(file.path); }} style={menuItem} role="menuitem" data-testid="attach-to-chat"><Paperclip size={14} /> {t(lang, "Im Chat anhängen", "Attach to chat")}</button>
+                        <button onClick={() => { setMenuFor(null); sendToChat(file.path); }} style={menuItem} role="menuitem" data-testid="ask-goblin"><MessageSquarePlus size={14} /> {t(lang, "Goblin dazu fragen", "Ask Goblin about it")}</button>
+                        <div style={{ height: 1, background: "var(--line)", margin: "4px 0" }} />
+                        <button onClick={() => { setMenuFor(null); duplicateFile(file.path); }} style={menuItem} role="menuitem"><FilesIcon size={14} /> {t(lang, "Duplizieren", "Duplicate")}</button>
                         <button onClick={() => { setMenuFor(null); copyContent(file.path); }} style={menuItem} role="menuitem"><Copy size={14} /> Kopieren</button>
                         <button onClick={() => { setMenuFor(null); shareFile(file.path); }} style={menuItem} role="menuitem"><Share2 size={14} /> Teilen</button>
                         <button onClick={() => { setMenuFor(null); setNamePrompt({ kind: "rename", from: file.path, value: name }); }} style={menuItem} role="menuitem"><Pencil size={14} /> Umbenennen</button>
@@ -518,13 +852,26 @@ export function FileExplorer({ projectId, projectName }: Props) {
           ) : (
             <>
               <div style={{ padding: "10px 16px", borderBottom: "1px solid var(--line)", display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ flex: 1, minWidth: 0, fontFamily: "JetBrains Mono, monospace", fontSize: 12.5, color: "var(--ink-1)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selected}</span>
-                <button onClick={() => download(selected)} title="Herunterladen" style={iconBtn}><Download size={15} /></button>
-                <button onClick={() => { setSelected(null); setPreview(null); }} title="Schliessen" style={iconBtn}><X size={15} /></button>
+                <span style={{ flex: 1, minWidth: 0, fontFamily: "JetBrains Mono, monospace", fontSize: 12.5, color: "var(--ink-1)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selected}{editing && <span style={{ color: "var(--gold)" }}> ●</span>}</span>
+                {preview?.kind === "text" && !editing && (
+                  <button onClick={startEdit} title={t(lang, "Bearbeiten", "Edit")} data-testid="fx-edit" style={btnGhost}><Pencil size={14} /> {t(lang, "Bearbeiten", "Edit")}</button>
+                )}
+                {editing && (
+                  <>
+                    <button onClick={() => setEditing(false)} title={t(lang, "Verwerfen", "Discard")} style={btnGhost}>{t(lang, "Verwerfen", "Discard")}</button>
+                    <button onClick={() => saveEdit()} disabled={saving} title={t(lang, "Speichern", "Save")} data-testid="fx-save" style={{ ...btnPrimary, opacity: saving ? 0.6 : 1 }}>{saving ? "…" : t(lang, "Speichern", "Save")}</button>
+                  </>
+                )}
+                {!editing && <button onClick={() => download(selected)} title="Herunterladen" style={iconBtn}><Download size={15} /></button>}
+                <button onClick={() => { setSelected(null); setPreview(null); setEditing(false); }} title="Schliessen" style={iconBtn}><X size={15} /></button>
               </div>
               <div style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
                 {preview?.kind === "text" ? (
-                  <CodeEditor content={preview.text ?? ""} filename={selected} readOnly theme="light" />
+                  editing ? (
+                    <CodeEditor content={draft} filename={selected} theme="light" onChange={setDraft} onSave={(c) => saveEdit(c)} />
+                  ) : (
+                    <CodeEditor content={preview.text ?? ""} filename={selected} readOnly theme="light" />
+                  )
                 ) : preview?.kind === "image" ? (
                   <div style={{ padding: 20, display: "flex", justifyContent: "center" }}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -598,6 +945,20 @@ export function FileExplorer({ projectId, projectName }: Props) {
         </>
       )}
 
+      {confirmPurge && (
+        <>
+          <div onClick={() => setConfirmPurge(false)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 90 }} />
+          <div style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "var(--d-surface-elev)", border: "1px solid var(--line)", borderRadius: 14, padding: "22px 24px", zIndex: 91, minWidth: 300, maxWidth: 380 }}>
+            <div style={{ fontSize: 16, fontWeight: 600, color: "var(--ink-1)", marginBottom: 8, fontFamily: "var(--font-dash-display), Manrope, sans-serif" }}>{t(lang, "Papierkorb endgültig leeren?", "Empty trash permanently?")}</div>
+            <div style={{ fontSize: 13, color: "var(--ink-2)", marginBottom: 18 }}>{t(lang, "Alle Dateien im Papierkorb werden unwiderruflich gelöscht und der Speicher wird freigegeben.", "All files in the trash are permanently deleted and their storage is freed.")}</div>
+            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+              <button onClick={() => setConfirmPurge(false)} style={btnGhost}>{t(lang, "Abbrechen", "Cancel")}</button>
+              <button onClick={purgeTrash} style={{ ...btnPrimary, background: "var(--danger)" }}><Trash2 size={14} /> {t(lang, "Endgültig löschen", "Delete permanently")}</button>
+            </div>
+          </div>
+        </>
+      )}
+
       {namePrompt && (
         <>
           <div onClick={() => setNamePrompt(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)", zIndex: 90 }} />
@@ -608,19 +969,64 @@ export function FileExplorer({ projectId, projectName }: Props) {
             <div style={{ fontSize: 12, color: "var(--ink-3)", marginBottom: 14 }}>
               {namePrompt.kind === "rename" ? "Name oder Pfad (z.B. src/app.ts zum Verschieben)." : `Wird in ${cwd || "/"} erstellt.`}
             </div>
+            {namePrompt.kind === "newfile" && (
+              <div style={{ display: "flex", gap: 6, marginBottom: 14, flexWrap: "wrap" }}>
+                {([
+                  { key: "leer" as Template, label: t(lang, "Leer", "Empty"), ext: "" },
+                  { key: "md" as Template, label: "Markdown", ext: ".md" },
+                  { key: "html" as Template, label: "HTML", ext: ".html" },
+                ]).map((tpl) => {
+                  const active = (namePrompt.template ?? "leer") === tpl.key;
+                  return (
+                    <button
+                      key={tpl.key}
+                      onClick={() => {
+                        const cur = namePrompt.value.trim();
+                        const hasExt = /\.[^.]+$/.test(cur);
+                        const base = cur.replace(/\.[^.]+$/, "");
+                        const value = tpl.ext && !hasExt ? `${base || (tpl.key === "md" ? "notiz" : "seite")}${tpl.ext}` : cur;
+                        setNamePrompt({ ...namePrompt, template: tpl.key, value });
+                      }}
+                      style={{
+                        ...btnGhost, padding: "6px 12px", fontSize: 12.5,
+                        borderColor: active ? "var(--green)" : "var(--line)",
+                        color: active ? "var(--green)" : "var(--ink-2)",
+                        background: active ? "rgba(127,169,138,0.10)" : "transparent",
+                      }}
+                    >{tpl.label}</button>
+                  );
+                })}
+              </div>
+            )}
             <input
               autoFocus value={namePrompt.value}
               onChange={(e) => setNamePrompt({ ...namePrompt, value: e.target.value })}
               onKeyDown={(e) => { if (e.key === "Enter") submitPrompt(); if (e.key === "Escape") setNamePrompt(null); }}
               placeholder={namePrompt.kind === "newfolder" ? "ordnername" : "datei.txt"}
+              data-testid="fx-name-input"
               style={{ width: "100%", padding: "10px 12px", borderRadius: 8, border: "1px solid var(--line)", background: "var(--d-surface)", color: "var(--ink-1)", fontSize: 13.5, fontFamily: "JetBrains Mono, monospace", outline: "none", boxSizing: "border-box", marginBottom: 18 }}
             />
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
               <button onClick={() => setNamePrompt(null)} style={btnGhost}>Abbrechen</button>
-              <button onClick={submitPrompt} disabled={busy || !namePrompt.value.trim()} style={{ ...btnPrimary, opacity: !namePrompt.value.trim() ? 0.5 : 1 }}>Speichern</button>
+              <button onClick={submitPrompt} disabled={busy || !namePrompt.value.trim()} data-testid="fx-name-submit" style={{ ...btnPrimary, opacity: !namePrompt.value.trim() ? 0.5 : 1 }}>Speichern</button>
             </div>
           </div>
         </>
+      )}
+
+      {/* C-3: multi-select action bar (long-press to enter). Batch delete + download
+          reuse the per-file endpoints; batch move / zip-of-selection are v1.1. */}
+      {selectMode && (
+        <div style={{
+          position: "fixed", bottom: "calc(16px + env(safe-area-inset-bottom, 0px))", left: "50%", transform: "translateX(-50%)",
+          display: "flex", alignItems: "center", gap: 10, background: "var(--d-surface-elev)", border: "1px solid var(--line)",
+          borderRadius: 12, padding: "9px 12px", zIndex: 94, boxShadow: "0 12px 32px rgba(0,0,0,0.22)", maxWidth: "calc(100vw - 24px)", flexWrap: "wrap",
+        }} data-testid="select-bar">
+          <span style={{ fontSize: 13, color: "var(--ink-1)", fontWeight: 600 }}>{t(lang, `${checked.size} ausgewählt`, `${checked.size} selected`)}</span>
+          <button onClick={batchDownload} disabled={busy || checked.size === 0} style={{ ...btnGhost, padding: "7px 11px", opacity: checked.size === 0 ? 0.5 : 1 }}><Download size={14} /> {t(lang, "Download", "Download")}</button>
+          <button onClick={batchDelete} disabled={busy || checked.size === 0} style={{ ...btnGhost, padding: "7px 11px", color: "var(--danger)", borderColor: "var(--danger)", opacity: checked.size === 0 ? 0.5 : 1 }}><Trash2 size={14} /> {t(lang, "Löschen", "Delete")}</button>
+          <button onClick={exitSelect} style={{ ...btnGhost, padding: "7px 11px" }}>{t(lang, "Fertig", "Done")}</button>
+        </div>
       )}
 
       {toast && (

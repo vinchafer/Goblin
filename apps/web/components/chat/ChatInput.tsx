@@ -71,6 +71,10 @@ interface ChatInputProps {
   isStreaming?: boolean;
   /** Abort the in-flight stream (Stop button). */
   onStop?: () => void;
+  /** C-4: pre-seed the composer with attachments (e.g. a file sent from the
+      Explorer's "Im Chat anhängen" / "Goblin dazu fragen"). Seeded once; the
+      normal budget + honest-error path on send applies unchanged. */
+  initialAttachments?: ChatAttachment[];
 }
 
 // ─── Provider Icons ───────────────────────────────────────────────────────────
@@ -469,7 +473,7 @@ export function useChatModel() {
   return { selectedModel, changeModel, setSelectedModel };
 }
 
-export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelChange, variant = 'default', placeholder, prefill, isStreaming = false, onStop }: ChatInputProps) {
+export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelChange, variant = 'default', placeholder, prefill, isStreaming = false, onStop, initialAttachments }: ChatInputProps) {
   const hero = variant === 'hero';
   const lang = useLang();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -490,6 +494,17 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
       textareaRef.current?.focus();
     }
   }, [prefill]);
+
+  // C-4: seed pre-attached files (from the Explorer) exactly once. They enter the
+  // same `attachments` state as picked files, so budgets + honest errors on send
+  // are unchanged.
+  const seededRef = useRef(false);
+  useEffect(() => {
+    if (!seededRef.current && initialAttachments && initialAttachments.length > 0) {
+      seededRef.current = true;
+      setAttachments((prev) => [...prev, ...initialAttachments]);
+    }
+  }, [initialAttachments]);
   const [hubOpen, setHubOpen] = useState(false);
   const [models, setModels] = useState<ApiModel[]>([]);
   const [connectedKeys, setConnectedKeys] = useState<ConnectedKey[]>([]);
