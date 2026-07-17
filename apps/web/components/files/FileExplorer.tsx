@@ -3,10 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   FileCode, FileJson, FileText, Image as ImageIcon, Palette, File as FileIcon,
   Folder, ChevronRight, Upload, Download, Trash2, ArrowLeft, X,
-  Pencil, FolderPlus, FilePlus, MoreVertical, Copy, Share2, FolderInput, FolderSymlink, Code2, FileArchive, Search, RotateCcw, Files as FilesIcon, CheckCircle2,
+  Pencil, FolderPlus, FilePlus, MoreVertical, Copy, Share2, FolderInput, FolderSymlink, Code2, FileArchive, Search, RotateCcw, Files as FilesIcon, CheckCircle2, Paperclip, MessageSquarePlus,
 } from "lucide-react";
 import { API_URL, getToken } from "@/hooks/code/getToken";
 import { useLang, t, type Lang } from "@/lib/use-lang";
@@ -99,6 +100,7 @@ function ago(iso: string | null) {
 
 export function FileExplorer({ projectId, projectName }: Props) {
   const lang = useLang();
+  const router = useRouter();
   const [entries, setEntries] = useState<FileMeta[]>([]);
   const [dragOver, setDragOver] = useState(false);   // FW5-U3: drag-drop upload target
   const [loading, setLoading] = useState(true);
@@ -553,6 +555,22 @@ export function FileExplorer({ projectId, projectName }: Props) {
     for (const p of [...checked]) { await download(p); }
   }, [checked, download]);
 
+  // ── C-4: files → work. Stash the file's content and open the project chat with
+  // it pre-attached (routes into the existing C2 attach path: budgets + honest
+  // errors apply on send; nothing is billed until the user actually sends).
+  const sendToChat = useCallback(async (path: string) => {
+    if (!TEXT_EXT.has(ext(path))) {
+      flash(t(lang, "Nur Text-/Code-Dateien können an den Chat angehängt werden.", "Only text/code files can be attached to chat."));
+      return;
+    }
+    const content = await fetchText(path);
+    if (content == null) { flash(t(lang, "Datei konnte nicht gelesen werden", "Could not read file")); return; }
+    try {
+      sessionStorage.setItem("goblin:attach-file", JSON.stringify({ projectId, name: path.split("/").pop() ?? path, content }));
+    } catch { /* sessionStorage unavailable — nav still opens chat, just unseeded */ }
+    router.push(`/dashboard/project/${projectId}/work?tab=chat`);
+  }, [fetchText, projectId, router, lang]);
+
   const crumbs = cwd ? cwd.split("/") : [];
 
   return (
@@ -797,6 +815,9 @@ export function FileExplorer({ projectId, projectName }: Props) {
                         }}
                       >
                         <Link href={`/dashboard/project/${projectId}/work?tab=code&file=${encodeURIComponent(file.path)}`} style={menuItem} role="menuitem"><Code2 size={14} /> Im Editor öffnen</Link>
+                        <button onClick={() => { setMenuFor(null); sendToChat(file.path); }} style={menuItem} role="menuitem" data-testid="attach-to-chat"><Paperclip size={14} /> {t(lang, "Im Chat anhängen", "Attach to chat")}</button>
+                        <button onClick={() => { setMenuFor(null); sendToChat(file.path); }} style={menuItem} role="menuitem" data-testid="ask-goblin"><MessageSquarePlus size={14} /> {t(lang, "Goblin dazu fragen", "Ask Goblin about it")}</button>
+                        <div style={{ height: 1, background: "var(--line)", margin: "4px 0" }} />
                         <button onClick={() => { setMenuFor(null); duplicateFile(file.path); }} style={menuItem} role="menuitem"><FilesIcon size={14} /> {t(lang, "Duplizieren", "Duplicate")}</button>
                         <button onClick={() => { setMenuFor(null); copyContent(file.path); }} style={menuItem} role="menuitem"><Copy size={14} /> Kopieren</button>
                         <button onClick={() => { setMenuFor(null); shareFile(file.path); }} style={menuItem} role="menuitem"><Share2 size={14} /> Teilen</button>
