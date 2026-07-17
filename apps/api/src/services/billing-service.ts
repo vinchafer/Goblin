@@ -72,6 +72,16 @@ function getStripe(): Stripe {
 // 500 by the route) instead of hanging until the SDK's own default. Env-overridable.
 const moneyCallTimeoutMs = () => envTimeoutMs('STRIPE_MONEY_TIMEOUT_MS', 15_000);
 
+// E-4: a post-charge entitlement write failure is NON-FATAL. Once the money has moved
+// (subscription created / plan changed + charged), we must NEVER report a failed charge
+// to the user (F-29 species, chargeback vector). We log loudly, return an honest
+// success carrying this note, and let the webhook (customer.subscription.created /
+// updated) reconcile the plan. German UI + EN i18n.
+const ENTITLEMENT_PENDING_NOTE = {
+  de: 'Zahlung erhalten — dein Plan wird gerade aktiviert.',
+  en: 'Payment received — your plan is being activated.',
+};
+
 export async function createCheckoutSession(
   userId: string,
   targetPlan: string,
@@ -247,7 +257,7 @@ export async function resolveCheckoutPrice(
 }
 
 export type CreateSubscriptionResult =
-  | { ok: true; plan: string; tier: GeoTier; amount: number; subscriptionId: string; status: string }
+  | { ok: true; plan: string; tier: GeoTier; amount: number; subscriptionId: string; status: string; entitlementPending?: boolean; note?: { en: string; de: string } }
   | { ok: false; needsReconfirm: true; resolved: ResolvedPrice }
   | { ok: false; hasActiveSubscription: true };
 
@@ -314,8 +324,20 @@ export async function createSubscriptionAtTier(
   }), moneyCallTimeoutMs(), 'subscriptions.create');
 
   // Entitlement: set the plan from the resolved price id immediately (the webhook
-  // customer.subscription.created keeps it in sync, but we don't block on it).
-  await handleSubscriptionCreated(subscription);
+  // customer.subscription.created keeps it in sync, but we don't block on it). The
+  // charge has ALREADY happened above (subscriptions.create), so a failure here is
+  // NON-FATAL (E-4): never report a failed charge after money moved. Log loudly and
+  // return an honest pending-success; the webhook reconciles the plan.
+  let entitlementPending = false;
+  try {
+    await handleSubscriptionCreated(subscription);
+  } catch (err) {
+    entitlementPending = true;
+    logger.error(
+      { userId, subId: subscription.id, err: err instanceof Error ? err.message : String(err) },
+      'createSubscriptionAtTier: entitlement write failed AFTER charge — webhook will reconcile (E-4)',
+    );
+  }
 
   return {
     ok: true,
@@ -324,6 +346,7 @@ export async function createSubscriptionAtTier(
     amount: resolved.amount,
     subscriptionId: subscription.id,
     status: subscription.status,
+    ...(entitlementPending ? { entitlementPending: true, note: ENTITLEMENT_PENDING_NOTE } : {}),
   };
 }
 
@@ -424,7 +447,7 @@ export async function previewPlanChange(
 }
 
 export type ChangePlanResult =
-  | { ok: true; samePlan: boolean; plan: string; tier: GeoTier; amount: number; subscriptionId: string; status: string }
+  | { ok: true; samePlan: boolean; plan: string; tier: GeoTier; amount: number; subscriptionId: string; status: string; entitlementPending?: boolean; note?: { en: string; de: string } }
   | { ok: false; needsReconfirm: true; newPriceId: string; newAmount: number }
   | { ok: false; hasActiveSubscription: false };
 
@@ -481,9 +504,22 @@ export async function changePlan(
     expand: ['latest_invoice.payment_intent'],
   }), moneyCallTimeoutMs(), 'subscriptions.update');
 
-  // Persist entitlement immediately (webhook customer.subscription.updated keeps
-  // it in sync, but we don't block on it).
-  await handleSubscriptionUpdated(updated);
+  // Persist entitlement immediately (webhook customer.subscription.updated keeps it in
+  // sync, but we don't block on it). The prorated charge has ALREADY cleared above
+  // (always_invoice + error_if_incomplete means a declined card would have thrown from
+  // subscriptions.update, before this point), so a failure here is NON-FATAL (E-4):
+  // never report a failed charge after money moved. Log loudly and return an honest
+  // pending-success; the webhook reconciles the plan.
+  let entitlementPending = false;
+  try {
+    await handleSubscriptionUpdated(updated);
+  } catch (err) {
+    entitlementPending = true;
+    logger.error(
+      { userId, subId: updated.id, err: err instanceof Error ? err.message : String(err) },
+      'changePlan: entitlement write failed AFTER charge — webhook will reconcile (E-4)',
+    );
+  }
 
   return {
     ok: true,
@@ -493,6 +529,7 @@ export async function changePlan(
     amount: tierAmount(targetPlan, tier),
     subscriptionId: updated.id,
     status: updated.status,
+    ...(entitlementPending ? { entitlementPending: true, note: ENTITLEMENT_PENDING_NOTE } : {}),
   };
 }
 
