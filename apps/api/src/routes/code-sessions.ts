@@ -97,15 +97,25 @@ async function hydrateSessionFiles(
     const missing = storagePaths.filter((p) => p && !have.has(p)).slice(0, 50);
     if (missing.length === 0) return;
 
-    const rows: Array<Record<string, unknown>> = [];
-    for (const path of missing) {
-      const content = await getFile(projectId, path);
-      if (content == null) continue;
-      rows.push({
-        session_id: sessionId, user_id: userId, path, content,
-        change_state: 'saved', updated_at: new Date().toISOString(),
-      });
+    // WAVE-H · H6 (B2 batching): read the missing files with BOUNDED concurrency instead of
+    // one-at-a-time. This runs at the start of every agent run; a sequential await-in-loop
+    // paid N storage round-trips in series (the N+1). Bounded (not an unbounded Promise.all
+    // over 50) so we speed up the common case without flooding storage under load.
+    const CONCURRENCY = 8;
+    const fetched: Array<{ path: string; content: string }> = [];
+    for (let i = 0; i < missing.length; i += CONCURRENCY) {
+      const batch = missing.slice(i, i + CONCURRENCY);
+      const results = await Promise.all(
+        batch.map(async (path) => ({ path, content: await getFile(projectId, path) })),
+      );
+      for (const r of results) {
+        if (r.content != null) fetched.push({ path: r.path, content: r.content });
+      }
     }
+    const rows = fetched.map(({ path, content }) => ({
+      session_id: sessionId, user_id: userId, path, content,
+      change_state: 'saved', updated_at: new Date().toISOString(),
+    }));
     if (rows.length) {
       await sb.from('code_session_files').upsert(rows, { onConflict: 'session_id,path' });
     }
