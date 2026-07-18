@@ -68,6 +68,7 @@ import { cors } from 'hono/cors';
 import { initSentry, captureError } from './lib/sentry';
 import logger, { logRequest } from './lib/logger';
 import { recordHttp } from './lib/metrics';
+import { versionHandler } from './lib/version-handler';
 import { randomUUID } from 'node:crypto';
 import { StorageCapError, StorageUnavailableError } from './lib/storage-cap';
 
@@ -207,17 +208,8 @@ app.onError((err, c) => {
   return c.json({ error: status === 500 ? 'Internal server error' : err.message }, status);
 });
 
-// Version handler — registered at both /version (legacy) and /api/version so the
-// path matches Vercel's /api/version and both surfaces answer identically.
-const versionHandler = (c: import('hono').Context) => {
-  return c.json({
-    version: process.env.npm_package_version || '0.0.0',
-    gitCommit: process.env.RAILWAY_GIT_COMMIT_SHA || process.env.VERCEL_GIT_COMMIT_SHA || 'unknown',
-    buildTime: new Date().toISOString(),
-    env: process.env.NODE_ENV,
-    apiReady: true,
-  })
-}
+// Version handler (WAVE-H H2: stable-per-boot + Cache-Control) lives in ./lib/version-handler
+// so it is unit-testable without booting the server.
 app.get('/version', versionHandler)
 app.get('/api/version', versionHandler)
 
