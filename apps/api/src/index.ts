@@ -67,6 +67,8 @@ import { serve } from '@hono/node-server';
 import { cors } from 'hono/cors';
 import { initSentry, captureError } from './lib/sentry';
 import logger, { logRequest } from './lib/logger';
+import { recordHttp } from './lib/metrics';
+import { randomUUID } from 'node:crypto';
 import { StorageCapError, StorageUnavailableError } from './lib/storage-cap';
 
 initSentry();
@@ -108,7 +110,9 @@ import { events } from './routes/events';
 import { feedback } from './routes/feedback';
 import { startCron } from './lib/cron';
 
-const app = new Hono();
+// WAVE-H · H5: `requestId` is a top-level context var so the correlation id set in the
+// logging middleware is readable in the error handler (and any downstream that wants it).
+const app = new Hono<{ Variables: { requestId: string } }>();
 
 // Build CORS origin list once at startup — avoids rebuilding on every request
 const CORS_EXACT = new Set([
@@ -170,11 +174,19 @@ app.use('/api/*', generalRateLimit);
 // Trial gate: blocks expired-trial users from API calls (migration 0030)
 app.use('/api/*', trialGate);
 
-// Request logging
+// Request logging + WAVE-H · H5 (#12): a per-request correlation id threaded into every
+// log line and echoed as `x-request-id`, plus the HTTP status feeding the metrics surface
+// (error-rate window). An inbound `x-request-id` (from a proxy/client) is honoured so a
+// trace can be correlated end-to-end; otherwise one is minted.
 app.use('*', async (c, next) => {
   const start = Date.now();
+  const requestId = c.req.header('x-request-id') ?? randomUUID();
+  c.set('requestId', requestId);
+  c.header('x-request-id', requestId);
   await next();
-  logRequest(c.req.method, c.req.path, c.res.status, Date.now() - start);
+  const durationMs = Date.now() - start;
+  recordHttp(c.res.status);
+  logRequest(c.req.method, c.req.path, c.res.status, durationMs, { request_id: requestId });
 });
 
 app.onError((err, c) => {
@@ -189,8 +201,9 @@ app.onError((err, c) => {
     return c.json({ error: err.message, code: err.code }, 503);
   }
   const status = err instanceof HTTPException ? err.status : 500;
-  if (status >= 500) captureError(err, { path: c.req.path, method: c.req.method });
-  else logger.warn({ path: c.req.path, status }, err.message);
+  const requestId = c.get('requestId');
+  if (status >= 500) captureError(err, { path: c.req.path, method: c.req.method, request_id: requestId });
+  else logger.warn({ path: c.req.path, status, request_id: requestId }, err.message);
   return c.json({ error: status === 500 ? 'Internal server error' : err.message }, status);
 });
 

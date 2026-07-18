@@ -3,6 +3,7 @@ import { getSupabaseAdmin } from '../lib/supabase';
 import { aggregateTelemetry, type CompletionRow } from '../lib/goblin-telemetry';
 import { requestAccountDeletion, reactivateByUserId } from '../services/account-deletion';
 import { buildInsight } from '../services/insight';
+import { metricsSnapshot } from '../lib/metrics';
 
 const admin = new Hono();
 
@@ -491,6 +492,18 @@ admin.get('/health', async (c) => {
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
   });
+});
+
+// WAVE-H · H5 (#12) — the founder-reachable metrics surface. One admin-gated GET returns
+// the live operational picture: HTTP error-rate window, agent-run success rate + in-flight
+// count (queue depth), admission shedding, and circuit-breaker states, with a derived
+// `alerts` list so a synthetic incident (error spike, OPEN breaker, capacity shedding) is
+// visible at a glance without reading Railway logs. In-process/per-instance (honest note in
+// the payload); on the single box that is the whole fleet. NO new paid service.
+admin.get('/metrics', (c) => {
+  const snap = metricsSnapshot();
+  // 200 always (this IS the health surface); `status` reflects whether anything is alerting.
+  return c.json({ status: snap.alerts.length ? 'attention' : 'ok', ...snap, timestamp: new Date().toISOString() });
 });
 
 // Sprint 10.9-2 — manual + cron catalog refresh (OPTION B: per-user

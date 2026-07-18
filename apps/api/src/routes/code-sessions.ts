@@ -26,6 +26,7 @@ import { snapshotProject } from '../services/checkpoints/checkpoint-store';
 import { createAgentRun, finalizeAgentRun, findActiveRun } from '../services/agent/run-store';
 import { startRun, stopRun, streamRunEvents, checkAdmission } from '../services/agent/run-registry';
 import { capacityResponseBody } from '../services/agent/capacity-copy';
+import { recordAgentRun } from '../lib/metrics';
 import { agentMaxRuntimeMs } from '../services/agent/config';
 import { notifyAgentRunFinished } from './notifications';
 import { scrubString, safeErrorMessage } from '../lib/scrub-secrets';
@@ -680,6 +681,7 @@ codeSessions.post('/:sessionId/agent', async (c) => {
   // to close the microscopic race between this read and the actual slot reservation.
   const preAdmit = checkAdmission(userId);
   if (!preAdmit.admitted) {
+    recordAgentRun('admission_rejected', { reason: preAdmit.reason }); // H5 metrics surface
     c.header('Retry-After', preAdmit.retryAfterSec.toString());
     return c.json(capacityResponseBody(preAdmit), 429);
   }
@@ -761,6 +763,7 @@ codeSessions.post('/:sessionId/agent', async (c) => {
     projectId: session.project_id,
     meta: { model_slug: modelSlug },
   });
+  recordAgentRun('started'); // H5 metrics surface (in-flight/started vs finished)
 
   // F-40 (U2): start the run DETACHED in the process-level registry. It owns its OWN stop
   // signal (a client disconnect ≠ a user Stop) and a max-runtime guard, so leaving the tab
@@ -833,6 +836,7 @@ codeSessions.post('/:sessionId/agent', async (c) => {
           duration_ms: Date.now() - runStartedAt,
         },
       });
+      recordAgentRun('finished', { outcome: result.outcome }); // H5 metrics (success rate)
 
       // A-5 / F-40 U5: "dein Ping vom Strand" — push the run outcome (or the verified live
       // URL) to the user's devices. Fire ONLY when NO client was attached at completion: a
@@ -864,6 +868,7 @@ codeSessions.post('/:sessionId/agent', async (c) => {
         projectId: session.project_id,
         meta: { status: 'failed', outcome: 'error', duration_ms: Date.now() - runStartedAt },
       });
+      recordAgentRun('finished', { outcome: 'error' }); // H5 metrics (a fatal throw counts as failed)
       logger.warn({ err: safeErrorMessage(err, 'agent run failed'), runId: runKey }, 'agent_run_execute_failed');
     },
   });
@@ -874,6 +879,7 @@ codeSessions.post('/:sessionId/agent', async (c) => {
   // handled honestly (429 + "auf Anschlag") rather than admitted past the cap. The already-
   // created run row has no events and is reaped by the staleness filter (run-store).
   if (!admission.admitted) {
+    recordAgentRun('admission_rejected', { reason: admission.reason }); // H5 metrics surface
     c.header('Retry-After', admission.retryAfterSec.toString());
     return c.json(capacityResponseBody(admission), 429);
   }
