@@ -56,6 +56,13 @@ export interface GoblinChatContext {
    * the model knows it CAN search (and must cite). Base chat never sets this.
    */
   searchAvailable?: boolean;
+  /**
+   * WAVE-B B2: true when full-stack provisioning is enabled for this run. Adds the
+   * provision_backend capability map + schema→RLS→client-wiring few-shots so the model
+   * knows it CAN create a real database + login (and exactly how). Absent → the block is
+   * not appended and the static prefix is byte-identical to today (LIVE-USERS / prefix cache).
+   */
+  provisionAvailable?: boolean;
 }
 
 /**
@@ -473,6 +480,35 @@ Du: (web_search { "query": "current stable Tailwind CSS version" }) "Ich suche d
 → Ergebnis: { ok: true, data: { results: [ { title: "Tailwind CSS v4.0", url: "https://tailwindcss.com/blog/tailwindcss-v4", snippet: "…" } ] } }
 Du: (write_file …) "Ich trage Tailwind v4 ein (Quelle: https://tailwindcss.com/blog/tailwindcss-v4)."`;
 
+// WAVE-B B2 — appended to the agent prompt ONLY when full-stack provisioning is enabled for
+// the run (provisionAvailable). The capability map: what the model CAN and CANNOT provision,
+// and the schema→RLS→client-wiring pattern, with few-shots. While off, this block is absent
+// and the static prefix is byte-identical to today (LIVE-USERS / prefix cache).
+const PROVISION_BLOCK = `Datenbank & Login (provision_backend) — du KANNST in diesem Lauf eine echte Datenbank mit Login anlegen:
+- Nutze provision_backend, wenn die App Daten SPEICHERN oder Nutzer EINLOGGEN soll und jeder Nutzer nur SEINE eigenen Daten sehen darf (Aufgabenliste mit Login, Buchungen, Notizen pro Nutzer). Für eine reine statische Seite ohne gespeicherte Daten brauchst du es NICHT.
+- Du gibst die Tabellen STRUKTURIERT an (name + columns). Du schreibst NIE eigenes SQL. Für JEDE Tabelle wird automatisch Row-Level-Security angeschaltet, sodass jeder Nutzer nur seine eigenen Zeilen liest/schreibt — das ist nicht optional, es passiert immer. Die Spalten id (uuid), user_id (Besitzer) und created_at werden automatisch angelegt; gib sie NICHT selbst an.
+- Rufe provision_backend EINMAL auf, BEVOR du den Client-Code schreibst. Das Ergebnis liefert projectUrl und anonKey (beide öffentlich, dürfen in den Client-Code). Den geheimen service_role-Schlüssel bekommst du NIE — du brauchst ihn nicht; der Client arbeitet nur mit anonKey + Login + RLS.
+- Ist KEIN Supabase-Account verbunden, meldet dir das Werkzeug das ehrlich zurück (Code no_supabase_connection). Behaupte dann NICHT, etwas sei angelegt — sag dem Nutzer knapp, dass er seinen (kostenlosen) Supabase-Account einmal verbindet, dann geht es weiter. Erfinde NIEMALS ein angelegtes Backend oder Schlüssel — nur das echte Werkzeug-Ergebnis zählt.
+- Grenzen (ehrlich): nur clientseitige Apps (der anonKey + RLS im Browser), keine eigenen Server-Funktionen/Cron/Datei-Uploads in der App (das kommt evtl. später). Im Test sind bis zu 2 Apps mit Datenbank möglich. Eine Free-Tier-Datenbank pausiert nach 7 Tagen ohne Besuch — ein Aufruf weckt sie; sag das ruhig dazu, wenn es passt.
+
+Muster schema → RLS → Client verdrahten (Beispiel — Aufgabenliste mit Login):
+Nutzer: "Baue eine Aufgabenliste mit Login — jeder sieht nur seine Aufgaben. Stell sie live."
+Du: (plan) "1) Datenbank + Login anlegen 2) Login-/Aufgaben-UI bauen 3) verdrahten 4) veröffentlichen"
+Du: (provision_backend { "name": "aufgaben", "tables": [ { "name": "tasks", "columns": [ { "name": "title", "type": "text", "notNull": true }, { "name": "done", "type": "boolean", "default": "false" } ] } ] })
+→ Ergebnis: { ok: true, data: { projectUrl: "https://<ref>.supabase.co", anonKey: "<öffentlich>", tables: ["tasks"], rlsEnabled: true } }
+Du: (write_file index.html …) — bindet Supabase per CDN ein und nutzt projectUrl + anonKey aus dem Ergebnis:
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+    const supabase = createClient('https://<ref>.supabase.co', '<anonKey>')
+    // Login/Registrierung: supabase.auth.signUp / signInWithPassword; Session prüfen mit supabase.auth.getUser()
+    // Aufgaben LADEN (RLS liefert automatisch nur die eigenen): await supabase.from('tasks').select('*').order('created_at')
+    // Aufgabe ANLEGEN — user_id = eingeloggter Nutzer (RLS verlangt es):
+    //   const { data: { user } } = await supabase.auth.getUser()
+    //   await supabase.from('tasks').insert({ title, user_id: user.id })
+  </script>
+Du: (publish) → nach grüner Prüfung: "Live ✓ — mit Login, jeder sieht nur seine eigenen Aufgaben."
+Wichtig: Behaupte "jeder sieht nur seine eigenen Daten" NUR, weil RLS das erzwingt (nicht, weil der Client filtert). Der anonKey darf sichtbar im Client stehen — die Isolation kommt aus RLS + Login, nicht aus Geheimhaltung des anonKey.`;
+
 /**
  * A-1 (TTFT / prefix caching): the STATIC prefix of the agent system prompt.
  *
@@ -502,6 +538,9 @@ export function buildAgentSystemPrompt(ctx: GoblinChatContext = {}): string {
     // ── static prefix (byte-stable, cache-warm) ──
     AGENT_STATIC_PREFIX,
     ctx.searchAvailable ? WEB_SEARCH_BLOCK : '',
+    // WAVE-B B2: the provisioning capability block, appended (like the search block) only
+    // when full-stack is enabled — the static prefix stays byte-stable for the prefix cache.
+    ctx.provisionAvailable ? PROVISION_BLOCK : '',
     // ── dynamic tail (per-run; never part of the cached prefix) ──
     renderUserContext(ctx, { agent: true }),
     renderProjectContext(ctx),

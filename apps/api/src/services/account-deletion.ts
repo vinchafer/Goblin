@@ -5,6 +5,8 @@ import { sendEmail } from '../lib/email';
 import { deleteUserStorage, purgeProjectStorage } from './file-storage';
 import { purgeProjectCheckpoints } from './checkpoints/retention';
 import { teardownVercelProject } from './vercel-service';
+import { supabaseProvider } from './fullstack/supabase-provider';
+import { listUserBackendsForTeardown, setBackendStatus } from './fullstack/backend-store';
 import logger from '../lib/logger';
 
 /**
@@ -562,6 +564,35 @@ export async function hardDeleteUser(userId: string): Promise<HardDeleteOutcome>
     throw new Error(
       `vercel teardown incomplete: ${failedTeardowns.length}/${(userProjects ?? []).length} project(s) still live `
       + `(${failedTeardowns.join(', ')}) — site must come down before the PII cascade; cron will retry`,
+    );
+  }
+
+  // WAVE-B B1 (GDPR): tear down each PROVISIONED backend the user still has, BEFORE the
+  // cascade drops supabase_backends rows (FK ON DELETE CASCADE). Same blocking-throw posture
+  // as the Vercel teardown above: a backend that is not confirmed gone BLOCKS the cascade so
+  // the supabase_backends rows — and thus the refs we need to retry — survive, and the delete
+  // stays 'pending' for the next cron pass. supabaseProvider.teardown is idempotent (404 /
+  // no-token = already gone → ok:true), so re-running is safe. Pre-0096 tolerant:
+  // listUserBackendsForTeardown returns [] when the table is absent → no-op. Net effect: a
+  // deleted user's provisioned database is GUARANTEED to come down before their PII is dropped.
+  const backends = await listUserBackendsForTeardown(userId);
+  const failedBackendTeardowns: string[] = [];
+  for (const b of backends) {
+    const td = await supabaseProvider.teardown(userId, b.ref);
+    if (td.ok) {
+      await setBackendStatus(b.id, 'torn_down').catch(() => {});
+    } else {
+      failedBackendTeardowns.push(b.ref);
+      logger.warn(
+        { userIdHash: sha256(userId), status: td.status, reason: td.error },
+        'account-deletion: supabase backend teardown not confirmed — purge held, retry next cron pass',
+      );
+    }
+  }
+  if (failedBackendTeardowns.length > 0) {
+    throw new Error(
+      `supabase backend teardown incomplete: ${failedBackendTeardowns.length}/${backends.length} backend(s) still live `
+      + `(${failedBackendTeardowns.join(', ')}) — provisioned DB must come down before the PII cascade; cron will retry`,
     );
   }
 

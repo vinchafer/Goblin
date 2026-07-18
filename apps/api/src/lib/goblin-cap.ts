@@ -193,6 +193,22 @@ export function computeCapStatus(
   };
 }
 
+// ── WAVE-B (full-stack) trial backend cap — founder decision D-B2 ────────────────
+// How many backends (provisioned Supabase projects) a user may have live at once. In the
+// user-connected shape the DOLLAR exposure is already $0 (the backend lives in the user's
+// own Supabase free tier), so this cap is a cost-neutral ABUSE + complexity guard and an
+// honest, enforced-from-the-first-commit limit (CLOUD RIDER: trial caps from commit 1).
+//   • Trial/none: 2 (D-B2). Sits at the user's Supabase free-tier ceiling (2 active projects).
+//   • Paid: a generous guard that only bots hit — a normal builder never reaches it.
+export const MAX_PROVISIONED_BACKENDS_TRIAL = 2;
+export const MAX_PROVISIONED_BACKENDS_PAID = 10;
+
+/** Resolve the max live backends for a plan key (trial/none → D-B2 cap; paid → abuse guard). */
+export function maxProvisionedBackends(plan?: string | null): number {
+  const p = (plan ?? '').toLowerCase();
+  return p === 'trial' || p === 'none' || p === '' ? MAX_PROVISIONED_BACKENDS_TRIAL : MAX_PROVISIONED_BACKENDS_PAID;
+}
+
 /** True once this month's weighted usage has reached/exceeded the plan allowance. */
 export function isOverMonthlyAllowance(
   swiftTokens: number,

@@ -17,6 +17,7 @@ async function authHeaders(): Promise<Record<string, string> | null> {
 
 interface GithubState { connected: boolean; username?: string }
 interface VercelState { connected: boolean; account?: { username: string; email?: string } }
+interface SupabaseState { connected: boolean; available: boolean }
 
 export function ConnectorsPage() {
   const lang = useLang();
@@ -97,6 +98,12 @@ export function ConnectorsPage() {
         </SettingsCard>
       </SettingsGroup>
 
+      <SettingsGroup label={t(lang, 'Datenbank & Login', 'Database & login')}>
+        <SettingsCard>
+          <SupabaseConnectorRow />
+        </SettingsCard>
+      </SettingsGroup>
+
       <SettingsGroup label={t(lang, 'Websuche', 'Web search')}>
         <SettingsCard>
           <WebSearchConnector />
@@ -140,10 +147,6 @@ function ConnectorHelp({ what, steps, eta }: { what: string; steps: string[]; et
 function SoonSection() {
   const lang = useLang();
   const soon = [
-    {
-      name: 'Supabase', initial: 'SB',
-      blurb: t(lang, 'Datenbank & Login für deine App — damit sich Nutzer anmelden und ihre Daten gespeichert werden.', 'Database & login for your app — so users can sign in and their data is stored.'),
-    },
     {
       name: 'Stripe', initial: 'ST',
       blurb: t(lang, 'Zahlungen annehmen — Abos oder einmalige Käufe direkt in deinem Projekt.', 'Accept payments — subscriptions or one-off purchases right inside your project.'),
@@ -332,6 +335,133 @@ function VercelConnectorRow() {
             {t(lang, 'Wird gegen die Vercel-API geprüft und verschlüsselt gespeichert. Nur Account-Ebene.', 'Validated against the Vercel API and stored encrypted. Account level only.')}
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+// WAVE-B B4 — Supabase connector (OAuth, one-click, like GitHub). Powers "Datenbank & Login":
+// Goblin provisions a real database + auth INSIDE the user's own Supabase account (they own the
+// data — the own-Vercel model). Honest-hides to a "Bald" card while the feature flag is off, so
+// there is never a connect that leads nowhere. Carries the two honest notes the founder asked
+// for: the trial cap (2 database-backed apps) and the free-tier 7-day idle-pause.
+function SupabaseConnectorRow() {
+  const lang = useLang();
+  const [state, setState] = useState<SupabaseState>({ connected: false, available: false });
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+
+  const refresh = useCallback(async () => {
+    const headers = await authHeaders();
+    if (!headers) { setLoading(false); return; }
+    try {
+      const r = await fetch(`${apiBase}/api/supabase/status`, { headers, signal: AbortSignal.timeout(8000) });
+      if (r.ok) setState(await r.json());
+    } catch {
+      /* network/timeout — leave disconnected/unavailable, never an infinite spinner */
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { void refresh(); }, [refresh]);
+
+  const connect = useCallback(async () => {
+    const headers = await authHeaders();
+    if (!headers) return;
+    try {
+      const r = await fetch(`${apiBase}/api/supabase/connect`, {
+        method: 'POST', headers, body: JSON.stringify({ returnTo: '/dashboard?settings=connectors' }),
+      });
+      if (r.ok) {
+        const { url } = await r.json() as { url: string };
+        if (url) window.location.href = url;
+      }
+    } catch {
+      /* swallow — button stays clickable */
+    }
+  }, []);
+
+  const disconnect = useCallback(async () => {
+    setBusy(true);
+    try {
+      const headers = await authHeaders();
+      if (!headers) return;
+      await fetch(`${apiBase}/api/supabase/disconnect`, { method: 'DELETE', headers });
+      setState((s) => ({ ...s, connected: false }));
+    } finally {
+      setBusy(false);
+    }
+  }, []);
+
+  // Honest note (verbatim, DE+EN): the free-tier idle-pause. Shown once connected + in the help.
+  const idlePause = t(lang,
+    'Deine App läuft über deinen Supabase-Account und pausiert nach 7 Tagen ohne Besuch — ein Aufruf weckt sie.',
+    'Your app runs on your Supabase account and pauses after 7 days without a visit — one visit wakes it.');
+  const trialNote = t(lang,
+    'Im Test kannst du bis zu 2 Apps mit Datenbank anlegen.',
+    'During the trial you can create up to 2 apps with a database.');
+
+  // Feature off → honest "Bald" card (not clickable), never a dead connect.
+  if (!loading && !state.available) {
+    return (
+      <SoonCard
+        name="Supabase"
+        initial="SB"
+        blurb={t(lang, 'Datenbank & Login für deine App — damit sich Nutzer anmelden und ihre Daten gespeichert werden.', 'Database & login for your app — so users can sign in and their data is stored.')}
+        last
+      />
+    );
+  }
+
+  const detail = loading
+    ? t(lang, 'Lade…', 'Loading…')
+    : state.connected
+      ? t(lang, 'Datenbank & Login in deinem Supabase-Account', 'Database & login in your Supabase account')
+      : t(lang, 'Verbinde deinen (kostenlosen) Supabase-Account', 'Connect your (free) Supabase account');
+
+  return (
+    <div style={{ borderBottom: '1px solid var(--border-hairline)' }}>
+      <div className="list-item" style={{ padding: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
+        <span style={{
+          width: 36, height: 36, borderRadius: 10, background: 'var(--subtle)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 12, fontWeight: 700, color: 'var(--meta)', fontFamily: 'var(--font-mono)',
+        }}>SB</span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>Supabase</div>
+          <div style={{ fontSize: 13, color: 'var(--text-meta)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{detail}</div>
+        </div>
+        {state.connected ? (
+          <button onClick={disconnect} disabled={busy} style={ghostBtn('var(--text-meta)')}>
+            {busy ? '…' : t(lang, 'Trennen', 'Disconnect')}
+          </button>
+        ) : (
+          <button onClick={() => { void connect(); }} disabled={loading} style={ghostBtn('var(--brand-green)')}>
+            {t(lang, 'Verbinden', 'Connect')}
+          </button>
+        )}
+      </div>
+
+      <div style={{ padding: '0 16px 12px', marginTop: -4 }}>
+        <span style={{ fontSize: 11.5, fontStyle: 'italic', color: 'var(--text-meta)', lineHeight: 1.45 }}>
+          {t(lang, 'Goblin legt die Datenbank in deinem eigenen Supabase-Account an. Deine Daten, dein Account.', 'Goblin creates the database in your own Supabase account. Your data, your account.')}
+          {state.connected && ` ${idlePause}`}
+        </span>
+      </div>
+
+      {!state.connected && (
+        <ConnectorHelp
+          what={t(lang,
+            'Für Apps mit Login und gespeicherten Daten: Goblin legt Datenbank + Login in DEINEM Supabase-Account an — jeder Nutzer sieht nur seine eigenen Daten (Row-Level-Security).',
+            'For apps with login and stored data: Goblin sets up a database + login in YOUR Supabase account — each user sees only their own data (row-level security).')}
+          steps={[
+            t(lang, 'Auf „Verbinden" tippen', 'Tap "Connect"'),
+            t(lang, 'Bei Supabase anmelden und Goblin bestätigen', 'Sign in to Supabase and confirm Goblin'),
+            `${trialNote} ${idlePause}`,
+          ]}
+          eta={t(lang, '~1 Minute', '~1 minute')}
+        />
       )}
     </div>
   );

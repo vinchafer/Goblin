@@ -16,6 +16,7 @@ import { parseGoblinTier } from '../services/goblin-hosted';
 import { agentEligibility } from '../services/agent/config';
 import { agentToolsFor, buildToolExecutor } from '../services/agent/tools';
 import { resolveSearchProvider, agentMaxSearchesPerRun } from '../services/search';
+import { fullstackEnabled } from '../services/fullstack/config';
 import { getAgentModel } from '../services/agent/model-turn';
 import { runAgent } from '../services/agent/orchestrator';
 import { trackEvent } from '../lib/platform-events';
@@ -700,6 +701,9 @@ codeSessions.post('/:sessionId/agent', async (c) => {
     projectInstructions: proj?.instructions ?? null,
     userPreferences,
     searchAvailable: !!search,
+    // WAVE-B B2: the provisioning capability block is present only when full-stack is enabled,
+    // so the static prompt prefix stays byte-stable exactly like the web-search block.
+    provisionAvailable: fullstackEnabled(),
   });
   // History excludes the just-inserted user turn (passed as userMessage).
   const history: AgentMessage[] = (priorMsgs ?? []).slice(0, -1)
@@ -730,6 +734,11 @@ codeSessions.post('/:sessionId/agent', async (c) => {
   // advertised to the run (intent-gated exactly like publish) — so "mach die letzte
   // Änderung rückgängig" works via chat, but a build run can never undo the project.
   const restoreGranted = grantsRestore(prompt);
+
+  // WAVE-B B1: full-stack provisioning is advertised to the run ONLY when the opt-in flag is
+  // on. Off (default) → provision_backend is not in the tool list and the capability prompt
+  // block is absent → existing static AND framework runs are byte-identical (LIVE-USERS).
+  const provisionGranted = fullstackEnabled();
 
   // I1 funnel (rider): agent_run_started — the twin of agent_run_finished. Emitted the
   // instant the run begins so Pulse can show started-vs-finished; metadata only (model
@@ -762,7 +771,7 @@ codeSessions.post('/:sessionId/agent', async (c) => {
         systemPrompt,
         userMessage: prompt,
         history,
-        tools: agentToolsFor({ search: !!search, restore: restoreGranted }),
+        tools: agentToolsFor({ search: !!search, restore: restoreGranted, provision: provisionGranted }),
         executor: buildToolExecutor(sb, {
           search,
           maxSearchesPerRun: agentMaxSearchesPerRun(),

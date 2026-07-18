@@ -1,0 +1,136 @@
+<!doctype html>
+<!--
+  WAVE-B B3 — reference generated app for the verbatim proof task:
+    "Baue eine Aufgabenliste mit Login — jeder sieht nur seine Aufgaben. Stell sie live."
+
+  This is what the agent produces after provision_backend returns { projectUrl, anonKey }.
+  It is a STATIC, client-side app (R6): one HTML file, the Supabase JS client from a CDN,
+  login + per-user tasks. Isolation is enforced by ROW-LEVEL SECURITY on the server (the
+  tasks_*_own policies from schema-sql.ts), NOT by client-side filtering — the queries below
+  never say "where user_id = me"; RLS makes select return only the caller's own rows.
+
+  The two placeholders are filled from the provision_backend result (both PUBLIC — the anon
+  key is designed to ship in client code behind RLS). The secret admin key never appears here.
+-->
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Aufgaben</title>
+  <style>
+    :root { --sage: #4b6b53; --copper: #b06a3b; --ink: #1c2620; --paper: #f5f3ec; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, sans-serif; background: var(--paper); color: var(--ink); }
+    main { max-width: 34rem; margin: 0 auto; padding: 1.25rem; }
+    h1 { color: var(--sage); font-size: 1.5rem; }
+    input, button { font: inherit; padding: 0.6rem 0.75rem; border-radius: 0.5rem; border: 1px solid #cbd2c8; }
+    button { background: var(--sage); color: #fff; border: none; cursor: pointer; }
+    button.secondary { background: transparent; color: var(--sage); border: 1px solid var(--sage); }
+    .row { display: flex; gap: 0.5rem; margin: 0.5rem 0; }
+    .row input { flex: 1; }
+    ul { list-style: none; padding: 0; }
+    li { display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0; border-bottom: 1px solid #e2e6dd; }
+    li.done span { text-decoration: line-through; color: #8a948b; }
+    .hidden { display: none; }
+    #error { color: var(--copper); min-height: 1.2rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Aufgaben</h1>
+    <p id="error" role="alert"></p>
+
+    <section id="auth">
+      <div class="row"><input id="email" type="email" placeholder="E-Mail" autocomplete="email" /></div>
+      <div class="row"><input id="password" type="password" placeholder="Passwort" autocomplete="current-password" /></div>
+      <div class="row">
+        <button id="login">Anmelden</button>
+        <button id="signup" class="secondary">Registrieren</button>
+      </div>
+    </section>
+
+    <section id="app" class="hidden">
+      <div class="row">
+        <input id="new-task" placeholder="Neue Aufgabe…" />
+        <button id="add">Hinzufügen</button>
+      </div>
+      <ul id="tasks" aria-live="polite"></ul>
+      <div class="row"><button id="logout" class="secondary">Abmelden</button></div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+
+    // Filled from the provision_backend result — both PUBLIC (anon key ships behind RLS).
+    const SUPABASE_URL = '__SUPABASE_URL__';
+    const SUPABASE_ANON_KEY = '__SUPABASE_ANON_KEY__';
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    const $ = (id) => document.getElementById(id);
+    const errorEl = $('error');
+    const show = (msg) => { errorEl.textContent = msg ?? ''; };
+
+    async function refreshSession() {
+      const { data: { user } } = await supabase.auth.getUser();
+      $('auth').classList.toggle('hidden', !!user);
+      $('app').classList.toggle('hidden', !user);
+      if (user) await loadTasks();
+    }
+
+    async function loadTasks() {
+      // No "where user_id = me" — RLS returns ONLY the caller's own rows. That is the
+      // whole isolation guarantee; the client trusts the server policy, not a filter here.
+      const { data, error } = await supabase.from('tasks').select('*').order('created_at', { ascending: false });
+      if (error) return show(error.message);
+      const ul = $('tasks');
+      ul.innerHTML = '';
+      for (const t of data ?? []) {
+        const li = document.createElement('li');
+        if (t.done) li.className = 'done';
+        const box = document.createElement('input');
+        box.type = 'checkbox'; box.checked = !!t.done;
+        box.addEventListener('change', () => toggle(t.id, box.checked));
+        const span = document.createElement('span');
+        span.textContent = t.title;
+        li.append(box, span);
+        ul.append(li);
+      }
+    }
+
+    async function addTask() {
+      const title = $('new-task').value.trim();
+      if (!title) return;
+      const { data: { user } } = await supabase.auth.getUser();
+      // RLS insert policy requires user_id = auth.uid(); we set it explicitly on insert.
+      const { error } = await supabase.from('tasks').insert({ title, user_id: user.id });
+      if (error) return show(error.message);
+      $('new-task').value = '';
+      await loadTasks();
+    }
+
+    async function toggle(id, done) {
+      const { error } = await supabase.from('tasks').update({ done }).eq('id', id);
+      if (error) return show(error.message);
+      await loadTasks();
+    }
+
+    $('signup').addEventListener('click', async () => {
+      show('');
+      const { error } = await supabase.auth.signUp({ email: $('email').value, password: $('password').value });
+      if (error) return show(error.message);
+      await refreshSession();
+    });
+    $('login').addEventListener('click', async () => {
+      show('');
+      const { error } = await supabase.auth.signInWithPassword({ email: $('email').value, password: $('password').value });
+      if (error) return show(error.message);
+      await refreshSession();
+    });
+    $('logout').addEventListener('click', async () => { await supabase.auth.signOut(); await refreshSession(); });
+    $('add').addEventListener('click', addTask);
+
+    refreshSession();
+  </script>
+</body>
+</html>
