@@ -701,6 +701,9 @@ codeSessions.post('/:sessionId/agent', async (c) => {
     projectInstructions: proj?.instructions ?? null,
     userPreferences,
     searchAvailable: !!search,
+    // WAVE-B B2: the provisioning capability block is present only when full-stack is enabled,
+    // so the static prompt prefix stays byte-stable exactly like the web-search block.
+    provisionAvailable: fullstackEnabled(),
   });
   // History excludes the just-inserted user turn (passed as userMessage).
   const history: AgentMessage[] = (priorMsgs ?? []).slice(0, -1)
