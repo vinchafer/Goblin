@@ -1,0 +1,33 @@
+{
+  "config": {
+    "concurrency": 200,
+    "workMs": 200,
+    "distinctUsers": 50,
+    "rampMs": 0
+  },
+  "caps": {
+    "AGENT_GLOBAL_MAX_CONCURRENT": "50",
+    "AGENT_MAX_CONCURRENT_PER_USER": "2"
+  },
+  "admission": {
+    "admitted": 50,
+    "rejected": 150,
+    "rejectReasons": {
+      "global_limit": 150
+    },
+    "peakInFlight": 50
+  },
+  "latencyMs": {
+    "admit_p50": 0,
+    "admit_p95": 1,
+    "firstFrame_p50": 0,
+    "firstFrame_p95": 1,
+    "complete_p50": 203,
+    "complete_p95": 204
+  },
+  "hygiene": {
+    "leakedSubscribers": 0,
+    "liveHandlesAfterDrain": 0,
+    "heapDeltaMB": -3.5
+  }
+}

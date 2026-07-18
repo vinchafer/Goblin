@@ -34,6 +34,48 @@ export function agentMaxRuntimeMs(): number {
 }
 
 /**
+ * WAVE-H · H4 — global concurrent-run admission cap (the N-6 closer). The single-box
+ * process has no admission control today (Code-DD N-6: no p-limit/semaphore); an
+ * unbounded in-flight count is what turns provider throttling into a full-node outage
+ * (the shared circuit breaker OPENs after 3 failures) and grows heap without limit.
+ *
+ * This is the ceiling for TOTAL simultaneous agent runs in this process. LIVE USERS: the
+ * default (50) is generous — far above any realistic concurrent load for the current
+ * cohort, yet below the ~100-concurrent point the DD locates as the first breaking point,
+ * so it protects the box without throttling a real user at merge. Env-overridable; set
+ * `AGENT_GLOBAL_MAX_CONCURRENT=0` to DISABLE the cap entirely (founder knob).
+ */
+export function maxConcurrentRunsGlobal(): number {
+  const raw = Number(process.env.AGENT_GLOBAL_MAX_CONCURRENT);
+  if (Number.isFinite(raw) && raw === 0) return 0; // explicit disable
+  return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 50;
+}
+
+/**
+ * WAVE-H · H4 — per-user concurrent-run cap. A single human effectively never needs more
+ * than one or two builds running at once; a request for a third simultaneous run is either
+ * a stuck client or an abuse vector (one account fanning out hundreds of runs — the exact
+ * scale-out multiplier the DD warns about). Default 2 (generous for honest use, a hard
+ * ceiling against fan-out). Env-overridable; `AGENT_MAX_CONCURRENT_PER_USER=0` disables.
+ * This complements — does not replace — the existing per-hour cap (agentRunsPerHour).
+ */
+export function maxConcurrentRunsPerUser(): number {
+  const raw = Number(process.env.AGENT_MAX_CONCURRENT_PER_USER);
+  if (Number.isFinite(raw) && raw === 0) return 0; // explicit disable
+  return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 2;
+}
+
+/**
+ * Retry-After hint (seconds) handed to a user whose run was shed by the admission cap.
+ * Short by design: runs are bounded and slots free quickly, so "einen kurzen Moment" is
+ * honest. Env-overridable (`AGENT_CAPACITY_RETRY_AFTER_SEC`).
+ */
+export function capacityRetryAfterSec(): number {
+  const raw = Number(process.env.AGENT_CAPACITY_RETRY_AFTER_SEC);
+  return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 8;
+}
+
+/**
  * The AbortController reason the F-40 max-runtime guard uses, so it is distinguishable
  * from an explicit user Stop (disconnect ≠ stop ≠ timeout — the three signals must be
  * architecturally distinct). The orchestrator reads `stopSignal.reason` to land an honest

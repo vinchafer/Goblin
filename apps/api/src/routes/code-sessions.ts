@@ -24,7 +24,8 @@ import { loadUserPreferences } from '../services/user-preferences';
 import { grantsPublish, grantsRestore } from '../services/agent/intent';
 import { snapshotProject } from '../services/checkpoints/checkpoint-store';
 import { createAgentRun, finalizeAgentRun, findActiveRun } from '../services/agent/run-store';
-import { startRun, stopRun, streamRunEvents } from '../services/agent/run-registry';
+import { startRun, stopRun, streamRunEvents, checkAdmission } from '../services/agent/run-registry';
+import { capacityResponseBody } from '../services/agent/capacity-copy';
 import { agentMaxRuntimeMs } from '../services/agent/config';
 import { notifyAgentRunFinished } from './notifications';
 import { scrubString, safeErrorMessage } from '../lib/scrub-secrets';
@@ -672,6 +673,17 @@ codeSessions.post('/:sessionId/agent', async (c) => {
     );
   }
 
+  // WAVE-H · H4: concurrency admission — the N-6 closer. Shed BEFORE the expensive setup
+  // (file hydrate, DB writes, pre-run checkpoint) so a rejected run costs nothing, and land
+  // the honest "auf Anschlag" copy (DE+EN, client auto-retries) instead of a 500 or a
+  // pool-exhausting admit. This is the cheap early gate; startRun re-checks atomically below
+  // to close the microscopic race between this read and the actual slot reservation.
+  const preAdmit = checkAdmission(userId);
+  if (!preAdmit.admitted) {
+    c.header('Retry-After', preAdmit.retryAfterSec.toString());
+    return c.json(capacityResponseBody(preAdmit), 429);
+  }
+
   // Mirror the project's real files into the session so the tools see actual code.
   await hydrateSessionFiles(sb, sessionId, session.project_id, userId);
 
@@ -755,7 +767,7 @@ codeSessions.post('/:sessionId/agent', async (c) => {
   // no longer kills the run. Every emitted event flows through the registry's one path
   // (ring → durable event log → live subscribers) — the same path this request streams
   // below and a returning client re-attaches to.
-  startRun<RunResult>({
+  const admission = startRun<RunResult>({
     runId: runKey,
     userId,
     projectId: session.project_id,
@@ -855,6 +867,16 @@ codeSessions.post('/:sessionId/agent', async (c) => {
       logger.warn({ err: safeErrorMessage(err, 'agent run failed'), runId: runKey }, 'agent_run_execute_failed');
     },
   });
+
+  // WAVE-H · H4: the atomic backstop. The early pre-check above handles ~every rejection
+  // cheaply, but two requests from the same user in the same microsecond can both pass it;
+  // startRun's own gate is authoritative and one of them comes back rejected here. Rare, but
+  // handled honestly (429 + "auf Anschlag") rather than admitted past the cap. The already-
+  // created run row has no events and is reaped by the staleness filter (run-store).
+  if (!admission.admitted) {
+    c.header('Retry-After', admission.retryAfterSec.toString());
+    return c.json(capacityResponseBody(admission), 429);
+  }
 
   // Attach THIS request as a subscriber and stream the run's events. A disconnect ends
   // this stream (c.req.raw.signal) but not the run — that is the whole point.

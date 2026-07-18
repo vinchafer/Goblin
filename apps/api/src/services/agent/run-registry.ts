@@ -21,7 +21,14 @@
 // the source of truth in that case.
 
 import logger from '../../lib/logger';
-import { agentMaxRuntimeMs, MAX_RUNTIME_ABORT_REASON, USER_STOP_ABORT_REASON } from './config';
+import {
+  agentMaxRuntimeMs,
+  capacityRetryAfterSec,
+  maxConcurrentRunsGlobal,
+  maxConcurrentRunsPerUser,
+  MAX_RUNTIME_ABORT_REASON,
+  USER_STOP_ABORT_REASON,
+} from './config';
 import { appendRunEvent, loadRunEvents, type RunEvent, type RunEventType } from './run-events';
 
 /** A frame emitted into a run's log/stream: a type + an arbitrary metadata body. */
@@ -118,14 +125,68 @@ export function admissionSnapshot(): {
 }
 
 /**
- * Start a run detached from any request. Idempotent per runId: if a live handle already
- * exists (e.g. a duplicate POST), the existing one is returned and no second execution
- * starts. Returns immediately — the work runs in the background.
+ * WAVE-H · H4 — the admission verdict. `admitted:true` starts the run; `admitted:false`
+ * carries the machine reason + a Retry-After hint so the caller lands the honest
+ * "auf Anschlag" copy instead of a 500.
  */
-export function startRun<R>(input: StartRunInput<R>): void {
+export type AdmissionResult =
+  | { admitted: true }
+  | { admitted: false; reason: 'per_user_limit' | 'global_limit'; retryAfterSec: number };
+
+/**
+ * WAVE-H · H4 — decide whether a new run for `userId` may start, reading the live map (the
+ * single source of truth for in-flight) against the env caps. Counts NON-TERMINAL handles
+ * only, so a finished-but-not-yet-evicted run never holds a slot. Global cap checked first
+ * (the box-protection ceiling), then the per-user cap. A cap of 0 means "disabled". Pure
+ * read — no mutation — so the route can call it as an early pre-check AND startRun can call
+ * it as the atomic gate, with identical logic.
+ */
+export function checkAdmission(userId: string): AdmissionResult {
+  const globalCap = maxConcurrentRunsGlobal();
+  const perUserCap = maxConcurrentRunsPerUser();
+  if (globalCap <= 0 && perUserCap <= 0) return { admitted: true };
+
+  let globalInFlight = 0;
+  let userInFlight = 0;
+  for (const h of runs.values()) {
+    if (h.terminal) continue;
+    globalInFlight += 1;
+    if (h.userId === userId) userInFlight += 1;
+  }
+  if (globalCap > 0 && globalInFlight >= globalCap) {
+    return { admitted: false, reason: 'global_limit', retryAfterSec: capacityRetryAfterSec() };
+  }
+  if (perUserCap > 0 && userInFlight >= perUserCap) {
+    return { admitted: false, reason: 'per_user_limit', retryAfterSec: capacityRetryAfterSec() };
+  }
+  return { admitted: true };
+}
+
+/**
+ * Start a run detached from any request. Idempotent per runId: if a live handle already
+ * exists (e.g. a duplicate POST), it is already admitted and this is a no-op (returns
+ * admitted:true — the caller re-attaches to the running run, it does not count as new).
+ *
+ * WAVE-H · H4: enforces the concurrency admission cap ATOMICALLY here — the check and the
+ * `runs.set` below run with no `await` between them, so two racing requests can never both
+ * slip past a full cap (Node is single-threaded). A rejected run does NOT execute and
+ * returns the honest verdict; the caller renders the "auf Anschlag" copy. Returns
+ * immediately — an admitted run's work runs in the background.
+ */
+export function startRun<R>(input: StartRunInput<R>): AdmissionResult {
   if (runs.has(input.runId)) {
     logger.warn({ runId: input.runId }, 'agent_run_already_running');
-    return;
+    return { admitted: true };
+  }
+
+  // H4 admission gate — atomic with the runs.set below (no await between).
+  const verdict = checkAdmission(input.userId);
+  if (!verdict.admitted) {
+    logger.warn(
+      { runId: input.runId, userId: input.userId, reason: verdict.reason },
+      'agent_run_admission_rejected',
+    );
+    return verdict;
   }
 
   const controller = new AbortController();
@@ -216,6 +277,8 @@ export function startRun<R>(input: StartRunInput<R>): void {
     // Evict after a grace window; the DB log remains the durable record for later re-attach.
     setTimeout(() => { runs.delete(input.runId); }, EVICT_GRACE_MS).unref?.();
   })();
+
+  return { admitted: true };
 }
 
 /**

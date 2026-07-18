@@ -168,9 +168,24 @@ export async function apiStream(
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: res.statusText }))
-    throw new Error(err.message || err.error || `Stream error ${res.status}`)
+    // WAVE-H · H4: carry the machine code + Retry-After through so the caller can render the
+    // honest "auf Anschlag" copy and auto-retry, instead of a generic server error.
+    const e = new Error(err.message || err.error || `Stream error ${res.status}`) as StreamError
+    e.code = err.error
+    e.status = res.status
+    e.reason = err.reason
+    if (typeof err.retryAfterSeconds === 'number') e.retryAfterSeconds = err.retryAfterSeconds
+    throw e
   }
   await readSSE(res, onChunk)
+}
+
+/** An apiStream/apiStreamGet failure carrying the server's machine code + Retry-After. */
+export interface StreamError extends Error {
+  code?: string
+  reason?: string
+  status?: number
+  retryAfterSeconds?: number
 }
 
 /**
