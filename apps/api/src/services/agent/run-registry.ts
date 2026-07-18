@@ -91,6 +91,33 @@ export function isRunLocal(runId: string): boolean {
 }
 
 /**
+ * WAVE-H (H1/H5) — read-only observability snapshot of the live-run map. `inFlight`
+ * counts non-terminal runs (the ones actually holding a slot); `totalRuns` includes
+ * terminal-but-not-yet-evicted handles; `totalSubscribers` is the sum of attached SSE
+ * sinks (a leak canary — it must return to 0 after every run drains). `perUser` maps a
+ * user id to their non-terminal run count (the per-user concurrency the H4 cap bounds).
+ * Pure read — no mutation, so calling it can never perturb a run.
+ */
+export function admissionSnapshot(): {
+  inFlight: number;
+  totalRuns: number;
+  totalSubscribers: number;
+  perUser: Record<string, number>;
+} {
+  let inFlight = 0;
+  let totalSubscribers = 0;
+  const perUser: Record<string, number> = {};
+  for (const h of runs.values()) {
+    totalSubscribers += h.subscribers.size;
+    if (!h.terminal) {
+      inFlight += 1;
+      perUser[h.userId] = (perUser[h.userId] ?? 0) + 1;
+    }
+  }
+  return { inFlight, totalRuns: runs.size, totalSubscribers, perUser };
+}
+
+/**
  * Start a run detached from any request. Idempotent per runId: if a live handle already
  * exists (e.g. a duplicate POST), the existing one is returned and no second execution
  * starts. Returns immediately — the work runs in the background.
