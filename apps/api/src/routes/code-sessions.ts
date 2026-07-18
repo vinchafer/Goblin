@@ -16,6 +16,7 @@ import { parseGoblinTier } from '../services/goblin-hosted';
 import { agentEligibility } from '../services/agent/config';
 import { agentToolsFor, buildToolExecutor } from '../services/agent/tools';
 import { resolveSearchProvider, agentMaxSearchesPerRun } from '../services/search';
+import { fullstackEnabled } from '../services/fullstack/config';
 import { getAgentModel } from '../services/agent/model-turn';
 import { runAgent } from '../services/agent/orchestrator';
 import { trackEvent } from '../lib/platform-events';
@@ -731,6 +732,11 @@ codeSessions.post('/:sessionId/agent', async (c) => {
   // Änderung rückgängig" works via chat, but a build run can never undo the project.
   const restoreGranted = grantsRestore(prompt);
 
+  // WAVE-B B1: full-stack provisioning is advertised to the run ONLY when the opt-in flag is
+  // on. Off (default) → provision_backend is not in the tool list and the capability prompt
+  // block is absent → existing static AND framework runs are byte-identical (LIVE-USERS).
+  const provisionGranted = fullstackEnabled();
+
   // I1 funnel (rider): agent_run_started — the twin of agent_run_finished. Emitted the
   // instant the run begins so Pulse can show started-vs-finished; metadata only (model
   // slug), never the prompt or generated code.
@@ -762,7 +768,7 @@ codeSessions.post('/:sessionId/agent', async (c) => {
         systemPrompt,
         userMessage: prompt,
         history,
-        tools: agentToolsFor({ search: !!search, restore: restoreGranted }),
+        tools: agentToolsFor({ search: !!search, restore: restoreGranted, provision: provisionGranted }),
         executor: buildToolExecutor(sb, {
           search,
           maxSearchesPerRun: agentMaxSearchesPerRun(),

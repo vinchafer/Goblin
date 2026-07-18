@@ -36,6 +36,13 @@ import { listFiles as realListFiles, downloadFile as realDownloadFile } from '..
 import { snapshotProject, listCheckpoints, restoreCheckpoint } from '../checkpoints/checkpoint-store';
 import { getFrameworkTemplate, buildFrameworkFiles, SUPPORTED_FRAMEWORKS, FRAMEWORK_TEMPLATES } from '../framework-templates';
 import { validatePackageJson, dependencyRejectionMessage } from '../deps-allowlist';
+import {
+  runProvisionBackend,
+  newProvisionState,
+  realProvisionDeps,
+  type ProvisionDeps,
+  type ProvisionState,
+} from '../fullstack/provision-tool';
 import type { ToolSpec, ToolExecutor, ToolCall, ToolResult, ToolContext } from './types';
 import {
   remainingPlatformSearches,
@@ -247,14 +254,69 @@ export const RESTORE_CHECKPOINT_TOOL: ToolSpec = {
   },
 };
 
+// WAVE-B B1 — provision_backend is advertised ONLY when full-stack is enabled for the run
+// (the GOBLIN_FULLSTACK_ENABLED opt-in). While off, a run never sees it, so the static AND
+// framework paths are byte-identical to today (LIVE-USERS: additive / opt-in). The model
+// passes a STRUCTURED schema (tables + columns); it NEVER writes raw SQL — the server
+// generates the DDL with RLS always on (spec §5 B2, so no unsafe run_sql-class tool exists).
+export const PROVISION_BACKEND_TOOL: ToolSpec = {
+  name: 'provision_backend',
+  description:
+    'Legt eine echte Datenbank + Login (Supabase) für diese App an — für Apps, die Daten ' +
+    'speichern oder bei denen jeder Nutzer nur SEINE eigenen Daten sehen soll (Login, Aufgaben, ' +
+    'Buchungen). Gib die Tabellen STRUKTURIERT an (Name + Spalten); ich erzeuge daraus sicheres ' +
+    'SQL und schalte für JEDE Tabelle Row-Level-Security an, sodass jeder Nutzer nur seine eigenen ' +
+    'Zeilen liest. Du schreibst NIE eigenes SQL. Eine Spalte id (uuid), user_id (Besitzer) und ' +
+    'created_at werden AUTOMATISCH angelegt — gib sie NICHT selbst an. Rufe dies EINMAL auf, bevor ' +
+    'du den Client-Code schreibst; danach bekommst du projectUrl + anonKey (öffentlich) zum ' +
+    'Einbinden. Ist kein Supabase-Account verbunden, melde ich das ehrlich zurück (der Nutzer ' +
+    'verbindet ihn dann einmalig). Erfinde niemals ein angelegtes Backend — nur mein Ergebnis zählt.',
+  parameters: {
+    type: 'object',
+    properties: {
+      name: { type: 'string', description: 'Kurzer App-Name für das Supabase-Projekt, z.B. "aufgabenliste".' },
+      tables: {
+        type: 'array',
+        description: 'Die Tabellen. Für jede: name (snake_case) + columns (ohne id/user_id/created_at).',
+        items: {
+          type: 'object',
+          properties: {
+            name: { type: 'string', description: 'Tabellenname, snake_case, z.B. "tasks".' },
+            columns: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  name: { type: 'string' },
+                  type: { type: 'string', enum: ['text', 'integer', 'boolean', 'timestamptz', 'uuid', 'numeric', 'jsonb'] },
+                  notNull: { type: 'boolean' },
+                  default: { type: 'string', enum: ['now', 'true', 'false', 'gen_random_uuid'] },
+                },
+                required: ['name', 'type'],
+                additionalProperties: false,
+              },
+            },
+          },
+          required: ['name', 'columns'],
+          additionalProperties: false,
+        },
+      },
+    },
+    required: ['tables'],
+    additionalProperties: false,
+  },
+};
+
 /**
  * The tool set advertised to a run: base tools, plus web_search when search is available,
- * plus restore_checkpoint ONLY when the message granted restore intent.
+ * plus restore_checkpoint ONLY when the message granted restore intent, plus
+ * provision_backend ONLY when full-stack is enabled for the run.
  */
-export function agentToolsFor(opts: { search: boolean; restore?: boolean }): ToolSpec[] {
+export function agentToolsFor(opts: { search: boolean; restore?: boolean; provision?: boolean }): ToolSpec[] {
   const tools = [...AGENT_TOOLS];
   if (opts.search) tools.push(WEB_SEARCH_TOOL);
   if (opts.restore) tools.push(RESTORE_CHECKPOINT_TOOL);
+  if (opts.provision) tools.push(PROVISION_BACKEND_TOOL);
   return tools;
 }
 
@@ -785,6 +847,9 @@ export interface ExecutorOptions {
    * snapshot this very undo-run just took.
    */
   restoreExcludeCheckpointId?: string | null;
+  /** WAVE-B B1: provisioning deps + the run's shared provisioning state (injectable for tests). */
+  provisionDeps?: ProvisionDeps;
+  provisionState?: ProvisionState;
 }
 
 // F4.3 — the web_search tool. Enforces the per-run cap (counter lives in the run's
@@ -871,10 +936,15 @@ export function buildToolExecutor(sb: Sb = getSupabaseAdmin(), opts: ExecutorOpt
   const publishState = opts.publishState ?? newPublishState();
   // F4.3: per-run search budget lives in this closure (one executor per run).
   const searchState = { used: 0, max: opts.maxSearchesPerRun ?? agentMaxSearchesPerRun() };
+  // WAVE-B B1: provisioning deps + per-run state live in this closure (one executor per run).
+  const provisionDeps = opts.provisionDeps ?? realProvisionDeps;
+  const provisionState = opts.provisionState ?? newProvisionState();
   return async (call: ToolCall, ctx: ToolContext): Promise<ToolResult> => {
     switch (call.name) {
       case 'web_search':
         return toolWebSearch(ctx, call.args ?? {}, opts.search, searchState);
+      case 'provision_backend':
+        return runProvisionBackend(provisionDeps, ctx, provisionState, call.args ?? {});
       case 'list_files':
         return toolListFiles(sb, ctx);
       case 'read_file':

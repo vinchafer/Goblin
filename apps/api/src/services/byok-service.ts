@@ -644,4 +644,73 @@ export async function disconnectBrave(userId: string): Promise<void> {
     .throwOnError();
 }
 
+// ── Supabase connection (OAuth Management API token) — WAVE-B B1 ─────────────────
+// Like 'vercel'/'brave', 'supabase' is a CONNECTION provider kept out of the LLM
+// ByokProviderSchema so it never pollutes model lists. The user's OAuth access token
+// (D-B1 = user-connected shape) is stored in byok_keys (provider='supabase') with the SAME
+// canonical v1/v2 encryption; supabase-provider reads it via getActiveKeyByProvider. The
+// token is a Management-API bearer — a crown-jewel — so it is sealed exactly like a BYOK key
+// and never leaves the server (R5, Wave-D scrubbing catches its JWT shape defensively).
+
+export async function storeSupabaseConnection(userId: string, accessToken: string): Promise<void> {
+  const supabase = getSupabaseAdmin();
+  // Single active connection: revoke any existing active supabase token first.
+  await supabase
+    .from('byok_keys')
+    .update({ status: 'revoked' })
+    .eq('user_id', userId)
+    .eq('provider', 'supabase')
+    .eq('status', 'active');
+
+  let encryptedBlob: string;
+  let vaultSecretId: string | null = null;
+  let encryptionVersion = 1;
+  try {
+    const v2 = await encryptApiKeyV2(userId, accessToken);
+    encryptedBlob = v2.ciphertextB64;
+    vaultSecretId = v2.vaultSecretId;
+    encryptionVersion = v2.version;
+  } catch {
+    const userSalt = await getOrCreateUserSalt(userId);
+    encryptedBlob = encryptUserData(accessToken, userSalt);
+  }
+
+  await supabase
+    .from('byok_keys')
+    .insert({
+      user_id: userId,
+      provider: 'supabase',
+      key_encrypted: encryptedBlob,
+      key_hint: accessToken.slice(-4),
+      validated_at: new Date().toISOString(),
+      encryption_version: encryptionVersion,
+      vault_secret_id: vaultSecretId,
+    })
+    .throwOnError();
+}
+
+export async function getSupabaseConnection(userId: string): Promise<{ connected: boolean }> {
+  const supabase = getSupabaseAdmin();
+  const { data } = await supabase
+    .from('byok_keys')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('provider', 'supabase')
+    .eq('status', 'active')
+    .limit(1)
+    .maybeSingle();
+  return data ? { connected: true } : { connected: false };
+}
+
+export async function disconnectSupabase(userId: string): Promise<void> {
+  const supabase = getSupabaseAdmin();
+  await supabase
+    .from('byok_keys')
+    .update({ status: 'revoked' })
+    .eq('user_id', userId)
+    .eq('provider', 'supabase')
+    .eq('status', 'active')
+    .throwOnError();
+}
+
 export { testKey };

@@ -59,6 +59,11 @@ const SECRET_ENV_VARS = [
   'GITHUB_CLIENT_SECRET',
   'GITHUB_CLIENT_SECRET_RAILWAY',
   'INVESTOR_MODELS_TOKEN',
+  // WAVE-B — the Supabase OAuth app secret (user-connected provisioning). The OAuth access
+  // token and provisioned service_role keys are JWTs already caught by the pattern layer;
+  // this covers the prefix-less client secret by exact value.
+  'SUPABASE_OAUTH_CLIENT_SECRET',
+  'SUPABASE_OAUTH_CLIENT_SECRET_RAILWAY',
 ] as const;
 
 // Only redact env values long enough to be a real secret — never redact "", "true",
