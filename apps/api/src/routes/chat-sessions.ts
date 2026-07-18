@@ -244,8 +244,14 @@ chatSessions.post('/:id/stream', async (c) => {
     let currentModel = modelSlug ?? '';
     let currentSourceTier = '';
 
+    // WAVE-H · H3 (#15): tie the upstream model stream to the request lifecycle, and make
+    // the teardown symmetric. The listener is NAMED and removed in the finally below, and
+    // the controller is aborted on EVERY exit path (done, error, disconnect) so the upstream
+    // completion generator is always signalled to close — no server-side stream left open
+    // after the client has its `done`.
     const abortController = new AbortController();
-    c.req.raw.signal.addEventListener('abort', () => abortController.abort());
+    const onReqAbort = () => abortController.abort();
+    c.req.raw.signal.addEventListener('abort', onReqAbort);
 
     // F-43 — search-augmented generation (same real search path as the project
     // chat). When the "Websuche" toggle is ON, run one live search and inject the
@@ -353,6 +359,11 @@ chatSessions.post('/:id/stream', async (c) => {
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Streaming failed';
       await stream.writeSSE({ data: JSON.stringify({ type: 'error', message: msg }) });
+    } finally {
+      // H3 (#15): symmetric teardown on every exit — detach the request listener and abort
+      // the upstream model stream so nothing stays open server-side after the client's `done`.
+      c.req.raw.signal.removeEventListener('abort', onReqAbort);
+      if (!abortController.signal.aborted) abortController.abort();
     }
   });
 });
