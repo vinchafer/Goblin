@@ -4,6 +4,7 @@ import { aggregateTelemetry, type CompletionRow } from '../lib/goblin-telemetry'
 import { requestAccountDeletion, reactivateByUserId } from '../services/account-deletion';
 import { buildInsight } from '../services/insight';
 import { metricsSnapshot } from '../lib/metrics';
+import { generatePromoCodes } from '../lib/promo-code';
 
 const admin = new Hono();
 
@@ -578,6 +579,81 @@ admin.get('/insight', async (c) => {
   } catch (e) {
     return c.json({ error: (e as Error).message }, 500);
   }
+});
+
+// ─── LAUNCH-ASSIST U2 — Promo codes (founder) ─────────────────────────────────
+// Same x-admin-key gate as every /api/admin route (web proxy injects the key only
+// after a server-side founder check). The founder operates these from an iPhone via
+// /admin/promo: list codes, generate a batch, and label who each code was given to.
+
+// GET /api/admin/promo — all codes (newest batch first), with the redeemer's email.
+admin.get('/promo', async (c) => {
+  const supabase = getSupabaseAdmin();
+  const { data: codes, error } = await supabase
+    .from('promo_codes')
+    .select('code, tier, duration_days, created_batch, label, redeemed_by, redeemed_at, revoked, created_at')
+    .order('created_at', { ascending: false })
+    .limit(2000);
+  // Pre-migration tolerant: table absent → honest empty list, not a 500.
+  if (error) {
+    if (/does not exist|schema cache|find the table/i.test(error.message)) {
+      return c.json({ codes: [], batches: [], available: false });
+    }
+    return c.json({ error: error.message }, 500);
+  }
+
+  // Resolve redeemer emails in one query (small table).
+  const redeemerIds = [...new Set((codes ?? []).map((r) => r.redeemed_by).filter(Boolean))] as string[];
+  const emailById = new Map<string, string>();
+  if (redeemerIds.length) {
+    const { data: users } = await supabase.from('users').select('id, email').in('id', redeemerIds);
+    for (const u of users ?? []) emailById.set(u.id as string, (u.email as string) ?? '');
+  }
+
+  const rows = (codes ?? []).map((r) => ({
+    ...r,
+    redeemed: !!r.redeemed_by,
+    redeemer_email: r.redeemed_by ? emailById.get(r.redeemed_by as string) ?? null : null,
+  }));
+  const batches = [...new Set(rows.map((r) => r.created_batch))];
+  return c.json({ codes: rows, batches, available: true });
+});
+
+// POST /api/admin/promo/batch { count, tier, days, batch? } — generate a new batch.
+admin.post('/promo/batch', async (c) => {
+  const supabase = getSupabaseAdmin();
+  const body = await c.req.json().catch(() => ({}));
+  const count = Math.min(Math.max(parseInt(String(body.count ?? 10), 10) || 10, 1), 200);
+  const tier = ['build', 'pro', 'power'].includes(body.tier) ? body.tier : 'power';
+  const days = Math.min(Math.max(parseInt(String(body.days ?? 30), 10) || 30, 1), 365);
+  const batch = (typeof body.batch === 'string' && body.batch.trim()) || `batch-${new Date().toISOString().slice(0, 10)}`;
+
+  const codes = generatePromoCodes(count).map((code) => ({
+    code, tier, duration_days: days, created_batch: batch,
+  }));
+  const { error } = await supabase.from('promo_codes').insert(codes);
+  if (error) {
+    if (/does not exist|schema cache|find the table/i.test(error.message)) {
+      return c.json({ error: 'promo_codes table not applied yet (migration 0098)' }, 409);
+    }
+    return c.json({ error: error.message }, 500);
+  }
+  return c.json({ created: codes.length, batch, tier, days, codes: codes.map((x) => x.code) });
+});
+
+// PATCH /api/admin/promo/:code { label } — inline "wem gegeben" edit.
+admin.patch('/promo/:code', async (c) => {
+  const supabase = getSupabaseAdmin();
+  const code = c.req.param('code');
+  const body = await c.req.json().catch(() => ({}));
+  const update: Record<string, unknown> = {};
+  if (typeof body.label === 'string') update.label = body.label.slice(0, 200);
+  if (typeof body.revoked === 'boolean') update.revoked = body.revoked;
+  if (Object.keys(update).length === 0) return c.json({ error: 'nothing to update' }, 400);
+
+  const { error } = await supabase.from('promo_codes').update(update).eq('code', code);
+  if (error) return c.json({ error: error.message }, 500);
+  return c.json({ ok: true });
 });
 
 export { admin };

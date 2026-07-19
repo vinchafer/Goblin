@@ -10,6 +10,7 @@ const NAV = [
   { href: '/admin/catalog', label: 'Catalog Ops',  icon: 'C' },
   { href: '/admin/telemetry', label: 'Telemetry',  icon: 'T' },
   { href: '/admin/insight', label: 'Insight',      icon: 'I' },
+  { href: '/admin/promo',  label: 'Promo',         icon: 'P' },
   { href: '/admin/builds', label: 'Builds',        icon: 'B' },
   { href: '/admin/status', label: 'Status',        icon: 'S' },
 ];

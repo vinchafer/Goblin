@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import { GoblinLogo } from '@/components/brand/GoblinLogo';
 import { t, type Lang } from '@/lib/use-lang';
+import { PENDING_PROMO_KEY } from '@/lib/promo-redeem';
 
 export const dynamic = 'force-dynamic';
 
@@ -165,6 +166,9 @@ export default function LoginPage() {
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
+  // LAUNCH-ASSIST U2: optional promo code at signup. Signup needs email confirmation
+  // (no session yet), so we stash it and redeem on the first authenticated load.
+  const [promoCode, setPromoCode] = useState('');
 
   useEffect(() => {
     const error = searchParams.get('error');
@@ -203,6 +207,11 @@ export default function LoginPage() {
           options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
         });
         if (error) throw error;
+        // Stash an entered promo code; PendingPromoRedeemer redeems it once the
+        // confirmed session lands on /dashboard.
+        if (promoCode.trim()) {
+          try { localStorage.setItem(PENDING_PROMO_KEY, promoCode.trim()); } catch { /* ignore */ }
+        }
         setEmailSent(true);
       } else {
         const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
@@ -623,6 +632,22 @@ export default function LoginPage() {
               </div>
               {mode === 'signup' && password.length > 0 && (
                 <PasswordStrengthBar strength={passwordStrength(password)} />
+              )}
+              {mode === 'signup' && (
+                <input
+                  type="text"
+                  value={promoCode}
+                  onChange={e => setPromoCode(e.target.value)}
+                  placeholder={t(lang, 'Goblin-Code (optional)', 'Goblin code (optional)')}
+                  autoComplete="off"
+                  autoCapitalize="characters"
+                  style={{
+                    width: '100%', padding: '10px 12px', borderRadius: 8,
+                    border: '1px solid var(--rule, rgba(0,0,0,0.15))', background: 'var(--bg)',
+                    color: 'var(--text)', fontSize: 'var(--t-small-fs)',
+                    fontFamily: 'var(--font-mono, monospace)', textTransform: 'uppercase',
+                  }}
+                />
               )}
               {mode === 'signup' && (
                 <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', fontSize: 'var(--t-caption-fs)', color: 'var(--meta)', lineHeight: 1.5 }}>

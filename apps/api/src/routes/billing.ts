@@ -15,6 +15,7 @@ import { processStripeEvent } from '../services/stripe-webhook-processor';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { trackEvent } from '../lib/platform-events';
 import { derivePlanTruth } from '../lib/plan-truth';
+import { withCompExpiry } from '../lib/comp-expiry';
 import { getGeoTier, PLAN_PRICES, TIER_LABELS } from '../config/geo-pricing';
 import logger from '../lib/logger';
 import { withTimeout, envTimeoutMs } from '../lib/with-timeout';
@@ -225,8 +226,11 @@ billing.get('/status', authMiddleware, async (c) => {
   if (error || !user) return c.json({ error: 'User not found' }, 404);
 
   // Derived entitlement — 'plan' returned here must be the real current plan, not
-  // the raw column (a default/cancelled user resolves to 'none' → paywall).
-  const truth = derivePlanTruth(user);
+  // the raw column (a default/cancelled user resolves to 'none' → paywall). A comped
+  // user gets a best-effort comped_until read (pre-migration tolerant) so a promo
+  // grant surfaces its end date and an expired promo degrades honestly here too.
+  const userWithExpiry = await withCompExpiry(supabase, userId, user);
+  const truth = derivePlanTruth(userWithExpiry);
 
   // F-32: server-side "purchase confirmation seen" flag. Read in a SEPARATE best-effort
   // query so a pre-migration DB (column absent, migration 0093) can NEVER break /status
@@ -283,8 +287,12 @@ billing.get('/status', authMiddleware, async (c) => {
     paymentDeadline: truth.paymentDeadline,
     cardLast4,
     cardBrand,
-    isComped: !!user.is_comped,
+    isComped: truth.state === 'comped',
     compReason: user.comp_reason ?? null,
+    // LAUNCH-ASSIST U2: when the comp is a promo grant (has an expiry), surface the end
+    // so the web shows the honest countdown ("Testzeitraum endet in X Tagen") and, at
+    // expiry, the degrade-to-free copy. NULL for a permanent comp or non-comped account.
+    promoEndsAt: truth.state === 'comped' ? truth.endsAt : null,
     // F-32: the resolved plan key already seen/celebrated on this account (server-side,
     // cross-device). `planConfirmationServer` tells the client whether the server flag
     // is live yet — when false it falls back to localStorage.
@@ -310,7 +318,8 @@ billing.post('/confirm-plan', authMiddleware, async (c) => {
     .single();
   if (error || !user) return c.json({ error: 'User not found' }, 404);
 
-  const planKey = derivePlanTruth(user).planKey;
+  const userWithExpiry = await withCompExpiry(supabase, userId, user);
+  const planKey = derivePlanTruth(userWithExpiry).planKey;
   try {
     const { error: updErr } = await supabase
       .from('users').update({ last_confirmed_plan: planKey }).eq('id', userId);

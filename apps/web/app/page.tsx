@@ -2,6 +2,7 @@ import { Manrope, JetBrains_Mono, Instrument_Serif } from 'next/font/google';
 import { GoblinMarkSprite } from '@/components/landing/brand/GoblinMarkSprite';
 import { Nav } from '@/components/landing/sections/Nav';
 import { Hero } from '@/components/landing/sections/Hero';
+import { InstallAppBlock } from '@/components/landing/sections/InstallAppBlock';
 import { TrustedBy } from '@/components/landing/sections/TrustedBy';
 import { Problem } from '@/components/landing/sections/Problem';
 import { HowItWorks } from '@/components/landing/sections/HowItWorks';
@@ -65,6 +66,7 @@ export default function Home() {
         <Nav />
         <main id="main">
           <Hero />
+          <InstallAppBlock />
           <TrustedBy />
           <Problem />
           <HowItWorks />

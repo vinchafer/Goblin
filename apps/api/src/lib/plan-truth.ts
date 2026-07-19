@@ -8,7 +8,11 @@
  * entitlement from this single function instead of reading `users.plan` directly.
  *
  * Precedence (server-side, never the raw `plan` column):
- *   1. is_comped                         → comped  (full access; founder comp path)
+ *   1. is_comped (not yet expired)       → comped  (full access; founder comp OR promo
+ *                                                   grant. comped_until NULL = permanent
+ *                                                   comp; a value in the past means an
+ *                                                   expired promo → falls through and
+ *                                                   degrades honestly to paid/trial/none)
  *   2. stripe_subscription_id present    → paid    (plan kept in sync by the webhook;
  *                                                   INCLUDES cancel_at_period_end —
  *                                                   the user keeps paid access, with
@@ -48,6 +52,13 @@ export interface PlanTruth {
 export interface PlanTruthRow {
   plan?: string | null;
   is_comped?: boolean | null;
+  /**
+   * LAUNCH-ASSIST U2 (migration 0098): the comp expiry. NULL/undefined = permanent
+   * comp (founder path, today's behavior). A timestamp = a promo grant that ends then;
+   * once it is in the past the comp no longer applies and access degrades on read.
+   * Undefined (not selected / pre-migration column absent) is treated as permanent.
+   */
+  comped_until?: string | null;
   stripe_subscription_id?: string | null;
   cloud_trial_ends_at?: string | null;
   /** Stamped on first subscription → the trial is spent and must never reappear. */
@@ -67,8 +78,12 @@ const PAID_PLAN_KEYS = new Set(['build', 'pro', 'power']);
 export function derivePlanTruth(row: PlanTruthRow | null | undefined, now: Date = new Date()): PlanTruth {
   if (!row) return { state: 'none', allowanceKey: 'none', planKey: 'none', hasAccess: false, cancelAtPeriodEnd: false, endsAt: null, paymentFailing: false, paymentDeadline: null };
 
-  if (row.is_comped) {
-    return { state: 'comped', allowanceKey: 'power', planKey: 'comped', hasAccess: true, cancelAtPeriodEnd: false, endsAt: null, paymentFailing: false, paymentDeadline: null };
+  // Comped — permanent (comped_until NULL/undefined) OR a promo grant that has not yet
+  // expired. An expired promo (comped_until in the past) falls through so the user
+  // degrades honestly to paid/trial/none. endsAt surfaces the promo end for the UI
+  // countdown; a permanent comp has no end date.
+  if (row.is_comped && (!row.comped_until || new Date(row.comped_until) > now)) {
+    return { state: 'comped', allowanceKey: 'power', planKey: 'comped', hasAccess: true, cancelAtPeriodEnd: false, endsAt: row.comped_until ?? null, paymentFailing: false, paymentDeadline: null };
   }
 
   if (row.stripe_subscription_id) {

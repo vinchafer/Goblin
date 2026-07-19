@@ -8,6 +8,7 @@ import { buildsPerMonth } from '@/lib/plan-builds';
 import { storageLabel } from '@/lib/plan-storage';
 import StorageUsageBar from '@/components/usage/StorageUsageBar';
 import { useLang, t } from '@/lib/use-lang';
+import { PromoCodeField } from '@/components/billing/PromoCodeField';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? '';
 
@@ -358,6 +359,7 @@ export function BillingPage() {
       </Section>
 
       {!isComped && <InviteCodeRedemption />}
+      {!isComped && <PromoCodeField />}
 
       <p className="helper-text" style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--text-meta)', marginTop: 20, padding: '0 4px', lineHeight: 1.6 }}>
         {t(lang, 'Sicheres Checkout & Rechnungen über Stripe. Kündigung jederzeit im Kundenportal.', 'Secure checkout & invoices via Stripe. Cancel anytime in the customer portal.')}
