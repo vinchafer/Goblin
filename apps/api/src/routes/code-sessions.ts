@@ -24,7 +24,9 @@ import { loadUserPreferences } from '../services/user-preferences';
 import { grantsPublish, grantsRestore } from '../services/agent/intent';
 import { snapshotProject } from '../services/checkpoints/checkpoint-store';
 import { createAgentRun, finalizeAgentRun, findActiveRun } from '../services/agent/run-store';
-import { startRun, stopRun, streamRunEvents } from '../services/agent/run-registry';
+import { startRun, stopRun, streamRunEvents, checkAdmission } from '../services/agent/run-registry';
+import { capacityResponseBody } from '../services/agent/capacity-copy';
+import { recordAgentRun } from '../lib/metrics';
 import { agentMaxRuntimeMs } from '../services/agent/config';
 import { notifyAgentRunFinished } from './notifications';
 import { scrubString, safeErrorMessage } from '../lib/scrub-secrets';
@@ -95,15 +97,25 @@ async function hydrateSessionFiles(
     const missing = storagePaths.filter((p) => p && !have.has(p)).slice(0, 50);
     if (missing.length === 0) return;
 
-    const rows: Array<Record<string, unknown>> = [];
-    for (const path of missing) {
-      const content = await getFile(projectId, path);
-      if (content == null) continue;
-      rows.push({
-        session_id: sessionId, user_id: userId, path, content,
-        change_state: 'saved', updated_at: new Date().toISOString(),
-      });
+    // WAVE-H · H6 (B2 batching): read the missing files with BOUNDED concurrency instead of
+    // one-at-a-time. This runs at the start of every agent run; a sequential await-in-loop
+    // paid N storage round-trips in series (the N+1). Bounded (not an unbounded Promise.all
+    // over 50) so we speed up the common case without flooding storage under load.
+    const CONCURRENCY = 8;
+    const fetched: Array<{ path: string; content: string }> = [];
+    for (let i = 0; i < missing.length; i += CONCURRENCY) {
+      const batch = missing.slice(i, i + CONCURRENCY);
+      const results = await Promise.all(
+        batch.map(async (path) => ({ path, content: await getFile(projectId, path) })),
+      );
+      for (const r of results) {
+        if (r.content != null) fetched.push({ path: r.path, content: r.content });
+      }
     }
+    const rows = fetched.map(({ path, content }) => ({
+      session_id: sessionId, user_id: userId, path, content,
+      change_state: 'saved', updated_at: new Date().toISOString(),
+    }));
     if (rows.length) {
       await sb.from('code_session_files').upsert(rows, { onConflict: 'session_id,path' });
     }
@@ -672,6 +684,18 @@ codeSessions.post('/:sessionId/agent', async (c) => {
     );
   }
 
+  // WAVE-H · H4: concurrency admission — the N-6 closer. Shed BEFORE the expensive setup
+  // (file hydrate, DB writes, pre-run checkpoint) so a rejected run costs nothing, and land
+  // the honest "auf Anschlag" copy (DE+EN, client auto-retries) instead of a 500 or a
+  // pool-exhausting admit. This is the cheap early gate; startRun re-checks atomically below
+  // to close the microscopic race between this read and the actual slot reservation.
+  const preAdmit = checkAdmission(userId);
+  if (!preAdmit.admitted) {
+    recordAgentRun('admission_rejected', { reason: preAdmit.reason }); // H5 metrics surface
+    c.header('Retry-After', preAdmit.retryAfterSec.toString());
+    return c.json(capacityResponseBody(preAdmit), 429);
+  }
+
   // Mirror the project's real files into the session so the tools see actual code.
   await hydrateSessionFiles(sb, sessionId, session.project_id, userId);
 
@@ -749,13 +773,14 @@ codeSessions.post('/:sessionId/agent', async (c) => {
     projectId: session.project_id,
     meta: { model_slug: modelSlug },
   });
+  recordAgentRun('started'); // H5 metrics surface (in-flight/started vs finished)
 
   // F-40 (U2): start the run DETACHED in the process-level registry. It owns its OWN stop
   // signal (a client disconnect ≠ a user Stop) and a max-runtime guard, so leaving the tab
   // no longer kills the run. Every emitted event flows through the registry's one path
   // (ring → durable event log → live subscribers) — the same path this request streams
   // below and a returning client re-attaches to.
-  startRun<RunResult>({
+  const admission = startRun<RunResult>({
     runId: runKey,
     userId,
     projectId: session.project_id,
@@ -821,6 +846,7 @@ codeSessions.post('/:sessionId/agent', async (c) => {
           duration_ms: Date.now() - runStartedAt,
         },
       });
+      recordAgentRun('finished', { outcome: result.outcome }); // H5 metrics (success rate)
 
       // A-5 / F-40 U5: "dein Ping vom Strand" — push the run outcome (or the verified live
       // URL) to the user's devices. Fire ONLY when NO client was attached at completion: a
@@ -852,9 +878,21 @@ codeSessions.post('/:sessionId/agent', async (c) => {
         projectId: session.project_id,
         meta: { status: 'failed', outcome: 'error', duration_ms: Date.now() - runStartedAt },
       });
+      recordAgentRun('finished', { outcome: 'error' }); // H5 metrics (a fatal throw counts as failed)
       logger.warn({ err: safeErrorMessage(err, 'agent run failed'), runId: runKey }, 'agent_run_execute_failed');
     },
   });
+
+  // WAVE-H · H4: the atomic backstop. The early pre-check above handles ~every rejection
+  // cheaply, but two requests from the same user in the same microsecond can both pass it;
+  // startRun's own gate is authoritative and one of them comes back rejected here. Rare, but
+  // handled honestly (429 + "auf Anschlag") rather than admitted past the cap. The already-
+  // created run row has no events and is reaped by the staleness filter (run-store).
+  if (!admission.admitted) {
+    recordAgentRun('admission_rejected', { reason: admission.reason }); // H5 metrics surface
+    c.header('Retry-After', admission.retryAfterSec.toString());
+    return c.json(capacityResponseBody(admission), 429);
+  }
 
   // Attach THIS request as a subscriber and stream the run's events. A disconnect ends
   // this stream (c.req.raw.signal) but not the run — that is the whole point.

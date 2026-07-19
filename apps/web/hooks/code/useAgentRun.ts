@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { apiStream, apiStreamGet, API_URL, getAuthHeaders } from '@/lib/api';
+import { apiStream, apiStreamGet, API_URL, getAuthHeaders, type StreamError } from '@/lib/api';
 import { friendlyError } from '@/lib/friendly-error';
+import { readLang } from '@/lib/use-lang';
+import {
+  isAtCapacity, capacityWaitMs, capacityWaitingCopy, capacityGaveUpCopy, MAX_CAPACITY_RETRIES,
+} from '@/lib/agent-capacity';
 
 /**
  * A-6: fetch a run's persisted report card. After a stop mid-run the SSE closes before the
@@ -138,12 +142,36 @@ export function useAgentRun(sessionId: string | null) {
     abortRef.current = new AbortController();
 
     try {
-      await apiStream(
-        `/api/code-sessions/${sessionId}/agent`,
-        { prompt, modelId, confirmPublish: opts?.confirmPublish === true },
-        processFrame,
-        abortRef.current.signal,
-      );
+      // WAVE-H · H4: the server sheds a run at the concurrency cap with 429
+      // `agent_at_capacity` (never a 500). Honest UX: show the calm "auf Anschlag" line in
+      // the user's language and auto-retry after the server's Retry-After — the run is
+      // deferred, not lost, so the copy is truthful. Bounded; then surface an honest
+      // "still busy". An explicit Stop (abort) breaks the wait immediately.
+      for (let attempt = 0; ; attempt++) {
+        try {
+          await apiStream(
+            `/api/code-sessions/${sessionId}/agent`,
+            { prompt, modelId, confirmPublish: opts?.confirmPublish === true },
+            processFrame,
+            abortRef.current.signal,
+          );
+          break; // ran to completion
+        } catch (inner) {
+          if (!isAtCapacity(inner)) throw inner;
+          if (abortRef.current?.signal.aborted) { setStreaming(false); return; }
+          if (attempt >= MAX_CAPACITY_RETRIES) {
+            setError(capacityGaveUpCopy(readLang()));
+            setStreaming(false);
+            return;
+          }
+          const se = inner as StreamError;
+          setError(null);
+          setNarration(capacityWaitingCopy(readLang(), se.reason));
+          await new Promise((r) => setTimeout(r, capacityWaitMs(se.retryAfterSeconds)));
+          if (abortRef.current?.signal.aborted) { setStreaming(false); return; }
+          setNarration('');
+        }
+      }
       setStreaming(false);
       await opts?.onDone?.(reportRef.current);
     } catch (e) {
