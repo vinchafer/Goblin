@@ -136,4 +136,55 @@ describe('derivePlanTruth', () => {
     expect(t.hasAccess).toBe(true);
     expect(t.endsAt).toBe(future);
   });
+
+  // --- LAUNCH-ASSIST U2: promo comp with expiry (comped_until) ---
+
+  it('permanent comp (comped_until NULL/undefined) → still comped, no end date', () => {
+    expect(derivePlanTruth({ is_comped: true }, NOW).state).toBe('comped');
+    const t = derivePlanTruth({ is_comped: true, comped_until: null }, NOW);
+    expect(t.state).toBe('comped');
+    expect(t.allowanceKey).toBe('power');
+    expect(t.endsAt).toBeNull();
+  });
+
+  it('promo comp not yet expired → comped (top allowance), exposes the end date', () => {
+    const t = derivePlanTruth({ is_comped: true, comped_until: future }, NOW);
+    expect(t.state).toBe('comped');
+    expect(t.allowanceKey).toBe('power');
+    expect(t.hasAccess).toBe(true);
+    expect(t.endsAt).toBe(future);
+  });
+
+  it('EXPIRED promo comp → degrades honestly to none (no access), not comped', () => {
+    const t = derivePlanTruth({ is_comped: true, comped_until: past, plan: 'none' }, NOW);
+    expect(t.state).toBe('none');
+    expect(t.hasAccess).toBe(false);
+    expect(t.allowanceKey).toBe('none');
+  });
+
+  it('EXPIRED promo comp but user later SUBSCRIBED → paid wins (never stuck comped)', () => {
+    const t = derivePlanTruth({
+      is_comped: true, comped_until: past, stripe_subscription_id: 'sub_1', plan: 'pro',
+    }, NOW);
+    expect(t.state).toBe('paid');
+    expect(t.allowanceKey).toBe('pro');
+    expect(t.hasAccess).toBe(true);
+  });
+
+  it('active promo comp takes precedence over a subscription (comp is checked first)', () => {
+    const t = derivePlanTruth({
+      is_comped: true, comped_until: future, stripe_subscription_id: 'sub_1', plan: 'pro',
+    }, NOW);
+    expect(t.state).toBe('comped');
+    expect(t.allowanceKey).toBe('power');
+  });
+
+  it('expired promo comp with a still-valid trial date → falls through to trial', () => {
+    const t = derivePlanTruth({
+      is_comped: true, comped_until: past, plan: 'none',
+      trial_consumed_at: null, cloud_trial_ends_at: future,
+    }, NOW);
+    expect(t.state).toBe('trial');
+    expect(t.hasAccess).toBe(true);
+  });
 });

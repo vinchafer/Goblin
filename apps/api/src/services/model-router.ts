@@ -18,6 +18,7 @@ import {
 import { decryptData, decryptUserData } from './encryption';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { derivePlanTruth } from '../lib/plan-truth';
+import { withCompExpiry } from '../lib/comp-expiry';
 import { PROVIDERS, PROVIDER_BASE_URLS, type ProviderId } from '../config/providers';
 import { GoblinError, isGoblinError, litellmStream } from './litellm-client';
 import { formatTokenDisplay } from '../config/pricing';
@@ -258,7 +259,11 @@ async function getUserPlanAndLang(
     const lang = row?.preferred_lang === 'en' ? 'en' : 'de';
     // Allowance must follow the DERIVED entitlement, not the raw `plan` column —
     // a default user (plan='build', no sub) must resolve to trial-level, not 17.4M.
-    const plan = derivePlanTruth(row).allowanceKey;
+    // For a comped user, a best-effort comped_until read (pre-migration tolerant,
+    // only for is_comped rows) makes an EXPIRED promo drop from 'power' allowance to
+    // 'none' on the next call — the honest degradation at expiry.
+    const rowWithExpiry = await withCompExpiry(sb, userId, row);
+    const plan = derivePlanTruth(rowWithExpiry).allowanceKey;
     return { plan, lang };
   } catch {
     return { plan: '', lang: 'de' };

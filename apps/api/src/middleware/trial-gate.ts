@@ -1,6 +1,7 @@
 import { createMiddleware } from 'hono/factory';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { derivePlanTruth } from '../lib/plan-truth';
+import { withCompExpiry } from '../lib/comp-expiry';
 
 export const TRIAL_DAYS = 7;
 
@@ -27,6 +28,9 @@ const SKIP_PATHS = [
   '/api/templates',
   '/api/rankings',
   '/api/account',
+  // Promo redemption is how a no-plan user GETS a plan — it must never be paywalled,
+  // and it costs Goblin nothing (no AI). Mirrors '/api/account/redeem-invite'.
+  '/api/promo',
   '/api/auth',
   '/api/shared',
   '/api/investor', // investor-gated, server-to-server; has its own shared-secret auth
@@ -98,7 +102,10 @@ export const trialGate = createMiddleware(async (c, next) => {
   // Canonical entitlement (comped | paid | active-trial) — derived, never the raw
   // `plan` column. 'build'-default users no longer pass (the old PAID_PLANS check
   // counted 'build' and let every default user bypass the gate forever).
-  const truth = derivePlanTruth(user);
+  // A comped user gets a best-effort comped_until read (only for is_comped rows, and
+  // pre-migration tolerant) so an EXPIRED promo degrades to the paywall here too.
+  const userWithExpiry = await withCompExpiry(supabase, userId, user);
+  const truth = derivePlanTruth(userWithExpiry);
   if (truth.hasAccess) return next();
 
   // No access. The user must ACTIVELY choose a trial or subscribe (no silent
