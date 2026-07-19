@@ -62,3 +62,71 @@ export function showNativeInstallButton(platform: InstallPlatform, hasDeferredPr
   if (platform === 'ios') return false; // no phantom install button on iOS, ever
   return hasDeferredPrompt;
 }
+
+// ── LAUNCH-ASSIST U1: the prominent landing-page install block ──────────────────
+// The dashboard hint (above) only covers phones (ios/android). The landing block
+// does the MAXIMUM each platform allows, so it needs a finer read: on DESKTOP it
+// must tell Chromium (real install prompt), macOS Safari (Dock hint), and
+// Firefox/other (honest "no install, works in the tab") apart. These extra
+// classifiers are additive and pure — the dashboard hint and its detection above
+// are untouched.
+
+export type BrowserFamily = 'chromium' | 'safari' | 'firefox' | 'other';
+
+/**
+ * The install affordance to render on the landing block:
+ *   installed     → already a PWA; render nothing
+ *   ios-share     → iPhone/iPad Safari: the honest two-step Share instruction (no button)
+ *   prompt        → Chromium (Android/Desktop/Edge): a REAL button IF beforeinstallprompt
+ *                   fired, otherwise an honest fallback line
+ *   macos-safari  → macOS Safari: the "Ablage → Zum Dock hinzufügen" instruction
+ *   unsupported   → Firefox / anything without an install path: honest one-liner
+ */
+export type LandingInstallMode = 'installed' | 'ios-share' | 'prompt' | 'macos-safari' | 'unsupported';
+
+/**
+ * Pure UA → browser family. Order matters: a Chrome UA also contains the token
+ * "Safari", and an Edge UA contains "Chrome", so the most specific tokens are
+ * tested first (Firefox → Edge/Opera → Chrome → Safari → other).
+ */
+export function browserFamilyFromUA(ua: string): BrowserFamily {
+  const s = ua.toLowerCase();
+  if (/firefox|fxios/.test(s)) return 'firefox';
+  if (/edg\//.test(s)) return 'chromium';        // Edge (Chromium-based)
+  if (/opr\/|opera/.test(s)) return 'chromium';  // Opera (Chromium-based)
+  if (/chrome|chromium|crios/.test(s)) return 'chromium';
+  if (/safari/.test(s)) return 'safari';
+  return 'other';
+}
+
+/** Pure UA → is this a macOS desktop? (iPadOS is already reclassified to 'ios'.) */
+export function isMacOsUA(ua: string): boolean {
+  return /macintosh|mac os x/i.test(ua);
+}
+
+/**
+ * Resolve which landing affordance to show from the already-detected platform,
+ * browser family and OS. Independent of the deferred prompt: within 'prompt' the
+ * component still uses `showNativeInstallButton` to decide button vs honest
+ * fallback line, so no phantom button is ever shown.
+ */
+export function resolveLandingInstallMode(
+  platform: InstallPlatform,
+  browser: BrowserFamily,
+  isMac: boolean,
+): LandingInstallMode {
+  if (platform === 'installed') return 'installed';
+  if (platform === 'ios') return 'ios-share';
+  if (platform === 'android') return 'prompt'; // Chromium Android fires beforeinstallprompt
+  // desktop:
+  if (browser === 'chromium') return 'prompt'; // Chrome / Edge / Opera desktop
+  if (browser === 'safari' && isMac) return 'macos-safari';
+  return 'unsupported'; // Firefox, or any desktop browser with no install path
+}
+
+/** Compose the full landing detection from a window (thin wrapper over the pure fns). */
+export function detectLandingInstallMode(win: Window = window): LandingInstallMode {
+  const platform = detectInstallPlatform(win);
+  const ua = win.navigator?.userAgent || '';
+  return resolveLandingInstallMode(platform, browserFamilyFromUA(ua), isMacOsUA(ua));
+}
