@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { settle } from '@/lib/admin/settle';
 
 export const dynamic = 'force-dynamic';
 
@@ -87,18 +88,29 @@ function Dot({ ok }: { ok: boolean }) {
   return <span style={{ width: 8, height: 8, borderRadius: '50%', background: ok ? 'var(--success)' : 'var(--danger)', display: 'inline-block', marginRight: 6 }} />;
 }
 
+type RecentError = { id: string; status: string; error_message?: string | null; created_at: string };
+
 export default async function AdminHealthPage() {
   const supabase = await createClient();
 
+  // U5.5: settle every fetch so one failing query can't reject the whole
+  // Promise.all and crash SSR. A failed section degrades to an honest
+  // "unavailable" note instead of blanking the page.
   const [dbStats, apiHealth, recentErrors, trialStats] = await Promise.all([
-    getDbStats(supabase),
-    getApiHealth(),
-    getRecentErrors(supabase),
-    getTrialStats(supabase),
+    settle(() => getDbStats(supabase), { users: 0, projects: 0, messages: 0 }),
+    settle(() => getApiHealth(), null),
+    settle(() => getRecentErrors(supabase), [] as RecentError[]),
+    settle(() => getTrialStats(supabase), { active: 0, expired: 0, converted: 0 }),
   ]);
+
+  const db = dbStats.data;
+  const api = apiHealth.data;
+  const errors = recentErrors.data;
+  const trials = trialStats.data;
 
   const webCommit = process.env.VERCEL_GIT_COMMIT_SHA || process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA || 'local';
   const webVersion = process.env.npm_package_version || '—';
+  const UNAVAIL = { marginTop: 4, fontSize: 'var(--t-caption-fs)', color: 'var(--danger)', fontFamily: 'var(--font-sans)', fontStyle: 'italic' } as const;
 
   return (
     <div style={{ maxWidth: 800 }}>
@@ -112,8 +124,8 @@ export default async function AdminHealthPage() {
         <div style={ROW}>
           <span style={LABEL}>API</span>
           <span style={VALUE}>
-            <Dot ok={!!apiHealth} />
-            {apiHealth ? `v${apiHealth.version ?? '?'} · ${(apiHealth.gitCommit ?? 'unknown').slice(0, 7)}` : 'Unreachable'}
+            <Dot ok={!!api} />
+            {api ? `v${api.version ?? '?'} · ${(api.gitCommit ?? 'unknown').slice(0, 7)}` : 'Unreachable'}
           </span>
         </div>
         <div style={ROW}>
@@ -123,11 +135,11 @@ export default async function AdminHealthPage() {
             v{webVersion} · {webCommit.slice(0, 7)}
           </span>
         </div>
-        {apiHealth?.gitCommit && webCommit !== 'local' && (
-          <div style={{ marginTop: 10, fontSize: 'var(--t-caption-fs)', color: apiHealth.gitCommit.slice(0, 7) === webCommit.slice(0, 7) ? 'var(--success)' : 'var(--danger)', fontFamily: 'var(--font-sans)' }}>
-            {apiHealth.gitCommit.slice(0, 7) === webCommit.slice(0, 7)
+        {api?.gitCommit && webCommit !== 'local' && (
+          <div style={{ marginTop: 10, fontSize: 'var(--t-caption-fs)', color: api.gitCommit.slice(0, 7) === webCommit.slice(0, 7) ? 'var(--success)' : 'var(--danger)', fontFamily: 'var(--font-sans)' }}>
+            {api.gitCommit.slice(0, 7) === webCommit.slice(0, 7)
               ? 'Commits in sync'
-              : `Commits differ — API: ${apiHealth.gitCommit.slice(0, 7)}, Web: ${webCommit.slice(0, 7)}`}
+              : `Commits differ — API: ${api.gitCommit.slice(0, 7)}, Web: ${webCommit.slice(0, 7)}`}
           </div>
         )}
       </div>
@@ -135,12 +147,13 @@ export default async function AdminHealthPage() {
       {/* DB Stats */}
       <div style={CARD}>
         <h2 style={H2}>Database</h2>
-        {([['Users', dbStats.users], ['Projects', dbStats.projects], ['Chat messages', dbStats.messages]] as [string, number][]).map(([label, count]) => (
+        {([['Users', db.users], ['Projects', db.projects], ['Chat messages', db.messages]] as [string, number][]).map(([label, count]) => (
           <div key={label} style={ROW}>
             <span style={LABEL}>{label}</span>
-            <span style={VALUE}>{count.toLocaleString()}</span>
+            <span style={VALUE}>{dbStats.ok ? count.toLocaleString() : '—'}</span>
           </div>
         ))}
+        {!dbStats.ok && <div style={UNAVAIL}>Database stats unavailable — the query failed. Counts shown as —.</div>}
       </div>
 
       {/* Trial Stats */}
@@ -148,21 +161,22 @@ export default async function AdminHealthPage() {
         <h2 style={H2}>Trial Funnel</h2>
         <div style={ROW}>
           <span style={LABEL}>Active trials</span>
-          <span style={{ ...VALUE, color: 'var(--brand-green)' }}>{trialStats.active.toLocaleString()}</span>
+          <span style={{ ...VALUE, color: 'var(--brand-green)' }}>{trialStats.ok ? trials.active.toLocaleString() : '—'}</span>
         </div>
         <div style={ROW}>
           <span style={LABEL}>Expired (not converted)</span>
-          <span style={{ ...VALUE, color: 'var(--meta)' }}>{trialStats.expired.toLocaleString()}</span>
+          <span style={{ ...VALUE, color: 'var(--meta)' }}>{trialStats.ok ? trials.expired.toLocaleString() : '—'}</span>
         </div>
         <div style={ROW}>
           <span style={LABEL}>Converted to Pro</span>
-          <span style={{ ...VALUE, color: 'var(--success)' }}>{trialStats.converted.toLocaleString()}</span>
+          <span style={{ ...VALUE, color: 'var(--success)' }}>{trialStats.ok ? trials.converted.toLocaleString() : '—'}</span>
         </div>
-        {(trialStats.expired + trialStats.converted) > 0 && (
+        {trialStats.ok && (trials.expired + trials.converted) > 0 && (
           <div style={{ marginTop: 10, fontSize: 'var(--t-caption-fs)', color: 'var(--meta)', fontFamily: 'var(--font-sans)' }}>
-            Conversion rate: {Math.round(trialStats.converted / (trialStats.expired + trialStats.converted) * 100)}%
+            Conversion rate: {Math.round(trials.converted / (trials.expired + trials.converted) * 100)}%
           </div>
         )}
+        {!trialStats.ok && <div style={UNAVAIL}>Trial funnel unavailable — the query failed.</div>}
       </div>
 
       {/* Env Vars */}
@@ -184,10 +198,12 @@ export default async function AdminHealthPage() {
       {/* Recent Errors */}
       <div style={CARD}>
         <h2 style={H2}>Recent Errors (agent_runs)</h2>
-        {recentErrors.length === 0 ? (
+        {!recentErrors.ok ? (
+          <p style={UNAVAIL}>Recent errors unavailable — the query failed.</p>
+        ) : errors.length === 0 ? (
           <p style={{ fontSize: 13, color: 'var(--meta)', fontStyle: 'italic' }}>No failed runs.</p>
         ) : (
-          recentErrors.map((r: { id: string; status: string; error_message?: string | null; created_at: string }) => (
+          errors.map((r: RecentError) => (
             <div key={r.id} style={{ ...ROW, flexDirection: 'column', alignItems: 'flex-start', gap: 4 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontSize: 10, fontWeight: 700, background: 'rgba(184,92,60,0.1)', color: 'var(--danger)', padding: '1px 6px', borderRadius: 3, fontFamily: 'var(--font-sans)' }}>FAILED</span>
