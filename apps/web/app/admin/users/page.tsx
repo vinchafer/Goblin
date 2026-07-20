@@ -2,9 +2,11 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { readMutationError } from '@/lib/admin/mutation-error';
+import { hasNextPage, hasPrevPage } from '@/lib/admin/pagination';
 
 // Admin calls go through /api/admin proxy (server-side key injection, is_admin check)
 const ADMIN_BASE = '/api/admin';
+const PAGE_SIZE = 20;
 
 function adminHeaders() {
   return { 'Content-Type': 'application/json' };
@@ -58,7 +60,7 @@ export default function AdminUsersPage() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const params = new URLSearchParams({ page: String(page), limit: '20' });
+    const params = new URLSearchParams({ page: String(page), limit: String(PAGE_SIZE) });
     if (search) params.set('search', search);
     const [usersRes, statsRes] = await Promise.all([
       fetch(`${ADMIN_BASE}/users?${params}`, { headers: adminHeaders() }),
@@ -105,9 +107,11 @@ export default function AdminUsersPage() {
     }
   };
 
-  const filteredUsers = users.filter(u =>
-    !search || u.email?.toLowerCase().includes(search.toLowerCase())
-  );
+  // U5.2: the server already applied ?search=, so a second client-side filter
+  // was redundant AND broke pagination (it drove "Next" off the re-filtered
+  // count). Render the server page as-is; paginate on the raw page fill.
+  const nextEnabled = hasNextPage(users.length, PAGE_SIZE);
+  const prevEnabled = hasPrevPage(page);
 
   return (
     <div>
@@ -178,7 +182,7 @@ export default function AdminUsersPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredUsers.map(u => (
+                {users.map(u => (
                   <tr key={u.id} style={{ borderBottom: '1px solid var(--div)' }}>
                     <td style={{ padding: '10px 12px', color: 'var(--text)' }}>{u.email}</td>
                     <td style={{ padding: '10px 12px' }}>
@@ -225,13 +229,13 @@ export default function AdminUsersPage() {
 
         {/* Pagination */}
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 16, alignItems: 'center' }}>
-          <button disabled={page <= 1} onClick={() => setPage(p => p - 1)}
-            style={{ background: 'var(--subtle)', border: '1px solid var(--border)', borderRadius: 6, padding: '5px 12px', fontSize: 'var(--t-caption-fs)', cursor: page > 1 ? 'pointer' : 'not-allowed', color: 'var(--text)', opacity: page <= 1 ? 0.4 : 1 }}>
+          <button disabled={!prevEnabled} onClick={() => setPage(p => p - 1)}
+            style={{ background: 'var(--subtle)', border: '1px solid var(--border)', borderRadius: 6, padding: '5px 12px', fontSize: 'var(--t-caption-fs)', cursor: prevEnabled ? 'pointer' : 'not-allowed', color: 'var(--text)', opacity: prevEnabled ? 1 : 0.4 }}>
             ← Prev
           </button>
           <span style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--meta)' }}>Page {page}</span>
-          <button disabled={filteredUsers.length < 20} onClick={() => setPage(p => p + 1)}
-            style={{ background: 'var(--subtle)', border: '1px solid var(--border)', borderRadius: 6, padding: '5px 12px', fontSize: 'var(--t-caption-fs)', cursor: filteredUsers.length >= 20 ? 'pointer' : 'not-allowed', color: 'var(--text)', opacity: filteredUsers.length < 20 ? 0.4 : 1 }}>
+          <button disabled={!nextEnabled} onClick={() => setPage(p => p + 1)}
+            style={{ background: 'var(--subtle)', border: '1px solid var(--border)', borderRadius: 6, padding: '5px 12px', fontSize: 'var(--t-caption-fs)', cursor: nextEnabled ? 'pointer' : 'not-allowed', color: 'var(--text)', opacity: nextEnabled ? 1 : 0.4 }}>
             Next →
           </button>
         </div>
