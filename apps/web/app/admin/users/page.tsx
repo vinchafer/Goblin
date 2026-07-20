@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { readMutationError } from '@/lib/admin/mutation-error';
 
 // Admin calls go through /api/admin proxy (server-side key injection, is_admin check)
 const ADMIN_BASE = '/api/admin';
@@ -38,6 +39,13 @@ const PLAN_BADGE: Record<string, string> = {
   build: '#92701a', pro: 'var(--brand-green)', power: '#1a2d5a',
 };
 
+// U5.1: shared honest-error banner style (danger tint, readable in both themes).
+const ERR_BANNER: React.CSSProperties = {
+  background: 'rgba(176,67,42,0.10)', border: '1px solid var(--danger)',
+  color: 'var(--danger)', borderRadius: 8, padding: '10px 14px', marginBottom: 16,
+  fontSize: 13, fontFamily: 'var(--font-sans)', fontWeight: 500,
+};
+
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -46,6 +54,7 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [mutError, setMutError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -62,26 +71,37 @@ export default function AdminUsersPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  // U5.1: check the response and surface a failure honestly instead of silently
+  // closing the modal + reloading as if the mutation succeeded. On error the
+  // modal stays open so the founder sees the message in context.
   const handleAction = async (userId: string, action: string, value?: unknown) => {
     setActionLoading(userId + action);
+    setMutError(null);
     try {
+      let res: Response | null = null;
       if (action === 'delete') {
-        await fetch(`${ADMIN_BASE}/users/${userId}`, { method: 'DELETE', headers: adminHeaders() });
+        res = await fetch(`${ADMIN_BASE}/users/${userId}`, { method: 'DELETE', headers: adminHeaders() });
       } else if (action === 'suspend') {
-        await fetch(`${ADMIN_BASE}/users/${userId}`, {
+        res = await fetch(`${ADMIN_BASE}/users/${userId}`, {
           method: 'PATCH', headers: adminHeaders(),
           body: JSON.stringify({ is_suspended: value }),
         });
       } else if (action === 'plan') {
-        await fetch(`${ADMIN_BASE}/users/${userId}`, {
+        res = await fetch(`${ADMIN_BASE}/users/${userId}`, {
           method: 'PATCH', headers: adminHeaders(),
           body: JSON.stringify({ plan: value }),
         });
       }
+      if (res) {
+        const err = await readMutationError(res, 'en');
+        if (err) { setMutError(err); return; }
+      }
       load();
+      setSelectedUser(null);
+    } catch {
+      setMutError('Action failed — network error. Please try again.');
     } finally {
       setActionLoading(null);
-      setSelectedUser(null);
     }
   };
 
@@ -94,6 +114,11 @@ export default function AdminUsersPage() {
       <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 26, color: 'var(--brand-green)', fontWeight: 700, letterSpacing: '-0.6px', marginBottom: 24 }}>
         Users
       </h1>
+
+      {/* U5.1: honest, visible error state — only shown when a mutation fails. */}
+      {mutError && !selectedUser && (
+        <div role="alert" style={ERR_BANNER}>{mutError}</div>
+      )}
 
       {/* Stats — U4c: responsive stat grid (was fixed repeat(4,1fr) → overflowed at
           375px). auto-fit wraps to 2×2 / 1-col on a phone; MRR is guarded so a
@@ -177,7 +202,7 @@ export default function AdminUsersPage() {
                     <td style={{ padding: '10px 12px' }}>
                       <div style={{ display: 'flex', gap: 6 }}>
                         <button
-                          onClick={() => setSelectedUser(u)}
+                          onClick={() => { setMutError(null); setSelectedUser(u); }}
                           style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px', fontSize: 'var(--t-caption-fs)', cursor: 'pointer', color: 'var(--text)', fontFamily: 'var(--font-sans)' }}
                         >
                           Details
@@ -215,7 +240,7 @@ export default function AdminUsersPage() {
       {/* User Detail Modal */}
       {selectedUser && (
         <div
-          onClick={() => setSelectedUser(null)}
+          onClick={() => { setMutError(null); setSelectedUser(null); }}
           style={{
             position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
             backdropFilter: 'blur(4px)', zIndex: 9999,
@@ -234,9 +259,10 @@ export default function AdminUsersPage() {
           >
             <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--div)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: 17, color: 'var(--brand-green)', fontWeight: 700 }}>User Details</h2>
-              <button onClick={() => setSelectedUser(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--meta)', fontSize: 18 }}>✕</button>
+              <button onClick={() => { setMutError(null); setSelectedUser(null); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--meta)', fontSize: 18 }}>✕</button>
             </div>
             <div style={{ padding: '20px 24px' }}>
+              {mutError && <div role="alert" style={ERR_BANNER}>{mutError}</div>}
               {[
                 { label: 'ID',    value: selectedUser.id },
                 { label: 'Email', value: selectedUser.email },

@@ -6,6 +6,7 @@
 // iPhone): a single narrow column, wrapping rows, touch-sized controls, no terminal.
 
 import { useEffect, useState, useCallback } from 'react';
+import { readMutationError } from '@/lib/admin/mutation-error';
 
 const ADMIN_BASE = '/api/admin';
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
@@ -76,10 +77,17 @@ export default function AdminPromoPage() {
   }
 
   async function saveLabel(code: string, label: string) {
-    await fetch(`${ADMIN_BASE}/promo/${encodeURIComponent(code)}`, {
-      method: 'PATCH', headers: JSON_HEADERS, body: JSON.stringify({ label }),
-    });
-    flash('Label gespeichert');
+    // U5.1: only claim success when the save actually succeeded — this used to
+    // flash "Label gespeichert" unconditionally, even on a failed request.
+    try {
+      const res = await fetch(`${ADMIN_BASE}/promo/${encodeURIComponent(code)}`, {
+        method: 'PATCH', headers: JSON_HEADERS, body: JSON.stringify({ label }),
+      });
+      const err = await readMutationError(res, 'de');
+      flash(err ?? 'Label gespeichert');
+    } catch {
+      flash('Label speichern fehlgeschlagen — Netzwerkfehler.');
+    }
   }
 
   async function generate() {

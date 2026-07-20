@@ -1,9 +1,17 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { readMutationError } from '@/lib/admin/mutation-error';
 
 const ADMIN_BASE = '/api/admin';
 const adminHeaders = () => ({ 'Content-Type': 'application/json' });
+
+// U5.1: shared honest-error banner style.
+const ERR_BANNER: React.CSSProperties = {
+  background: 'rgba(176,67,42,0.10)', border: '1px solid var(--danger)',
+  color: 'var(--danger)', borderRadius: 8, padding: '10px 14px', marginBottom: 16,
+  fontSize: 13, fontFamily: 'var(--font-sans)', fontWeight: 500,
+};
 
 interface Model {
   id: string;
@@ -34,6 +42,7 @@ export default function AdminModelsPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState<Omit<Model, 'id'>>(BLANK);
   const [saving, setSaving] = useState(false);
+  const [mutError, setMutError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -52,32 +61,44 @@ export default function AdminModelsPage() {
     setModels(prev => prev.map(x => x.id === m.id ? { ...x, available: !x.available } : x));
   };
 
+  // U5.1: verify the save actually succeeded before closing the modal. On
+  // failure the modal stays open with an honest error, not a false success.
   const handleSave = async () => {
     setSaving(true);
+    setMutError(null);
     const payload = { ...form, tags: Array.isArray(form.tags) ? form.tags : [] };
-    if (editId) {
-      await fetch(`${ADMIN_BASE}/models/${editId}`, {
-        method: 'PATCH', headers: adminHeaders(), body: JSON.stringify(payload),
-      });
-    } else {
-      await fetch(`${ADMIN_BASE}/models`, {
-        method: 'POST', headers: adminHeaders(), body: JSON.stringify(payload),
-      });
+    try {
+      const res = editId
+        ? await fetch(`${ADMIN_BASE}/models/${editId}`, { method: 'PATCH', headers: adminHeaders(), body: JSON.stringify(payload) })
+        : await fetch(`${ADMIN_BASE}/models`, { method: 'POST', headers: adminHeaders(), body: JSON.stringify(payload) });
+      const err = await readMutationError(res, 'en');
+      if (err) { setMutError(err); return; }
+      setShowAdd(false);
+      setEditId(null);
+      setForm(BLANK);
+      load();
+    } catch {
+      setMutError('Save failed — network error. Please try again.');
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
-    setShowAdd(false);
-    setEditId(null);
-    setForm(BLANK);
-    load();
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this model?')) return;
-    await fetch(`${ADMIN_BASE}/models/${id}`, { method: 'DELETE', headers: adminHeaders() });
-    load();
+    setMutError(null);
+    try {
+      const res = await fetch(`${ADMIN_BASE}/models/${id}`, { method: 'DELETE', headers: adminHeaders() });
+      const err = await readMutationError(res, 'en');
+      if (err) { setMutError(err); return; }
+      load();
+    } catch {
+      setMutError('Delete failed — network error. Please try again.');
+    }
   };
 
   const openEdit = (m: Model) => {
+    setMutError(null);
     setEditId(m.id);
     setForm({ name: m.name, slug: m.slug, provider: m.provider, layer: m.layer, description: m.description, tags: m.tags, requires_key: m.requires_key, available: m.available, phase: m.phase });
     setShowAdd(true);
@@ -97,12 +118,18 @@ export default function AdminModelsPage() {
           Models
         </h1>
         <button
-          onClick={() => { setShowAdd(true); setEditId(null); setForm(BLANK); }}
+          onClick={() => { setMutError(null); setShowAdd(true); setEditId(null); setForm(BLANK); }}
           style={{ background: 'var(--brand-green)', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 18px', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}
         >
           + Add Model
         </button>
       </div>
+
+      {/* U5.1: honest error surface — shown on the list when a mutation fails
+          outside the modal (delete / toggle). */}
+      {mutError && !showAdd && (
+        <div role="alert" style={ERR_BANNER}>{mutError}</div>
+      )}
 
       {/* U4c: overflow-x auto + table min-width so the 6-col table scrolls on a
           phone instead of overflowing the page (it had no wrapper before). */}
@@ -176,6 +203,7 @@ export default function AdminModelsPage() {
               <button onClick={() => setShowAdd(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--meta)', fontSize: 18 }}>✕</button>
             </div>
             <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {mutError && <div role="alert" style={ERR_BANNER}>{mutError}</div>}
               {[
                 { key: 'name', label: 'Name' },
                 { key: 'slug', label: 'Slug' },

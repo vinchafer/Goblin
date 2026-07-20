@@ -1,9 +1,17 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { readMutationError } from '@/lib/admin/mutation-error';
 
 const ADMIN_BASE = '/api/admin';
 const adminHeaders = () => ({ 'Content-Type': 'application/json' });
+
+// U5.1: shared honest-error banner style.
+const ERR_BANNER: React.CSSProperties = {
+  background: 'rgba(176,67,42,0.10)', border: '1px solid var(--danger)',
+  color: 'var(--danger)', borderRadius: 8, padding: '10px 14px', marginBottom: 16,
+  fontSize: 13, fontFamily: 'var(--font-sans)', fontWeight: 500,
+};
 
 interface Incident {
   id: string;
@@ -41,6 +49,7 @@ export default function AdminStatusPage() {
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(BLANK);
   const [saving, setSaving] = useState(false);
+  const [mutError, setMutError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -51,31 +60,43 @@ export default function AdminStatusPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  // U5.1: confirm the write before closing the modal — a failed save used to
+  // close + reload as if the incident was created/updated.
   const handleSave = async () => {
     setSaving(true);
-    if (editId) {
-      await fetch(`${ADMIN_BASE}/incidents/${editId}`, {
-        method: 'PATCH', headers: adminHeaders(), body: JSON.stringify(form),
-      });
-    } else {
-      await fetch(`${ADMIN_BASE}/incidents`, {
-        method: 'POST', headers: adminHeaders(), body: JSON.stringify(form),
-      });
+    setMutError(null);
+    try {
+      const res = editId
+        ? await fetch(`${ADMIN_BASE}/incidents/${editId}`, { method: 'PATCH', headers: adminHeaders(), body: JSON.stringify(form) })
+        : await fetch(`${ADMIN_BASE}/incidents`, { method: 'POST', headers: adminHeaders(), body: JSON.stringify(form) });
+      const err = await readMutationError(res, 'en');
+      if (err) { setMutError(err); return; }
+      setShowNew(false);
+      setEditId(null);
+      setForm(BLANK);
+      load();
+    } catch {
+      setMutError('Save failed — network error. Please try again.');
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
-    setShowNew(false);
-    setEditId(null);
-    setForm(BLANK);
-    load();
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this incident?')) return;
-    await fetch(`${ADMIN_BASE}/incidents/${id}`, { method: 'DELETE', headers: adminHeaders() });
-    load();
+    setMutError(null);
+    try {
+      const res = await fetch(`${ADMIN_BASE}/incidents/${id}`, { method: 'DELETE', headers: adminHeaders() });
+      const err = await readMutationError(res, 'en');
+      if (err) { setMutError(err); return; }
+      load();
+    } catch {
+      setMutError('Delete failed — network error. Please try again.');
+    }
   };
 
   const openEdit = (inc: Incident) => {
+    setMutError(null);
     setEditId(inc.id);
     setForm({ title: inc.title, status: inc.status, severity: inc.severity, description: inc.description || '' });
     setShowNew(true);
@@ -98,12 +119,17 @@ export default function AdminStatusPage() {
           Status Incidents
         </h1>
         <button
-          onClick={() => { setShowNew(true); setEditId(null); setForm(BLANK); }}
+          onClick={() => { setMutError(null); setShowNew(true); setEditId(null); setForm(BLANK); }}
           style={{ background: 'var(--brand-green)', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 18px', fontSize: 13, fontWeight: 500, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}
         >
           + New Incident
         </button>
       </div>
+
+      {/* U5.1: honest error surface for list-level failures (delete). */}
+      {mutError && !showNew && (
+        <div role="alert" style={ERR_BANNER}>{mutError}</div>
+      )}
 
       {loading ? (
         <div style={{ color: 'var(--meta)', padding: 32, textAlign: 'center' }}>Loading…</div>
@@ -139,6 +165,7 @@ export default function AdminStatusPage() {
               <button onClick={() => setShowNew(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--meta)', fontSize: 18 }}>✕</button>
             </div>
             <div style={{ padding: '20px 24px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {mutError && <div role="alert" style={ERR_BANNER}>{mutError}</div>}
               <div>
                 <label style={{ fontSize: 'var(--t-caption-fs)', color: 'var(--meta)', display: 'block', marginBottom: 4 }}>Title</label>
                 <input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} style={FIELD_STYLE} placeholder="e.g. API latency elevated" />
