@@ -144,7 +144,7 @@ export default function AdminCatalogPage() {
                 <span style={{ width: 8, height: 8, borderRadius: '50%', background: STATE_COLOR[h.state] ?? 'var(--meta)' }} />
                 <strong style={{ color: 'var(--text)', minWidth: 90 }}>{h.provider}</strong>
                 <span style={{ color: STATE_COLOR[h.state] ?? 'var(--meta)', fontWeight: 600 }}>{h.state}</span>
-                <span style={{ color: 'var(--meta)' }}>· err {(h.errorRate * 100).toFixed(0)}% · n={h.volume}</span>
+                <span style={{ color: 'var(--meta)' }}>· err {((h.errorRate ?? 0) * 100).toFixed(0)}% · n={h.volume}</span>
               </div>
             ))}
           </div>
@@ -167,7 +167,9 @@ export default function AdminCatalogPage() {
         {data.recentSyncLog.length === 0 ? (
           <div style={{ fontSize: 13, color: 'var(--meta)' }}>Noch keine Einträge.</div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, fontFamily: 'var(--font-sans)' }}>
+          // U4c: overflow-x auto so the 5-col sync-log scrolls on a phone.
+          <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', minWidth: 520, borderCollapse: 'collapse', fontSize: 12, fontFamily: 'var(--font-sans)' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid var(--div)' }}>
                 {['Zeit', 'Quelle', 'Neu', 'Validiert', 'Ungültig'].map((h) => (
@@ -187,6 +189,7 @@ export default function AdminCatalogPage() {
               ))}
             </tbody>
           </table>
+          </div>
         )}
       </Card>
     </div>

@@ -43,8 +43,11 @@ export default async function AdminCostsPage() {
     );
   }
 
+  // U4c: guard the numeric renders — a partial API payload (null cost/tokens)
+  // used to throw at `.toFixed`/`.toLocaleString` and blank the whole SSR page.
+  const totalCost = data.total_cost_usd ?? 0;
   const avg = data.total_completions > 0
-    ? (data.total_cost_usd / data.total_completions).toFixed(4)
+    ? (totalCost / data.total_completions).toFixed(4)
     : '—';
 
   return (
@@ -61,7 +64,7 @@ export default async function AdminCostsPage() {
       </p>
 
       <div style={{ display: 'flex', gap: 16, marginBottom: 32, flexWrap: 'wrap' }}>
-        <StatCard label="Total Spend" value={`$${data.total_cost_usd.toFixed(2)}`} />
+        <StatCard label="Total Spend" value={`$${totalCost.toFixed(2)}`} />
         <StatCard label="Completions" value={String(data.total_completions)} />
         <StatCard label="Ø Cost / Completion" value={avg === '—' ? '—' : `$${avg}`} />
       </div>
@@ -70,26 +73,29 @@ export default async function AdminCostsPage() {
       {data.by_provider.length === 0 ? (
         <p style={{ color: 'var(--text-meta)' }}>Keine Daten in den letzten 30 Tagen.</p>
       ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
-              <th style={cellStyle(true)}>Provider</th>
-              <th style={cellStyle(true)}>Cost</th>
-              <th style={cellStyle(true)}>Tokens</th>
-              <th style={cellStyle(true)}>Completions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {[...data.by_provider].sort((a, b) => b.cost_usd - a.cost_usd).map((p) => (
-              <tr key={p.provider} style={{ borderBottom: '1px solid var(--border-hairline)' }}>
-                <td style={cellStyle(false)}>{p.provider}</td>
-                <td style={cellStyle(false)}>${p.cost_usd.toFixed(4)}</td>
-                <td style={cellStyle(false)}>{p.tokens.toLocaleString('de-DE')}</td>
-                <td style={cellStyle(false)}>{p.completions}</td>
+        // U4c: overflow-x auto so the 4-col table scrolls on a phone.
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', minWidth: 460, borderCollapse: 'collapse' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
+                <th style={cellStyle(true)}>Provider</th>
+                <th style={cellStyle(true)}>Cost</th>
+                <th style={cellStyle(true)}>Tokens</th>
+                <th style={cellStyle(true)}>Completions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {[...data.by_provider].sort((a, b) => (b.cost_usd ?? 0) - (a.cost_usd ?? 0)).map((p) => (
+                <tr key={p.provider} style={{ borderBottom: '1px solid var(--border-hairline)' }}>
+                  <td style={cellStyle(false)}>{p.provider}</td>
+                  <td style={cellStyle(false)}>${(p.cost_usd ?? 0).toFixed(4)}</td>
+                  <td style={cellStyle(false)}>{(p.tokens ?? 0).toLocaleString('de-DE')}</td>
+                  <td style={cellStyle(false)}>{p.completions}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );
