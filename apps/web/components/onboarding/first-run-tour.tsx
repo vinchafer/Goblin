@@ -75,14 +75,21 @@ export function FirstRunTour({ onDone }: FirstRunTourProps) {
         }}
       />
 
-      {/* Tour card */}
+      {/* Tour card — FOUNDER-WALK-2 U3: the card previously hard-coded #fff (a
+          LOCKED light anchor that never flips), so in dark mode its flip-aware
+          text tokens (--text/--meta) turned light on a white card → the title
+          rendered pale-on-pale (the founder's unreadable "Vom Chat in den Code").
+          The design-system-consistent fix is the app's own convention: use the
+          flip-aware raised-panel surface so SURFACE + TEXT flip together (light
+          #FFFFFF / dark #08170F), with a flip-aware hairline for definition. */}
       <div
         style={{
           position: 'fixed',
           bottom: 80, left: '50%',
           transform: 'translateX(-50%)',
           zIndex: 1001,
-          background: '#fff',
+          background: 'var(--panel)',
+          border: '1px solid var(--border)',
           borderRadius: 16,
           padding: '20px 24px',
           width: 'min(360px, calc(100vw - 32px))',
@@ -113,7 +120,10 @@ export function FirstRunTour({ onDone }: FirstRunTourProps) {
           {steps.map((_, i) => (
             <div key={i} style={{
               height: 4, flex: 1, borderRadius: 2,
-              background: i <= step ? 'var(--brand-green)' : 'var(--div)',
+              // U3: --brand-green (locked deep green) was ~1.6:1 on the dark card
+              // → an invisible progress bar. --brand-fg flips to sage in dark
+              // (~7:1) while staying deep green in light. Track stays --div.
+              background: i <= step ? 'var(--brand-fg)' : 'var(--div)',
               transition: 'background 0.2s',
             }} />
           ))}
@@ -132,8 +142,11 @@ export function FirstRunTour({ onDone }: FirstRunTourProps) {
             onClick={onDone}
             style={{
               background: 'none', border: 'none',
-              color: 'var(--disabled)', fontSize: 'var(--t-caption-fs)', cursor: 'pointer',
-              textDecoration: 'underline', textDecorationColor: 'rgba(0,0,0,0.15)',
+              // U3: --disabled fails AA on BOTH surfaces (#B8A988 ≈ 2:1 on white,
+              // #5A523D ≈ 1.5:1 on the dark card) — and this skip link is a real
+              // control, not a disabled one. --meta clears AA in both modes.
+              color: 'var(--meta)', fontSize: 'var(--t-caption-fs)', cursor: 'pointer',
+              textDecoration: 'underline', textDecorationColor: 'var(--border)',
             }}
           >
             {tc.skip}

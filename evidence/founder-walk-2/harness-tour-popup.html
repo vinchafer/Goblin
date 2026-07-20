@@ -1,0 +1,63 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  /* App tokens (subset) — verbatim resolved values from design-tokens.css. */
+  :root {
+    --panel: #FFFFFF; --border: #D8CBA8; --text: #0F2B1E; --meta: #5F5640;
+    --div: #E8DEC2; --brand-green: #1A3A2A; --brand-gold: #D4A737; --brand-fg: #1A3A2A;
+    --surface-page: #FBF7EC;
+    --t-body-fs: 16px; --t-caption-fs: 12px;
+    --font-sans: -apple-system, system-ui, sans-serif;
+  }
+  :root[data-theme="dark"] {
+    --panel: #08170F; --border: rgba(247,247,236,0.10); --text: #FBF7EC; --meta: #968768;
+    --div: rgba(247,247,236,0.06); --brand-fg: #7FA98A; --surface-page: #133224;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  /* A dashboard-ish backdrop so the card sits over real content, like in-app. */
+  .stage { position: relative; height: 640px; background: var(--surface-page);
+    background-image: linear-gradient(var(--div) 1px, transparent 1px); background-size: 100% 40px; }
+  .backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.35); }
+  .card {
+    position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+    background: var(--panel); border: 1px solid var(--border); border-radius: 16px;
+    padding: 20px 24px; width: min(360px, calc(100vw - 32px));
+    box-shadow: 0 8px 40px rgba(0,0,0,0.18); font-family: var(--font-sans);
+  }
+  .close { position: absolute; top: 12px; right: 12px; width: 28px; height: 28px; border-radius: 50%;
+    background: var(--div); border: none; display: flex; align-items: center; justify-content: center;
+    font-size: var(--t-body-fs); color: var(--meta); line-height: 1; }
+  .dots { display: flex; gap: 6px; margin-bottom: 16px; }
+  .dot { height: 4px; flex: 1; border-radius: 2px; background: var(--div); }
+  .dot.on { background: var(--brand-fg); }
+  .icon { font-size: 28px; margin-bottom: 10px; }
+  h3 { font-size: var(--t-body-fs); font-weight: 700; color: var(--text); margin: 0 0 8px; letter-spacing: -0.3px; }
+  p { font-size: 13px; color: var(--meta); line-height: 1.6; margin: 0 0 20px; }
+  .row { display: flex; align-items: center; justify-content: space-between; }
+  .skip { background: none; border: none; color: var(--meta); font-size: var(--t-caption-fs);
+    text-decoration: underline; text-decoration-color: var(--border); }
+  .next { padding: 9px 20px; background: var(--brand-green); color: var(--brand-gold);
+    border: none; border-radius: 8px; font-size: 13px; font-weight: 600; }
+</style>
+</head>
+<body>
+  <div class="stage">
+    <div class="backdrop"></div>
+    <div class="card">
+      <button class="close">×</button>
+      <div class="dots"><span class="dot on"></span><span class="dot on"></span><span class="dot"></span></div>
+      <div class="icon">✦</div>
+      <h3>Vom Chat in den Code</h3>
+      <p>Bitte Goblin, etwas zu bauen. Gibt es Code aus, bringt [An Code senden] ihn als Entwurf in den Code-Tab — du sicherst und veröffentlichst, wenn du bereit bist.</p>
+      <div class="row">
+        <button class="skip">Tour überspringen</button>
+        <button class="next">Weiter →</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
