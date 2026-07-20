@@ -83,6 +83,19 @@ const standalone = read('components/chat/standalone-chat.tsx');
 check('standalone-chat wrapper does NOT double the composer inset',
   !insetBottom.test(standalone));
 
+// ── FOUNDER-WALK-2 U4 — onboarding footer + tour popup (BOTTOM). The /welcome
+//    footer line (justgoblin.com · SCHRITT x VON y) sat in the home-indicator
+//    zone (founder saw the dark-mode bottom cut here), and the first-run tour
+//    card's bottom must clear the indicator on a standalone PWA. ──
+const onbChrome2 = read('app/welcome/_components/chrome.tsx');
+check('Onboarding footer: bottom inset',
+  /padding-bottom:\s*calc\(18px \+ env\(safe-area-inset-bottom/.test(onbChrome2));
+check('Onboarding footer (≤480px): bottom inset',
+  /padding-bottom:\s*calc\(14px \+ env\(safe-area-inset-bottom/.test(onbChrome2));
+const tour = read('components/onboarding/first-run-tour.tsx');
+check('Tour popup: bottom clears the home indicator',
+  /bottom:\s*'calc\(80px \+ env\(safe-area-inset-bottom/.test(tour));
+
 // ── report ──
 console.log('\nSAFEAREA-U-BOTTOM — bottom-anchored surface assertions\n' + '─'.repeat(56));
 for (const r of results) console.log(`${r.ok ? '  PASS' : '  FAIL'}  ${r.label}`);

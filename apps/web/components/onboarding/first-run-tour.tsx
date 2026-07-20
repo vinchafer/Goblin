@@ -85,7 +85,9 @@ export function FirstRunTour({ onDone }: FirstRunTourProps) {
       <div
         style={{
           position: 'fixed',
-          bottom: 80, left: '50%',
+          // U4 safe-area: on a standalone PWA the card's bottom must clear the
+          // iOS home indicator — add the bottom inset to the 80px offset.
+          bottom: 'calc(80px + env(safe-area-inset-bottom))', left: '50%',
           transform: 'translateX(-50%)',
           zIndex: 1001,
           background: 'var(--panel)',

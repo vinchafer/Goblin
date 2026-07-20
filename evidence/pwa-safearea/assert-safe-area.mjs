@@ -56,6 +56,19 @@ const already = [
 ];
 for (const [label, path, re] of already) check(label, re.test(read(path)));
 
+// ── FOUNDER-WALK-2 U4 — the /welcome onboarding chrome header. This flow was
+//    NEVER covered by #41/#44 (they treated the app shell), so the GOBLIN logo
+//    overlapped the iOS clock and "HILFE" collided with the battery. TOP insets: ─
+const onbChrome = read('app/welcome/_components/chrome.tsx');
+check('Onboarding header: padding-top adds the top inset',
+  /padding-top:\s*calc\(22px \+ env\(safe-area-inset-top/.test(onbChrome));
+check('Onboarding header: left inset (landscape notch)',
+  /padding-left:\s*max\(32px, env\(safe-area-inset-left/.test(onbChrome));
+check('Onboarding header: right inset (landscape notch)',
+  /padding-right:\s*max\(32px, env\(safe-area-inset-right/.test(onbChrome));
+check('Onboarding header (≤480px): top inset',
+  /padding-top:\s*calc\(16px \+ env\(safe-area-inset-top/.test(onbChrome));
+
 // ── report ──
 console.log('\nSAFEAREA-U1 — swept-surface assertions\n' + '─'.repeat(52));
 for (const r of results) console.log(`${r.ok ? '  PASS' : '  FAIL'}  ${r.label}`);

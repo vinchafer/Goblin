@@ -9,7 +9,8 @@ const dir = fileURLToPath(new URL('.', import.meta.url));
 const shots = [
   { file: 'harness-admin-nav.html', name: 'u1-admin-nav', width: 375, height: 200 },
   { file: 'harness-tour-popup.html', name: 'u3-tour-popup', width: 375, height: 640 },
-  { file: 'harness-onboarding-chrome.html', name: 'u4-onboarding', width: 375, height: 720 },
+  // U2 (install note) and U4 (onboarding before/after) use their own param-driven
+  // capture scripts (cap-u2.mjs / cap-u4.mjs) since they vary lang / before-after.
 ];
 
 // The pinned @playwright/test build differs from the pre-installed browser;
