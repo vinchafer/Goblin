@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { readMutationError } from '@/lib/admin/mutation-error';
+import { setAvailability, reconcileToggle } from '@/lib/admin/optimistic-toggle';
 
 const ADMIN_BASE = '/api/admin';
 const adminHeaders = () => ({ 'Content-Type': 'application/json' });
@@ -53,12 +54,28 @@ export default function AdminModelsPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  // U5.3: optimistic flip, then RECONCILE to server truth on failure. The old
+  // code awaited the PATCH and flipped unconditionally, so a failed request left
+  // the UI showing a state the server never accepted (optimistic divergence).
   const toggleAvailable = async (m: Model) => {
-    await fetch(`${ADMIN_BASE}/models/${m.id}`, {
-      method: 'PATCH', headers: adminHeaders(),
-      body: JSON.stringify({ available: !m.available }),
-    });
-    setModels(prev => prev.map(x => x.id === m.id ? { ...x, available: !x.available } : x));
+    const serverValue = m.available;      // known server truth before the flip
+    const target = !serverValue;
+    setMutError(null);
+    setModels(prev => setAvailability(prev, m.id, target)); // optimistic
+    try {
+      const res = await fetch(`${ADMIN_BASE}/models/${m.id}`, {
+        method: 'PATCH', headers: adminHeaders(),
+        body: JSON.stringify({ available: target }),
+      });
+      const err = await readMutationError(res, 'en');
+      if (err) {
+        setModels(prev => reconcileToggle(prev, m.id, serverValue)); // revert
+        setMutError(err);
+      }
+    } catch {
+      setModels(prev => reconcileToggle(prev, m.id, serverValue));   // revert
+      setMutError('Toggle failed — network error. Please try again.');
+    }
   };
 
   // U5.1: verify the save actually succeeded before closing the modal. On
