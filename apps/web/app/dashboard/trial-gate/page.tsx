@@ -11,6 +11,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getAuthHeaders, API_URL, apiGet } from '@/lib/api';
 import { useLang, t } from '@/lib/use-lang';
+import { PromoCodeField } from '@/components/billing/PromoCodeField';
 
 interface TrialInfo {
   trialStatus: 'not_started' | 'active' | 'expired' | 'subscribed' | 'none';
@@ -155,6 +156,18 @@ export default function TrialGatePage() {
           >
             {t(lang, 'Abo abschließen', 'Subscribe')}
           </button>
+        </div>
+
+        {/* FOUNDER-WALK-1 U2: the invite-code entry belongs where the user meets the
+            plan decision, not buried in Settings → Billing. Quiet trigger below the
+            plan options; tapping expands the SAME PromoCodeField (one component, one
+            redemption path, same validation + honest DE/EN errors). The test
+            invitations go out with these codes, so the paywall is exactly where an
+            invited user expects to enter one. Settings/billing entry stays as-is. */}
+        <div style={{ marginTop: 20, display: 'flex', justifyContent: 'center' }}>
+          <PromoCodeField
+            collapsedLabel={{ de: 'Hast du einen Invite-Code?', en: 'Have an invite code?' }}
+          />
         </div>
 
         {error && (
