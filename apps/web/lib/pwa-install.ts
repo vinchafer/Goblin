@@ -130,3 +130,33 @@ export function detectLandingInstallMode(win: Window = window): LandingInstallMo
   const ua = win.navigator?.userAgent || '';
   return resolveLandingInstallMode(platform, browserFamilyFromUA(ua), isMacOsUA(ua));
 }
+
+// ── FOUNDER-WALK-1 U3: the four-tab install block ───────────────────────────────
+// The block is now four always-selectable tabs (iOS · Android · Mac · Windows).
+// Detection still matters — it picks the DEFAULT-active tab — but every tab is
+// clickable, so a desktop visitor can read the iOS steps and vice-versa. This is a
+// pure detection→tab mapping on top of the classifiers above; the beforeinstallprompt
+// path and the honest "button only where the event fired" rule are unchanged.
+
+export type InstallTab = 'ios' | 'android' | 'mac' | 'windows';
+
+export const INSTALL_TABS: InstallTab[] = ['ios', 'android', 'mac', 'windows'];
+
+/**
+ * The tab to open by default, from the detected platform + OS. iOS/Android map
+ * straight through; desktop splits Mac vs Windows by UA (Windows is the catch-all
+ * for non-Mac desktop — Linux/ChromeOS Chromium share the address-bar install
+ * route). 'installed' never surfaces (the block hides), so it also defaults sanely.
+ */
+export function defaultInstallTab(platform: InstallPlatform, isMac: boolean): InstallTab {
+  if (platform === 'ios') return 'ios';
+  if (platform === 'android') return 'android';
+  return isMac ? 'mac' : 'windows';
+}
+
+/** Compose the default tab from a window (thin wrapper over the pure fns). */
+export function detectDefaultInstallTab(win: Window = window): InstallTab {
+  const platform = detectInstallPlatform(win);
+  const ua = win.navigator?.userAgent || '';
+  return defaultInstallTab(platform, isMacOsUA(ua));
+}

@@ -11,6 +11,9 @@ import {
   isMacOsUA,
   resolveLandingInstallMode,
   detectLandingInstallMode,
+  defaultInstallTab,
+  detectDefaultInstallTab,
+  INSTALL_TABS,
 } from './pwa-install';
 
 const UA = {
@@ -153,6 +156,42 @@ describe('resolveLandingInstallMode — MAXIMUM honest affordance per platform',
     expect(resolveLandingInstallMode('desktop', 'other', false)).toBe('unsupported');
     // Safari that is NOT on macOS (would be exotic) has no Dock path → unsupported.
     expect(resolveLandingInstallMode('desktop', 'safari', false)).toBe('unsupported');
+  });
+});
+
+// ── FOUNDER-WALK-1 U3: four-tab default (iOS · Android · Mac · Windows) ─────────
+
+describe('defaultInstallTab — detection sets the right default tab', () => {
+  it('exposes exactly the four founder-specified tabs in order', () => {
+    expect(INSTALL_TABS).toEqual(['ios', 'android', 'mac', 'windows']);
+  });
+  it('iOS → ios, Android → android (isMac irrelevant on mobile)', () => {
+    expect(defaultInstallTab('ios', false)).toBe('ios');
+    expect(defaultInstallTab('android', false)).toBe('android');
+  });
+  it('desktop splits Mac vs Windows by OS', () => {
+    expect(defaultInstallTab('desktop', true)).toBe('mac');
+    expect(defaultInstallTab('desktop', false)).toBe('windows'); // Windows/Linux/ChromeOS catch-all
+  });
+  it('installed never traps a bad default (block hides anyway)', () => {
+    expect(defaultInstallTab('installed', true)).toBe('mac');
+    expect(defaultInstallTab('installed', false)).toBe('windows');
+  });
+});
+
+describe('detectDefaultInstallTab — end-to-end from a window', () => {
+  it('iPhone → ios, Android → android', () => {
+    expect(detectDefaultInstallTab(fakeWin({ ua: UA.iphone }))).toBe('ios');
+    expect(detectDefaultInstallTab(fakeWin({ ua: UA.android }))).toBe('android');
+  });
+  it('macOS (Safari or Chrome) → mac; Windows/other desktop → windows', () => {
+    expect(detectDefaultInstallTab(fakeWin({ ua: UA.macSafari }))).toBe('mac');
+    expect(detectDefaultInstallTab(fakeWin({ ua: UA.macChrome }))).toBe('mac');
+    expect(detectDefaultInstallTab(fakeWin({ ua: UA.desktop }))).toBe('windows');
+    expect(detectDefaultInstallTab(fakeWin({ ua: UA.edge }))).toBe('windows');
+  });
+  it('iPadOS-in-desktop-mode (touch) → ios', () => {
+    expect(detectDefaultInstallTab(fakeWin({ ua: UA.ipadDesktopMode, touch: 5 }))).toBe('ios');
   });
 });
 

@@ -1186,57 +1186,9 @@
 .landing-root .footer-brand .lockup .wordmark { color: var(--bone); }
 .landing-root .footer-brand .lockup .mark { color: var(--bone); }
 
-.landing-root .footer-devices {
-  border-bottom: 1px solid rgba(244,236,216,.10);
-  padding-bottom: 56px; margin-bottom: 56px;
-}
-.landing-root .footer-devices-head {
-  display: flex; align-items: center; gap: 14px;
-  font-family: var(--lp2-font-mono), monospace;
-  font-size: 10.5px; letter-spacing: 0.18em; text-transform: uppercase;
-  color: var(--gold-soft);
-  margin-bottom: 32px;
-}
-.landing-root .footer-devices-head .rule {
-  flex: 1; height: 1px; background: rgba(244,236,216,.14);
-  max-width: 80px;
-}
-.landing-root .footer-devices-note {
-  margin-top: 16px; text-align: center;
-  font-family: var(--lp2-font-sans), sans-serif;
-  font-size: 12.5px; color: var(--ink-inverse-3);
-}
-.landing-root .footer-devices-row {
-  display: grid; grid-template-columns: repeat(6, 1fr);
-  gap: 1px; background: rgba(244,236,216,.08);
-  border: 1px solid rgba(244,236,216,.08);
-  border-radius: var(--radius);
-  overflow: hidden;
-}
-.landing-root .footer-devices-row .device {
-  background: transparent;
-  display: flex; flex-direction: column; align-items: center;
-  gap: 12px; padding: 24px 12px;
-  transition: background-color .15s;
-}
-.landing-root .footer-devices-row .device:hover { background: rgba(244,236,216,.04); }
-.landing-root .footer-devices-row .device svg {
-  width: 26px; height: 26px;
-  color: var(--bone);
-  opacity: 0.86;
-}
-.landing-root .footer-devices-row .device span {
-  font-family: var(--lp2-font-mono), monospace;
-  font-size: 10.5px; letter-spacing: 0.10em; text-transform: uppercase;
-  color: rgba(244,236,216,.62);
-  font-weight: 500;
-}
-@media (max-width: 720px) {
-  .landing-root .footer-devices-row { grid-template-columns: repeat(3, 1fr); }
-}
-@media (max-width: 440px) {
-  .landing-root .footer-devices-row { grid-template-columns: repeat(2, 1fr); }
-}
+/* FOUNDER-WALK-1 U3: the .footer-devices legacy platform table was removed (its
+   markup deleted from Footer.tsx). The four-tab InstallAppBlock is the single
+   platform story now. */
 .landing-root .footer-socials { display: flex; gap: 8px; flex-wrap: wrap; }
 .landing-root .footer-socials a {
   padding: 8px 14px; border-radius: var(--radius-sm);
