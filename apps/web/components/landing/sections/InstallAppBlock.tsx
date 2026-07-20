@@ -206,6 +206,17 @@ export function InstallAppBlock() {
           </button>
         )}
       </div>
+
+      {/* FOUNDER-WALK-2 U2 — one quiet, confident line under the install block.
+          Frames the no-app-store choice as deliberate (not "…yet"), matching the
+          block's typography (--ink-3 meta ink, no icons). DE default + EN. */}
+      <p data-testid="install-app-note" style={note}>
+        {t(
+          lang,
+          'Bewusst in keinem App Store — Goblin kommt direkt aufs Gerät.',
+          'Deliberately not in any app store — Goblin goes straight to your device.',
+        )}
+      </p>
     </section>
   );
 }
@@ -276,6 +287,14 @@ const stepNum: React.CSSProperties = {
   fontSize: 12,
   fontWeight: 700,
   fontVariantNumeric: 'tabular-nums',
+};
+const note: React.CSSProperties = {
+  maxWidth: 560,
+  margin: '12px auto 0',
+  textAlign: 'center',
+  fontSize: 'var(--small, 13.5px)',
+  color: 'var(--ink-3)',
+  lineHeight: 1.5,
 };
 const btn: React.CSSProperties = {
   alignSelf: 'flex-start',

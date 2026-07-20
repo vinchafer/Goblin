@@ -1,0 +1,74 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  /* Landing tokens (subset) copied verbatim from styles/landing.css. */
+  .landing-root {
+    --gold: #D4A737; --bone: #F4ECD8;
+    --surface: #F4ECD8; --surface-elev: #FBF7EC;
+    --ink-1: #0F2B1E; --ink-2: #2c4538; --ink-3: #5c6f64;
+    --line: rgba(15,43,30,.12);
+    --accent: #D4A737; --accent-soft: rgba(212,167,55,.14);
+    --green: #1A3A2A; --small: 13.5px; --radius-lg: 14px; --radius: 10px;
+    --shadow-card: 0 1px 0 rgba(15,43,30,.04), 0 20px 40px -28px rgba(15,43,30,.20);
+    background: var(--surface); color: var(--ink-1);
+    font-family: -apple-system, system-ui, sans-serif;
+  }
+  .landing-root[data-theme="dark"] {
+    --surface: #0F2B1E; --surface-elev: #1a4030;
+    --ink-1: #F4ECD8; --ink-2: rgba(244,236,216,.78); --ink-3: rgba(244,236,216,.55);
+    --line: rgba(244,236,216,.10); --accent-soft: rgba(212,167,55,.16);
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; }
+  .card {
+    max-width: 560px; margin: 0 auto; background: var(--surface-elev);
+    border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 22px;
+    box-shadow: var(--shadow-card); display: flex; flex-direction: column; gap: 16px;
+  }
+  .title { font-size: 18px; font-weight: 700; color: var(--ink-1); line-height: 1.3; }
+  .sub { font-size: var(--small); color: var(--ink-3); margin-top: 3px; }
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+  .tab { flex: 1 1 auto; min-width: 72px; min-height: 44px; padding: 10px 14px;
+    border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface);
+    color: var(--ink-2); font-size: 14px; font-weight: 600; text-align: center; }
+  .tab.active { background: var(--accent-soft); color: var(--ink-1); border-color: var(--accent); }
+  .steps { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .step { display: flex; gap: 12px; font-size: var(--small); color: var(--ink-2); }
+  .num { flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft);
+    color: var(--accent); display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+  /* The U2 line */
+  .note { max-width: 560px; margin: 12px auto 0; text-align: center; font-size: var(--small);
+    color: var(--ink-3); line-height: 1.5; }
+  section { padding: 28px 20px; }
+</style>
+</head>
+<body>
+  <div class="landing-root" id="root">
+    <section>
+      <div class="card">
+        <div>
+          <div class="title" data-de="Goblin als App installieren" data-en="Install Goblin as an app">Goblin als App installieren</div>
+          <div class="sub" data-de="Auf deinem Home-Bildschirm oder Dock. Kein App Store nötig." data-en="On your home screen or dock. No app store needed.">Auf deinem Home-Bildschirm oder Dock. Kein App Store nötig.</div>
+        </div>
+        <div class="tabs">
+          <div class="tab active">iOS</div><div class="tab">Android</div><div class="tab">Mac</div><div class="tab">Windows</div>
+        </div>
+        <ol class="steps">
+          <li class="step"><span class="num">1</span><span data-de="Tippe unten auf Teilen" data-en="Tap Share at the bottom">Tippe unten auf Teilen</span></li>
+          <li class="step"><span class="num">2</span><span data-de="Wähle „Zum Home-Bildschirm“." data-en="Choose “Add to Home Screen”.">Wähle „Zum Home-Bildschirm“.</span></li>
+        </ol>
+      </div>
+      <p class="note" data-de="Bewusst in keinem App Store — Goblin kommt direkt aufs Gerät." data-en="Deliberately not in any app store — Goblin goes straight to your device.">Bewusst in keinem App Store — Goblin kommt direkt aufs Gerät.</p>
+    </section>
+  </div>
+  <script>
+    // ?lang=en swaps every data-en; ?theme=dark sets the theme.
+    const p = new URLSearchParams(location.search);
+    if (p.get('lang') === 'en') document.querySelectorAll('[data-en]').forEach(el => el.textContent = el.getAttribute('data-en'));
+    if (p.get('theme') === 'dark') document.getElementById('root').setAttribute('data-theme', 'dark');
+  </script>
+</body>
+</html>

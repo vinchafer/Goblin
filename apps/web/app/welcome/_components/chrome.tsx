@@ -140,6 +140,14 @@ export function OnboardingChrome({ children }: { children: React.ReactNode }) {
         }
         .gobl-onb-top {
           padding: 22px 32px;
+          /* FOUNDER-WALK-2 U4: the /welcome flow was never covered by the
+             safe-area waves (#41/#44 treated the app shell) — the GOBLIN logo
+             overlapped the iOS clock and "HILFE" collided with the battery.
+             Reuse the shipped env() idiom: keep the design padding, add the top
+             inset; left/right insets clear the landscape notch. */
+          padding-top: calc(22px + env(safe-area-inset-top));
+          padding-left: max(32px, env(safe-area-inset-left));
+          padding-right: max(32px, env(safe-area-inset-right));
           display: flex; align-items: center; justify-content: space-between;
           gap: 18px;
           border-bottom: 1px solid var(--line);
@@ -183,6 +191,12 @@ export function OnboardingChrome({ children }: { children: React.ReactNode }) {
         .gobl-onb-footstrip {
           border-top: 1px solid var(--line);
           padding: 18px 32px;
+          /* U4: the footer line (justgoblin.com · SCHRITT x VON y) sat in the
+             home-indicator zone on a standalone PWA. Add the bottom inset (the
+             founder saw the dark-mode bottom cut here); left/right for landscape. */
+          padding-bottom: calc(18px + env(safe-area-inset-bottom));
+          padding-left: max(32px, env(safe-area-inset-left));
+          padding-right: max(32px, env(safe-area-inset-right));
           display: flex; align-items: center; justify-content: space-between;
           font-family: var(--font-mono), JetBrains Mono, monospace;
           font-size: 11px; letter-spacing: 0.10em;
@@ -195,11 +209,21 @@ export function OnboardingChrome({ children }: { children: React.ReactNode }) {
           vertical-align: middle;
         }
         @media (max-width: 480px) {
-          .gobl-onb-top { padding: 16px 18px; gap: 12px; }
+          .gobl-onb-top {
+            padding: 16px 18px; gap: 12px;
+            padding-top: calc(16px + env(safe-area-inset-top));
+            padding-left: max(18px, env(safe-area-inset-left));
+            padding-right: max(18px, env(safe-area-inset-right));
+          }
           .gobl-onb-top-right { gap: 12px; }
           .gobl-onb-pips { display: none; }
           .gobl-onb-help { font-size: 10px; letter-spacing: 0.18em; }
-          .gobl-onb-footstrip { padding: 14px 18px; font-size: 10px; }
+          .gobl-onb-footstrip {
+            padding: 14px 18px; font-size: 10px;
+            padding-bottom: calc(14px + env(safe-area-inset-bottom));
+            padding-left: max(18px, env(safe-area-inset-left));
+            padding-right: max(18px, env(safe-area-inset-right));
+          }
         }
       `}</style>
     </div>

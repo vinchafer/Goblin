@@ -1,0 +1,80 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  /* Minimal token stand-ins matching the shipped design-tokens.css values so the
+     harness renders the real colours. */
+  :root {
+    --paper: #FBF7EC;
+    --brand-green: #1A3A2A;
+    --brand-gold: #D4A737;
+    --font-sans: -apple-system, system-ui, sans-serif;
+    --t-small-fs: 14px;
+    background: var(--paper);
+  }
+  :root[data-theme="dark"] { --paper: #08170F; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: var(--font-sans); }
+
+  /* ── Exact copy of the shipped mobile admin-nav CSS (admin-shell.tsx) ── */
+  .gobl-admin { display: flex; flex-direction: column; min-height: 200px; background: var(--paper); }
+  .gobl-admin-nav {
+    width: 100%; background: var(--brand-green); color: #fff;
+    display: flex; flex-direction: column; padding: 0; z-index: 20;
+  }
+  .gobl-admin-brand { display: flex; align-items: baseline; gap: 8px; padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,0.12); }
+  .gobl-admin-wordmark { font-size: 16px; font-weight: 800; letter-spacing: 0.14em; color: #fff; }
+  .gobl-admin-kicker { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--brand-gold); }
+
+  .gobl-admin-scroller { display: flex; flex: 0 0 auto; flex-direction: row; position: relative; min-height: 0; }
+  .gobl-admin-links {
+    display: flex; flex-direction: row; gap: 16px;
+    padding: 10px 8px 12px; padding-right: 36px; width: 100%;
+    overflow-x: auto; flex: 1 1 auto; scrollbar-width: none;
+  }
+  .gobl-admin-links::-webkit-scrollbar { display: none; }
+  .gobl-admin-link {
+    display: flex; align-items: center; flex: 0 0 auto; min-height: 44px;
+    padding: 10px 4px; font-size: var(--t-small-fs); font-family: var(--font-sans);
+    color: rgba(255,255,255,0.62); text-decoration: none; font-weight: 400;
+    white-space: nowrap; border-bottom: 2px solid transparent;
+  }
+  .gobl-admin-link.active { color: #fff; border-bottom-color: var(--brand-gold); font-weight: 700; }
+  .gobl-admin-scrollfade {
+    display: block; position: absolute; top: 0; right: 0; bottom: 0; width: 36px;
+    pointer-events: none; background: linear-gradient(to right, rgba(26,58,42,0), var(--brand-green));
+  }
+</style>
+</head>
+<body>
+  <div class="gobl-admin">
+    <aside class="gobl-admin-nav">
+      <div class="gobl-admin-brand">
+        <span style="display:flex;align-items:baseline;gap:8px;">
+          <span class="gobl-admin-wordmark">GOBLIN</span>
+          <span class="gobl-admin-kicker">Admin</span>
+        </span>
+      </div>
+      <div class="gobl-admin-scroller">
+        <nav class="gobl-admin-links" aria-label="Admin sections">
+          <a class="gobl-admin-link active" href="#">Insight</a>
+          <a class="gobl-admin-link" href="#">Promo</a>
+          <a class="gobl-admin-link" href="#">Costs</a>
+          <a class="gobl-admin-link" href="#">Users</a>
+          <a class="gobl-admin-link" href="#">Health</a>
+          <a class="gobl-admin-link" href="#">Models</a>
+          <a class="gobl-admin-link" href="#">Catalog Ops</a>
+          <a class="gobl-admin-link" href="#">Telemetry</a>
+          <a class="gobl-admin-link" href="#">Rankings</a>
+          <a class="gobl-admin-link" href="#">Builds</a>
+          <a class="gobl-admin-link" href="#">Status</a>
+        </nav>
+        <span class="gobl-admin-scrollfade" aria-hidden="true"></span>
+      </div>
+    </aside>
+    <div style="padding:20px 16px;color:var(--brand-green);font-family:var(--font-sans)">Admin content…</div>
+  </div>
+</body>
+</html>

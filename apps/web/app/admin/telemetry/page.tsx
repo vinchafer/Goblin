@@ -7,6 +7,7 @@
 // is the founder's own operating data (HR-2/HR-3). Legible at 390px (iPhone).
 
 import { useCallback, useEffect, useState } from 'react';
+import { telemetryDisplay } from '@/lib/admin/telemetry-state';
 
 const ADMIN_BASE = '/api/admin';
 
@@ -88,6 +89,8 @@ export default function AdminTelemetryPage() {
 
   const r = data.reconciliation;
   const reconciled = r.consistent;
+  // U5.4: derive the calibration/empty state from the payload — never hard-code.
+  const disp = telemetryDisplay({ calibrated: data.calibrated, totalTokens: data.totalTokens, activeUsers: data.activeUsers });
 
   return (
     <div style={{ maxWidth: 720 }}>
@@ -95,13 +98,31 @@ export default function AdminTelemetryPage() {
         <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 24, color: 'var(--brand-green)', fontWeight: 700, letterSpacing: '-0.6px', margin: 0 }}>
           Goblin Telemetry
         </h1>
-        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--brand-gold-ink, #7A5A12)', background: 'var(--brand-gold)', borderRadius: 999, padding: '3px 10px' }}>
-          live · not yet calibrated
+        {/* U5.4: badge reflects data.calibrated (green when calibrated, gold
+            while provisional) instead of a hard-coded "not yet calibrated". */}
+        <span style={{
+          fontSize: 11, fontWeight: 600, borderRadius: 999, padding: '3px 10px',
+          color: disp.calibrated ? 'var(--bone, #F4ECD8)' : 'var(--brand-gold-ink, #7A5A12)',
+          background: disp.calibrated ? 'var(--success)' : 'var(--brand-gold)',
+        }}>
+          {disp.calibrationLabel}
         </span>
       </div>
       <div style={{ fontSize: 13, color: 'var(--meta)', marginBottom: 20 }}>
         This calendar month · resets {data.resetDate}
       </div>
+
+      {/* U5.4: honest empty state — with no Goblin-hosted usage this month, say so
+          plainly instead of presenting a grid of zeroes as calibrated figures. */}
+      {disp.emptyNote && (
+        <div style={{
+          background: 'var(--subtle)', border: '1px solid var(--div, var(--border))',
+          borderRadius: 12, padding: '12px 16px', marginBottom: 16,
+          fontSize: 13, color: 'var(--meta)',
+        }}>
+          {disp.emptyNote}
+        </div>
+      )}
 
       {/* Reconciliation — the 1000% guarantee, surfaced first */}
       <div style={{
@@ -124,7 +145,7 @@ export default function AdminTelemetryPage() {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, rowGap: 18 }}>
           <Stat label="Total tokens" value={nf(data.totalTokens)} sub={`${nf(data.totalSwiftTokens)} Swift · ${nf(data.totalForgeTokens)} Forge`} />
           <Stat label="Weighted cost units" value={nf(data.weightedCostUnits)} sub="Swift + Forge ×4.4" />
-          <Stat label="Est. spend (you)" value={`$${(data.estimatedCostUsd ?? 0).toFixed(4)}`} sub="wholesale, founder-only" />
+          <Stat label="Est. spend (you)" value={`$${(data.estimatedCostUsd ?? 0).toFixed(4)}`} sub={disp.showEstimateCaveat ? 'wholesale · provisional estimate' : 'wholesale, founder-only'} />
           <Stat label="Active users" value={nf(data.activeUsers)} />
           <Stat label="Avg tokens / user" value={nf(data.avgTokensPerUser)} />
           <Stat label="Completions" value={nf(data.completions)} sub={`${nf(data.zeroTokenCompletions)} zero-token (flagged)`} />
