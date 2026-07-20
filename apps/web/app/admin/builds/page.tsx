@@ -47,7 +47,11 @@ export default function AdminBuildsPage() {
     const res = await fetch(`${ADMIN_BASE}/builds?${params}`, { headers: adminHeaders() });
     if (res.ok) {
       const d = await res.json();
-      setBuilds(Array.isArray(d) ? d : (d.builds ?? d));
+      // U4c: a non-array payload (e.g. an error/object body) used to be assigned
+      // straight to `builds`, then `builds.map` threw and blanked the page. Coerce
+      // to an array and never crash on an unexpected shape.
+      const list = Array.isArray(d) ? d : Array.isArray(d?.builds) ? d.builds : [];
+      setBuilds(list);
     }
     setLoading(false);
   }, [page, statusFilter]);
@@ -89,11 +93,13 @@ export default function AdminBuildsPage() {
         </button>
       </div>
 
-      <div style={{ background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+      {/* U4c: overflow-x auto (was overflow:hidden) so the 6-col table scrolls on a
+          phone instead of being clipped with no way to reach the Actions column. */}
+      <div style={{ background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: 12, overflowX: 'auto' }}>
         {loading ? (
           <div style={{ padding: '32px', textAlign: 'center', color: 'var(--meta)' }}>Loading…</div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'var(--t-caption-fs)', fontFamily: 'var(--font-sans)' }}>
+          <table style={{ width: '100%', minWidth: 620, borderCollapse: 'collapse', fontSize: 'var(--t-caption-fs)', fontFamily: 'var(--font-sans)' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid var(--div)' }}>
                 {['Type', 'Status', 'Progress', 'Duration', 'Created', 'Actions'].map(h => (
@@ -118,9 +124,9 @@ export default function AdminBuildsPage() {
                     <td style={{ padding: '10px 14px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <div style={{ width: 60, height: 4, background: 'var(--subtle)', borderRadius: 2, overflow: 'hidden' }}>
-                          <div style={{ width: `${b.progress_pct}%`, height: '100%', background: 'var(--brand-green)', transition: 'width 0.3s' }} />
+                          <div style={{ width: `${b.progress_pct ?? 0}%`, height: '100%', background: 'var(--brand-green)', transition: 'width 0.3s' }} />
                         </div>
-                        <span style={{ color: 'var(--meta)' }}>{b.progress_pct}%</span>
+                        <span style={{ color: 'var(--meta)' }}>{b.progress_pct ?? 0}%</span>
                       </div>
                     </td>
                     <td style={{ padding: '10px 14px', color: 'var(--meta)' }}>{durationStr(b)}</td>

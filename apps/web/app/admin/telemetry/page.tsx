@@ -124,7 +124,7 @@ export default function AdminTelemetryPage() {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20, rowGap: 18 }}>
           <Stat label="Total tokens" value={nf(data.totalTokens)} sub={`${nf(data.totalSwiftTokens)} Swift · ${nf(data.totalForgeTokens)} Forge`} />
           <Stat label="Weighted cost units" value={nf(data.weightedCostUnits)} sub="Swift + Forge ×4.4" />
-          <Stat label="Est. spend (you)" value={`$${data.estimatedCostUsd.toFixed(4)}`} sub="wholesale, founder-only" />
+          <Stat label="Est. spend (you)" value={`$${(data.estimatedCostUsd ?? 0).toFixed(4)}`} sub="wholesale, founder-only" />
           <Stat label="Active users" value={nf(data.activeUsers)} />
           <Stat label="Avg tokens / user" value={nf(data.avgTokensPerUser)} />
           <Stat label="Completions" value={nf(data.completions)} sub={`${nf(data.zeroTokenCompletions)} zero-token (flagged)`} />

@@ -82,3 +82,59 @@ export const ONBOARDED_COOKIE = {
 export function onboardedCookieString(): string {
   return `${ONBOARDED_COOKIE.name}=${ONBOARDED_COOKIE.value}; path=/; max-age=${ONBOARDED_COOKIE.maxAgeSeconds}; SameSite=Lax`;
 }
+
+// ── F-05 · standalone hardening (Founder-Walk-1, U1) ─────────────────────────
+//
+// THE STANDALONE BUG. The handshake above has ONE channel: a client-written
+// `document.cookie` that the SSR dashboard guard must read back on the very next
+// navigation. In an installed iOS PWA (standalone WebKit) that JS-written cookie
+// is not reliably visible to that same-navigation server read — standalone applies
+// stricter/partitioned cookie storage + ITP than a Safari tab, and the client
+// write may not be committed/sent before the RSC navigation request fires. When
+// the sole loop-breaker goes missing, the dashboard guard sees no cookie AND a
+// stale `completed === false`, redirects to /welcome, the forward leg reads
+// fresh-true (service role) and bounces back — the welcome↔dashboard oscillation
+// the FW3 fix was meant to kill. It matches the founder's report exactly: installed
+// PWA loops on a spinner and never reaches the dashboard, yet the SAME account in a
+// Safari tab (where the JS cookie IS sent) lands on the dashboard, and onboarding
+// completion persisted (the DB write is independent of the failed transition).
+//
+// THE FIX (extend F-05, don't fork). Add a SECOND, storage-independent channel
+// that rides the navigation itself and cannot be lost to cookie partitioning: a
+// `?onboarded=1` query signal on the post-onboarding navigation. `middleware.ts`
+// promotes it into the SAME `goblin_onboarded` cookie — set on both the forwarded
+// request (so the dashboard layout sees it THIS pass) and the response (so it
+// persists, server-committed, which standalone WebKit does honor). Same cookie,
+// same gate — just a channel a PWA can't silently drop. It also hardens the two
+// other candidate causes: the middleware↔flag bounce (broken positively here) and
+// a stale user-scoped read (the URL signal is authoritative, DB-independent).
+
+/** Query param + value carrying the storage-independent "just finished" signal. */
+export const ONBOARDED_SIGNAL_PARAM = 'onboarded';
+export const ONBOARDED_SIGNAL_VALUE = '1';
+
+/**
+ * The exact URL the client navigates to on onboarding completion. Carries the
+ * signal in the navigation itself so it survives standalone WebKit's cookie
+ * quirks; the JS cookie is still written as the fast path.
+ */
+export const DASHBOARD_ONBOARDED_URL = `/dashboard?${ONBOARDED_SIGNAL_PARAM}=${ONBOARDED_SIGNAL_VALUE}`;
+
+/** True when a navigation carries the storage-independent completion signal. */
+export function hasOnboardedSignal(searchParams: URLSearchParams): boolean {
+  return searchParams.get(ONBOARDED_SIGNAL_PARAM) === ONBOARDED_SIGNAL_VALUE;
+}
+
+/**
+ * The middleware promotion decision (pure, testable). Promote the URL signal into
+ * the durable server-set cookie exactly when the signal is present and the cookie
+ * isn't already set — converting the fragile, storage-independent URL channel into
+ * the reliable, server-committed cookie the back-leg guard already trusts. Idempotent:
+ * once the cookie exists there is nothing to promote.
+ */
+export function shouldPromoteOnboardedCookie(input: {
+  searchParams: URLSearchParams;
+  cookieAlreadySet: boolean;
+}): boolean {
+  return hasOnboardedSignal(input.searchParams) && !input.cookieAlreadySet;
+}

@@ -104,11 +104,13 @@ export default function AdminModelsPage() {
         </button>
       </div>
 
-      <div style={{ background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+      {/* U4c: overflow-x auto + table min-width so the 6-col table scrolls on a
+          phone instead of overflowing the page (it had no wrapper before). */}
+      <div style={{ background: 'var(--panel)', border: '1px solid var(--border)', borderRadius: 12, overflowX: 'auto' }}>
         {loading ? (
           <div style={{ padding: '32px', textAlign: 'center', color: 'var(--meta)' }}>Loading…</div>
         ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, fontFamily: 'var(--font-sans)' }}>
+          <table style={{ width: '100%', minWidth: 620, borderCollapse: 'collapse', fontSize: 13, fontFamily: 'var(--font-sans)' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid var(--div)' }}>
                 {['Name', 'Provider', 'Layer', 'Phase', 'Available', 'Actions'].map(h => (

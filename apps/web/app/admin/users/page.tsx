@@ -95,14 +95,16 @@ export default function AdminUsersPage() {
         Users
       </h1>
 
-      {/* Stats */}
+      {/* Stats — U4c: responsive stat grid (was fixed repeat(4,1fr) → overflowed at
+          375px). auto-fit wraps to 2×2 / 1-col on a phone; MRR is guarded so a
+          missing field renders $0 instead of $undefined/$NaN. */}
       {stats && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 16, marginBottom: 24 }}>
           {[
-            { label: 'Total Users', value: stats.total_users },
-            { label: 'Active (7d)', value: stats.active_7d },
-            { label: 'Paid', value: stats.paid_users },
-            { label: 'Est. MRR', value: `$${stats.estimated_mrr}` },
+            { label: 'Total Users', value: stats.total_users ?? 0 },
+            { label: 'Active (7d)', value: stats.active_7d ?? 0 },
+            { label: 'Paid', value: stats.paid_users ?? 0 },
+            { label: 'Est. MRR', value: `$${stats.estimated_mrr ?? 0}` },
           ].map(s => (
             <div key={s.label} style={CARD_STYLE}>
               <div style={{ fontSize: 24, fontWeight: 700, fontFamily: 'var(--font-sans)', color: 'var(--brand-green)' }}>{s.value}</div>

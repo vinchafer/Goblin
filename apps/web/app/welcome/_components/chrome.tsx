@@ -8,7 +8,7 @@ import { GMark } from './icons';
 import { useOnbLang, STR } from './i18n';
 import { getOnboardingState } from './onboarding-state';
 import { readVibeKnown, stepInfo, type VibeKnown } from './flow';
-import { onboardedCookieString } from '@/lib/onboarding-gate';
+import { onboardedCookieString, DASHBOARD_ONBOARDED_URL } from '@/lib/onboarding-gate';
 
 // Numbering is owned by flow.ts (single source of truth). The header chip +
 // footer read {step,total} for the CURRENT branch; off-flow optional pages
@@ -70,7 +70,9 @@ export function OnboardingChrome({ children }: { children: React.ReactNode }) {
           // before the user-scoped dashboard read may. Set the handshake cookie
           // so the dashboard's back leg trusts it and can't bounce us here again.
           if (typeof document !== 'undefined') document.cookie = onboardedCookieString();
-          router.replace('/dashboard');
+          // Standalone hardening (U1): carry the ?onboarded=1 signal so middleware
+          // re-promotes the cookie even if standalone WebKit dropped the JS write.
+          router.replace(DASHBOARD_ONBOARDED_URL);
           return;
         }
       } catch {

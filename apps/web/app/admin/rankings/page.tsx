@@ -55,7 +55,9 @@ export default function AdminRankingsPage() {
         Rankings — Source Status
       </h1>
 
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+      {/* U4c: overflow-x auto so the 4-col table scrolls on a phone. */}
+      <div style={{ overflowX: 'auto' }}>
+      <table style={{ width: '100%', minWidth: 460, borderCollapse: 'collapse' }}>
         <thead>
           <tr style={{ borderBottom: '1px solid var(--border-subtle)' }}>
             <th style={cellStyle(true)}>Source</th>
@@ -91,16 +93,19 @@ export default function AdminRankingsPage() {
                 <td style={cellStyle(false)}>
                   {s.last_fetched_at ? new Date(s.last_fetched_at).toLocaleString('de-CH') : '—'}
                 </td>
-                <td style={cellStyle(false)}>{s.last_record_count}</td>
+                <td style={cellStyle(false)}>{s.last_record_count ?? '—'}</td>
               </tr>
             );
           })}
         </tbody>
       </table>
+      </div>
 
       <p style={{ marginTop: 24, fontSize: 'var(--t-caption-fs)', color: 'var(--text-meta)' }}>
         Manual trigger:{' '}
-        <code style={{ fontFamily: 'var(--font-mono)' }}>
+        {/* U4c: allow the long curl string to wrap/scroll instead of overflowing
+            the content box on a phone. */}
+        <code style={{ fontFamily: 'var(--font-mono)', display: 'block', marginTop: 6, overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
           curl -X POST -H "x-admin-key: $ADMIN_API_KEY"
           $API_URL/api/admin/rankings/refresh
         </code>

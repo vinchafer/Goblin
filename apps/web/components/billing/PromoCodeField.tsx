@@ -8,7 +8,15 @@ import { useState } from 'react';
 import { useLang, t } from '@/lib/use-lang';
 import { redeemPromoCode } from '@/lib/promo-redeem';
 
-export function PromoCodeField() {
+// The collapsed trigger copy is the only thing that varies by placement — the
+// redemption logic, validation and honest errors are identical everywhere (one
+// component, one `redeemPromoCode` path). Settings/billing keeps the default
+// "Goblin-Code" wording; the paywall passes the founder's "Invite-Code" copy.
+export interface PromoCodeFieldProps {
+  collapsedLabel?: { de: string; en: string };
+}
+
+export function PromoCodeField({ collapsedLabel }: PromoCodeFieldProps = {}) {
   const lang = useLang();
   const [open, setOpen] = useState(false);
   const [code, setCode] = useState('');
@@ -34,7 +42,9 @@ export function PromoCodeField() {
           fontFamily: 'var(--font-sans)',
         }}
       >
-        {t(lang, 'Hast du einen Goblin-Code?', 'Have a Goblin code?')}
+        {collapsedLabel
+          ? t(lang, collapsedLabel.de, collapsedLabel.en)
+          : t(lang, 'Hast du einen Goblin-Code?', 'Have a Goblin code?')}
       </button>
     );
   }
