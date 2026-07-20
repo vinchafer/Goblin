@@ -23,14 +23,22 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-// Every /admin route, in a sensible operator order. Costs + Rankings were absent
-// from the old nav though the pages exist — added so every tab is reachable.
+// FOUNDER-WALK-2 U1 — the mobile tab strip collided into one run of text
+// ("HealthInsightCosts PromoUsers…") because the tabs sat 4px apart with no
+// per-tab framing, and the long "Catalog Ops" wrapped. This wave gives the
+// strip REAL spacing (gap ≥16px), an unmistakable per-tab boundary + active
+// indicator, an edge-fade so it's obvious more tabs live to the right, and a
+// founder-relevance order.
+//
+// Order by founder relevance (his re-walk names these five first): Insight ·
+// Promo · Costs · Users · Health, then the operational rest. Costs + Rankings
+// were absent from the OLD nav though the pages exist — every tab is reachable.
 const NAV = [
-  { href: '/admin/health', label: 'Health' },
   { href: '/admin/insight', label: 'Insight' },
-  { href: '/admin/costs', label: 'Costs' },
   { href: '/admin/promo', label: 'Promo' },
+  { href: '/admin/costs', label: 'Costs' },
   { href: '/admin/users', label: 'Users' },
+  { href: '/admin/health', label: 'Health' },
   { href: '/admin/models', label: 'Models' },
   { href: '/admin/catalog', label: 'Catalog Ops' },
   { href: '/admin/telemetry', label: 'Telemetry' },
@@ -55,18 +63,23 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           <Link href="/dashboard" className="gobl-admin-back">← App</Link>
         </div>
 
-        <nav className="gobl-admin-links" aria-label="Admin sections">
-          {NAV.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              aria-current={isActive(item.href) ? 'page' : undefined}
-              className={`gobl-admin-link${isActive(item.href) ? ' active' : ''}`}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
+        {/* Scroller wraps the links so the phone strip can carry a right-edge
+            fade (a scroll affordance) without clipping the desktop column. */}
+        <div className="gobl-admin-scroller">
+          <nav className="gobl-admin-links" aria-label="Admin sections">
+            {NAV.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                aria-current={isActive(item.href) ? 'page' : undefined}
+                className={`gobl-admin-link${isActive(item.href) ? ' active' : ''}`}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+          <span className="gobl-admin-scrollfade" aria-hidden />
+        </div>
       </aside>
 
       <main className="gobl-admin-main">{children}</main>
@@ -114,6 +127,15 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           text-transform: uppercase;
           color: var(--brand-gold);
         }
+        /* Desktop: the scroller is a transparent passthrough — the links keep
+           filling the sidebar column exactly as before. */
+        .gobl-admin-scroller {
+          display: flex;
+          flex-direction: column;
+          flex: 1;
+          min-height: 0;
+        }
+        .gobl-admin-scrollfade { display: none; }
         .gobl-admin-links {
           display: flex;
           flex-direction: column;
@@ -184,14 +206,26 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
             padding-left: max(16px, env(safe-area-inset-left));
             margin-bottom: 0;
           }
+          /* Phone: the scroller becomes a relative box so the right-edge fade
+             can overlay the scrolling strip without clipping it. */
+          .gobl-admin-scroller {
+            flex: 0 0 auto;
+            flex-direction: row;
+            position: relative;
+            min-height: 0;
+          }
           .gobl-admin-links {
             flex-direction: row;
-            gap: 4px;
-            padding: 8px;
-            padding-left: max(8px, env(safe-area-inset-left));
-            padding-right: max(8px, env(safe-area-inset-right));
+            /* REAL separation — the founder-walk-2 collision was a 4px gap that
+               read as one run of text. 16px + per-tab framing kills it. */
+            gap: 16px;
+            padding: 10px 8px 12px;
+            padding-left: max(12px, env(safe-area-inset-left));
+            /* extra right pad so the last tab clears the fade overlay */
+            padding-right: max(36px, env(safe-area-inset-right));
+            width: 100%;
             overflow-x: auto;
-            flex: 0 0 auto;
+            flex: 1 1 auto;
             -webkit-overflow-scrolling: touch;
             scrollbar-width: none;
           }
@@ -200,6 +234,42 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           }
           .gobl-admin-link {
             flex: 0 0 auto;
+            /* Each tab is its own bounded touch target (≥44px tall, generous
+               horizontal padding) so labels can never read as one run. */
+            min-height: 44px;
+            padding: 10px 4px;
+            border-radius: 0;
+            /* transparent baseline underline reserves space so the active
+               gold underline never shifts the row. */
+            border-bottom: 2px solid transparent;
+            color: rgba(255, 255, 255, 0.62);
+          }
+          .gobl-admin-link.active {
+            /* Unmistakable active indicator: bright label + gold underline. */
+            background: transparent;
+            color: #fff;
+            border-bottom-color: var(--brand-gold);
+            font-weight: 700;
+          }
+          .gobl-admin-link:hover {
+            background: transparent;
+            color: #fff;
+          }
+          /* Right-edge fade — the "there's more to the right" affordance. Sits
+             over the strip, ignores pointer events so it never blocks scroll. */
+          .gobl-admin-scrollfade {
+            display: block;
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 36px;
+            pointer-events: none;
+            background: linear-gradient(
+              to right,
+              rgba(26, 58, 42, 0),
+              var(--brand-green)
+            );
           }
           /* The "back to app" link would clutter the phone strip — hide it there;
              the brand wordmark links nowhere, so keep it in the scroll row is noisy.
