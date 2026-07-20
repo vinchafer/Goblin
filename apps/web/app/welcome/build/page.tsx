@@ -12,7 +12,7 @@ import { useState } from 'react';
 import { IArrowL, IArrowR } from '../_components/icons';
 import { patchOnboardingState } from '../_components/onboarding-state';
 import { useOnbLang, STR } from '../_components/i18n';
-import { onboardedCookieString } from '@/lib/onboarding-gate';
+import { onboardedCookieString, DASHBOARD_ONBOARDED_URL } from '@/lib/onboarding-gate';
 
 export default function BuildStepPage() {
   const router = useRouter();
@@ -31,7 +31,11 @@ export default function BuildStepPage() {
     // Mark onboarding complete (best-effort) before entering the dashboard, so
     // the returning-user guard won't bounce the user back into /welcome.
     await patchOnboardingState({ current_step: 4, completed: true });
-    router.push('/dashboard');
+    // F-05 standalone hardening (U1): navigate WITH the ?onboarded=1 signal, not a
+    // bare /dashboard. In an installed PWA the JS cookie above can be dropped by
+    // standalone WebKit; the URL signal rides the navigation itself and middleware
+    // promotes it into the same cookie, so the back-leg guard still trusts it.
+    router.push(DASHBOARD_ONBOARDED_URL);
   }
 
   return (

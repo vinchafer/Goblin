@@ -1,5 +1,6 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { ONBOARDED_COOKIE, shouldPromoteOnboardedCookie } from '@/lib/onboarding-gate';
 
 export async function middleware(request: NextRequest) {
   // Bypass auth for demo routes (Sprint 7 — pitch iframe embedding). These render
@@ -7,6 +8,23 @@ export async function middleware(request: NextRequest) {
   // override for them lives in next.config.ts.
   if (request.nextUrl.pathname.startsWith('/demo-')) {
     return NextResponse.next();
+  }
+
+  // F-05 · standalone hardening (Founder-Walk-1, U1). Promote the storage-independent
+  // `?onboarded=1` completion signal into the durable, server-set `goblin_onboarded`
+  // cookie so a just-finished user carries an authoritative "already onboarded"
+  // signal into the dashboard back-leg guard even when the client `document.cookie`
+  // write did not survive standalone WebKit (the installed-PWA loop). Seed the
+  // FORWARDED request now so the dashboard layout reads it THIS pass; the matching
+  // response write happens after Supabase (below) so we don't clobber a session
+  // refresh. See lib/onboarding-gate.ts for the full diagnosis.
+  const promoteOnboarded = shouldPromoteOnboardedCookie({
+    searchParams: request.nextUrl.searchParams,
+    cookieAlreadySet:
+      request.cookies.get(ONBOARDED_COOKIE.name)?.value === ONBOARDED_COOKIE.value,
+  });
+  if (promoteOnboarded) {
+    request.cookies.set(ONBOARDED_COOKIE.name, ONBOARDED_COOKIE.value);
   }
 
   let response = NextResponse.next({ request: { headers: request.headers } });
@@ -67,6 +85,16 @@ export async function middleware(request: NextRequest) {
   // Authenticated → login page: redirect to dashboard
   if (user && pathname === '/login') {
     return NextResponse.redirect(new URL('/dashboard', request.url));
+  }
+
+  // Persist the promoted completion cookie on the final response (after any
+  // Supabase session-refresh writes above), so it survives beyond this request.
+  if (promoteOnboarded) {
+    response.cookies.set(ONBOARDED_COOKIE.name, ONBOARDED_COOKIE.value, {
+      path: '/',
+      maxAge: ONBOARDED_COOKIE.maxAgeSeconds,
+      sameSite: 'lax',
+    });
   }
 
   return response;

@@ -6,7 +6,14 @@
 // endless welcome ↔ dashboard bounce.
 
 import { describe, it, expect } from 'vitest';
-import { resolveOnboardingGate, onboardedCookieString, ONBOARDED_COOKIE } from './onboarding-gate';
+import {
+  resolveOnboardingGate,
+  onboardedCookieString,
+  ONBOARDED_COOKIE,
+  hasOnboardedSignal,
+  shouldPromoteOnboardedCookie,
+  DASHBOARD_ONBOARDED_URL,
+} from './onboarding-gate';
 
 describe('resolveOnboardingGate — the back leg', () => {
   it('gates a genuine fresh user with no completion signal (the intended redirect)', () => {
@@ -107,5 +114,81 @@ describe('onboardedCookieString', () => {
     expect(s).toContain('path=/');
     expect(s).toContain(`max-age=${ONBOARDED_COOKIE.maxAgeSeconds}`);
     expect(s).toContain('SameSite=Lax');
+  });
+});
+
+// ── F-05 standalone hardening (FOUNDER-WALK-1 U1) ────────────────────────────
+//
+// The installed-PWA loop. The FW3 handshake had ONE channel — a client-written
+// document.cookie the SSR dashboard guard reads back on the next navigation. In a
+// standalone PWA (iOS WebKit) that JS cookie is not reliably visible to that
+// same-navigation server read, so the sole loop-breaker goes missing and the
+// welcome↔dashboard oscillation returns — the founder's spinner loop. The second,
+// storage-independent channel (?onboarded=1, promoted to the cookie by middleware)
+// rides the navigation itself and cannot be dropped the same way.
+describe('the storage-independent completion signal (the PWA channel)', () => {
+  it('detects ?onboarded=1 and nothing else', () => {
+    expect(hasOnboardedSignal(new URLSearchParams('onboarded=1'))).toBe(true);
+    expect(hasOnboardedSignal(new URLSearchParams('onboarded=0'))).toBe(false);
+    expect(hasOnboardedSignal(new URLSearchParams('foo=bar'))).toBe(false);
+    expect(hasOnboardedSignal(new URLSearchParams(''))).toBe(false);
+  });
+
+  it('the completion navigation URL carries the signal', () => {
+    expect(hasOnboardedSignal(new URLSearchParams(DASHBOARD_ONBOARDED_URL.split('?')[1]))).toBe(true);
+  });
+
+  it('promotes URL signal → cookie only when present and not already set (idempotent)', () => {
+    const withSignal = new URLSearchParams('onboarded=1');
+    expect(shouldPromoteOnboardedCookie({ searchParams: withSignal, cookieAlreadySet: false })).toBe(true);
+    // once the cookie exists, nothing to promote — no repeat write on every request
+    expect(shouldPromoteOnboardedCookie({ searchParams: withSignal, cookieAlreadySet: true })).toBe(false);
+    // no signal → never promote
+    expect(shouldPromoteOnboardedCookie({ searchParams: new URLSearchParams(''), cookieAlreadySet: false })).toBe(false);
+  });
+});
+
+describe('the installed-PWA exit settles (no oscillation) — the U1 repro', () => {
+  // Model the standalone context: the client wrote document.cookie on finish, but
+  // standalone WebKit DROPPED it, so the SSR read never sees the client cookie.
+  // The ONLY surviving completion signal is the ?onboarded=1 URL. `promoteFromUrl`
+  // models middleware promoting that URL signal into the cookie the back leg reads.
+  // The DB read stays stale-false the whole time (the pathological case).
+  const runStandaloneExit = (promoteFromUrl: boolean): string[] => {
+    let route = DASHBOARD_ONBOARDED_URL;
+    const visited: string[] = [route];
+    for (let i = 0; i < 6; i++) {
+      if (route.startsWith('/dashboard')) {
+        const sp = new URLSearchParams(route.split('?')[1] ?? '');
+        // The client cookie is gone (standalone); the cookie is present ONLY if
+        // middleware promoted it from the URL signal on this dashboard hit.
+        const cookiePresent = promoteFromUrl && hasOnboardedSignal(sp);
+        const { redirectToOnboarding } = resolveOnboardingGate({
+          isNewUser: true, isReactivated: false,
+          onboardingCompleted: false, // stale-false — write not yet visible to this client
+          justOnboarded: cookiePresent,
+        });
+        if (!redirectToOnboarding) break;
+        route = '/welcome/language';
+      } else {
+        // forward leg (chrome, service-role read = true) re-navigates WITH the signal
+        route = DASHBOARD_ONBOARDED_URL;
+      }
+      visited.push(route);
+    }
+    return visited;
+  };
+
+  it('WITHOUT the URL→cookie promotion: the installed PWA oscillates (documents the bug)', () => {
+    const visited = runStandaloneExit(false);
+    // never settles: keeps flipping welcome ↔ dashboard and hits the iteration cap
+    expect(visited.length).toBeGreaterThan(4);
+    expect(visited).toContain('/welcome/language');
+  });
+
+  it('WITH the URL→cookie promotion: the installed PWA settles on /dashboard immediately', () => {
+    const visited = runStandaloneExit(true);
+    // fixed point on the first check — no bounce to /welcome ever
+    expect(visited).toEqual([DASHBOARD_ONBOARDED_URL]);
   });
 });
