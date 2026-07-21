@@ -1,0 +1,124 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  /* FOUNDER-WALK-3 U3 harness — faithfully mirrors the chat-session bottom:
+     dashboard-shell (100dvh, --surface-page) > standalone-chat root (--surface-2)
+     > messages (--surface-2) > composer WRAPPER (--surface-2) > ChatInput non-hero
+     root (--panel, padding-bottom: 12 + inset). The iOS home-indicator inset is
+     simulated with --sab (env() can't be forced headless). Two device frames per
+     row: BEFORE (wrapper = --surface-2) and AFTER (wrapper = --panel). */
+  :root {
+    --sab: 34px; /* simulated env(safe-area-inset-bottom) — iPhone home indicator */
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: #333; padding: 20px; font-family: -apple-system, system-ui, sans-serif; display: flex; gap: 28px; flex-wrap: wrap; }
+  .col { display: flex; flex-direction: column; gap: 8px; }
+  .cap { color: #fff; font-size: 12px; font-weight: 600; letter-spacing: .04em; }
+  .device {
+    width: 300px; height: 560px; position: relative; overflow: hidden;
+    border-radius: 28px; border: 2px solid #000;
+  }
+  /* THEME TOKENS (from styles/design-tokens.css) */
+  .light { --surface-page:#FBF7EC; --surface-2:#F4ECD8; --panel:#FFFFFF; --rule:rgba(15,43,30,.12); --subtle:#F4ECD8; --border-subtle:rgba(15,43,30,.10); --meta:#6B7A6E; }
+  .dark  { --surface-page:#133224; --surface-2:#0F2B1E; --panel:#08170F; --rule:rgba(244,236,216,.14); --subtle:#0F2B1E; --border-subtle:rgba(244,236,216,.10); --meta:#9BB0A0; }
+
+  .shell { position:absolute; inset:0; height:100%; display:flex; flex-direction:column; background:var(--surface-page); }
+  .hdr { height:52px; flex-shrink:0; background:var(--surface-2); border-bottom:1px solid var(--rule); display:flex; align-items:center; padding:0 16px; color:var(--meta); font-size:13px; font-weight:600; }
+  .chatroot { flex:1; display:flex; flex-direction:column; height:100%; background:var(--surface-2); min-height:0; }
+  .msgs { flex:1; overflow:auto; padding:16px; color:var(--meta); font-size:13px; }
+
+  /* composer WRAPPER — the line-738 div.
+     BEFORE: bone (--surface-2) wrapper that ALSO reserves the inset (padding-bottom
+     :var(--sab)) → a dead bone strip below the white composer = the founder's second
+     bar. AFTER: wrapper = --panel, inset owned ONCE by the composer → continuous. */
+  .cwrap-before { border-top:1px solid var(--rule); background:var(--surface-2); padding-bottom:var(--sab); }
+  .cwrap-after  { border-top:1px solid var(--rule); background:var(--panel); }
+
+  /* ChatInput non-hero root — the line-806 style (owns the inset once) */
+  .composer { padding:10px 16px calc(12px + var(--sab)); background:var(--panel); border-top:1px solid var(--border-subtle); flex-shrink:0; }
+  .cwrap-after .composer { /* single inset only */ }
+  .inputbox { border:1.5px solid var(--rule); border-radius:14px; background:var(--subtle); min-height:44px; display:flex; align-items:center; padding:0 14px; color:var(--meta); font-size:13px; }
+
+  /* home-indicator overlay marker (shows the 34px gesture zone) */
+  .indicator { position:absolute; left:0; right:0; bottom:0; height:var(--sab); pointer-events:none;
+    box-shadow: inset 0 0 0 1px rgba(255,0,0,.55); }
+  .indicator::after { content:""; position:absolute; left:50%; bottom:7px; transform:translateX(-50%); width:110px; height:5px; border-radius:3px; background:rgba(0,0,0,.35); }
+  .dark .indicator::after { background:rgba(255,255,255,.5); }
+</style>
+</head>
+<body>
+  <div class="col">
+    <div class="cap">BEFORE · light — wrapper = --surface-2 (bone)</div>
+    <div class="device light">
+      <div class="shell">
+        <div class="hdr">Chat</div>
+        <div class="chatroot">
+          <div class="msgs">…messages…</div>
+          <div class="cwrap-before">
+            <div style="position:relative">
+              <div class="composer"><div class="inputbox">Sag Goblin, was du bauen willst…</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="indicator"></div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="cap">AFTER · light — wrapper = --panel (white)</div>
+    <div class="device light">
+      <div class="shell">
+        <div class="hdr">Chat</div>
+        <div class="chatroot">
+          <div class="msgs">…messages…</div>
+          <div class="cwrap-after">
+            <div style="position:relative">
+              <div class="composer"><div class="inputbox">Sag Goblin, was du bauen willst…</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="indicator"></div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="cap">BEFORE · dark — wrapper = --surface-2</div>
+    <div class="device dark">
+      <div class="shell">
+        <div class="hdr">Chat</div>
+        <div class="chatroot">
+          <div class="msgs">…messages…</div>
+          <div class="cwrap-before">
+            <div style="position:relative">
+              <div class="composer"><div class="inputbox">Sag Goblin, was du bauen willst…</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="indicator"></div>
+    </div>
+  </div>
+
+  <div class="col">
+    <div class="cap">AFTER · dark — wrapper = --panel</div>
+    <div class="device dark">
+      <div class="shell">
+        <div class="hdr">Chat</div>
+        <div class="chatroot">
+          <div class="msgs">…messages…</div>
+          <div class="cwrap-after">
+            <div style="position:relative">
+              <div class="composer"><div class="inputbox">Sag Goblin, was du bauen willst…</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="indicator"></div>
+    </div>
+  </div>
+</body>
+</html>
