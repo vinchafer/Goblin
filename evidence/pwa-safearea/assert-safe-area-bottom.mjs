@@ -83,6 +83,17 @@ const standalone = read('components/chat/standalone-chat.tsx');
 check('standalone-chat wrapper does NOT double the composer inset',
   !insetBottom.test(standalone));
 
+// ── FOUNDER-WALK-3 U3 — the double-BAR (white + bone). Beyond the double-INSET
+//    guard above, the composer wrapper must not paint a DIFFERENT background than
+//    the composer it holds: the composer is --panel, so a --surface-2 wrapper let
+//    a bone strip show under the white composer in the home-indicator zone (the
+//    founder's stacked bars). The wrapper background must be --panel — one
+//    continuous surface into the inset. ──
+check('U3: standalone-chat composer wrapper is --panel (no bone seam under the composer)',
+  /borderTop: "1px solid var\(--rule\)", background: "var\(--panel\)"/.test(standalone));
+check('U3: standalone-chat composer wrapper is NOT --surface-2 (the removed bone layer)',
+  !/borderTop: "1px solid var\(--rule\)", background: "var\(--surface-2\)"/.test(standalone));
+
 // ── FOUNDER-WALK-2 U4 — onboarding footer + tour popup (BOTTOM). The /welcome
 //    footer line (justgoblin.com · SCHRITT x VON y) sat in the home-indicator
 //    zone (founder saw the dark-mode bottom cut here), and the first-run tour

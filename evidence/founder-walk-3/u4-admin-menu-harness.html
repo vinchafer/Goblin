@@ -1,0 +1,63 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><style>
+  :root { --brand-green:#1A3A2A; --brand-gold:#D4A737; --paper:#FBF7EC; --font-sans: -apple-system, system-ui, sans-serif; }
+  * { box-sizing:border-box; margin:0; }
+  body { background:#333; padding:22px; font-family:var(--font-sans); display:flex; gap:26px; flex-wrap:wrap; align-items:flex-start; }
+  .col { display:flex; flex-direction:column; gap:8px; }
+  .cap { color:#fff; font-size:12px; font-weight:600; }
+  .device { position:relative; overflow:hidden; border-radius:26px; border:2px solid #000; background:var(--paper); }
+  .w375 { width:375px; height:520px; }
+  .w320 { width:320px; height:520px; }
+
+  /* mobile bar */
+  .bar { display:flex; align-items:center; justify-content:space-between; gap:12px; background:var(--brand-green); color:#fff; padding:12px 16px; }
+  .lockup { display:inline-flex; align-items:baseline; gap:8px; }
+  .wordmark { font-size:16px; font-weight:800; letter-spacing:.14em; }
+  .kicker { font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--brand-gold); }
+  .menubtn { display:inline-flex; align-items:center; gap:8px; min-height:44px; max-width:62%; padding:7px 14px; background:rgba(255,255,255,.12); color:#fff; border:1px solid rgba(255,255,255,.24); border-radius:10px; cursor:pointer; }
+  .mb-eyebrow { font-size:10px; font-weight:600; letter-spacing:.1em; text-transform:uppercase; color:var(--brand-gold); }
+  .mb-label { font-size:14.5px; font-weight:700; white-space:nowrap; }
+  .mb-caret { font-size:11px; opacity:.85; }
+
+  .body { padding:20px 16px; color:#3a4a3f; font-size:14px; }
+  .body h1 { font-size:20px; margin-bottom:8px; }
+
+  /* sheet */
+  .sheet { position:absolute; left:0; right:0; top:0; display:flex; flex-direction:column; background:var(--brand-green); color:#fff; padding:8px 8px 10px; max-height:100%; overflow:auto; box-shadow:0 10px 34px rgba(0,0,0,.34); }
+  .sheet-head { display:flex; align-items:center; justify-content:space-between; padding:6px 12px 10px; }
+  .sheet-title { font-size:11px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--brand-gold); }
+  .sheet-close { width:40px; height:40px; border-radius:10px; background:rgba(255,255,255,.1); border:none; color:#fff; font-size:16px; }
+  .row { display:flex; align-items:center; justify-content:space-between; gap:12px; min-height:52px; padding:12px 16px; color:rgba(255,255,255,.82); text-decoration:none; border-radius:10px; }
+  .row .label { font-size:16px; font-weight:500; white-space:nowrap; }
+  .row.active { background:rgba(255,255,255,.16); }
+  .row.active .label { font-weight:700; color:#fff; }
+  .row .check { color:var(--brand-gold); font-size:15px; }
+  .row.appback { margin-top:6px; border-top:1px solid rgba(255,255,255,.12); border-radius:0; color:rgba(255,255,255,.6); }
+
+  .dark .device { background:#0F2B1E; }
+  .dark .body { color:#c9d6cd; }
+</style></head>
+<body>
+<script>
+  const NAV = ['Insight','Promo','Costs','Users','Health','Models','Catalog Ops','Telemetry','Rankings','Builds','Status'];
+  function barHTML(current){ return `<div class="bar"><span class="lockup"><span class="wordmark">GOBLIN</span><span class="kicker">Admin</span></span><button class="menubtn"><span class="mb-eyebrow">Bereich</span><span class="mb-label">${current}</span><span class="mb-caret">▾</span></button></div>`; }
+  function sheetHTML(current){ let rows = NAV.map(n=>`<a class="row ${n===current?'active':''}"><span class="label">${n}</span>${n===current?'<span class="check">✓</span>':''}</a>`).join(''); return `<div class="sheet"><div class="sheet-head"><span class="sheet-title">Bereich wählen</span><button class="sheet-close">✕</button></div>${rows}<a class="row appback"><span class="label">← Zur App</span></a></div>`; }
+  function body(){ return `<div class="body"><h1>Insight</h1>Signups, activation, retention…</div>`; }
+</script>
+
+<div class="col"><div class="cap">375 · light — CLOSED (bar shows current section)</div>
+  <div class="device w375" id="d1"></div></div>
+<div class="col"><div class="cap">375 · light — OPEN sheet</div>
+  <div class="device w375" id="d2"></div></div>
+<div class="col dark"><div class="cap">375 · dark — OPEN sheet</div>
+  <div class="device w375" id="d3"></div></div>
+<div class="col"><div class="cap">320 · light — OPEN sheet (narrowest)</div>
+  <div class="device w320" id="d4"></div></div>
+
+<script>
+  document.getElementById('d1').innerHTML = barHTML('Insight') + body();
+  document.getElementById('d2').innerHTML = barHTML('Insight') + body() + sheetHTML('Insight');
+  document.getElementById('d3').innerHTML = barHTML('Catalog Ops') + body() + sheetHTML('Catalog Ops');
+  document.getElementById('d4').innerHTML = barHTML('Catalog Ops') + body() + sheetHTML('Catalog Ops');
+</script>
+</body></html>

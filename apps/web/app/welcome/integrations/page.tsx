@@ -23,11 +23,7 @@ import {
 import { ProviderLogo } from '@/components/onboarding/ProviderLogo';
 import { patchOnboardingState } from '../_components/onboarding-state';
 import { useOnbLang, STR } from '../_components/i18n';
-
-// Where onboarding hands off. 10.10 C.5 (founder decision): land on a CLEAN
-// dashboard — NO ?start=1, which auto-opened the New-Project modal. This
-// intentionally reverses the Sprint-10.5 A-S11 behaviour.
-const NEXT_DEST = '/dashboard';
+import { completeOnboarding } from '@/lib/onboarding-complete';
 
 export default function IntegrationsStepPage() {
   const router = useRouter();
@@ -64,12 +60,19 @@ export default function IntegrationsStepPage() {
   }
 
   async function finish(skip: boolean) {
-    await patchOnboardingState({
-      completed: true,
-      current_step: 5,
-      ...(skip ? { skipped_steps: [5] } : {}),
+    // FOUNDER-WALK-3 U1: this path previously navigated to a BARE /dashboard — no
+    // ?onboarded=1 signal at all, so the installed-PWA loop was fully un-fixed for
+    // anyone who finished here (the optional/BYOK route). It also awaited the write
+    // before navigating (the same hang). Route it through the shared completion
+    // mechanism so it carries the signal, never blocks on the write, and is watched.
+    await completeOnboarding({
+      mutation: patchOnboardingState({
+        completed: true,
+        current_step: 5,
+        ...(skip ? { skipped_steps: [5] } : {}),
+      }),
+      navigate: (url) => router.push(url),
     });
-    router.push(NEXT_DEST);
   }
 
   function copyUrl() {

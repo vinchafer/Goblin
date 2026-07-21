@@ -8,7 +8,8 @@ import { GMark } from './icons';
 import { useOnbLang, STR } from './i18n';
 import { getOnboardingState } from './onboarding-state';
 import { readVibeKnown, stepInfo, type VibeKnown } from './flow';
-import { onboardedCookieString, DASHBOARD_ONBOARDED_URL } from '@/lib/onboarding-gate';
+import { onboardedCookieString, DASHBOARD_ONBOARDED_URL, ONBOARDING_MUTATION_BUDGET_MS } from '@/lib/onboarding-gate';
+import { withBudget, armOnboardingWatchdog } from '@/lib/onboarding-complete';
 
 // Numbering is owned by flow.ts (single source of truth). The header chip +
 // footer read {step,total} for the CURRENT branch; off-flow optional pages
@@ -64,7 +65,12 @@ export function OnboardingChrome({ children }: { children: React.ReactNode }) {
     }
     (async () => {
       try {
-        const state = await getOnboardingState();
+        // FOUNDER-WALK-3 U1: budget this read so a suspended/backgrounded PWA fetch
+        // can't wedge `checking` at true forever (the GMark spinner is itself a hang
+        // surface). On timeout `state` is undefined → we fall through and render
+        // onboarding rather than spinning; a genuinely-completed user still exits
+        // via the dashboard back-leg on the next hop.
+        const state = await withBudget(getOnboardingState(), ONBOARDING_MUTATION_BUDGET_MS);
         if (!cancelled && state?.completed) {
           // F-05 loop-breaker: this guard (service-role read) sees completion
           // before the user-scoped dashboard read may. Set the handshake cookie
@@ -73,6 +79,8 @@ export function OnboardingChrome({ children }: { children: React.ReactNode }) {
           // Standalone hardening (U1): carry the ?onboarded=1 signal so middleware
           // re-promotes the cookie even if standalone WebKit dropped the JS write.
           router.replace(DASHBOARD_ONBOARDED_URL);
+          // Watchdog: if the soft replace never resolves, hard-navigate.
+          armOnboardingWatchdog();
           return;
         }
       } catch {

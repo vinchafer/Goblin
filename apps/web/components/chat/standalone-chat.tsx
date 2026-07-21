@@ -731,11 +731,19 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
       </div>
 
       {/* Input area — sticky bottom of the flex column. The iOS bottom safe-area
-          (home-indicator gesture zone) is now cleared by ChatInput itself
+          (home-indicator gesture zone) is cleared by ChatInput itself
           (SAFEAREA-U-BOTTOM: its non-hero root pads paddingBottom by the inset),
-          so this wrapper no longer duplicates it — a double inset would leave a
-          dead --surface-2 strip below the composer. */}
-      <div style={{ borderTop: "1px solid var(--rule)", background: "var(--surface-2)" }}>
+          so this wrapper does NOT duplicate the inset — a double inset would leave a
+          dead --surface-2 strip below the composer.
+          FOUNDER-WALK-3 U3: the wrapper background is now --panel, NOT --surface-2.
+          The composer it holds is --panel (white light / #08170F dark); painting the
+          wrapper a DIFFERENT colour (--surface-2 bone) meant that if any seam opened
+          in the home-indicator zone (the composer's inset white over the bone wrapper
+          / page), the bone showed as a second bar under the white composer — the
+          founder's stacked white+bone bars. One surface, one colour, continuous into
+          the inset. chat-tab renders the composer with no such wrapper, so this
+          aligns the two chat surfaces. */}
+      <div style={{ borderTop: "1px solid var(--rule)", background: "var(--panel)" }}>
         <div style={{ position: "relative" }}>
           {/* U0: shown when the user scrolled away from the bottom; tap → back
               to live-follow. Sits centered above the composer, clear of the

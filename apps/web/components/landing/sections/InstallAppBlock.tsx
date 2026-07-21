@@ -162,8 +162,8 @@ export function InstallAppBlock() {
           <div style={{ fontSize: 'var(--small, 13.5px)', color: 'var(--ink-3)', marginTop: 3, lineHeight: 1.5 }}>
             {t(
               lang,
-              'Auf deinem Home-Bildschirm oder Dock. Kein App Store nötig.',
-              'On your home screen or dock. No app store needed.',
+              'Auf deinem Home-Bildschirm oder Dock. Ohne Store, ohne Umweg.',
+              'On your home screen or dock. No store, no detour.',
             )}
           </div>
         </div>
@@ -207,14 +207,16 @@ export function InstallAppBlock() {
         )}
       </div>
 
-      {/* FOUNDER-WALK-2 U2 — one quiet, confident line under the install block.
-          Frames the no-app-store choice as deliberate (not "…yet"), matching the
-          block's typography (--ink-3 meta ink, no icons). DE default + EN. */}
+      {/* FOUNDER-WALK-3 U6 — store-NEUTRAL line. The FW2 line read Apple-specific
+          ("App Store") and as if Goblin never wants any store; this covers Apple/
+          Google/Microsoft implicitly, frames it as a benefit (no store, no
+          download detour), never names a store, never sounds apologetic. --ink-3
+          meta ink, no icons. DE default + EN. */}
       <p data-testid="install-app-note" style={note}>
         {t(
           lang,
-          'Bewusst in keinem App Store — Goblin kommt direkt aufs Gerät.',
-          'Deliberately not in any app store — Goblin goes straight to your device.',
+          'Kein Store, kein Download-Umweg — Goblin kommt direkt aufs Gerät.',
+          'No store, no detour — Goblin goes straight to your device.',
         )}
       </p>
     </section>

@@ -1,5 +1,8 @@
 export const dynamic = 'force-dynamic';
 
+import { AdminErrorState } from '@/components/admin/AdminErrorState';
+import { type AdminErrorStatus } from '@/lib/admin/admin-error';
+
 interface ProviderStat {
   provider: string;
   cost_usd: number;
@@ -14,31 +17,35 @@ interface CostsSummary {
   by_provider: ProviderStat[];
 }
 
-async function fetchSummary(): Promise<CostsSummary | { error: string }> {
+async function fetchSummary(): Promise<CostsSummary | { errorStatus: AdminErrorStatus; detail?: string }> {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL;
   const adminKey = process.env.ADMIN_API_KEY;
-  if (!apiUrl) return { error: 'NEXT_PUBLIC_API_URL not set' };
-  if (!adminKey) return { error: 'ADMIN_API_KEY not set (server-side)' };
+  // A missing server-side key is the same actionable cause as a 401 (the Vercel-
+  // side ADMIN_API_KEY isn't set / doesn't match Railway) — surface it identically.
+  if (!apiUrl) return { errorStatus: 500, detail: 'NEXT_PUBLIC_API_URL not set' };
+  if (!adminKey) return { errorStatus: 401 };
   try {
     const res = await fetch(`${apiUrl}/api/admin/cost-summary`, {
       headers: { 'x-admin-key': adminKey },
       cache: 'no-store',
     });
-    if (!res.ok) return { error: `API ${res.status}` };
+    if (!res.ok) return { errorStatus: res.status };
     return await res.json() as CostsSummary;
-  } catch (e) {
-    return { error: (e as Error).message };
+  } catch {
+    return { errorStatus: 'network' };
   }
 }
 
 export default async function AdminCostsPage() {
   const data = await fetchSummary();
 
-  if ('error' in data) {
+  if ('errorStatus' in data) {
+    // FW3 U5: the shared, actionable admin error state — a 401 here now names the
+    // ADMIN_API_KEY cause instead of the bare "Error: API 401".
     return (
       <div style={{ padding: 32, color: 'var(--text-1)' }}>
-        <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 8 }}>Cost Dashboard</h1>
-        <p style={{ color: 'var(--rust)' }}>Error: {data.error}</p>
+        <h1 style={{ fontSize: 28, fontWeight: 600, marginBottom: 16 }}>Cost Dashboard</h1>
+        <AdminErrorState status={data.errorStatus} detail={data.detail} />
       </div>
     );
   }

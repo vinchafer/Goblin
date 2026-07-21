@@ -13,6 +13,9 @@ import {
   hasOnboardedSignal,
   shouldPromoteOnboardedCookie,
   DASHBOARD_ONBOARDED_URL,
+  shouldForceOnboardingNavigation,
+  ONBOARDING_MUTATION_BUDGET_MS,
+  ONBOARDING_WATCHDOG_MS,
 } from './onboarding-gate';
 
 describe('resolveOnboardingGate — the back leg', () => {
@@ -190,5 +193,39 @@ describe('the installed-PWA exit settles (no oscillation) — the U1 repro', () 
     const visited = runStandaloneExit(true);
     // fixed point on the first check — no bounce to /welcome ever
     expect(visited).toEqual([DASHBOARD_ONBOARDED_URL]);
+  });
+});
+
+// ── F-05 · transition watchdog (FOUNDER-WALK-3 U1) ───────────────────────────
+//
+// The redirect-loop probes above assume the navigation FIRES. The founder-walk-3
+// hang is a different failure: every completion path awaited the best-effort write
+// before navigating, so a suspended PWA fetch wedged the spinner and the signal-
+// bearing navigation never happened. The watchdog force-navigates when the app is
+// still on /welcome after a generous budget.
+describe('shouldForceOnboardingNavigation — the stuck-transition watchdog', () => {
+  it('fires while still stuck on any /welcome path', () => {
+    expect(shouldForceOnboardingNavigation('/welcome')).toBe(true);
+    expect(shouldForceOnboardingNavigation('/welcome/build')).toBe(true);
+    expect(shouldForceOnboardingNavigation('/welcome/integrations')).toBe(true);
+    expect(shouldForceOnboardingNavigation('/welcome/language')).toBe(true);
+  });
+
+  it('no-ops once the dashboard has been reached (nothing to force)', () => {
+    expect(shouldForceOnboardingNavigation('/dashboard')).toBe(false);
+    // the signal-bearing dashboard URL is a dashboard path, not a /welcome one
+    expect(shouldForceOnboardingNavigation('/dashboard?onboarded=1')).toBe(false);
+  });
+
+  it('does not false-positive on unrelated routes that merely contain "welcome"', () => {
+    // guards against a naive includes() — only real /welcome routes count
+    expect(shouldForceOnboardingNavigation('/dashboard/welcome-back')).toBe(false);
+    expect(shouldForceOnboardingNavigation('/help/welcome')).toBe(false);
+  });
+
+  it('the mutation budget is shorter than the watchdog (navigate before we force)', () => {
+    // the write is raced first; the watchdog is the last-resort backstop
+    expect(ONBOARDING_MUTATION_BUDGET_MS).toBeLessThan(ONBOARDING_WATCHDOG_MS);
+    expect(ONBOARDING_MUTATION_BUDGET_MS).toBeGreaterThan(0);
   });
 });
