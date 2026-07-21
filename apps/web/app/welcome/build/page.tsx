@@ -12,7 +12,7 @@ import { useState } from 'react';
 import { IArrowL, IArrowR } from '../_components/icons';
 import { patchOnboardingState } from '../_components/onboarding-state';
 import { useOnbLang, STR } from '../_components/i18n';
-import { onboardedCookieString, DASHBOARD_ONBOARDED_URL } from '@/lib/onboarding-gate';
+import { completeOnboarding } from '@/lib/onboarding-complete';
 
 export default function BuildStepPage() {
   const router = useRouter();
@@ -23,19 +23,15 @@ export default function BuildStepPage() {
   async function finish() {
     if (busy) return;
     setBusy(true);
-    // F-05: set the synchronous completion handshake FIRST, so it rides the very
-    // next navigation into the dashboard. This closes the stale-read window — the
-    // server guard trusts the cookie even while the DB write (below) is still
-    // replicating or RLS-hidden, so it can never bounce us back into /welcome.
-    if (typeof document !== 'undefined') document.cookie = onboardedCookieString();
-    // Mark onboarding complete (best-effort) before entering the dashboard, so
-    // the returning-user guard won't bounce the user back into /welcome.
-    await patchOnboardingState({ current_step: 4, completed: true });
-    // F-05 standalone hardening (U1): navigate WITH the ?onboarded=1 signal, not a
-    // bare /dashboard. In an installed PWA the JS cookie above can be dropped by
-    // standalone WebKit; the URL signal rides the navigation itself and middleware
-    // promotes it into the same cookie, so the back-leg guard still trusts it.
-    router.push(DASHBOARD_ONBOARDED_URL);
+    // FOUNDER-WALK-3 U1: the completion cookie, the best-effort write, the signal-
+    // bearing navigation and the stuck-transition watchdog are one mechanism now
+    // (lib/onboarding-complete). Crucially the write is RACED against a budget, not
+    // awaited to completion — a suspended PWA fetch can no longer wedge the spinner
+    // and block the navigation into the dashboard (the P0 hang).
+    await completeOnboarding({
+      mutation: patchOnboardingState({ current_step: 4, completed: true }),
+      navigate: (url) => router.push(url),
+    });
   }
 
   return (
