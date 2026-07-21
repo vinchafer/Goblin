@@ -27,8 +27,8 @@ check('bar shows current section ("Bereich")', /Bereich/.test(shell) && /current
 check('section sheet present (gobl-admin-sheet-row)', /gobl-admin-sheet-row/.test(shell));
 check('sheet rows ≥52px tall', /min-height:\s*52px/.test(shell));
 check('sheet labels are one line (white-space: nowrap)', /gobl-admin-sheet-label[\s\S]*?white-space:\s*nowrap/.test(shell));
-check('sheet closes on navigation (route effect) + Escape',
-  /setMenuOpen\(false\)[\s\S]*?\[pathname\]/.test(shell) && /'Escape'/.test(shell));
+check('sheet closes on row tap (onClick) + Escape',
+  /onClick=\{\(\) => setMenuOpen\(false\)\}/.test(shell) && /'Escape'/.test(shell));
 
 // ── the OLD horizontal scroll strip is GONE (no dead code) ──
 check('old scroll-fade removed', !/gobl-admin-scrollfade/.test(shell));

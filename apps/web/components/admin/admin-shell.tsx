@@ -42,8 +42,8 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/');
   const currentLabel = NAV.find((n) => isActive(n.href))?.label ?? 'Übersicht';
 
-  // Close the sheet on navigation (route change) and on Escape.
-  useEffect(() => { setMenuOpen(false); }, [pathname]);
+  // Close on Escape. (Row taps close via their own onClick before navigating, so
+  // no pathname effect is needed — and that keeps this free of a setState-in-effect.)
   useEffect(() => {
     if (!menuOpen) return;
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenuOpen(false); };
