@@ -3,6 +3,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import { readMutationError } from '@/lib/admin/mutation-error';
 import { setAvailability, reconcileToggle } from '@/lib/admin/optimistic-toggle';
+import { AdminErrorState } from '@/components/admin/AdminErrorState';
+import { type AdminErrorStatus } from '@/lib/admin/admin-error';
 
 const ADMIN_BASE = '/api/admin';
 const adminHeaders = () => ({ 'Content-Type': 'application/json' });
@@ -44,11 +46,19 @@ export default function AdminModelsPage() {
   const [form, setForm] = useState<Omit<Model, 'id'>>(BLANK);
   const [saving, setSaving] = useState(false);
   const [mutError, setMutError] = useState<string | null>(null);
+  // FW3 U5: a load 401 left an empty models table (a false state). Surface it.
+  const [loadError, setLoadError] = useState<AdminErrorStatus | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const res = await fetch(`${ADMIN_BASE}/models`, { headers: adminHeaders() });
-    if (res.ok) setModels(await res.json());
+    try {
+      const res = await fetch(`${ADMIN_BASE}/models`, { headers: adminHeaders() });
+      if (!res.ok) { setLoadError(res.status); setLoading(false); return; }
+      setLoadError(null);
+      setModels(await res.json());
+    } catch {
+      setLoadError('network');
+    }
     setLoading(false);
   }, []);
 
@@ -141,6 +151,10 @@ export default function AdminModelsPage() {
           + Add Model
         </button>
       </div>
+
+      {/* FW3 U5: load failure (401 → key mismatch) fails honestly, not as an
+          empty table — shared, actionable copy across every admin page. */}
+      {loadError != null && <AdminErrorState status={loadError} style={{ marginBottom: 16 }} />}
 
       {/* U5.1: honest error surface — shown on the list when a mutation fails
           outside the modal (delete / toggle). */}

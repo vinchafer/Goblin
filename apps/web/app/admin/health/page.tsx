@@ -135,13 +135,21 @@ export default async function AdminHealthPage() {
             v{webVersion} · {webCommit.slice(0, 7)}
           </span>
         </div>
-        {api?.gitCommit && webCommit !== 'local' && (
-          <div style={{ marginTop: 10, fontSize: 'var(--t-caption-fs)', color: api.gitCommit.slice(0, 7) === webCommit.slice(0, 7) ? 'var(--success)' : 'var(--danger)', fontFamily: 'var(--font-sans)' }}>
-            {api.gitCommit.slice(0, 7) === webCommit.slice(0, 7)
-              ? 'Commits in sync'
-              : `Commits differ — API: ${api.gitCommit.slice(0, 7)}, Web: ${webCommit.slice(0, 7)}`}
-          </div>
-        )}
+        {api?.gitCommit && webCommit !== 'local' && (() => {
+          // FW3 U5: differing SHAs are NORMAL, not an incident — a web-only wave
+          // ships a new web commit while the API binary is unchanged. Rendering it
+          // in red (--danger) read as an alarm for an expected state (a false
+          // signal). In sync → calm success; differing → neutral META info with a
+          // one-line reason, never red.
+          const inSync = api.gitCommit.slice(0, 7) === webCommit.slice(0, 7);
+          return (
+            <div style={{ marginTop: 10, fontSize: 'var(--t-caption-fs)', color: inSync ? 'var(--success)' : 'var(--meta)', fontFamily: 'var(--font-sans)' }}>
+              {inSync
+                ? 'Commits in sync'
+                : `Web ${webCommit.slice(0, 7)} · API ${api.gitCommit.slice(0, 7)} — unterschiedliche Commits sind bei einem reinen Web-Deploy normal (API-Binary unverändert).`}
+            </div>
+          );
+        })()}
       </div>
 
       {/* DB Stats */}
