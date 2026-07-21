@@ -1,38 +1,27 @@
 "use client";
 
-// FOUNDER-WALK-1 U4 — admin shell, rebuilt mobile-first.
+// FOUNDER-WALK-3 U4 — admin nav, v3: mobile menu-button, not a scroll strip.
 //
-// Founder verdict: the old mobile admin was "extrem schlicht — worst case". The
-// cause was a desktop layout shrunk onto a phone — a FIXED 220px sidebar inside a
-// horizontal flex on a 100dvh row, so at 375px the nav ate ~59% of the width and
-// left a ~155px content column (the "Desktop-IDE auf Handy geschrumpft" anti-pattern).
-// He runs the console MOSTLY from an iPhone, and it must also work on desktop.
+// History: FW1 replaced a shrunk 220px desktop sidebar with a horizontal tab
+// strip; FW2 gave the strip real spacing. The founder's verdict stood: 11 items
+// in a horizontal scroll row on a phone is the WRONG pattern — labels still
+// collided ("ModelsCatalogTelemetRankings…"), "Catalog Ops" wrapped, and the
+// off-screen tabs were undiscoverable. v3 removes the strip entirely:
+//   • Phone (<900px): a compact top bar showing the CURRENT section
+//     ("Bereich: Insight ▾"). Tap → a clean full-width sheet listing EVERY
+//     section as a large row (≥52px, one per line, current highlighted,
+//     founder-priority order). No horizontal scrolling, no truncation, no
+//     collision possible by construction; "Catalog Ops" lives on one line.
+//   • Desktop (≥900px): the left sidebar is UNCHANGED.
 //
-// This rebuild:
-//   • Phone (<900px): a compact top bar (brand WORDMARK — the old 👺 goblin-face
-//     logo is gone) + a horizontally scrollable tab strip; content gets the FULL
-//     width below it. Safe-area insets (env()) so the bar clears the notch and the
-//     tabs clear the home indicator. Every tab ≥44px tall.
-//   • Desktop (≥900px): the left sidebar returns and pages breathe at width.
-//   • One nav list drives both layouts, and it now includes EVERY /admin route
-//     (Costs + Rankings were missing before, unreachable from the nav).
-//
-// Inline styles can't express media queries, so the shell uses a scoped styled-jsx
-// block (classes + breakpoints) — same mechanism the onboarding chrome already uses.
+// Inline styles can't express media queries, so the shell uses scoped styled-jsx.
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
-// FOUNDER-WALK-2 U1 — the mobile tab strip collided into one run of text
-// ("HealthInsightCosts PromoUsers…") because the tabs sat 4px apart with no
-// per-tab framing, and the long "Catalog Ops" wrapped. This wave gives the
-// strip REAL spacing (gap ≥16px), an unmistakable per-tab boundary + active
-// indicator, an edge-fade so it's obvious more tabs live to the right, and a
-// founder-relevance order.
-//
-// Order by founder relevance (his re-walk names these five first): Insight ·
-// Promo · Costs · Users · Health, then the operational rest. Costs + Rankings
-// were absent from the OLD nav though the pages exist — every tab is reachable.
+// Founder-priority order (his re-walk names these five first): Insight · Promo ·
+// Costs · Users · Health, then the operational rest. Every /admin route is here.
 const NAV = [
   { href: '/admin/insight', label: 'Insight' },
   { href: '/admin/promo', label: 'Promo' },
@@ -49,11 +38,22 @@ const NAV = [
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const [menuOpen, setMenuOpen] = useState(false);
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + '/');
+  const currentLabel = NAV.find((n) => isActive(n.href))?.label ?? 'Übersicht';
+
+  // Close the sheet on navigation (route change) and on Escape.
+  useEffect(() => { setMenuOpen(false); }, [pathname]);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setMenuOpen(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [menuOpen]);
 
   return (
     <div className="gobl-admin">
-      {/* Sidebar (desktop) / top bar (mobile) share one brand + nav list. */}
+      {/* ── Desktop sidebar (≥900px) — UNCHANGED ── */}
       <aside className="gobl-admin-nav">
         <div className="gobl-admin-brand">
           <span className="gobl-admin-lockup">
@@ -62,25 +62,67 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           </span>
           <Link href="/dashboard" className="gobl-admin-back">← App</Link>
         </div>
+        <nav className="gobl-admin-links" aria-label="Admin sections">
+          {NAV.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-current={isActive(item.href) ? 'page' : undefined}
+              className={`gobl-admin-link${isActive(item.href) ? ' active' : ''}`}
+            >
+              {item.label}
+            </Link>
+          ))}
+        </nav>
+      </aside>
 
-        {/* Scroller wraps the links so the phone strip can carry a right-edge
-            fade (a scroll affordance) without clipping the desktop column. */}
-        <div className="gobl-admin-scroller">
-          <nav className="gobl-admin-links" aria-label="Admin sections">
+      {/* ── Phone top bar (<900px) — the menu-button pattern ── */}
+      <div className="gobl-admin-mobilebar">
+        <span className="gobl-admin-lockup">
+          <span className="gobl-admin-wordmark">GOBLIN</span>
+          <span className="gobl-admin-kicker">Admin</span>
+        </span>
+        <button
+          type="button"
+          className="gobl-admin-menubtn"
+          onClick={() => setMenuOpen((o) => !o)}
+          aria-haspopup="menu"
+          aria-expanded={menuOpen}
+          aria-controls="gobl-admin-sheet"
+        >
+          <span className="gobl-admin-menubtn-eyebrow">Bereich</span>
+          <span className="gobl-admin-menubtn-label">{currentLabel}</span>
+          <span className="gobl-admin-menubtn-caret" aria-hidden>▾</span>
+        </button>
+      </div>
+
+      {/* ── Phone section sheet — every section, one row each, no scroll strip ── */}
+      {menuOpen && (
+        <div className="gobl-admin-sheet-root" role="dialog" aria-modal="true" aria-label="Admin-Bereich wählen">
+          <div className="gobl-admin-sheet-backdrop" onClick={() => setMenuOpen(false)} />
+          <nav id="gobl-admin-sheet" className="gobl-admin-sheet" aria-label="Admin sections">
+            <div className="gobl-admin-sheet-head">
+              <span className="gobl-admin-sheet-title">Bereich wählen</span>
+              <button type="button" className="gobl-admin-sheet-close" onClick={() => setMenuOpen(false)} aria-label="Schließen">✕</button>
+            </div>
             {NAV.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 aria-current={isActive(item.href) ? 'page' : undefined}
-                className={`gobl-admin-link${isActive(item.href) ? ' active' : ''}`}
+                className={`gobl-admin-sheet-row${isActive(item.href) ? ' active' : ''}`}
+                onClick={() => setMenuOpen(false)}
               >
-                {item.label}
+                <span className="gobl-admin-sheet-label">{item.label}</span>
+                {isActive(item.href) && <span className="gobl-admin-sheet-check" aria-hidden>✓</span>}
               </Link>
             ))}
+            <Link href="/dashboard" className="gobl-admin-sheet-row gobl-admin-sheet-appback" onClick={() => setMenuOpen(false)}>
+              <span className="gobl-admin-sheet-label">← Zur App</span>
+            </Link>
           </nav>
-          <span className="gobl-admin-scrollfade" aria-hidden />
         </div>
-      </aside>
+      )}
 
       <main className="gobl-admin-main">{children}</main>
 
@@ -90,6 +132,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           min-height: 100dvh;
           background: var(--paper);
         }
+        /* ── Desktop sidebar (≥900px) — UNCHANGED from FW1/FW2 ── */
         .gobl-admin-nav {
           flex-shrink: 0;
           width: 220px;
@@ -98,7 +141,6 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           display: flex;
           flex-direction: column;
           padding: 20px 0;
-          /* Desktop sidebar scrolls independently. */
           position: sticky;
           top: 0;
           height: 100dvh;
@@ -111,6 +153,11 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           padding: 0 20px 18px;
           margin-bottom: 6px;
           border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        .gobl-admin-lockup {
+          display: inline-flex;
+          align-items: baseline;
+          gap: 8px;
         }
         .gobl-admin-wordmark {
           font-family: var(--font-sans);
@@ -127,15 +174,6 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           text-transform: uppercase;
           color: var(--brand-gold);
         }
-        /* Desktop: the scroller is a transparent passthrough — the links keep
-           filling the sidebar column exactly as before. */
-        .gobl-admin-scroller {
-          display: flex;
-          flex-direction: column;
-          flex: 1;
-          min-height: 0;
-        }
-        .gobl-admin-scrollfade { display: none; }
         .gobl-admin-links {
           display: flex;
           flex-direction: column;
@@ -181,101 +219,159 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
         }
         .gobl-admin-main {
           flex: 1;
-          min-width: 0; /* let children shrink / scroll instead of overflowing the row */
+          min-width: 0;
           overflow-x: hidden;
           padding: 32px;
         }
 
-        /* ── Phone: sidebar becomes a top bar + horizontal-scroll tabs ── */
+        /* ── Phone bar + sheet are desktop-hidden ── */
+        .gobl-admin-mobilebar { display: none; }
+        .gobl-admin-sheet-root { display: none; }
+
+        /* ── Phone (<900px): sidebar hidden, menu-button bar + sheet ── */
         @media (max-width: 899px) {
           .gobl-admin {
             flex-direction: column;
           }
           .gobl-admin-nav {
-            width: 100%;
-            height: auto;
+            display: none;
+          }
+          .gobl-admin-mobilebar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            background: var(--brand-green);
+            color: #fff;
             position: sticky;
             top: 0;
-            z-index: 20;
-            padding: 0;
-            padding-top: env(safe-area-inset-top);
-            flex-direction: column;
-          }
-          .gobl-admin-brand {
-            padding: 12px 16px;
+            z-index: 30;
+            padding: 10px 16px;
+            padding-top: calc(10px + env(safe-area-inset-top));
             padding-left: max(16px, env(safe-area-inset-left));
-            margin-bottom: 0;
+            padding-right: max(16px, env(safe-area-inset-right));
           }
-          /* Phone: the scroller becomes a relative box so the right-edge fade
-             can overlay the scrolling strip without clipping it. */
-          .gobl-admin-scroller {
-            flex: 0 0 auto;
-            flex-direction: row;
-            position: relative;
-            min-height: 0;
-          }
-          .gobl-admin-links {
-            flex-direction: row;
-            /* REAL separation — the founder-walk-2 collision was a 4px gap that
-               read as one run of text. 16px + per-tab framing kills it. */
-            gap: 16px;
-            padding: 10px 8px 12px;
-            padding-left: max(12px, env(safe-area-inset-left));
-            /* extra right pad so the last tab clears the fade overlay */
-            padding-right: max(36px, env(safe-area-inset-right));
-            width: 100%;
-            overflow-x: auto;
-            flex: 1 1 auto;
-            -webkit-overflow-scrolling: touch;
-            scrollbar-width: none;
-          }
-          .gobl-admin-links::-webkit-scrollbar {
-            display: none;
-          }
-          .gobl-admin-link {
-            flex: 0 0 auto;
-            /* Each tab is its own bounded touch target (≥44px tall, generous
-               horizontal padding) so labels can never read as one run. */
+          .gobl-admin-menubtn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
             min-height: 44px;
-            padding: 10px 4px;
-            border-radius: 0;
-            /* transparent baseline underline reserves space so the active
-               gold underline never shifts the row. */
-            border-bottom: 2px solid transparent;
-            color: rgba(255, 255, 255, 0.62);
-          }
-          .gobl-admin-link.active {
-            /* Unmistakable active indicator: bright label + gold underline. */
-            background: transparent;
+            max-width: 62%;
+            padding: 7px 14px;
+            background: rgba(255, 255, 255, 0.12);
             color: #fff;
-            border-bottom-color: var(--brand-gold);
+            border: 1px solid rgba(255, 255, 255, 0.24);
+            border-radius: 10px;
+            font-family: var(--font-sans);
+            cursor: pointer;
+          }
+          .gobl-admin-menubtn-eyebrow {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--brand-gold);
+            flex-shrink: 0;
+          }
+          .gobl-admin-menubtn-label {
+            font-size: 14.5px;
+            font-weight: 700;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+          .gobl-admin-menubtn-caret {
+            font-size: 11px;
+            opacity: 0.85;
+            flex-shrink: 0;
+          }
+
+          .gobl-admin-sheet-root {
+            display: block;
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+          }
+          .gobl-admin-sheet-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+          }
+          .gobl-admin-sheet {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 0;
+            display: flex;
+            flex-direction: column;
+            background: var(--brand-green);
+            color: #fff;
+            padding: 6px 8px 10px;
+            padding-top: calc(8px + env(safe-area-inset-top));
+            padding-left: max(8px, env(safe-area-inset-left));
+            padding-right: max(8px, env(safe-area-inset-right));
+            max-height: 100dvh;
+            overflow-y: auto;
+            box-shadow: 0 10px 34px rgba(0, 0, 0, 0.34);
+          }
+          .gobl-admin-sheet-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 6px 12px 10px;
+          }
+          .gobl-admin-sheet-title {
+            font-family: var(--font-sans);
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--brand-gold);
+          }
+          .gobl-admin-sheet-close {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+          }
+          .gobl-admin-sheet-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            min-height: 52px;
+            padding: 12px 16px;
+            color: rgba(255, 255, 255, 0.82);
+            text-decoration: none;
+            font-family: var(--font-sans);
+            border-radius: 10px;
+          }
+          .gobl-admin-sheet-label {
+            font-size: 16px;
+            font-weight: 500;
+            white-space: nowrap; /* multi-word ("Catalog Ops") on ONE line, never truncated */
+          }
+          .gobl-admin-sheet-row.active {
+            background: rgba(255, 255, 255, 0.16);
+            color: #fff;
+          }
+          .gobl-admin-sheet-row.active .gobl-admin-sheet-label {
             font-weight: 700;
           }
-          .gobl-admin-link:hover {
-            background: transparent;
-            color: #fff;
+          .gobl-admin-sheet-check {
+            color: var(--brand-gold);
+            font-size: 15px;
+            flex-shrink: 0;
           }
-          /* Right-edge fade — the "there's more to the right" affordance. Sits
-             over the strip, ignores pointer events so it never blocks scroll. */
-          .gobl-admin-scrollfade {
-            display: block;
-            position: absolute;
-            top: 0;
-            right: 0;
-            bottom: 0;
-            width: 36px;
-            pointer-events: none;
-            background: linear-gradient(
-              to right,
-              rgba(26, 58, 42, 0),
-              var(--brand-green)
-            );
-          }
-          /* The "back to app" link would clutter the phone strip — hide it there;
-             the brand wordmark links nowhere, so keep it in the scroll row is noisy.
-             Instead show it as a compact trailing tab. */
-          .gobl-admin-back {
-            display: none;
+          .gobl-admin-sheet-appback {
+            margin-top: 6px;
+            border-top: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 0;
+            color: rgba(255, 255, 255, 0.6);
           }
           .gobl-admin-main {
             padding: 20px 16px;
