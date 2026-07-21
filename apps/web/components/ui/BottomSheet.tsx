@@ -78,10 +78,18 @@ export function BottomSheet({
 
   if (!open || !mounted) return null;
 
+  // FOUNDER-WALK-3 U2: the full sheet (mobile Settings — where the founder toggled
+  // dark mode) is bottom-anchored, so its height sets how far its TOP sits from the
+  // screen top. A fixed 48px offset does NOT clear the iOS status bar / Dynamic
+  // Island on a standalone PWA, so the sheet's back button landed ON the clock and
+  // he couldn't navigate back. Reserve the real top inset: the top now sits at
+  // max(48px, safe-area-inset-top + 12px) down, clearing the notch on every device
+  // while staying identical (48px) in a normal browser where env() is 0. dvh, not
+  // vh, so the iOS toolbar collapse doesn't leave a gap.
   const heightMap: Record<SheetSize, string> = {
     auto: 'auto',
-    half: '50vh',
-    full: 'calc(100vh - 48px)',
+    half: '50dvh',
+    full: 'calc(100dvh - max(48px, calc(env(safe-area-inset-top) + 12px)))',
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
