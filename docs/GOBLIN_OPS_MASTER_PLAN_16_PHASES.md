@@ -16,6 +16,27 @@ Companion zu: `GOBLIN_ARBEITSMETHODIK.md` · `GOBLIN_THESIS_v3_DRAFT.md` · `GOB
 
 **Sequenz-Gesetz:** Phase 0 (Papier) darf sofort nach user-go-Vorbereitung laufen. **Phasen 1–15 starten erst nach Gate G1** (Validierungszahlen der ersten Kohorte, Thesis §11: W4-Rückkehr · W8-App-lebt · Concierge ≥3/10). Phasen strikt in Reihenfolge, außer als PARALLEL-SAFE markiert. Phase 13 ist auf Hire-1 gesperrt, Phase 14 auf Decision D5 — diese Sperren stehen in den Phasen selbst und Opus wird sie respektieren; überstimme sie nicht spontan.
 
+> **FOUNDER AMENDMENT 2026-07-27 — G1 ist kein Bau-Blocker mehr (Entscheid vom 2026-07-26).**
+> Das Sequenz-Gesetz oben gilt weiter **mit einer bewusst geänderten Stelle**: der Act-2-**Bau** läuft
+> **parallel zur Kohorten-Validierung**, statt hinter G1 zu warten. Konkret, damit hier nichts
+> hineingelesen wird, was nicht dasteht:
+> - **Phasen 1–15 dürfen starten, bevor G1 vorliegt.** Der Satz „starten erst nach Gate G1" ist für
+>   den Bau ausgesetzt. Alles andere am Sequenz-Gesetz bleibt: Phasen strikt in Reihenfolge, eine
+>   Phase pro Session, Phase 13 auf Hire-1, Phase 14 auf D5.
+> - **Die G1-Metriken werden weiter erhoben** (W4-Rückkehr · W8-App-lebt · Concierge ≥3/10). Sie
+>   entfallen nicht, sie sind nur kein Startsignal für den Bau mehr.
+> - **Die Kill-Kriterien aus Thesis §11 bleiben unverändert und bindend — unabhängig vom
+>   Baufortschritt.** Gebauter Code ist kein Argument gegen ein Kill. Wer je „wir haben schon so viel
+>   gebaut" gegen die Zahlen stellt, hat diese Amendment falsch gelesen: sie verschiebt den
+>   *Zeitpunkt des Bauens*, nicht die *Bedingungen des Weitermachens*.
+>
+> **Was das kostet, ehrlich:** Parallelbau heisst, dass Act-2-Arbeit weggeworfen werden kann, wenn die
+> Kohortenzahlen gegen die These sprechen. Das ist der bewusst gekaufte Preis für Vorlauf — nicht ein
+> übersehenes Risiko. Deshalb bleibt jede Act-2-Phase hinter `OPS_HOSTING_ENABLED` dunkel, bis die
+> Zahlen da sind: die Kohorte sieht nichts, was noch sterben könnte.
+>
+> *Recorded 2026-07-28 (Phase-1-PR), auf Founder-Anweisung. Phase 1 lief unter genau dieser Regel.*
+
 **Modell:** Alles Opus 4.8. Einzige empfohlene Ausnahme: Phase-Units, die mit `[DESIGN-SENSITIVE]` markiert sind (Status-Card, Report-E-Mail, Badge) — dort, falls verfügbar, stärkeres Modell, sonst Opus mit den Design-Gates.
 
 ---
@@ -108,15 +129,44 @@ G1 (validation numbers) gates Phases 1–15 · Phase 0 is paper and may run pre-
 **Ledger:** M-H1 line authored (hosting COGS class, platform-COGS).
 **Founder actions:** apply migration when merging; keep flag off.
 
+**AMENDMENT — Phase 1 v2 LEAN (founder decision 2026-07-27, executed 2026-07-28).** D2 is amended:
+the user-app plane runs on the Workers **FREE** plan — no Workers for Platforms, no dispatch namespace,
+no $25 subscription — until a real limit bites. The 100k-requests/day Free hard stop is the cost ceiling
+by design. Consequences for this phase, which the shipped code follows rather than the unit list above:
+ONE platform-owned router Worker (built in Phase 2) resolves `{name}.justgoblin.app` via a **KV** lookup
+and serves that app's static files from **R2** (`goblin-apps`, key prefix `apps/{app_id}/…`); there are no
+per-app Workers and no D1 on Free. `CF_DISPATCH_NAMESPACE` is therefore **not** a Phase-1 variable — the
+adapter reads `CF_ACCOUNT_ID`, `CF_API_TOKEN`, `CF_R2_*`, `CF_KV_NAMESPACE_ID`, `OPS_APPS_DOMAIN`. The
+domain is `justgoblin.app`. Phases 2 and 3 said `goblin.app` and were corrected in this document on
+2026-07-28 on founder instruction; Phase 12 never named a domain. **`OPS_SPIKE_0_DECISION_TABLE.md`
+still says `goblin.app` throughout** — it is a dated evidence record and is deliberately NOT rewritten,
+so read it with that substitution in mind. The adapter
+interface is deliberately substrate-agnostic so the documented upgrade trigger (Free limit bites OR
+server-side app code needed → Workers Paid / WfP, D1, per-app Workers) is an added implementation behind
+the same surface, not a rewrite.
+
+**THE ACT-2 GATE (U1.1 contract — binding on every later phase).** `isOpsBetaAccount(user)`
+(`apps/api/src/services/ops-beta.ts`) is the single boundary that keeps Act 2 invisible to the live Act-1
+cohort. It returns true only when the global kill switch `OPS_HOSTING_ENABLED` is exactly `true` AND the
+user's email is in the comma-separated `OPS_BETA_ACCOUNTS` — two independent dimensions, ANDed, both
+fail-closed (unset, empty or malformed → denied). **Every Act-2 surface — every route, background job,
+agent tool, and every web surface that so much as reveals one — must pass through this helper before it
+does anything observable, read-only surfaces included**, because the existence of an Act-2 route is
+itself information the cohort must not have. Refusals answer **404** with no discriminating detail
+(`middleware/ops-gate.ts`); the deny *reason* is for logs and tests only, never for a client. Do not add
+a second gate: one boundary is one thing to get right. With `OPS_HOSTING_ENABLED=false` — its production
+default and its state at this merge — the whole of Act 2 is dark for everyone, including the founder,
+with no deploy needed to keep it that way.
+
 ## PHASE 2 — HOSTED PUBLISH (STATIC): THE FIRST LIVING URL
-**Objective:** A Goblin project publishes to `name.goblin.app` through the existing truth-gated pipeline.
-**Units:** (2.1) Wildcard routing: dispatch Worker resolving `{name}.goblin.app` → tenant script (plus reserved-names list: www, api, admin, status, mail…). (2.2) Publish path in API: build artifact (existing) → cf-deploy upload → setTenantLimits(default caps) → record in ops_apps. (2.3) Extend the EXISTING verification loop: entry 200 via public URL, N assets byte-checked, headers sane; reuse, don't fork, the current verifier. (2.4) Name claim flow: availability check, honest German errors ("Dieser Name ist vergeben"), rename = new deploy + old released. (2.5) E2E on prod API with test account: publish test app → verification green → screenshot of live URL fetched server-side (curl output as evidence, since sandbox has no browser — label it deterministic).
+**Objective:** A Goblin project publishes to `name.justgoblin.app` through the existing truth-gated pipeline.
+**Units:** (2.1) Wildcard routing: dispatch Worker resolving `{name}.justgoblin.app` → tenant script (plus reserved-names list: www, api, admin, status, mail…). (2.2) Publish path in API: build artifact (existing) → cf-deploy upload → setTenantLimits(default caps) → record in ops_apps. (2.3) Extend the EXISTING verification loop: entry 200 via public URL, N assets byte-checked, headers sane; reuse, don't fork, the current verifier. (2.4) Name claim flow: availability check, honest German errors ("Dieser Name ist vergeben"), rename = new deploy + old released. (2.5) E2E on prod API with test account: publish test app → verification green → screenshot of live URL fetched server-side (curl output as evidence, since sandbox has no browser — label it deterministic).
 **Gates:** 2.5 publish→verify 5/5 · caps demonstrably set (CF API read-back in evidence) · flag still off for real users.
-**HALT if:** wildcard DNS/SSL for `*.goblin.app` not yet configured — output exact founder steps (CF dashboard) and stop.
+**HALT if:** wildcard DNS/SSL for `*.justgoblin.app` not yet configured — output exact founder steps (CF dashboard) and stop.
 
 ## PHASE 3 — PUBLISH UX + PRE-DEPLOY ABUSE SCAN
 **Objective:** "Live stellen" gets the hosted default path; nothing ships un-scanned.
-**Units:** (3.1) [DESIGN-SENSITIVE] Publish sheet v2: hosted path default ("Live auf name.goblin.app — nichts zu verbinden"), Vercel-connect remains as "Eigenes Vercel verbinden (für Fortgeschrittene)" — both honest, neither phantom; German + EN i18n. (3.2) Pre-deploy scan unit: deterministic ruleset (blocked patterns, external form-action targets, crypto-drainer signatures) + Swift-class content classifier on extracted text; verdict pass/review/block with honest user message; review queue table (migration AUTHORED). (3.3) Scan wired into publish path before upload; blocked = nothing uploaded. (3.4) Admin review surface (minimal list in /admin, reuse existing admin patterns).
+**Units:** (3.1) [DESIGN-SENSITIVE] Publish sheet v2: hosted path default ("Live auf name.justgoblin.app — nichts zu verbinden"), Vercel-connect remains as "Eigenes Vercel verbinden (für Fortgeschrittene)" — both honest, neither phantom; German + EN i18n. (3.2) Pre-deploy scan unit: deterministic ruleset (blocked patterns, external form-action targets, crypto-drainer signatures) + Swift-class content classifier on extracted text; verdict pass/review/block with honest user message; review queue table (migration AUTHORED). (3.3) Scan wired into publish path before upload; blocked = nothing uploaded. (3.4) Admin review surface (minimal list in /admin, reuse existing admin patterns).
 **Gates:** scan battery: 10 seeded samples (7 benign, 3 hostile from 3.2's own test fixtures) → expected verdicts 10/10 · publish UX walk on test account with screenshots · no English leaks (grep i18n).
 **Ledger:** M-A1 (scan tokens: formula = extracted-text tokens × classifier rate; platform-COGS).
 

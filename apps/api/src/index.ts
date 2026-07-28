@@ -108,6 +108,7 @@ import { auth2fa } from './routes/auth-2fa';
 import { auth } from './routes/auth';
 import { shared } from './routes/shared';
 import { waitlist } from './routes/waitlist';
+import { ops } from './routes/ops';
 import { events } from './routes/events';
 import { feedback } from './routes/feedback';
 import { startCron } from './lib/cron';
@@ -258,6 +259,10 @@ app.route('/api/auth/2fa', auth2fa);
 app.route('/api/auth', auth);
 app.route('/api/shared', shared);
 app.route('/api/waitlist', waitlist);
+// AKT 2 · PHASE 1 — the ops plane. Every route behind opsGate: with
+// OPS_HOSTING_ENABLED=false (production default) this whole surface 404s for
+// everyone, so the live Act-1 cohort cannot reach or detect it.
+app.route('/api/ops', ops);
 
 // 9R — rankings aggregator every 6h (production only)
 startCron();
