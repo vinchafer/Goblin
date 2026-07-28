@@ -14,7 +14,8 @@
 | U1.3 | `0307abf` | `GET /api/ops/health` — four checks, value-blind |
 | U1.4 | `f5ee0a4` | Migration `0099_ops_apps.sql` (AUTHORED, not applied) + pre-migration-tolerant reader |
 | U1.5 | `86f7506` | `POST /api/ops/selftest` — the real-API round-trip, run by the deployed API |
-| — | `504a1ec` | Evidence artifacts |
+| — | `504a1ec`, `a072a97` | Evidence artifacts + report |
+| — | `8ceb09e` | Founder amendment (G1 parallel-build) + `goblin.app` → `justgoblin.app` |
 
 Scope: **16 files, +3218 lines, 0 deletions.** Three files modified, thirteen new. The only modified
 *code* file is `apps/api/src/index.ts`, +5 lines (an import, a comment, the mount).
@@ -48,7 +49,10 @@ exact fact the gate exists to hide, on the surface whose entire purpose is invis
 asserted in a test against a bare Hono app's own 404 so it cannot drift. Reasoning about the gate did
 not find this; running one request against the real server did.
 
-**FINDING 2 — the master plan's Phase-1 unit list is superseded, and the domain differs everywhere.**
+**FINDING 2 — the master plan's Phase-1 unit list is superseded, and the domain differed everywhere.**
+*(Domain half RESOLVED 2026-07-28 on founder instruction: Phases 2 and 3 now say `justgoblin.app`;
+Phase 12 never named a domain, so there was nothing there to correct. `OPS_SPIKE_0_DECISION_TABLE.md`
+still says `goblin.app` and is deliberately left alone — it is a dated evidence record.)*
 The plan (and `OPS_SPIKE_0`) specify `CF_DISPATCH_NAMESPACE`, Workers for Platforms, per-app Workers
 and per-app D1 — all of which the lean/Free amendment removes — and name the apps domain
 `goblin.app`, while the environment and this phase use **`justgoblin.app`**. Repo-over-prompt was not
