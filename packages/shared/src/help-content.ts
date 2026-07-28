@@ -112,10 +112,10 @@ export const HELP_ARTICLES: HelpArticle[] = [
     sections: [
       {
         anchor: 'dein-eigenes-vercel',
-        heading: { de: 'Goblin hostet nicht — dein Vercel hostet', en: 'Goblin doesn’t host — your Vercel does' },
+        heading: { de: 'Dein Vercel hostet deine Live-Seite', en: 'Your Vercel hosts your live site' },
         body: {
-          de: 'Wichtig zu wissen: Goblin betreibt deine Seite nicht selbst. Deine Live-Seite läuft in deinem eigenen Vercel-Konto. Deshalb verbindest du einmalig Vercel, bevor du live stellen kannst. Ein Vercel-Konto ist kostenlos.',
-          en: 'Important: Goblin does not run your site itself. Your live site runs in your own Vercel account. That’s why you connect Vercel once before you can go live. A Vercel account is free.',
+          de: 'Wichtig zu wissen: Deine Live-Seite läuft in deinem eigenen Vercel-Konto, nicht bei Goblin. Deshalb verbindest du einmalig Vercel, bevor du live stellen kannst. Ein Vercel-Konto ist kostenlos. (Daneben gibt es eine eingeschränkte Beta, in der Goblin Apps selbst auf {name}.justgoblin.app veröffentlicht — die ist nur für ausgewählte Konten freigeschaltet. Für alle anderen ist Vercel der Weg.)',
+          en: 'Important: your live site runs in your own Vercel account, not at Goblin. That’s why you connect Vercel once before you can go live. A Vercel account is free. (There is also a limited beta in which Goblin publishes apps to {name}.justgoblin.app itself — enabled only for selected accounts. For everyone else, Vercel is the path.)',
         },
       },
       {

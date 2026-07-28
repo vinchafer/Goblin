@@ -40,6 +40,15 @@ export default function LegalLayout({ children }: { children: ReactNode }) {
               {label}
             </Link>
           ))}
+          {/* AKT 2 · U-B4(a): the abuse route has to be reachable, not just written
+              down in the AUP. Lightest honest option — a mailto, no phantom form.
+              A report form and a per-hosted-app footer link are Phase-3 items. */}
+          <a
+            href="mailto:abuse@justgoblin.com"
+            style={{ fontSize: 'var(--t-caption-fs)', color: 'rgba(255,255,255,0.72)', textDecoration: 'none', fontFamily: 'var(--font-sans)', transition: 'color 0.15s' }}
+          >
+            Abuse
+          </a>
         </nav>
       </footer>
     </div>

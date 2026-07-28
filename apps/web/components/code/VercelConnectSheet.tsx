@@ -1,12 +1,19 @@
 "use client";
 
 // P1.11 — the publish-moment JIT. The founder tapped "Live stellen" with no Vercel
-// token and hit a dead end. Founder decision (2026-07-07): Goblin does NOT host
-// user deploys — every user connects their OWN Vercel; that's part of becoming a
-// real builder. So this sheet is the canonical first-publish path for every new
-// user: welcoming, clear, zero dead ends. It detects the missing connection BEFORE
-// the deploy fails, lets the user connect inline in ~2 minutes, and returns them to
-// a still-pending "Live stellen" (onConnected resumes the publish).
+// token and hit a dead end. So this sheet is the canonical first-publish path for
+// every new user: welcoming, clear, zero dead ends. It detects the missing
+// connection BEFORE the deploy fails, lets the user connect inline in ~2 minutes,
+// and returns them to a still-pending "Live stellen" (onConnected resumes the
+// publish).
+//
+// SUPERSEDED PREMISE (corrected 2026-07-28, AKT 2 · U-B1/S5): this comment used to
+// cite the founder decision of 2026-07-07 — "Goblin does NOT host user deploys" —
+// as settled. The founder reopened that ruling on 2026-07-11
+// (docs/GOBLIN_THESIS_v3_DRAFT.md:11), and from AKT 2 · Phase 2 Goblin does host
+// apps on {name}.justgoblin.app for allowlisted beta accounts. The Vercel path
+// below remains the default for every other account, so this sheet is unchanged in
+// behaviour — only the stale rationale is corrected. See docs/HOSTING_CLAIMS_AUDIT.md.
 
 import { useState } from "react";
 import { Icon } from "@/components/ui/icon";
