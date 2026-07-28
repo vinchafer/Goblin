@@ -108,6 +108,27 @@ describe('U2.3 — the 9/9 fixture battery', () => {
   });
 });
 
+// ── The same nine artifacts, in the shape production runs them ──────────────
+
+describe('the generated fixture constant', () => {
+  it('is identical to the files on disk', async () => {
+    // U2.8 re-runs this battery ON PRODUCTION, and a bundled API cannot read
+    // __fixtures__/ off disk. So the fixtures are also emitted as a constant, and
+    // this is what stops prod from silently scoring 9/9 on a stale copy.
+    const { HOSTED_SCAN_FIXTURES } = await import('./hosted-fixtures.generated');
+    const onDisk: Record<string, Record<string, string>> = {};
+    for (const c of BATTERY) {
+      onDisk[c.fixture] = Object.fromEntries(loadFixture(c.fixture).map((f) => [f.path, f.content!]));
+    }
+    expect(HOSTED_SCAN_FIXTURES).toEqual(onDisk);
+  });
+
+  it('scores 9/9 through the production battery runner too', async () => {
+    const { runScanBattery } = await import('../ops-e2e');
+    expect(runScanBattery()).toEqual({ correct: 9, total: 9, wrong: [] });
+  });
+});
+
 // ── The messages a blocked builder actually reads ───────────────────────────
 
 describe('block messages', () => {

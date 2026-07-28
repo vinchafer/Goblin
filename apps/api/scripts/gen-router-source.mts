@@ -13,9 +13,9 @@
  *   pnpm --filter @goblin/api ops:gen-router
  */
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
+import { dirname, join, relative } from 'node:path';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const workerPath = join(here, '..', 'src', 'services', 'ops-router', 'worker.js');
@@ -51,3 +51,51 @@ export const ROUTER_SCRIPT_NAME = 'goblin-apps-router';
 
 writeFileSync(outPath, out, 'utf8');
 console.log(`wrote ${outPath} (${source.length} bytes of worker source, ${source.split('\n').length} lines)`);
+
+// ── The scan fixtures, for the same reason ──────────────────────────────────
+//
+// U2.8's E2E runner re-runs the 9/9 battery ON PRODUCTION, from the deployed API.
+// The bundle cannot read __fixtures__/ off disk any more than it can read
+// worker.js, so the fixtures are emitted as a constant too. The unit battery keeps
+// reading the real FILES (a reviewer must be able to open benign-06 and judge
+// whether it is really an honest security guide), and a test asserts the two match
+// — so prod runs the same nine artifacts the repo reviews.
+
+const fixtureRoot = join(here, '..', 'src', 'services', 'safety', '__fixtures__', 'hosted-publish');
+const fixtureOut = join(here, '..', 'src', 'services', 'safety', 'hosted-fixtures.generated.ts');
+
+const fixtures: Record<string, Record<string, string>> = {};
+for (const dir of readdirSync(fixtureRoot).sort()) {
+  const full = join(fixtureRoot, dir);
+  if (!statSync(full).isDirectory()) continue;
+  const files: Record<string, string> = {};
+  const walk = (d: string) => {
+    for (const entry of readdirSync(d).sort()) {
+      const p = join(d, entry);
+      if (statSync(p).isDirectory()) walk(p);
+      else files[relative(full, p).split('\\').join('/')] = readFileSync(p, 'utf8');
+    }
+  };
+  walk(full);
+  fixtures[dir] = files;
+}
+
+const fixtureBody = `/**
+ * GENERATED FILE — DO NOT EDIT.
+ *
+ * Source of truth: \`src/services/safety/__fixtures__/hosted-publish/\`.
+ * Regenerate with: \`pnpm --filter @goblin/api ops:gen-router\`.
+ *
+ * The unit battery reads the real files; this constant exists so the DEPLOYED API
+ * can re-run the same nine artifacts on production (U2.8). A test asserts the two
+ * are identical.
+ */
+
+/* eslint-disable */
+
+export const HOSTED_SCAN_FIXTURES: Record<string, Record<string, string>> =
+${JSON.stringify(fixtures, null, 2)};
+`;
+
+writeFileSync(fixtureOut, fixtureBody, 'utf8');
+console.log(`wrote ${fixtureOut} (${Object.keys(fixtures).length} fixtures)`);

@@ -70,6 +70,7 @@ const ROUTES: Array<{ method: string; path: string; body?: unknown }> = [
   { method: 'GET', path: '/apps/name-check?name=meinladen' },
   { method: 'POST', path: '/apps/publish', body: { projectId: 'proj-1', name: 'meinladen' } },
   { method: 'POST', path: '/apps/app-1/rename', body: { name: 'neuername' } },
+  { method: 'POST', path: '/e2e?confirm=RUN-E2E' },
 ];
 
 function call(route: { method: string; path: string; body?: unknown }, headers: Record<string, string> = {}) {

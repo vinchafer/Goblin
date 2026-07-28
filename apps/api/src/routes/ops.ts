@@ -28,6 +28,7 @@ import { opsHostingEnabled } from '../services/ops-beta';
 import { runOpsSelftest, SELFTEST_APP_ID } from '../services/ops-selftest';
 import { provisionRouter, routerStatus } from '../services/ops-router-deploy';
 import { checkNameAvailable, publishHostedApp, renameHostedApp } from '../services/ops-publish';
+import { runOpsE2E, E2E_CONFIRM } from '../services/ops-e2e';
 import { findOpsAppById, listUserOpsApps } from '../services/ops-apps-store';
 import { appUrl } from '../services/ops-app-names';
 import { getSupabaseAdmin } from '../lib/supabase';
@@ -289,6 +290,37 @@ ops.post('/router/provision', async (c) => {
     { userId: principal.userId, provisioned: report.provisioned, blockedOnDns: report.blockedOnDns },
     'ops_router_provision_finished',
   );
+  return c.json(report);
+});
+
+/**
+ * POST /api/ops/e2e?confirm=RUN-E2E — U2.8, the whole loop on the real substrate.
+ *
+ * POST and an explicit confirm token: it writes to production R2, KV and Postgres,
+ * so no link, prefetch or crawler may be able to start it. Names are always
+ * `e2e-<random>` and project_id is null, so it cannot touch a builder's app.
+ *
+ * 200 whether or not it passed — the report is the answer, and a failing step is
+ * data the founder needs to read, not an HTTP error that hides it.
+ */
+ops.post('/e2e', async (c) => {
+  const principal = c.get('opsPrincipal');
+  if (c.req.query('confirm') !== E2E_CONFIRM) {
+    return c.json(
+      { error: 'confirm_required', message: `Dieser Lauf schreibt auf die echte Infrastruktur. Zum Starten: ?confirm=${E2E_CONFIRM}` },
+      400,
+    );
+  }
+  const loopsParam = Number(c.req.query('loops'));
+  logger.warn({ userId: principal.userId }, 'ops_e2e_started');
+
+  const report = await runOpsE2E({
+    userId: principal.userId,
+    actor: principal.email,
+    ...(Number.isFinite(loopsParam) ? { loops: loopsParam } : {}),
+  });
+
+  logger.warn({ userId: principal.userId, passed: report.passed, numbers: report.numbers }, 'ops_e2e_finished');
   return c.json(report);
 });
 
