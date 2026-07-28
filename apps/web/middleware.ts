@@ -62,6 +62,14 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/terms') ||
     pathname.startsWith('/privacy') ||
     pathname.startsWith('/imprint') ||
+    // /acceptable-use was added with the K1 policy page but never added here, so
+    // production answered it with a redirect to /login (verified live 2026-07-28:
+    // x-matched-path: /login). A legal page behind an auth wall is unreachable for
+    // exactly the people who need it — anyone evaluating the policy before signing
+    // up, and anyone reporting abuse. It is also linked from the signup consent and
+    // the legal footer, so those links dead-ended. The other three legal routes were
+    // already public; this restores parity.
+    pathname.startsWith('/acceptable-use') ||
     pathname.startsWith('/help') ||
     pathname.startsWith('/pricing') ||
     pathname.startsWith('/about') ||
