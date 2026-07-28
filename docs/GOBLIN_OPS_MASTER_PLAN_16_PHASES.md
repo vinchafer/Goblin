@@ -132,14 +132,16 @@ G1 (validation numbers) gates Phases 1–15 · Phase 0 is paper and may run pre-
 **PHASE 1.5 — round-trip gate (U1.5) closure record.** The U1.4/U1.5 round-trip was run
 against the REAL Cloudflare APIs from the founder's laptop on **2026-07-28** via the dev-only
 harness `apps/api/scripts/ops-roundtrip.mts` (direct adapter — no HTTP, no auth, no trial gate;
-adapter `763b3cc2`, 3 runs/surface). Measured result:
-**`kv 3/3 · workers 3/3` (real Cloudflare) · `r2 0/3`.** KV proves the multipart
-`value`+`metadata` write shape; Workers proves the ES-module upload format — both previously
-flagged suspects are correct. **R2 is NOT closed:** the local R2 S3 credential pair is rejected
-`auth: not authorized` even on a read-only HEAD/LIST, so it is a local-credential problem, not an
-adapter defect (the same adapter passes KV+Workers). R2's real-API proof therefore still stands on
-the deployed `POST /api/ops/selftest` (Railway holds the working R2 keys) OR a valid local R2 key —
-see the phase report's FOUNDER ACTIONS. Evidence: `evidence/akt2-phase1/roundtrip-local-2026-07-28.txt`.
+adapter `763b3cc2`, 3 runs/surface). **Final result: `r2 3/3 · kv 3/3 · workers 3/3 · cleanup ok`
+(real Cloudflare, stable across 3 consecutive runs) — the gate is GREEN.** KV proves the multipart
+`value`+`metadata` write shape; Workers proves the ES-module upload format; R2 proves put → list →
+get+byte-match → batched delete → list-0. **R2 close-out path:** the first attempt was `r2 0/3`
+because `CF_R2_ENDPOINT` carried a trailing `/goblin-apps` path segment, which under the adapter's
+`forcePathStyle` produced a double-bucket path (`…/goblin-apps/goblin-apps/…`) — NOT an adapter
+defect and NOT a credential-validity problem. The founder removed the path segment (endpoint is now
+the bare host, 0 path segments) and R2 went green. Evidence:
+`evidence/akt2-phase1/roundtrip-local-2026-07-28-r2-3of3.txt` (green) and the earlier
+`roundtrip-local-2026-07-28.txt` (the honest `r2 0/3` before-state).
 Also closed here (U1.5c): the internal ops plane no longer sits behind the trial/subscription
 paywall — `/api/ops` is skipped by the trial gate so an allowlisted beta account without a plan
 reaches `opsGate` instead of getting a 402.

@@ -1,0 +1,62 @@
+== ops round-trip (LOCAL, direct adapter) ==
+env presence: CF_ACCOUNT_ID=set  CF_API_TOKEN=set  CF_R2_ACCESS_KEY_ID=set  CF_R2_SECRET_ACCESS_KEY=set  CF_R2_ENDPOINT=set  CF_R2_BUCKET=set  CF_KV_NAMESPACE_ID=set  OPS_APPS_DOMAIN=set
+runs per surface: 3
+
+── R2 — 3/3 runs · cleanup ok
+   ok  run 1: put 3 files [3/3 / exp 3/3]
+   ok  run 1: list after put [3/3 / exp 3/3]
+   ok  run 1: get index.html [byte-match / exp byte-match]
+   ok  run 1: get assets/app.css [byte-match / exp byte-match]
+   ok  run 1: get nested/deep/data.json [byte-match / exp byte-match]
+   ok  run 1: byte-match total [3/3 / exp 3/3]
+   ok  run 1: batched delete [3 in 1 batch(es) / exp 3 in 1 batch(es)]
+   ok  run 1: list after delete [0 / exp 0]
+   ok  run 2: put 3 files [3/3 / exp 3/3]
+   ok  run 2: list after put [3/3 / exp 3/3]
+   ok  run 2: get index.html [byte-match / exp byte-match]
+   ok  run 2: get assets/app.css [byte-match / exp byte-match]
+   ok  run 2: get nested/deep/data.json [byte-match / exp byte-match]
+   ok  run 2: byte-match total [3/3 / exp 3/3]
+   ok  run 2: batched delete [3 in 1 batch(es) / exp 3 in 1 batch(es)]
+   ok  run 2: list after delete [0 / exp 0]
+   ok  run 3: put 3 files [3/3 / exp 3/3]
+   ok  run 3: list after put [3/3 / exp 3/3]
+   ok  run 3: get index.html [byte-match / exp byte-match]
+   ok  run 3: get assets/app.css [byte-match / exp byte-match]
+   ok  run 3: get nested/deep/data.json [byte-match / exp byte-match]
+   ok  run 3: byte-match total [3/3 / exp 3/3]
+   ok  run 3: batched delete [3 in 1 batch(es) / exp 3 in 1 batch(es)]
+   ok  run 3: list after delete [0 / exp 0]
+
+── KV — 3/3 runs · cleanup ok
+   ok  run 1: setRoute [test-roundtrip-1]
+   ok  run 1: getRoute matches [test-roundtrip-1 / exp test-roundtrip-1]
+   ok  run 1: deleteRoute [deleted]
+   ok  run 1: getRoute after delete [gone / exp gone]
+   ok  run 2: setRoute [test-roundtrip-2]
+   ok  run 2: getRoute matches [test-roundtrip-2 / exp test-roundtrip-2]
+   ok  run 2: deleteRoute [deleted]
+   ok  run 2: getRoute after delete [gone / exp gone]
+   ok  run 3: setRoute [test-roundtrip-3]
+   ok  run 3: getRoute matches [test-roundtrip-3 / exp test-roundtrip-3]
+   ok  run 3: deleteRoute [deleted]
+   ok  run 3: getRoute after delete [gone / exp gone]
+
+── WORKERS — 3/3 runs · cleanup ok
+   ok  run 1: deployWorker [133 bytes]
+   ok  run 1: getWorker exists [318 bytes / exp exists]
+   ok  run 1: deleteWorker [deleted]
+   ok  run 1: getWorker after delete [gone / exp gone]
+   ok  run 2: deployWorker [133 bytes]
+   ok  run 2: getWorker exists [318 bytes / exp exists]
+   ok  run 2: deleteWorker [deleted]
+   ok  run 2: getWorker after delete [gone / exp gone]
+   ok  run 3: deployWorker [133 bytes]
+   ok  run 3: getWorker exists [318 bytes / exp exists]
+   ok  run 3: deleteWorker [deleted]
+   ok  run 3: getWorker after delete [gone / exp gone]
+
+SUMMARY: r2 3/3 · kv 3/3 · workers 3/3 · cleanup ok
+PASSED: YES  (tookMs=32972)
+
+FINAL CLEANUP: r2 deleted 0 · kv deleted · workers already-absent
