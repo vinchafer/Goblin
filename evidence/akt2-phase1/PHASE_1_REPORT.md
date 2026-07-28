@@ -53,9 +53,7 @@ The plan (and `OPS_SPIKE_0`) specify `CF_DISPATCH_NAMESPACE`, Workers for Platfo
 and per-app D1 — all of which the lean/Free amendment removes — and name the apps domain
 `goblin.app`, while the environment and this phase use **`justgoblin.app`**. Repo-over-prompt was not
 in conflict here (the prompt is the written record of the amendment), so this was recorded rather than
-halted: the amendment is now written into the master plan's Phase-1 section in `a5fa297`. **Phase 2
-and Phase 12 still say `goblin.app` in their own sections and were left untouched** — out of scope for
-this phase, and a trap for whoever writes the Phase-2 prompt.
+halted: the amendment is now written into the master plan's Phase-1 section in `a5fa297`. Phases 2 and 3 have since been corrected in this document; the spike is not, by design.
 
 **FINDING 3 — `OPS_SPIKE_0` §7 limitation 1 is now partly answered, and nobody wrote it down.**
 The spike's largest open unknown was "`goblin.app` was never verified". The environment carries
@@ -129,10 +127,15 @@ asserting it is absent from that list. **Left untouched in Railway — reserved-
     tokens, honest degradation: all vacuously satisfied because this phase ships zero pixels. The
     first real test of those is Phase 3.
 
-11. **`G1` was not checked.** The master plan hard-gates Phases 1–15 behind G1 (first-cohort
-    validation numbers). This prompt did not list G1 among the preconditions and no G1 artifact exists
-    in the repo. I proceeded on the prompt's precondition list. **If G1 has not actually passed, this
-    PR should not merge yet** — that is the founder's call, not mine.
+11. **~~`G1` was not checked.~~ RESOLVED 2026-07-28 — this was my misreading, not a gap.** I raised
+    that the master plan hard-gates Phases 1–15 behind G1 and that no G1 artifact exists in the repo.
+    The founder's answer: the sequencing was consciously amended on **2026-07-26** — Act-2 **build**
+    runs **parallel** to cohort validation, the G1 metrics are still collected, and the Thesis §11
+    kill criteria remain binding regardless of build progress. That amendment is now written into the
+    master plan's sequencing section (`FOUNDER AMENDMENT 2026-07-27`), which is where it was missing.
+    **Phase 1 ran under exactly this rule.** The residual honest cost is stated in the amendment
+    itself: parallel building means Act-2 work can be thrown away if the cohort numbers go against the
+    thesis — a price knowingly paid for lead time, not an overlooked risk.
 
 12. **The adapter has one caller (the health probe) and one exerciser (the self-test).** No publish
     path, no user path, no job calls it. Its ergonomics under real use are untested by construction.
@@ -154,5 +157,5 @@ asserting it is absent from that list. **Left untouched in Railway — reserved-
    question and is currently written down nowhere.
 7. **Then say "Phase 2" to Steven.** Phase 2 must be re-issued as **v3** to match this lean
    architecture (router Worker + wildcard DNS + publish). **Do not use the Phase-2 v2 prompt as-is** —
-   it assumes a dispatch namespace and per-app Workers that no longer exist, and it says
-   `goblin.app` where the environment says `justgoblin.app`.
+   it assumes a dispatch namespace and per-app Workers that no longer exist. (The domain is now
+   correct in the master plan; the v2 *prompt* may still carry the old one.)
