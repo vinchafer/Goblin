@@ -106,6 +106,7 @@ import { account } from './routes/account';
 import { promo } from './routes/promo';
 import { auth2fa } from './routes/auth-2fa';
 import { auth } from './routes/auth';
+import { authEmailHook } from './routes/auth-email-hook';
 import { shared } from './routes/shared';
 import { waitlist } from './routes/waitlist';
 import { ops } from './routes/ops';
@@ -171,8 +172,16 @@ app.use('*', cors({
   maxAge: 86400,
 }));
 
-// Global rate limit: 60 req/min per IP/user — applied to all /api/* routes
-app.use('/api/*', generalRateLimit);
+// Global rate limit: 60 req/min per IP/user — applied to all /api/* routes.
+// EXCEPT the Supabase auth-email hook: it is server-to-server from a single
+// Supabase egress IP, so a signup burst would trip a per-IP limit meant for
+// browsers — and a 429 there means a password-reset or confirmation mail that
+// never arrives. It is HMAC-verified (routes/auth-email-hook.ts) and rejects
+// unsigned requests before doing any work.
+app.use('/api/*', async (c, next) => {
+  if (c.req.path === '/api/auth/email-hook') return next();
+  return generalRateLimit(c, next);
+});
 
 // Trial gate: blocks expired-trial users from API calls (migration 0030)
 app.use('/api/*', trialGate);
@@ -256,6 +265,7 @@ app.route('/api/admin/rankings', adminRankings);
 app.route('/api/account', account);
 app.route('/api/promo', promo);
 app.route('/api/auth/2fa', auth2fa);
+app.route('/api/auth/email-hook', authEmailHook);
 app.route('/api/auth', auth);
 app.route('/api/shared', shared);
 app.route('/api/waitlist', waitlist);
