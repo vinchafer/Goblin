@@ -178,7 +178,8 @@ Admin-Dashboard („Sicherheit"-Karte) + zügige Reaktion auf Feedback/Meldungen
   Runbook und in der Richtlinie zeigen jetzt auf diese Adresse.
 - ~~**Karenzfrist 30 Tage**~~ **BESTÄTIGT (Gründer-Entscheid 2026-07-28):** 30 Tage, wie in
   AGB Abschnitt 7 formuliert.
-- **Aufbewahrungsfrist für Beweise (12 Monate, 8.7)** bestätigen oder korrigieren — offen.
+- ~~**Aufbewahrungsfrist für Beweise (12 Monate, 8.7)**~~ **BESTÄTIGT (Gründer-Entscheid
+  2026-07-28):** 12 Monate, CSAM ausgenommen (dort gilt das Verfahren der Behörden).
 - **Vier Phase-2-Anforderungen aus 8.3 abnehmen**, bevor die erste fremde App live geht:
   Router respektiert `suspended` · Admin-Schreibpfad für die Sperre · Orphan-Sweep beim
   Projektlöschen · K3-Scan im CF-Publish-Pfad (sonst wird die öffentliche AUP-Zusage falsch).
@@ -278,5 +279,5 @@ Zeitstempel. Ablage außerhalb des Nutzer-Projekts.
 
 **Aufbewahrung: 12 Monate**, dann löschen — lang genug für einen Folgestreit, nicht länger
 als nötig. **Ausnahme CSAM:** nichts eigenständig aufbewahren oder ansehen; dem Verfahren
-der Behörden folgen und deren Weisung einholen. *(Frist ist ein Vorschlag → Gründer-/
-Anwaltsentscheid, siehe Abschnitt 7.)*
+der Behörden folgen und deren Weisung einholen. *(Gründer-Entscheid 2026-07-28: bestätigt —
+keine offene Frist mehr. Bei einer späteren anwaltlichen Prüfung mit zu bestätigen.)*
