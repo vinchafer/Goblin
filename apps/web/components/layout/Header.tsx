@@ -203,7 +203,8 @@ export function Header({
           </button>
           {modeOpen && (
             <>
-              <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setModeOpen(false)} />
+              {/* SCRIM-U1: named so a blocked click reports the scrim, not "<div></div>". */}
+              <div data-testid="header-mode-scrim" style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setModeOpen(false)} />
               <div role="menu" style={{
                 position: 'absolute', left: 0, top: 'calc(100% + 8px)',
                 background: 'var(--panel)', border: '1px solid var(--border-subtle)',
@@ -331,7 +332,8 @@ export function Header({
         </button>
         {plusOpen && (
           <>
-            <div style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setPlusOpen(false)} />
+            {/* SCRIM-U1: named so a blocked click reports the scrim, not "<div></div>". */}
+            <div data-testid="header-plus-scrim" style={{ position: 'fixed', inset: 0, zIndex: 99 }} onClick={() => setPlusOpen(false)} />
             <div
               role="menu"
               style={{

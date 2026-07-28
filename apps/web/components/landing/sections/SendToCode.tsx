@@ -52,6 +52,44 @@ function Chevron() {
   );
 }
 
+// I18N-LEAK FIX (AKT 1 · FEHLERSTRANG-1 · U4): the mock chat/code cards below
+// mirror the real product surface, and their labels were hardcoded GERMAN on a
+// fully English marketing page — nine of the founder-reported leaks came from
+// here and from InstallAppBlock. The product itself is bilingual (useLang), so
+// an English visitor really does see these controls in English; rendering the
+// mock in English is accurate, not a dressed-up screenshot.
+//
+// Same convention as AgentFlow.tsx: the landing RENDERS `.en`, and the German
+// the founder authored is preserved in `.de` so it is ready the day the landing
+// is localized. Localizing the whole landing is separate, larger work.
+const MOCK = {
+  en: {
+    tier: '· INCLUDED',
+    userMsg: 'Add a dark-mode toggle to the navbar',
+    aiLead: 'Here is your updated component:',
+    copy: 'Copy',
+    sendToCode: 'Send to Code',
+    draftPill: 'Draft · 2 files',
+    lines: (n: number) => `${n} lines`,
+    changed: 'CHANGED',
+    isNew: 'NEW',
+  },
+  de: {
+    tier: '· INKLUSIVE',
+    userMsg: 'Füg der Navbar einen Dark-Mode-Umschalter hinzu',
+    aiLead: 'Hier ist deine aktualisierte Komponente:',
+    copy: 'Kopieren',
+    sendToCode: 'An Code senden',
+    draftPill: 'Entwurf · 2 Dateien',
+    lines: (n: number) => `${n} Zeilen`,
+    changed: 'GEÄNDERT',
+    isNew: 'NEU',
+  },
+} as const;
+
+// Rendered language for the landing (see note above).
+const M = MOCK.en;
+
 export function SendToCode() {
   const illustRef = useRef<HTMLDivElement>(null);
 
@@ -101,18 +139,18 @@ export function SendToCode() {
                 </span>
                 <span className="name">Goblin</span>
                 <span className="model-chip">
-                  Goblin Swift <span className="tier">· INKLUSIVE</span>
+                  Goblin Swift <span className="tier">{M.tier}</span>
                   <span className="caret" aria-hidden="true">▾</span>
                 </span>
               </div>
               <div className="stc-body">
-                <div className="msg-user">Füg der Navbar einen Dark-Mode-Umschalter hinzu</div>
+                <div className="msg-user">{M.userMsg}</div>
                 <div className="msg-row">
                   <span className="msg-avatar" aria-hidden="true">
                     <svg><use href="#goblin-mark" /></svg>
                   </span>
                   <div className="msg-ai">
-                    <p>Hier ist deine aktualisierte Komponente:</p>
+                    <p>{M.aiLead}</p>
                     {/* Dark code block — mirrors CodeBlock.tsx verbatim */}
                     <div className="stc-codeblock">
                       <div className="cb-head"><span className="cb-lang">tsx</span></div>
@@ -123,8 +161,8 @@ export function SendToCode() {
 }`}</pre>
                       </div>
                       <div className="cb-actions">
-                        <span className="cb-btn cb-copy"><CopyIcon /> Kopieren</span>
-                        <span className="cb-btn cb-send"><CodeIcon /> An Code senden</span>
+                        <span className="cb-btn cb-copy"><CopyIcon /> {M.copy}</span>
+                        <span className="cb-btn cb-send"><CodeIcon /> {M.sendToCode}</span>
                       </div>
                     </div>
                   </div>
@@ -146,17 +184,17 @@ export function SendToCode() {
             <div className="stc-card-code">
               <div className="stc-code-head">
                 <span className="tab">Code</span>
-                <span className="draft-pill">Entwurf · 2 Dateien</span>
+                <span className="draft-pill">{M.draftPill}</span>
               </div>
               <div className="stc-code-body">
                 <div className="file-card">
                   <span className="fc-icon" aria-hidden="true"><FileIcon /></span>
                   <span className="fc-meta">
                     <span className="fc-name">Navbar.tsx</span>
-                    <span className="fc-sub">TSX · 12 Zeilen</span>
+                    <span className="fc-sub">TSX · {M.lines(12)}</span>
                   </span>
                   <span className="fc-badge badge-changed">
-                    GEÄNDERT <span className="delta">+6 −2</span>
+                    {M.changed} <span className="delta">+6 −2</span>
                   </span>
                   <span className="fc-chevron" aria-hidden="true"><Chevron /></span>
                 </div>
@@ -164,9 +202,9 @@ export function SendToCode() {
                   <span className="fc-icon" aria-hidden="true"><FileIcon /></span>
                   <span className="fc-meta">
                     <span className="fc-name">theme.css</span>
-                    <span className="fc-sub">CSS · 8 Zeilen</span>
+                    <span className="fc-sub">CSS · {M.lines(8)}</span>
                   </span>
-                  <span className="fc-badge badge-new">NEU</span>
+                  <span className="fc-badge badge-new">{M.isNew}</span>
                   <span className="fc-chevron" aria-hidden="true"><Chevron /></span>
                 </div>
               </div>

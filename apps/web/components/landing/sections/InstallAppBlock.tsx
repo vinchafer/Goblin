@@ -20,10 +20,24 @@
 //   • Already installed (standalone PWA): the whole block hides.
 //
 // Styled with the landing's scoped tokens (.landing-root) so it themes dark+light
-// automatically; DE default + EN via useLang/t; mobile-first (375px).
+// automatically; full DE + EN copy via t(); mobile-first (375px).
+//
+// I18N-LEAK FIX (AKT 1 · FEHLERSTRANG-1 · U4): this block used to take its
+// language from useLang() alone. useLang() reads the APP's stored preference
+// (localStorage 'goblin:preferred-lang'), which is written during onboarding and
+// defaults to 'de' when absent — and a first-time visitor on the marketing
+// landing has never been through onboarding, so the key is absent and the block
+// rendered GERMAN inside an otherwise fully English page. That was the founder's
+// report, and the cause was never a missing key: both locales were always here.
+// The cause was the SOURCE of the locale.
+//
+// The landing is a static English surface with no i18n mechanism of its own (see
+// app/page.tsx — every other section is hardcoded English). So the surface now
+// DECLARES its language via the `lang` prop, and only app surfaces — which do
+// have a real stored preference — fall back to useLang().
 
 import { useEffect, useState } from 'react';
-import { useLang, t } from '@/lib/use-lang';
+import { useLang, t, type Lang } from '@/lib/use-lang';
 import {
   detectInstallPlatform,
   isMacOsUA,
@@ -69,8 +83,16 @@ const TAB_LABEL: Record<InstallTab, string> = {
   windows: 'Windows',
 };
 
-export function InstallAppBlock() {
-  const lang = useLang();
+interface InstallAppBlockProps {
+  /** The language of the SURFACE this block sits on. The marketing landing is
+   *  English and passes 'en' explicitly. Omitted inside the app, where the
+   *  user's stored preference is the right source. */
+  lang?: Lang;
+}
+
+export function InstallAppBlock({ lang: langProp }: InstallAppBlockProps = {}) {
+  const storedLang = useLang();
+  const lang = langProp ?? storedLang;
   const [mounted, setMounted] = useState(false);
   const [platform, setPlatform] = useState<InstallPlatform>('desktop');
   const [detectedTab, setDetectedTab] = useState<InstallTab>('windows');

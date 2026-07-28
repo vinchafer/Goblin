@@ -122,6 +122,7 @@ export function BottomSheet({
     >
       <div
         onClick={onClose}
+        data-testid={testId ? `${testId}-scrim` : 'bottom-sheet-scrim'}
         style={{
           position: 'absolute',
           inset: 0,

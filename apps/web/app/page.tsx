@@ -66,7 +66,7 @@ export default function Home() {
         <Nav />
         <main id="main">
           <Hero />
-          <InstallAppBlock />
+          <InstallAppBlock lang="en" />
           <TrustedBy />
           <Problem />
           <HowItWorks />

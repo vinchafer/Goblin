@@ -348,6 +348,22 @@ export async function logoutTestUser(page: Page): Promise<void> {
 // "Hilfe" row, etc.) and the section pages (ProfilePage, ModelsPage) are shared
 // components, so post-open assertions are identical across both shells.
 
+/**
+ * The origin the authenticated session actually lives on.
+ *
+ * NOT the same thing as Playwright's baseURL. loginAsRealTestUser asks Supabase
+ * for a magic link with redirect_to = <BASE_URL>/auth/magic-callback; when that
+ * origin is not in the project's redirect allowlist (localhost:3000 is not),
+ * Supabase falls back to the configured Site URL and the session is established
+ * THERE. Any later `page.goto('/some/path')` resolves against baseURL instead,
+ * lands on a different origin with no cookies, and silently redirects to
+ * /login — which reads like a logged-out bug and is really a cross-origin
+ * navigation. Navigate with `${originOf(page)}/path` after logging in.
+ */
+export function originOf(page: Page): string {
+  return new URL(page.url()).origin;
+}
+
 /** Desktop = the 9D anchored popover / two-pane modal (≥768px, matchMedia in the shell). */
 export function isDesktopViewport(page: Page): boolean {
   const vp = page.viewportSize();
@@ -358,6 +374,7 @@ export function isDesktopViewport(page: Page): boolean {
 export async function openAvatarMenu(page: Page): Promise<Locator> {
   const avatar = page.locator('[data-testid="header-avatar"]');
   await avatar.waitFor({ state: 'visible', timeout: 10000 });
+  await assertHeaderUnblocked(page);
   await avatar.click();
   const menu = page.locator('[data-testid="avatar-menu-popover"], [data-testid="avatar-menu-sheet"]').first();
   await menu.waitFor({ state: 'visible', timeout: 5000 });
@@ -386,12 +403,75 @@ export async function openSettingsSection(page: Page, rowTestId: string, label: 
   return surface;
 }
 
-// Dismiss FirstRunTour if present
+/**
+ * Dismiss the FirstRunTour if it is up, and RESOLVE ONLY ONCE IT IS GONE.
+ *
+ * SCRIM-U1 — this helper was the root cause of the 15-failure E2E wave on
+ * master (run 30330975482). It matched the skip button by ENGLISH label
+ * ('Skip tour' / 'Skip'), but FirstRunTour renders through useOnbLang(), whose
+ * default — and the only value a fresh Playwright context can have, since it
+ * reads localStorage('goblin:preferred-lang') — is 'de'. The German label is
+ * 'Tour überspringen', so the locator never matched, isVisible() resolved false
+ * through its own .catch, and the helper returned SILENTLY having dismissed
+ * nothing. The tour's backdrop (first-run-tour.tsx, position:fixed inset:0
+ * z-index:1000) then swallowed every later click; Playwright reported the
+ * blocker only as "<div></div>" because previewNode() omits `style`.
+ *
+ * Fixed by dismissing the tour whatever language it is in, and waiting for it to
+ * actually detach — no sleep.
+ *
+ * Two locators, deliberately. The @auth suite authenticates through a Supabase
+ * magic link whose redirect_to (localhost) is not in the project's allowlist, so
+ * Supabase falls back to the site URL and these tests end up driving the
+ * DEPLOYED app rather than this checkout (see the note on
+ * originOf() below). A testid added in this commit therefore does not exist in
+ * the app under test until it ships. The label fallback covers BOTH languages,
+ * so this helper is correct against a deployment that predates the testids —
+ * which is precisely the situation the original 15 failures happened in.
+ */
 export async function dismissTour(page: Page): Promise<void> {
-  const skipBtn = page.locator('button:has-text("Skip tour"), button:has-text("Skip")').first();
-  if (await skipBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
-    await skipBtn.click();
-    await page.waitForTimeout(300);
+  const tour = page.locator('[data-testid="first-run-tour"]');
+  const skipByLabel = page.getByRole('button', { name: /^(Tour überspringen|Skip tour)$/ });
+
+  if (await tour.isVisible({ timeout: 3000 }).catch(() => false)) {
+    await page.locator('[data-testid="first-run-tour-skip"]').click();
+    await tour.waitFor({ state: 'detached', timeout: 5000 });
+  } else if (await skipByLabel.isVisible({ timeout: 2000 }).catch(() => false)) {
+    await skipByLabel.click();
+    await skipByLabel.waitFor({ state: 'detached', timeout: 5000 });
+  }
+  // Defence in depth (NOT a diagnosed cause of the wave above): the tour mounts
+  // from a lazy chunk inside a shell effect, so a later navigation in the same
+  // context could raise it again after this helper has returned. DashboardShell
+  // reads this exact key before setting showTour, so persisting it here means a
+  // dismissed tour stays dismissed for the rest of the test.
+  await page.evaluate(() => { try { localStorage.setItem('goblin_tour_done', '1'); } catch { /* no origin yet */ } });
+}
+
+/**
+ * Full-screen scrims that sit ABOVE the header and can swallow a header click.
+ * Every one of them carries a data-testid (SCRIM-U1) precisely so a blocked
+ * click can name its blocker instead of reporting an anonymous "<div></div>".
+ */
+const BLOCKING_SCRIMS = [
+  'first-run-tour-backdrop',
+  'sidebar-scrim',
+  'header-plus-scrim',
+  'header-mode-scrim',
+] as const;
+
+/**
+ * Fail fast, and legibly, if a scrim is covering the header. Without this the
+ * only symptom is a 15s actionability timeout naming an attribute-less div.
+ */
+async function assertHeaderUnblocked(page: Page): Promise<void> {
+  for (const id of BLOCKING_SCRIMS) {
+    if (await page.locator(`[data-testid="${id}"]`).isVisible().catch(() => false)) {
+      throw new Error(
+        `Header is covered by [data-testid="${id}"] — it will intercept the click. ` +
+        `Dismiss that surface first (e.g. dismissTour(page)) before opening the account menu.`,
+      );
+    }
   }
 }
 

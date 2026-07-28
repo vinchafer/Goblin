@@ -184,6 +184,7 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
       {isOpen && (
         <div
           onClick={onClose}
+          data-testid="sidebar-scrim"
           style={{
             position: 'fixed', inset: 0,
             background: 'rgba(0,0,0,0.45)',
