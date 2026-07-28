@@ -549,6 +549,44 @@ export async function listAppFiles(appId: string): Promise<CfResult<CfStoredFile
   return ok(out);
 }
 
+/**
+ * Every app id that has files in R2 — the orphan sweep's left-hand side
+ * (Phase 2 · U2.5, ABUSE_RESPONSE §8.3 gap 3).
+ *
+ * Deleting a project cascades its `ops_apps` row away but does NOT touch the
+ * hosted content, so the registry cannot be asked "what is still out there". Only
+ * the bucket knows. This lists by delimiter, so it returns app ids rather than
+ * every object — an account with a hundred apps and a hundred thousand files
+ * answers in one page per hundred prefixes, not per hundred thousand keys.
+ */
+export async function listAppPrefixes(): Promise<CfResult<string[]>> {
+  const s3 = getR2Client();
+  if (!s3) return r2Unconfigured();
+  const bucket = env('CF_R2_BUCKET');
+
+  const ids: string[] = [];
+  let token: string | undefined;
+  try {
+    do {
+      const page = await withTimeout('r2:list-prefixes', (signal) =>
+        s3.send(
+          new ListObjectsV2Command({ Bucket: bucket, Prefix: 'apps/', Delimiter: '/', ContinuationToken: token }),
+          { abortSignal: signal },
+        ),
+      );
+      for (const p of page.CommonPrefixes ?? []) {
+        const prefix = p.Prefix ?? '';
+        const id = prefix.slice('apps/'.length).replace(/\/$/, '');
+        if (id) ids.push(id);
+      }
+      token = page.IsTruncated ? page.NextContinuationToken : undefined;
+    } while (token);
+  } catch (err) {
+    return { ok: false, error: toCfError('r2:list-prefixes', err) };
+  }
+  return ok(ids);
+}
+
 /** Read one file back, as bytes. Used for byte-match verification. */
 export async function getAppFile(appId: string, path: string): Promise<CfResult<CfFetchedFile | null>> {
   const idErr = badAppId(appId);

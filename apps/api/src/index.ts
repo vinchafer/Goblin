@@ -110,6 +110,7 @@ import { authEmailHook } from './routes/auth-email-hook';
 import { shared } from './routes/shared';
 import { waitlist } from './routes/waitlist';
 import { ops } from './routes/ops';
+import { opsAdmin } from './routes/ops-admin';
 import { events } from './routes/events';
 import { feedback } from './routes/feedback';
 import { startCron } from './lib/cron';
@@ -273,6 +274,11 @@ app.route('/api/waitlist', waitlist);
 // OPS_HOSTING_ENABLED=false (production default) this whole surface 404s for
 // everyone, so the live Act-1 cohort cannot reach or detect it.
 app.route('/api/ops', ops);
+// AKT 2 · PHASE 2 · U2.5 — the operator surface (suspend / unsuspend / teardown /
+// orphan sweep). Behind the SAME x-admin-key as the rest of /api/admin, NOT behind
+// the beta allowlist: the router serves from KV and never asks the API anything, so
+// the per-app emergency stop must keep working with OPS_HOSTING_ENABLED off.
+app.route('/api/admin/ops', opsAdmin);
 
 // 9R — rankings aggregator every 6h (production only)
 startCron();

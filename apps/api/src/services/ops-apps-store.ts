@@ -267,6 +267,89 @@ export async function markOpsAppFailed(appId: string, sb: Sb = getSupabaseAdmin(
   return true;
 }
 
+// ── Operator writes (Phase 2 · U2.5 — ABUSE_RESPONSE §8.3 gap 2) ────────────
+//
+// Before this, suspending an app meant running
+//   UPDATE public.ops_apps SET status='suspended' WHERE app_name='…';
+// by hand in the Supabase SQL editor, with no audit row and no way to be sure the
+// router had stopped serving. These are the write path that replaces that.
+
+/** Suspend an app. Reversible by design — the opposite of deleting the content. */
+export async function suspendOpsApp(
+  appId: string,
+  reason: string,
+  sb: Sb = getSupabaseAdmin(),
+): Promise<boolean> {
+  if (!(await opsAppsTableAvailable(sb))) return false;
+  const now = new Date().toISOString();
+  const { error } = await sb
+    .from('ops_apps')
+    .update({ status: 'suspended', suspended_at: now, suspension_reason: reason, updated_at: now })
+    .eq('app_id', appId)
+    .neq('status', 'deleted'); // a torn-down app cannot be suspended
+  if (error) {
+    logger.warn({ appId, reason: error.message }, 'ops_apps_suspend_failed');
+    return false;
+  }
+  logger.warn({ appId }, 'ops_apps_suspended');
+  return true;
+}
+
+/**
+ * Lift a suspension. `suspended_at` and `suspension_reason` are cleared HERE and
+ * only here — a republish must never quietly unsuspend an app (see
+ * markOpsAppPublished, which excludes suspended rows for exactly that reason).
+ */
+export async function unsuspendOpsApp(appId: string, sb: Sb = getSupabaseAdmin()): Promise<boolean> {
+  if (!(await opsAppsTableAvailable(sb))) return false;
+  const { error } = await sb
+    .from('ops_apps')
+    .update({ status: 'active', suspended_at: null, suspension_reason: null, updated_at: new Date().toISOString() })
+    .eq('app_id', appId)
+    .eq('status', 'suspended'); // only a suspension can be lifted
+  if (error) {
+    logger.warn({ appId, reason: error.message }, 'ops_apps_unsuspend_failed');
+    return false;
+  }
+  logger.warn({ appId }, 'ops_apps_unsuspended');
+  return true;
+}
+
+/**
+ * Terminal state after a teardown. The row is KEPT, not deleted: the name must not
+ * fall back into circulation, and the audit trail needs something to point at.
+ */
+export async function markOpsAppDeleted(appId: string, sb: Sb = getSupabaseAdmin()): Promise<boolean> {
+  if (!(await opsAppsTableAvailable(sb))) return false;
+  const { error } = await sb
+    .from('ops_apps')
+    .update({ status: 'deleted', updated_at: new Date().toISOString() })
+    .eq('app_id', appId);
+  if (error) {
+    logger.warn({ appId, reason: error.message }, 'ops_apps_mark_deleted_failed');
+    return false;
+  }
+  logger.warn({ appId }, 'ops_apps_deleted');
+  return true;
+}
+
+/**
+ * Every app id the registry knows about, in any state — the orphan sweep's
+ * right-hand side. `deleted` rows are INCLUDED on purpose: their files should be
+ * gone, and if they are not, that is precisely the orphan we are hunting.
+ */
+export async function allKnownAppIds(sb: Sb = getSupabaseAdmin()): Promise<string[] | null> {
+  if (!(await opsAppsTableAvailable(sb))) return null;
+  const { data, error } = await sb.from('ops_apps').select('app_id');
+  if (error) {
+    logger.warn({ reason: error.message }, 'ops_apps_list_ids_failed');
+    // null, not [] — "I could not ask" must never look like "there are none",
+    // which would mark every hosted app an orphan.
+    return null;
+  }
+  return (data ?? []).map((r) => String((r as { app_id: unknown }).app_id));
+}
+
 /** Move an app to a new name. The old route's tombstone is the caller's job. */
 export async function renameOpsApp(appId: string, newName: string, sb: Sb = getSupabaseAdmin()): Promise<boolean> {
   if (!(await opsAppsTableAvailable(sb))) return false;
