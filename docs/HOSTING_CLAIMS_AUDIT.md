@@ -68,9 +68,19 @@ revisited when hosting leaves beta:
 
 | # | Location | Gap |
 |---|---|---|
-| G1 | `apps/web/app/(legal)/privacy/page.tsx:72-81` | The sub-processor list has **no Cloudflare entry**. Once Phase 2 ships, Cloudflare (R2 object storage, KV, Workers) processes user content and visitor request data. Adding a sub-processor is a **data-processing commitment** → Rule 7 escalation. Not edited in this PR. **Must be added before the first Goblin-hosted publish**, together with the region/transfer statement the other entries carry. |
+| G1 | `apps/web/app/(legal)/privacy/page.tsx` | ~~The sub-processor list has **no Cloudflare entry**.~~ **CLOSED 2026-07-28 on founder authorisation.** Cloudflare added to the sub-processor list, DE + EN: purpose (hosting and delivery of user-published apps), services (Workers, R2, KV), and the region facts *as verified* — R2 configured in the EU jurisdiction (endpoint `<hash>.eu.r2.cloudflarestorage.com`, bucket `goblin-apps`, per `evidence/akt2-phase1/roundtrip-local-2026-07-28-r2-3of3.README.md`), while Workers and KV are explicitly described as globally distributed rather than EU-confined. |
 | G2 | `apps/web/app/(legal)/terms/page.tsx` (whole file) | The ToS page is **English-only**, while the AUP page is bilingual DE+EN. Pre-existing parity gap. The new hosting section (U-B2) ships DE+EN; the six pre-existing sections are left untouched — translating existing terms would change liability wording that was not in scope. Founder decision. |
 | G3 | `apps/web/app/(legal)/privacy/page.tsx`, `imprint/page.tsx` | Also English-only / mixed. Same pre-existing gap as G2, same reasoning. |
+
+## Founder decisions applied (2026-07-28)
+
+- **Termination grace period: 30 days** — confirmed; the drafts already said 30 days
+  (ToS §7, DE and EN). No change was needed.
+- **Abuse contact: `support@justgoblin.com`** — the existing, monitored mailbox, chosen
+  over inventing a new `abuse@`-style address that nobody reads. Every occurrence across
+  the legal pages, the footer, the AUP and the runbook now points there; a repo-wide grep
+  for the previously drafted `abuse@` address returns **0 hits**.
+- **Cloudflare sub-processor entry: authorised and added** — closes G1 above.
 
 ## What was checked and found clean
 

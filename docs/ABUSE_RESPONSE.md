@@ -171,12 +171,14 @@ Admin-Dashboard („Sicherheit"-Karte) + zügige Reaktion auf Feedback/Meldungen
 
 **Neu aus AKT 2 · Pre-Phase-2 (Abschnitt 8):**
 
-- **`abuse@justgoblin.com` einrichten und tatsächlich überwachen.** Die Adresse steht ab
-  diesem Release öffentlich auf `/acceptable-use` und in den AGB. Eine Rechtsseite, die auf
-  eine ungelesene Mailbox zeigt, ist eine Lüge — entweder die Mailbox existiert und wird
-  gelesen, oder die Adresse muss von den Seiten wieder runter.
-- **Aufbewahrungsfrist für Beweise (12 Monate, 8.7)** bestätigen oder korrigieren.
-- **Karenzfrist 30 Tage** (AGB Abschnitt 7) bestätigen.
+- ~~**Missbrauchs-Adresse festlegen.**~~ **ERLEDIGT (Gründer-Entscheid 2026-07-28):**
+  `support@justgoblin.com` — eine Mailbox, die bereits existiert und überwacht wird. Damit
+  wurde bewusst *keine* neue `abuse@`-Adresse erfunden: eine Rechtsseite, die auf eine
+  ungelesene Mailbox zeigt, wäre eine Lüge. Alle Vorkommen auf den Rechtsseiten, im
+  Runbook und in der Richtlinie zeigen jetzt auf diese Adresse.
+- ~~**Karenzfrist 30 Tage**~~ **BESTÄTIGT (Gründer-Entscheid 2026-07-28):** 30 Tage, wie in
+  AGB Abschnitt 7 formuliert.
+- **Aufbewahrungsfrist für Beweise (12 Monate, 8.7)** bestätigen oder korrigieren — offen.
 - **Vier Phase-2-Anforderungen aus 8.3 abnehmen**, bevor die erste fremde App live geht:
   Router respektiert `suspended` · Admin-Schreibpfad für die Sperre · Orphan-Sweep beim
   Projektlöschen · K3-Scan im CF-Publish-Pfad (sonst wird die öffentliche AUP-Zusage falsch).
@@ -192,7 +194,7 @@ an den weitergereicht werden kann.
 
 | Quelle | Wo | Hinweis |
 |---|---|---|
-| **`abuse@justgoblin.com`** | Mailbox | Der öffentliche Meldeweg. Steht auf `/acceptable-use` und in den AGB (Abschnitt 8). **Muss tatsächlich überwacht werden** — eine Adresse, die niemand liest, ist eine Lüge auf einer Rechtsseite. |
+| **`support@justgoblin.com`** | Mailbox (bestehend, überwacht) | Der öffentliche Meldeweg. Steht auf `/acceptable-use` und in den AGB (Abschnitt 8). Bewusst die **bestehende** Support-Mailbox statt einer neuen `abuse@`-Adresse — eine Adresse, die niemand liest, wäre eine Lüge auf einer Rechtsseite. Missbrauchsmeldungen laufen also im Support-Posteingang auf und müssen dort als solche erkannt werden. |
 | Urheberrechtsbeschwerde | dieselbe Mailbox | Verfahren in 8.6 |
 | K3-Publish-Block | `platform_events`, `event_type = 'publish_blocked'` | präventiv, vor dem Livegang |
 | K4-Signal | Admin-Dashboard → „Sicherheit" | Muster, kein Urteil |
@@ -249,7 +251,7 @@ Bei S0 wird **nachträglich** benachrichtigt, sobald die Gefahr gebannt ist — 
 
 ### 8.5 Widerspruch
 
-Der Nutzer antwortet auf die Benachrichtigung oder schreibt an `abuse@justgoblin.com`.
+Der Nutzer antwortet auf die Benachrichtigung oder schreibt an `support@justgoblin.com`.
 Ein Mensch (der Gründer) sieht es sich an. War die Sperre falsch: entsperren
 (`status='active'` bzw. Route neu setzen via `setRoute`), dem Nutzer sagen, dass es unser
 Fehler war, und die auslösende Regel in `scan-rules.ts` justieren + Fixture ergänzen.
@@ -260,7 +262,7 @@ Fehler war, und die auslösende Regel in `scan-rules.ts` justieren + Fixture erg
 Goblin sitzt in der **Schweiz**; es gilt Schweizer Recht. **Goblin unterhält keinen
 DMCA-Agenten** und darf keine DMCA-Verfahrensgarantien behaupten — steht so auch öffentlich.
 
-1. Beschwerde an `abuse@justgoblin.com` mit: URL · Bezeichnung des Werks · Nachweis der
+1. Beschwerde an `support@justgoblin.com` mit: URL · Bezeichnung des Werks · Nachweis der
    Berechtigung · Kontaktdaten · Richtigkeitserklärung. Unvollständig → nachfordern.
 2. Plausibilität prüfen (keine juristische Würdigung, nur: ist das schlüssig?).
 3. Plausibel → Inhalt sperren, Nutzer benachrichtigen, Kopie der Beschwerde beilegen.

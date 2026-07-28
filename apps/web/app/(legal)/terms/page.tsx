@@ -181,8 +181,8 @@ export default function TermsPage() {
         </h2>
         <p className="mb-3" style={{ color: 'var(--ink-3)' }}>
           Wenn eine von Goblin gehostete App gegen die Nutzungsrichtlinie verstößt, melde sie an{' '}
-          <a href="mailto:abuse@justgoblin.com" style={{ color: 'var(--brand-green)', textDecoration: 'underline' }}>
-            abuse@justgoblin.com
+          <a href="mailto:support@justgoblin.com" style={{ color: 'var(--brand-green)', textDecoration: 'underline' }}>
+            support@justgoblin.com
           </a>{' '}
           — mit URL und einer kurzen Beschreibung. Näheres in der{' '}
           <Link href="/acceptable-use" style={{ color: 'var(--brand-green)', textDecoration: 'underline' }}>
@@ -191,8 +191,8 @@ export default function TermsPage() {
         </p>
         <p className="mb-3" style={{ color: 'var(--ink-3)' }}>
           If a Goblin-hosted app violates the Acceptable-Use Policy, report it to{' '}
-          <a href="mailto:abuse@justgoblin.com" style={{ color: 'var(--brand-green)', textDecoration: 'underline' }}>
-            abuse@justgoblin.com
+          <a href="mailto:support@justgoblin.com" style={{ color: 'var(--brand-green)', textDecoration: 'underline' }}>
+            support@justgoblin.com
           </a>{' '}
           with the URL and a short description. Details in the{' '}
           <Link href="/acceptable-use" style={{ color: 'var(--brand-green)', textDecoration: 'underline' }}>

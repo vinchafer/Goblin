@@ -8,7 +8,7 @@
 > Verantwortlichkeit, die Grenzen 8–12 (Krypto-Drainer · Spam/SEO-Linkfarmen ·
 > Urheberrecht · Ressourcen-Missbrauch · Datenverarbeitung ohne Berechtigung), die
 > ausdrückliche CSAM-Null-Toleranz, ein ehrlicher Abschnitt „Was Goblin prüft — und was
-> nicht", der Meldeweg `abuse@justgoblin.com` und das Urheberrechts-Beschwerdeverfahren
+> nicht", der Meldeweg `support@justgoblin.com` und das Urheberrechts-Beschwerdeverfahren
 > (Schweiz, kein DMCA-Agent).
 
 > ⚠️ **Von KI verfasst, nicht anwaltlich geprüft — vor Skalierung juristisch reviewen lassen.**
@@ -158,7 +158,7 @@ ist keine Freigabe, keine Prüfung und keine Zusicherung durch Goblin.
 ### Missbrauch melden
 
 Eine von Goblin gehostete App (`*.justgoblin.app`), die gegen diese Richtlinie verstößt,
-meldest du an **abuse@justgoblin.com** — mit URL und kurzer Beschreibung. Wir zielen
+meldest du an **support@justgoblin.com** — mit URL und kurzer Beschreibung. Wir zielen
 darauf ab, glaubwürdige Meldungen **innerhalb von 24 Stunden** zu sichten. Das ist ein
 Ziel, keine Zusicherung: Goblin wird von einer Einzelperson betrieben.
 
@@ -170,7 +170,7 @@ der richtige Adressat für eine Abschaltung: <https://vercel.com/abuse>.
 Goblin hat den Sitz in der **Schweiz**; es gilt Schweizer Recht. Goblin unterhält
 **keinen DMCA-Agenten** und gibt keine DMCA-Verfahrensgarantien ab — solche Angaben wären
 falsch. Beschwerden zu von Goblin gehosteten Inhalten gehen formlos an
-**abuse@justgoblin.com** und sollten enthalten: die genaue URL, die Bezeichnung des
+**support@justgoblin.com** und sollten enthalten: die genaue URL, die Bezeichnung des
 geschützten Werks, den Nachweis deiner Berechtigung, deine Kontaktdaten und eine Erklärung,
 dass deine Angaben zutreffen. Ist die Beschwerde plausibel, informieren wir den Nutzer und
 entfernen oder sperren den Inhalt; der Nutzer kann widersprechen (siehe
@@ -287,7 +287,7 @@ an approval, not a review, and not a warranty by Goblin.
 ### Reporting abuse
 
 To report a Goblin-hosted app (`*.justgoblin.app`) that violates this policy, write to
-**abuse@justgoblin.com** with the URL and a short description. We aim to triage credible
+**support@justgoblin.com** with the URL and a short description. We aim to triage credible
 reports **within 24 hours**. That is a target, not a warranty: Goblin is run by one person.
 
 If the app sits in the user's **own Vercel account** (path A), Vercel is additionally the
@@ -297,7 +297,7 @@ right addressee for a takedown: <https://vercel.com/abuse>.
 
 Goblin is based in **Switzerland** and Swiss law applies. Goblin does **not** maintain a
 DMCA agent and makes no DMCA procedural guarantees — claiming otherwise would be false.
-Complaints about Goblin-hosted content go informally to **abuse@justgoblin.com** and should
+Complaints about Goblin-hosted content go informally to **support@justgoblin.com** and should
 include: the exact URL, identification of the protected work, evidence of your authority,
 your contact details, and a statement that your information is accurate. Where a complaint
 is plausible we notify the user and remove or suspend the content; the user may object

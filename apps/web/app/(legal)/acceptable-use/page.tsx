@@ -170,8 +170,8 @@ export default function AcceptableUsePage() {
         <p style={P}>
           Verstößt eine von Goblin gehostete App (<code>*.justgoblin.app</code>) gegen diese Richtlinie,
           melde sie an{" "}
-          <a href="mailto:abuse@justgoblin.com" style={{ color: "var(--brand-green)", textDecoration: "underline" }}>
-            abuse@justgoblin.com
+          <a href="mailto:support@justgoblin.com" style={{ color: "var(--brand-green)", textDecoration: "underline" }}>
+            support@justgoblin.com
           </a>{" "}
           — mit URL und kurzer Beschreibung. Wir zielen darauf ab, glaubwürdige Meldungen innerhalb von
           24 Stunden zu sichten. <em>Das ist ein Ziel, keine Zusicherung</em> — Goblin wird von einer
@@ -187,8 +187,8 @@ export default function AcceptableUsePage() {
           Goblin hat den Sitz in der Schweiz; es gilt Schweizer Recht. Wir unterhalten{" "}
           <strong style={{ color: "var(--ink-2)" }}>keinen DMCA-Agenten</strong> und geben keine
           DMCA-Verfahrensgarantien ab. Beschwerden zu von Goblin gehosteten Inhalten gehen an{" "}
-          <a href="mailto:abuse@justgoblin.com" style={{ color: "var(--brand-green)", textDecoration: "underline" }}>
-            abuse@justgoblin.com
+          <a href="mailto:support@justgoblin.com" style={{ color: "var(--brand-green)", textDecoration: "underline" }}>
+            support@justgoblin.com
           </a>{" "}
           mit: genauer URL, Bezeichnung des geschützten Werks, Nachweis deiner Berechtigung,
           Kontaktdaten und einer Erklärung, dass deine Angaben zutreffen. Ist die Beschwerde plausibel,
@@ -322,8 +322,8 @@ export default function AcceptableUsePage() {
         <h3 style={H3}>Reporting abuse</h3>
         <p style={P}>
           If a Goblin-hosted app (<code>*.justgoblin.app</code>) violates this policy, report it to{" "}
-          <a href="mailto:abuse@justgoblin.com" style={{ color: "var(--brand-green)", textDecoration: "underline" }}>
-            abuse@justgoblin.com
+          <a href="mailto:support@justgoblin.com" style={{ color: "var(--brand-green)", textDecoration: "underline" }}>
+            support@justgoblin.com
           </a>{" "}
           with the URL and a short description. We aim to triage credible reports within 24 hours.{" "}
           <em>That is a target, not a warranty</em> — Goblin is run by one person. If the site lives in
@@ -339,8 +339,8 @@ export default function AcceptableUsePage() {
           Goblin is based in Switzerland and Swiss law applies. We do{" "}
           <strong style={{ color: "var(--ink-2)" }}>not maintain a DMCA agent</strong> and make no DMCA
           procedural guarantees. Complaints about Goblin-hosted content go to{" "}
-          <a href="mailto:abuse@justgoblin.com" style={{ color: "var(--brand-green)", textDecoration: "underline" }}>
-            abuse@justgoblin.com
+          <a href="mailto:support@justgoblin.com" style={{ color: "var(--brand-green)", textDecoration: "underline" }}>
+            support@justgoblin.com
           </a>{" "}
           with: the exact URL, identification of the protected work, evidence of your authority, your
           contact details, and a statement that your information is accurate. Where a complaint is
@@ -378,7 +378,7 @@ export default function AcceptableUsePage() {
           Neu sind außerdem die Grenzen zu Krypto-Drainern, Spam/SEO-Linkfarmen, Urheberrecht,
           Ressourcen-Missbrauch und Datenverarbeitung ohne Berechtigung, die ausdrückliche
           Null-Toleranz-Regel, der Abschnitt „Was Goblin prüft — und was nicht", der Meldeweg{" "}
-          <code>abuse@justgoblin.com</code> und das Urheberrechts-Beschwerdeverfahren.
+          <code>support@justgoblin.com</code> und das Urheberrechts-Beschwerdeverfahren.
         </p>
         <p style={{ ...P, fontSize: 14 }}>
           <strong style={{ color: "var(--ink-2)" }}>Version 1.1 · 28 July 2026</strong> — This page
@@ -386,7 +386,7 @@ export default function AcceptableUsePage() {
           now publish apps to <code>{"{name}"}.justgoblin.app</code> itself (limited beta). Also new: the
           limits on crypto drainers, spam/SEO link farms, copyright, resource abuse and processing data
           without authorisation; the explicit zero-tolerance rule; the section on what Goblin does and
-          does not check; the <code>abuse@justgoblin.com</code> reporting route; and the copyright
+          does not check; the <code>support@justgoblin.com</code> reporting route; and the copyright
           complaint procedure.
         </p>
       </section>
