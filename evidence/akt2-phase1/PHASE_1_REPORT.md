@@ -26,15 +26,15 @@ Scope: **16 files, +3218 lines, 0 deletions.** Three files modified, thirteen ne
 
 | Gate | Result | Evidence |
 |---|---|---|
-| **U1.1 tests green (numbers)** | **22/22** — 14 helper (truth table: admits in exactly 1 of 7 configurations) + 8 middleware | `test-results.txt` §A |
+| **U1.1 tests green (numbers)** | **22/22** — 14 helper (truth table: admits in exactly 1 of 7 configurations) + 8 middleware | `test-results.md` §A |
 | **U1.5 round-trips 3/3** | **BLOCKED-ON-FOUNDER.** Not green, not claimed green. | `founder-roundtrip-command.md` |
-| **Migration exists, NOT applied** | **GREEN.** `0099_ops_apps.sql` present; `startup-migrations.ts` (the only startup schema hook) validates columns and never executes a `.sql` file — read this session | `test-results.txt` §E |
+| **Migration exists, NOT applied** | **GREEN.** `0099_ops_apps.sql` present; `startup-migrations.ts` (the only startup schema hook) validates columns and never executes a `.sql` file — read this session | `test-results.md` §E |
 | **`OPS_HOSTING_ENABLED=false` everywhere** | **GREEN in code; NOT verifiable from here.** Default is OFF; only the exact string `true` opens the gate (7-row truth table). The Railway value is founder-owned and this session never reads env values — see Limitation 2. | `ops-beta.test.ts` |
-| **Cohort-invisibility: no new route reachable without the allowlist** | **GREEN**, and **one real defect found and fixed** — see FINDING 1 | `test-results.txt` §A, `cohort-invisibility-probe.txt` |
-| **Regression: one Act-1 flow (publish) unchanged** | **GREEN — 16/16 at `origin/master` in a worktree, 16/16 here.** Both sides run and compared, not assumed | `test-results.txt` §B, §D |
+| **Cohort-invisibility: no new route reachable without the allowlist** | **GREEN**, and **one real defect found and fixed** — see FINDING 1 | `test-results.md` §A, `cohort-invisibility-probe.md` |
+| **Regression: one Act-1 flow (publish) unchanged** | **GREEN — 16/16 at `origin/master` in a worktree, 16/16 here.** Both sides run and compared, not assumed | `test-results.md` §B, §D |
 | **M-H1 ledger line in the same commit as the adapter** | **GREEN** — `763b3cc` contains both `cf-deploy.ts` and the ledger row | `git show --stat 763b3cc` |
-| Full API suite | **127 files / 1112 tests passed** (was 121 / 1018; this PR adds 6 / 94) | `test-results.txt` §C |
-| Typecheck | `tsc --noEmit` clean | `test-results.txt` §C |
+| Full API suite | **127 files / 1112 tests passed** (was 121 / 1018; this PR adds 6 / 94) | `test-results.md` §C |
+| Typecheck | `tsc --noEmit` clean | `test-results.md` §C |
 
 ---
 
