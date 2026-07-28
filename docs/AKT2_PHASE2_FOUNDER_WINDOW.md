@@ -19,13 +19,17 @@ Token an.
 | # | Schritt | Warum |
 |---|---|---|
 | 1 | **PR mergen** | Der Router-Code muss deployt sein, bevor er sich selbst ausrollen kann. |
-| 2 | **Migration `0099_ops_apps.sql` anwenden** (falls noch nicht) | Ohne die Registry **verweigert** der Publish-Pfad die Arbeit — absichtlich: hochgeladene Dateien ohne Registry-Zeile wären genau das Waisenkind aus `ABUSE_RESPONSE` §8.3. |
-| 3 | **Migration `0100_ops_app_audit.sql` anwenden** | Ohne sie funktionieren Sperren trotzdem, aber der Lauf meldet `audit: "unavailable"` statt Beweiszeilen. |
+| 2 | ~~Migration `0099_ops_apps.sql` anwenden~~ **ERLEDIGT** (Gründer, nach PR #57) | Die Registry steht. Ohne sie würde der Publish-Pfad die Arbeit **verweigern** — absichtlich: hochgeladene Dateien ohne Registry-Zeile wären genau das Waisenkind aus `ABUSE_RESPONSE` §8.3. |
+| 3 | **Migration `0100_ops_app_audit.sql` anwenden** — **die einzige noch offene** | Ohne sie funktionieren Sperren trotzdem, aber der Lauf meldet `audit: "unavailable"` statt Beweiszeilen. |
 | 4 | Warten, bis Railway das Deployment ausgerollt hat | Sonst testest du den alten Stand. |
 
-Migrationen: Supabase → SQL Editor → Datei-Inhalt einfügen → Run. Beide sind
-additiv und idempotent (`IF NOT EXISTS` durchgehend) und fassen keine bestehende
-Tabelle an.
+Migration: Supabase → SQL Editor → Datei-Inhalt einfügen → Run. `0100` ist additiv und
+idempotent (`IF NOT EXISTS` durchgehend) und fasst keine bestehende Tabelle an — ein
+zweites Ausführen schadet also nicht, falls du unsicher bist.
+
+> **Stand 0099:** vom Gründer nach PR #57 angewendet. Diese Session hat keinen
+> Datenbank-Zugang und hat das **nicht selbst nachgeprüft** — sie übernimmt die Angabe.
+> Falls doch offen, sagt es dir der E2E-Lauf sofort und eindeutig: `registry_unavailable`.
 
 ---
 
@@ -222,7 +226,7 @@ Test-App per Teardown weg (Schritt 5) — das Umlegen des Schalters reicht dafü
 | `provision` meldet `auth` | Dem Token fehlt ein Recht | `founderAction` im Ergebnis lesen — die Liste steht dort |
 | `404` von `/api/ops/...` | `OPS_HOSTING_ENABLED` ist nicht `true`, oder das Token gehört nicht zu `vinc.hafner3@` | Variable prüfen, Redeploy abwarten |
 | E2E: `preflight:router` rot | DNS/Route fehlen | Schritt 3 — der Lauf überspringt dann bewusst alle URL-Schritte |
-| E2E: `registry_unavailable` | Migration 0099 fehlt | Anwenden, Lauf wiederholen |
+| E2E: `registry_unavailable` | Migration 0099 fehlt doch | Anwenden, Lauf wiederholen |
 | E2E: `audit: "unavailable"` | Migration 0100 fehlt | Anwenden. Sperren funktionieren trotzdem, nur ohne Beweiszeile |
 | Cloudflare-Fehlerseite statt Goblin-Seite | Die Worker-Route greift nicht | `GET /api/ops/router` — `routeBound` und `wildcardProxied` ansehen |
 | Gesperrte App liefert noch aus | KV-Lesecache | Bis zu 60 Sekunden warten. Bleibt es länger, `route` im Sperr-Ergebnis prüfen |

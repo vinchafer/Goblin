@@ -269,8 +269,11 @@ Dinge, die beim Bauen auffielen und über diese Phase hinaus zählen:
 
 Nach dem Merge, in dieser Reihenfolge:
 
-1. **Migrationen anwenden:** `0099_ops_apps.sql` (falls noch offen) **und**
-   `0100_ops_app_audit.sql`. Ohne 0099 **verweigert** der Publish-Pfad die Arbeit — absichtlich.
+1. **Migration `0100_ops_app_audit.sql` anwenden — die einzige noch offene.** `0099` ist
+   laut Gründer nach PR #57 bereits angewendet (der Phase-1-Bericht führte sie noch als
+   offene Gründer-Aktion; diese Session hat keinen Datenbank-Zugang und hat es **nicht
+   selbst nachgeprüft**). Falls 0099 doch fehlt, meldet der E2E-Lauf `registry_unavailable`
+   — der Publish-Pfad **verweigert** dann die Arbeit, absichtlich.
 2. **Token-Rechte ergänzen** (drei neue, die Phase 1 nie brauchte): Zone→Zone Read,
    Zone→DNS Edit, Zone→Workers Routes Edit. Wenn du es überspringst, sagt dir der
    Provisioning-Lauf genau, was fehlt.

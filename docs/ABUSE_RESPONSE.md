@@ -183,7 +183,8 @@ Admin-Dashboard („Sicherheit"-Karte) + zügige Reaktion auf Feedback/Meldungen
 - ~~**Vier Phase-2-Anforderungen aus 8.3 abnehmen**~~ **IM CODE ERLEDIGT (AKT 2 · Phase 2,
   2026-07-28) — Abnahme steht aus.** Alle vier sind gebaut und getestet (Details in 8.3).
   Was noch fehlt, ist der Beweis auf der echten Infrastruktur: **das U2.8-Fenster fahren**
-  (`docs/AKT2_PHASE2_FOUNDER_WINDOW.md`) und die Migrationen **0099** und **0100** anwenden.
+  (`docs/AKT2_PHASE2_FOUNDER_WINDOW.md`) und Migration **0100** anwenden (**0099** ist seit
+  PR #57 angewendet).
   Vorher darf keine fremde App live gehen — gebaut ist nicht bewiesen.
 
 ---
