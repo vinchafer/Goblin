@@ -385,7 +385,7 @@ export const STR: Record<Lang, {
       ownCta: 'Kostenlosen Vercel-Account erstellen →',
       vercelDesc:
         'Deploys gehen auf DEIN EIGENES Vercel-Konto — deine Domain, deine Kosten. '
-        + 'Goblin hostet keine Live-Seiten für dich. Kostenlos für private Projekte.',
+        + 'Kostenlos für private Projekte.',
       addVercel: 'Vercel-Token hinzufügen',
       vercelTokenLabel: 'Vercel-Token einfügen',
       saveToken: 'Token speichern', saving: 'Speichere…', connected: 'Verbunden',
@@ -645,8 +645,8 @@ export const STR: Record<Lang, {
         + 'host later.',
       ownCta: 'Create a free Vercel account →',
       vercelDesc:
-        "Deploys go to YOUR OWN Vercel account — your domain, your costs. Goblin "
-        + "doesn't host live sites for you. Free for personal projects.",
+        "Deploys go to YOUR OWN Vercel account — your domain, your costs. "
+        + "Free for personal projects.",
       addVercel: 'Add Vercel token',
       vercelTokenLabel: 'Paste your Vercel token',
       saveToken: 'Save token', saving: 'Saving…', connected: 'Connected',

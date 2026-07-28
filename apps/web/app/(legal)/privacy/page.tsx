@@ -77,6 +77,33 @@ export default function PrivacyPage() {
           <li>Backblaze B2 (EU, eu-central-003) — encrypted project &amp; file storage</li>
           <li>Vercel — web application hosting</li>
           <li>Railway — API hosting</li>
+          {/* AKT 2 · U-B1 item G1, closed 2026-07-28 on founder authorisation.
+              Cloudflare becomes a sub-processor for Goblin-hosted Living Apps
+              (Phase 2). Region facts are stated as configured and verified, NOT
+              assumed: the R2 endpoint is the EU-jurisdiction host
+              (<hash>.eu.r2.cloudflarestorage.com, bucket goblin-apps — see
+              evidence/akt2-phase1/roundtrip-local-2026-07-28-r2-3of3.README.md).
+              Workers and KV are Cloudflare's globally distributed edge by design,
+              so they are NOT described as EU-confined — saying otherwise would be
+              the kind of comfortable falsehood this whole PR exists to remove. */}
+          <li>
+            Cloudflare — Hosting und Auslieferung der von Nutzern veröffentlichten
+            Apps (<code>*.justgoblin.app</code>); genutzte Dienste: Workers, R2,
+            KV. Der R2-Speicher ist in der EU-Jurisdiktion konfiguriert; Workers
+            und KV laufen auf Cloudflares global verteiltem Edge-Netz, sind also
+            nicht auf die EU begrenzt. Betrifft nur Apps, die über das
+            Goblin-Hosting veröffentlicht werden — derzeit eine eingeschränkte
+            Beta für ausgewählte Konten.
+            <br />
+            <span>
+              Cloudflare — hosting and delivery of user-published apps
+              (<code>*.justgoblin.app</code>); services used: Workers, R2, KV. R2
+              storage is configured in the EU jurisdiction; Workers and KV run on
+              Cloudflare&rsquo;s globally distributed edge network and are
+              therefore not EU-confined. Applies only to apps published via Goblin
+              hosting — currently a limited beta for selected accounts.
+            </span>
+          </li>
           <li>Resend — transactional email</li>
           <li>
             DeepInfra (United States) — inference for the Goblin-bundled models.
