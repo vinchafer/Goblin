@@ -11,6 +11,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "ops:roundtrip": "tsx scripts/ops-roundtrip.mts",
+    "ops:gen-router": "tsx scripts/gen-router-source.mts",
     "generate-vapid": "node -e \"const wp=require('web-push');const k=wp.generateVAPIDKeys();console.log('VAPID_PUBLIC_KEY='+k.publicKey);console.log('VAPID_PRIVATE_KEY='+k.privateKey);\""
   },
   "dependencies": {
