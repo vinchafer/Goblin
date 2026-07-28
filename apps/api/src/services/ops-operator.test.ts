@@ -74,7 +74,9 @@ beforeEach(() => {
 describe('suspend', () => {
   it('flips KV to suspended and updates the registry', async () => {
     const r = await suspendApp(APP, 'vinc@example.com', 'Phishing-Meldung');
-    expect(setRoute).toHaveBeenCalledWith('meinladen', 'app-1', { status: 'suspended' });
+    // The budget rides along on every route write: the record is replaced
+    // wholesale, so omitting it would silently strip the app's ceiling.
+    expect(setRoute).toHaveBeenCalledWith('meinladen', 'app-1', { status: 'suspended', dailyBudget: 10_000 });
     expect(suspendOpsApp).toHaveBeenCalledWith('app-1', 'Phishing-Meldung');
     expect(r).toMatchObject({ ok: true, route: 'ok', registry: 'ok', audit: 'written' });
   });
@@ -136,7 +138,7 @@ describe('unsuspend', () => {
   it('restores the route and the registry, with its own audit row', async () => {
     setRoute.mockResolvedValue(ok({ name: 'meinladen', appId: 'app-1', status: 'active' }));
     const r = await unsuspendApp(APP, 'vinc', 'Fehlalarm — war unsere Schuld');
-    expect(setRoute).toHaveBeenCalledWith('meinladen', 'app-1', { status: 'active' });
+    expect(setRoute).toHaveBeenCalledWith('meinladen', 'app-1', { status: 'active', dailyBudget: 10_000 });
     expect(r).toMatchObject({ ok: true, route: 'ok', registry: 'ok' });
     expect(writeOpsAudit).toHaveBeenCalledWith(expect.objectContaining({ action: 'unsuspend' }));
   });

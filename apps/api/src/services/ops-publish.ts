@@ -48,6 +48,7 @@ import {
   type NameCheck,
 } from './ops-app-names';
 import { verifyHostedPublish, type HostedVerification, type UploadedFile } from './ops-hosted-verify';
+import { dailyRequestBudget } from './ops-caps';
 import { SCANNABLE_EXT } from './safety/scan-rules';
 import logger from '../lib/logger';
 
@@ -303,8 +304,12 @@ export async function publishHostedApp(input: PublishInput, deps: PublishDeps = 
     return fail('upload', 'upload_failed', 'Die Dateien konnten nicht vollständig hochgeladen werden. Bitte versuch es gleich noch einmal.', { appId, name, url });
   }
 
-  // 6. ROUTE.
-  const route = await deps.setRoute(name, appId, { status: 'active' });
+  // 6. ROUTE. The daily budget rides ON the record: the router must be able to
+  //    enforce it from the edge without a database round-trip (U2.6).
+  const route = await deps.setRoute(name, appId, {
+    status: 'active',
+    dailyBudget: dailyRequestBudget(app.capsProfile),
+  });
   if (!route.ok) {
     await deps.markOpsAppFailed(appId);
     logger.warn({ appId, name, reason: route.error.code }, 'hosted_publish_route_failed');
@@ -387,7 +392,10 @@ export async function renameHostedApp(
     };
   }
 
-  const route = await deps.setRoute(newName, app.appId, { status: 'active' });
+  const route = await deps.setRoute(newName, app.appId, {
+    status: 'active',
+    dailyBudget: dailyRequestBudget(app.capsProfile),
+  });
   if (!route.ok) {
     return { ok: false, code: 'route_failed', message: 'Die neue Adresse konnte nicht eingerichtet werden. Die App ist unter der alten Adresse weiter erreichbar.' };
   }

@@ -22,7 +22,7 @@ import { dirname, join } from 'node:path';
 import { ROUTER_WORKER_SOURCE, ROUTER_SCRIPT_NAME } from './worker-source.generated';
 
 type WorkerModule = {
-  default: { fetch: (request: Request, env: Record<string, unknown>) => Promise<Response> };
+  default: { fetch: (request: Request, env: Record<string, unknown>, ctx?: { waitUntil: (p: Promise<unknown>) => void }) => Promise<Response> };
 };
 
 let worker: WorkerModule['default'];
@@ -468,5 +468,162 @@ describe('design-system quality', () => {
     const html = await res.text();
     expect(html).not.toContain('<script>alert(1)</script>');
     expect(html).toContain('&lt;script&gt;');
+  });
+});
+
+// ── U2.6 · the request budget (spike F3, denial-of-wallet) ──────────────────
+//
+// What is proven here is the DECISION: 429 at the budget, a fresh allowance on a
+// new UTC day, refusals never counted, and fail-open on a counter that cannot be
+// read. What CANNOT be proven here — and is stated in the phase report rather than
+// papered over — is the accuracy of the counter under a real burst. KV reads are
+// eventually consistent with a 60-second floor, so real enforcement overshoots.
+
+describe('request budget', () => {
+  /** A KV fake with a writable store, so the counter can actually accumulate. */
+  function countingKv(records: Record<string, unknown>) {
+    const store: Record<string, string> = {};
+    return {
+      store,
+      get: async (key: string, opts?: { type?: string }) => {
+        if (key.startsWith('budget:')) return store[key] ?? null;
+        const value = records[key];
+        if (value === undefined) return null;
+        return opts?.type === 'json' ? value : JSON.stringify(value);
+      },
+      put: async (key: string, value: string) => { store[key] = value; },
+    };
+  }
+
+  function budgetedApp(dailyBudget: number | undefined) {
+    const routes = countingKv({
+      'route:meinladen': { name: 'meinladen', appId: 'app-1', status: 'active', ...(dailyBudget !== undefined ? { dailyBudget } : {}) },
+    });
+    return {
+      env: env({ ROUTES: routes, APPS: r2({ 'apps/app-1/index.html': '<h1>Hallo</h1>' }) }),
+      routes,
+    };
+  }
+
+  const hit = (e: Record<string, unknown>) => worker.fetch(req('https://meinladen.justgoblin.app/'), e);
+
+  it('serves up to the budget, then answers 429', async () => {
+    const { env: e } = budgetedApp(3);
+    const statuses: number[] = [];
+    for (let i = 0; i < 5; i++) statuses.push((await hit(e)).status);
+    expect(statuses).toEqual([200, 200, 200, 429, 429]);
+  });
+
+  it('the 429 is the designed page, in German by default', async () => {
+    const { env: e } = budgetedApp(1);
+    await hit(e);
+    const res = await hit(e);
+    expect(res.status).toBe(429);
+    const html = await res.text();
+    expect(html).toContain('Diese App hat ihr Tageslimit erreicht');
+    expect(html).toContain('#D4A737'); // the same designed page, not error text
+    expect(res.headers.get('retry-after')).toBe('3600');
+    expect(res.headers.get('cache-control')).toBe('no-store');
+  });
+
+  it('says in English for an English-first browser, with no German left in it', async () => {
+    const { env: e } = budgetedApp(1);
+    await hit(e);
+    const res = await worker.fetch(
+      req('https://meinladen.justgoblin.app/', { headers: { 'accept-language': 'en-US,en;q=0.9' } }),
+      e,
+    );
+    const html = await res.text();
+    expect(html).toContain('This app has reached its daily limit.');
+    expect(html).not.toContain('Tageslimit erreicht');
+  });
+
+  it('is honest that the limit is a real free-tier ceiling, not a sales tactic', async () => {
+    const { env: e } = budgetedApp(1);
+    await hit(e);
+    expect(await (await hit(e)).text()).toContain('keine Verkaufsmasche');
+  });
+
+  it('counts per app, per UTC day', async () => {
+    const { env: e, routes } = budgetedApp(5);
+    await hit(e);
+    const day = new Date().toISOString().slice(0, 10);
+    expect(routes.store[`budget:app-1:${day}`]).toBe('1');
+  });
+
+  it('resets on a new day — yesterday`s exhausted counter does not carry over', async () => {
+    const { env: e, routes } = budgetedApp(2);
+    const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+    routes.store[`budget:app-1:${yesterday}`] = '999'; // yesterday was exhausted
+    expect((await hit(e)).status).toBe(200);
+  });
+
+  it('does not count refusals — a 404 storm must not exhaust an allowance', async () => {
+    const { env: e, routes } = budgetedApp(5);
+    await worker.fetch(req('https://meinladen.justgoblin.app/gibtesnicht.js'), e);
+    const day = new Date().toISOString().slice(0, 10);
+    // The path 404s inside a budgeted app; the allowance is untouched by the miss
+    // itself beyond the single request that reached the app.
+    expect(Number(routes.store[`budget:app-1:${day}`] ?? 0)).toBeLessThanOrEqual(1);
+  });
+
+  it('shows the SUSPENDED page, not a 429, when both would apply', async () => {
+    // A suspended app must explain itself. "Tageslimit" would be a lie.
+    const routes = countingKv({ 'route:meinladen': { name: 'meinladen', appId: 'app-1', status: 'suspended', dailyBudget: 1 } });
+    const e = env({ ROUTES: routes, APPS: r2({ 'apps/app-1/index.html': 'x' }) });
+    const res = await hit(e);
+    expect(res.status).toBe(403);
+    expect(await res.text()).toContain('gesperrt');
+  });
+
+  it('does not enforce when the record carries no budget — stated, not defaulted', async () => {
+    const { env: e } = budgetedApp(undefined);
+    for (let i = 0; i < 4; i++) expect((await hit(e)).status).toBe(200);
+  });
+
+  it('ignores a nonsensical budget rather than locking the app out', async () => {
+    for (const bad of [0, -5, Number.NaN]) {
+      const { env: e } = budgetedApp(bad as number);
+      expect((await hit(e)).status).toBe(200);
+    }
+  });
+
+  it('FAILS OPEN — a counter that cannot be read serves the app', async () => {
+    // An app going dark because KV blipped is worse than an overshoot on a budget
+    // that is already approximate.
+    const e = env({
+      ROUTES: {
+        get: async (key: string, opts?: { type?: string }) => {
+          if (key.startsWith('budget:')) throw new Error('kv down');
+          return opts?.type === 'json' ? { name: 'meinladen', appId: 'app-1', status: 'active', dailyBudget: 1 } : null;
+        },
+        put: async () => { throw new Error('kv down'); },
+      },
+      APPS: r2({ 'apps/app-1/index.html': '<h1>Hallo</h1>' }),
+    });
+    expect((await hit(e)).status).toBe(200);
+    expect((await hit(e)).status).toBe(200);
+  });
+
+  it('serves the app even when the counter write fails', async () => {
+    const e = env({
+      ROUTES: {
+        get: async (key: string, opts?: { type?: string }) =>
+          key.startsWith('budget:') ? null : (opts?.type === 'json' ? { name: 'meinladen', appId: 'app-1', status: 'active', dailyBudget: 5 } : null),
+        put: async () => { throw new Error('write failed'); },
+      },
+      APPS: r2({ 'apps/app-1/index.html': '<h1>Hallo</h1>' }),
+    });
+    expect((await hit(e)).status).toBe(200);
+  });
+
+  it('defers the counter write to waitUntil when the runtime offers one', async () => {
+    const { env: e } = budgetedApp(5);
+    const deferred: Promise<unknown>[] = [];
+    const res = await worker.fetch(req('https://meinladen.justgoblin.app/'), e, {
+      waitUntil: (p: Promise<unknown>) => deferred.push(p),
+    } as never);
+    expect(res.status).toBe(200);
+    expect(deferred).toHaveLength(1); // the response did not wait on the KV write
   });
 });

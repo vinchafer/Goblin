@@ -124,6 +124,13 @@ export interface CfRoute {
   name: string;
   appId: string;
   status: CfRouteStatus;
+  /**
+   * Requests per UTC day before the router answers 429 (Phase 2 · U2.6). Carried
+   * ON THE ROUTE rather than looked up, because the router must not need a database
+   * round-trip from the edge — the same reason `status` lives here. Absent means no
+   * enforcement, which is stated rather than silently defaulted.
+   */
+  dailyBudget?: number;
   updatedAt?: string;
 }
 
@@ -758,7 +765,7 @@ export async function checkKvNamespace(): Promise<CfResult<{ title: string; late
 export async function setRoute(
   name: string,
   appId: string,
-  opts: { status?: CfRouteStatus } = {},
+  opts: { status?: CfRouteStatus; dailyBudget?: number } = {},
 ): Promise<CfResult<CfRoute>> {
   if (!ROUTE_NAME_RE.test(name)) return fail('invalid_input', `invalid route name: ${JSON.stringify(name)}`);
   const idErr = badAppId(appId);
@@ -769,6 +776,9 @@ export async function setRoute(
     name,
     appId,
     status: opts.status ?? 'active',
+    ...(Number.isFinite(opts.dailyBudget) && (opts.dailyBudget as number) > 0
+      ? { dailyBudget: Math.floor(opts.dailyBudget as number) }
+      : {}),
     updatedAt: new Date().toISOString(),
   };
 
@@ -816,6 +826,7 @@ export async function getRoute(name: string): Promise<CfResult<CfRoute | null>> 
       // Phase 1 — but the ROUTER fails closed on an unknown status rather than
       // serving it. Tolerant here, strict where it can hurt someone.
       status: parsed.status === 'suspended' ? 'suspended' : parsed.status === 'released' ? 'released' : 'active',
+      ...(Number.isFinite(parsed.dailyBudget) ? { dailyBudget: Number(parsed.dailyBudget) } : {}),
       ...(parsed.updatedAt ? { updatedAt: parsed.updatedAt } : {}),
     });
   } catch {

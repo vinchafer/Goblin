@@ -42,6 +42,7 @@ import {
   type OpsApp,
 } from './ops-apps-store';
 import { writeOpsAudit, type OpsAuditOutcome } from './ops-audit';
+import { dailyRequestBudget } from './ops-caps';
 import logger from '../lib/logger';
 
 /** One step of an operator action, reported rather than summarised away. */
@@ -78,7 +79,12 @@ export async function findApp(idOrName: string): Promise<OpsApp | null> {
  */
 export async function suspendApp(app: OpsApp, actor: string, reason: string): Promise<OperatorResult> {
   // 1. KV first — this is the step that stops visitors seeing the app.
-  const route = await setRoute(app.appName, app.appId, { status: 'suspended' });
+  // The budget is re-sent on every route write so a suspend/unsuspend round trip
+  // cannot quietly strip an app's ceiling — the record is replaced wholesale.
+  const route = await setRoute(app.appName, app.appId, {
+    status: 'suspended',
+    dailyBudget: dailyRequestBudget(app.capsProfile),
+  });
   // 2. Registry.
   const registry = route.ok ? await suspendOpsApp(app.appId, reason) : false;
 
@@ -113,7 +119,10 @@ export async function suspendApp(app: OpsApp, actor: string, reason: string): Pr
 
 /** UNSUSPEND — §8.5. If the suspension was wrong, this is how it is undone. */
 export async function unsuspendApp(app: OpsApp, actor: string, reason: string): Promise<OperatorResult> {
-  const route = await setRoute(app.appName, app.appId, { status: 'active' });
+  const route = await setRoute(app.appName, app.appId, {
+    status: 'active',
+    dailyBudget: dailyRequestBudget(app.capsProfile),
+  });
   const registry = route.ok ? await unsuspendOpsApp(app.appId) : false;
 
   const result: OperatorResult = {
