@@ -70,7 +70,7 @@ describe('the route is invisible to everyone but the allowlist', () => {
     getUser.mockResolvedValue({ data: { user: { id: 'u2', email: COHORT } }, error: null });
     const res = await call(makeApp(), { Authorization: 'Bearer valid-cohort' });
     expect(res.status).toBe(404);
-    expect(await res.json()).toEqual({ error: 'not_found' });
+    expect(await res.text()).toBe('404 Not Found');
   });
 
   it('fails CLOSED when the auth backend throws', async () => {
@@ -89,13 +89,15 @@ describe('the route is invisible to everyone but the allowlist', () => {
   });
 });
 
-describe('refusals are indistinguishable', () => {
-  it('returns the same status and the same body on every deny path', async () => {
+describe('refusals are indistinguishable — from each other AND from an unmounted route', () => {
+  it('returns the same status, body and content-type on every deny path', async () => {
     const bodies: string[] = [];
     const statuses: number[] = [];
 
+    const types: (string | null)[] = [];
     const capture = async (res: Response) => {
       statuses.push(res.status);
+      types.push(res.headers.get('content-type'));
       bodies.push(await res.text());
     };
 
@@ -118,6 +120,15 @@ describe('refusals are indistinguishable', () => {
 
     expect(statuses).toEqual([404, 404, 404, 404, 404]);
     expect(new Set(bodies).size).toBe(1);
-    expect(bodies[0]).toBe(JSON.stringify({ error: 'not_found' }));
+    expect(new Set(types).size).toBe(1);
+
+    // …and identical to what a route that was never mounted returns. A distinctive
+    // refusal body would itself disclose that an /api/ops mount exists — measured
+    // against the live API on 2026-07-28, an unrouted path answers exactly this.
+    const bare = new Hono();
+    const unmounted = await bare.request('/no-such-route');
+    expect(bodies[0]).toBe(await unmounted.text());
+    expect(types[0]).toBe(unmounted.headers.get('content-type'));
+    expect(statuses[0]).toBe(unmounted.status);
   });
 });

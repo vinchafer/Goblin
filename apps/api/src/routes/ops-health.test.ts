@@ -100,7 +100,7 @@ describe('cohort invisibility — the probe is gated even though it is read-only
     allGreen();
     const res = await health({ Authorization: 'Bearer valid' });
     expect(res.status).toBe(404);
-    expect(await res.json()).toEqual({ error: 'not_found' });
+    expect(await res.text()).toBe('404 Not Found');
     expect(checkR2).not.toHaveBeenCalled();
     expect(checkKvNamespace).not.toHaveBeenCalled();
     expect(listWorkers).not.toHaveBeenCalled();
@@ -116,6 +116,28 @@ describe('cohort invisibility — the probe is gated even though it is read-only
     const res = await health({ Authorization: 'Bearer valid-cohort' });
     expect(res.status).toBe(404);
     expect(checkR2).not.toHaveBeenCalled();
+  });
+});
+
+describe('cohort invisibility — the destructive self-test route', () => {
+  // /selftest writes to and deletes from the real substrate. It is the one route
+  // here where an unguarded reach would do more than leak the plane's existence.
+  const selftest = (headers: Record<string, string> = {}) => ops.request('/selftest', { method: 'POST', headers });
+
+  it('404s with the kill switch off', async () => {
+    process.env.OPS_HOSTING_ENABLED = 'false';
+    expect((await selftest({ Authorization: 'Bearer valid' })).status).toBe(404);
+  });
+
+  it('404s for an anonymous request and for a cohort user', async () => {
+    expect((await selftest()).status).toBe(404);
+    getUser.mockResolvedValue({ data: { user: { id: 'u-cohort', email: COHORT } }, error: null });
+    expect((await selftest({ Authorization: 'Bearer valid-cohort' })).status).toBe(404);
+  });
+
+  it('is not reachable by GET', async () => {
+    const res = await ops.request('/selftest', { headers: { Authorization: 'Bearer valid' } });
+    expect(res.status).toBe(404);
   });
 });
 

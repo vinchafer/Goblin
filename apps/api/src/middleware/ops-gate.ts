@@ -11,21 +11,37 @@
  * a curious cohort user that an ops plane exists and that they are excluded from
  * it; a 401 would invite them to go find a credential. 404 says the only thing
  * that is true *for them*: with the kill switch off there is no such route. The
- * response body is byte-identical in every refusal path — hosting disabled, bad
- * token, valid token but not allowlisted — so nothing can be inferred by
- * comparing responses. The real reason is logged server-side, never returned.
+ * response is identical in every refusal path — hosting disabled, bad token,
+ * valid token but not allowlisted — so nothing can be inferred by comparing
+ * responses. The real reason is logged server-side, never returned.
+ *
+ * ── Why it is Hono's DEFAULT 404 verbatim, not a JSON error ───────────────────
+ * A distinctive refusal body is itself a disclosure. Measured against the live
+ * API on 2026-07-28: an unrouted path returns `404 Not Found` as
+ * `text/plain; charset=UTF-8` (Hono's built-in notFound). Had this middleware
+ * answered `{"error":"not_found"}` in JSON, anyone could compare `/api/ops/xyz`
+ * with `/api/xyz` and learn that an `/api/ops` mount exists — the exact fact the
+ * gate is here to hide. So the refusal reproduces the framework default exactly:
+ * same status, same content type, same bytes. `/api/ops/anything` is
+ * indistinguishable from a route that was never mounted.
  *
  * This is honest degradation, not a phantom: nothing anywhere in the product
  * links to, mentions, or implies these routes while the flag is off.
  */
 
 import { createMiddleware } from 'hono/factory';
+import type { Context } from 'hono';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { isOpsBetaAccount, opsBetaDenyReason, opsHostingEnabled } from '../services/ops-beta';
 import logger from '../lib/logger';
 
-/** The single refusal shape. Identical for every deny reason, by design. */
-const NOT_FOUND = { error: 'not_found' } as const;
+/**
+ * The single refusal. Byte-identical to Hono's built-in notFound response, so an
+ * ops route refuses exactly as a non-existent route does.
+ */
+function notFound(c: Context) {
+  return c.text('404 Not Found', 404);
+}
 
 export type OpsPrincipal = { userId: string; email: string };
 
@@ -36,13 +52,13 @@ export const opsGate = createMiddleware<{ Variables: OpsGateVariables }>(async (
   // read the allowlist, and cannot leak through a mis-parsed allowlist value.
   if (!opsHostingEnabled()) {
     logger.debug({ path: c.req.path }, 'ops_gate_denied:hosting_disabled');
-    return c.json(NOT_FOUND, 404);
+    return notFound(c);
   }
 
   const authHeader = c.req.header('Authorization');
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     logger.debug({ path: c.req.path }, 'ops_gate_denied:no_bearer');
-    return c.json(NOT_FOUND, 404);
+    return notFound(c);
   }
 
   let email: string | null = null;
@@ -51,7 +67,7 @@ export const opsGate = createMiddleware<{ Variables: OpsGateVariables }>(async (
     const { data, error } = await getSupabaseAdmin().auth.getUser(authHeader.substring(7));
     if (error || !data?.user) {
       logger.debug({ path: c.req.path }, 'ops_gate_denied:invalid_token');
-      return c.json(NOT_FOUND, 404);
+      return notFound(c);
     }
     email = data.user.email ?? null;
     userId = data.user.id;
@@ -60,7 +76,7 @@ export const opsGate = createMiddleware<{ Variables: OpsGateVariables }>(async (
     // down is worse than an ops surface that is briefly unavailable to its one
     // beta account.
     logger.warn({ path: c.req.path, reason: (err as Error)?.message }, 'ops_gate_denied:auth_error');
-    return c.json(NOT_FOUND, 404);
+    return notFound(c);
   }
 
   // Dimension 2: the allowlist.
@@ -69,7 +85,7 @@ export const opsGate = createMiddleware<{ Variables: OpsGateVariables }>(async (
       { path: c.req.path, userId, reason: opsBetaDenyReason(email) },
       'ops_gate_denied',
     );
-    return c.json(NOT_FOUND, 404);
+    return notFound(c);
   }
 
   c.set('opsPrincipal', { userId: userId!, email: email! });

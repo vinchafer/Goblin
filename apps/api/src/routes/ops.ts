@@ -25,6 +25,7 @@ import {
   type CfError,
 } from '../services/cf-deploy';
 import { opsHostingEnabled } from '../services/ops-beta';
+import { runOpsSelftest, SELFTEST_APP_ID } from '../services/ops-selftest';
 import logger from '../lib/logger';
 
 type Variables = OpsGateVariables;
@@ -118,6 +119,35 @@ ops.get('/health', async (c) => {
     tookMs: Date.now() - started,
     timestamp: new Date().toISOString(),
   });
+});
+
+/**
+ * POST /api/ops/selftest — U1.5's round-trip proof, executed BY THE DEPLOYED API.
+ *
+ * It runs here, not in a CC session and not on the founder's laptop, because the
+ * Cloudflare credentials live only in the Railway environment (OPS_SPIKE_0 §4.4:
+ * a cloud CC session is not a vault). The founder triggers it with one authorized
+ * request and reads the result; no token is handled by a human or a session.
+ *
+ * Scope is fixed and hard-coded — the R2 prefix `apps/test-roundtrip/`, the KV
+ * route of the same name, one throwaway Worker. The only accepted parameter is
+ * `runs` (1–10, default 3); there is no way to point it at a real app.
+ *
+ * POST, not GET: it writes to and deletes from the real substrate. It must never
+ * be something a link, a prefetch or a crawler can trigger.
+ */
+ops.post('/selftest', async (c) => {
+  const principal = c.get('opsPrincipal');
+  const runsParam = Number(c.req.query('runs'));
+  logger.warn({ userId: principal.userId, appId: SELFTEST_APP_ID }, 'ops_selftest_started');
+
+  const report = await runOpsSelftest(Number.isFinite(runsParam) ? { runs: runsParam } : {});
+
+  logger.warn({ userId: principal.userId, passed: report.passed, summary: report.summary }, 'ops_selftest_finished');
+  // 200 whether or not the round-trips passed: the REQUEST succeeded and the
+  // report is the answer. A failing round-trip is data, not an HTTP error — and
+  // the founder needs to read the steps, which a thrown status would hide.
+  return c.json(report);
 });
 
 export { ops };
