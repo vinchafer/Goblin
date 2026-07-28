@@ -526,3 +526,172 @@ describe('no raw throws into routes', () => {
     }
   });
 });
+
+// ── PHASE 2 · U2.2: bindings, zone, DNS, Worker routes ──────────────────────
+//
+// Same contract as everything above: typed results, no raw throws, and a MISSING
+// SCOPE reported as `auth` rather than crashed on — the founder's next action
+// differs completely between "the token cannot do this" and "Cloudflare said no".
+
+describe('deployWorker bindings (Phase 2)', () => {
+  it('sends the binding set with the script, so a deploy cannot strip it', async () => {
+    fetchMock.mockResolvedValue(cfOk({}));
+    const res = await cf.deployWorker('goblin-apps-router', 'export default {}', {
+      bindings: [
+        { type: 'kv_namespace', name: 'ROUTES', namespace_id: 'kv-1' },
+        { type: 'r2_bucket', name: 'APPS', bucket_name: 'goblin-apps' },
+        { type: 'plain_text', name: 'APPS_DOMAIN', text: 'justgoblin.app' },
+      ],
+    });
+    expect(res.ok).toBe(true);
+
+    const body = fetchMock.mock.calls[0]![1].body as FormData;
+    const metadata = JSON.parse(await (body.get('metadata') as Blob).text());
+    expect(metadata.main_module).toBe('worker.mjs');
+    expect(metadata.bindings).toHaveLength(3);
+    expect(metadata.bindings[0]).toEqual({ type: 'kv_namespace', name: 'ROUTES', namespace_id: 'kv-1' });
+    expect(metadata.bindings[1]).toEqual({ type: 'r2_bucket', name: 'APPS', bucket_name: 'goblin-apps' });
+  });
+
+  it('omits the bindings key entirely when there are none (Phase-1 behaviour unchanged)', async () => {
+    fetchMock.mockResolvedValue(cfOk({}));
+    await cf.deployWorker('w1', 'export default {}');
+    const body = fetchMock.mock.calls[0]![1].body as FormData;
+    const metadata = JSON.parse(await (body.get('metadata') as Blob).text());
+    expect(metadata).not.toHaveProperty('bindings');
+  });
+});
+
+describe('findZoneId', () => {
+  it('returns the id of the exactly-matching zone', async () => {
+    fetchMock.mockResolvedValue(cfOk([{ id: 'zone-abc', name: 'justgoblin.app' }]));
+    const res = await cf.findZoneId('justgoblin.app');
+    expect(res).toEqual({ ok: true, value: 'zone-abc' });
+    expect(fetchMock.mock.calls[0]![0]).toContain('/zones?name=justgoblin.app');
+  });
+
+  it('returns null — an answer, not an error — when the domain is not on the account', async () => {
+    fetchMock.mockResolvedValue(cfOk([]));
+    expect(await cf.findZoneId('justgoblin.app')).toEqual({ ok: true, value: null });
+  });
+
+  it('does not accept a near-miss zone name', async () => {
+    // A suffix match would happily hand back someone else's zone.
+    fetchMock.mockResolvedValue(cfOk([{ id: 'zone-x', name: 'notjustgoblin.app' }]));
+    expect(await cf.findZoneId('justgoblin.app')).toEqual({ ok: true, value: null });
+  });
+
+  it('reports a missing Zone:Read scope as auth, not as "no such zone"', async () => {
+    fetchMock.mockResolvedValue(cfErr(403, 'Actor is not authorized'));
+    const res = await cf.findZoneId('justgoblin.app');
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.error.code).toBe('auth');
+  });
+});
+
+describe('ensureWildcardDns', () => {
+  it('creates a PROXIED A record at the RFC 5737 documentation address', async () => {
+    fetchMock
+      .mockResolvedValueOnce(cfOk([])) // list: nothing there
+      .mockResolvedValueOnce(cfOk({ id: 'rec-1', proxied: true })); // create
+    const res = await cf.ensureWildcardDns('zone-abc', 'justgoblin.app');
+    expect(res).toEqual({ ok: true, value: { created: true, recordId: 'rec-1', proxied: true } });
+
+    const body = JSON.parse(fetchMock.mock.calls[1]![1].body as string);
+    expect(body).toMatchObject({ type: 'A', name: '*.justgoblin.app', content: '192.0.2.1', proxied: true });
+  });
+
+  it('is idempotent — an existing proxied record is left alone', async () => {
+    fetchMock.mockResolvedValueOnce(cfOk([{ id: 'rec-1', name: '*.justgoblin.app', type: 'A', proxied: true }]));
+    const res = await cf.ensureWildcardDns('zone-abc', 'justgoblin.app');
+    expect(res).toEqual({ ok: true, value: { created: false, recordId: 'rec-1', proxied: true } });
+    expect(fetchMock).toHaveBeenCalledTimes(1); // no write
+  });
+
+  it('reports an UNPROXIED record truthfully instead of overwriting it', async () => {
+    // This is the case that looks configured and silently never runs the Worker.
+    fetchMock.mockResolvedValueOnce(cfOk([{ id: 'rec-1', name: '*.justgoblin.app', type: 'A', proxied: false }]));
+    const res = await cf.ensureWildcardDns('zone-abc', 'justgoblin.app');
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.value.proxied).toBe(false);
+    expect(fetchMock).toHaveBeenCalledTimes(1); // the founder's record is not touched
+  });
+
+  it('reports a missing DNS:Edit scope as auth', async () => {
+    fetchMock.mockResolvedValueOnce(cfOk([])).mockResolvedValueOnce(cfErr(403, 'nope'));
+    const res = await cf.ensureWildcardDns('zone-abc', 'justgoblin.app');
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.error.code).toBe('auth');
+  });
+});
+
+describe('ensureWorkerRoute', () => {
+  it('creates the route when it does not exist', async () => {
+    fetchMock.mockResolvedValueOnce(cfOk([])).mockResolvedValueOnce(cfOk({ id: 'route-1' }));
+    const res = await cf.ensureWorkerRoute('zone-abc', '*.justgoblin.app/*', 'goblin-apps-router');
+    expect(res).toEqual({ ok: true, value: { created: true, updated: false, routeId: 'route-1' } });
+    expect(JSON.parse(fetchMock.mock.calls[1]![1].body as string)).toEqual({
+      pattern: '*.justgoblin.app/*',
+      script: 'goblin-apps-router',
+    });
+  });
+
+  it('does nothing when the route already points at the right script', async () => {
+    fetchMock.mockResolvedValueOnce(
+      cfOk([{ id: 'route-1', pattern: '*.justgoblin.app/*', script: 'goblin-apps-router' }]),
+    );
+    const res = await cf.ensureWorkerRoute('zone-abc', '*.justgoblin.app/*', 'goblin-apps-router');
+    expect(res).toEqual({ ok: true, value: { created: false, updated: false, routeId: 'route-1' } });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('RE-POINTS a route that serves the wrong script instead of reporting success', async () => {
+    fetchMock
+      .mockResolvedValueOnce(cfOk([{ id: 'route-1', pattern: '*.justgoblin.app/*', script: 'some-other-worker' }]))
+      .mockResolvedValueOnce(cfOk({ id: 'route-1' }));
+    const res = await cf.ensureWorkerRoute('zone-abc', '*.justgoblin.app/*', 'goblin-apps-router');
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.value.updated).toBe(true);
+    expect(fetchMock.mock.calls[1]![1].method).toBe('PUT');
+  });
+
+  it('refuses an invalid script name before making any call', async () => {
+    const res = await cf.ensureWorkerRoute('zone-abc', '*.justgoblin.app/*', 'Not A Valid Name!');
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.error.code).toBe('invalid_input');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('opsSiteUrl', () => {
+  it('defaults to the marketing site and strips a trailing slash', () => {
+    delete process.env.OPS_SITE_URL;
+    expect(cf.opsSiteUrl()).toBe('https://justgoblin.com');
+    process.env.OPS_SITE_URL = 'https://staging.example.com/';
+    expect(cf.opsSiteUrl()).toBe('https://staging.example.com');
+    delete process.env.OPS_SITE_URL;
+  });
+
+  it('is NOT one of the health probe`s required variables', () => {
+    // Adding it there would turn a green Phase-1 health report degraded on merge,
+    // for a value that has a correct default.
+    expect(cf.CF_ENV_VARS as readonly string[]).not.toContain('OPS_SITE_URL');
+  });
+});
+
+describe('the Phase-2 calls also never throw', () => {
+  it('returns a typed result even when the transport dies', async () => {
+    fetchMock.mockRejectedValue(new Error('kaputt'));
+    const results = await Promise.allSettled([
+      cf.findZoneId('justgoblin.app'),
+      cf.listDnsRecords('zone-abc', '*.justgoblin.app'),
+      cf.ensureWildcardDns('zone-abc', 'justgoblin.app'),
+      cf.listWorkerRoutes('zone-abc'),
+      cf.ensureWorkerRoute('zone-abc', '*.justgoblin.app/*', 'goblin-apps-router'),
+    ]);
+    expect(results.every((r) => r.status === 'fulfilled')).toBe(true);
+    for (const r of results) {
+      if (r.status === 'fulfilled') expect(typeof (r.value as { ok: boolean }).ok).toBe('boolean');
+    }
+  });
+});

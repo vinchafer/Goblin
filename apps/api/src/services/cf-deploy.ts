@@ -136,6 +136,35 @@ export interface CfWorker {
   size: number;
 }
 
+/**
+ * A runtime binding attached to a Worker at deploy time — how the router reaches
+ * KV and R2 without ever holding a credential of its own.
+ *
+ * PHASE 2. The router is the first (and on the lean plane, only) Worker that needs
+ * these: without them it could only talk to Cloudflare over the REST API, which
+ * would mean shipping CF_API_TOKEN into a script that runs on every visitor
+ * request. Bindings are the mechanism that keeps the token in Railway.
+ */
+export type CfBinding =
+  | { type: 'kv_namespace'; name: string; namespace_id: string }
+  | { type: 'r2_bucket'; name: string; bucket_name: string }
+  | { type: 'plain_text'; name: string; text: string };
+
+/** A DNS record, as far as this adapter cares. */
+export interface CfDnsRecord {
+  id: string;
+  name: string;
+  type: string;
+  proxied: boolean;
+}
+
+/** A Workers route binding a URL pattern on a zone to a script. */
+export interface CfWorkerRoute {
+  id: string;
+  pattern: string;
+  script: string;
+}
+
 export interface CfPutResult {
   files: number;
   bytes: number;
@@ -786,7 +815,7 @@ function workersBase(): string {
 export async function deployWorker(
   scriptName: string,
   code: string,
-  opts: { compatibilityDate?: string } = {},
+  opts: { compatibilityDate?: string; bindings?: CfBinding[] } = {},
 ): Promise<CfResult<{ scriptName: string; bytes: number }>> {
   if (!SCRIPT_NAME_RE.test(scriptName)) {
     return fail('invalid_input', `invalid worker script name: ${JSON.stringify(scriptName)}`);
@@ -801,6 +830,12 @@ export async function deployWorker(
   const metadata = {
     main_module: entry,
     compatibility_date: opts.compatibilityDate ?? workerCompatDate(),
+    // Bindings are declared on EVERY upload, not patched in afterwards: Cloudflare
+    // replaces a script's binding set wholesale, so an upload that omitted them
+    // would silently strip the router's access to KV and R2 and turn every app
+    // into a 503. Sending them each time makes a deploy idempotent in fact, not
+    // just in intent.
+    ...(opts.bindings && opts.bindings.length > 0 ? { bindings: opts.bindings } : {}),
   };
 
   const form = new FormData();
@@ -868,7 +903,175 @@ export async function listWorkers(): Promise<CfResult<{ count: number; latencyMs
   return ok({ count: Array.isArray(res.value) ? res.value.length : 0, latencyMs: Date.now() - started });
 }
 
+// ── Zone, DNS, Worker routes (Phase 2 · U2.2) ───────────────────────────────
+//
+// The three calls that make `{name}.justgoblin.app` resolve to the router at all.
+// They need token scopes the Phase-1 calls did not: Zone:Read, DNS:Edit and
+// Workers Routes:Edit. Each is written so a MISSING SCOPE is reported as a typed
+// `auth` error rather than a crash, because the founder's next action differs
+// completely between "the token cannot do this" (add the scope in the dashboard)
+// and "Cloudflare said no" (read the message).
+//
+// All three are IDEMPOTENT: they look before they write, and re-running a
+// provision that already succeeded changes nothing and reports what it found.
+
+/** Find the zone id for a domain. The founder never has to paste one anywhere. */
+export async function findZoneId(domain: string): Promise<CfResult<string | null>> {
+  const name = domain.trim().toLowerCase();
+  if (!name) return fail('invalid_input', 'findZoneId called with an empty domain');
+  const res = await cfFetch<Array<{ id?: string; name?: string }>>(
+    'zones:list',
+    `/zones?name=${encodeURIComponent(name)}`,
+    { method: 'GET' },
+  );
+  if (!res.ok) return { ok: false, error: res.error };
+  const zone = (res.value ?? []).find((z) => (z.name ?? '').toLowerCase() === name);
+  // Absent is an answer: the domain is not on this Cloudflare account (yet).
+  return ok(zone?.id ?? null);
+}
+
+/** The DNS records matching a name on a zone. */
+export async function listDnsRecords(zoneId: string, name: string): Promise<CfResult<CfDnsRecord[]>> {
+  const res = await cfFetch<Array<{ id?: string; name?: string; type?: string; proxied?: boolean }>>(
+    'dns:list',
+    `/zones/${encodeURIComponent(zoneId)}/dns_records?name=${encodeURIComponent(name)}`,
+    { method: 'GET' },
+  );
+  if (!res.ok) return { ok: false, error: res.error };
+  return ok(
+    (res.value ?? [])
+      .filter((r) => r.id && r.name)
+      .map((r) => ({ id: r.id!, name: r.name!, type: r.type ?? '', proxied: Boolean(r.proxied) })),
+  );
+}
+
+/**
+ * Make sure `*.{domain}` exists as a PROXIED record, creating it if it does not.
+ *
+ * Why an A record to 192.0.2.1: a Workers route only fires for hostnames that
+ * resolve through Cloudflare's proxy, so a record must exist — but no origin
+ * server does, because the router IS the origin. 192.0.2.1 is the RFC 5737
+ * documentation address, reserved precisely so it can never route anywhere real.
+ * If the Worker route is ever removed, the wildcard fails closed (nothing answers)
+ * instead of leaking traffic to a stranger's server.
+ */
+export async function ensureWildcardDns(
+  zoneId: string,
+  domain: string,
+): Promise<CfResult<{ created: boolean; recordId: string; proxied: boolean }>> {
+  const name = `*.${domain.trim().toLowerCase()}`;
+  const existing = await listDnsRecords(zoneId, name);
+  if (!existing.ok) return { ok: false, error: existing.error };
+
+  const match = existing.value.find((r) => r.type === 'A' || r.type === 'AAAA' || r.type === 'CNAME');
+  if (match) {
+    // Present but unproxied is worse than absent: it looks configured and the
+    // Worker never runs. Report it truthfully instead of overwriting the
+    // founder's record behind their back.
+    return ok({ created: false, recordId: match.id, proxied: match.proxied });
+  }
+
+  const res = await cfFetch<{ id?: string; proxied?: boolean }>(
+    'dns:create',
+    `/zones/${encodeURIComponent(zoneId)}/dns_records`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'A',
+        name,
+        content: '192.0.2.1',
+        proxied: true,
+        ttl: 1,
+        comment: 'Goblin Living Apps — wildcard for the router Worker (AKT 2 Phase 2)',
+      }),
+    },
+  );
+  if (!res.ok) return { ok: false, error: res.error };
+  logger.info({ name }, 'cf_wildcard_dns_created');
+  return ok({ created: true, recordId: res.value?.id ?? '', proxied: Boolean(res.value?.proxied ?? true) });
+}
+
+/** Every Workers route on a zone. */
+export async function listWorkerRoutes(zoneId: string): Promise<CfResult<CfWorkerRoute[]>> {
+  const res = await cfFetch<Array<{ id?: string; pattern?: string; script?: string }>>(
+    'routes:list',
+    `/zones/${encodeURIComponent(zoneId)}/workers/routes`,
+    { method: 'GET' },
+  );
+  if (!res.ok) return { ok: false, error: res.error };
+  return ok(
+    (res.value ?? [])
+      .filter((r) => r.id && r.pattern)
+      .map((r) => ({ id: r.id!, pattern: r.pattern!, script: r.script ?? '' })),
+  );
+}
+
+/**
+ * Bind a URL pattern on a zone to a Worker script, creating or correcting it.
+ *
+ * Correcting matters: a pattern already pointing at a DIFFERENT script is not a
+ * success, and silently leaving it would mean the founder reads "provisioned" while
+ * the wrong code serves every app. It is updated in place and reported as `updated`.
+ */
+export async function ensureWorkerRoute(
+  zoneId: string,
+  pattern: string,
+  scriptName: string,
+): Promise<CfResult<{ created: boolean; updated: boolean; routeId: string }>> {
+  if (!SCRIPT_NAME_RE.test(scriptName)) {
+    return fail('invalid_input', `invalid worker script name: ${JSON.stringify(scriptName)}`);
+  }
+  const existing = await listWorkerRoutes(zoneId);
+  if (!existing.ok) return { ok: false, error: existing.error };
+
+  const match = existing.value.find((r) => r.pattern === pattern);
+  if (match && match.script === scriptName) return ok({ created: false, updated: false, routeId: match.id });
+
+  if (match) {
+    const res = await cfFetch<{ id?: string }>(
+      'routes:update',
+      `/zones/${encodeURIComponent(zoneId)}/workers/routes/${encodeURIComponent(match.id)}`,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pattern, script: scriptName }),
+      },
+    );
+    if (!res.ok) return { ok: false, error: res.error };
+    logger.warn({ pattern, from: match.script, to: scriptName }, 'cf_worker_route_repointed');
+    return ok({ created: false, updated: true, routeId: res.value?.id ?? match.id });
+  }
+
+  const res = await cfFetch<{ id?: string }>(
+    'routes:create',
+    `/zones/${encodeURIComponent(zoneId)}/workers/routes`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ pattern, script: scriptName }),
+    },
+  );
+  if (!res.ok) return { ok: false, error: res.error };
+  logger.info({ pattern, scriptName }, 'cf_worker_route_created');
+  return ok({ created: true, updated: false, routeId: res.value?.id ?? '' });
+}
+
 /** The apps domain (`justgoblin.app`). Phase 2 builds `{name}.{domain}` from it. */
 export function opsAppsDomain(): string {
   return env('OPS_APPS_DOMAIN');
+}
+
+/**
+ * The marketing site the apps domain redirects to, and the base of the AUP link on
+ * the suspended page.
+ *
+ * Deliberately NOT added to CF_ENV_VARS: that list drives the health probe's
+ * "every required variable present" check, and a new required name would turn a
+ * green Phase-1 health report degraded the moment this merges — a false alarm
+ * about a value that has a correct default.
+ */
+export function opsSiteUrl(): string {
+  const raw = (process.env.OPS_SITE_URL ?? '').trim();
+  return (raw || 'https://justgoblin.com').replace(/\/$/, '');
 }

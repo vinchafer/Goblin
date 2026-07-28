@@ -26,6 +26,7 @@ import {
 } from '../services/cf-deploy';
 import { opsHostingEnabled } from '../services/ops-beta';
 import { runOpsSelftest, SELFTEST_APP_ID } from '../services/ops-selftest';
+import { provisionRouter, routerStatus } from '../services/ops-router-deploy';
 import logger from '../lib/logger';
 
 type Variables = OpsGateVariables;
@@ -147,6 +148,39 @@ ops.post('/selftest', async (c) => {
   // 200 whether or not the round-trips passed: the REQUEST succeeded and the
   // report is the answer. A failing round-trip is data, not an HTTP error — and
   // the founder needs to read the steps, which a thrown status would hide.
+  return c.json(report);
+});
+
+/**
+ * GET /api/ops/router — what is actually in place, without changing any of it.
+ *
+ * Read-only by construction (see routerStatus). Separate from the provision call
+ * so "show me the state" can be used for evidence without a write, and so a
+ * confused operator cannot reconfigure production by refreshing a page.
+ */
+ops.get('/router', async (c) => {
+  return c.json(await routerStatus());
+});
+
+/**
+ * POST /api/ops/router/provision — U2.2: deploy the router and wire the hostname.
+ *
+ * POST because it writes to Cloudflare (script upload, DNS record, Workers route).
+ * It is idempotent, so re-running it after fixing a token scope is the intended
+ * workflow rather than a risk.
+ *
+ * 200 whether or not every step succeeded: the REQUEST worked and the step report
+ * is the answer. A missing token scope is a founder action, not an HTTP error —
+ * and a thrown status would hide the very steps the founder needs to read.
+ */
+ops.post('/router/provision', async (c) => {
+  const principal = c.get('opsPrincipal');
+  logger.warn({ userId: principal.userId }, 'ops_router_provision_started');
+  const report = await provisionRouter();
+  logger.warn(
+    { userId: principal.userId, provisioned: report.provisioned, blockedOnDns: report.blockedOnDns },
+    'ops_router_provision_finished',
+  );
   return c.json(report);
 });
 
