@@ -108,6 +108,32 @@ G1 (validation numbers) gates Phases 1–15 · Phase 0 is paper and may run pre-
 **Ledger:** M-H1 line authored (hosting COGS class, platform-COGS).
 **Founder actions:** apply migration when merging; keep flag off.
 
+**AMENDMENT — Phase 1 v2 LEAN (founder decision 2026-07-27, executed 2026-07-28).** D2 is amended:
+the user-app plane runs on the Workers **FREE** plan — no Workers for Platforms, no dispatch namespace,
+no $25 subscription — until a real limit bites. The 100k-requests/day Free hard stop is the cost ceiling
+by design. Consequences for this phase, which the shipped code follows rather than the unit list above:
+ONE platform-owned router Worker (built in Phase 2) resolves `{name}.justgoblin.app` via a **KV** lookup
+and serves that app's static files from **R2** (`goblin-apps`, key prefix `apps/{app_id}/…`); there are no
+per-app Workers and no D1 on Free. `CF_DISPATCH_NAMESPACE` is therefore **not** a Phase-1 variable — the
+adapter reads `CF_ACCOUNT_ID`, `CF_API_TOKEN`, `CF_R2_*`, `CF_KV_NAMESPACE_ID`, `OPS_APPS_DOMAIN`. The
+domain is `justgoblin.app`, not `goblin.app` as written in Phase 2/12 and in OPS_SPIKE_0. The adapter
+interface is deliberately substrate-agnostic so the documented upgrade trigger (Free limit bites OR
+server-side app code needed → Workers Paid / WfP, D1, per-app Workers) is an added implementation behind
+the same surface, not a rewrite.
+
+**THE ACT-2 GATE (U1.1 contract — binding on every later phase).** `isOpsBetaAccount(user)`
+(`apps/api/src/services/ops-beta.ts`) is the single boundary that keeps Act 2 invisible to the live Act-1
+cohort. It returns true only when the global kill switch `OPS_HOSTING_ENABLED` is exactly `true` AND the
+user's email is in the comma-separated `OPS_BETA_ACCOUNTS` — two independent dimensions, ANDed, both
+fail-closed (unset, empty or malformed → denied). **Every Act-2 surface — every route, background job,
+agent tool, and every web surface that so much as reveals one — must pass through this helper before it
+does anything observable, read-only surfaces included**, because the existence of an Act-2 route is
+itself information the cohort must not have. Refusals answer **404** with no discriminating detail
+(`middleware/ops-gate.ts`); the deny *reason* is for logs and tests only, never for a client. Do not add
+a second gate: one boundary is one thing to get right. With `OPS_HOSTING_ENABLED=false` — its production
+default and its state at this merge — the whole of Act 2 is dark for everyone, including the founder,
+with no deploy needed to keep it that way.
+
 ## PHASE 2 — HOSTED PUBLISH (STATIC): THE FIRST LIVING URL
 **Objective:** A Goblin project publishes to `name.goblin.app` through the existing truth-gated pipeline.
 **Units:** (2.1) Wildcard routing: dispatch Worker resolving `{name}.goblin.app` → tenant script (plus reserved-names list: www, api, admin, status, mail…). (2.2) Publish path in API: build artifact (existing) → cf-deploy upload → setTenantLimits(default caps) → record in ops_apps. (2.3) Extend the EXISTING verification loop: entry 200 via public URL, N assets byte-checked, headers sane; reuse, don't fork, the current verifier. (2.4) Name claim flow: availability check, honest German errors ("Dieser Name ist vergeben"), rename = new deploy + old released. (2.5) E2E on prod API with test account: publish test app → verification green → screenshot of live URL fetched server-side (curl output as evidence, since sandbox has no browser — label it deterministic).
