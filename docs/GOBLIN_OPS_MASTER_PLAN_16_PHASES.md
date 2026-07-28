@@ -129,6 +129,23 @@ G1 (validation numbers) gates Phases 1–15 · Phase 0 is paper and may run pre-
 **Ledger:** M-H1 line authored (hosting COGS class, platform-COGS).
 **Founder actions:** apply migration when merging; keep flag off.
 
+**PHASE 1.5 — round-trip gate (U1.5) closure record.** The U1.4/U1.5 round-trip was run
+against the REAL Cloudflare APIs from the founder's laptop on **2026-07-28** via the dev-only
+harness `apps/api/scripts/ops-roundtrip.mts` (direct adapter — no HTTP, no auth, no trial gate;
+adapter `763b3cc2`, 3 runs/surface). **Final result: `r2 3/3 · kv 3/3 · workers 3/3 · cleanup ok`
+(real Cloudflare, stable across 3 consecutive runs) — the gate is GREEN.** KV proves the multipart
+`value`+`metadata` write shape; Workers proves the ES-module upload format; R2 proves put → list →
+get+byte-match → batched delete → list-0. **R2 close-out path:** the first attempt was `r2 0/3`
+because `CF_R2_ENDPOINT` carried a trailing `/goblin-apps` path segment, which under the adapter's
+`forcePathStyle` produced a double-bucket path (`…/goblin-apps/goblin-apps/…`) — NOT an adapter
+defect and NOT a credential-validity problem. The founder removed the path segment (endpoint is now
+the bare host, 0 path segments) and R2 went green. Evidence:
+`evidence/akt2-phase1/roundtrip-local-2026-07-28-r2-3of3.txt` (green) and the earlier
+`roundtrip-local-2026-07-28.txt` (the honest `r2 0/3` before-state).
+Also closed here (U1.5c): the internal ops plane no longer sits behind the trial/subscription
+paywall — `/api/ops` is skipped by the trial gate so an allowlisted beta account without a plan
+reaches `opsGate` instead of getting a 402.
+
 **AMENDMENT — Phase 1 v2 LEAN (founder decision 2026-07-27, executed 2026-07-28).** D2 is amended:
 the user-app plane runs on the Workers **FREE** plan — no Workers for Platforms, no dispatch namespace,
 no $25 subscription — until a real limit bites. The 100k-requests/day Free hard stop is the cost ceiling
