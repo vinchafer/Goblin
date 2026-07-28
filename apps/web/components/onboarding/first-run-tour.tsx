@@ -65,9 +65,16 @@ export function FirstRunTour({ onDone }: FirstRunTourProps) {
 
   return (
     <>
-      {/* Backdrop — semi-transparent, skippable */}
+      {/* Backdrop — semi-transparent, skippable.
+          SCRIM-U1: every full-screen scrim in the shell carries a data-testid.
+          A scrim styled purely inline renders as an attribute-less element in
+          Playwright's failure log (previewNode() skips the `style` attribute),
+          so a blocked click reported only "<div></div> intercepts pointer
+          events" — 15 E2E failures that named neither the component nor the
+          file. The testid makes the blocker self-identifying. */}
       <div
         onClick={onDone}
+        data-testid="first-run-tour-backdrop"
         style={{
           position: 'fixed', inset: 0, zIndex: 1000,
           background: 'rgba(0,0,0,0.35)',
@@ -83,6 +90,7 @@ export function FirstRunTour({ onDone }: FirstRunTourProps) {
           flip-aware raised-panel surface so SURFACE + TEXT flip together (light
           #FFFFFF / dark #08170F), with a flip-aware hairline for definition. */}
       <div
+        data-testid="first-run-tour"
         style={{
           position: 'fixed',
           // U4 safe-area: on a standalone PWA the card's bottom must clear the
@@ -103,6 +111,7 @@ export function FirstRunTour({ onDone }: FirstRunTourProps) {
         <button
           onClick={onDone}
           aria-label={tc.close}
+          data-testid="first-run-tour-close"
           style={{
             position: 'absolute', top: 12, right: 12,
             width: 28, height: 28, borderRadius: '50%',
@@ -142,6 +151,7 @@ export function FirstRunTour({ onDone }: FirstRunTourProps) {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <button
             onClick={onDone}
+            data-testid="first-run-tour-skip"
             style={{
               background: 'none', border: 'none',
               // U3: --disabled fails AA on BOTH surfaces (#B8A988 ≈ 2:1 on white,
@@ -156,6 +166,7 @@ export function FirstRunTour({ onDone }: FirstRunTourProps) {
 
           <button
             onClick={() => isLast ? onDone() : setStep(s => s + 1)}
+            data-testid="first-run-tour-next"
             style={{
               padding: '9px 20px',
               background: 'var(--brand-green)', color: 'var(--brand-gold)',
