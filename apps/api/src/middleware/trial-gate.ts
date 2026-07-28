@@ -34,6 +34,16 @@ const SKIP_PATHS = [
   '/api/auth',
   '/api/shared',
   '/api/investor', // investor-gated, server-to-server; has its own shared-secret auth
+  // AKT 2 · PHASE 1.5 · U1.5c — the internal ops plane is NOT gated by the trial/
+  // subscription paywall. Its access control is the Act-2 allowlist (ops-gate →
+  // isOpsBetaAccount), a different question than "has this user paid". Requiring a
+  // paid plan for an internal beta endpoint was a construction error that 402'd the
+  // founder's own allowlisted account before it ever reached opsGate. Skipping the
+  // trial gate here also PRESERVES the 404-invisibility guarantee: a refused /api/ops
+  // request now reaches opsGate and gets Hono's byte-identical default 404, instead of
+  // a distinctive 402 that would betray the mount's existence to the Act-1 cohort.
+  // opsGate still enforces auth (identity) → allowlist + kill-switch before any handler.
+  '/api/ops',
 ];
 
 // Read-only paths that should remain accessible even after trial expiry.
