@@ -1,6 +1,7 @@
 # Missbrauchs-Runbook (ABUSE_RESPONSE) — für den Gründer
 
-**Stand: 2026-07-11 · Wave-K, Layer 5 (die menschliche Schicht).**
+**Stand: 2026-07-28 · Wave-K, Layer 5 (die menschliche Schicht) · erweitert um Abschnitt 8
+(von Goblin gehostete Apps, AKT 2 · Pre-Phase-2).**
 
 Dieses Runbook ist der Handlungs-Leitfaden, wenn ein Missbrauchs-Verdacht auftaucht.
 Es setzt die fünf Schutzschichten voraus (K1 Nutzungsrichtlinie · K2 Generierungs-Refusal ·
@@ -9,14 +10,26 @@ Risiko technisch; diese Schicht ist der Mensch, der entscheidet — denn
 **Konto-Aktionen sind Gründer-Entscheidungen, nie automatisch** (OS-Eskalationstabelle:
 Nutzerdaten / irreversibel).
 
-## Der strukturelle Vorteil (immer mitdenken)
+## Zwei Wege — und nur auf einem ist Goblin der Hoster
 
-**Goblin hostet Nutzer-Inhalte nie öffentlich.** Generierte Apps laufen im **eigenen
-Vercel-Konto des Nutzers**; der Projektspeicher (B2) ist privat. Missbrauchsfläche ist
-deshalb: (a) was der Agent baut (K2), (b) was die Publish-Pipeline zu Vercel ausliefert
-(K3), (c) Plattform-Ressourcen (Wave-D). Die Hosting-Ebene — und Vercels eigene
-Trust-&-Safety-Maschinerie — gehört dem Nutzer und Vercel. Ein Inhalt, der erst NACH dem
-Publish auf dem Vercel des Nutzers sichtbar wird, ist primär Vercels Meldeweg (siehe unten).
+> **Geändert 2026-07-28 (AKT 2 · Pre-Phase-2).** Hier stand: „Goblin hostet Nutzer-Inhalte
+> nie öffentlich." Das gilt ab Phase 2 nicht mehr. Siehe `docs/HOSTING_CLAIMS_AUDIT.md`.
+
+**Weg A — eigenes Vercel-Konto des Nutzers (Standard, alle Konten).**
+Missbrauchsfläche: (a) was der Agent baut (K2), (b) was die Publish-Pipeline ausliefert
+(K3), (c) Plattform-Ressourcen (Wave-D). Die Hosting-Ebene gehört dem Nutzer und Vercel.
+Ein Inhalt, der erst NACH dem Publish auf dem Vercel des Nutzers erscheint, ist primär
+Vercels Meldeweg (Abschnitt 4). **Goblin kann dort nichts abschalten.**
+
+**Weg B — von Goblin gehostet auf `{name}.justgoblin.app` (Phase 2, Beta, Allowlist).**
+Hier ist **Goblin der Hoster**: die Dateien liegen in Goblins R2, die Route in Goblins KV,
+ausgeliefert unter Goblins Domain. Goblin **kann und muss** hier selbst abschalten. Der
+Meldeweg ist Goblins eigener (Abschnitt 8), nicht Vercels. Der Projektspeicher (B2) ist
+auf beiden Wegen privat.
+
+**Die eine Zeile, ehrlich:** Goblin kann von ihm gehostete Inhalte jederzeit abschalten und
+entfernen, prüft aber nicht jede App und findet Missbrauch überwiegend erst durch Meldungen
+oder den deterministischen Publish-Scan — nicht durch Überwachung.
 
 ---
 
@@ -155,3 +168,113 @@ Admin-Dashboard („Sicherheit"-Karte) + zügige Reaktion auf Feedback/Meldungen
 - **Vercel-Meldeweg** halbjährlich gegenprüfen und das Datum in Abschnitt 4 aktualisieren.
 - **Regel-Pflege:** jeden echten Missbrauchsfall in `scan-rules.ts` als neue Regel + Fixture
   gießen (der Scan wird nur durch echte Fälle klüger).
+
+**Neu aus AKT 2 · Pre-Phase-2 (Abschnitt 8):**
+
+- **`abuse@justgoblin.com` einrichten und tatsächlich überwachen.** Die Adresse steht ab
+  diesem Release öffentlich auf `/acceptable-use` und in den AGB. Eine Rechtsseite, die auf
+  eine ungelesene Mailbox zeigt, ist eine Lüge — entweder die Mailbox existiert und wird
+  gelesen, oder die Adresse muss von den Seiten wieder runter.
+- **Aufbewahrungsfrist für Beweise (12 Monate, 8.7)** bestätigen oder korrigieren.
+- **Karenzfrist 30 Tage** (AGB Abschnitt 7) bestätigen.
+- **Vier Phase-2-Anforderungen aus 8.3 abnehmen**, bevor die erste fremde App live geht:
+  Router respektiert `suspended` · Admin-Schreibpfad für die Sperre · Orphan-Sweep beim
+  Projektlöschen · K3-Scan im CF-Publish-Pfad (sonst wird die öffentliche AUP-Zusage falsch).
+
+---
+
+## 8. Von Goblin gehostete Apps (Weg B) — der Hoster-Meldeweg
+
+Gilt für alles unter `*.justgoblin.app`. Auf diesem Weg gibt es keinen dritten Anbieter,
+an den weitergereicht werden kann.
+
+### 8.1 Intake
+
+| Quelle | Wo | Hinweis |
+|---|---|---|
+| **`abuse@justgoblin.com`** | Mailbox | Der öffentliche Meldeweg. Steht auf `/acceptable-use` und in den AGB (Abschnitt 8). **Muss tatsächlich überwacht werden** — eine Adresse, die niemand liest, ist eine Lüge auf einer Rechtsseite. |
+| Urheberrechtsbeschwerde | dieselbe Mailbox | Verfahren in 8.6 |
+| K3-Publish-Block | `platform_events`, `event_type = 'publish_blocked'` | präventiv, vor dem Livegang |
+| K4-Signal | Admin-Dashboard → „Sicherheit" | Muster, kein Urteil |
+
+**Ziel: glaubwürdige Meldungen innerhalb von 24 Stunden sichten.** Das ist ein **Ziel, keine
+Zusicherung** — so steht es auch öffentlich. Goblin wird von einer Einzelperson betrieben;
+Urlaub, Krankheit und Zeitzonen existieren. Niemals als SLA formulieren.
+
+### 8.2 Triage — Schweregrade
+
+| Klasse | Beispiele | Handlung |
+|---|---|---|
+| **S0 — sofort** | CSAM · aktives Phishing mit echtem Credential-Abfluss · Malware-Auslieferung | **Zuerst abschalten, dann prüfen.** Keine Vorankündigung. Beweise sichern. Bei CSAM: Konto-Kündigung + Behördenmeldung, keine Ermessensfrage. |
+| **S1 — dringend** | Krypto-Drainer · Marken-Imitation · Kartendaten-Formulare · Ressourcen-Missbrauch mit laufenden Kosten | Abschalten oder sperren, Nutzer gleichzeitig benachrichtigen. |
+| **S2 — normal** | Spam/SEO-Linkfarm · Urheberrechtsbeschwerde · Grenzfall-Täuschung | Nutzer zuerst kontaktieren, Frist zur Behebung setzen, dann sperren. |
+| **S3 — unklar** | Meldung ohne Beleg · Konkurrenz-/Beschwerdemotiv erkennbar | Selbst ansehen. Nicht auf Zuruf sperren. |
+
+Die Regel aus Abschnitt 2 gilt unverändert: **False Positives sind unsere eigene
+Ehrlichkeits-Niederlage.** S2/S3 zuerst mit dem Menschen klären.
+
+### 8.3 Der Sperr-Mechanismus — was heute existiert und was nicht
+
+**Existiert nach Phase 1 (verifiziert am 2026-07-28):**
+
+| Hebel | Wo | Wirkung |
+|---|---|---|
+| `OPS_HOSTING_ENABLED=false` | Env, API | **Globaler Kill-Switch.** Legt die gesamte Ops-Ebene still (`apps/api/src/services/ops-beta.ts:45`, `ops-gate.ts:53`). Alles-oder-nichts — kein Instrument gegen eine einzelne App. |
+| `OPS_BETA_ACCOUNTS` | Env, API | Allowlist. Entfernen eines Kontos nimmt ihm den Zugang zur Ops-Ebene (`isOpsBetaAccount`). |
+| `ops_apps.status = 'suspended'` | DB (Migration 0099) | Der vorgesehene Not-Aus pro App. Ein `UPDATE`, sofort umkehrbar — das Gegenteil vom Löschen. |
+| `deleteAppFiles(appId)` / `deleteRoute(name)` | `apps/api/src/services/cf-deploy.ts:552` / `:752` | Harte Entfernung: R2-Prefix bzw. KV-Route. **Nicht umkehrbar.** Erst nach Beweissicherung. |
+
+**Existiert NOCH NICHT — Phase-2-Anforderungen, hier festgehalten statt beschönigt:**
+
+1. **Der Router respektiert `status = 'suspended'` noch nicht** — es gibt in Phase 1 keinen
+   Router Worker. Bis Phase 2 ihn baut und die Statusprüfung einbaut, ist der einzige
+   wirksame Not-Aus pro App das **Löschen der KV-Route** (`deleteRoute`) — grob, aber
+   wirksam. *Phase-2-Anforderung: der Router MUSS eine suspendierte App abweisen.*
+2. **Es gibt keinen Schreibpfad für die Suspendierung.** `ops-apps-store.ts` ist heute
+   read-only (`listUserOpsApps`, `findOpsAppByName`). Suspendieren heißt derzeit: `UPDATE
+   public.ops_apps SET status='suspended' WHERE app_name='…';` im Supabase-SQL-Editor.
+   *Phase-2-Anforderung: ein Admin-Pfad mit Audit-Eintrag.*
+3. **Es gibt keinen Orphan-Sweep.** Das Löschen eines Projekts entfernt die Registry-Zeile
+   per Cascade, **nicht** die gehosteten Dateien (siehe Warnung in `0099_ops_apps.sql`).
+   Eine gelöschte Projektzeile kann eine erreichbare URL zurücklassen. *Phase-2-Anforderung.*
+4. **Der Publish-Scan (K3) ist an den Vercel-Pfad gebunden.** *Phase-2-Anforderung: der
+   CF-Publish-Pfad MUSS durch denselben Scan laufen* — sonst wird die öffentliche AUP-Zusage
+   „automatische Prüfungen vor dem Veröffentlichen" auf Weg B falsch.
+
+### 8.4 Nutzer benachrichtigen
+
+Immer, außer bei S0. Vorlagen in Abschnitt 5 — für Weg B ergänzen: welche URL, welche
+Grenze, was passiert ist (gesperrt/entfernt), wie der Export geht, wie widersprochen wird.
+Bei S0 wird **nachträglich** benachrichtigt, sobald die Gefahr gebannt ist — nicht gar nicht.
+
+### 8.5 Widerspruch
+
+Der Nutzer antwortet auf die Benachrichtigung oder schreibt an `abuse@justgoblin.com`.
+Ein Mensch (der Gründer) sieht es sich an. War die Sperre falsch: entsperren
+(`status='active'` bzw. Route neu setzen via `setRoute`), dem Nutzer sagen, dass es unser
+Fehler war, und die auslösende Regel in `scan-rules.ts` justieren + Fixture ergänzen.
+**Ausnahme: bei CSAM gibt es kein Widerspruchsverfahren, das die Sperre aufschiebt.**
+
+### 8.6 Urheberrechtsbeschwerde (Schweiz, notice-and-takedown)
+
+Goblin sitzt in der **Schweiz**; es gilt Schweizer Recht. **Goblin unterhält keinen
+DMCA-Agenten** und darf keine DMCA-Verfahrensgarantien behaupten — steht so auch öffentlich.
+
+1. Beschwerde an `abuse@justgoblin.com` mit: URL · Bezeichnung des Werks · Nachweis der
+   Berechtigung · Kontaktdaten · Richtigkeitserklärung. Unvollständig → nachfordern.
+2. Plausibilität prüfen (keine juristische Würdigung, nur: ist das schlüssig?).
+3. Plausibel → Inhalt sperren, Nutzer benachrichtigen, Kopie der Beschwerde beilegen.
+4. Widerspricht der Nutzer begründet, ist es ein **Rechtsstreit zwischen zwei Parteien**.
+   Goblin entscheidet ihn nicht. Beide Seiten informieren, Sperre bis zur Klärung halten,
+   bei ernsthaftem Streit anwaltlichen Rat einholen.
+
+### 8.7 Beweisaufbewahrung
+
+Vor jeder irreversiblen Stufe sichern: R2-Snapshot der ausgelieferten Dateien, die
+`ops_apps`-Zeile, die relevanten `platform_events`, die URL, die Meldung selbst,
+Zeitstempel. Ablage außerhalb des Nutzer-Projekts.
+
+**Aufbewahrung: 12 Monate**, dann löschen — lang genug für einen Folgestreit, nicht länger
+als nötig. **Ausnahme CSAM:** nichts eigenständig aufbewahren oder ansehen; dem Verfahren
+der Behörden folgen und deren Weisung einholen. *(Frist ist ein Vorschlag → Gründer-/
+Anwaltsentscheid, siehe Abschnitt 7.)*
