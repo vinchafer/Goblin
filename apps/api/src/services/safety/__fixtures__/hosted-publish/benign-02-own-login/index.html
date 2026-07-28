@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="de">
+<head><meta charset="utf-8"><title>Vereinsportal TV Rot-Weiss — Anmelden</title></head>
+<body>
+  <h1>Vereinsportal</h1>
+  <p>Melde dich mit deinen Vereinsdaten an.</p>
+  <form method="post" action="/api/login">
+    <label for="benutzer">Benutzername</label>
+    <input id="benutzer" name="benutzer" type="text" autocomplete="username">
+    <label for="passwort">Passwort</label>
+    <input id="passwort" name="passwort" type="password" autocomplete="current-password">
+    <button type="submit">Anmelden</button>
+  </form>
+  <p><a href="/hilfe">Zugangsdaten vergessen?</a></p>
+</body>
+</html>

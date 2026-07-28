@@ -180,9 +180,12 @@ Admin-Dashboard („Sicherheit"-Karte) + zügige Reaktion auf Feedback/Meldungen
   AGB Abschnitt 7 formuliert.
 - ~~**Aufbewahrungsfrist für Beweise (12 Monate, 8.7)**~~ **BESTÄTIGT (Gründer-Entscheid
   2026-07-28):** 12 Monate, CSAM ausgenommen (dort gilt das Verfahren der Behörden).
-- **Vier Phase-2-Anforderungen aus 8.3 abnehmen**, bevor die erste fremde App live geht:
-  Router respektiert `suspended` · Admin-Schreibpfad für die Sperre · Orphan-Sweep beim
-  Projektlöschen · K3-Scan im CF-Publish-Pfad (sonst wird die öffentliche AUP-Zusage falsch).
+- ~~**Vier Phase-2-Anforderungen aus 8.3 abnehmen**~~ **IM CODE ERLEDIGT (AKT 2 · Phase 2,
+  2026-07-28) — Abnahme steht aus.** Alle vier sind gebaut und getestet (Details in 8.3).
+  Was noch fehlt, ist der Beweis auf der echten Infrastruktur: **das U2.8-Fenster fahren**
+  (`docs/AKT2_PHASE2_FOUNDER_WINDOW.md`) und Migration **0100** anwenden (**0099** ist seit
+  PR #57 angewendet).
+  Vorher darf keine fremde App live gehen — gebaut ist nicht bewiesen.
 
 ---
 
@@ -227,22 +230,61 @@ Ehrlichkeits-Niederlage.** S2/S3 zuerst mit dem Menschen klären.
 | `ops_apps.status = 'suspended'` | DB (Migration 0099) | Der vorgesehene Not-Aus pro App. Ein `UPDATE`, sofort umkehrbar — das Gegenteil vom Löschen. |
 | `deleteAppFiles(appId)` / `deleteRoute(name)` | `apps/api/src/services/cf-deploy.ts:552` / `:752` | Harte Entfernung: R2-Prefix bzw. KV-Route. **Nicht umkehrbar.** Erst nach Beweissicherung. |
 
-**Existiert NOCH NICHT — Phase-2-Anforderungen, hier festgehalten statt beschönigt:**
+**Die vier Phase-2-Anforderungen — Stand nach AKT 2 · Phase 2 (2026-07-28):**
 
-1. **Der Router respektiert `status = 'suspended'` noch nicht** — es gibt in Phase 1 keinen
-   Router Worker. Bis Phase 2 ihn baut und die Statusprüfung einbaut, ist der einzige
-   wirksame Not-Aus pro App das **Löschen der KV-Route** (`deleteRoute`) — grob, aber
-   wirksam. *Phase-2-Anforderung: der Router MUSS eine suspendierte App abweisen.*
-2. **Es gibt keinen Schreibpfad für die Suspendierung.** `ops-apps-store.ts` ist heute
-   read-only (`listUserOpsApps`, `findOpsAppByName`). Suspendieren heißt derzeit: `UPDATE
-   public.ops_apps SET status='suspended' WHERE app_name='…';` im Supabase-SQL-Editor.
-   *Phase-2-Anforderung: ein Admin-Pfad mit Audit-Eintrag.*
-3. **Es gibt keinen Orphan-Sweep.** Das Löschen eines Projekts entfernt die Registry-Zeile
-   per Cascade, **nicht** die gehosteten Dateien (siehe Warnung in `0099_ops_apps.sql`).
-   Eine gelöschte Projektzeile kann eine erreichbare URL zurücklassen. *Phase-2-Anforderung.*
-4. **Der Publish-Scan (K3) ist an den Vercel-Pfad gebunden.** *Phase-2-Anforderung: der
-   CF-Publish-Pfad MUSS durch denselben Scan laufen* — sonst wird die öffentliche AUP-Zusage
-   „automatische Prüfungen vor dem Veröffentlichen" auf Weg B falsch.
+> **Im Code erledigt, im Betrieb noch unbelegt.** Alle vier sind gebaut und durch Tests
+> abgedeckt. Der Beweis auf der echten Infrastruktur steht aus, bis der Gründer das
+> U2.8-Fenster gefahren hat (`docs/AKT2_PHASE2_FOUNDER_WINDOW.md`). Bis dahin gilt hier:
+> gebaut ≠ bewiesen.
+
+1. ~~Der Router respektiert `status = 'suspended'` noch nicht~~ **GEBAUT (U2.1).** Es gibt
+   jetzt einen Router Worker (`apps/api/src/services/ops-router/worker.js`). Er liest
+   `route:{name}` aus KV und weist eine gesperrte App mit einer **gestalteten deutschen
+   Seite** ab (403, „Diese App wurde vorübergehend gesperrt.", Link auf die
+   Nutzungsrichtlinie). Der Not-Aus braucht **keine Datenbank**: der Router fragt die API
+   nie etwas, also wirkt die Sperre auch dann, wenn die API steht.
+   **Eine ehrliche Einschränkung:** KV-Lesevorgänge haben 60 Sekunden Cache pro Standort.
+   Eine Sperre greift also innerhalb einer Minute, nicht in derselben Sekunde. Der
+   U2.8-Lauf misst die tatsächliche Zeit und schreibt sie als `propagationSec` ins Ergebnis.
+2. ~~Es gibt keinen Schreibpfad für die Suspendierung~~ **GEBAUT (U2.5).** Kein Hand-`UPDATE`
+   mehr im SQL-Editor. Stattdessen:
+   `POST /api/admin/ops/apps/{name}/suspend` · `.../unsuspend` · `DELETE /api/admin/ops/apps/{name}`.
+   Jeder Aufruf **verlangt einen Grund** (ohne Grund: 400) — weil Abschnitt 8.4 dem Nutzer
+   diesen Satz schuldet und 8.5 ohne ihn keinen Widerspruch führen kann. Jede Aktion
+   schreibt eine Zeile in `ops_app_audit` (Migration **0100**, siehe 8.7).
+   Gehängt an den **Admin-Key**, nicht an die Beta-Allowlist, und **absichtlich nicht** an
+   `OPS_HOSTING_ENABLED`: dieser Schalter legt die API-Oberfläche still und den Router
+   nicht. Act 2 dunkel zu schalten darf nicht die einzige Sperre entwaffnen.
+3. ~~Es gibt keinen Orphan-Sweep~~ **GEBAUT (U2.5), mit Grenze.** `GET /api/admin/ops/orphans`
+   listet R2-Prefixe ohne Registry-Zeile — genau das, was das Löschen eines Projekts
+   hinterlässt. Ein Teardown **beweist** sein Ergebnis, statt es zu behaupten: er listet
+   den Prefix danach erneut und liest die Route erneut (`orphansRemaining`, `routeGone`).
+   **Bewusst nur ein Bericht:** es löscht nichts von selbst. Ein automatischer Sweeper, der
+   einmal falsch liegt, vernichtet die Live-App eines zahlenden Nutzers. Das Aufräumen ist
+   ein zweiter, ausdrücklicher Aufruf mit App-IDs — ein „alles löschen" gibt es nicht.
+   **Weiterhin offen:** die Projektlöschung selbst räumt nicht automatisch auf. Sie
+   entfernt die Zeile per Cascade wie bisher; die Dateien findet erst der Sweep. Das ist
+   eine bewusste Phasengrenze (Act-1-Code wird hier nicht angefasst), keine Vergesslichkeit.
+4. ~~Der Publish-Scan (K3) ist an den Vercel-Pfad gebunden~~ **GEBAUT (U2.3).** Der
+   CF-Publish-Pfad läuft durch **dieselben K3-Regeln** — wiederverwendet, nicht
+   nachgebaut, denn zwei Scanner wären zwei Antworten auf dieselbe Richtlinie. Dazu drei
+   Ergänzungen, nur wo *Hoster sein* den Unterschied macht: Wallet-Drainer,
+   Zugangsdaten-Formulare an fremde Domains (auf Vercel nur protokolliert, hier
+   blockierend), und Größen-/Typ-Prüfung.
+   Der Scan läuft **bevor ein einziges Byte in R2 landet** — eine Blockierung heißt: nichts
+   hochgeladen, keine Route, keine Registry-Zeile. Er **verweigert im Zweifel**, anders als
+   K3 auf dem Vercel-Weg: wenn wir nicht lesen können, was wir gleich von unserer eigenen
+   Domain ausliefern, liefern wir es nicht aus.
+   Beleg: 9 eingecheckte Fixtures (6 harmlos, 3 feindlich), 9/9 erwartete Urteile,
+   `apps/api/src/services/safety/__fixtures__/hosted-publish/`. Die harmlose Hälfte ist die
+   größere — darunter eine Seite, die Seed Phrases *erklärt* und nicht blockiert werden darf.
+   **Damit ist die öffentliche AUP-Zusage „automatische Prüfungen vor dem Veröffentlichen"
+   ab der ersten gehosteten Veröffentlichung wahr** — nicht erst mit Phase 3.
+
+**Was Phase 3 hier ergänzt (und was heute NICHT existiert):** der Swift-Klassifizierer, die
+Review-Queue und die Admin-Oberfläche. Die deterministische Schicht erfüllt die Zusage; sie
+ist nicht klug. Sie erkennt Muster, keine Absicht — die sechs bekannten Lücken aus
+Abschnitt 6 gelten unverändert weiter.
 
 ### 8.4 Nutzer benachrichtigen
 

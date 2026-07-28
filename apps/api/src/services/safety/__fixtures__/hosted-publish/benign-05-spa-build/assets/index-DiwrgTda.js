@@ -1,0 +1,1 @@
+var e=document.getElementById("root");function t(n){return n.map(function(r){return"<li>"+r.tag+" "+r.von+"–"+r.bis+"</li>"}).join("")}fetch("/api/schichten").then(function(n){return n.json()}).then(function(n){e.innerHTML="<ul>"+t(n)+"</ul>"}).catch(function(){e.textContent="Schichten konnten nicht geladen werden."});

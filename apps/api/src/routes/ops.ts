@@ -26,6 +26,12 @@ import {
 } from '../services/cf-deploy';
 import { opsHostingEnabled } from '../services/ops-beta';
 import { runOpsSelftest, SELFTEST_APP_ID } from '../services/ops-selftest';
+import { provisionRouter, routerStatus } from '../services/ops-router-deploy';
+import { checkNameAvailable, publishHostedApp, renameHostedApp } from '../services/ops-publish';
+import { runOpsE2E, E2E_CONFIRM } from '../services/ops-e2e';
+import { findOpsAppById, listUserOpsApps } from '../services/ops-apps-store';
+import { appUrl } from '../services/ops-app-names';
+import { getSupabaseAdmin } from '../lib/supabase';
 import logger from '../lib/logger';
 
 type Variables = OpsGateVariables;
@@ -147,6 +153,174 @@ ops.post('/selftest', async (c) => {
   // 200 whether or not the round-trips passed: the REQUEST succeeded and the
   // report is the answer. A failing round-trip is data, not an HTTP error — and
   // the founder needs to read the steps, which a thrown status would hide.
+  return c.json(report);
+});
+
+// ── U2.4 · the publish path ─────────────────────────────────────────────────
+
+/**
+ * Ownership, not just allowlisting. `opsGate` answers "may this human see Act 2
+ * at all"; it says nothing about whether this particular project is theirs. Both
+ * checks are owed, and this is the second one.
+ */
+async function ownedProject(userId: string, projectId: string): Promise<{ id: string } | null> {
+  const { data } = await getSupabaseAdmin()
+    .from('projects')
+    .select('id')
+    .eq('id', projectId)
+    .eq('user_id', userId)
+    .single();
+  return data ?? null;
+}
+
+/** GET /api/ops/apps — this user's Living Apps. Empty list on a pre-0099 database. */
+ops.get('/apps', async (c) => {
+  const principal = c.get('opsPrincipal');
+  const apps = await listUserOpsApps(principal.userId);
+  const domain = opsAppsDomain();
+  return c.json({
+    apps: apps.map((a) => ({
+      appId: a.appId,
+      name: a.appName,
+      url: appUrl(a.appName, domain),
+      status: a.status,
+      projectId: a.projectId,
+      lastPublishedAt: a.lastPublishedAt,
+    })),
+  });
+});
+
+/**
+ * GET /api/ops/apps/name-check?name=… — is this name free?
+ *
+ * A read, so a name field can answer while someone types. It is NOT the claim: two
+ * people can both be told "frei" and only one insert survives the unique index.
+ * Saying so here keeps the check from being mistaken for a reservation.
+ */
+ops.get('/apps/name-check', async (c) => {
+  const result = await checkNameAvailable(c.req.query('name') ?? '');
+  return c.json({
+    name: result.normalized,
+    available: result.ok,
+    ...(result.ok ? { url: result.url } : { reason: result.reason, message: result.message }),
+  });
+});
+
+/**
+ * POST /api/ops/apps/publish — scan, upload, route, verify, and only then "live".
+ *
+ * Idempotent: a project has at most one Living App, so republishing reuses the app
+ * id and keeps the URL people already have.
+ *
+ * A scan block answers 422, not 500: the request was well-formed and the answer is
+ * "no". The German message is the payload that matters; the rule ids ride along for
+ * the appeal, never in the message itself.
+ */
+ops.post('/apps/publish', async (c) => {
+  const principal = c.get('opsPrincipal');
+  const body = await c.req.json<{ projectId?: string; name?: string }>().catch(() => ({}) as { projectId?: string; name?: string });
+  const projectId = (body.projectId ?? '').trim();
+  const name = (body.name ?? '').trim();
+
+  if (!projectId) return c.json({ error: 'missing_project', message: 'Es fehlt die Angabe, welches Projekt veröffentlicht werden soll.' }, 400);
+  if (!(await ownedProject(principal.userId, projectId))) {
+    // Same reasoning as opsGate: a 403 would confirm the project exists.
+    return c.json({ error: 'not_found', message: 'Dieses Projekt gibt es nicht.' }, 404);
+  }
+
+  logger.warn({ userId: principal.userId, projectId }, 'hosted_publish_started');
+  const result = await publishHostedApp({ userId: principal.userId, projectId, name });
+
+  if (!result.ok) {
+    const status = result.code === 'scan_blocked' ? 422 : result.code === 'name_taken' || result.code === 'name_released' || result.code === 'invalid_name' ? 409 : 502;
+    return c.json({ error: result.code, stage: result.stage, message: result.message, ...(result.url ? { url: result.url } : {}) }, status);
+  }
+  return c.json(result);
+});
+
+/**
+ * POST /api/ops/apps/:appId/rename — move the app, leave an honest 410 behind.
+ *
+ * The old address is tombstoned rather than redirected: see renameHostedApp for
+ * why a redirect would be a lie to everyone holding the old link.
+ */
+ops.post('/apps/:appId/rename', async (c) => {
+  const principal = c.get('opsPrincipal');
+  const appId = c.req.param('appId');
+  const body = await c.req.json<{ name?: string }>().catch(() => ({}) as { name?: string });
+
+  const app = await findOpsAppById(appId);
+  // Ownership again, and 404 rather than 403 for someone else's app.
+  if (!app || app.userId !== principal.userId) {
+    return c.json({ error: 'not_found', message: 'Diese App gibt es nicht.' }, 404);
+  }
+
+  const result = await renameHostedApp(app, body.name ?? '');
+  if (!result.ok) return c.json({ error: result.code, message: result.message }, result.code === 'route_failed' || result.code === 'registry_unavailable' ? 502 : 409);
+  return c.json(result);
+});
+
+/**
+ * GET /api/ops/router — what is actually in place, without changing any of it.
+ *
+ * Read-only by construction (see routerStatus). Separate from the provision call
+ * so "show me the state" can be used for evidence without a write, and so a
+ * confused operator cannot reconfigure production by refreshing a page.
+ */
+ops.get('/router', async (c) => {
+  return c.json(await routerStatus());
+});
+
+/**
+ * POST /api/ops/router/provision — U2.2: deploy the router and wire the hostname.
+ *
+ * POST because it writes to Cloudflare (script upload, DNS record, Workers route).
+ * It is idempotent, so re-running it after fixing a token scope is the intended
+ * workflow rather than a risk.
+ *
+ * 200 whether or not every step succeeded: the REQUEST worked and the step report
+ * is the answer. A missing token scope is a founder action, not an HTTP error —
+ * and a thrown status would hide the very steps the founder needs to read.
+ */
+ops.post('/router/provision', async (c) => {
+  const principal = c.get('opsPrincipal');
+  logger.warn({ userId: principal.userId }, 'ops_router_provision_started');
+  const report = await provisionRouter();
+  logger.warn(
+    { userId: principal.userId, provisioned: report.provisioned, blockedOnDns: report.blockedOnDns },
+    'ops_router_provision_finished',
+  );
+  return c.json(report);
+});
+
+/**
+ * POST /api/ops/e2e?confirm=RUN-E2E — U2.8, the whole loop on the real substrate.
+ *
+ * POST and an explicit confirm token: it writes to production R2, KV and Postgres,
+ * so no link, prefetch or crawler may be able to start it. Names are always
+ * `e2e-<random>` and project_id is null, so it cannot touch a builder's app.
+ *
+ * 200 whether or not it passed — the report is the answer, and a failing step is
+ * data the founder needs to read, not an HTTP error that hides it.
+ */
+ops.post('/e2e', async (c) => {
+  const principal = c.get('opsPrincipal');
+  if (c.req.query('confirm') !== E2E_CONFIRM) {
+    return c.json(
+      { error: 'confirm_required', message: `Dieser Lauf schreibt auf die echte Infrastruktur. Zum Starten: ?confirm=${E2E_CONFIRM}` },
+      400,
+    );
+  }
+  const loopsParam = Number(c.req.query('loops'));
+  logger.warn({ userId: principal.userId }, 'ops_e2e_started');
+
+  const report = await runOpsE2E({
+    userId: principal.userId,
+    actor: principal.email,
+    ...(Number.isFinite(loopsParam) ? { loops: loopsParam } : {}),
+  });
+
+  logger.warn({ userId: principal.userId, passed: report.passed, numbers: report.numbers }, 'ops_e2e_finished');
   return c.json(report);
 });
 
