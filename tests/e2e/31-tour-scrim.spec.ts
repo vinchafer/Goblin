@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { loginAsRealTestUser, dismissTour, openAvatarMenu } from './helpers/auth';
+import { loginAsRealTestUser, dismissTour, openAvatarMenu, originOf } from './helpers/auth';
 
 /**
  * SCRIM-U1 regression — the mechanism behind the 15-failure E2E wave on master
@@ -13,39 +13,37 @@ import { loginAsRealTestUser, dismissTour, openAvatarMenu } from './helpers/auth
  * The helper matched nothing, returned silently, and the tour's full-screen
  * backdrop (z-index 1000) swallowed every subsequent click.
  *
- * This test pins BOTH halves: the tour really does render German by default,
- * and dismissTour() must leave the header clickable afterwards. It fails on the
- * pre-fix helper — the German tour survives the dismiss and openAvatarMenu()
- * cannot reach the avatar.
+ * ASSERTED BY LABEL, NOT BY TEST-ID, ON PURPOSE. The @auth suite drives the
+ * DEPLOYED app (see originOf() in helpers/auth.ts), which does not yet carry the
+ * testids added alongside this test. Labels exist in both the old and the new
+ * build, so this test states the BEHAVIOUR — a German tour must really be gone
+ * after dismissTour, and the header must be reachable afterwards — which is
+ * exactly what regressed, and which fails on the pre-fix helper.
  */
 test.describe('@auth SCRIM-U1 First-run tour must not swallow header clicks', () => {
   test('German tour is really dismissed and the avatar stays clickable', async ({ page }) => {
     await loginAsRealTestUser(page);
+    const origin = originOf(page);
 
     // Raise the tour deterministically instead of depending on how many
     // projects the shared test account happens to own (isFirstLogin). ?tour=1
     // is the same entry point the onboarding hand-off uses (DashboardShell).
     await page.evaluate(() => localStorage.removeItem('goblin_tour_done'));
-    await page.goto('/dashboard?tour=1');
+    await page.goto(`${origin}/dashboard?tour=1`);
     await page.waitForLoadState('networkidle');
 
-    // Asserted by ROLE + German name, not by test-id: this half must be true on
-    // the pre-fix code too, otherwise the test would only be proving that a new
-    // attribute exists rather than that the behaviour regressed.
+    // The regression itself: a fresh context has no goblin:preferred-lang, so
+    // the tour renders GERMAN. The old helper matched only 'Skip tour'/'Skip'.
     const skip = page.getByRole('button', { name: 'Tour überspringen' });
-    await expect(skip).toBeVisible();
-
-    // The scrim that reported as "<div></div>" is now self-identifying.
-    await expect(page.getByTestId('first-run-tour-backdrop')).toBeVisible();
+    await expect(skip).toBeVisible({ timeout: 15000 });
 
     await dismissTour(page);
 
     // The behavioural assertion. Pre-fix, dismissTour() no-ops on a German tour
     // and this still resolves to a visible button.
     await expect(skip).toHaveCount(0);
-    await expect(page.getByTestId('first-run-tour-backdrop')).toHaveCount(0);
 
-    // Where all 15 failures died (helpers/auth.ts:361).
+    // Where all 15 failures died (helpers/auth.ts openAvatarMenu).
     const menu = await openAvatarMenu(page);
     await expect(menu).toBeVisible();
     await expect(page.getByTestId('avatar-menu-settings')).toBeVisible();
@@ -53,14 +51,17 @@ test.describe('@auth SCRIM-U1 First-run tour must not swallow header clicks', ()
 
   test('the tour stays dismissed across a navigation', async ({ page }) => {
     await loginAsRealTestUser(page);
+    const origin = originOf(page);
+
     await page.evaluate(() => localStorage.removeItem('goblin_tour_done'));
-    await page.goto('/dashboard?tour=1');
+    await page.goto(`${origin}/dashboard?tour=1`);
     await page.waitForLoadState('networkidle');
+    await expect(page.getByRole('button', { name: 'Tour überspringen' })).toBeVisible({ timeout: 15000 });
     await dismissTour(page);
 
-    await page.goto('/dashboard');
+    await page.goto(`${origin}/dashboard`);
     await page.waitForLoadState('networkidle');
-    await expect(page.getByTestId('first-run-tour')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Tour überspringen' })).toHaveCount(0);
 
     const menu = await openAvatarMenu(page);
     await expect(menu).toBeVisible();

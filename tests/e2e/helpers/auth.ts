@@ -348,6 +348,22 @@ export async function logoutTestUser(page: Page): Promise<void> {
 // "Hilfe" row, etc.) and the section pages (ProfilePage, ModelsPage) are shared
 // components, so post-open assertions are identical across both shells.
 
+/**
+ * The origin the authenticated session actually lives on.
+ *
+ * NOT the same thing as Playwright's baseURL. loginAsRealTestUser asks Supabase
+ * for a magic link with redirect_to = <BASE_URL>/auth/magic-callback; when that
+ * origin is not in the project's redirect allowlist (localhost:3000 is not),
+ * Supabase falls back to the configured Site URL and the session is established
+ * THERE. Any later `page.goto('/some/path')` resolves against baseURL instead,
+ * lands on a different origin with no cookies, and silently redirects to
+ * /login — which reads like a logged-out bug and is really a cross-origin
+ * navigation. Navigate with `${originOf(page)}/path` after logging in.
+ */
+export function originOf(page: Page): string {
+  return new URL(page.url()).origin;
+}
+
 /** Desktop = the 9D anchored popover / two-pane modal (≥768px, matchMedia in the shell). */
 export function isDesktopViewport(page: Page): boolean {
   const vp = page.viewportSize();
@@ -401,14 +417,28 @@ export async function openSettingsSection(page: Page, rowTestId: string, label: 
  * z-index:1000) then swallowed every later click; Playwright reported the
  * blocker only as "<div></div>" because previewNode() omits `style`.
  *
- * Fixed by targeting the language-agnostic testid and waiting for the tour to
- * actually detach — no label matching, no sleep.
+ * Fixed by dismissing the tour whatever language it is in, and waiting for it to
+ * actually detach — no sleep.
+ *
+ * Two locators, deliberately. The @auth suite authenticates through a Supabase
+ * magic link whose redirect_to (localhost) is not in the project's allowlist, so
+ * Supabase falls back to the site URL and these tests end up driving the
+ * DEPLOYED app rather than this checkout (see the note on
+ * originOf() below). A testid added in this commit therefore does not exist in
+ * the app under test until it ships. The label fallback covers BOTH languages,
+ * so this helper is correct against a deployment that predates the testids —
+ * which is precisely the situation the original 15 failures happened in.
  */
 export async function dismissTour(page: Page): Promise<void> {
   const tour = page.locator('[data-testid="first-run-tour"]');
+  const skipByLabel = page.getByRole('button', { name: /^(Tour überspringen|Skip tour)$/ });
+
   if (await tour.isVisible({ timeout: 3000 }).catch(() => false)) {
     await page.locator('[data-testid="first-run-tour-skip"]').click();
     await tour.waitFor({ state: 'detached', timeout: 5000 });
+  } else if (await skipByLabel.isVisible({ timeout: 2000 }).catch(() => false)) {
+    await skipByLabel.click();
+    await skipByLabel.waitFor({ state: 'detached', timeout: 5000 });
   }
   // Defence in depth (NOT a diagnosed cause of the wave above): the tour mounts
   // from a lazy chunk inside a shell effect, so a later navigation in the same
