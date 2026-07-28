@@ -127,7 +127,13 @@ export interface CfRoute {
   updatedAt?: string;
 }
 
-export type CfRouteStatus = 'active' | 'suspended';
+/**
+ * `released` (Phase 2 · U2.4) is a TOMBSTONE, not a deletion: the address of an app
+ * that was renamed away. The router answers 410 for it, and the name stays out of
+ * circulation, because somebody's bookmark or printed flyer still points there and
+ * handing the address to a different builder would silently redirect real people.
+ */
+export type CfRouteStatus = 'active' | 'suspended' | 'released';
 
 /** A deployed Worker script, as read back from Cloudflare. */
 export interface CfWorker {
@@ -768,7 +774,10 @@ export async function getRoute(name: string): Promise<CfResult<CfRoute | null>> 
     return ok({
       name,
       appId: parsed.appId,
-      status: parsed.status === 'suspended' ? 'suspended' : 'active',
+      // Anything unrecognised reads as 'active' for backward safety, exactly as in
+      // Phase 1 — but the ROUTER fails closed on an unknown status rather than
+      // serving it. Tolerant here, strict where it can hurt someone.
+      status: parsed.status === 'suspended' ? 'suspended' : parsed.status === 'released' ? 'released' : 'active',
       ...(parsed.updatedAt ? { updatedAt: parsed.updatedAt } : {}),
     });
   } catch {
