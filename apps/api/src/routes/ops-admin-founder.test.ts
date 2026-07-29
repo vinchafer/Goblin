@@ -94,7 +94,8 @@ describe('regression — the x-admin-key path is unchanged', () => {
   });
 
   it('still refuses a wrong, empty or absent key with 401 {"error":"Unauthorized"}', async () => {
-    for (const h of [{}, { 'x-admin-key': '' }, { 'x-admin-key': 'wrong' }]) {
+    const cases: Record<string, string>[] = [{}, { 'x-admin-key': '' }, { 'x-admin-key': 'wrong' }];
+    for (const h of cases) {
       const res = await req('/apps/demo/suspend', { headers: h });
       expect(res.status).toBe(401);
       expect(await res.json()).toEqual({ error: 'Unauthorized' });

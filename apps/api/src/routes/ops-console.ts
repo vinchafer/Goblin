@@ -182,6 +182,62 @@ opsConsole.get('/projects', async (c) => {
 });
 
 /**
+ * GET /api/ops-console/probe?name=<appName> — what does the PUBLIC url answer?
+ *
+ * ── Why this exists at all ───────────────────────────────────────────────────
+ * The console has to report how many seconds a suspension actually took to become
+ * visible, and it must MEASURE that rather than assume it (KV route writes are
+ * eventually consistent with a 60-second read cache — the E2E runner polls for the
+ * same reason). A browser cannot do the measuring: a cross-origin `fetch` to
+ * `*.justgoblin.app` cannot read the status code, and `mode:'no-cors'` returns an
+ * opaque response that says nothing. So the API looks, and reports what it saw.
+ *
+ * ── Why it takes a NAME and not a URL ────────────────────────────────────────
+ * A route that fetches a caller-supplied URL is an SSRF hole, gate or no gate —
+ * one bad day away from being pointed at a metadata endpoint or an internal host.
+ * This takes the app's hostname LABEL and builds the URL itself from
+ * `opsAppsDomain()`, so the only thing reachable is a public app hostname. The
+ * label is validated to the same charset a hostname label may contain, which
+ * leaves no room for a `..`, a `@`, a scheme or a port.
+ *
+ * One request, one look. The polling loop lives in the console, so what it counts
+ * is elapsed wall-clock across real answers rather than a number this route made up.
+ */
+const APP_LABEL = /^[a-z0-9][a-z0-9-]{0,61}[a-z0-9]$/;
+
+opsConsole.get('/probe', async (c) => {
+  const name = (c.req.query('name') ?? '').trim().toLowerCase();
+  if (!APP_LABEL.test(name)) {
+    return c.json({ error: 'invalid_name', message: 'Kein gültiger App-Name.' }, 400);
+  }
+
+  const domain = opsAppsDomain();
+  if (!domain) {
+    return c.json({ error: 'no_domain', message: 'OPS_APPS_DOMAIN ist nicht gesetzt — es gibt keine öffentliche Adresse zum Nachsehen.' }, 503);
+  }
+
+  const url = appUrl(name, domain);
+  const started = Date.now();
+  try {
+    const res = await fetch(url, {
+      signal: AbortSignal.timeout(10_000),
+      redirect: 'manual',
+      headers: { 'User-Agent': 'goblin-ops-console/1.0' },
+    });
+    return c.json({ url, status: res.status, reachable: true, tookMs: Date.now() - started });
+  } catch (err) {
+    // Unreachable is NOT a status. Reporting it as 0 or 404 would be a guess.
+    return c.json({
+      url,
+      status: null,
+      reachable: false,
+      detail: (err as Error)?.message?.slice(0, 200) ?? 'unknown',
+      tookMs: Date.now() - started,
+    });
+  }
+});
+
+/**
  * POST /api/ops-console/e2e/start?confirm=RUN-E2E — begin a run, answer at once.
  *
  * The confirm token is kept from POST /api/ops/e2e verbatim: this writes to

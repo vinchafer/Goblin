@@ -417,6 +417,65 @@ describe('3 — the E2E job: start, transitions, terminal state', () => {
   });
 });
 
+describe('the public-URL probe measures instead of assuming, and cannot be aimed', () => {
+  const realFetch = globalThis.fetch;
+  afterEach(() => {
+    globalThis.fetch = realFetch;
+  });
+
+  it('reports the status the public URL actually answered', async () => {
+    globalThis.fetch = vi.fn(async () => new Response('', { status: 403 })) as unknown as typeof fetch;
+    const body = await (await get('/probe?name=demo')).json();
+    expect(body.status).toBe(403);
+    expect(body.reachable).toBe(true);
+    expect(body.url).toBe('https://demo.justgoblin.app');
+  });
+
+  it('reports unreachable as unreachable — not as a status code', async () => {
+    globalThis.fetch = vi.fn(async () => {
+      throw new Error('ETIMEDOUT');
+    }) as unknown as typeof fetch;
+    const body = await (await get('/probe?name=demo')).json();
+    expect(body.reachable).toBe(false);
+    expect(body.status).toBeNull(); // NOT 0, NOT 404 — those would be guesses
+    expect(body.detail).toContain('ETIMEDOUT');
+  });
+
+  it('takes a NAME, so there is no URL for a caller to aim it at', async () => {
+    const spy = vi.fn(async () => new Response('', { status: 200 }));
+    globalThis.fetch = spy as unknown as typeof fetch;
+    const evil = [
+      'http://169.254.169.254/latest/meta-data',
+      '../../etc/passwd',
+      'demo.justgoblin.app@evil.example',
+      'demo/../../x',
+      'demo:8080',
+      'demo demo',
+      '-leading',
+      '',
+      'a'.repeat(120),
+    ];
+    for (const name of evil) {
+      const res = await get(`/probe?name=${encodeURIComponent(name)}`);
+      expect(res.status, name).toBe(400);
+    }
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it('only ever builds a URL on the apps domain', async () => {
+    const spy = vi.fn(async (_input: unknown, _init?: unknown) => new Response('', { status: 200 }));
+    globalThis.fetch = spy as unknown as typeof fetch;
+    await get('/probe?name=demo');
+    expect(String(spy.mock.calls[0]![0])).toBe('https://demo.justgoblin.app');
+  });
+
+  it('404s the probe for a cohort user like every other console route', async () => {
+    getUser.mockResolvedValue({ data: { user: { id: 'u2', email: COHORT } }, error: null });
+    const res = await opsConsole.request('/probe?name=demo', { headers: { Authorization: 'Bearer t' } });
+    expect(res.status).toBe(404);
+  });
+});
+
 describe('the project picker offers only what could actually be published', () => {
   function mockProjects(result: { data?: unknown; error?: unknown }) {
     const chain = {
