@@ -15,8 +15,9 @@
  *   accompanied by a sentence saying why — never hidden, never clickable-dead,
  *   never a tooltip (there is no hover on a phone).
  * • NO RAW STACK TRACES. Every failure becomes an honest German sentence plus a
- *   copyable detail block. `describeError` is the only place a caught value is
- *   turned into text.
+ *   copyable detail block. `call()` is the single place a response or a thrown
+ *   value becomes text, so there is one place to audit and no second path that
+ *   could leak an exception into the page.
  * • NO INVENTED PROGRESS. Nothing advances on a timer. The E2E step list grows
  *   only when the API reports a step; the propagation figure is counted from real
  *   answers to real polls. There is deliberately no percentage bar — see
@@ -135,12 +136,6 @@ async function call<T>(path: string, init: RequestInit = {}): Promise<{ ok: true
     };
   }
   return { ok: true, data: (parsed ?? {}) as T };
-}
-
-/** The only place a caught value becomes user-facing text. Never a stack trace. */
-function describeError(err: unknown, fallback: string): HonestError {
-  const e = err as Error;
-  return { message: fallback, detail: e?.message ? e.message : String(err) };
 }
 
 // ── small presentational pieces ─────────────────────────────────────────────
@@ -281,9 +276,14 @@ export function OpsConsole({ initialStatus }: { initialStatus: StatusPayload }) 
     }
   }, []);
 
+  // The first load of the two lists the console needs but the server half did not
+  // fetch. Both setState only after their awaits; the IIFE makes that explicit to
+  // a reader (and to the lint rule) rather than leaving it to be inferred.
   useEffect(() => {
-    void refreshApps();
-    void refreshProjects();
+    void (async () => {
+      await refreshApps();
+      await refreshProjects();
+    })();
   }, [refreshApps, refreshProjects]);
 
   // ── router ────────────────────────────────────────────────────────────────
@@ -309,41 +309,50 @@ export function OpsConsole({ initialStatus }: { initialStatus: StatusPayload }) 
 
   const [projectId, setProjectId] = useState('');
   const [appName, setAppName] = useState('');
-  const [nameState, setNameState] = useState<'idle' | 'checking' | 'free' | 'taken' | 'invalid'>('idle');
+  const [nameCheck, setNameCheck] = useState<{ name: string; result: 'free' | 'taken' | 'invalid' | 'unknown' } | null>(null);
   const [publishBusy, setPublishBusy] = useState(false);
   const [published, setPublished] = useState<{ url: string; files: number } | null>(null);
   const [publishError, setPublishError] = useState<HonestError | null>(null);
 
+  const typedName = appName.trim().toLowerCase();
+
   // Debounced availability check. It is explicitly NOT a reservation, and the
   // hint under the field says so — two people can both be told "frei".
+  //
+  // The effect only SCHEDULES; it never sets state in its own body. The answer is
+  // stored together with the name it belongs to, and what the field displays is
+  // derived below. That is not just to satisfy the lint rule: it makes a stale
+  // answer structurally impossible, because a result whose `name` no longer
+  // matches what is in the box can never be shown.
   useEffect(() => {
-    const name = appName.trim().toLowerCase();
-    if (!name) {
-      setNameState('idle');
-      return;
-    }
-    if (!hostingOn) {
-      setNameState('idle'); // the check lives behind /api/ops and would 404
-      return;
-    }
-    setNameState('checking');
+    if (!typedName || !hostingOn) return; // the check lives behind /api/ops and would 404
     const timer = setTimeout(async () => {
-      const res = await call<{ available: boolean; reason?: string }>(`/api/ops/apps/name-check?name=${encodeURIComponent(name)}`);
-      if (!res.ok) {
-        setNameState('idle'); // we could not tell — do not claim either way
-        return;
-      }
-      setNameState(res.data.available ? 'free' : res.data.reason === 'invalid' ? 'invalid' : 'taken');
+      const res = await call<{ available: boolean; reason?: string }>(`/api/ops/apps/name-check?name=${encodeURIComponent(typedName)}`);
+      setNameCheck({
+        name: typedName,
+        // A failed check is 'unknown' and shows the neutral hint. Claiming "frei"
+        // because the request died would be the worst of the three answers.
+        result: !res.ok ? 'unknown' : res.data.available ? 'free' : res.data.reason === 'invalid' ? 'invalid' : 'taken',
+      });
     }, 450);
     return () => clearTimeout(timer);
-  }, [appName, hostingOn]);
+  }, [typedName, hostingOn]);
+
+  const nameState: 'idle' | 'checking' | 'free' | 'taken' | 'invalid' =
+    !typedName || !hostingOn
+      ? 'idle'
+      : nameCheck?.name !== typedName
+        ? 'checking'
+        : nameCheck.result === 'unknown'
+          ? 'idle'
+          : nameCheck.result;
 
   const publish = useCallback(async () => {
     setPublishBusy(true);
     setPublishError(null);
     const res = await call<{ url: string; files: number }>('/api/ops/apps/publish', {
       method: 'POST',
-      body: JSON.stringify({ projectId, name: appName.trim().toLowerCase() }),
+      body: JSON.stringify({ projectId, name: typedName }),
     });
     setPublishBusy(false);
     if (res.ok) {
@@ -352,7 +361,7 @@ export function OpsConsole({ initialStatus }: { initialStatus: StatusPayload }) 
     } else {
       setPublishError(res.error);
     }
-  }, [projectId, appName, refreshApps]);
+  }, [projectId, typedName, refreshApps]);
 
   const publishBlockedBecause = !hostingOn
     ? s.publish.disabledNoHosting
@@ -652,7 +661,9 @@ export function OpsConsole({ initialStatus }: { initialStatus: StatusPayload }) 
               </option>
             ))}
           </select>
-          {projectsAvailable === null ? <p className="oc-why">{s.publish.projectsUnavailable}</p> : null}
+          {/* Same rule as the app list: not-a-confirmed-true means we could not
+              read them, and a silent empty picker would look like "no projects". */}
+          {projectsAvailable !== true ? <p className="oc-why">{s.publish.projectsUnavailable}</p> : null}
           {projectsAvailable === true && projects.length === 0 ? <p className="oc-why">{s.publish.noProjects}</p> : null}
         </div>
 
@@ -708,7 +719,11 @@ export function OpsConsole({ initialStatus }: { initialStatus: StatusPayload }) 
         <h2>{s.apps.heading}</h2>
         <p className="oc-lead">{s.apps.lead}</p>
 
-        {appsAvailable === null ? <p className="oc-why">{s.apps.unavailable}</p> : null}
+        {/* Anything that is not a confirmed `true` means we could not read the
+            registry — whether the API said so (available:false, e.g. pre-0099)
+            or the call itself failed (null). Both must say so out loud: an empty
+            card here would read as "no apps", which is the one wrong answer. */}
+        {appsAvailable !== true ? <p className="oc-why">{s.apps.unavailable}</p> : null}
         {appsAvailable === true && apps.length === 0 ? <p className="oc-why">{s.apps.none}</p> : null}
 
         {apps.map((app) => {
