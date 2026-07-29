@@ -191,6 +191,17 @@ export interface E2EOptions {
   actor: string;
   /** How many publish→verify loops. The gate is 5. */
   loops?: number;
+  /**
+   * PHASE 2.5 · U-C4 — called once per step, as the step lands.
+   *
+   * Observation only. It cannot change what the run does, it is never awaited, and
+   * a throw from it is swallowed (see `add`), so a broken observer can neither
+   * stall nor fail a production run. It exists because this run takes 5–15 minutes
+   * and a phone cannot hold one HTTP request open that long: the job wrapper
+   * (ops-e2e-jobs.ts) uses it to publish real per-step results while the run is
+   * still going, instead of the UI inventing progress.
+   */
+  onStep?: (step: E2EStep) => void;
 }
 
 /**
@@ -210,8 +221,16 @@ export async function runOpsE2E(opts: E2EOptions): Promise<E2EReport> {
   const steps: E2EStep[] = [];
   const notes: string[] = [];
   const add = (step: string, ok: boolean, detail: string, propagationSec?: number) => {
-    steps.push({ step, ok, detail, ...(propagationSec !== undefined ? { propagationSec } : {}) });
+    const entry: E2EStep = { step, ok, detail, ...(propagationSec !== undefined ? { propagationSec } : {}) };
+    steps.push(entry);
     logger.warn({ step, ok, detail }, 'ops_e2e_step');
+    // The observer is untrusted by construction: a throw here must not be able to
+    // abort a run that is halfway through writing to production.
+    try {
+      opts.onStep?.(entry);
+    } catch (err) {
+      logger.warn({ step, reason: (err as Error)?.message }, 'ops_e2e_onstep_threw');
+    }
     return ok;
   };
 

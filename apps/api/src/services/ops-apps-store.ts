@@ -109,6 +109,45 @@ export async function listUserOpsApps(userId: string, sb: Sb = getSupabaseAdmin(
 }
 
 /**
+ * PHASE 2.5 · U-C3 — every Living App, for the operator console.
+ *
+ * Two things make this different from `listUserOpsApps` rather than a parameter
+ * of it:
+ *
+ *   • It is not scoped to a user. Suspension and teardown are operator powers over
+ *     anyone's app (routes/ops-admin.ts), so the surface that offers them has to be
+ *     able to show anyone's app. The caller is responsible for having established
+ *     that it is talking to an operator — here, the founder gate.
+ *   • It reports whether the TABLE was there, instead of collapsing "not migrated"
+ *     into the same `[]` as "nothing published yet". For a builder's own dashboard
+ *     that collapse is kind: both mean "du hast noch keine App". For the console it
+ *     would be a lie — the operator needs to see UNKNOWN and go apply 0099, not a
+ *     confident empty list implying there is nothing live out there.
+ *
+ * `deleted` rows stay excluded: they are tombstones, not apps.
+ */
+export async function listAllOpsApps(
+  sb: Sb = getSupabaseAdmin(),
+): Promise<{ available: boolean; apps: OpsApp[] }> {
+  if (!(await opsAppsTableAvailable(sb))) {
+    logger.debug({}, 'ops_apps_table_absent (pre-0099) — console list unavailable');
+    return { available: false, apps: [] };
+  }
+  const { data, error } = await sb
+    .from('ops_apps')
+    .select(COLUMNS)
+    .neq('status', 'deleted')
+    .order('created_at', { ascending: false })
+    .limit(200);
+  if (error) {
+    logger.warn({ reason: error.message }, 'ops_apps_list_all_failed');
+    // The table exists but the read failed. Not "no apps" — unknown.
+    return { available: false, apps: [] };
+  }
+  return { available: true, apps: (data ?? []).map((row) => toOpsApp(row as unknown as Record<string, unknown>)) };
+}
+
+/**
  * Look up an app by its hostname label. `null` covers both "no such app" and
  * "table not migrated yet" on purpose: both mean the same thing to a caller —
  * there is no app behind this name — and neither is an error worth surfacing.

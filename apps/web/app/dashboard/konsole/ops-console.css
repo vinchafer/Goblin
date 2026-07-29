@@ -1,0 +1,419 @@
+/* ──────────────────────────────────────────────────────────────────────
+   AKT 2 · PHASE 2.5 · U-C2 — the founder console, scoped to .ops-console.
+
+   Its own file rather than an addition to dashboard-tokens.css, which 23
+   screens depend on: nothing here can reach another surface.
+
+   TOKENS ONLY. Every colour, radius, shadow and type size below is a
+   var() from the design system (design-tokens.css / dashboard-tokens.css,
+   both in scope because the dashboard layout wraps this page in
+   .gobl-dash). The only literals are layout numbers — gaps, min-heights,
+   a breakpoint — which the token set does not speak to.
+
+   MOBILE FIRST. The base rules ARE the 390px layout; the single media
+   query only widens things on a desktop that the founder is not using.
+   Nothing scrolls horizontally: long identifiers wrap or truncate, and
+   the one genuinely wide thing (the copyable detail block) scrolls
+   inside its own box rather than pushing the page.
+
+   TAP TARGETS. Buttons and inputs are min 44px tall — the iOS minimum —
+   and 16px font on inputs, below which Safari zooms the viewport on
+   focus and the layout the founder is reading jumps out from under them.
+   ────────────────────────────────────────────────────────────────────── */
+
+.ops-console {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 20px 16px 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  /* Nothing inside may widen the page. */
+  overflow-x: hidden;
+}
+
+.ops-console * {
+  min-width: 0;
+}
+
+/* — page head — */
+
+.ops-console .oc-head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-bottom: 4px;
+}
+
+.ops-console .oc-head h1 {
+  font-family: var(--font-dash-display), 'Manrope', sans-serif;
+  font-size: var(--t-h2-fs);
+  line-height: var(--t-h2-lh);
+  letter-spacing: var(--t-h2-ls);
+  font-weight: 600;
+  color: var(--ink-1);
+}
+
+.ops-console .oc-who {
+  font-size: var(--t-small-fs);
+  color: var(--ink-3);
+  word-break: break-word;
+}
+
+/* — cards — */
+
+.ops-console .oc-card {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ops-console .oc-card h2 {
+  font-family: var(--font-dash-display), 'Manrope', sans-serif;
+  font-size: var(--t-h3-fs, 1.0625rem);
+  font-weight: 600;
+  color: var(--ink-1);
+  line-height: 1.3;
+}
+
+.ops-console .oc-lead {
+  font-size: var(--t-small-fs);
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.ops-console .oc-note {
+  font-size: var(--t-small-fs);
+  line-height: 1.5;
+  color: var(--ink-3);
+}
+
+/* — status rows: label left, value right, wrapping rather than truncating — */
+
+.ops-console .oc-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ops-console .oc-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.ops-console .oc-row:last-child {
+  border-bottom: none;
+}
+
+.ops-console .oc-row .k {
+  font-size: var(--t-small-fs);
+  color: var(--ink-2);
+  flex: 1 1 auto;
+}
+
+.ops-console .oc-row .v {
+  flex: 0 0 auto;
+  text-align: right;
+  word-break: break-word;
+}
+
+/* — state pills. UNKNOWN gets its own look: not green, not red, and
+     visually distinct from both so it cannot be skim-read as either. — */
+
+.ops-console .oc-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono), 'JetBrains Mono', monospace;
+  font-size: var(--t-eyebrow-fs);
+  font-weight: 600;
+  letter-spacing: var(--t-eyebrow-ls);
+  text-transform: uppercase;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background: var(--d-surface-2);
+  color: var(--ink-2);
+}
+
+.ops-console .oc-state.ok {
+  background: var(--ok-soft);
+  color: var(--ok);
+  border-color: rgba(47, 106, 71, 0.3);
+}
+
+.ops-console .oc-state.bad {
+  background: var(--danger-soft);
+  color: var(--danger);
+  border-color: rgba(160, 66, 48, 0.3);
+}
+
+.ops-console .oc-state.warn {
+  background: rgba(184, 129, 40, 0.14);
+  color: var(--warn);
+  border-color: rgba(184, 129, 40, 0.32);
+}
+
+/* Dashed border — UNKNOWN reads as "not filled in", never as a verdict. */
+.ops-console .oc-state.unknown {
+  background: transparent;
+  color: var(--ink-3);
+  border-style: dashed;
+  border-color: var(--line-strong);
+}
+
+/* — actions — */
+
+.ops-console .oc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ops-console .oc-actions .gobl-btn {
+  min-height: 44px;
+  flex: 1 1 auto;
+}
+
+/* A disabled action always carries its reason as a sibling, never a tooltip:
+   there is no hover on the device this was built for. */
+.ops-console .oc-why {
+  font-size: var(--t-small-fs);
+  line-height: 1.45;
+  color: var(--ink-3);
+  font-style: italic;
+}
+
+/* — inputs — */
+
+.ops-console .oc-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ops-console .gobl-input,
+.ops-console select.gobl-input {
+  min-height: 44px;
+  /* 16px exactly: anything smaller makes iOS Safari zoom on focus. */
+  font-size: 16px;
+}
+
+/* — the honest error block — */
+
+.ops-console .oc-error {
+  border: 1px solid rgba(160, 66, 48, 0.3);
+  background: var(--danger-soft);
+  border-radius: var(--radius);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ops-console .oc-error .t {
+  font-size: var(--t-small-fs);
+  font-weight: 600;
+  color: var(--danger);
+}
+
+.ops-console .oc-error .m {
+  font-size: var(--t-small-fs);
+  line-height: 1.5;
+  color: var(--ink-1);
+}
+
+/* The detail block is the one wide thing on the page. It scrolls inside
+   itself so the PAGE never gains a horizontal axis. */
+.ops-console .oc-detail {
+  font-family: var(--font-mono), 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  background: var(--d-surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 10px;
+  max-height: 240px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: var(--ink-2);
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* — the E2E step list — */
+
+.ops-console .oc-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.ops-console .oc-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.ops-console .oc-step:last-child {
+  border-bottom: none;
+}
+
+.ops-console .oc-step .mark {
+  flex: 0 0 auto;
+  width: 18px;
+  text-align: center;
+  font-family: var(--font-mono), 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.ops-console .oc-step .mark.ok {
+  color: var(--ok);
+}
+
+.ops-console .oc-step .mark.bad {
+  color: var(--danger);
+}
+
+.ops-console .oc-step .body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ops-console .oc-step .name {
+  font-family: var(--font-mono), 'JetBrains Mono', monospace;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--ink-1);
+  word-break: break-word;
+}
+
+.ops-console .oc-step .detail {
+  font-size: var(--t-small-fs);
+  line-height: 1.45;
+  color: var(--ink-3);
+  word-break: break-word;
+}
+
+/* — the three headline numbers — */
+
+.ops-console .oc-numbers {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+}
+
+.ops-console .oc-number {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--d-surface-2);
+  padding: 12px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.ops-console .oc-number .lbl {
+  font-family: var(--font-mono), 'JetBrains Mono', monospace;
+  font-size: var(--t-eyebrow-fs);
+  letter-spacing: var(--t-eyebrow-ls);
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.ops-console .oc-number .val {
+  font-family: var(--font-mono), 'JetBrains Mono', monospace;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ink-1);
+}
+
+/* — one hosted app — */
+
+.ops-console .oc-app {
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ops-console .oc-app .top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ops-console .oc-app .nm {
+  font-family: var(--font-mono), 'JetBrains Mono', monospace;
+  font-size: var(--t-small-fs);
+  font-weight: 600;
+  color: var(--ink-1);
+  word-break: break-all;
+}
+
+.ops-console .oc-app .url {
+  font-size: 12px;
+  color: var(--ink-3);
+  word-break: break-all;
+}
+
+/* — the teardown confirmation, deliberately loud — */
+
+.ops-console .oc-danger {
+  border: 1px solid var(--danger);
+  background: var(--danger-soft);
+  border-radius: var(--radius);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ops-console .oc-danger .t {
+  font-size: var(--t-small-fs);
+  font-weight: 700;
+  color: var(--danger);
+}
+
+.ops-console .oc-danger .b {
+  font-size: var(--t-small-fs);
+  line-height: 1.5;
+  color: var(--ink-1);
+}
+
+/* — desktop only widens; the mobile layout above is the real one — */
+
+@media (min-width: 640px) {
+  .ops-console {
+    padding: 32px 24px 80px;
+    gap: 20px;
+  }
+
+  .ops-console .oc-card {
+    padding: 20px;
+  }
+
+  .ops-console .oc-numbers {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .ops-console .oc-actions .gobl-btn {
+    flex: 0 0 auto;
+  }
+}
