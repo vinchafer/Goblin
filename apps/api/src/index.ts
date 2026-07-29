@@ -111,6 +111,7 @@ import { shared } from './routes/shared';
 import { waitlist } from './routes/waitlist';
 import { ops } from './routes/ops';
 import { opsAdmin } from './routes/ops-admin';
+import { opsConsole } from './routes/ops-console';
 import { events } from './routes/events';
 import { feedback } from './routes/feedback';
 import { startCron } from './lib/cron';
@@ -279,6 +280,13 @@ app.route('/api/ops', ops);
 // the beta allowlist: the router serves from KV and never asks the API anything, so
 // the per-app emergency stop must keep working with OPS_HOSTING_ENABLED off.
 app.route('/api/admin/ops', opsAdmin);
+// AKT 2 · PHASE 2.5 · U-C2 — the founder console's own backing routes. Behind
+// opsFounderGate (OPS_FOUNDER_ACCOUNTS, unset by default → 404 for everyone,
+// byte-identical to an unrouted path). Its OWN mount rather than a sub-path of
+// /api/ops on purpose: /api/ops ANDs in OPS_HOSTING_ENABLED, and this console's
+// job includes REPORTING that the flag is off — which it could not do from behind
+// a gate that the flag closes.
+app.route('/api/ops-console', opsConsole);
 
 // 9R — rankings aggregator every 6h (production only)
 startCron();
