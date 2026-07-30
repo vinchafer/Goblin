@@ -106,3 +106,41 @@ describe('/api/version — the diagnosis endpoint cannot 500', () => {
     }
   });
 });
+
+describe('/api/version — the build verdict survives the bundle-wide substitution', () => {
+  // next.config.ts replaces NEXT_PUBLIC_API_URL with the *normalised* origin
+  // everywhere, so this route can no longer detect the misconfiguration from
+  // that variable alone. GOBLIN_API_URL_PROBLEM carries the build's verdict.
+  it('reports the problem even when the value it can see looks clean', async () => {
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://project.supabase.co';
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'anon';
+    process.env.NEXT_PUBLIC_APP_URL = 'https://www.justgoblin.com';
+    // Exactly what production looks like after the substitution: a clean origin.
+    process.env.NEXT_PUBLIC_API_URL = 'https://goblinapi-production.up.railway.app';
+    process.env.GOBLIN_API_URL_PROBLEM = 'not-an-origin';
+
+    const { status, body } = await callGet();
+    expect(status).toBe(200);
+    expect(body.config.healthy).toBe(false);
+    expect(body.config.problems.join(' ')).toContain('NEXT_PUBLIC_API_URL');
+  });
+
+  it('stays healthy when the build found nothing wrong', async () => {
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://project.supabase.co';
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'anon';
+    process.env.NEXT_PUBLIC_APP_URL = 'https://www.justgoblin.com';
+    process.env.NEXT_PUBLIC_API_URL = 'https://goblinapi-production.up.railway.app';
+    process.env.GOBLIN_API_URL_PROBLEM = '';
+
+    const { status, body } = await callGet();
+    expect(status).toBe(200);
+    expect(body.config.healthy).toBe(true);
+  });
+
+  it('never leaks a value through the verdict path', async () => {
+    process.env.NEXT_PUBLIC_API_URL = 'https://goblinapi-production.up.railway.app';
+    process.env.GOBLIN_API_URL_PROBLEM = 'control-characters';
+    const { body } = await callGet();
+    expect(JSON.stringify(body.config)).not.toContain('email-hook');
+  });
+});

@@ -85,6 +85,28 @@ const nextConfig: NextConfig = {
   distDir: process.env.GOBLIN_DIST_DIR || '.next',
   env: {
     NEXT_PUBLIC_BUILD_ID: process.env.VERCEL_GIT_COMMIT_SHA || Date.now().toString(),
+    // The normaliser, applied to the whole bundle in one place.
+    //
+    // `NEXT_PUBLIC_API_URL` is read raw in 70+ call sites across components,
+    // hooks and pages — `?? ''`, `|| ''`, and bare. Routing each of them through
+    // resolveApiOrigin() by hand would be 50 files of churn and would still miss
+    // the next one somebody writes. Declaring it here instead makes Next inline
+    // the *validated* origin wherever `process.env.NEXT_PUBLIC_API_URL` appears,
+    // so a malformed value cannot reach a fetch base anywhere, whoever wrote it.
+    //
+    // This is what the 2026-07-30 restore missed on its first pass: PR #65 made
+    // the app boot again, but every feature that builds its own URL was still
+    // concatenating onto `…/api/auth/email-hook\n` and getting a 404. The E2E
+    // suite caught it — 19-mobile-create-project was the one @auth spec that did
+    // not recover, because it is the only one that writes.
+    //
+    // No-op when the configured value is already a clean origin.
+    NEXT_PUBLIC_API_URL: API_URL,
+    // ...but the substitution above would also hide the misconfiguration from
+    // /api/version, which reads the same variable to report on it. Carry the
+    // verdict separately so the status surface still tells the truth. The
+    // problem CODE only — never the value, so this stays safe to expose.
+    GOBLIN_API_URL_PROBLEM: apiOrigin.ok ? '' : apiOrigin.problem!,
   },
   async headers() {
     return [

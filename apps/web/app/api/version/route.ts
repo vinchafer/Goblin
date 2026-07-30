@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { normalizeOrigin, describeOriginProblem } from '@/lib/env/origin'
+import { normalizeOrigin, describeOriginProblem, type OriginProblem } from '@/lib/env/origin'
 
 /**
  * The diagnosis endpoint. Its one hard requirement: it answers 200 even when the
@@ -45,8 +45,21 @@ export async function GET() {
       else absent.push(name)
     }
 
+    // next.config.ts substitutes the *normalised* origin for
+    // NEXT_PUBLIC_API_URL across the whole bundle, so by the time this route
+    // reads it the value already looks clean — which would make this surface
+    // quietly report `healthy: true` over a misconfiguration. The build carries
+    // its verdict across in GOBLIN_API_URL_PROBLEM (a problem code, never a
+    // value); that verdict wins here, and the local check is the fallback for
+    // any context where the substitution did not run.
+    const buildVerdict = process.env.GOBLIN_API_URL_PROBLEM as OriginProblem | '' | undefined
+
     const problems: string[] = []
-    if (!apiOrigin.ok) problems.push(describeOriginProblem('NEXT_PUBLIC_API_URL', apiOrigin.problem!))
+    if (buildVerdict) {
+      problems.push(describeOriginProblem('NEXT_PUBLIC_API_URL', buildVerdict))
+    } else if (!apiOrigin.ok) {
+      problems.push(describeOriginProblem('NEXT_PUBLIC_API_URL', apiOrigin.problem!))
+    }
     if (!appOrigin.ok && appOrigin.problem !== 'missing') {
       problems.push(describeOriginProblem('NEXT_PUBLIC_APP_URL', appOrigin.problem!))
     }
