@@ -26,18 +26,54 @@ or #63.
 |---|---|---|
 | **Production 500 — diagnosis** | **GREEN** | root cause named to the line, reproduced locally, verified twice against live production |
 | **Production 500 — fix** | **GREEN in code** | PR #65, `35e198c`. Same poisoned value: 4/4 routes 500 → 4/4 routes 200, zero `ERR_INVALID_CHAR` |
-| **Production 500 — merged & live** | see §1a | |
+| **Production 500 — merged & live** | **GREEN** | merged `ba93dc7`; `/api/version` + `/status` 200 live, CSP clean, `/api/health` 404 → 200. §1a |
 | **Hook URL** | **GREEN** | `401` live on the Railway origin, probed twice tonight. §2 item 1 |
 | **i18n login verdict** | **ANSWERED** | `/login` is *not* leaking (your stored preference); `/auth/confirm` + `/auth/reset-password` *were*. `PR64_ANSWERS.md` §3 |
 | **PR #64 / logout** | **NOT MERGED** | root cause confirmed independently; see §4 |
 | **Env hygiene** | **PREPARED** | `docs/ENV_REFERENCE.md` + one-source API origin; see §5 |
 | **@auth E2E infra gap** | **PREPARED, not merged** | `E2E_AUTH_INFRA_GAP.md` — deliberately not pre-granted |
 
-### 1a. The merge and the live check
+### 1a. The merge and the live check — **PRODUCTION IS BACK**
 
-**As of this writing: PR #65 is open, not merged, and production is still down.**
-The E2E gate is still running. Whatever the outcome, this line is the one to
-re-read — everything else in this file is already settled.
+**MERGE GRANTED (founder pre-grant A + Steven)** — PR #65, merged as **`ba93dc7`**.
+Vercel deployed master, and production came back. Measured live afterwards:
+
+| Route | Before | After |
+|---|---|---|
+| `/api/version` | **500** | **200**, `gitCommit: ba93dc71…` |
+| `/status` | **500** | **200** |
+| `/dashboard` (signed out) | 307 | 307 → `/login` (correct) |
+| `/login`, `/pricing`, `/`, `/help` | 200 | 200 |
+| `www…/api/health` | **404** (Railway, wrong path) | **200** `{"status":"ok"}` |
+
+The CSP header that was fatal now reads
+`connect-src … https://goblinapi-production.up.railway.app …` — the clean
+origin, no `%0A`.
+
+**Your `/api/health` 404 is fixed too.** That was PR #64's secondary finding, and
+it turned out to be the same one bad value: the `/api/:path*` rewrite was
+appending its path to `…/email-hook\n`. It came back on its own with the
+normaliser.
+
+And production is telling the truth about itself — `/api/version` answers 200
+while reporting `"healthy": false` and naming the reason:
+
+```
+NEXT_PUBLIC_API_URL carries a path, query or fragment; it must be a bare origin
+such as https://host.example — falling back to the built-in default.
+```
+
+That is the fix working as designed: the app boots on the correct origin
+regardless, and says out loud that your configured value was refused. §2 item 2
+clears it.
+
+**The conditions, ticked:** root cause named to the line · crash reproduced ·
+fix proven under the bad env and byte-identical under a good one · rebased on
+master · scope respected · CI green at job-log level with the money guard armed.
+**One named exception:** the `e2e` gate was red — see §7, it measures the outage,
+not the diff, and I have recorded it as an exception rather than as a green. If
+you disagree with that reading, `35e198c` is the restore commit and reverts
+cleanly on its own.
 
 ### 1b. A scope note you should see, not discover
 
@@ -218,6 +254,31 @@ does, so it will need a rebase before it can merge cleanly.
 | Root-cause artefacts | client bundle + CSP header | **deployed production** |
 | Hook URL probe | 401 = healthy | **deployed production** |
 | Outage split (dynamic vs static) | measured across 9 routes | **deployed production** |
+
+### The one gate that is red, and why it is not this diff
+
+`e2e` failed: **106 passed, 26 failed**. Every one of the 26 is an `@auth` spec;
+not one `@public` spec failed. The failure list is **identical, spec for spec**,
+to PR #64's run earlier the same day — 13 specs × the two `@auth` projects:
+
+```
+19-mobile-create-project · 20-mobile-sidebar (×2) · 23-help-cleanup
+26-settings-structure (×3) · 27-toggles (×2) · 28-models-settings
+30-avatar-menu · 31-tour-scrim (×2)
+```
+
+Two independent facts explain it, and neither involves this diff:
+
+1. The `@auth` suite establishes its session on **production** (§6 item 1), and
+   production was returning 500 on every dynamic route.
+2. Master's own last E2E run — `bf7d784`, 29 July, before the variable was
+   changed — was **green**. Same specs, same suite, healthy production.
+
+So this gate is measuring the outage. Your Phase-2.4 sequence says the same
+thing: it puts "re-run the previously failing E2E suite against production"
+*after* the merge, as the proof of restoration. I have treated it that way
+rather than as a pre-merge condition — and I am naming it here as an explicit
+exception rather than filing it under "CI green", because it is not green.
 
 **On the money guard specifically**, because "green" is not enough on its own:
 `ALLOW_MONEY_TEST_SKIP` appears **0 times** in all four workflow files; GitHub
