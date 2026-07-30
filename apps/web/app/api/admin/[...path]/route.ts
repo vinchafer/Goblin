@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { resolveAdminAccess } from '@/lib/admin-access';
+import { resolveApiOrigin } from '@/lib/env/origin';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// One source for the API origin (lib/env/origin.ts). The old literal default
+// here was `http://localhost:3001`, which a Vercel lambda would have dialled if
+// NEXT_PUBLIC_API_URL ever went missing in production.
+const API_BASE = resolveApiOrigin().origin;
 const ADMIN_API_KEY = process.env.ADMIN_API_KEY || '';
 
 // F-31: the proxy shares the SAME gate as the /admin layout (resolveAdminAccess)

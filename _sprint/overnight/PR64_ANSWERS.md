@@ -153,6 +153,38 @@ returning 500 on every dynamic route it could only have reported the outage, not
 the diff. That is an infrastructure gap, not a PR #64 defect — Phase 6 of
 tonight's brief.
 
+**The precise mechanism, traced this session** (PR #61 named the symptom; this is
+the chain, and it changes what the fix has to be):
+
+1. `.github/workflows/e2e.yml` sets no `PLAYWRIGHT_BASE_URL`, so
+   `playwright.config.ts:3` resolves `baseURL` to `http://localhost:3000` and
+   `:59` starts a local API + a local `next start`. The `@public` projects
+   therefore *do* test the checkout.
+2. `tests/e2e/helpers/auth.ts:28` asks Supabase for a magic link with
+   `redirect_to = http://localhost:3000/auth/magic-callback`.
+3. `localhost:3000` is not in the Supabase project's redirect allowlist, so
+   Supabase discards it and falls back to the configured **Site URL** — the
+   production host. The session is established on `https://www.justgoblin.com`.
+4. Every subsequent signed-in assertion in the `@auth` projects is therefore made
+   against **production**, on a page the local server never rendered.
+
+So the split is finer than "the suite targets production": `@public` tests the
+checkout, `@auth` silently crosses over at the login step. Two ways to close it,
+both already half-present in the repo:
+
+- **Allowlist `http://localhost:3000/auth/magic-callback`** in Supabase →
+  Authentication → URL Configuration. Founder-only, one paste, no code change.
+- **Use the documented test-mode path instead.** `auth.ts:80`'s
+  `loginAsTestCallback` exists precisely for this and needs
+  `NEXT_PUBLIC_ENABLE_TEST_AUTH=true` at **build** time. `e2e.yml` sets
+  `ENABLE_TEST_AUTH: 'true'` on the *test* step only — not
+  `NEXT_PUBLIC_ENABLE_TEST_AUTH`, and not on the `pnpm --filter @goblin/web build`
+  step above it. Since `NEXT_PUBLIC_*` values are compiled into the bundle, the
+  route is disabled in the very build the tests run against. That is a two-line
+  workflow change plus switching the `@auth` specs' login helper.
+
+Neither is merged tonight — Phase 6 is deliberately prepare-only.
+
 **The consequence for merging #64:** its evidence is real but almost entirely
 checkout-level, so it says nothing about whether the deployed app works. That is
 why production had to be restored *first* — which is what the rest of tonight

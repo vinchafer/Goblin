@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
-import { normalizeOrigin, describeOriginProblem, headerSafe } from "./lib/env/origin";
+import { normalizeOrigin, resolveApiOrigin, describeOriginProblem, headerSafe } from "./lib/env/origin";
 
 // 2026-07-30 incident: both of the reads below used to trust the raw env value.
 // `NEXT_PUBLIC_API_URL` held a pasted Supabase hook URL with a trailing newline,
@@ -9,12 +9,7 @@ import { normalizeOrigin, describeOriginProblem, headerSafe } from "./lib/env/or
 // route while the prerendered marketing pages kept serving from the CDN.
 // Neither read may throw and neither may emit an unvalidated value ever again;
 // see lib/env/origin.ts for the full write-up.
-const DEFAULT_API_URL =
-  process.env.NODE_ENV === 'production'
-    ? 'https://goblinapi-production.up.railway.app'
-    : 'http://localhost:3001';
-
-const apiOrigin = normalizeOrigin(process.env.NEXT_PUBLIC_API_URL, DEFAULT_API_URL);
+const apiOrigin = resolveApiOrigin();
 const API_URL = apiOrigin.origin;
 
 const supabaseOrigin = normalizeOrigin(process.env.NEXT_PUBLIC_SUPABASE_URL, '');

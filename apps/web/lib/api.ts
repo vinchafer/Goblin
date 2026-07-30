@@ -1,5 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr'
-import { normalizeOrigin, describeOriginProblem } from '@/lib/env/origin'
+import { resolveApiOrigin, describeOriginProblem } from '@/lib/env/origin'
 
 // `createBrowserClient` throws when either argument is falsy. It used to be
 // called here at module scope, which meant a single missing Supabase variable
@@ -24,15 +24,11 @@ function getApiUrl(): string {
   // to route dev through the LOCAL guarded API so the B3 dev-safety shield intercepts writes
   // (see docs/DEV_SAFETY.md). Leave it on the Railway URL to hit prod directly.
   //
-  // One normaliser, shared with next.config.ts, so the rewrite destination, the
-  // CSP connect-src and this fetch base can never disagree about the API origin
-  // — the disagreement is what made the 2026-07-30 outage so hard to read.
-  const fallback =
-    process.env.NODE_ENV !== 'production'
-      ? 'http://localhost:3001'
-      : 'https://goblinapi-production.up.railway.app'
-
-  const result = normalizeOrigin(process.env.NEXT_PUBLIC_API_URL, fallback)
+  // One normaliser AND one default, shared with next.config.ts, so the rewrite
+  // destination, the CSP connect-src and this fetch base can never disagree
+  // about the API origin — that disagreement is what made the 2026-07-30 outage
+  // read as two unrelated faults.
+  const result = resolveApiOrigin()
   if (!result.ok) {
     console.error(`[env] ${describeOriginProblem('NEXT_PUBLIC_API_URL', result.problem!)}`)
   }

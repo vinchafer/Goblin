@@ -118,6 +118,28 @@ export function describeOriginProblem(name: string, problem: OriginProblem): str
 }
 
 /**
+ * The API origin's built-in default, in one place.
+ *
+ * Before this existed the same choice was written out four times with three
+ * different answers: `next.config.ts` and `lib/api.ts` picked by `NODE_ENV`,
+ * `app/api/admin/[...path]/route.ts` defaulted to `http://localhost:3001` (which
+ * a Vercel lambda would have dialled in production), and
+ * `github-connect-button.tsx` defaulted to the Railway origin (which a laptop
+ * would have dialled in development, bypassing the dev-safety shield). A
+ * disagreement between the rewrite destination and the fetch base is exactly
+ * what made the 2026-07-30 outage read as two unrelated faults.
+ */
+export const DEFAULT_API_ORIGIN =
+  process.env.NODE_ENV === 'production'
+    ? 'https://goblinapi-production.up.railway.app'
+    : 'http://localhost:3001';
+
+/** The configured API origin, normalised. Never throws, always usable. */
+export function resolveApiOrigin(): NormalizedOrigin {
+  return normalizeOrigin(process.env.NEXT_PUBLIC_API_URL, DEFAULT_API_ORIGIN);
+}
+
+/**
  * Last line of defence for anything about to become an HTTP header value.
  * A header carrying a control character is not a bad header, it is a fatal one:
  * Node throws `ERR_INVALID_CHAR` and the request dies with no response at all.
