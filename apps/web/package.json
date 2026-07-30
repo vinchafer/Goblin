@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "../api/node_modules/.bin/vitest run --config vitest.config.ts"
   },
   "dependencies": {
     "@codemirror/commands": "^6.10.3",
