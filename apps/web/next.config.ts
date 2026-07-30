@@ -5,8 +5,17 @@ const SUPABASE_HOST = process.env.NEXT_PUBLIC_SUPABASE_URL
   ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).host
   : '*.supabase.co';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ||
+// AKT1-STRANG-2 · U1: normalise the configured origin the same way lib/api.ts:13
+// already does. Without this the `/api/:path*` rewrite below concatenates the raw
+// env value, so a trailing slash produces `https://host//api/health` and a trailing
+// `/api` produces `https://host/api/api/health` — both of which the API answers with
+// a Hono 404. That is what `www.justgoblin.com/api/health` returned in production
+// (404) while the Railway origin returned 200, and it stayed invisible because
+// lib/api.ts strips the slash before the browser ever uses the value. See
+// _sprint/akt1-strang-2/hook-404-probe.md.
+const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL ||
   (process.env.NODE_ENV === 'production' ? 'https://goblinapi-production.up.railway.app' : 'http://localhost:3001');
+const API_URL = RAW_API_URL.replace(/\/+$/, '').replace(/\/api$/, '');
 
 // Content-Security-Policy
 // Note: unsafe-inline required for Next.js inline styles; unsafe-eval required in dev.
