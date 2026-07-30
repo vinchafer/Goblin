@@ -110,12 +110,31 @@ export function mapActionType(action: string): AuthEmailType | null {
   }
 }
 
-/** Only same-origin relative paths survive — never trust redirect_to blindly. */
+/** `justgoblin.com` and `www.justgoblin.com` are the same site to us. */
+function sameSite(a: URL, b: URL): boolean {
+  if (a.origin === b.origin) return true;
+  const strip = (h: string) => h.replace(/^www\./, '');
+  return a.protocol === b.protocol && strip(a.host) === strip(b.host);
+}
+
+/**
+ * Only same-site relative paths survive — never trust redirect_to blindly. Note
+ * that only `pathname + search` is ever carried over, never the origin, so this
+ * cannot become an open redirect; the check exists to keep a foreign path out of
+ * our own URL.
+ *
+ * U4: the apex/www pair is accepted as one site. Supabase sends `redirect_to`
+ * derived from the project's Site URL, which is the apex, while
+ * NEXT_PUBLIC_APP_URL on the API host is `https://www.justgoblin.com` (the apex
+ * 307s to www). A strict origin comparison silently dropped every `next`, so a
+ * signup confirmation meant to land somewhere specific fell back to the default.
+ */
 export function nextPathFrom(redirectTo: string | undefined, origin: string): string | undefined {
   if (!redirectTo) return undefined;
   try {
+    const base = new URL(origin);
     const url = new URL(redirectTo, origin);
-    if (url.origin !== new URL(origin).origin) return undefined;
+    if (!sameSite(url, base)) return undefined;
     return `${url.pathname}${url.search}`;
   } catch {
     return undefined;
