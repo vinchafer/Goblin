@@ -1,21 +1,36 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
+import { normalizeOrigin, resolveApiOrigin, describeOriginProblem, headerSafe } from "./lib/env/origin";
 
-const SUPABASE_HOST = process.env.NEXT_PUBLIC_SUPABASE_URL
-  ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).host
-  : '*.supabase.co';
+// 2026-07-30 incident: both of the reads below used to trust the raw env value.
+// `NEXT_PUBLIC_API_URL` held a pasted Supabase hook URL with a trailing newline,
+// that newline landed in the CSP `connect-src` below, and Node then refused to
+// write the header at all (`ERR_INVALID_CHAR`) — killing every server-rendered
+// route while the prerendered marketing pages kept serving from the CDN.
+// Neither read may throw and neither may emit an unvalidated value ever again;
+// see lib/env/origin.ts for the full write-up.
+const apiOrigin = resolveApiOrigin();
+const API_URL = apiOrigin.origin;
 
-// AKT1-STRANG-2 · U1: normalise the configured origin the same way lib/api.ts:13
-// already does. Without this the `/api/:path*` rewrite below concatenates the raw
-// env value, so a trailing slash produces `https://host//api/health` and a trailing
-// `/api` produces `https://host/api/api/health` — both of which the API answers with
-// a Hono 404. That is what `www.justgoblin.com/api/health` returned in production
-// (404) while the Railway origin returned 200, and it stayed invisible because
-// lib/api.ts strips the slash before the browser ever uses the value. See
-// _sprint/akt1-strang-2/hook-404-probe.md.
-const RAW_API_URL = process.env.NEXT_PUBLIC_API_URL ||
-  (process.env.NODE_ENV === 'production' ? 'https://goblinapi-production.up.railway.app' : 'http://localhost:3001');
-const API_URL = RAW_API_URL.replace(/\/+$/, '').replace(/\/api$/, '');
+// U1's normalisation (strip a trailing slash, strip a trailing `/api`) lives in
+// `resolveApiOrigin()` above now — it does U1's job and refuses control
+// characters, non-http(s) protocols and path-bearing values besides. U1's
+// finding was right and its diagnosis of the `www…/api/health` 404 was correct;
+// the same bad value turned out to be what took production down, so the fix
+// landed on master first (PR #65, `ba93dc7`) in a stronger form. Nothing is lost
+// here — `www.justgoblin.com/api/health` answers 200 again as of that deploy.
+const supabaseOrigin = normalizeOrigin(process.env.NEXT_PUBLIC_SUPABASE_URL, '');
+const SUPABASE_HOST = supabaseOrigin.ok ? new URL(supabaseOrigin.origin).host : '*.supabase.co';
+
+// Loud, but never fatal. The build and the running server both keep going with
+// the fallback; the founder gets the reason (never the value) in the log and on
+// /api/version's `config` block.
+if (!apiOrigin.ok) {
+  console.error(`[env] ${describeOriginProblem('NEXT_PUBLIC_API_URL', apiOrigin.problem!)}`);
+}
+if (!supabaseOrigin.ok && supabaseOrigin.problem !== 'missing') {
+  console.error(`[env] ${describeOriginProblem('NEXT_PUBLIC_SUPABASE_URL', supabaseOrigin.problem!)}`);
+}
 
 // Content-Security-Policy
 // Note: unsafe-inline required for Next.js inline styles; unsafe-eval required in dev.
@@ -41,8 +56,11 @@ const csp = [
   `form-action 'self'`,
 ].join('; ');
 
+// Belt and braces: `normalizeOrigin` already guarantees no control character can
+// reach `csp`, but a header value is the one place where a stray byte is fatal
+// rather than merely wrong, so nothing leaves this file unsanitised.
 const securityHeaders = [
-  { key: 'Content-Security-Policy', value: csp },
+  { key: 'Content-Security-Policy', value: headerSafe(csp) },
   { key: 'X-Frame-Options', value: 'DENY' },
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
@@ -66,7 +84,7 @@ const demoCsp = csp.replace(
 const demoSecurityHeaders = securityHeaders
   .filter((h) => h.key !== 'X-Frame-Options')
   .map((h) =>
-    h.key === 'Content-Security-Policy' ? { ...h, value: demoCsp } : h,
+    h.key === 'Content-Security-Policy' ? { ...h, value: headerSafe(demoCsp) } : h,
   );
 
 const nextConfig: NextConfig = {

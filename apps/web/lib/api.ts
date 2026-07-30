@@ -1,27 +1,44 @@
 import { createBrowserClient } from '@supabase/ssr'
+import { resolveApiOrigin, describeOriginProblem } from '@/lib/env/origin'
 
-const supabase = createBrowserClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+// `createBrowserClient` throws when either argument is falsy. It used to be
+// called here at module scope, which meant a single missing Supabase variable
+// took down every module that imports this file — including, on the server,
+// every page that renders one of them. It is lazy now: the throw, if it still
+// happens, belongs to the caller that actually needed a session, not to the
+// import graph.
+let cachedSupabase: ReturnType<typeof createBrowserClient> | null = null
+
+function getSupabase() {
+  if (!cachedSupabase) {
+    cachedSupabase = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
+  }
+  return cachedSupabase
+}
 
 function getApiUrl(): string {
   // Explicit setting always wins. Set NEXT_PUBLIC_API_URL=http://localhost:3001 in .env.local
   // to route dev through the LOCAL guarded API so the B3 dev-safety shield intercepts writes
   // (see docs/DEV_SAFETY.md). Leave it on the Railway URL to hit prod directly.
-  const url = process.env.NEXT_PUBLIC_API_URL
-  if (url) return url.replace(/\/$/, '')
-  // No explicit URL: in dev default to the local guarded API; in prod fall back to Railway.
-  if (process.env.NODE_ENV !== 'production') {
-    return 'http://localhost:3001'
+  //
+  // One normaliser AND one default, shared with next.config.ts, so the rewrite
+  // destination, the CSP connect-src and this fetch base can never disagree
+  // about the API origin — that disagreement is what made the 2026-07-30 outage
+  // read as two unrelated faults.
+  const result = resolveApiOrigin()
+  if (!result.ok) {
+    console.error(`[env] ${describeOriginProblem('NEXT_PUBLIC_API_URL', result.problem!)}`)
   }
-  console.error('NEXT_PUBLIC_API_URL is not set in production!')
-  return 'https://goblinapi-production.up.railway.app'
+  return result.origin
 }
 
 export const API_URL = getApiUrl()
 
 export async function getAuthHeaders(): Promise<HeadersInit> {
+  const supabase = getSupabase()
   const { data: { session }, error } = await supabase.auth.getSession()
   if (error || !session) {
     const { data: refreshed } = await supabase.auth.refreshSession()

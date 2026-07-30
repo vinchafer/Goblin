@@ -2,13 +2,17 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { resolveApiOrigin } from "@/lib/env/origin";
 
 interface GitHubConnectButtonProps {
   connected: boolean;
   username?: string | null;
 }
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://goblinapi-production.up.railway.app';
+// One source for the API origin (lib/env/origin.ts). The old literal default
+// here was the Railway origin, which a laptop would have dialled in development
+// — straight past the dev-safety shield (docs/DEV_SAFETY.md).
+const API_URL = resolveApiOrigin().origin;
 
 export function GitHubConnectButton({ connected, username }: GitHubConnectButtonProps) {
   const [loading, setLoading] = useState(false);
