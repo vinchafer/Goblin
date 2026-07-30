@@ -7,29 +7,14 @@ import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
 import { GoblinLogo } from '@/components/brand/GoblinLogo';
 import { t, type Lang } from '@/lib/use-lang';
+// U3: this hook used to live here, private to the login screen — which is why
+// /auth/confirm and /auth/reset-password reached for the app-side useLang() and
+// rendered German to a clean English visitor. It is now the shared pre-auth
+// locale source. See lib/use-auth-lang.ts.
+import { useAuthLang } from '@/lib/use-auth-lang';
 import { PENDING_PROMO_KEY } from '@/lib/promo-redeem';
 
 export const dynamic = 'force-dynamic';
-
-// Pre-auth language for the login/signup screen. UNLIKE the in-app useLang
-// (which defaults to 'de' because the user has already picked a language at
-// onboarding Step 0), a cold visitor here arrives from the ENGLISH marketing
-// landing and has no preference yet — so we default to 'en' and only switch to
-// German if they explicitly chose it earlier. Reads the same localStorage key
-// as lib/use-lang (goblin:preferred-lang). SSR renders 'en'; the client
-// corrects on mount at most a one-frame flip if 'de' was stored.
-function useAuthLang(): Lang {
-  const [lang, setLang] = useState<Lang>('en');
-  useEffect(() => {
-    try {
-      const v = window.localStorage.getItem('goblin:preferred-lang');
-      if (v === 'en' || v === 'de') setLang(v);
-    } catch {
-      /* ignore — keep the English default */
-    }
-  }, []);
-  return lang;
-}
 
 type Provider = 'google' | 'github';
 type Mode = 'signup' | 'login';
