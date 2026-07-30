@@ -12,6 +12,13 @@ import { normalizeOrigin, resolveApiOrigin, describeOriginProblem, headerSafe } 
 const apiOrigin = resolveApiOrigin();
 const API_URL = apiOrigin.origin;
 
+// U1's normalisation (strip a trailing slash, strip a trailing `/api`) lives in
+// `resolveApiOrigin()` above now — it does U1's job and refuses control
+// characters, non-http(s) protocols and path-bearing values besides. U1's
+// finding was right and its diagnosis of the `www…/api/health` 404 was correct;
+// the same bad value turned out to be what took production down, so the fix
+// landed on master first (PR #65, `ba93dc7`) in a stronger form. Nothing is lost
+// here — `www.justgoblin.com/api/health` answers 200 again as of that deploy.
 const supabaseOrigin = normalizeOrigin(process.env.NEXT_PUBLIC_SUPABASE_URL, '');
 const SUPABASE_HOST = supabaseOrigin.ok ? new URL(supabaseOrigin.origin).host : '*.supabase.co';
 

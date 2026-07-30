@@ -22,8 +22,8 @@ import dynamic from "next/dynamic";
 const FirstRunTour = dynamic(() => import("@/components/onboarding/first-run-tour").then(m => m.FirstRunTour), { ssr: false });
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useApp } from "@/contexts/app-context";
+import { useAuth } from "@/lib/hooks/useAuth";
 import { useDemoMode } from "@/lib/demo/demo-mode-context";
-import { createClient } from "@/lib/supabase/client";
 import { apiGet } from "@/lib/api";
 import { isDemoActive } from "@/lib/demo/demo-flag";
 import type { Project } from "@goblin/shared/src/schemas";
@@ -69,11 +69,11 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
     closeSettings();
   }, [pathname, closeSettings]);
 
-  const handleLogout = useCallback(async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push('/');
-  }, [router]);
+  // The command palette's "Logout" is a third logout entry point. It used to
+  // have its OWN implementation (signOut + a soft router.push, no error check),
+  // which is precisely the drift U2 removes: it now runs the same
+  // `performSignOut` as the avatar menu and the settings page.
+  const { signOut: handleLogout } = useAuth();
 
   // Project context comes from the URL (/project/[id]/…) first. A project chat,
   // however, lives on the standalone /chat/[id] route with no /project/ segment;

@@ -4,18 +4,20 @@ import { useState, useEffect, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { createClient } from '@/lib/supabase/client';
-import { useLang, t } from '@/lib/use-lang';
+import { t } from '@/lib/use-lang';
+import { useAuthLang } from '@/lib/use-auth-lang';
 
 function ResetPasswordForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const lang = useLang();
+  // U3: pre-auth surface — English by default, not German. See lib/use-auth-lang.ts.
+  const lang = useAuthLang();
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [loading, setLoading] = useState(false);
   const [ready, setReady] = useState(false);
 
-  // Stored as a KEY, not as finished text: useLang() corrects from the default
+  // Stored as a KEY, not as finished text: useAuthLang() corrects from the default
   // on mount, so text captured inside the effect could freeze the wrong
   // language. Rendering resolves it with the language in force at paint.
   const [error, setError] = useState<'cross_context' | 'no_token' | null>(null);
