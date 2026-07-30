@@ -1,12 +1,34 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
+import { normalizeOrigin, describeOriginProblem, headerSafe } from "./lib/env/origin";
 
-const SUPABASE_HOST = process.env.NEXT_PUBLIC_SUPABASE_URL
-  ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).host
-  : '*.supabase.co';
+// 2026-07-30 incident: both of the reads below used to trust the raw env value.
+// `NEXT_PUBLIC_API_URL` held a pasted Supabase hook URL with a trailing newline,
+// that newline landed in the CSP `connect-src` below, and Node then refused to
+// write the header at all (`ERR_INVALID_CHAR`) — killing every server-rendered
+// route while the prerendered marketing pages kept serving from the CDN.
+// Neither read may throw and neither may emit an unvalidated value ever again;
+// see lib/env/origin.ts for the full write-up.
+const DEFAULT_API_URL =
+  process.env.NODE_ENV === 'production'
+    ? 'https://goblinapi-production.up.railway.app'
+    : 'http://localhost:3001';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ||
-  (process.env.NODE_ENV === 'production' ? 'https://goblinapi-production.up.railway.app' : 'http://localhost:3001');
+const apiOrigin = normalizeOrigin(process.env.NEXT_PUBLIC_API_URL, DEFAULT_API_URL);
+const API_URL = apiOrigin.origin;
+
+const supabaseOrigin = normalizeOrigin(process.env.NEXT_PUBLIC_SUPABASE_URL, '');
+const SUPABASE_HOST = supabaseOrigin.ok ? new URL(supabaseOrigin.origin).host : '*.supabase.co';
+
+// Loud, but never fatal. The build and the running server both keep going with
+// the fallback; the founder gets the reason (never the value) in the log and on
+// /api/version's `config` block.
+if (!apiOrigin.ok) {
+  console.error(`[env] ${describeOriginProblem('NEXT_PUBLIC_API_URL', apiOrigin.problem!)}`);
+}
+if (!supabaseOrigin.ok && supabaseOrigin.problem !== 'missing') {
+  console.error(`[env] ${describeOriginProblem('NEXT_PUBLIC_SUPABASE_URL', supabaseOrigin.problem!)}`);
+}
 
 // Content-Security-Policy
 // Note: unsafe-inline required for Next.js inline styles; unsafe-eval required in dev.
@@ -32,8 +54,11 @@ const csp = [
   `form-action 'self'`,
 ].join('; ');
 
+// Belt and braces: `normalizeOrigin` already guarantees no control character can
+// reach `csp`, but a header value is the one place where a stray byte is fatal
+// rather than merely wrong, so nothing leaves this file unsanitised.
 const securityHeaders = [
-  { key: 'Content-Security-Policy', value: csp },
+  { key: 'Content-Security-Policy', value: headerSafe(csp) },
   { key: 'X-Frame-Options', value: 'DENY' },
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
@@ -57,7 +82,7 @@ const demoCsp = csp.replace(
 const demoSecurityHeaders = securityHeaders
   .filter((h) => h.key !== 'X-Frame-Options')
   .map((h) =>
-    h.key === 'Content-Security-Policy' ? { ...h, value: demoCsp } : h,
+    h.key === 'Content-Security-Policy' ? { ...h, value: headerSafe(demoCsp) } : h,
   );
 
 const nextConfig: NextConfig = {
