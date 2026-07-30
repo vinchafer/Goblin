@@ -30,7 +30,8 @@ import { Suspense, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { EmailOtpType } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/client';
-import { useLang, t } from '@/lib/use-lang';
+import { t } from '@/lib/use-lang';
+import { useAuthLang } from '@/lib/use-auth-lang';
 
 const VALID_TYPES: EmailOtpType[] = ['recovery', 'signup', 'invite', 'magiclink', 'email_change'];
 
@@ -52,7 +53,8 @@ function safeNext(next: string | null, type: EmailOtpType): string {
 function ConfirmInner() {
   const router = useRouter();
   const params = useSearchParams();
-  const lang = useLang();
+  // U3: pre-auth surface — English by default, not German. See lib/use-auth-lang.ts.
+  const lang = useAuthLang();
 
   const tokenHash = params.get('token_hash');
   const rawType = params.get('type');

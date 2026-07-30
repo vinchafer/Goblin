@@ -40,6 +40,14 @@ jobs:
           NEXT_PUBLIC_API_URL: http://localhost:3001
         run: pnpm --filter @goblin/web build
 
+      # AKT1-STRANG-2 · U2: apps/web has carried vitest specs since P1.7, but no
+      # job ever ran them — so the logout regression suite would not have gated
+      # anything. It runs here, in the job that already installs the web deps.
+      # The runner is apps/api's vitest binary, which is what apps/web's
+      # dependency-free vitest.config.ts was written for.
+      - name: Run web vitest
+        run: pnpm --filter @goblin/web test
+
   api-tests:
     name: API unit tests (incl. build-loop net)
     runs-on: ubuntu-latest
