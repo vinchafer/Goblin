@@ -19,7 +19,15 @@ export default function HelpPage() {
   }, []);
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--surface-page)', padding: '32px 20px 80px' }}>
+    // WAVE-KORREKTUR-1 · U1: /help is public (no auth guard) and full-screen; its
+    // 32px top padding is under a typical iOS inset. Absorb it here, once.
+    <div style={{
+      minHeight: '100dvh', background: 'var(--surface-page)', padding: '32px 20px 80px',
+      paddingTop: 'max(32px, calc(env(safe-area-inset-top, 0px) + 12px))',
+      paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))',
+      paddingLeft: 'max(20px, env(safe-area-inset-left, 0px))',
+      paddingRight: 'max(20px, env(safe-area-inset-right, 0px))',
+    }}>
       <div style={{ maxWidth: 720, margin: '0 auto' }}>
         <Link href="/dashboard" style={{
           display: 'inline-flex', alignItems: 'center', gap: 6,

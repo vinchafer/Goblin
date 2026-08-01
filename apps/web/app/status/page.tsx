@@ -131,7 +131,19 @@ export default async function StatusPage() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--paper)', fontFamily: 'var(--font-sans)' }}>
       {/* Header */}
-      <div style={{ background: 'var(--brand-green)', padding: '0 24px', height: 52, display: 'flex', alignItems: 'center', gap: 10 }}>
+      {/* WAVE-KORREKTUR-1 · U1 — /status DOES carry an edge-anchored green top bar
+          (the FOUNDER-WALK-3 inventory filed it as "content page, no edge chrome",
+          which the source contradicts). Treated with the shipped idiom, identical
+          to app/(legal)/layout.tsx: pad the inset, grow the height by it once. */}
+      <div style={{
+        background: 'var(--brand-green)',
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+        paddingBottom: 0,
+        paddingLeft: 'max(24px, env(safe-area-inset-left, 0px))',
+        paddingRight: 'max(24px, env(safe-area-inset-right, 0px))',
+        height: 'calc(52px + env(safe-area-inset-top, 0px))',
+        display: 'flex', alignItems: 'center', gap: 10,
+      }}>
         <span style={{ fontSize: 20 }}>👺</span>
         <a href="/" style={{ fontFamily: 'var(--font-sans)', fontSize: 18, fontWeight: 700, color: 'var(--brand-gold)', textDecoration: 'none' }}>Goblin</a>
         <span style={{ color: 'rgba(255,255,255,0.4)', marginLeft: 8, fontSize: 13 }}>/ Status</span>

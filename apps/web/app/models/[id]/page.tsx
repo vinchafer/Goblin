@@ -60,7 +60,13 @@ export default function ModelDetailPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--surface-2)', fontFamily: 'var(--font-sans)' }}>
-      <main style={{ maxWidth: 900, margin: '0 auto', padding: '32px 16px' }}>
+      {/* WAVE-KORREKTUR-1 · U1 — same treatment as the /models index. */}
+      <main style={{
+        maxWidth: 900, margin: '0 auto', padding: '32px 16px',
+        paddingTop: 'max(32px, calc(env(safe-area-inset-top, 0px) + 12px))',
+        paddingLeft: 'max(16px, env(safe-area-inset-left, 0px))',
+        paddingRight: 'max(16px, env(safe-area-inset-right, 0px))',
+      }}>
         <Link href="/models" style={{ color: 'var(--text-meta)', textDecoration: 'none', fontSize: 'var(--t-small-fs)' }}>
           ← Alle Modelle
         </Link>

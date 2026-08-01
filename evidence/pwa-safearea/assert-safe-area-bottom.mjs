@@ -107,6 +107,43 @@ const tour = read('components/onboarding/first-run-tour.tsx');
 check('Tour popup: bottom clears the home indicator',
   /bottom:\s*'calc\(80px \+ env\(safe-area-inset-bottom/.test(tour));
 
+// ── WAVE-KORREKTUR-1 U1 — the PUBLIC bottom edges. Every bottom-inset wave so
+//    far treated signed-in chrome; a signed-out visitor scrolling the landing to
+//    its end, or reading a legal/help/share page, reaches the home-indicator zone
+//    with the last row of content in it. Each of these adds the inset to its own
+//    padding exactly once — the surface's own background continues into it. ──
+const publicBottom = [
+  ['Landing footer: bottom inset', 'styles/landing.css',
+    /padding-bottom:\s*calc\(36px \+ env\(safe-area-inset-bottom/],
+  ['/login form column: bottom inset', 'app/(auth)/login/page.tsx',
+    /paddingBottom:\s*['"]max\(40px, calc\(env\(safe-area-inset-bottom/],
+  ['.auth-page (confirm/reset): bottom inset', 'app/globals.css',
+    /padding-bottom:\s*max\(24px, calc\(env\(safe-area-inset-bottom/],
+  ['.safe-prose-page (about/manifesto/changelog): bottom inset', 'app/globals.css',
+    /\.safe-prose-page\s*\{[\s\S]*?padding-bottom:\s*calc\(64px \+ env\(safe-area-inset-bottom/],
+  ['/help index: bottom inset', 'app/help/page.tsx',
+    /paddingBottom:\s*['"]calc\(80px \+ env\(safe-area-inset-bottom/],
+  ['/help/[slug]: bottom inset', 'app/help/[slug]/page.tsx',
+    /paddingBottom:\s*['"]calc\(80px \+ env\(safe-area-inset-bottom/],
+  ['/shared/[token]: bottom inset', 'app/shared/[token]/page.tsx',
+    /paddingBottom:\s*['"]calc\(64px \+ env\(safe-area-inset-bottom/],
+  ['404: bottom inset', 'app/not-found.tsx',
+    /paddingBottom:\s*['"]max\(24px, env\(safe-area-inset-bottom/],
+  ['500: bottom inset', 'app/error.tsx',
+    /paddingBottom:\s*['"]max\(24px, env\(safe-area-inset-bottom/],
+];
+for (const [label, path, re] of publicBottom) check(label, re.test(read(path)));
+
+// Double-inset guard for the landing footer (#44/#55 lesson): the bottom inset
+// must appear exactly ONCE in the footer's own rule block.
+const landingCss = read('styles/landing.css');
+const footerBlock = landingCss.slice(
+  landingCss.indexOf('footer.lp-footer {'),
+  landingCss.indexOf('.landing-root .footer-grid'),
+);
+check('Landing footer: bottom inset applied exactly once (no double-inset)',
+  (footerBlock.match(/env\(safe-area-inset-bottom/g) || []).length === 1);
+
 // ── report ──
 console.log('\nSAFEAREA-U-BOTTOM — bottom-anchored surface assertions\n' + '─'.repeat(56));
 for (const r of results) console.log(`${r.ok ? '  PASS' : '  FAIL'}  ${r.label}`);

@@ -45,7 +45,13 @@ function CancelDeletionInner() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        // WAVE-KORREKTUR-1 · U1: public account-lifecycle surface reached from an
+        // e-mail link — can open inside the installed PWA while signed out.
         padding: 24,
+        paddingTop: 'max(24px, env(safe-area-inset-top, 0px))',
+        paddingBottom: 'max(24px, env(safe-area-inset-bottom, 0px))',
+        paddingLeft: 'max(24px, env(safe-area-inset-left, 0px))',
+        paddingRight: 'max(24px, env(safe-area-inset-right, 0px))',
         background: 'var(--paper)',
         fontFamily: 'var(--font-sans)',
       }}

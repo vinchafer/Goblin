@@ -197,6 +197,18 @@ body {
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
 .safe-top    { padding-top:    env(safe-area-inset-top,    0px); }
 
+/* WAVE-KORREKTUR-1 · U1 — the shared frame of the PUBLIC prose pages
+   (/about, /manifesto, /changelog). They used Tailwind's `py-16 px-4`, which an
+   inline inset style would have REPLACED rather than added to; this utility keeps
+   the 64px/16px design padding and adds the device inset on top, exactly once.
+   Same env() idiom as .safe-top/.safe-bottom above — no new mechanism. */
+.safe-prose-page {
+  padding-top:    calc(64px + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  padding-left:   max(16px, env(safe-area-inset-left, 0px));
+  padding-right:  max(16px, env(safe-area-inset-right, 0px));
+}
+
 /* ─── Mobile ─────────────────────────────────────────────── */
 @media (max-width: 768px) {
   button, [role="button"], a {
@@ -494,6 +506,15 @@ a[role="button"]:active {
   align-items: center;
   justify-content: center;
   padding: 24px 16px;
+  /* WAVE-KORREKTUR-1 · U1 — the shared shell of /auth/confirm and
+     /auth/reset-password. Both are full-screen public surfaces reachable from a
+     mail link inside the installed PWA, and neither was safe-area-treated. Same
+     idiom as the rest of the wave: the page's own padding absorbs the inset
+     exactly once, the --auth-bg background continues into it. */
+  padding-top: max(24px, calc(env(safe-area-inset-top, 0px) + 12px));
+  padding-bottom: max(24px, calc(env(safe-area-inset-bottom, 0px) + 12px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
 .auth-logo {
   font-family: var(--font-sans);
