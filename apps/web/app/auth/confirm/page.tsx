@@ -32,6 +32,7 @@ import type { EmailOtpType } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/client';
 import { t } from '@/lib/use-lang';
 import { useAuthLang } from '@/lib/use-auth-lang';
+import { LangToggle } from '@/components/i18n/LangToggle';
 
 const VALID_TYPES: EmailOtpType[] = ['recovery', 'signup', 'invite', 'magiclink', 'email_change'];
 
@@ -130,6 +131,12 @@ function ConfirmInner() {
 
   return (
     <div className="auth-page">
+      {/* WAVE-KORREKTUR-1 · U2 — DE · EN switcher. This page is fully
+          bilingual, so a press re-renders it instantly; it also lets someone
+          who arrived straight from a mail link fix the language here. */}
+      <div style={{ width: '100%', maxWidth: 400, display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
+        <LangToggle />
+      </div>
       <div className="auth-logo">Goblin.</div>
       <div className="auth-card-wrapper">
         {!linkOk ? (

@@ -5,11 +5,15 @@ import Link from 'next/link';
 import { SupportChat } from '@/components/support/support-chat';
 import { FeedbackModal } from '@/components/feedback/FeedbackModal';
 import { HELP_ARTICLES } from '@goblin/shared/src/help-content';
-import { useLang, t, type Lang } from '@/lib/use-lang';
+// WAVE-KORREKTUR-1 · U2: /help is PUBLIC (middleware.ts isPublic) and was bound
+// to the APP locale hook, default 'de' — German help for a clean English
+// visitor. Bound to the public/pre-auth binding now.
+import { t, type Lang } from '@/lib/use-lang';
+import { useAuthLang } from '@/lib/use-auth-lang';
 import { emitEvent } from '@/lib/api';
 
 export default function HelpPage() {
-  const lang = useLang();
+  const lang = useAuthLang();
   const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   // I1 funnel: help_opened — a user reached the help/support surface (a friction

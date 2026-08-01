@@ -1,4 +1,5 @@
 import { Lockup } from '@/components/landing/brand/Lockup';
+import { LangToggle } from '@/components/i18n/LangToggle';
 
 // FOUNDER-WALK-1 U3: the legacy device table (macOS/Windows/Linux/iPhone/iPad/
 // Android tiles with phone-symbol icons) was removed here. The four-tab install
@@ -40,6 +41,12 @@ export function Footer() {
 
         <div className="footer-bottom">
           <span>© 2026 · Goblin Inc. · Made in Switzerland</span>
+          {/* WAVE-KORREKTUR-1 · U2: mobile placement of the DE · EN switcher.
+              ≤860px the nav has no room for it (see styles/landing.css); here it
+              is its own item in a wrapping flex row, so at 320px it takes its own
+              line rather than crowding the tagline, and it inherits the footer's
+              bottom safe-area inset from U1. */}
+          <LangToggle className="lang-toggle--footer" />
           <span className="end">
             <span className="dot" aria-hidden="true" /> Build anywhere · Code anything
           </span>

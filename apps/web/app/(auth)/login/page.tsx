@@ -12,6 +12,7 @@ import { t, type Lang } from '@/lib/use-lang';
 // rendered German to a clean English visitor. It is now the shared pre-auth
 // locale source. See lib/use-auth-lang.ts.
 import { useAuthLang } from '@/lib/use-auth-lang';
+import { LangToggle } from '@/components/i18n/LangToggle';
 import { PENDING_PROMO_KEY } from '@/lib/promo-redeem';
 
 export const dynamic = 'force-dynamic';
@@ -460,6 +461,15 @@ export default function LoginPage() {
         paddingRight: 'max(24px, env(safe-area-inset-right, 0px))',
       }}>
         <div style={{ width: '100%', maxWidth: 380 }}>
+
+          {/* WAVE-KORREKTUR-1 · U2 — the DE · EN switcher, on the surface where it
+              pays off instantly: this page is fully bilingual, so a press
+              re-renders it in the chosen language with no reload. In the document
+              flow (never absolute), so it inherits the column's safe-area top
+              inset from U1 and cannot collide at 320px. */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8, color: 'var(--meta)' }}>
+            <LangToggle />
+          </div>
 
           {/* Mobile logo */}
           <Link

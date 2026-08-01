@@ -1,12 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useLang, t } from "@/lib/use-lang";
+// WAVE-KORREKTUR-1 · U2: /about is PUBLIC — one click from the English landing
+// footer — but it was bound to the APP locale hook, whose surface default is
+// 'de'. A clean English visitor therefore got a German page. Bound to the
+// public/pre-auth binding now; `t()` still comes from the same module.
+import { t } from "@/lib/use-lang";
+import { useAuthLang } from "@/lib/use-auth-lang";
 
 // WS-C: was English-only while the app defaults to German. Now bilingual via the
-// shared i18n hook (client component — useLang reads the user's lang preference).
+// shared i18n hook (client component — useAuthLang applies the public locale precedence).
 export default function AboutPage() {
-  const lang = useLang();
+  const lang = useAuthLang();
   return (
     <main className="max-w-2xl mx-auto safe-prose-page">
       <nav className="mb-8">
