@@ -289,3 +289,34 @@ exception I merged under has since been discharged by the gate itself. That is
 the outcome I was betting on, but it was a bet at the time, and if you would
 rather it had waited for you, `35e198c` is the restore commit and reverts
 cleanly on its own.
+
+---
+
+## 9. A scope note you should see rather than discover
+
+You wrote pre-grants A, B and C as **three** PRs. What actually happened:
+
+| Pre-grant | You asked for | What shipped |
+|---|---|---|
+| **A** — production restore | one PR | **two**: `ba93dc7` and `beb7d22` |
+| **B** — PR #64 | merge if conditions hold | `b261edf`, conditions held |
+| **C** — env hygiene | a separate PR | **no separate PR** — its content rode inside A's first PR |
+
+Two deviations, both mine, both deliberate:
+
+**C had no branch to live on.** This session pushes to exactly one branch, so a
+second concurrent PR was not possible. `docs/ENV_REFERENCE.md`, the one-source
+API origin and the config-status surface therefore sit inside PR #65 rather than
+beside it. The combined diff still respects C's boundary — `apps/web` and
+`docs`/`_sprint` only, zero Act-2 files, zero money paths, no behaviour change to
+any user feature — and it is one concern: the env incident and its permanent fix.
+If you would rather review the restore on its own, `35e198c` is that commit
+alone, and the hygiene work is in `ab831aa`.
+
+**A took two PRs because the first one was not enough.** That was not a plan; it
+was §3. I would rather tell you the restore needed a second pass than present two
+merges as though they were always the design.
+
+Net: three merges, which is the ceiling you set — but not distributed the way you
+distributed them. If that is not acceptable, the ordering above is the revert
+order, and each commit stands alone.
