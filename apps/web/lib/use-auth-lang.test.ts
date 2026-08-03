@@ -99,20 +99,18 @@ describe('the two bindings differ exactly where it matters', () => {
     expect(readLang()).toBe(readAuthLang());
   });
 
-  // U2: detection sits between the preference and the default, so with nothing
-  // stored the browser decides and BOTH bindings agree — this is what closed the
-  // "German browser, English login" half of the founder's report.
-  it('nothing stored, German browser: both bindings say German', () => {
+  // U2: detection sits between the preference and the default — but for the
+  // PUBLIC binding only. It is what closed the "German browser, English login"
+  // half of the founder's report.
+  it('nothing stored, German browser: the public binding says German', () => {
     withLocalStorage(null);
     withBrowserLanguages(['de-CH', 'de']);
-    expect(readLang()).toBe('de');
     expect(readAuthLang()).toBe('de');
   });
 
-  it('nothing stored, English browser: both bindings say English', () => {
+  it('nothing stored, English browser: the public binding says English', () => {
     withLocalStorage(null);
     withBrowserLanguages(['en-GB', 'en']);
-    expect(readLang()).toBe('en');
     expect(readAuthLang()).toBe('en');
   });
 
@@ -121,6 +119,39 @@ describe('the two bindings differ exactly where it matters', () => {
     withBrowserLanguages(['fr-FR', 'fr']);
     expect(readLang()).toBe('de');
     expect(readAuthLang()).toBe('en');
+  });
+
+  /**
+   * U3 REGRESSION GUARD — the exact failure that turned master red.
+   *
+   * The first cut of U2 let the APP binding detect too. CI's Playwright contexts
+   * carry no stored preference and report en-US, so the signed-in app rendered
+   * "Models" where SettingsRoot.tsx:86 had always rendered "Modelle" — 14 @auth
+   * tests failed on master, and any key-less live account would have had the
+   * same silent flip. The app's language is the account's answer, never the
+   * browser's guess.
+   */
+  it('nothing stored, English browser: the APP binding stays GERMAN', () => {
+    withLocalStorage(null);
+    withBrowserLanguages(['en-US', 'en']);
+    expect(readLang()).toBe('de');
+  });
+
+  it('an English browser cannot flip a German app account that never stored a key', () => {
+    withLocalStorage(null);
+    withBrowserLanguages(['en-US']);
+    // What the signed-in settings surface actually renders.
+    expect(readLang() === 'de' ? 'Modelle' : 'Models').toBe('Modelle');
+  });
+
+  it('…but an explicit switcher choice still reaches the app binding', () => {
+    // The escape hatch stays open: a user who presses EN gets English everywhere.
+    const store = new Map<string, string>([['goblin:lang-choice', 'en']]);
+    (globalThis as { window?: unknown }).window = {
+      localStorage: { getItem: (k: string) => store.get(k) ?? null },
+    };
+    withBrowserLanguages(['de-DE']);
+    expect(readLang()).toBe('en');
   });
 });
 

@@ -15,6 +15,15 @@
 // time a user sees these screens they have answered onboarding Step 0. It also
 // re-renders when the DE·EN switcher fires, so a language change applies without
 // a reload.
+//
+// WAVE-KORREKTUR-1 · U3 (regression fix): this binding explicitly opts OUT of
+// browser detection. The first cut let it detect, and a signed-in session with
+// no stored `goblin:preferred-lang` on an en-US browser started rendering the
+// app in English — "Models" where SettingsRoot.tsx:86 had always said "Modelle".
+// 14 @auth E2E tests caught it on master, and any key-less live account would
+// have had the same silent flip. The browser's locale is a guess for someone we
+// have never met; it is not a reason to change an established account's UI.
+// Detection stays where it belongs: the public/pre-auth binding.
 
 import { useEffect, useState } from 'react';
 import { resolveLang, subscribeLang, type Lang } from './locale';
@@ -23,7 +32,7 @@ export type { Lang };
 
 /** Synchronous read (event handlers, non-React code). Surface default 'de'. */
 export function readLang(): Lang {
-  return resolveLang({ fallback: 'de' });
+  return resolveLang({ fallback: 'de', useDetection: false });
 }
 
 /**
