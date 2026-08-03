@@ -3,10 +3,17 @@ import { GoblinLogo } from "@/components/brand/GoblinLogo";
 
 export default function NotFound() {
   return (
+    // WAVE-KORREKTUR-1 · U1: 404 is a full-screen public surface — a mistyped or
+    // stale link inside the installed PWA lands here. Content is centred, but the
+    // padding still has to clear the notch/home indicator when the card is tall.
     <div style={{
       minHeight: '100dvh', display: 'flex', flexDirection: 'column',
       alignItems: 'center', justifyContent: 'center',
       background: 'var(--paper)', padding: '24px', textAlign: 'center',
+      paddingTop: 'max(24px, env(safe-area-inset-top, 0px))',
+      paddingBottom: 'max(24px, env(safe-area-inset-bottom, 0px))',
+      paddingLeft: 'max(24px, env(safe-area-inset-left, 0px))',
+      paddingRight: 'max(24px, env(safe-area-inset-right, 0px))',
     }}>
       <div style={{ marginBottom: 24 }}><GoblinLogo state="idle" size={80} variant="gold" /></div>
       <h1 style={{

@@ -7,22 +7,23 @@
 // mirrored to users.preferred_lang. This is the one mechanism — onboarding's
 // useOnbLang and this useLang read the identical key, so a DE choice in
 // onboarding makes the dashboard render DE too. No second i18n system.
+//
+// WAVE-KORREKTUR-1 · U2: the resolution itself moved to lib/locale.ts, which is
+// now the single place the precedence is written down (explicit switcher choice
+// > stored preference > browser detection > surface default). This hook is the
+// APP-surface binding of that rule: its surface default is 'de', because by the
+// time a user sees these screens they have answered onboarding Step 0. It also
+// re-renders when the DE·EN switcher fires, so a language change applies without
+// a reload.
 
 import { useEffect, useState } from 'react';
+import { resolveLang, subscribeLang, type Lang } from './locale';
 
-export type Lang = 'en' | 'de';
+export type { Lang };
 
-const LS_KEY = 'goblin:preferred-lang';
-
-/** Synchronous read (event handlers, non-React code). Defaults to 'de'. */
+/** Synchronous read (event handlers, non-React code). Surface default 'de'. */
 export function readLang(): Lang {
-  try {
-    const v = window.localStorage.getItem(LS_KEY);
-    if (v === 'en' || v === 'de') return v;
-  } catch {
-    /* ignore */
-  }
-  return 'de';
+  return resolveLang({ fallback: 'de' });
 }
 
 /**
@@ -32,7 +33,11 @@ export function readLang(): Lang {
  */
 export function useLang(): Lang {
   const [lang, setLang] = useState<Lang>('de');
-  useEffect(() => { setLang(readLang()); }, []);
+  useEffect(() => {
+    const read = () => setLang(readLang());
+    read();
+    return subscribeLang(read);
+  }, []);
   return lang;
 }
 

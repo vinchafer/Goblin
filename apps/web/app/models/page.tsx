@@ -51,7 +51,15 @@ export default function ModelsPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--surface-2)', fontFamily: 'var(--font-sans)' }}>
-      <main style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 16px' }}>
+      {/* WAVE-KORREKTUR-1 · U1 — public full-screen page; its 32px top padding is
+          smaller than an iOS top inset, so the h1 landed under the clock in the
+          installed PWA. Absorb the inset here, once; --surface-2 continues into it. */}
+      <main style={{
+        maxWidth: 1100, margin: '0 auto', padding: '32px 16px',
+        paddingTop: 'max(32px, calc(env(safe-area-inset-top, 0px) + 12px))',
+        paddingLeft: 'max(16px, env(safe-area-inset-left, 0px))',
+        paddingRight: 'max(16px, env(safe-area-inset-right, 0px))',
+      }}>
         <h1
           style={{
             fontFamily: 'var(--font-sans)',

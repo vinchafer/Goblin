@@ -9,7 +9,16 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
   }, [error]);
 
   return (
-    <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: 'var(--paper)', padding: '24px', textAlign: 'center' }}>
+    // WAVE-KORREKTUR-1 · U1: the 500 surface gets the same inset treatment as 404 —
+    // a crash inside the installed PWA must not put "Try again" under the clock.
+    <div style={{
+      minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center',
+      justifyContent: 'center', background: 'var(--paper)', padding: '24px', textAlign: 'center',
+      paddingTop: 'max(24px, env(safe-area-inset-top, 0px))',
+      paddingBottom: 'max(24px, env(safe-area-inset-bottom, 0px))',
+      paddingLeft: 'max(24px, env(safe-area-inset-left, 0px))',
+      paddingRight: 'max(24px, env(safe-area-inset-right, 0px))',
+    }}>
       <div style={{ fontSize: 64, lineHeight: 1, marginBottom: 20 }}>🤕</div>
       <h2 style={{ fontFamily: 'var(--font-sans)', fontSize: 28, color: 'var(--brand-green)', fontWeight: 700, letterSpacing: '-0.5px', marginBottom: 10 }}>
         Your goblin crashed.

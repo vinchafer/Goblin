@@ -309,7 +309,17 @@
    ========================================================= */
 .landing-root nav.lp-nav {
   position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-  height: 64px;
+  /* WAVE-KORREKTUR-1 · U1 — the PUBLIC landing was the one full-screen surface the
+     safe-area waves (#41/#44/#54/#55) never touched, and it is the FIRST thing an
+     installed PWA shows a signed-out visitor: with viewport-fit=cover this fixed
+     bar starts at y=0, so the GOBLIN lockup sat on the iOS clock and "Start
+     building" on the wifi/battery icons (founder screenshot).
+     Same shipped idiom as components/layout/Header.tsx and app/(legal)/layout.tsx:
+     reserve the inset as padding AND grow the height by exactly the same amount.
+     The ONE nav background then continues up into the inset, and the inset is
+     applied exactly once on this edge — the #44/#55 double-inset lesson. */
+  height: calc(64px + env(safe-area-inset-top, 0px));
+  padding-top: env(safe-area-inset-top, 0px);
   background: var(--nav-bg);
   backdrop-filter: blur(18px) saturate(180%);
   -webkit-backdrop-filter: blur(18px) saturate(180%);
@@ -320,6 +330,9 @@
 .landing-root nav.lp-nav .container {
   display: flex; align-items: center; justify-content: space-between;
   width: 100%; gap: 24px;
+  /* U1 — landscape notch: keep the gutter, but never less than the device inset. */
+  padding-left: max(var(--gutter), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--gutter), env(safe-area-inset-right, 0px));
 }
 .landing-root .nav-links { display: flex; gap: 28px; }
 .landing-root .nav-links a {
@@ -386,9 +399,35 @@
 :is(html.lp2-dark .landing-root, .landing-root[data-theme="dark"]) .theme-toggle .sun { display: block; }
 :is(html.lp2-dark .landing-root, .landing-root[data-theme="dark"]) .theme-toggle .moon { display: none; }
 
+/* WAVE-KORREKTUR-1 · U2 — DE · EN switcher placement: NAV on desktop, FOOTER on
+   mobile, switching at the same 860px breakpoint where the nav already drops its
+   links and the sign-in link.
+   Why not the mobile nav: at 320px the bar already carries the lockup, the theme
+   toggle and the primary CTA and has no room to spare — that crowding is the
+   same edge U1 just cleared, and a third control there would re-create it. The
+   footer has a full-width row and no competition. Base styles: app/globals.css. */
+.landing-root .lang-toggle--nav { margin-right: 2px; }
+.landing-root .lang-toggle--footer { display: none; }
+
 @media (max-width: 860px) {
   .landing-root .nav-links { display: none; }
   .landing-root .nav-signin { display: none; }
+  .landing-root .lang-toggle--nav { display: none; }
+  .landing-root .lang-toggle--footer { display: inline-flex; }
+}
+
+/* WAVE-KORREKTUR-1 · U2 — found while checking the switcher against the 320px
+   design constraint, and fixed because the evidence would otherwise show a
+   collision this wave chose not to touch: at 320px the nav's lockup and the
+   "Start building" CTA overlapped (the CTA's `white-space: nowrap` text runs
+   past its own shrunken flex box and covers the wordmark). Nothing here moves
+   the switcher into the bar — it stays in the footer below 860px. */
+@media (max-width: 400px) {
+  .landing-root nav.lp-nav .container { gap: 10px; }
+  .landing-root nav.lp-nav .lockup { flex-shrink: 0; }
+  .landing-root nav.lp-nav .lockup .wordmark { font-size: 14px; letter-spacing: 0.10em; }
+  .landing-root nav.lp-nav .btn-primary { padding: 10px 12px; font-size: 12.5px; }
+  .landing-root nav.lp-nav .btn .arrow { display: none; }
 }
 
 /* =========================================================
@@ -397,6 +436,13 @@
 .landing-root .hero {
   position: relative;
   padding: var(--hero-pad-top, 168px) 32px var(--hero-pad-bot, 120px);
+  /* U1 — the hero clears a FIXED nav, so when the nav grows by the top inset the
+     hero's own top padding has to grow by the same amount or the headline slides
+     under the taller bar. This is not a second inset on the same edge: the nav
+     covers this strip, the hero content is never at the device edge. */
+  padding-top: calc(var(--hero-pad-top, 168px) + env(safe-area-inset-top, 0px));
+  padding-left: max(32px, env(safe-area-inset-left, 0px));
+  padding-right: max(32px, env(safe-area-inset-right, 0px));
   display: flex; flex-direction: column; align-items: center;
   text-align: center;
   overflow: hidden;
@@ -1172,6 +1218,13 @@
   background: var(--surface-deep);
   color: var(--ink-inverse);
   padding: 88px 32px 36px;
+  /* U1 — the landing footer is the last thing in the scroll, so in a standalone
+     PWA its bottom row sits in the home-indicator zone. Grow the footer's own
+     bottom padding by the inset (once); the deep footer background continues
+     into it, so the strip is never bare. Landscape L/R notch too. */
+  padding-bottom: calc(36px + env(safe-area-inset-bottom, 0px));
+  padding-left: max(32px, env(safe-area-inset-left, 0px));
+  padding-right: max(32px, env(safe-area-inset-right, 0px));
   border-top: 1px solid var(--line);
 }
 .landing-root .footer-grid {

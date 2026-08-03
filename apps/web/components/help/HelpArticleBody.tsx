@@ -8,10 +8,13 @@
 
 import Link from 'next/link';
 import type { HelpArticle } from '@goblin/shared/src/help-content';
-import { useLang, t, type Lang } from '@/lib/use-lang';
+// WAVE-KORREKTUR-1 · U2: rendered by the PUBLIC /help/[slug] route — same
+// repointing as the /help index.
+import { t, type Lang } from '@/lib/use-lang';
+import { useAuthLang } from '@/lib/use-auth-lang';
 
 export function HelpArticleBody({ article }: { article: HelpArticle }) {
-  const lang: Lang = useLang();
+  const lang: Lang = useAuthLang();
   return (
     <article style={{ maxWidth: 720, margin: '0 auto' }}>
       <Link

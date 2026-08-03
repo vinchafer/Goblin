@@ -55,7 +55,13 @@ export default async function SharedChatPage({ params }: SharedPageProps) {
         minHeight: '100vh',
         background: 'var(--paper)',
         fontFamily: 'var(--font-sans)',
+        // WAVE-KORREKTUR-1 · U1: a public share link is the most likely thing a
+        // signed-out visitor opens in the installed PWA. Absorb the inset once.
         padding: '32px 16px 64px',
+        paddingTop: 'max(32px, calc(env(safe-area-inset-top, 0px) + 12px))',
+        paddingBottom: 'calc(64px + env(safe-area-inset-bottom, 0px))',
+        paddingLeft: 'max(16px, env(safe-area-inset-left, 0px))',
+        paddingRight: 'max(16px, env(safe-area-inset-right, 0px))',
       }}
     >
       <div style={{ maxWidth: 720, margin: '0 auto' }}>

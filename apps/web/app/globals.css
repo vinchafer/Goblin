@@ -197,6 +197,53 @@ body {
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
 .safe-top    { padding-top:    env(safe-area-inset-top,    0px); }
 
+/* WAVE-KORREKTUR-1 · U1 — the shared frame of the PUBLIC prose pages
+   (/about, /manifesto, /changelog). They used Tailwind's `py-16 px-4`, which an
+   inline inset style would have REPLACED rather than added to; this utility keeps
+   the 64px/16px design padding and adds the device inset on top, exactly once.
+   Same env() idiom as .safe-top/.safe-bottom above — no new mechanism. */
+.safe-prose-page {
+  padding-top:    calc(64px + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  padding-left:   max(16px, env(safe-area-inset-left, 0px));
+  padding-right:  max(16px, env(safe-area-inset-right, 0px));
+}
+
+/* WAVE-KORREKTUR-1 · U2 — the DE · EN switcher (components/i18n/LangToggle.tsx).
+   Deliberately quiet: two text buttons and a separator, no flags, no dropdown
+   chrome. Everything is `currentColor` + opacity so the one component inherits
+   the landing nav, the landing footer and the auth pages without a variant.
+   The ≤768px rule below gives each button a 44px touch target automatically. */
+.lang-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  color: inherit;
+}
+.lang-toggle__sep { opacity: 0.35; }
+.lang-toggle__opt {
+  background: none;
+  border: none;
+  padding: 6px 5px;
+  cursor: pointer;
+  font: inherit;
+  letter-spacing: inherit;
+  color: currentColor;
+  opacity: 0.45;
+  border-radius: 6px;
+  transition: opacity 0.15s ease;
+}
+.lang-toggle__opt:hover { opacity: 0.8; }
+/* The active side is the one thing this control has to say clearly. */
+.lang-toggle__opt[aria-pressed='true'],
+.lang-toggle__opt[aria-pressed='true']:hover { opacity: 1; }
+.lang-toggle__opt:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+
 /* ─── Mobile ─────────────────────────────────────────────── */
 @media (max-width: 768px) {
   button, [role="button"], a {
@@ -494,6 +541,15 @@ a[role="button"]:active {
   align-items: center;
   justify-content: center;
   padding: 24px 16px;
+  /* WAVE-KORREKTUR-1 · U1 — the shared shell of /auth/confirm and
+     /auth/reset-password. Both are full-screen public surfaces reachable from a
+     mail link inside the installed PWA, and neither was safe-area-treated. Same
+     idiom as the rest of the wave: the page's own padding absorbs the inset
+     exactly once, the --auth-bg background continues into it. */
+  padding-top: max(24px, calc(env(safe-area-inset-top, 0px) + 12px));
+  padding-bottom: max(24px, calc(env(safe-area-inset-bottom, 0px) + 12px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
 .auth-logo {
   font-family: var(--font-sans);

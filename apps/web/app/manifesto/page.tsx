@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function ManifestoPage() {
   return (
-    <main className="max-w-2xl mx-auto py-16 px-4">
+    <main className="max-w-2xl mx-auto safe-prose-page">
       <nav className="mb-8">
         <Link href="/" className="text-sm" style={{ color: "var(--brand-green)" }}>← Back</Link>
       </nav>

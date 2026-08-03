@@ -106,6 +106,107 @@ const inventoryTreated = [
 ];
 for (const [label, path, re] of inventoryTreated) check(`Inventory: ${label} treated`, re.test(read(path)));
 
+// ══════════════════════════════════════════════════════════════════════════════
+// WAVE-KORREKTUR-1 · U1 — THE PUBLIC HALF OF THE INVENTORY.
+//
+// Every safe-area wave so far (#41/#44/#54/#55 + FOUNDER-WALK-3 U2) swept the
+// SIGNED-IN app: shell, onboarding, settings, admin, legal, pricing. The PUBLIC
+// landing page — the first thing the installed PWA shows anyone who opens it
+// before signing in — was never in the inventory at all, so it shipped a bare
+// `position: fixed; top: 0` nav: the GOBLIN lockup on the iOS clock, "Start
+// building" on the wifi/battery icons (founder screenshot).
+//
+// The hole was not the landing alone, it was that the inventory only described
+// half the app. The list below therefore keys off middleware.ts's `isPublic`
+// allowlist — the repo's own definition of "reachable without a session" — so a
+// new public route cannot be added there and silently skip this gate.
+// ══════════════════════════════════════════════════════════════════════════════
+
+// (c) The public route allowlist itself — if middleware gains a public path, this
+//     count changes and the assert fails until the inventory is extended.
+const middleware = read('middleware.ts');
+const isPublicBlock = middleware.slice(
+  middleware.indexOf('const isPublic ='),
+  middleware.indexOf("pathname.startsWith('/api/')") + 30,
+);
+const publicPaths = [...isPublicBlock.matchAll(/pathname\s*(?:===\s*|\.startsWith\(\s*)'([^']+)'/g)].map(m => m[1]);
+check(`middleware isPublic allowlist enumerated (${publicPaths.length} paths)`, publicPaths.length === 23);
+for (const p of ['/', '/login', '/status', '/badge', '/help', '/about', '/models', '/shared/'])
+  check(`isPublic covers ${p}`, publicPaths.includes(p));
+
+// (d) The landing page — the P0 of this wave. CSS lives in styles/landing.css.
+const landing = read('styles/landing.css');
+check('Landing nav: padding-top = safe-area-inset-top',
+  /padding-top:\s*env\(safe-area-inset-top/.test(landing));
+check('Landing nav: height reserves the top inset (one background, one inset)',
+  /height:\s*calc\(64px \+ env\(safe-area-inset-top/.test(landing));
+check('Landing nav container: landscape L/R insets',
+  /padding-left:\s*max\(var\(--gutter\), env\(safe-area-inset-left/.test(landing) &&
+  /padding-right:\s*max\(var\(--gutter\), env\(safe-area-inset-right/.test(landing));
+check('Landing hero: top padding grows with the nav (no slide-under)',
+  /padding-top:\s*calc\(var\(--hero-pad-top, 168px\) \+ env\(safe-area-inset-top/.test(landing));
+check('Landing hero: landscape L/R insets',
+  /padding-left:\s*max\(32px, env\(safe-area-inset-left/.test(landing));
+check('Landing footer: bottom inset (home indicator)',
+  /padding-bottom:\s*calc\(36px \+ env\(safe-area-inset-bottom/.test(landing));
+check('Landing footer: landscape L/R insets',
+  /padding-right:\s*max\(32px, env\(safe-area-inset-right/.test(landing));
+// Double-inset guard (#44/#55 lesson): the inset must be reserved on the nav
+// EXACTLY once — one `padding-top: env(...)` and one `height: calc(... + env(...))`.
+const navBlock = landing.slice(landing.indexOf('nav.lp-nav {'), landing.indexOf('.landing-root nav.lp-nav .container'));
+check('Landing nav: top inset applied exactly once (no double-inset)',
+  (navBlock.match(/env\(safe-area-inset-top/g) || []).length === 2);
+
+// (e) The pre-auth surfaces a visitor reaches straight off the landing.
+const login = read('app/(auth)/login/page.tsx');
+check('/login form column: top inset',
+  /paddingTop:\s*['"]max\(40px, calc\(env\(safe-area-inset-top/.test(login));
+check('/login form column: bottom inset',
+  /paddingBottom:\s*['"]max\(40px, calc\(env\(safe-area-inset-bottom/.test(login));
+check('/login form column: landscape L/R insets',
+  /paddingLeft:\s*['"]max\(24px, env\(safe-area-inset-left/.test(login) &&
+  /paddingRight:\s*['"]max\(24px, env\(safe-area-inset-right/.test(login));
+check('/login brand panel (iPad landscape): L + T/B insets',
+  /paddingLeft:\s*['"]max\(56px, env\(safe-area-inset-left/.test(login));
+check('auth layout: viewportFit cover (precondition for the above)',
+  /viewportFit:\s*['"]cover['"]/.test(read('app/(auth)/layout.tsx')));
+check('/login/2fa: all four insets',
+  /paddingTop:\s*['"]max\(24px, env\(safe-area-inset-top/.test(read('app/(auth)/login/2fa/page.tsx')));
+
+const globals = read('app/globals.css');
+check('.auth-page (/auth/confirm + /auth/reset-password): top inset',
+  /padding-top:\s*max\(24px, calc\(env\(safe-area-inset-top/.test(globals));
+check('.auth-page: bottom inset',
+  /padding-bottom:\s*max\(24px, calc\(env\(safe-area-inset-bottom/.test(globals));
+check('.auth-page: landscape L/R insets',
+  /padding-left:\s*max\(16px, env\(safe-area-inset-left/.test(globals));
+check('.safe-prose-page utility exists (adds to the design padding, never replaces)',
+  /\.safe-prose-page\s*\{[\s\S]*?padding-top:\s*calc\(64px \+ env\(safe-area-inset-top/.test(globals));
+
+// (f) The remaining public full-screen routes.
+const publicSurfaces = [
+  ['/status green top bar', 'app/status/page.tsx', /height:\s*['"]calc\(52px \+ env\(safe-area-inset-top/],
+  ['/badge green top bar', 'app/badge/page.tsx', /height:\s*['"]calc\(52px \+ env\(safe-area-inset-top/],
+  ['/models index', 'app/models/page.tsx', /paddingTop:\s*['"]max\(32px, calc\(env\(safe-area-inset-top/],
+  ['/models/[id]', 'app/models/[id]/page.tsx', /paddingTop:\s*['"]max\(32px, calc\(env\(safe-area-inset-top/],
+  ['/help index', 'app/help/page.tsx', /paddingTop:\s*['"]max\(32px, calc\(env\(safe-area-inset-top/],
+  ['/help/[slug]', 'app/help/[slug]/page.tsx', /paddingTop:\s*['"]max\(28px, calc\(env\(safe-area-inset-top/],
+  ['/shared/[token]', 'app/shared/[token]/page.tsx', /paddingTop:\s*['"]max\(32px, calc\(env\(safe-area-inset-top/],
+  ['/cancel-deletion', 'app/cancel-deletion/page.tsx', /paddingTop:\s*['"]max\(24px, env\(safe-area-inset-top/],
+  ['/deletion-pending', 'app/deletion-pending/page.tsx', /paddingTop:\s*['"]max\(24px, env\(safe-area-inset-top/],
+  ['404 (not-found)', 'app/not-found.tsx', /paddingTop:\s*['"]max\(24px, env\(safe-area-inset-top/],
+  ['500 (error)', 'app/error.tsx', /paddingTop:\s*['"]max\(24px, env\(safe-area-inset-top/],
+];
+for (const [label, path, re] of publicSurfaces) check(`Public inventory: ${label} treated`, re.test(read(path)));
+
+// The three prose pages must USE the utility (and must not have silently
+// regressed back to Tailwind's py-16, which would drop the inset).
+for (const p of ['app/about/page.tsx', 'app/manifesto/page.tsx', 'app/changelog/page.tsx']) {
+  const src = read(p);
+  check(`Public inventory: ${p} uses .safe-prose-page`,
+    /className="max-w-2xl mx-auto safe-prose-page"/.test(src) && !/py-16/.test(src));
+}
+
 // ── report ──
 console.log('\nSAFEAREA-U1 — swept-surface assertions\n' + '─'.repeat(52));
 for (const r of results) console.log(`${r.ok ? '  PASS' : '  FAIL'}  ${r.label}`);

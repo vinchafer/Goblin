@@ -5,11 +5,15 @@ import Link from 'next/link';
 import { SupportChat } from '@/components/support/support-chat';
 import { FeedbackModal } from '@/components/feedback/FeedbackModal';
 import { HELP_ARTICLES } from '@goblin/shared/src/help-content';
-import { useLang, t, type Lang } from '@/lib/use-lang';
+// WAVE-KORREKTUR-1 · U2: /help is PUBLIC (middleware.ts isPublic) and was bound
+// to the APP locale hook, default 'de' — German help for a clean English
+// visitor. Bound to the public/pre-auth binding now.
+import { t, type Lang } from '@/lib/use-lang';
+import { useAuthLang } from '@/lib/use-auth-lang';
 import { emitEvent } from '@/lib/api';
 
 export default function HelpPage() {
-  const lang = useLang();
+  const lang = useAuthLang();
   const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   // I1 funnel: help_opened — a user reached the help/support surface (a friction
@@ -19,7 +23,15 @@ export default function HelpPage() {
   }, []);
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--surface-page)', padding: '32px 20px 80px' }}>
+    // WAVE-KORREKTUR-1 · U1: /help is public (no auth guard) and full-screen; its
+    // 32px top padding is under a typical iOS inset. Absorb it here, once.
+    <div style={{
+      minHeight: '100dvh', background: 'var(--surface-page)', padding: '32px 20px 80px',
+      paddingTop: 'max(32px, calc(env(safe-area-inset-top, 0px) + 12px))',
+      paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))',
+      paddingLeft: 'max(20px, env(safe-area-inset-left, 0px))',
+      paddingRight: 'max(20px, env(safe-area-inset-right, 0px))',
+    }}>
       <div style={{ maxWidth: 720, margin: '0 auto' }}>
         <Link href="/dashboard" style={{
           display: 'inline-flex', alignItems: 'center', gap: 6,

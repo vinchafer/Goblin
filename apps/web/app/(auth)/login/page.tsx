@@ -12,6 +12,7 @@ import { t, type Lang } from '@/lib/use-lang';
 // rendered German to a clean English visitor. It is now the shared pre-auth
 // locale source. See lib/use-auth-lang.ts.
 import { useAuthLang } from '@/lib/use-auth-lang';
+import { LangToggle } from '@/components/i18n/LangToggle';
 import { PENDING_PROMO_KEY } from '@/lib/promo-redeem';
 
 export const dynamic = 'force-dynamic';
@@ -363,6 +364,11 @@ export default function LoginPage() {
           background: 'linear-gradient(135deg, var(--green-800) 0%, var(--brand-green) 100%)',
           color: '#fff',
           padding: '48px 56px',
+          // WAVE-KORREKTUR-1 · U1: on a landscape iPad PWA this panel touches the
+          // notch edge — keep the 48/56 design padding, never less than the inset.
+          paddingTop: 'max(48px, env(safe-area-inset-top, 0px))',
+          paddingBottom: 'max(48px, env(safe-area-inset-bottom, 0px))',
+          paddingLeft: 'max(56px, env(safe-area-inset-left, 0px))',
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
@@ -439,11 +445,31 @@ export default function LoginPage() {
       </div>
 
       {/* RIGHT — Form panel */}
+      {/* WAVE-KORREKTUR-1 · U1 — /login (and /signup, which redirects here as
+          ?mode=signup) is a full-screen PUBLIC surface: in the installed PWA it is
+          where a signed-out visitor lands straight off the landing page. It was
+          never safe-area-treated, so on mobile — where the brand panel is hidden
+          and this column IS the page — the mobile logo sat under the status bar.
+          The page background (--paper, from the grid parent) continues into the
+          inset; this column absorbs it exactly once. */}
       <div style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
         padding: '40px 24px', minHeight: '100dvh',
+        paddingTop: 'max(40px, calc(env(safe-area-inset-top, 0px) + 16px))',
+        paddingBottom: 'max(40px, calc(env(safe-area-inset-bottom, 0px) + 16px))',
+        paddingLeft: 'max(24px, env(safe-area-inset-left, 0px))',
+        paddingRight: 'max(24px, env(safe-area-inset-right, 0px))',
       }}>
         <div style={{ width: '100%', maxWidth: 380 }}>
+
+          {/* WAVE-KORREKTUR-1 · U2 — the DE · EN switcher, on the surface where it
+              pays off instantly: this page is fully bilingual, so a press
+              re-renders it in the chosen language with no reload. In the document
+              flow (never absolute), so it inherits the column's safe-area top
+              inset from U1 and cannot collide at 320px. */}
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8, color: 'var(--meta)' }}>
+            <LangToggle />
+          </div>
 
           {/* Mobile logo */}
           <Link

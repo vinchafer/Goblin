@@ -22,7 +22,15 @@ export default function HelpArticlePage() {
   if (!article) return notFound();
 
   return (
-    <div style={{ minHeight: '100dvh', background: 'var(--surface-page)', padding: '28px 20px 80px' }}>
+    // WAVE-KORREKTUR-1 · U1: same treatment as the /help index — public,
+    // full-screen, top padding under a typical iOS inset.
+    <div style={{
+      minHeight: '100dvh', background: 'var(--surface-page)', padding: '28px 20px 80px',
+      paddingTop: 'max(28px, calc(env(safe-area-inset-top, 0px) + 12px))',
+      paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))',
+      paddingLeft: 'max(20px, env(safe-area-inset-left, 0px))',
+      paddingRight: 'max(20px, env(safe-area-inset-right, 0px))',
+    }}>
       <HelpArticleBody article={article} />
     </div>
   );
