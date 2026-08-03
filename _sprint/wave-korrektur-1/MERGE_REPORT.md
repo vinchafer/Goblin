@@ -1,7 +1,9 @@
 # WAVE-KORREKTUR-1 — Landing-Safe-Area (PWA) · Sprach-Propagierung + DE/EN-Umschalter
 
 **Branch** `claude/landing-safe-area-i18n-7o7rcx`, forked fresh from `origin/master` `d45c8d7`.
-**Status: PR + HALT.** Nothing merged — the merge is the founder's.
+**Status: MERGED.** PR #68, merged into `master` with `--no-ff` after an explicit
+grant from the founder + Steven. The branch head at merge time was `371908e`,
+with CI, E2E Tests and the Vercel deployment all green on that SHA.
 
 | Unit | Commit | Subject |
 |---|---|---|
@@ -315,4 +317,5 @@ cost — `docs/GOBLIN_CONSUMPTION_LEDGER.md` needs no new M-line.
 - **D3** F1 `/signup` — add a redirect to `/register`, or drop the middleware
   entry?
 
-**PR opened. HALT — the merge is yours.**
+**Merged (PR #68, `--no-ff`, founder-granted). HALT — the device walk above is
+the remaining gate, and it is yours.**
