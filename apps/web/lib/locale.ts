@@ -16,9 +16,26 @@
  *                         Applies to app + pre-auth surfaces.
  *   3. DETECTION        — the browser's own languages (navigator.languages →
  *                         Accept-Language). de* → 'de', en* → 'en', else skip.
+ *                         PUBLIC / PRE-AUTH SURFACES ONLY — see below.
  *   4. SURFACE DEFAULT  — 'en' for public/pre-auth surfaces (the visitor came
  *                         from the English marketing landing), 'de' for
  *                         signed-in app surfaces (by then Step 0 is answered).
+ *
+ * WHY DETECTION IS PUBLIC-ONLY (regression fix, master `e8c82bc`).
+ * The first cut applied detection to BOTH bindings, and that broke the signed-in
+ * app: 14 @auth E2E tests went red on master because a session with no stored
+ * `goblin:preferred-lang` on an en-US browser started rendering "Models" where
+ * `SettingsRoot.tsx:86` had always rendered "Modelle". It was not only a test
+ * failure — any live account without that key would have had its German UI
+ * silently flipped to English by its browser locale.
+ *
+ * The rule that makes this correct rather than merely green: detection answers
+ * "we have never met, what should I guess?", which is exactly the anonymous
+ * visitor's situation and never an established account's. A signed-in user has
+ * either answered Step 0 (precedence 2 already wins) or is a key-less legacy
+ * account whose UI has always been German — and the browser's locale is not a
+ * reason to change it out from under them. So the app binding goes straight from
+ * the stored preference to its German default, exactly as it did before this wave.
  *
  * WHY THE EXPLICIT CHOICE NEEDS ITS OWN KEY.
  * `goblin:preferred-lang` already carries a different meaning: "the answer this
@@ -84,21 +101,30 @@ export function detectLang(): Lang | null {
 }
 
 /**
- * The precedence, applied. `fallback` is the surface default (step 4);
- * `usePreference: false` opts a surface out of step 2 — used by surfaces that
- * must not inherit an account-scoped answer the visitor never gave here.
+ * The precedence, applied. `fallback` is the surface default (step 4).
+ *
+ * `usePreference: false` opts a surface out of step 2 — for surfaces that must
+ * not inherit an account-scoped answer the visitor never gave here.
+ * `useDetection: false` opts a surface out of step 3 — for the signed-in app,
+ * whose language is the account's answer and not the browser's guess (see the
+ * regression note in this file's header).
  */
 export function resolveLang({
   fallback,
   usePreference = true,
-}: { fallback: Lang; usePreference?: boolean }): Lang {
+  useDetection = true,
+}: { fallback: Lang; usePreference?: boolean; useDetection?: boolean }): Lang {
   const choice = readStoredLang(LANG_CHOICE_KEY);
   if (choice) return choice;                                     // 1
   if (usePreference) {
     const pref = readStoredLang(LANG_PREF_KEY);
     if (pref) return pref;                                       // 2
   }
-  return detectLang() ?? fallback;                               // 3 → 4
+  if (useDetection) {
+    const detected = detectLang();
+    if (detected) return detected;                               // 3
+  }
+  return fallback;                                               // 4
 }
 
 /**

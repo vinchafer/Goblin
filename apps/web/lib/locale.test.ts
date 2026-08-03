@@ -121,7 +121,7 @@ describe('precedence 2 — the stored onboarding preference', () => {
   });
 });
 
-describe('precedence 3 — browser detection', () => {
+describe('precedence 3 — browser detection (PUBLIC / pre-auth surfaces only)', () => {
   it('reads the first shipped language out of navigator.languages', () => {
     withEnv({ languages: ['fr-FR', 'de-CH', 'en-US'] });
     expect(detectLang()).toBe('de');
@@ -144,6 +144,27 @@ describe('precedence 3 — browser detection', () => {
   it('survives a browser with no navigator at all', () => {
     withEnv({ languages: null });
     expect(detectLang()).toBeNull();
+  });
+
+  /**
+   * U3 REGRESSION GUARD — the defect that turned master red at `e8c82bc`.
+   *
+   * Detection applied to the signed-in app binding meant a session with no
+   * stored preference on an en-US browser rendered the app in English. 14 @auth
+   * E2E tests caught it; a key-less live account would have been flipped just as
+   * silently. `useDetection: false` is the opt-out, and it must keep working.
+   */
+  it('useDetection: false skips step 3 entirely and lands on the surface default', () => {
+    withEnv({ languages: ['en-US', 'en'] });
+    expect(resolveLang({ fallback: 'de' })).toBe('en');                        // public
+    expect(resolveLang({ fallback: 'de', useDetection: false })).toBe('de');   // app
+  });
+
+  it('the opt-out does NOT block an explicit choice or a stored preference', () => {
+    withEnv({ store: { [LANG_CHOICE_KEY]: 'en' }, languages: ['de-DE'] });
+    expect(resolveLang({ fallback: 'de', useDetection: false })).toBe('en');
+    withEnv({ store: { [LANG_PREF_KEY]: 'en' }, languages: ['de-DE'] });
+    expect(resolveLang({ fallback: 'de', useDetection: false })).toBe('en');
   });
 });
 
@@ -245,6 +266,18 @@ describe('every PUBLIC surface takes its locale from the public binding', () => 
 /** The precedence must be written down in exactly one place, and that place is
  *  lib/locale.ts. If a second module starts resolving on its own, this fails. */
 describe('one precedence, one place', () => {
+  // U3: the app binding must stay opted out of detection. A future edit that
+  // drops this flag reintroduces the exact regression that turned master red.
+  it('the APP binding opts out of browser detection', () => {
+    const src = readFileSync(join(__dirname, '..', 'lib/use-lang.ts'), 'utf8');
+    expect(src).toMatch(/useDetection:\s*false/);
+  });
+
+  it('the PUBLIC binding does NOT opt out — detection is the point there', () => {
+    const src = readFileSync(join(__dirname, '..', 'lib/use-auth-lang.ts'), 'utf8');
+    expect(src).not.toMatch(/useDetection:\s*false/);
+  });
+
   it('both hooks delegate to lib/locale.ts rather than re-deriving', () => {
     for (const rel of ['lib/use-lang.ts', 'lib/use-auth-lang.ts']) {
       const src = readFileSync(join(__dirname, '..', rel), 'utf8');
