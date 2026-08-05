@@ -1,6 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+// FINAL-POLISH · U7.3: /models is PUBLIC (middleware.ts isPublic) and was written in
+// German only, so an English visitor evaluating the model rankings hit a German wall.
+// Bound to the public/pre-auth locale binding, the same one /help and the legal pages use.
+import { t as tr } from '@/lib/use-lang';
+import { useAuthLang } from '@/lib/use-auth-lang';
 import Link from 'next/link';
 import { getModelAccess, ACCESS_COLORS } from '@/lib/model-access';
 
@@ -24,15 +29,18 @@ interface RankingRow {
   };
 }
 
-const TASKS: Array<{ id: TaskType; label: string; description: string }> = [
-  { id: 'coding', label: 'Coding', description: 'Code-Generation, Debugging, Refactoring' },
-  { id: 'reasoning', label: 'Reasoning', description: 'Komplexe Logik, Mehrschritt-Aufgaben' },
-  { id: 'speed', label: 'Speed', description: 'Schnelle Antworten, niedrige Latenz' },
-  { id: 'cost-efficiency', label: 'Cost', description: 'Preis-Leistung pro Token' },
-  { id: 'general', label: 'General', description: 'Ausgewogen über alle Tasks' },
+// The pill labels are proper nouns of the benchmark world and stay as-is in both
+// languages; only the descriptions are prose.
+const TASKS: Array<{ id: TaskType; label: string; de: string; en: string }> = [
+  { id: 'coding', label: 'Coding', de: 'Code-Generation, Debugging, Refactoring', en: 'Code generation, debugging, refactoring' },
+  { id: 'reasoning', label: 'Reasoning', de: 'Komplexe Logik, Mehrschritt-Aufgaben', en: 'Complex logic, multi-step tasks' },
+  { id: 'speed', label: 'Speed', de: 'Schnelle Antworten, niedrige Latenz', en: 'Fast answers, low latency' },
+  { id: 'cost-efficiency', label: 'Cost', de: 'Preis-Leistung pro Token', en: 'Value per token' },
+  { id: 'general', label: 'General', de: 'Ausgewogen über alle Tasks', en: 'Balanced across all tasks' },
 ];
 
 export default function ModelsPage() {
+  const lang = useAuthLang();
   const [task, setTask] = useState<TaskType>('coding');
   const [rankings, setRankings] = useState<RankingRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -70,12 +78,14 @@ export default function ModelsPage() {
             marginBottom: 8,
           }}
         >
-          Modelle, geordnet nach echten Benchmarks.
+          {tr(lang, 'Modelle, geordnet nach echten Benchmarks.', 'Models, ranked by real benchmarks.')}
         </h1>
         <p style={{ fontSize: 'var(--t-body-fs)', color: 'var(--text-2)', marginBottom: 32, maxWidth: 720 }}>
-          Goblin aggregiert alle 6 Stunden Daten aus 5 öffentlichen Quellen (OpenRouter, Aider,
-          LiveBench, HuggingFace, SWE-Bench) und zeigt dir, welches LLM heute am besten für deinen
-          Task ist.
+          {tr(
+            lang,
+            'Goblin aggregiert alle 6 Stunden Daten aus 5 öffentlichen Quellen (OpenRouter, Aider, LiveBench, HuggingFace, SWE-Bench) und zeigt dir, welches LLM heute am besten für deinen Task ist.',
+            'Every 6 hours Goblin aggregates data from 5 public sources (OpenRouter, Aider, LiveBench, HuggingFace, SWE-Bench) and shows you which LLM is best for your task today.',
+          )}
         </p>
 
         <div
@@ -111,13 +121,15 @@ export default function ModelsPage() {
         </div>
 
         <p style={{ color: 'var(--text-meta)', fontSize: 'var(--t-small-fs)', marginBottom: 24 }}>
-          {TASKS.find((t) => t.id === task)?.description}
+          {(() => { const sel = TASKS.find((x) => x.id === task); return sel ? tr(lang, sel.de, sel.en) : null; })()}
         </p>
 
-        {loading && <p style={{ color: 'var(--text-meta)' }}>Lade Rankings...</p>}
-        {error && <p style={{ color: 'var(--rust)' }}>Fehler: {error}</p>}
+        {loading && <p style={{ color: 'var(--text-meta)' }}>{tr(lang, 'Lade Rankings …', 'Loading rankings …')}</p>}
+        {error && <p style={{ color: 'var(--rust)' }}>{tr(lang, 'Fehler', 'Error')}: {error}</p>}
         {!loading && !error && rankings.length === 0 && (
-          <p style={{ color: 'var(--text-meta)' }}>Noch keine Daten. Cron läuft alle 6h.</p>
+          <p style={{ color: 'var(--text-meta)' }}>
+            {tr(lang, 'Noch keine Daten. Die Aggregation läuft alle 6 Stunden.', 'No data yet. Aggregation runs every 6 hours.')}
+          </p>
         )}
 
         {!loading && rankings.length > 0 && (
