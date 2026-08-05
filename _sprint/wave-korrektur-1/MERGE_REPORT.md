@@ -386,10 +386,47 @@ Three of the new guards are static and aimed at exactly this defect: the app
 binding must carry `useDetection: false`, the public binding must not, and
 `readLang()` on an English browser with nothing stored must still return `'de'`.
 
-**The `@auth` suite still cannot be run from this container** (it needs the
-Supabase test account and crosses to production). U3's evidence that the app
-binding renders German is the unit + static guards, not a live `@auth` run — the
-first real `@auth` verification will be CI on master after this lands.
+**The `@auth` suite could not be run from this container** (it needs the Supabase
+test account and crosses to production). U3's pre-merge evidence that the app
+binding renders German was the unit + static guards, not a live `@auth` run — the
+first real `@auth` verification was CI on master after it landed. It landed, and
+it is recorded below.
 
-**HALT — this fix needs its own merge grant, and master is red until it lands.**
-The device walk above remains yours.
+## U3 outcome — merged, and the diagnosis confirmed
+
+**Status: MERGED and GREEN.** PR #69 merged into `master` with `--no-ff` as
+**`eaaa622`** after an explicit grant from the founder + Steven, conditional on
+two checks that were made first: production was confirmed serving the broken
+`e8c82bc` (`/api/version` → `gitCommit`), and the diff was confirmed minimal —
+which turned up a stray `apps/web/next-env.d.ts` build artefact, removed in
+`6a11058` before the merge.
+
+Master CI on `eaaa622`, at job-log level:
+
+| Check | Result |
+|---|---|
+| API unit tests (money guard armed) | ✅ success |
+| Typecheck & Build | ✅ success |
+| Bundle Size Check | ✅ success |
+| Sentry Release | ✅ success |
+| **e2e (all four projects)** | ✅ **169 passed, 1 flaky, 0 failed** of 170 |
+
+**`@auth` went green, and specifically the 14 that were red:**
+`26-settings-structure` 6/6 · `23-help-cleanup` 6/6 · `27-toggles` 4/4 ·
+`30-avatar-menu` 2/2 · `28-models-settings` 2/2 · `19-mobile-create-project` 2/2.
+That is the confirmation the pre-merge evidence could not supply: the diagnosis
+was right. The single flaky is `19-mobile-create-project` on `auth-mobile` —
+failed once, passed on retry, unrelated to locale and pre-existing.
+
+Production redeployed: `/api/version` → `gitCommit: eaaa622…`, `webReady: true`.
+
+**One honest limit on that green.** The e2e job finished at 02:57:18 and the
+production deploy of `eaaa622` could not be timestamped against it: `/api/version`
+computes `buildTime` with `new Date()` **at request time**
+(`app/api/version/route.ts:70`), so it is a clock reading, not a deploy time —
+`e8c82bc` reported a `buildTime` two hours after it merged. So the ordering of
+deploy versus test run is unproven; what is proven is that the 14 tests failed
+twice on the broken code and pass on the fixed code.
+
+**HALT.** The device walk in the founder-action list above remains the one
+outstanding gate, and it is yours.
