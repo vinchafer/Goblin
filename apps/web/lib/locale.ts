@@ -185,11 +185,14 @@ export function setLangChoice(next: Lang): void {
     /* blocked storage: the choice still applies for this page's lifetime */
   }
   // Deliberately NOT writing document.documentElement.lang here. The root layout
-  // hard-codes <html lang="en"> (app/layout.tsx:105) and the marketing landing is
-  // an English document whatever this choice is, so flipping the root attribute
-  // would mislabel that page. Making <html lang> track the surface's real
-  // language is a correct follow-up, but it belongs to the surface, not to this
-  // setter — reported as a finding rather than half-done here.
+  // hard-codes <html lang="en"> (app/layout.tsx) and the marketing landing is an
+  // English document whatever this choice is, so flipping the root attribute from
+  // this setter would mislabel that page.
+  //
+  // FINAL-POLISH · U7.2 closed the other half of that: the attribute now tracks the
+  // real language PER SURFACE via <AppHtmlLangSync /> (components/i18n/HtmlLangSync.tsx),
+  // mounted in the dashboard layout. It follows this event, because it reads a live
+  // hook — so the ownership stated here is unchanged: the surface sets it, not the setter.
   try {
     window.dispatchEvent(new CustomEvent(LANG_CHANGE_EVENT, { detail: next }));
   } catch {

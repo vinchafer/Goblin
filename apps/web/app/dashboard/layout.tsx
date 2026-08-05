@@ -9,6 +9,7 @@ import { DashboardShell } from "@/components/app-shell/dashboard-shell";
 import { filterVisibleProjects } from "@/lib/project-visibility";
 import { AdvancedModeProvider } from "@/components/ui/advanced-mode-provider";
 import SoftLimitBanner from "@/components/onboarding/SoftLimitBanner";
+import { AppHtmlLangSync } from "@/components/i18n/HtmlLangSync";
 import "../../styles/dashboard-tokens.css";
 
 // App route (B-S9): lock zoom on the dashboard so pinch-zoom can't break the
@@ -108,6 +109,10 @@ export default async function DashboardLayout({
     <div className={`gobl-dash ${manrope.variable} ${instrumentSerif.variable}`}>
       <AppProvider>
         <AdvancedModeProvider>
+          {/* U7.2: the root layout hard-codes <html lang="en"> for every route. Correct
+              for the English marketing landing, wrong for the signed-in app, which
+              renders German by default. Keep the attribute honest on THIS surface. */}
+          <AppHtmlLangSync />
           <SoftLimitBanner />
           <DashboardShell
             projects={filterVisibleProjects((projects as Project[]) || [])}
