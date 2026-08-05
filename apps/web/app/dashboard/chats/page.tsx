@@ -9,7 +9,7 @@ import { useLang } from '@/lib/use-lang';
 import { manageLabels } from '@/components/manage/labels';
 import { KebabMenu } from '@/components/manage/KebabMenu';
 import { ConfirmDialog, RenameDialog, MoveDialog } from '@/components/manage/ManageDialogs';
-import { GoblinLogo } from '@/components/brand/GoblinLogo';
+import { PageLoading } from '@/components/ui/PageLoading';
 
 interface Chat {
   id: string;
@@ -98,9 +98,7 @@ export default function ChatsOverviewPage() {
         </div>
 
         {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
-            <GoblinLogo state="thinking" size={32} variant="green" />
-          </div>
+          <PageLoading context="chats" />
         ) : chats.length === 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <p style={{ color: 'var(--text-faint)', fontStyle: 'italic', fontFamily: 'var(--font-sans)', fontSize: 'var(--t-small-fs)', margin: 0 }}>{L.noChats}</p>

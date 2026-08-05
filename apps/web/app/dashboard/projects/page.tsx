@@ -9,7 +9,7 @@ import { useLang } from '@/lib/use-lang';
 import { manageLabels } from '@/components/manage/labels';
 import { ProjectRowMenu } from '@/components/sidebar/ProjectRowMenu';
 import { ConfirmDialog } from '@/components/manage/ManageDialogs';
-import { GoblinLogo } from '@/components/brand/GoblinLogo';
+import { PageLoading } from '@/components/ui/PageLoading';
 
 interface Project {
   id: string;
@@ -103,9 +103,7 @@ export default function ProjectsOverviewPage() {
         </div>
 
         {loading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
-            <GoblinLogo state="thinking" size={32} variant="green" />
-          </div>
+          <PageLoading context="projects" />
         ) : projects.length === 0 ? (
           <p style={{ color: 'var(--text-faint)', fontStyle: 'italic', fontFamily: 'var(--font-sans)', fontSize: 'var(--t-small-fs)' }}>{L.noProjects}</p>
         ) : (

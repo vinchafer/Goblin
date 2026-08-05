@@ -1,27 +1,8 @@
-import { GoblinLogo } from '@/components/brand/GoblinLogo';
+// FINAL-POLISH · U4: the root route splash — now the shared PageLoading, so it is
+// pixel-identical to every other loading surface and nothing jumps mid-load. The copy
+// was also German-only here; PageLoading resolves DE·EN like the rest of the app.
+import { PageLoading } from '@/components/ui/PageLoading';
 
 export default function Loading() {
-  return (
-    <div style={{
-      minHeight: '100dvh',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 16,
-      background: 'var(--surface-page)',
-    }}>
-      <GoblinLogo state="breath" size={64} variant="green" />
-      <p style={{
-        fontFamily: 'var(--font-mono), JetBrains Mono, ui-monospace, monospace',
-        fontSize: 12.5,
-        textTransform: 'uppercase',
-        letterSpacing: '0.18em',
-        color: 'var(--ink-muted)',
-        margin: 0,
-      }}>
-        Workspace wird geladen
-      </p>
-    </div>
-  );
+  return <PageLoading context="workspace" fill="viewport" />;
 }

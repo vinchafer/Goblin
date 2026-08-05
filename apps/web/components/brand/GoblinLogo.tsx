@@ -27,7 +27,7 @@
 import * as React from "react";
 
 export type GoblinLogoState = "idle" | "thinking" | "working" | "breath";
-export type GoblinLogoVariant = "gold" | "ink" | "green" | "bone" | "white";
+export type GoblinLogoVariant = "gold" | "ink" | "green" | "brand" | "bone" | "white";
 
 export interface GoblinLogoProps {
   state?: GoblinLogoState;
@@ -41,7 +41,16 @@ export interface GoblinLogoProps {
 const VARIANT_COLOR: Record<GoblinLogoVariant, string> = {
   gold:  "var(--brand-gold)",
   ink:   "var(--ink-deep)",
+  // `green` is the LOCKED brand anchor (#1A3A2A). It never flips, so it is only
+  // correct on a surface that is itself light in both themes.
   green: "var(--brand-green)",
+  // FINAL-POLISH · U4 — the flip-aware twin, and the right choice for a mark drawn
+  // ON a themed surface. Caught by actually rendering the loading screen in dark:
+  // the mark was dark-green on the dark-green page surface, i.e. all but invisible.
+  // That is precisely the defect design-tokens.css warns about at --brand-fg
+  // ("use --brand-fg wherever brand green was a FOREGROUND; keep --brand-green for
+  // fills") — brand green in light, sage in dark.
+  brand: "var(--brand-fg)",
   bone:  "var(--bone)",
   white: "#FFFFFF",
 };
