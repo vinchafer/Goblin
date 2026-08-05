@@ -204,10 +204,33 @@ origin-safe `loginAsTestCallback` when the flag is compiled in, so **all 20 `@au
 files are fixed without editing one of them**; and `assertOnCheckout()` on **both** login
 paths turns a silent crossover into a loud, self-explaining failure.
 
-**GATE NOT MET — stated plainly.** The falsification the wave asks for (break app code →
-`@auth` goes red on the PR) requires a CI run with the repository secrets. This sandbox
-has neither, so **I have not proven the suite now sees the checkout.** The mechanism is
-argued and the assertion is written; the proof is outstanding. See the founder-action list.
+**GATE MET — falsified on the PR.** Run through CI on this branch:
+
+| Run | Head | Result |
+|---|---|---|
+| **394** | `2a7c4e3` — probe v2 (Settings 'Modelle' label broken) | **failure — 5 failed, ALL `@auth`** |
+| **395** | `de08f2a` — probe reverted | green (see below) |
+
+Run 394's failures are exactly the intended ones: `26-settings-structure` on **both**
+`auth-desktop` and `auth-mobile`, failing on `settings.getByText('Modelle', { exact: true })`;
+`28-models-settings`; and `30-avatar-menu` as collateral (it opens the same surface). **All
+140 `@public` tests kept passing**, because the break was on a signed-in surface only.
+
+Why that is proof rather than just a red test: **production still renders 'Modelle'.** If
+`@auth` were still crossing over to the deployed app at login, every one of those
+assertions would have passed. They went red — so the suite is reading the checkout.
+
+**A false positive worth recording.** Probe **v1** (run 393) came back **green**, and that
+green meant nothing: it changed `SettingsRoot`'s page-TITLE map rather than the rendered
+row label, so the assertion never saw it (`sections.ts` documents that the labels live in
+two places; v1 touched a third). A green from a probe that *cannot* fail is not evidence,
+and it would have been easy to bank as one.
+
+**A second correction, about my own process.** Run 392 (the first run of this branch) was
+**cancelled by me** on a wrong call: the API kept reporting the job in progress long after
+it had finished, I read ~35 minutes against a 5-minute baseline as a hang, and cancelled.
+The log shows it had in fact reached 169 passed / 1 failed, and that one failure passed on
+retry. Nothing was wrong; I stopped a healthy run.
 
 **Founder dashboard step required: none.** Option B was chosen precisely because it leaves
 the production Supabase project untouched.
@@ -277,9 +300,11 @@ reconciliation protocol.
 
 ## Honest-Limitations (mandatory)
 
-1. **U6's gate is NOT met.** No CI run, no falsification. The `@auth` suite may now see the
-   checkout; I have not shown that it does. This is the one unit whose headline claim is
-   unproven, and it should be read as such.
+1. **U6's gate is now MET, but read what it does and does not say.** The falsification
+   shows the `@auth` suite reacts to a change in THIS checkout that production does not
+   have. It does not prove every `@auth` assertion is meaningful, nor that no other test
+   still reaches production for some other reason. It proves the login-step crossover —
+   the specific gap the spec documented — is closed.
 2. **No production, no device, no walk.** Secretless sandbox. Every gate is a deterministic
    test, a source assertion, or a locally rendered component. The founder's felt walks
    (phone lock → return; the two proofs) remain the real evidence.
@@ -325,7 +350,10 @@ reconciliation protocol.
   watching the test go red; U2's structural assertions were hand-falsified; U4's dark-mode
   bug was found by opening the render, not by reasoning about it.
 - **U3, U8** — yes for "the code says so", no for "it was walked". Stated that way above.
-- **U6** — **no**, and I do not claim it. The gate is the falsification, and it is not run.
+- **U6** — yes, now. The falsification ran, red on exactly the `@auth` assertions the break
+  targets and green on all 140 `@public` ones. The honest footnote is that my FIRST probe
+  was a dud that came back green, and I only caught it by checking which file actually
+  renders the label.
 
 ---
 
@@ -340,9 +368,9 @@ reconciliation protocol.
 3. **Confirm migrations `0091` + `0092` are applied** (Supabase SQL editor). Still
    outstanding from F-40. **Without `0092` the agent re-attach is silently never offered**,
    which blunts half of U1.
-4. **U6's falsification — needs your CI.** Once the PR is open: push one deliberate
-   breaking change to app code, confirm an `@auth` test goes **red** on the PR, then revert.
-   That is the gate I could not run. No Supabase dashboard step is needed.
+4. **U6 needs nothing from you.** The falsification ran on the PR (run 394 red on 5 `@auth`
+   tests, run 395 green after the revert). No Supabase dashboard step is required — Option B
+   leaves the production project untouched.
 5. **When you have time: the two proofs** — `_sprint/final-polish/FOUNDER_PROOFS.md`.
    E4 needs a Vercel token; B3 needs the full-stack switch (step 2 of that doc tells you in
    two seconds whether it is on).
