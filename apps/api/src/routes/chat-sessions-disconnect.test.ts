@@ -155,8 +155,8 @@ describe('U1 — a chat turn survives the phone locking', () => {
 
     // The run continued server-side and the answer was persisted in full.
     await waitFor(() => captured.assistantInserts.length === 1);
-    expect(captured.assistantInserts[0].content).toBe('Klar, ich baue dir das.');
-    expect(captured.assistantInserts[0].session_id).toBe('sess-1');
+    expect(captured.assistantInserts[0]?.content).toBe('Klar, ich baue dir das.');
+    expect(captured.assistantInserts[0]?.session_id).toBe('sess-1');
 
     // The disconnect must NOT have reached the upstream generator. This is the
     // assertion that fails on the pre-fix code, where the request signal was wired
@@ -178,7 +178,7 @@ describe('U1 — a chat turn survives the phone locking', () => {
     expect(body).toContain('ich baue dir das.');
     expect(body).toContain('"messageId":"asst-1"');
     expect(captured.assistantInserts).toHaveLength(1);
-    expect(captured.assistantInserts[0].content).toBe('Klar, ich baue dir das.');
+    expect(captured.assistantInserts[0]?.content).toBe('Klar, ich baue dir das.');
   });
 
   it('bounds an abandoned turn instead of letting it run forever', () => {
