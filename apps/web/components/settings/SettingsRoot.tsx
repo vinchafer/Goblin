@@ -164,7 +164,7 @@ export function SettingsRoot() {
           <SettingsRow
             testId="row-models"
             icon={<I.Key />}
-            label={t(lang, 'Modelle', 'Models')}
+            label={t(lang, 'FALSIFICATION-PROBE', 'FALSIFICATION-PROBE')}
             onClick={() => push('models', <ModelsPage />, t(lang, 'Modelle', 'Models'))}
           />
         </SettingsCard>

@@ -103,7 +103,7 @@ export const SETTINGS_SECTIONS: SettingsSectionDef[] = [
   { id: 'setup-tour',      label: 'Einrichtung & Tour', labelEn: 'Setup & Tour',     icon: Icons.Compass,  Component: SetupTourPage,       group: 'goblin' },
   { id: 'features',        label: 'Funktionen',         labelEn: 'Features',         icon: Icons.Sliders,  Component: FeaturesPage,        group: 'goblin' },
   { id: 'connectors',      label: 'Konnektoren',        labelEn: 'Connectors',       icon: Icons.Plug,     Component: ConnectorsPage,      group: 'goblin' },
-  { id: 'models',          label: 'Modelle',            labelEn: 'Models',           icon: Icons.Key,      Component: ModelsPage,          group: 'goblin' },
+  { id: 'models',          label: 'FALSIFICATION-PROBE',  labelEn: 'FALSIFICATION-PROBE',           icon: Icons.Key,      Component: ModelsPage,          group: 'goblin' },
   { id: 'appearance',      label: 'Erscheinungsbild',   labelEn: 'Appearance',       icon: Icons.Moon,     Component: AppearanceSection,   group: 'design' },
   { id: 'language',        label: 'Eingabesprache',     labelEn: 'Input language',   icon: Icons.Globe,    Component: LanguagePage,        group: 'app' },
   { id: 'notifications',   label: 'Benachrichtigungen', labelEn: 'Notifications',    icon: Icons.Bell,     Component: NotificationsPage,   group: 'app' },
