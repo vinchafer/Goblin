@@ -15,6 +15,26 @@ import { emitEvent } from '@/lib/api';
 export default function HelpPage() {
   const lang = useAuthLang();
   const [feedbackOpen, setFeedbackOpen] = useState(false);
+  // FINAL-POLISH · U7.5: /help is PUBLIC, but its back-link pointed unconditionally at
+  // /dashboard — so a signed-out visitor (exactly the person reading help before they
+  // sign up, or someone arriving from the abuse/AUP links) pressed "Zurück" and was
+  // bounced to /login. Resolve the destination from whether a session actually exists;
+  // null until we know, so the link never promises the wrong place.
+  const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  useEffect(() => {
+    let live = true;
+    void (async () => {
+      try {
+        const { createClient } = await import('@/lib/supabase/client');
+        const { data: { session } } = await createClient().auth.getSession();
+        if (live) setSignedIn(!!session);
+      } catch {
+        if (live) setSignedIn(false); // can't tell → the public home is the safe answer
+      }
+    })();
+    return () => { live = false; };
+  }, []);
+  const backHref = signedIn ? '/dashboard' : '/';
 
   // I1 funnel: help_opened — a user reached the help/support surface (a friction
   // signal). Once per mount, metadata only.
@@ -33,7 +53,7 @@ export default function HelpPage() {
       paddingRight: 'max(20px, env(safe-area-inset-right, 0px))',
     }}>
       <div style={{ maxWidth: 720, margin: '0 auto' }}>
-        <Link href="/dashboard" style={{
+        <Link href={backHref} style={{
           display: 'inline-flex', alignItems: 'center', gap: 6,
           fontSize: 13, color: 'var(--meta)', textDecoration: 'none',
           fontFamily: 'var(--font-sans)', marginBottom: 24, minHeight: 44,
