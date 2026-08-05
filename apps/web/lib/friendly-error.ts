@@ -59,10 +59,33 @@ export function friendlyError(raw: unknown, fallback?: string): string {
 // server not answering (network fine, health ping fails). Reused by project
 // creation and chat sends.
 
-export const OFFLINE_MSG =
-  'Deine Internetverbindung ist unterbrochen — bitte prüfe dein Netzwerk und versuch es erneut.';
-export const SERVER_DOWN_MSG =
-  'Unser Server antwortet gerade nicht. Deine Eingabe ist nicht verloren — bitte versuch es gleich nochmal.';
+// D-4 honesty + i18n: these three lines were German-only while the rest of this file
+// was already bilingual, so an EN user hit a German wall on exactly the failure where
+// clarity matters most. Each now resolves through the same readLang() source of truth.
+const OFFLINE = {
+  de: 'Deine Internetverbindung ist unterbrochen — bitte prüfe dein Netzwerk und versuch es erneut.',
+  en: 'Your internet connection is down — please check your network and try again.',
+};
+const SERVER_DOWN = {
+  de: 'Unser Server antwortet gerade nicht. Deine Eingabe ist nicht verloren — bitte versuch es gleich nochmal.',
+  en: "Our server isn't responding right now. Your input is not lost — please try again in a moment.",
+};
+const BLIPPED = {
+  de: 'Die Verbindung hat kurz gehakt — bitte versuch es erneut.',
+  en: 'The connection hiccuped — please try again.',
+};
+
+/** @deprecated Prefer `offlineMessage()`; kept so existing German call sites keep working. */
+export const OFFLINE_MSG = OFFLINE.de;
+/** @deprecated Prefer `serverDownMessage()`; kept so existing German call sites keep working. */
+export const SERVER_DOWN_MSG = SERVER_DOWN.de;
+
+export function offlineMessage(): string {
+  return readLang() === 'en' ? OFFLINE.en : OFFLINE.de;
+}
+export function serverDownMessage(): string {
+  return readLang() === 'en' ? SERVER_DOWN.en : SERVER_DOWN.de;
+}
 
 /** Is this error a connection-class failure (as opposed to an app error)? */
 export function isConnectionError(raw: unknown): boolean {
@@ -76,16 +99,17 @@ export function isConnectionError(raw: unknown): boolean {
  * down" and (ping ok ⇒ transient blip) "try again".
  */
 export async function connectionErrorMessage(): Promise<string> {
-  if (typeof navigator !== 'undefined' && navigator.onLine === false) return OFFLINE_MSG;
+  const lang = readLang();
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) return offlineMessage();
   try {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
     const res = await fetch(`${apiUrl}/health`, { signal: AbortSignal.timeout(3000), cache: 'no-store' });
-    if (res.ok) return 'Die Verbindung hat kurz gehakt — bitte versuch es erneut.';
-    return SERVER_DOWN_MSG;
+    if (res.ok) return lang === 'en' ? BLIPPED.en : BLIPPED.de;
+    return serverDownMessage();
   } catch {
     // Health ping also failed: without onLine=false we can't be sure whose
     // side it is — server-down copy is the honest default (their network
     // reached us for the page itself).
-    return SERVER_DOWN_MSG;
+    return serverDownMessage();
   }
 }

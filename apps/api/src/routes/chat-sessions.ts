@@ -16,6 +16,20 @@ type Variables = { userId: string };
 const chatSessions = new Hono<{ Variables: Variables }>();
 chatSessions.use('*', authMiddleware);
 
+/**
+ * FINAL-POLISH · U1 — the abandoned-turn backstop for the standalone chat.
+ *
+ * A client disconnect no longer aborts the upstream model stream (that discarded answers
+ * the user had already paid for — the phone-lock defect). Something must still bound a
+ * turn whose reader has gone away, so this guard does what `AGENT_MAX_RUNTIME_MS` does for
+ * agent runs. Two minutes is far above a normal chat turn and far below "runs forever".
+ * Mirrors `agentMaxRuntimeMs()` in shape so both knobs read the same way.
+ */
+export function chatMaxRuntimeMs(): number {
+  const raw = Number(process.env.CHAT_MAX_RUNTIME_MS);
+  return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 120_000;
+}
+
 // GET /api/chat-sessions — list user sessions
 chatSessions.get('/', async (c) => {
   const userId = c.get('userId');
@@ -244,14 +258,45 @@ chatSessions.post('/:id/stream', async (c) => {
     let currentModel = modelSlug ?? '';
     let currentSourceTier = '';
 
-    // WAVE-H · H3 (#15): tie the upstream model stream to the request lifecycle, and make
-    // the teardown symmetric. The listener is NAMED and removed in the finally below, and
-    // the controller is aborted on EVERY exit path (done, error, disconnect) so the upstream
-    // completion generator is always signalled to close — no server-side stream left open
-    // after the client has its `done`.
+    // WAVE-H · H3 (#15): the upstream model stream gets its own controller, and the
+    // teardown is symmetric — the controller is aborted on EVERY exit path (done, error,
+    // guard) so the upstream completion generator is always signalled to close and no
+    // server-side stream is left open after the client has its `done`.
+    //
+    // FINAL-POLISH · U1: a client disconnect no longer aborts that controller. Goblin is
+    // phone-first: an iPhone locks within a minute, iOS suspends the PWA, and the SSE
+    // socket drops. The old code aborted the model stream on `c.req.raw.signal` and broke
+    // out of the loop BEFORE the persistence branch below, so the answer the user had
+    // already paid for was discarded and the client showed a vague "try again". Now a
+    // disconnect only stops the WRITES (`clientGone`); the turn runs to completion and
+    // persists, so the answer is there when they come back. Same architecture as the F-40
+    // agent registry: a disconnect is not a stop.
     const abortController = new AbortController();
-    const onReqAbort = () => abortController.abort();
+    let clientGone = false;
+    const onReqAbort = () => { clientGone = true; };
     c.req.raw.signal.addEventListener('abort', onReqAbort);
+
+    // The backstop that replaces the disconnect-abort: an abandoned turn must still be
+    // bounded, or a dropped socket could leave an upstream generator running indefinitely.
+    const guard = setTimeout(() => {
+      if (!abortController.signal.aborted) abortController.abort();
+    }, chatMaxRuntimeMs());
+    guard.unref?.();
+
+    /**
+     * The one write path. Once the client is gone every write is skipped (writing to a
+     * closed SSE stream throws, and that throw would land in the catch below and replace
+     * a perfectly good turn with an error frame). A failed write means the socket died
+     * without the abort event — treat it exactly like a disconnect.
+     */
+    const send = async (payload: unknown): Promise<void> => {
+      if (clientGone) return;
+      try {
+        await stream.writeSSE({ data: JSON.stringify(payload) });
+      } catch {
+        clientGone = true;
+      }
+    };
 
     // F-43 — search-augmented generation (same real search path as the project
     // chat). When the "Websuche" toggle is ON, run one live search and inject the
@@ -260,15 +305,13 @@ chatSessions.post('/:id/stream', async (c) => {
     if (wantsWebSearch) {
       try {
         const outcome = await runChatWebSearch(userId, message, abortController.signal);
-        await stream.writeSSE({
-          data: JSON.stringify({
-            type: 'search',
-            query: outcome.query,
-            ran: outcome.ran,
-            results: outcome.results.length,
-            source: outcome.source ?? null,
-            reason: outcome.reason ?? null,
-          }),
+        await send({
+          type: 'search',
+          query: outcome.query,
+          ran: outcome.ran,
+          results: outcome.results.length,
+          source: outcome.source ?? null,
+          reason: outcome.reason ?? null,
         });
         if (outcome.contextBlock) {
           systemPrompt = `${outcome.contextBlock}\n\n${systemPrompt}`;
@@ -306,13 +349,13 @@ chatSessions.post('/:id/stream', async (c) => {
         if (parsed.type === 'meta') {
           currentModel = (parsed.model as string) || currentModel;
           currentSourceTier = (parsed.source_tier as string) || '';
-          await stream.writeSSE({ data: JSON.stringify(parsed) });
+          await send(parsed);
           continue;
         }
 
         if (parsed.type === 'delta') {
           fullResponse += (parsed.content as string) ?? '';
-          await stream.writeSSE({ data: JSON.stringify(parsed) });
+          await send(parsed);
           continue;
         }
 
@@ -340,28 +383,28 @@ chatSessions.post('/:id/stream', async (c) => {
               scheduleProjectStateUpdate({ supabase, userId, projectId, userMessage: message, assistantMessage: fullResponse });
             }
 
-            await stream.writeSSE({
-              data: JSON.stringify({
-                ...parsed,
-                messageId: savedMsg?.id,
-                model_used: currentModel,
-                source_tier: currentSourceTier,
-              }),
+            await send({
+              ...parsed,
+              messageId: savedMsg?.id,
+              model_used: currentModel,
+              source_tier: currentSourceTier,
             });
           } else {
-            await stream.writeSSE({ data: JSON.stringify(parsed) });
+            await send(parsed);
           }
           return;
         }
 
-        await stream.writeSSE({ data: JSON.stringify(parsed) });
+        await send(parsed);
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Streaming failed';
-      await stream.writeSSE({ data: JSON.stringify({ type: 'error', message: msg }) });
+      await send({ type: 'error', message: msg });
     } finally {
       // H3 (#15): symmetric teardown on every exit — detach the request listener and abort
       // the upstream model stream so nothing stays open server-side after the client's `done`.
+      // U1: also clear the abandoned-turn guard so a completed turn leaves no pending timer.
+      clearTimeout(guard);
       c.req.raw.signal.removeEventListener('abort', onReqAbort);
       if (!abortController.signal.aborted) abortController.abort();
     }

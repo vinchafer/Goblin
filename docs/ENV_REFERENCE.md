@@ -96,8 +96,9 @@ be loud immediately rather than half-broken later.
 ### Optional, grouped
 
 The long tail — Layer-2 hosted models (`GOBLIN_HOSTED_API`, `DEEPINFRA_API_KEY`,
-`GOBLIN_HOSTED_MODEL_*`), LiteLLM (`LITELLM_*`), agent concurrency knobs
-(`AGENT_*`), rate-limit caps (`SEARCH_DAILY_CAP`, `PUBLISHES_PER_HOUR`,
+`GOBLIN_HOSTED_MODEL_*`), LiteLLM (`LITELLM_*`), agent concurrency and runtime knobs
+(`AGENT_*`, plus `CHAT_MAX_RUNTIME_MS` — the chat twin of `AGENT_MAX_RUNTIME_MS`, which
+bounds a turn whose reader disconnected), rate-limit caps (`SEARCH_DAILY_CAP`, `PUBLISHES_PER_HOUR`,
 `ATTACHMENT_BYTES_PER_DAY`), eval runner (`EVAL_*`), digests
 (`FOUNDER_DIGEST_EMAIL`, `FEEDBACK_EMAIL`), ops/Act-2 (`OPS_*`, `CF_*`) and
 observability (`SENTRY_DSN`, `LOG_LEVEL`, `BETTERSTACK_HEARTBEAT_URL`) — is

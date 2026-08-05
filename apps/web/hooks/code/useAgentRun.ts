@@ -5,6 +5,7 @@ import { readLang } from '@/lib/use-lang';
 import {
   isAtCapacity, capacityWaitMs, capacityWaitingCopy, capacityGaveUpCopy, MAX_CAPACITY_RETRIES,
 } from '@/lib/agent-capacity';
+import { bindResumeOnReturn } from '@/lib/resume-on-return';
 
 /**
  * A-6: fetch a run's persisted report card. After a stop mid-run the SSE closes before the
@@ -205,8 +206,20 @@ export function useAgentRun(sessionId: string | null) {
    * the run finishes. A run that finished while the client was away replays its persisted
    * agent_report frame → the report card renders. No user action; called by the mount probe.
    */
-  const reattach = useCallback(async (runId: string, opts?: { onDone?: (r: AgentReport | null) => void | Promise<void> }) => {
-    if (!sessionId || !runId || streamingRef.current) return;
+  const reattach = useCallback(async (
+    runId: string,
+    opts?: { onDone?: (r: AgentReport | null) => void | Promise<void>; force?: boolean },
+  ) => {
+    if (!sessionId || !runId) return;
+    // FINAL-POLISH · U1: `force` is the returning-from-suspension path. After iOS freezes
+    // the PWA the socket is dead but `streaming` is still true — the old guard made that
+    // state permanent (no re-attach could ever run). A forced re-attach drops the dead
+    // stream and rebuilds from seq 0, which is idempotent: the same replay the mount probe
+    // does. Without force we still refuse to trample a healthy in-flight stream.
+    if (streamingRef.current) {
+      if (!opts?.force) return;
+      abortRef.current?.abort();
+    }
     setStreaming(true);
     setReattached(true);
     setError(null);
@@ -254,25 +267,52 @@ export function useAgentRun(sessionId: string | null) {
     setStreaming(false);
   }, [sessionId]);
 
+  /**
+   * F-40: ask the server whether this session has an in-flight run and re-attach to it.
+   * Silent on no active run / any probe failure — this must never surface an error.
+   */
+  const probeAndReattach = useCallback(async (opts?: { force?: boolean; signal?: AbortSignal }) => {
+    if (!sessionId) return;
+    if (streamingRef.current && !opts?.force) return;
+    try {
+      const headers = await getAuthHeaders();
+      const res = await fetch(`${API_URL}/api/code-sessions/${sessionId}/runs/active`, {
+        headers, signal: opts?.signal,
+      });
+      if (!res.ok) return;
+      const d = (await res.json()) as { activeRun?: { runId?: string } | null };
+      const rid = d.activeRun?.runId;
+      if (rid) void reattach(rid, { force: opts?.force });
+    } catch { /* offline / aborted — nothing to re-attach */ }
+  }, [sessionId, reattach]);
+
   // F-40: on mount of a session, probe for an in-flight run and re-attach automatically —
   // the founder returns to the browser and the run is THERE (step history + live progress),
-  // no tap needed. Silent on no active run / any probe failure.
+  // no tap needed.
   useEffect(() => {
     if (!sessionId) return;
-    let cancelled = false;
     const ac = new AbortController();
-    (async () => {
-      try {
-        const headers = await getAuthHeaders();
-        const res = await fetch(`${API_URL}/api/code-sessions/${sessionId}/runs/active`, { headers, signal: ac.signal });
-        if (!res.ok) return;
-        const d = (await res.json()) as { activeRun?: { runId?: string } | null };
-        const rid = d.activeRun?.runId;
-        if (!cancelled && rid && !streamingRef.current) void reattach(rid);
-      } catch { /* offline / aborted — nothing to re-attach */ }
-    })();
-    return () => { cancelled = true; ac.abort(); };
-  }, [sessionId, reattach]);
+    void probeAndReattach({ signal: ac.signal });
+    return () => ac.abort();
+  }, [sessionId, probeAndReattach]);
+
+  /**
+   * FINAL-POLISH · U1 — the phone-lock path the mount probe could never cover.
+   *
+   * Goblin is phone-first and every iPhone auto-locks within a minute. iOS then SUSPENDS
+   * the PWA: the SSE socket dies, but the React tree is frozen, not unmounted. On return
+   * nothing remounts, so the mount probe above never fires again and the run the server is
+   * still happily executing is invisible. That is the client half of the founder's walk.
+   *
+   * So we also probe when the document becomes visible again. A short hide (switching apps
+   * for a moment, the app switcher) leaves a healthy socket alone; past SUSPEND_SUSPECT_MS
+   * the socket must be treated as dead and the re-attach is forced. `pageshow` covers a
+   * bfcache restore and `online` covers the tunnel/lift-recovery case.
+   */
+  useEffect(() => {
+    if (!sessionId) return;
+    return bindResumeOnReturn(({ force }) => { void probeAndReattach({ force }); });
+  }, [sessionId, probeAndReattach]);
 
   return { streaming, reattached, steps, narration, plan, report, error, submit, cancel, reset, reattach };
 }
