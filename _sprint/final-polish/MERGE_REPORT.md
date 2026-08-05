@@ -315,9 +315,22 @@ reconciliation protocol.
    device-level fact I cannot check here.
 4. **U1 does not fix an in-flight agent run whose process died.** F-40's Honest-Limitation
    #4 stands unchanged: a crashed process leaves `agent_runs.status='running'` and there is
-   still no background reconciler. And **if migration `0092` was never applied,
-   `findActiveRun` returns null and re-attach is silently never offered** — the client work
-   in U1 cannot help in that state. Unverifiable from here; it is the first founder action.
+   still no background reconciler.
+
+   **CORRECTION — I overstated the `0092` risk.** I wrote that migration `0092` "is still
+   unapplied". That was never an observation: it was carried over from F-40's build report,
+   which was true *when that wave shipped*, and I restated it as current fact. This session
+   is secretless and cannot read the production database, so I did not know and do not know.
+   The founder's objection is well-founded — migrations are applied in ascending order, and
+   `0097`/`0098` being applied makes `0092` almost certainly applied too.
+
+   What replaces the guess: `supabase/checks/migration_status.sql`, a read-only probe that
+   answers it from the database in one paste. The conditional statement that remains true is
+   narrow: *if* `session_id` were absent, `findActiveRun` returns null and agent re-attach is
+   never offered. The probe settles whether that "if" applies.
+
+   **This PR authors no migrations and depends on no unapplied one** — every unit works
+   against the current schema.
 5. **U2 cannot say which of the two signup defects the founder actually hit.** Both are
    real and both are fixed, but attributing his specific experience needs the data. The
    live redemption count was not retrieved (no DB access) — `/admin/promo` answers it.
