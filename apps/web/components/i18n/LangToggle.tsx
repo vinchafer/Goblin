@@ -26,6 +26,7 @@
 
 import { Fragment, useEffect, useState } from 'react';
 import { resolveLang, setLangChoice, subscribeLang, type Lang } from '@/lib/locale';
+import { persistLangToAccount } from '@/lib/account-lang';
 
 const OPTIONS: Lang[] = ['de', 'en'];
 
@@ -68,7 +69,13 @@ export function LangToggle({
             className="lang-toggle__opt"
             data-testid={`lang-toggle-${option}`}
             aria-pressed={lang === option}
-            onClick={() => setLangChoice(option)}
+            onClick={() => {
+              setLangChoice(option);
+              // FINAL-POLISH · U5: the choice must follow the user, not the browser.
+              // Fire-and-forget — signed out (the landing switcher) it no-ops, and a
+              // failed mirror never undoes the local choice that just applied.
+              void persistLangToAccount(option);
+            }}
           >
             {option.toUpperCase()}
           </button>

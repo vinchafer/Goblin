@@ -6,6 +6,7 @@ import {
   LANG_PREF_KEY,
   LANG_CHANGE_EVENT,
   detectLang,
+  hydrateAccountLang,
   readStoredLang,
   resolveLang,
   setLangChoice,
@@ -292,5 +293,129 @@ describe('one precedence, one place', () => {
     const src = readFileSync(join(__dirname, '..', 'components/i18n/LangToggle.tsx'), 'utf8');
     expect(src).toMatch(/setLangChoice\(/);
     expect(src).not.toMatch(/localStorage\.setItem/);
+  });
+});
+
+
+/**
+ * FINAL-POLISH · U5 — the ACCOUNT's answer, finally read back.
+ *
+ * `users.preferred_lang` (migration 0059) was written at onboarding Step 0 and by the
+ * settings picker, and then read by NOTHING. The preference lived in the localStorage of
+ * the single browser that answered, so the same account on a second device fell straight
+ * through to the surface default — an English user landing in a German app, because the
+ * app binding defaults to 'de'.
+ *
+ * `hydrateAccountLang()` is that missing read. It writes the account value into the
+ * SAME slot onboarding writes (precedence 2), so the account and the stored preference
+ * are one level rather than two.
+ */
+describe('U5 — hydrating the account preference (cross-device)', () => {
+  it('a second device with empty storage inherits the account language', () => {
+    const { store } = withEnv({ store: {}, languages: ['de-DE'] });
+    // Before: nothing stored, the app binding ignores detection → the 'de' default.
+    expect(resolveLang({ fallback: 'de', useDetection: false })).toBe('de');
+
+    hydrateAccountLang('en'); // the account answered English at onboarding
+
+    expect(store[LANG_PREF_KEY]).toBe('en');
+    expect(resolveLang({ fallback: 'de', useDetection: false })).toBe('en');
+  });
+
+  it('overwrites a DIFFERENT stored preference — the account is the answer', () => {
+    // A shared browser can hold another account's leftover preference.
+    const { store } = withEnv({ store: { [LANG_PREF_KEY]: 'de' } });
+    expect(hydrateAccountLang('en')).toBe(true);
+    expect(store[LANG_PREF_KEY]).toBe('en');
+  });
+
+  it('does nothing when the account already agrees (no needless event)', () => {
+    const { listeners } = withEnv({ store: { [LANG_PREF_KEY]: 'en' } });
+    let fired = 0;
+    (listeners[LANG_CHANGE_EVENT] ||= []).push(() => { fired++; });
+    expect(hydrateAccountLang('en')).toBe(false);
+    expect(fired).toBe(0);
+  });
+
+  it('NEVER overrides an explicit switcher choice', () => {
+    // The founder presses EN on this device; the account still says DE. Precedence 1
+    // must win — a hydrate underneath must not flip the UI back.
+    const { store } = withEnv({ store: { [LANG_CHOICE_KEY]: 'en' } });
+    hydrateAccountLang('de');
+    expect(store[LANG_PREF_KEY]).toBe('de');   // recorded at its own level…
+    expect(resolveLang({ fallback: 'de' })).toBe('en'); // …but the choice still wins
+  });
+
+  it('does not re-render surfaces when an explicit choice is masking the account', () => {
+    const { listeners } = withEnv({ store: { [LANG_CHOICE_KEY]: 'en' } });
+    let fired = 0;
+    (listeners[LANG_CHANGE_EVENT] ||= []).push(() => { fired++; });
+    hydrateAccountLang('de');
+    expect(fired).toBe(0); // nothing visible changed, so nothing should flip
+  });
+
+  it('ignores a null/absent/garbage account value rather than guessing', () => {
+    const { store } = withEnv({ store: { [LANG_PREF_KEY]: 'de' } });
+    for (const junk of [null, undefined, '', 'fr', 'EN', 42]) {
+      expect(hydrateAccountLang(junk)).toBe(false);
+    }
+    expect(store[LANG_PREF_KEY]).toBe('de'); // untouched
+  });
+
+  it('blocked storage degrades quietly', () => {
+    withEnv({ store: {}, throwOnRead: true });
+    expect(() => hydrateAccountLang('en')).not.toThrow();
+    expect(hydrateAccountLang('en')).toBe(false);
+  });
+
+  it('notifies mounted surfaces so the language applies without a reload', () => {
+    const { listeners } = withEnv({ store: {} });
+    let seen: unknown = null;
+    (listeners[LANG_CHANGE_EVENT] ||= []).push((e) => { seen = (e as { detail: unknown }).detail; });
+    hydrateAccountLang('en');
+    expect(seen).toBe('en');
+  });
+});
+
+describe('U5 — the account bridge stays out of the precedence', () => {
+  const bridge = readFileSync(join(__dirname, '..', 'lib/account-lang.ts'), 'utf8');
+
+  it('never touches a storage key directly — it goes through locale.ts', () => {
+    // Calls only — the header comment explains the mechanism, and prose is not a write.
+    expect(bridge).not.toMatch(/localStorage\.(getItem|setItem|removeItem)/);
+    expect(bridge).toMatch(/hydrateAccountLang\(/);
+  });
+
+  it('reads and writes users.preferred_lang, and nothing else', () => {
+    expect(bridge).toMatch(/\/api\/users\/me/);
+    expect(bridge).toMatch(/preferred_lang/);
+  });
+
+  it('is best-effort in both directions — a language preference never throws', () => {
+    // Every network path is wrapped; a signed-out caller no-ops.
+    expect(bridge).toMatch(/catch \{/);
+    expect(bridge).toMatch(/if \(!headers\) return/);
+  });
+});
+
+describe('U5 — every explicit picker persists to the account', () => {
+  it('the DE·EN switcher mirrors the choice', () => {
+    const src = readFileSync(join(__dirname, '..', 'components/i18n/LangToggle.tsx'), 'utf8');
+    expect(src).toMatch(/setLangChoice\(option\)/);
+    expect(src).toMatch(/persistLangToAccount\(option\)/);
+  });
+
+  it('the settings language picker records a CHOICE, not just a preference', () => {
+    // It used to write only the preference key, which a previous switcher press
+    // (precedence 1) silently outranked — picking a language did nothing.
+    const src = readFileSync(join(__dirname, '..', 'components/settings/LanguagePage.tsx'), 'utf8');
+    expect(src).toMatch(/setLangChoice\(v\)/);
+    expect(src).toMatch(/persistLangToAccount\(v\)/);
+    expect(src).not.toMatch(/localStorage\.setItem/);
+  });
+
+  it('the authenticated shell performs the read-back on mount', () => {
+    const src = readFileSync(join(__dirname, '..', 'components/app-shell/dashboard-shell.tsx'), 'utf8');
+    expect(src).toMatch(/hydrateLangFromAccount\(/);
   });
 });
