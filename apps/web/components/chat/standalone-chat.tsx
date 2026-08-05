@@ -15,13 +15,14 @@ import { parseCodeBlocks } from "@/lib/parse-code-blocks";
 import { StcPreviewSheet, type StcFile } from "@/components/code/StcPreviewSheet";
 import { useApp } from "@/contexts/app-context";
 import { useDemoMode } from "@/lib/demo/demo-mode-context";
-import { useLang } from "@/lib/use-lang";
+import { useLang, readLang } from "@/lib/use-lang";
 import { useStickToBottom } from "@/hooks/useStickToBottom";
 import { ScrollToEndChip } from "@/components/chat/ScrollToEndChip";
 import { ExistingFilesContext } from "@/contexts/existing-files-context";
 import { SendToCodeContext, type CardStcFile } from "@/contexts/send-to-code-context";
 import { isAgentModel } from "@/lib/agent-eligible";
 import { shouldRouteToAgent, AGENT_HANDOFF_NARRATION } from "@/lib/run-intent";
+import { bindResumeOnReturn } from "@/lib/resume-on-return";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -391,6 +392,88 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
   useEffect(() => {
     return () => { abortRef.current?.abort(); };
   }, []);
+
+  // ─── FINAL-POLISH · U1 — coming back after the phone locked ─────────────────
+  //
+  // The founder's walk: send a message on the iPhone, switch to the PC, the phone
+  // auto-locks. iOS suspends the PWA and the SSE socket dies. The server now finishes
+  // the turn and persists the answer regardless (chat-sessions.ts), but the frozen tab
+  // never learns that — it thaws still showing a dead spinner and a "try again" line
+  // over an answer that actually exists.
+  //
+  // So on return we ASK the server. Nothing here claims the answer is there; it fetches
+  // and then reports only what it actually saw. If the turn was still running when the
+  // user came back, we poll briefly (a normal turn is seconds) before giving up and
+  // leaving the honest retry affordance in place.
+  const isStreamingRef = useRef(false);
+  useEffect(() => { isStreamingRef.current = isStreaming; }, [isStreaming]);
+  const interruptedRef = useRef(false);
+  useEffect(() => {
+    interruptedRef.current = isStreaming || error !== null || messages.some((m) => m.sendFailed);
+  }, [isStreaming, error, messages]);
+
+  const recoverAfterDisconnect = useCallback(async () => {
+    if (!sessionId) return;
+    const l = readLang();
+    setError(l === "en"
+      ? "Connection lost — checking whether your answer finished …"
+      : "Verbindung unterbrochen — ich prüfe, ob deine Antwort fertig geworden ist …");
+    try {
+      const { data: { session } } = await (await import("@/lib/supabase/client")).createClient().auth.getSession();
+      const token = session?.access_token;
+      if (!token) return;
+
+      // A turn the user walked out on may still be running. Poll briefly rather than
+      // declaring failure on the first look.
+      for (let attempt = 0; attempt < 5; attempt++) {
+        const res = await fetch(`${apiBase}/api/chat-sessions/${sessionId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+          cache: "no-store",
+        });
+        if (res.ok) {
+          const d = (await res.json()) as { messages?: StandaloneMessage[] };
+          const server = d.messages ?? [];
+          const last = server[server.length - 1];
+          if (last && last.role === "assistant") {
+            // The turn DID finish while we were away. Adopt the server's transcript —
+            // it is the truth — and drop the dead stream and its error banner.
+            abortRef.current?.abort();
+            streamingMsgRef.current = null;
+            streamingContentRef.current = "";
+            const adopted = server.map((m) => ({ ...m }));
+            setMessages(adopted);
+            baseMessagesRef.current = adopted;
+            setIsStreaming(false);
+            setError(null);
+            return;
+          }
+        }
+        await new Promise((r) => setTimeout(r, 1500 + attempt * 1000));
+      }
+      // Nothing landed. Say exactly that — never a vague "try again" over lost work.
+      abortRef.current?.abort();
+      streamingMsgRef.current = null;
+      setIsStreaming(false);
+      setError(l === "en"
+        ? "The connection dropped and this answer did not finish. Your message is saved — send it again."
+        : "Die Verbindung ist abgerissen und diese Antwort wurde nicht fertig. Deine Nachricht ist gespeichert — schick sie einfach nochmal.");
+    } catch {
+      setIsStreaming(false);
+      setError(l === "en"
+        ? "Couldn't reach the server to check on your answer. Please try again."
+        : "Der Server war nicht erreichbar, um nach deiner Antwort zu sehen. Bitte versuch es erneut.");
+    }
+  }, [sessionId, apiBase]);
+
+  // The trigger the mount-only paths could never provide: iOS freezes the tab rather
+  // than unmounting it, so only a visibility/bfcache/online event tells us we are back.
+  // A brief hide (app switcher) leaves a healthy stream alone.
+  useEffect(() => {
+    return bindResumeOnReturn(({ force }) => {
+      if (!force || !interruptedRef.current) return;
+      void recoverAfterDisconnect();
+    });
+  }, [recoverAfterDisconnect]);
 
   // Seed-on-mount: the dashboard home composer (and "Neues Projekt") stash the
   // prompt — and now the picked model (F2) — in sessionStorage before navigating

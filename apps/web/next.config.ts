@@ -92,6 +92,12 @@ const nextConfig: NextConfig = {
   distDir: process.env.GOBLIN_DIST_DIR || '.next',
   env: {
     NEXT_PUBLIC_BUILD_ID: process.env.VERCEL_GIT_COMMIT_SHA || Date.now().toString(),
+    // FINAL-POLISH · U7.6 — the REAL build timestamp, evaluated once here while the
+    // bundle is being built and inlined by Next. /api/version used to report
+    // `new Date()` at REQUEST time under the name `buildTime`, so it always looked
+    // freshly deployed; that cost a whole night of diagnosis chasing a deploy that had
+    // never actually happened. A field called buildTime must be the build's time.
+    GOBLIN_BUILD_TIME: new Date().toISOString(),
     // The normaliser, applied to the whole bundle in one place.
     //
     // `NEXT_PUBLIC_API_URL` is read raw in 70+ call sites across components,

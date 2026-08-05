@@ -57,7 +57,8 @@ Supabase mail-hook URL pasted into Vercel's `NEXT_PUBLIC_API_URL`.
 | `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST` | no | Product analytics. |
 | `NEXT_PUBLIC_IMPRINT_*` | no | Imprint page overrides; each has a literal default. |
 | `NEXT_PUBLIC_ENABLE_WEBSEARCH`, `NEXT_PUBLIC_FREE_POOL_ENABLED`, `NEXT_PUBLIC_GOBLIN_HOSTED_API`, `NEXT_PUBLIC_ONBOARDING_TOOLS_STEP` | no | Feature flags. Compared to the literal `'true'`; anything else is off. |
-| `ENABLE_TEST_AUTH`, `TEST_AUTH_TOKEN` | token **yes** | E2E test-auth route. **Must stay unset in production.** |
+| `ENABLE_TEST_AUTH`, `TEST_AUTH_TOKEN` | token **yes** | E2E test-auth route (server side). **Must stay unset in production.** |
+| `NEXT_PUBLIC_ENABLE_TEST_AUTH` | no (but **dangerous**) | Compiles `/auth/test-callback` — a **session-minting route** — into the browser bundle. Set **only** in the CI E2E build (`.github/workflows/e2e.yml`), which is what makes the `@auth` suite test the checkout instead of production. **Never set it on the Vercel project**: because it is `NEXT_PUBLIC_*` it is baked into the JavaScript every visitor downloads, so a production build carrying it would ship that route to the public. There is no runtime switch that can undo it after the build. See `_sprint/overnight/E2E_AUTH_INFRA_GAP.md`. |
 
 ---
 
@@ -96,8 +97,9 @@ be loud immediately rather than half-broken later.
 ### Optional, grouped
 
 The long tail — Layer-2 hosted models (`GOBLIN_HOSTED_API`, `DEEPINFRA_API_KEY`,
-`GOBLIN_HOSTED_MODEL_*`), LiteLLM (`LITELLM_*`), agent concurrency knobs
-(`AGENT_*`), rate-limit caps (`SEARCH_DAILY_CAP`, `PUBLISHES_PER_HOUR`,
+`GOBLIN_HOSTED_MODEL_*`), LiteLLM (`LITELLM_*`), agent concurrency and runtime knobs
+(`AGENT_*`, plus `CHAT_MAX_RUNTIME_MS` — the chat twin of `AGENT_MAX_RUNTIME_MS`, which
+bounds a turn whose reader disconnected), rate-limit caps (`SEARCH_DAILY_CAP`, `PUBLISHES_PER_HOUR`,
 `ATTACHMENT_BYTES_PER_DAY`), eval runner (`EVAL_*`), digests
 (`FOUNDER_DIGEST_EMAIL`, `FEEDBACK_EMAIL`), ops/Act-2 (`OPS_*`, `CF_*`) and
 observability (`SENTRY_DSN`, `LOG_LEVEL`, `BETTERSTACK_HEARTBEAT_URL`) — is

@@ -24,13 +24,27 @@ export function PendingPromoRedeemer() {
     let cancelled = false;
     (async () => {
       const res = await redeemPromoCode(pending, lang);
-      if (cancelled) return;
-      // noSession shouldn't happen here (we're authed), but if it does, re-stash so a
-      // later authed load can retry.
-      if (res.noSession) {
+
+      // FINAL-POLISH · U2 — never lose a code to a transient failure.
+      //
+      // This used to re-stash ONLY on `noSession`. Every other non-verdict — a dropped
+      // network, a 5xx, the API not reachable from a cold landing — cleared the code
+      // above and then dropped it on the floor, silently. The user's next stop is the
+      // trial gate, which asks for a code again; they paste the same one, it works, and
+      // it looks as though single-use is broken when in truth the first attempt never
+      // reached the server. Re-stash unless the server actually returned a verdict.
+      //
+      // `status` is present iff the API answered (`ok`, `invalid`, `already_redeemed`, …).
+      // Its absence means we never got an answer, so the code is still unspent.
+      const gotVerdict = typeof res.status === 'string' && res.status.length > 0;
+      if (!gotVerdict) {
         try { localStorage.setItem(PENDING_PROMO_KEY, pending); } catch { /* ignore */ }
         return;
       }
+
+      // The redemption itself already happened server-side; only the toast is ours to
+      // skip once this component is gone (the trial-gate redirect unmounts us).
+      if (cancelled) return;
       setToast(res.message);
       setTimeout(() => setToast(null), 4000);
     })();

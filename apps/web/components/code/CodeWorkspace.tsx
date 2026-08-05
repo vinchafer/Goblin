@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/ui/icon";
-import { GoblinLogo } from "@/components/brand/GoblinLogo";
 import { SessionTabs } from "./SessionTabs";
 import { SessionPane } from "./SessionPane";
 import { SessionPickerDialog } from "./SessionPickerDialog";
@@ -12,6 +11,7 @@ import { useEditorTheme } from "@/hooks/code/useEditorTheme";
 import { API_URL, getToken } from "@/hooks/code/getToken";
 import { getStoredIntent, DEFAULT_INTENT, type Intent } from "@/lib/intent";
 import { titleFromPath, titleFromPrompt } from "@/lib/session-title";
+import { PageLoading } from "@/components/ui/PageLoading";
 
 interface Props {
   projectId: string;
@@ -210,7 +210,7 @@ export function CodeWorkspace({ projectId, pendingCode, onPendingConsumed }: Pro
   if (s.loading) {
     return (
       <div className="gb-codetab" data-editor-theme={theme} style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--ed-canvas)" }}>
-        <GoblinLogo state="breath" size={28} variant="green" />
+        <PageLoading context="code" />
       </div>
     );
   }

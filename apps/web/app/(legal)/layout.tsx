@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { LegalFooterNav } from '@/components/legal/LegalFooterNav';
 import type { ReactNode } from 'react';
 
 export default function LegalLayout({ children }: { children: ReactNode }) {
@@ -30,26 +31,7 @@ export default function LegalLayout({ children }: { children: ReactNode }) {
         <span style={{ fontSize: 'var(--t-caption-fs)', color: 'rgba(255,255,255,0.72)', fontFamily: 'var(--font-sans)' }}>
           © 2026 Goblin
         </span>
-        <nav style={{ display: 'flex', gap: 16 }}>
-          {[['Terms', '/terms'], ['Nutzung', '/acceptable-use'], ['Privacy', '/privacy'], ['Imprint', '/imprint']].map(([label, href]) => (
-            <Link
-              key={href}
-              href={href!}
-              style={{ fontSize: 'var(--t-caption-fs)', color: 'rgba(255,255,255,0.72)', textDecoration: 'none', fontFamily: 'var(--font-sans)', transition: 'color 0.15s' }}
-            >
-              {label}
-            </Link>
-          ))}
-          {/* AKT 2 · U-B4(a): the abuse route has to be reachable, not just written
-              down in the AUP. Lightest honest option — a mailto, no phantom form.
-              A report form and a per-hosted-app footer link are Phase-3 items. */}
-          <a
-            href="mailto:support@justgoblin.com"
-            style={{ fontSize: 'var(--t-caption-fs)', color: 'rgba(255,255,255,0.72)', textDecoration: 'none', fontFamily: 'var(--font-sans)', transition: 'color 0.15s' }}
-          >
-            Abuse
-          </a>
-        </nav>
+        <LegalFooterNav />
       </footer>
     </div>
   );

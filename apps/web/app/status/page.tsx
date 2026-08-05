@@ -5,7 +5,8 @@ export const dynamic = 'force-dynamic';
 interface VersionData {
   version: string;
   gitCommit: string;
-  buildTime: string;
+  /** U7.6: the build's own timestamp; null when the build did not stamp one. */
+  buildTime: string | null;
   nodeEnv?: string;
   env?: string;
   apiUrl?: string;
@@ -257,7 +258,7 @@ export default async function StatusPage() {
               </div>
               {data && (
                 <div style={{ fontSize: 11, color: 'var(--text-faint)', fontFamily: 'monospace', paddingLeft: 20 }}>
-                  commit: {data.gitCommit.slice(0, 7)} · built: {new Date(data.buildTime).toLocaleString()}
+                  commit: {data.gitCommit.slice(0, 7)} · built: {data.buildTime ? new Date(data.buildTime).toLocaleString() : 'unknown'}
                 </div>
               )}
             </div>

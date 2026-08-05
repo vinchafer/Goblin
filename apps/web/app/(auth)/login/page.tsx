@@ -13,7 +13,6 @@ import { t, type Lang } from '@/lib/use-lang';
 // locale source. See lib/use-auth-lang.ts.
 import { useAuthLang } from '@/lib/use-auth-lang';
 import { LangToggle } from '@/components/i18n/LangToggle';
-import { PENDING_PROMO_KEY } from '@/lib/promo-redeem';
 
 export const dynamic = 'force-dynamic';
 
@@ -152,9 +151,6 @@ export default function LoginPage() {
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [resetSent, setResetSent] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
-  // LAUNCH-ASSIST U2: optional promo code at signup. Signup needs email confirmation
-  // (no session yet), so we stash it and redeem on the first authenticated load.
-  const [promoCode, setPromoCode] = useState('');
 
   useEffect(() => {
     const error = searchParams.get('error');
@@ -193,11 +189,8 @@ export default function LoginPage() {
           options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
         });
         if (error) throw error;
-        // Stash an entered promo code; PendingPromoRedeemer redeems it once the
-        // confirmed session lands on /dashboard.
-        if (promoCode.trim()) {
-          try { localStorage.setItem(PENDING_PROMO_KEY, promoCode.trim()); } catch { /* ignore */ }
-        }
+        // U3: no promo stash here any more — the code is entered on the plan/trial
+        // dialog after sign-in, where a session exists and the result is immediate.
         setEmailSent(true);
       } else {
         const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
@@ -644,22 +637,12 @@ export default function LoginPage() {
               {mode === 'signup' && password.length > 0 && (
                 <PasswordStrengthBar strength={passwordStrength(password)} />
               )}
-              {mode === 'signup' && (
-                <input
-                  type="text"
-                  value={promoCode}
-                  onChange={e => setPromoCode(e.target.value)}
-                  placeholder={t(lang, 'Goblin-Code (optional)', 'Goblin code (optional)')}
-                  autoComplete="off"
-                  autoCapitalize="characters"
-                  style={{
-                    width: '100%', padding: '10px 12px', borderRadius: 8,
-                    border: '1px solid var(--rule, rgba(0,0,0,0.15))', background: 'var(--bg)',
-                    color: 'var(--text)', fontSize: 'var(--t-small-fs)',
-                    fontFamily: 'var(--font-mono, monospace)', textTransform: 'uppercase',
-                  }}
-                />
-              )}
+              {/* FINAL-POLISH · U3 — the invite-code field used to sit here. Founder
+                  decision: asking for the code at signup and then asking AGAIN on the
+                  plan/trial dialog was confusing, and the signup entry could only ever
+                  be a deferred redemption (no session exists until the confirmation mail
+                  is clicked). The code is now entered in ONE place: the plan/trial dialog
+                  (/dashboard/trial-gate), which also serves the settings/billing field. */}
               {mode === 'signup' && (
                 <label style={{ display: 'flex', alignItems: 'flex-start', gap: 8, cursor: 'pointer', fontSize: 'var(--t-caption-fs)', color: 'var(--meta)', lineHeight: 1.5 }}>
                   <input

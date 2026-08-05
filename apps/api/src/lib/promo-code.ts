@@ -90,7 +90,15 @@ export function promoRedeemCopy(status: PromoRedeemStatus, lang: 'de' | 'en', da
     case 'already_redeemed':
       return { ok: false, message: de ? 'Dieser Code wurde bereits eingelöst.' : 'This code has already been redeemed.' };
     case 'already_redeemed_account':
-      return { ok: false, message: de ? 'Du hast bereits einen Code eingelöst.' : 'You’ve already redeemed a code.' };
+      // U2 (FINAL-POLISH): the same-account re-entry. Refusing is right — a code is
+      // single-use and one per account — but the old line left the user wondering what
+      // it meant for their access. It now says a second code isn't needed and points at
+      // the one screen that shows the truth. It deliberately does NOT claim the access is
+      // currently active: a redeemed comp can since have expired, and only the billing
+      // screen knows. Never assert an unverified state.
+      return { ok: false, message: de
+        ? 'Du hast für dieses Konto bereits einen Code eingelöst — ein zweiter ist nicht nötig. Deinen aktuellen Zugang siehst du unter Einstellungen › Abo.'
+        : 'You’ve already redeemed a code on this account — a second one isn’t needed. Your current access is shown under Settings › Plan.' };
     case 'already_paying':
       return { ok: false, message: de
         ? 'Du hast bereits ein aktives Abo — der Code ist für Konten ohne Abo gedacht. Heb ihn dir auf.'

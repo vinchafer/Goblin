@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import { GoblinLogo } from "@/components/brand/GoblinLogo";
+import { PageLoading } from "@/components/ui/PageLoading";
 
 // Creates a new chat session and redirects to it
 export default function NewChatPage() {
@@ -34,8 +34,6 @@ export default function NewChatPage() {
   }, [router]);
 
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", background: "var(--surface-page)" }}>
-      <GoblinLogo state="thinking" size={36} variant="green" />
-    </div>
+    <PageLoading context="chat" />
   );
 }

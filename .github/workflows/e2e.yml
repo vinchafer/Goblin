@@ -23,6 +23,21 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co' }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder' }}
           NEXT_PUBLIC_API_URL: http://localhost:3001
+          # FINAL-POLISH · U6 — this is the line that makes a green `@auth` mean something.
+          #
+          # `@auth` used to cross over to PRODUCTION at the login step: the helper asked
+          # Supabase for a magic link back to localhost:3000, that URL is not in the
+          # project's redirect allowlist, Supabase fell back to the Site URL, and every
+          # signed-in assertion afterwards described the deployed app instead of this
+          # diff. `/auth/test-callback` avoids the allowlist entirely — but it is gated on
+          # NEXT_PUBLIC_ENABLE_TEST_AUTH, and NEXT_PUBLIC_* is inlined at BUILD time, so
+          # setting it on the test step (as ENABLE_TEST_AUTH, below) was both the wrong
+          # variable and one step too late.
+          #
+          # SAFETY, non-negotiable: this compiles a session-minting route into the bundle.
+          # It belongs to this CI E2E build ONLY and must never be set on the Vercel
+          # project. See docs/ENV_REFERENCE.md and _sprint/overnight/E2E_AUTH_INFRA_GAP.md.
+          NEXT_PUBLIC_ENABLE_TEST_AUTH: 'true'
       - run: npx playwright install --with-deps chromium
       - name: Run E2E Tests (CI subset — @public + @auth)
         run: pnpm test:e2e:ci
@@ -30,6 +45,9 @@ jobs:
           NODE_ENV: test
           CI: 'true'
           ENABLE_TEST_AUTH: 'true'
+          # U6: the same flag in the TEST process, so tests/e2e/helpers/auth.ts knows the
+          # bundle it is driving has the route compiled in and takes the origin-safe path.
+          NEXT_PUBLIC_ENABLE_TEST_AUTH: 'true'
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co' }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder' }}
           NEXT_PUBLIC_API_URL: http://localhost:3001

@@ -11,9 +11,15 @@
  *   1. EXPLICIT CHOICE  — the visitor pressed DE or EN in the switcher.
  *                         Key: `goblin:lang-choice`. Wins on EVERY surface,
  *                         always, and is never written by anything else.
- *   2. STORED PREFERENCE— the onboarding Step-0 answer, mirrored to
- *                         users.preferred_lang. Key: `goblin:preferred-lang`.
- *                         Applies to app + pre-auth surfaces.
+ *   2. STORED PREFERENCE— the onboarding Step-0 answer. Key:
+ *                         `goblin:preferred-lang`. Applies to app + pre-auth
+ *                         surfaces. Its DURABLE form is `users.preferred_lang`
+ *                         (migration 0059): on an authenticated load
+ *                         `hydrateAccountLang()` copies the account's value into
+ *                         this key, so the preference follows the user to a
+ *                         second device instead of living in one browser. The
+ *                         account value and this key are therefore ONE level,
+ *                         not two — see FINAL-POLISH · U5 below.
  *   3. DETECTION        — the browser's own languages (navigator.languages →
  *                         Accept-Language). de* → 'de', en* → 'en', else skip.
  *                         PUBLIC / PRE-AUTH SURFACES ONLY — see below.
@@ -65,6 +71,46 @@ export const LANG_CHANGE_EVENT = 'goblin:lang-change';
 
 function isLang(v: unknown): v is Lang {
   return v === 'en' || v === 'de';
+}
+
+/**
+ * FINAL-POLISH · U5 — bring the ACCOUNT's answer into the precedence.
+ *
+ * `users.preferred_lang` (migration 0059) was written at onboarding Step 0 and mirrored by
+ * the settings picker — and then never read back by anything. The preference therefore
+ * lived only in the localStorage of the one browser that answered, so the same account on
+ * a second device (or after clearing site data) fell straight through to the surface
+ * default: an English user got a German app, because the app binding's default is 'de'.
+ *
+ * This is the missing read. The account value is the durable form of precedence 2, so
+ * hydrating it writes `LANG_PREF_KEY` — the same slot onboarding writes — rather than
+ * adding a fifth level. Two consequences worth being explicit about:
+ *
+ *   • It OVERWRITES a differing stored preference. The DB is the account's answer; a
+ *     localStorage pref can be another account's leftover on a shared browser.
+ *   • It never touches `LANG_CHOICE_KEY`. An explicit switcher press stays precedence 1
+ *     and still outranks the account — pressing EN must not be undone by a hydrate.
+ *
+ * Returns true when something actually changed (callers use it only for tests/telemetry).
+ */
+export function hydrateAccountLang(accountLang: unknown): boolean {
+  if (!isLang(accountLang)) return false;
+  const current = readStoredLang(LANG_PREF_KEY);
+  if (current === accountLang) return false;
+  try {
+    window.localStorage.setItem(LANG_PREF_KEY, accountLang);
+  } catch {
+    return false; // blocked storage — the session simply keeps resolving as before
+  }
+  // Only re-render if this actually changes what resolves: an explicit choice outranks
+  // the account, so a hydrate underneath it is invisible and must not cause a flip.
+  if (readStoredLang(LANG_CHOICE_KEY)) return true;
+  try {
+    window.dispatchEvent(new CustomEvent(LANG_CHANGE_EVENT, { detail: accountLang }));
+  } catch {
+    /* ignore */
+  }
+  return true;
 }
 
 /** Read one storage key. Returns null when absent, junk, or storage is blocked. */
@@ -139,11 +185,14 @@ export function setLangChoice(next: Lang): void {
     /* blocked storage: the choice still applies for this page's lifetime */
   }
   // Deliberately NOT writing document.documentElement.lang here. The root layout
-  // hard-codes <html lang="en"> (app/layout.tsx:105) and the marketing landing is
-  // an English document whatever this choice is, so flipping the root attribute
-  // would mislabel that page. Making <html lang> track the surface's real
-  // language is a correct follow-up, but it belongs to the surface, not to this
-  // setter — reported as a finding rather than half-done here.
+  // hard-codes <html lang="en"> (app/layout.tsx) and the marketing landing is an
+  // English document whatever this choice is, so flipping the root attribute from
+  // this setter would mislabel that page.
+  //
+  // FINAL-POLISH · U7.2 closed the other half of that: the attribute now tracks the
+  // real language PER SURFACE via <AppHtmlLangSync /> (components/i18n/HtmlLangSync.tsx),
+  // mounted in the dashboard layout. It follows this event, because it reads a live
+  // hook — so the ownership stated here is unchanged: the surface sets it, not the setter.
   try {
     window.dispatchEvent(new CustomEvent(LANG_CHANGE_EVENT, { detail: next }));
   } catch {

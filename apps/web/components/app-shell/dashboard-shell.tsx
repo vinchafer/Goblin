@@ -56,6 +56,21 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
     return () => mq.removeEventListener('change', on);
   }, []);
 
+  // FINAL-POLISH · U5: read the ACCOUNT's language preference back.
+  // users.preferred_lang (migration 0059) was written at onboarding and by the settings
+  // picker, and then read by nothing — so the preference lived in one browser's
+  // localStorage and the same account on a second device fell through to the surface
+  // default. This is the missing read, done once per authenticated shell mount. Silent
+  // and best-effort: a language preference must never block a render.
+  useEffect(() => {
+    const ac = new AbortController();
+    void (async () => {
+      const { hydrateLangFromAccount } = await import('@/lib/account-lang');
+      await hydrateLangFromAccount(ac.signal);
+    })();
+    return () => ac.abort();
+  }, []);
+
   const closeSettings = useCallback(() => {
     setShowSettingsSheet(false);
     setSettingsInitialItem(null);

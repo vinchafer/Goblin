@@ -1,16 +1,20 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createClient } from '@/lib/supabase/client';
 import { SettingsCard } from '../ui/SettingsCard';
 import { readLang, type Lang } from '@/lib/use-lang';
+import { setLangChoice } from '@/lib/locale';
+import { persistLangToAccount } from '@/lib/account-lang';
 
 // Honesty sprint (F1): the selector used to write `goblin-language`, a key NOTHING
 // read — the app's language is driven by `goblin:preferred-lang` (useLang), set at
-// onboarding Step-0 and mirrored to users.preferred_lang. We now write THAT
-// canonical key (+ the same server mirror onboarding uses) and reload, so the
-// choice actually switches the UI.
-const LS_KEY = 'goblin:preferred-lang';
+// onboarding Step-0 and mirrored to users.preferred_lang.
+//
+// FINAL-POLISH · U5: it wrote the PREFERENCE key (precedence 2). Once the DE·EN
+// switcher existed, a prior press of that switcher wrote the CHOICE key (precedence 1)
+// and silently outranked this screen — picking a language in Settings would appear to
+// do nothing. Picking a language here is an explicit choice by any reading, so it now
+// records one, and mirrors it to the account through the same helper the switcher uses.
 
 export function LanguagePage() {
   const [value, setValue] = useState<Lang>('de');
@@ -20,22 +24,12 @@ export function LanguagePage() {
   const pick = async (v: Lang) => {
     if (v === value) return;
     setValue(v);
-    try { localStorage.setItem(LS_KEY, v); } catch { /* ignore */ }
-    // Best-effort server mirror — same column (users.preferred_lang, mig 0059)
-    // the onboarding language step writes. Non-blocking.
-    try {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        const apiBase = process.env.NEXT_PUBLIC_API_URL ?? '';
-        await fetch(`${apiBase}/api/users/me`, {
-          method: 'PATCH',
-          headers: { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ preferred_lang: v }),
-        });
-      }
-    } catch { /* ignore — local choice still applies */ }
-    // useLang reads the key once on mount; reload so every surface picks it up.
+    // Precedence 1 — outranks any earlier switcher press and the stored preference.
+    setLangChoice(v);
+    // Precedence 2's durable form, so the choice follows the user to another device.
+    await persistLangToAccount(v);
+    // setLangChoice already notifies every mounted surface; the reload stays because a
+    // few server-rendered strings are resolved at request time, not by the hook.
     window.location.reload();
   };
 

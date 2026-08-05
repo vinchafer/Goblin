@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "../api/node_modules/.bin/vitest run --config vitest.config.ts"
+    "test": "../api/node_modules/.bin/vitest run --config vitest.config.ts",
+    "render:loading": "../api/node_modules/.bin/tsx --tsconfig scripts/tsconfig.render.json scripts/render-loading-surfaces.tsx"
   },
   "dependencies": {
     "@codemirror/commands": "^6.10.3",

@@ -7,11 +7,11 @@ import { apiStream, apiGet } from "@/lib/api";
 import { detectFilename } from "@/lib/detect-filename";
 import { ChatInput, useChatModel } from "@/components/chat/ChatInput";
 import { ChatMessages, type TokenInfo } from "./ChatMessages";
-import { GoblinLoader } from "@/components/ui/GoblinLoader";
 import { FirstChatTip } from "@/components/onboarding/first-chat-tip";
 import type { ChatMessage } from "@goblin/shared/src/schemas";
 import type { SelectedModel } from "@/components/chat/ChatInput";
 import { StcPreviewSheet, type StcFile } from "@/components/code/StcPreviewSheet";
+import { PageLoading } from "@/components/ui/PageLoading";
 
 const EXAMPLE_PROMPTS = [
   'Build a simple landing page with a hero section and CTA button.',
@@ -231,11 +231,9 @@ export function ChatTab({ projectId }: ChatTabProps) {
   };
 
   if (isLoadingHistory) {
-    return (
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <GoblinLoader variant="thinking" size="md" />
-      </div>
-    );
+    // U4: this was the GOLD one. Arriving here straight after the green route splash is
+    // exactly the gold→green jump the founder saw mid-load.
+    return <PageLoading context="chat" />;
   }
 
   return (

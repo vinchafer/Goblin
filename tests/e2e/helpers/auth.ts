@@ -8,6 +8,53 @@ export interface RealTestSession {
 }
 
 /**
+ * FINAL-POLISH · U6 — the assertion that makes a green `@auth` mean something.
+ *
+ * Spec: `_sprint/overnight/E2E_AUTH_INFRA_GAP.md`. `@public` genuinely tests the local
+ * checkout, but `@auth` used to CROSS OVER at the login step: the helper asked Supabase
+ * for a magic link with `redirect_to = http://localhost:3000/...`, localhost was not in
+ * the project's redirect allowlist, Supabase silently fell back to the project Site URL
+ * (production), and every signed-in assertion after that ran against the DEPLOYED app.
+ *
+ * So a green `@auth` on a PR said nothing about that PR's diff, and a red one could just
+ * mean production was sick. That cost twice: the scrim false alarm, then a locale
+ * regression that reached live users behind a green gate.
+ *
+ * This turns that silent crossover into a loud failure. It is the part of the fix worth
+ * having no matter which login path is used, because it can never silently regress.
+ */
+function assertOnCheckout(page: Page, afterWhat: string): void {
+  const actual = new URL(page.url()).origin;
+  const expected = new URL(BASE_URL).origin;
+  if (actual !== expected) {
+    throw new Error(
+      `[@auth] Signed in on the WRONG ORIGIN after ${afterWhat}.\n` +
+        `  landed on : ${actual}\n` +
+        `  expected  : ${expected} (PLAYWRIGHT_BASE_URL / the checkout under test)\n` +
+        `Every signed-in assertion after this point would have described THAT origin, not\n` +
+        `this PR's code. Most likely cause: Supabase discarded the requested redirect_to\n` +
+        `(not in the project's allowlist) and fell back to the Site URL.\n` +
+        `See _sprint/overnight/E2E_AUTH_INFRA_GAP.md.`,
+    );
+  }
+}
+
+/**
+ * U6: is the session-minting test route compiled into the bundle under test?
+ *
+ * `NEXT_PUBLIC_*` is inlined at BUILD time, so this is decided by the build step, not by
+ * the test step. `e2e.yml` sets it on both: the build so `/auth/test-callback` exists, the
+ * test process so this helper knows it may use it.
+ *
+ * SAFETY (must not be skipped): a production build with this set would ship a
+ * session-minting route. It belongs in the CI E2E build only — never in the Vercel
+ * project. See docs/ENV_REFERENCE.md.
+ */
+function testAuthCompiledIn(): boolean {
+  return process.env.NEXT_PUBLIC_ENABLE_TEST_AUTH === 'true';
+}
+
+/**
  * Login with the real Goblin test account.
  * Uses Supabase Admin API to generate a magic link, then navigates to it.
  * This sets proper server-side cookies (works on local + production).
@@ -15,6 +62,14 @@ export interface RealTestSession {
  * Do NOT delete this account after tests.
  */
 export async function loginAsRealTestUser(page: Page): Promise<RealTestSession> {
+  // U6: prefer the origin-safe path when the build compiled it in. `loginAsTestCallback`
+  // mints the session admin-side and writes the @supabase/ssr cookies on whatever origin
+  // the test is ACTUALLY on — no redirect allowlist involved, so no crossover to
+  // production. Every `@auth` spec calls this function, so switching here fixes all 20 of
+  // them without touching a single spec. The magic-link path below stays as the fallback
+  // for a local run against a build that did not enable test auth.
+  if (testAuthCompiledIn()) return loginAsTestCallback(page);
+
   const email = process.env.TEST_ACCOUNT_EMAIL;
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -65,6 +120,9 @@ export async function loginAsRealTestUser(page: Page): Promise<RealTestSession> 
   }
 
   await page.waitForURL(/\/dashboard/, { timeout: 35000 });
+  // U6: the crossover happens HERE or not at all — Supabase may have ignored our
+  // redirect_to and landed us on the production Site URL instead.
+  assertOnCheckout(page, 'the magic-link login');
 
   // Ensure the test account stays comped so trial/quota walls don't block @auth
   // tests (idempotent — no-op if already comped). The real test account is a
@@ -116,6 +174,9 @@ export async function loginAsTestCallback(page: Page): Promise<RealTestSession> 
   // 3. Hand tokens to test-callback → setSession → cookies → /dashboard.
   await page.goto(`${BASE_URL}/auth/test-callback#access_token=${vj.access_token}&refresh_token=${vj.refresh_token}`);
   await page.waitForURL(/\/dashboard/, { timeout: 35000 });
+  // U6: this path cannot cross over by construction (no redirect allowlist is involved),
+  // but assert it anyway — a guarantee that is only argued is a guarantee that regresses.
+  assertOnCheckout(page, 'the test-callback login');
   await ensureTestAccountComped(page, email);
   return { email };
 }
