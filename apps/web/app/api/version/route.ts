@@ -67,7 +67,14 @@ export async function GET() {
     return NextResponse.json({
       version: process.env.npm_package_version || '0.0.0',
       gitCommit: process.env.VERCEL_GIT_COMMIT_SHA || 'unknown',
-      buildTime: new Date().toISOString(),
+      // U7.6: the time this bundle was BUILT, inlined by next.config.ts at build time.
+      // This used to be `new Date()` — i.e. the time of the request — under the same
+      // name, so every response looked freshly deployed no matter how old the deploy
+      // was. It misled a full night of diagnosis. `null` rather than a guess if the
+      // build-time value is somehow absent; `serverTime` below is the request clock,
+      // now named for what it actually is (and useful for spotting clock skew).
+      buildTime: process.env.GOBLIN_BUILD_TIME ?? null,
+      serverTime: new Date().toISOString(),
       nodeEnv: process.env.NODE_ENV,
       apiUrl: apiOrigin.origin,
       webReady: true,
