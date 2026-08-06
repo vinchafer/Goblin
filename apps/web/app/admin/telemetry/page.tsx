@@ -9,7 +9,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { telemetryDisplay } from '@/lib/admin/telemetry-state';
 import { AdminErrorState } from '@/components/admin/AdminErrorState';
-import { type AdminErrorStatus } from '@/lib/admin/admin-error';
+import { readAdminErrorDetail, type AdminErrorStatus } from '@/lib/admin/admin-error';
 
 const ADMIN_BASE = '/api/admin';
 
@@ -76,13 +76,20 @@ export default function AdminTelemetryPage() {
   // FW3 U5: distinguish an auth failure (401 → key mismatch) from a generic
   // "could not load" so telemetry fails honestly and identically to every page.
   const [loadError, setLoadError] = useState<AdminErrorStatus | null>(null);
+  const [loadDetail, setLoadDetail] = useState<string | undefined>(undefined);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch(`${ADMIN_BASE}/telemetry`, { headers: { 'Content-Type': 'application/json' } });
-      if (!res.ok) { setLoadError(res.status); return; }
+      if (!res.ok) {
+        // FW4 U2: keep the server's own reason, not just the status code.
+        setLoadError(res.status);
+        setLoadDetail(await readAdminErrorDetail(res));
+        return;
+      }
       setLoadError(null);
+      setLoadDetail(undefined);
       setData(await res.json());
     } catch {
       setLoadError('network');
@@ -94,7 +101,7 @@ export default function AdminTelemetryPage() {
   useEffect(() => { load(); }, [load]);
 
   if (loading) return <div style={{ color: 'var(--meta)' }}>Loading…</div>;
-  if (loadError != null) return <AdminErrorState status={loadError} />;
+  if (loadError != null) return <AdminErrorState status={loadError} detail={loadDetail} />;
   if (!data) return <AdminErrorState message="Konnte Telemetrie-Daten nicht laden." />;
 
   const r = data.reconciliation;

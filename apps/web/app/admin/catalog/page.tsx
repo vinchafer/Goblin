@@ -5,6 +5,8 @@
 // /api/admin proxy. Reads GET /api/admin/catalog; triggers POST endpoints.
 
 import { useCallback, useEffect, useState } from 'react';
+import { AdminErrorState } from '@/components/admin/AdminErrorState';
+import { readAdminErrorDetail, type AdminErrorStatus } from '@/lib/admin/admin-error';
 
 const ADMIN_BASE = '/api/admin';
 
@@ -61,12 +63,21 @@ export default function AdminCatalogPage() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<AdminErrorStatus | null>(null);
+  const [loadDetail, setLoadDetail] = useState<string | undefined>(undefined);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch(`${ADMIN_BASE}/catalog`, { headers: { 'Content-Type': 'application/json' } });
-      if (res.ok) setData(await res.json());
+      if (!res.ok) {
+        setLoadError(res.status);
+        setLoadDetail(await readAdminErrorDetail(res));
+        return;
+      }
+      setLoadError(null);
+      setLoadDetail(undefined);
+      setData(await res.json());
     } finally {
       setLoading(false);
     }
@@ -104,7 +115,9 @@ export default function AdminCatalogPage() {
   );
 
   if (loading) return <div style={{ color: 'var(--meta)' }}>Loading…</div>;
-  if (!data) return <div style={{ color: 'var(--danger)' }}>Konnte Katalog-Daten nicht laden.</div>;
+  // FW4 U2: this said only "konnte nicht laden" — the status and the server's own reason
+  // were both discarded, so a 403, a 500 and an offline API looked identical.
+  if (!data) return <AdminErrorState status={loadError ?? 'network'} detail={loadDetail} />;
 
   return (
     <div>

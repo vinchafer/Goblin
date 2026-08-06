@@ -2,7 +2,8 @@ import { Hono } from 'hono';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { aggregateTelemetry, type CompletionRow } from '../lib/goblin-telemetry';
 import { requestAccountDeletion, reactivateByUserId } from '../services/account-deletion';
-import { buildInsight } from '../services/insight';
+import { buildInsight, InsightReadError } from '../services/insight';
+import { isMissingSchema } from '../lib/schema-shape';
 import { metricsSnapshot } from '../lib/metrics';
 import { generatePromoCodes } from '../lib/promo-code';
 
@@ -570,14 +571,47 @@ admin.get('/catalog', async (c) => {
 // same x-admin-key middleware as every other /api/admin route (the web proxy
 // injects the key only after a server-side is_admin/ADMIN_EMAIL check → a
 // non-founder never reaches here; API-verified, not client-hidden).
+//
+// FOUNDER-WALK-4 · U2 — this endpoint answered a bare 500 and the founder could not learn
+// why. Two separate faults, both fixed here:
+//
+//   a) NO TOLERANCE. `buildInsight` is the only admin data path that turns a Supabase read
+//      error into a throw, and platform_events (0078/0085) is a table this repo applies BY
+//      HAND — the migrations say so, and the consumption ledger records both as "authored,
+//      NOT applied". Every other consumer of that table degrades (insertPlatformEvent
+//      silent-fails, /admin/promo answers available:false). Insight hard-failed, which is
+//      exactly why /admin/insight is the ONE admin page that 500s: no other admin endpoint
+//      reads platform_events at all. A pending migration is now a stated, actionable state,
+//      not an outage.
+//   b) NO DIAGNOSIS. The message was flattened into `{ error }` — a key the web page never
+//      read (its 500 branch reads `detail`, which only the web proxy's own error body
+//      carries). Both keys are populated now, and `source` says which side spoke.
+//
 admin.get('/insight', async (c) => {
   const days = c.req.query('days') === '30' ? 30 : 7;
   const includeTest = c.req.query('includeTest') === 'true';
   try {
     const payload = await buildInsight({ days, includeTest });
-    return c.json(payload);
+    return c.json({ ...payload, available: true });
   } catch (e) {
-    return c.json({ error: (e as Error).message }, 500);
+    const err = e as Partial<InsightReadError> & Error;
+    if (err instanceof InsightReadError && err.schemaGap) {
+      // 200, not 500: the API is healthy, the DB is simply older than this code. Named so
+      // the founder can act — apply the migration — instead of hunting a config ghost.
+      return c.json({
+        available: false,
+        reason: 'schema_pending',
+        table: err.table,
+        migration: err.migration,
+        detail: `${err.table} is not there yet — apply migration ${err.migration} in the Supabase SQL editor. (${err.detail})`,
+      });
+    }
+    // A genuine read failure. Say what failed and where, in BOTH body keys the web side
+    // has ever read, so no layer downstream has to guess again.
+    const detail = err instanceof InsightReadError
+      ? `${err.table} read failed: ${err.detail}`
+      : err.message;
+    return c.json({ error: detail, detail, source: 'api/admin/insight' }, 500);
   }
 });
 
@@ -596,7 +630,7 @@ admin.get('/promo', async (c) => {
     .limit(2000);
   // Pre-migration tolerant: table absent → honest empty list, not a 500.
   if (error) {
-    if (/does not exist|schema cache|find the table/i.test(error.message)) {
+    if (isMissingSchema(error.message)) {
       return c.json({ codes: [], batches: [], available: false });
     }
     return c.json({ error: error.message }, 500);
@@ -633,7 +667,7 @@ admin.post('/promo/batch', async (c) => {
   }));
   const { error } = await supabase.from('promo_codes').insert(codes);
   if (error) {
-    if (/does not exist|schema cache|find the table/i.test(error.message)) {
+    if (isMissingSchema(error.message)) {
       return c.json({ error: 'promo_codes table not applied yet (migration 0098)' }, 409);
     }
     return c.json({ error: error.message }, 500);

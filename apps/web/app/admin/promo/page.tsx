@@ -7,6 +7,8 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { readMutationError } from '@/lib/admin/mutation-error';
+import { AdminErrorState } from '@/components/admin/AdminErrorState';
+import { readAdminErrorDetail, type AdminErrorStatus } from '@/lib/admin/admin-error';
 
 const ADMIN_BASE = '/api/admin';
 const JSON_HEADERS = { 'Content-Type': 'application/json' };
@@ -52,14 +54,23 @@ export default function AdminPromoPage() {
   const [days, setDays] = useState(30);
   const [batchLabel, setBatchLabel] = useState('');
   const [genBusy, setGenBusy] = useState(false);
+  const [loadError, setLoadError] = useState<AdminErrorStatus | null>(null);
+  const [loadDetail, setLoadDetail] = useState<string | undefined>(undefined);
 
   const load = useCallback(async () => {
     setLoading(true);
     const r = await fetch(`${ADMIN_BASE}/promo`, { headers: JSON_HEADERS });
     if (r.ok) {
       const d = await r.json();
+      setLoadError(null);
+      setLoadDetail(undefined);
       setRows(d.codes ?? []);
       setAvailable(d.available !== false);
+    } else {
+      // FW4 U2: this branch did not exist — a failed load left the page showing an empty
+      // code list, indistinguishable from "no codes generated yet".
+      setLoadError(r.status);
+      setLoadDetail(await readAdminErrorDetail(r));
     }
     setLoading(false);
   }, []);
@@ -117,6 +128,10 @@ export default function AdminPromoPage() {
       <p style={{ fontSize: 12.5, color: 'var(--meta)', marginBottom: 16 }}>
         30 Tage beste Version, einmalig einlösbar. Labels & neue Batches direkt vom iPhone — kein Terminal.
       </p>
+
+      {loadError != null && (
+        <AdminErrorState status={loadError} detail={loadDetail} style={{ marginBottom: 16 }} />
+      )}
 
       {!available && (
         <div style={{ ...card, borderColor: 'var(--warning, #b8860b)' }}>

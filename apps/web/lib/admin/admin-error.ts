@@ -39,10 +39,49 @@ export function adminErrorMessage(status: AdminErrorStatus, detail?: string): st
     return '403 — dieses Konto hat keinen Admin-Zugriff.';
   }
   if (status === 500) {
-    return detail ? `Konfigurationsfehler — ${detail}` : 'Fehler 500 — Admin-Konfiguration prüfen.';
+    // FOUNDER-WALK-4 · U2 — this branch used to assert a CAUSE it had not observed.
+    //
+    // "Konfigurationsfehler" is true for exactly ONE of the two 500s that reach an admin
+    // page: the web proxy's own `admin_key_unconfigured`. The other — the API failing a
+    // read behind the proxy — is not a configuration problem at all, and calling it one
+    // sends the founder back to the env vars they had already verified. Same mistake as the
+    // retracted 401 verdict, one surface further down.
+    //
+    // And the detail was usually absent anyway: the page read `detail`, while the API's 500
+    // body carried `error`. The server's own words were being dropped and replaced with a
+    // guess. `readAdminErrorDetail` now reads both keys; this copy states the status, hands
+    // over whatever the server said verbatim, and names no cause of its own.
+    return detail
+      ? `Fehler 500 — der Server meldet: ${detail}`
+      : 'Fehler 500 — der Server hat keinen Grund mitgeliefert. Serverlog prüfen.';
   }
   if (status === 'network') {
     return 'Konnte Admin-Daten nicht laden — Netzwerk oder API nicht erreichbar.';
   }
-  return `Fehler ${status}`;
+  return detail ? `Fehler ${status} — ${detail}` : `Fehler ${status}`;
+}
+
+/**
+ * FOUNDER-WALK-4 · U2 — read the reason out of a failed admin response, whichever shape it
+ * has, so no page has to know which layer answered.
+ *
+ * There are two error bodies in this chain and they use different keys:
+ *   · the web proxy (app/api/admin/[...path]/route.ts) → `{ error, detail }`
+ *   · the API      (apps/api/src/routes/admin.ts)      → `{ error }` (now also `detail`)
+ *
+ * /admin/insight read only `detail`, only on 500, so an API-side failure arrived as a
+ * generic line while the actual message sat unread in the body. Every other admin page read
+ * NOTHING at all — some did not even show that a request had failed. One reader, used
+ * everywhere, ends both.
+ */
+export async function readAdminErrorDetail(res: Response): Promise<string | undefined> {
+  try {
+    const body = (await res.clone().json()) as { detail?: unknown; error?: unknown } | null;
+    for (const v of [body?.detail, body?.error]) {
+      if (typeof v === 'string' && v.trim()) return v.trim();
+    }
+  } catch {
+    /* not JSON (an HTML error page, an empty body) — the status alone has to speak */
+  }
+  return undefined;
 }
