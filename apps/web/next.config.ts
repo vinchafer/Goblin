@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 import { normalizeOrigin, resolveApiOrigin, describeOriginProblem, headerSafe } from "./lib/env/origin";
+import { apiRewrites } from "./lib/env/api-rewrites";
 
 // 2026-07-30 incident: both of the reads below used to trust the raw env value.
 // `NEXT_PUBLIC_API_URL` held a pasted Supabase hook URL with a trailing newline,
@@ -133,13 +134,16 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  // The `/api/*` → Railway proxy. Returned as the PHASED OBJECT form, not a bare
+  // array: a bare array is `afterFiles`, which is checked BEFORE dynamic routes and
+  // therefore shadowed `app/api/admin/[...path]/route.ts` — the handler that injects
+  // the `x-admin-key` header — so every /admin page got a keyless 401 from the API.
+  // `fallback` runs after dynamic routes, which is what this rule always meant:
+  // "proxy to Railway anything this app does not serve itself." Full routing-order
+  // rationale and the rejected alternatives live in lib/env/api-rewrites.ts; the
+  // phase is locked by lib/env/api-rewrites.test.ts.
   async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: `${API_URL}/api/:path*`,
-      },
-    ];
+    return apiRewrites(API_URL);
   },
   async redirects() {
     return [
