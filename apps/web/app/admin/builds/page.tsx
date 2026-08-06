@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
+import { AdminErrorState } from '@/components/admin/AdminErrorState';
+import { readAdminErrorDetail, type AdminErrorStatus } from '@/lib/admin/admin-error';
 
 const ADMIN_BASE = '/api/admin';
 const adminHeaders = () => ({ 'Content-Type': 'application/json' });
@@ -39,13 +41,23 @@ export default function AdminBuildsPage() {
   const [page, setPage] = useState(1);
   const [selectedBuild, setSelectedBuild] = useState<Build | null>(null);
   const [cancelling, setCancelling] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<AdminErrorStatus | null>(null);
+  const [loadDetail, setLoadDetail] = useState<string | undefined>(undefined);
 
   const load = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams({ page: String(page), limit: '25' });
     if (statusFilter) params.set('status', statusFilter);
     const res = await fetch(`${ADMIN_BASE}/builds?${params}`, { headers: adminHeaders() });
-    if (res.ok) {
+    if (!res.ok) {
+      setLoadError(res.status);
+      setLoadDetail(await readAdminErrorDetail(res));
+      setLoading(false);
+      return;
+    }
+    setLoadError(null);
+    setLoadDetail(undefined);
+    {
       const d = await res.json();
       // U4c: a non-array payload (e.g. an error/object body) used to be assigned
       // straight to `builds`, then `builds.map` threw and blanked the page. Coerce
@@ -70,6 +82,11 @@ export default function AdminBuildsPage() {
       <h1 style={{ fontFamily: 'var(--font-sans)', fontSize: 26, color: 'var(--brand-green)', fontWeight: 700, letterSpacing: '-0.6px', marginBottom: 24 }}>
         Builds
       </h1>
+
+      {/* FW4 U2: an admin page that swallows a failed load shows an EMPTY list — which
+          reads as "nothing here" over data the founder simply could not fetch. FW3 U5 fixed
+          that on users/models/telemetry/insight and left this page behind. */}
+      {loadError != null && <AdminErrorState status={loadError} detail={loadDetail} style={{ marginBottom: 16 }} />}
 
       {/* Filters */}
       <div style={{ display: 'flex', gap: 8, marginBottom: 20, alignItems: 'center' }}>

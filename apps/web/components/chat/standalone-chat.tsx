@@ -23,6 +23,10 @@ import { SendToCodeContext, type CardStcFile } from "@/contexts/send-to-code-con
 import { isAgentModel } from "@/lib/agent-eligible";
 import { shouldRouteToAgent, AGENT_HANDOFF_NARRATION } from "@/lib/run-intent";
 import { bindResumeOnReturn } from "@/lib/resume-on-return";
+import {
+  createTurnGuard, recoverTurn, recoveryMessage, checkingMessage, offersResend,
+  shouldAskServerOnReturn, type TranscriptMessage,
+} from "@/lib/chat-recovery";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -393,84 +397,124 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
     return () => { abortRef.current?.abort(); };
   }, []);
 
-  // ─── FINAL-POLISH · U1 — coming back after the phone locked ─────────────────
+  // ─── FOUNDER-WALK-4 · U1 — coming back after the phone locked ───────────────
   //
   // The founder's walk: send a message on the iPhone, switch to the PC, the phone
-  // auto-locks. iOS suspends the PWA and the SSE socket dies. The server now finishes
-  // the turn and persists the answer regardless (chat-sessions.ts), but the frozen tab
-  // never learns that — it thaws still showing a dead spinner and a "try again" line
-  // over an answer that actually exists.
+  // auto-locks. iOS suspends the PWA and the SSE socket dies. The server finishes the turn
+  // and persists the answer regardless (chat-sessions.ts) — but FINAL-POLISH · U1's client
+  // half still lost, and the founder's re-test still showed "die Verbindung hat kurz
+  // gehakt". Two reasons, both structural, both now owned by lib/chat-recovery.ts:
   //
-  // So on return we ASK the server. Nothing here claims the answer is there; it fetches
-  // and then reports only what it actually saw. If the turn was still running when the
-  // user came back, we poll briefly (a normal turn is seconds) before giving up and
-  // leaving the honest retry affordance in place.
-  const isStreamingRef = useRef(false);
-  useEffect(() => { isStreamingRef.current = isStreaming; }, [isStreaming]);
+  //   1. TWO WRITERS, NO ORDER. The dead stream's rejection and the return handler both
+  //      wake at thaw and both write `error`/`sendFailed`. The rejection's tail is a
+  //      3s-timeout health ping; the recovery's is an import + a session read + a fetch.
+  //      The recovery could succeed and be overwritten milliseconds later. `turnGuard` now
+  //      retires a turn the moment a recovery takes it over, so its late writes are refused.
+  //   2. THE TRIGGER NEEDED AN EVENT THAT MAY NOT SURVIVE A FREEZE. The old rule fired only
+  //      when it had MEASURED a long hide. A `visibilitychange` delivered to an already-
+  //      suspended page runs at thaw with `visibilityState === 'visible'` and no measurement
+  //      at all → `force: false` → no recovery, ever. We now decide on our own stream's
+  //      SILENCE, which a freeze cannot hide.
+  //
+  // What we do NOT claim to fix: an in-flight fetch does not survive iOS suspension. The
+  // request dies. Everything here is about the recovery being honest afterwards — it asks
+  // the server and reports only what it saw, including telling the founder when their
+  // message never left the phone at all.
+  const turnGuard = useRef(createTurnGuard());
+  /** Wall clock of the last stream frame; null once no stream is running. */
+  const lastStreamActivityRef = useRef<number | null>(null);
   const interruptedRef = useRef(false);
   useEffect(() => {
     interruptedRef.current = isStreaming || error !== null || messages.some((m) => m.sendFailed);
   }, [isStreaming, error, messages]);
+  /** The prompt of the turn in flight — how the recovery tells "arrived" from "never arrived". */
+  const pendingPromptRef = useRef<string | null>(null);
+  /** The local id of that turn's user bubble, so a resend affordance lands on the right one. */
+  const pendingIdRef = useRef<string | null>(null);
 
   const recoverAfterDisconnect = useCallback(async () => {
     if (!sessionId) return;
-    const l = readLang();
-    setError(l === "en"
-      ? "Connection lost — checking whether your answer finished …"
-      : "Verbindung unterbrochen — ich prüfe, ob deine Antwort fertig geworden ist …");
-    try {
-      const { data: { session } } = await (await import("@/lib/supabase/client")).createClient().auth.getSession();
-      const token = session?.access_token;
-      if (!token) return;
+    const lang = readLang() === "en" ? "en" : "de";
+    const prompt = pendingPromptRef.current ?? "";
+    const activityAtStart = lastStreamActivityRef.current;
 
-      // A turn the user walked out on may still be running. Poll briefly rather than
-      // declaring failure on the first look.
-      for (let attempt = 0; attempt < 5; attempt++) {
-        const res = await fetch(`${apiBase}/api/chat-sessions/${sessionId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-          cache: "no-store",
-        });
-        if (res.ok) {
-          const d = (await res.json()) as { messages?: StandaloneMessage[] };
-          const server = d.messages ?? [];
-          const last = server[server.length - 1];
-          if (last && last.role === "assistant") {
-            // The turn DID finish while we were away. Adopt the server's transcript —
-            // it is the truth — and drop the dead stream and its error banner.
-            abortRef.current?.abort();
-            streamingMsgRef.current = null;
-            streamingContentRef.current = "";
-            const adopted = server.map((m) => ({ ...m }));
-            setMessages(adopted);
-            baseMessagesRef.current = adopted;
-            setIsStreaming(false);
-            setError(null);
-            return;
-          }
-        }
-        await new Promise((r) => setTimeout(r, 1500 + attempt * 1000));
-      }
-      // Nothing landed. Say exactly that — never a vague "try again" over lost work.
-      abortRef.current?.abort();
-      streamingMsgRef.current = null;
-      setIsStreaming(false);
-      setError(l === "en"
-        ? "The connection dropped and this answer did not finish. Your message is saved — send it again."
-        : "Die Verbindung ist abgerissen und diese Antwort wurde nicht fertig. Deine Nachricht ist gespeichert — schick sie einfach nochmal.");
-    } catch {
-      setIsStreaming(false);
-      setError(l === "en"
-        ? "Couldn't reach the server to check on your answer. Please try again."
-        : "Der Server war nicht erreichbar, um nach deiner Antwort zu sehen. Bitte versuch es erneut.");
+    turnGuard.current.beginRecovery();
+    setError(checkingMessage(lang));
+
+    const outcome = await recoverTurn({
+      prompt,
+      // The session is re-read on every look, not once up front: a token read that fails on
+      // the first attempt (the app has only just thawed) must not condemn the whole recovery
+      // to `unreachable`. A failure here returns null, which is exactly "could not ask" —
+      // never a silent no-op that leaves the founder staring at a spinner.
+      fetchTranscript: async () => {
+        try {
+          const { data: { session } } = await (await import("@/lib/supabase/client")).createClient().auth.getSession();
+          const token = session?.access_token;
+          if (!token) return null;
+          const res = await fetch(`${apiBase}/api/chat-sessions/${sessionId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+            cache: "no-store",
+          });
+          if (!res.ok) return null;
+          const d = (await res.json()) as { messages?: TranscriptMessage[] };
+          return d.messages ?? [];
+        } catch { return null; }
+      },
+      // A frame that arrived since we started looking means the stream was never dead.
+      streamAlive: () =>
+        lastStreamActivityRef.current !== null && lastStreamActivityRef.current !== activityAtStart,
+      sleep: (ms) => new Promise((r) => setTimeout(r, ms)),
+    });
+
+    turnGuard.current.endRecovery(outcome.kind !== "stream-alive");
+
+    if (outcome.kind === "stream-alive") {
+      // Back off completely: the turn is still live and still owns the screen.
+      setError(null);
+      return;
     }
+
+    abortRef.current?.abort();
+    streamingMsgRef.current = null;
+    streamingContentRef.current = "";
+    lastStreamActivityRef.current = null;
+    setIsStreaming(false);
+
+    if (outcome.kind === "answered") {
+      // The server's transcript is the truth. Adopt it whole — the answer simply appears.
+      const adopted = outcome.messages.map((m) => ({
+        ...m, has_code: m.has_code ?? m.content.includes("```"),
+      })) as typeof messages;
+      setMessages(adopted);
+      baseMessagesRef.current = adopted;
+      setError(null);
+      return;
+    }
+
+    // Only a message that provably never reached the server keeps a resend affordance —
+    // offering "erneut senden" over a turn the server is still finishing would duplicate
+    // work the founder has already paid for.
+    const resend = offersResend(outcome.kind);
+    setMessages(baseMessagesRef.current.map((m) =>
+      m.id === pendingIdRef.current ? { ...m, sendFailed: resend } : m,
+    ));
+    setError(recoveryMessage(outcome.kind, lang));
   }, [sessionId, apiBase]);
 
   // The trigger the mount-only paths could never provide: iOS freezes the tab rather
   // than unmounting it, so only a visibility/bfcache/online event tells us we are back.
-  // A brief hide (app switcher) leaves a healthy stream alone.
+  // The DECISION is `shouldAskServerOnReturn`, not the detector's `force` — see above.
   useEffect(() => {
-    return bindResumeOnReturn(({ force }) => {
-      if (!force || !interruptedRef.current) return;
+    return bindResumeOnReturn(({ force, hiddenForMs }) => {
+      if (turnGuard.current.recovering()) return; // one look at a time
+      const quietForMs = lastStreamActivityRef.current === null
+        ? null
+        : Date.now() - lastStreamActivityRef.current;
+      const ask = force
+        ? interruptedRef.current
+        : shouldAskServerOnReturn({ unresolved: interruptedRef.current, hiddenForMs, quietForMs });
+      if (!ask) return;
       void recoverAfterDisconnect();
     });
   }, [recoverAfterDisconnect]);
@@ -607,6 +651,14 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
     setError(null);
     streamingContentRef.current = "";
 
+    // U1: this turn's identity. Every write below carries `epoch`, and the guard refuses it
+    // once a recovery has taken the turn over — which is what stops a rejection that thawed
+    // out of a suspended socket from stamping "try again" over an answer already on screen.
+    const epoch = turnGuard.current.begin();
+    pendingPromptRef.current = text;
+    pendingIdRef.current = tempId;
+    lastStreamActivityRef.current = Date.now();
+
     const streamMsg: typeof messages[0] = {
       id: "streaming", role: "assistant", content: "",
       has_code: false, created_at: new Date().toISOString(),
@@ -626,6 +678,14 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
         { message: text, modelSlug: model.slug, clientMessageId, websearch: wantsWebSearch },
         (raw: unknown) => {
           const d = raw as StreamChunk;
+          // U1: frames that ARRIVED are trustworthy — they came over a socket that is
+          // demonstrably alive — so they are gated on the epoch alone, not on `mayFinish`.
+          // A recovery running right now will see this timestamp move and back off.
+          // (The one writer that must yield to a recovery is the local connection-failure
+          // verdict in the catch below, which is a guess about a socket, not a message
+          // from the server.)
+          if (!turnGuard.current.mayStream(epoch)) return; // superseded — this turn is over
+          lastStreamActivityRef.current = Date.now();
 
           if (d.type === "meta") {
             if (streamingMsgRef.current) {
@@ -650,11 +710,13 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
               setMessages([...baseMessagesRef.current, final]);
               streamingMsgRef.current = null;
             }
+            lastStreamActivityRef.current = null; // no stream is running any more
             setIsStreaming(false);
           } else if (d.type === "error") {
             setError(friendlyError(d.message));
             setMessages(baseMessagesRef.current);
             streamingMsgRef.current = null;
+            lastStreamActivityRef.current = null;
             setIsStreaming(false);
           }
         },
@@ -665,7 +727,24 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
       // place (founder decision: abrupt abort, partial stays), no banner.
       if (err instanceof Error && err.name === "AbortError") {
         streamingMsgRef.current = null;
+        lastStreamActivityRef.current = null;
         setIsStreaming(false);
+        return;
+      }
+      // U1 — THE FOUNDER'S SYMPTOM WAS WRITTEN HERE.
+      //
+      // On a locked iPhone this branch runs at THAW: the frozen socket's rejection is
+      // delivered, `isConnectionError` matches, and `connectionErrorMessage()` pings /health
+      // — which succeeds, because the network is back — and returns "Die Verbindung hat kurz
+      // gehakt — bitte versuch es erneut". Meanwhile the return handler is asking the server
+      // and finding the finished answer. Both used to write; the slower one lost.
+      //
+      // This is a GUESS about a socket, not a message from the server, so it now yields:
+      // once a recovery owns the turn, this write is refused outright. The `await` below is
+      // exactly where the old ordering was decided, so the guard is re-checked after it too
+      // — a recovery can start while the health ping is in flight.
+      if (!turnGuard.current.mayFinish(epoch)) {
+        streamingMsgRef.current = null;
         return;
       }
       // P0.5 — connection-class failure: the message enters a visible
@@ -673,15 +752,18 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
       // dedupe) instead of a bare toast. Honest copy distinguishes offline
       // from server-down (P0.4 classifier).
       if (isConnectionError(err)) {
+        const copy = await connectionErrorMessage();
+        if (!turnGuard.current.mayFinish(epoch)) { streamingMsgRef.current = null; return; }
         setMessages(baseMessagesRef.current.map(m =>
           m.id === tempId ? { ...m, sendFailed: true } : m
         ));
-        setError(await connectionErrorMessage());
+        setError(copy);
       } else {
         setError(friendlyError(err, "Senden fehlgeschlagen — bitte nochmal versuchen."));
         setMessages(baseMessagesRef.current);
       }
       streamingMsgRef.current = null;
+      lastStreamActivityRef.current = null;
       setIsStreaming(false);
     }
   };
@@ -690,6 +772,13 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
     abortRef.current?.abort();
     // Partial assistant message remains in messages[] — do NOT remove it.
     streamingMsgRef.current = null;
+    // U1: a deliberate stop RESOLVES the turn. Retiring it here (begin() bumps the epoch)
+    // means a later return does not treat the user's own stop as an interrupted turn and
+    // go asking the server about it.
+    turnGuard.current.begin();
+    pendingPromptRef.current = null;
+    pendingIdRef.current = null;
+    lastStreamActivityRef.current = null;
     setIsStreaming(false);
   };
 

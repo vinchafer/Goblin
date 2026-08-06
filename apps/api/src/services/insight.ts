@@ -10,6 +10,7 @@
 // message content, file contents, or generated code (events never carried any).
 
 import { getSupabaseAdmin } from '../lib/supabase';
+import { isMissingSchema } from '../lib/schema-shape';
 
 // The canonical funnel, in order. `source: 'signup'` is derived from
 // users.created_at; every other stage is the first occurrence of its event.
@@ -50,6 +51,37 @@ function testEmailSet(): Set<string> {
   );
 }
 
+/**
+ * FOUNDER-WALK-4 · U2 — a read failure that says WHICH read failed.
+ *
+ * `/admin/insight` answered 500 and the founder had no way to learn why: the route caught
+ * everything into `{ error: <message> }`, the web page's 500 branch read a `detail` key
+ * that only the web proxy's own error body ever carries, and the shared copy then called
+ * every 500 a "Konfigurationsfehler" — a CAUSE nobody had observed. Three layers, each
+ * discarding a little more, ending in a sentence that pointed at the wrong thing. That is
+ * the same failure mode as the retracted 401 verdict, one surface further down.
+ *
+ * So the error carries its own diagnosis now: which table, which migration supplies it,
+ * and whether the shape is "schema older than code" (the founder applies a migration) or a
+ * genuine read failure (something else is wrong). The route turns that into an honest
+ * answer instead of a bare 500.
+ */
+export class InsightReadError extends Error {
+  constructor(
+    /** The table the failing read targeted. */
+    readonly table: string,
+    /** The migration that supplies it — what the founder would actually apply. */
+    readonly migration: string,
+    /** True when the DB is simply older than this code (missing table/column). */
+    readonly schemaGap: boolean,
+    /** The underlying Postgres/PostgREST message, verbatim. */
+    readonly detail: string,
+  ) {
+    super(`insight ${table} read failed: ${detail}`);
+    this.name = 'InsightReadError';
+  }
+}
+
 async function loadUsers(): Promise<UserRow[]> {
   const sb = getSupabaseAdmin();
   const { data, error } = await sb
@@ -58,7 +90,10 @@ async function loadUsers(): Promise<UserRow[]> {
     .is('deleted_at', null)
     .order('created_at', { ascending: false })
     .limit(5000);
-  if (error) throw new Error(`insight users read failed: ${error.message}`);
+  // `deleted_at` is written by account-deletion and read by /admin/users, but NO migration
+  // in this repo creates it — so name it here rather than let a 42703 read as a generic
+  // outage. Same read, same filter, same failure mode as admin.ts:41.
+  if (error) throw new InsightReadError('users', '(users.deleted_at — added out of band, no migration in repo)', isMissingSchema(error.message), error.message);
   return (data ?? []) as UserRow[];
 }
 
@@ -73,7 +108,12 @@ async function loadEvents(sinceDays: number): Promise<EventRow[]> {
     .gte('created_at', since)
     .order('created_at', { ascending: false })
     .limit(50000);
-  if (error) throw new Error(`insight events read failed: ${error.message}`);
+  // This is the ONLY admin endpoint that reads platform_events, and 0078/0085 both say
+  // "NOT applied automatically — founder applies via Supabase SQL Editor". Every other
+  // consumer of this table is pre-migration tolerant by contract (insertPlatformEvent
+  // silent-fails). Insight was the sole hard-failing one — which is exactly the shape of
+  // "only /admin/insight is broken".
+  if (error) throw new InsightReadError('platform_events', '0078 + 0085', isMissingSchema(error.message), error.message);
   return (data ?? []) as EventRow[];
 }
 

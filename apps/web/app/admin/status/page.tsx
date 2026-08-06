@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { readMutationError } from '@/lib/admin/mutation-error';
+import { AdminErrorState } from '@/components/admin/AdminErrorState';
+import { readAdminErrorDetail, type AdminErrorStatus } from '@/lib/admin/admin-error';
 
 const ADMIN_BASE = '/api/admin';
 const adminHeaders = () => ({ 'Content-Type': 'application/json' });
@@ -50,11 +52,20 @@ export default function AdminStatusPage() {
   const [form, setForm] = useState(BLANK);
   const [saving, setSaving] = useState(false);
   const [mutError, setMutError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<AdminErrorStatus | null>(null);
+  const [loadDetail, setLoadDetail] = useState<string | undefined>(undefined);
 
   const load = useCallback(async () => {
     setLoading(true);
     const res = await fetch(`${ADMIN_BASE}/incidents`, { headers: adminHeaders() });
-    if (res.ok) setIncidents(await res.json());
+    if (res.ok) {
+      setLoadError(null);
+      setLoadDetail(undefined);
+      setIncidents(await res.json());
+    } else {
+      setLoadError(res.status);
+      setLoadDetail(await readAdminErrorDetail(res));
+    }
     setLoading(false);
   }, []);
 
@@ -125,6 +136,14 @@ export default function AdminStatusPage() {
           + New Incident
         </button>
       </div>
+
+      {/* FW4 U2: a swallowed LOAD failure rendered an empty incident list — "no incidents"
+          over data the founder simply could not fetch. FW3 U5 fixed that on
+          users/models/telemetry and left this page behind; the /admin/insight 500 is what
+          surfaced the gap. (mutError below covers WRITES; this covers the read.) */}
+      {loadError != null && (
+        <AdminErrorState status={loadError} detail={loadDetail} style={{ marginBottom: 16 }} />
+      )}
 
       {/* U5.1: honest error surface for list-level failures (delete). */}
       {mutError && !showNew && (

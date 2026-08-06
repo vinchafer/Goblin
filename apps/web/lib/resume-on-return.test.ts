@@ -50,6 +50,26 @@ describe('resume detector — when a return means "the socket is dead"', () => {
     expect(d.visible().force).toBe(false);
   });
 
+  it('reports NO hide measurement (null) rather than a zero-length one', () => {
+    // FOUNDER-WALK-4 · U1. "Never hidden" and "hidden for 0ms" are the same `force: false`
+    // but they are NOT the same fact. A page iOS froze before delivering `visibilitychange`
+    // runs the handler at thaw with `visibilityState === 'visible'` and lands here having
+    // measured nothing — over a stream that has been dead for a minute. Callers must be able
+    // to tell "we have no measurement" from "we were barely away"; the chat surface then
+    // decides on its own stream's silence (see chat-recovery.ts). Collapsing the two is what
+    // let the founder's re-test still show a dead spinner.
+    const clock = fakeClock();
+    const d = createResumeDetector({ now: clock.now });
+    expect(d.visible().hiddenForMs).toBeNull();
+
+    d.hidden();
+    clock.advance(45_000);
+    expect(d.visible().hiddenForMs).toBe(45_000);
+
+    // bfcache / online carry no measurement either — `force` alone speaks for them.
+    expect(d.restored().hiddenForMs).toBeNull();
+  });
+
   it('counts a page that was ALREADY hidden at bind time', () => {
     // Mounting while backgrounded: the hidden clock starts at construction, so a long
     // stay away is still recognised on return.

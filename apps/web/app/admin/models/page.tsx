@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { readMutationError } from '@/lib/admin/mutation-error';
 import { setAvailability, reconcileToggle } from '@/lib/admin/optimistic-toggle';
 import { AdminErrorState } from '@/components/admin/AdminErrorState';
-import { type AdminErrorStatus } from '@/lib/admin/admin-error';
+import { readAdminErrorDetail, type AdminErrorStatus } from '@/lib/admin/admin-error';
 
 const ADMIN_BASE = '/api/admin';
 const adminHeaders = () => ({ 'Content-Type': 'application/json' });
@@ -48,13 +48,22 @@ export default function AdminModelsPage() {
   const [mutError, setMutError] = useState<string | null>(null);
   // FW3 U5: a load 401 left an empty models table (a false state). Surface it.
   const [loadError, setLoadError] = useState<AdminErrorStatus | null>(null);
+  const [loadDetail, setLoadDetail] = useState<string | undefined>(undefined);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch(`${ADMIN_BASE}/models`, { headers: adminHeaders() });
-      if (!res.ok) { setLoadError(res.status); setLoading(false); return; }
+      if (!res.ok) {
+        // FW4 U2: the status was kept, the server's own reason thrown away — so a 500
+        // saying "platform_events is not there yet" rendered as a bare status code.
+        setLoadError(res.status);
+        setLoadDetail(await readAdminErrorDetail(res));
+        setLoading(false);
+        return;
+      }
       setLoadError(null);
+      setLoadDetail(undefined);
       setModels(await res.json());
     } catch {
       setLoadError('network');
@@ -154,7 +163,7 @@ export default function AdminModelsPage() {
 
       {/* FW3 U5: load failure (401 → key mismatch) fails honestly, not as an
           empty table — shared, actionable copy across every admin page. */}
-      {loadError != null && <AdminErrorState status={loadError} style={{ marginBottom: 16 }} />}
+      {loadError != null && <AdminErrorState status={loadError} detail={loadDetail} style={{ marginBottom: 16 }} />}
 
       {/* U5.1: honest error surface — shown on the list when a mutation fails
           outside the modal (delete / toggle). */}

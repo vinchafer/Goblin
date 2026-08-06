@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { readMutationError } from '@/lib/admin/mutation-error';
 import { hasNextPage, hasPrevPage } from '@/lib/admin/pagination';
 import { AdminErrorState } from '@/components/admin/AdminErrorState';
-import { type AdminErrorStatus } from '@/lib/admin/admin-error';
+import { readAdminErrorDetail, type AdminErrorStatus } from '@/lib/admin/admin-error';
 
 // Admin calls go through /api/admin proxy (server-side key injection, is_admin check)
 const ADMIN_BASE = '/api/admin';
@@ -62,6 +62,7 @@ export default function AdminUsersPage() {
   // FW3 U5: a load failure (esp. 401) was silent — an empty user list is a false
   // state. Capture the status and render the shared honest error instead.
   const [loadError, setLoadError] = useState<AdminErrorStatus | null>(null);
+  const [loadDetail, setLoadDetail] = useState<string | undefined>(undefined);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -72,8 +73,15 @@ export default function AdminUsersPage() {
         fetch(`${ADMIN_BASE}/users?${params}`, { headers: adminHeaders() }),
         fetch(`${ADMIN_BASE}/stats`, { headers: adminHeaders() }),
       ]);
-      if (!usersRes.ok) { setLoadError(usersRes.status); setLoading(false); return; }
+      if (!usersRes.ok) {
+        // FW4 U2: the status was kept, the server's own reason thrown away.
+        setLoadError(usersRes.status);
+        setLoadDetail(await readAdminErrorDetail(usersRes));
+        setLoading(false);
+        return;
+      }
       setLoadError(null);
+      setLoadDetail(undefined);
       setUsers(await usersRes.json());
       if (statsRes.ok) setStats(await statsRes.json());
     } catch {
@@ -132,7 +140,7 @@ export default function AdminUsersPage() {
 
       {/* FW3 U5: a load failure (401 → key mismatch) fails honestly, not as an
           empty table. Shared, actionable copy across every admin page. */}
-      {loadError != null && <AdminErrorState status={loadError} style={{ marginBottom: 16 }} />}
+      {loadError != null && <AdminErrorState status={loadError} detail={loadDetail} style={{ marginBottom: 16 }} />}
 
       {/* U5.1: honest, visible error state — only shown when a mutation fails. */}
       {mutError && !selectedUser && (

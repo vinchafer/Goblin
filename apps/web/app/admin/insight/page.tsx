@@ -10,7 +10,7 @@
 // founder reads this on a phone (legible from 360px), dark + light via CSS vars.
 
 import { useCallback, useEffect, useState } from 'react';
-import { adminErrorMessage } from '@/lib/admin/admin-error';
+import { adminErrorMessage, readAdminErrorDetail } from '@/lib/admin/admin-error';
 
 const ADMIN_BASE = '/api/admin';
 const mono = "'JetBrains Mono', monospace";
@@ -39,6 +39,18 @@ interface Safety {
 interface Insight {
   generatedAt: string; includeTest: boolean; testAccountCount: number;
   funnel7: Funnel; funnel30: Funnel; journeys: Journey[]; pulse: Pulse; safety?: Safety;
+  available?: true;
+}
+/**
+ * FOUNDER-WALK-4 · U2 — the "the DB is older than this code" answer.
+ *
+ * platform_events comes from migrations 0078/0085, which this repo applies BY HAND. Until
+ * they are applied the read fails, and this page used to render that as a bare 500. It is
+ * now a stated, actionable state — and NOT an empty funnel, which would be a false state:
+ * "0 registriert" and "we cannot see the data" must never look the same.
+ */
+interface Unavailable {
+  available: false; reason: 'schema_pending'; table: string; migration: string; detail: string;
 }
 
 function Card({ title, right, children }: { title: string; right?: React.ReactNode; children: React.ReactNode }) {
@@ -107,6 +119,7 @@ function Toggle({ on, onClick, children }: { on: boolean; onClick: () => void; c
 
 export default function AdminInsightPage() {
   const [data, setData] = useState<Insight | null>(null);
+  const [unavailable, setUnavailable] = useState<Unavailable | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [days, setDays] = useState<7 | 30>(7);
@@ -118,15 +131,21 @@ export default function AdminInsightPage() {
     try {
       const res = await fetch(`${ADMIN_BASE}/insight?days=${days}&includeTest=${includeTest}`, { headers: { 'Content-Type': 'application/json' } });
       if (!res.ok) {
-        // FW3 U5: the SHARED admin error copy (this page's 401 string is now the
-        // single source for every admin page). 500 still surfaces the proxy detail.
-        const detail = res.status === 500
-          ? (await res.json().catch(() => null) as { detail?: string } | null)?.detail
-          : undefined;
-        setError(adminErrorMessage(res.status, detail));
+        // FW3 U5: the SHARED admin error copy (this page's 401 string is now the single
+        // source for every admin page). FW4 U2: the detail is read from BOTH body keys and
+        // on EVERY status — reading only `detail`, only on 500, dropped the API's own
+        // message and left a generic line in its place.
+        setError(adminErrorMessage(res.status, await readAdminErrorDetail(res)));
         return;
       }
-      setData(await res.json());
+      const body = (await res.json()) as Insight | Unavailable;
+      if (body.available === false) {
+        // A pending migration, named. Not a 500, and not an empty dashboard either.
+        setUnavailable(body);
+        return;
+      }
+      setUnavailable(null);
+      setData(body);
     } catch {
       setError(adminErrorMessage('network'));
     } finally {
@@ -166,8 +185,31 @@ export default function AdminInsightPage() {
         </button>
       </div>
 
-      {loading && !data ? <div style={{ color: 'var(--meta)' }}>Lädt…</div> : null}
+      {loading && !data && !unavailable ? <div style={{ color: 'var(--meta)' }}>Lädt…</div> : null}
       {error ? <div style={{ color: 'var(--danger)', marginBottom: 12 }}>{error}</div> : null}
+
+      {/* FW4 U2: the DB is older than this code. Say exactly that, name the migration, and
+          show NO numbers — an empty funnel here would read as "nobody signed up". */}
+      {unavailable ? (
+        <div role="alert" style={{
+          background: 'color-mix(in srgb, var(--brand-gold) 12%, transparent)',
+          border: '1px solid var(--brand-gold)', borderRadius: 12, padding: 16,
+          fontFamily: 'var(--font-sans)', fontSize: 13, lineHeight: 1.55, color: 'var(--text)',
+        }}>
+          <strong style={{ display: 'block', marginBottom: 6 }}>
+            Diese Ansicht braucht eine Migration, die noch nicht eingespielt ist.
+          </strong>
+          <div>
+            Die Tabelle <code style={{ fontFamily: mono }}>{unavailable.table}</code> fehlt in der
+            Datenbank. Spiel Migration <code style={{ fontFamily: mono }}>{unavailable.migration}</code>{' '}
+            im Supabase-SQL-Editor ein, dann lädt diese Seite. Solange zeige ich keine Zahlen —
+            eine leere Kurve wäre nicht „niemand da“, sondern „ich kann nicht nachsehen“.
+          </div>
+          <div style={{ marginTop: 8, fontSize: 11.5, color: 'var(--meta)', fontFamily: mono, wordBreak: 'break-word' }}>
+            {unavailable.detail}
+          </div>
+        </div>
+      ) : null}
 
       {data && funnel ? (
         <>
