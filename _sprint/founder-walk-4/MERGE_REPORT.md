@@ -226,20 +226,44 @@ table.
 
 ---
 
-## Money suites
+## Money suites — READ AT JOB-LOG LEVEL (and they were)
 
-**Read this at job-log level, not from the table above.** The real-Stripe suites
-(proration / subscribe / tier) run only when `STRIPE_SECRET_KEY` and the three
-`STRIPE_PRICE_*` secrets are present. GitHub sets `CI=true`, which arms
-`money-suite-guard.test.ts` — it **fails the `api-tests` job** if those secrets are
-missing, so a green build cannot hide a silent money-test skip.
+They cannot run in this sandbox (no Stripe test credentials; obtaining them is a
+founder-credential action), so the local run proves nothing about them. The gate is the
+**`API unit tests (incl. build-loop net)` job log on the PR**, and it was read, not
+assumed.
 
-They cannot run in this sandbox (no Stripe test credentials, and obtaining them is a
-founder-credential action). The gate that matters is the **`API unit tests (incl.
-build-loop net)` job log on the PR**, which is where the guard and the money suites
-actually execute. This unit touches `apps/api/src/routes/admin.ts`,
-`apps/api/src/services/insight.ts` and a new `apps/api/src/lib/schema-shape.ts` —
-none of them on a billing path — but the job log, not that reasoning, is the gate.
+CI run [`31099070217`](https://github.com/vinchafer/Goblin/actions/runs/31099070217),
+job `92607975158`, head `b353c22` — the real-Stripe suites **executed**, they did not
+self-skip:
+
+```
+✓ plan-change for existing subscribers (real test-mode Stripe)
+    PROOF 1 upgrade Build→Pro uses subscriptions.UPDATE …
+    PROOF 2 downgrade Pro→Build credits proration …
+    PROOF 3 GUARD — existing subscriber hitting the SUBSCRIBE path …
+    PROOF 4 a genuinely NEW (no-sub) user still subscribes …
+    PROOF 7 portal path healthy …
+✓ immediate-proration (always_invoice) — real test-mode Stripe
+    PROOF A / PROOF B (declined card) / PROOF C
+✓ account-deletion canonical service (real test-mode Stripe)   PROOF 1–6
+✓ src/services/money-suite-guard.test.ts       (1 test)   ← armed, and passed
+✓ src/services/billing-money-timeout.test.ts  (1 test)
+
+Test Files  146 passed (146)
+Tests       1551 passed (1551)
+```
+
+`money-suite-guard.test.ts` passing under `CI=true` is itself the proof the Stripe
+secrets were present — it is written to **fail the job** when they are missing, so a
+green build cannot hide a silent money-test skip.
+
+Both CI jobs green: **Typecheck & Build** `92607975084`, **API unit tests**
+`92607975158`. Vercel preview deployed Ready.
+
+For the record, this PR touches `apps/api/src/routes/admin.ts`,
+`apps/api/src/services/insight.ts` and a new `apps/api/src/lib/schema-shape.ts` — none
+on a billing path — but the job log above, not that reasoning, is the gate.
 
 ## Files
 
