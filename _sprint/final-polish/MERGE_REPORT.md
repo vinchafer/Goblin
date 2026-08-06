@@ -2,7 +2,9 @@
 
 **Branch:** `claude/wave-final-polish-goblin-nfyldc`, fresh from `4423c63` (master).
 **Scope:** the founder's last cleanup wave before invitations go out.
-**Status:** PR open, **HALT** — merge is founder-granted.
+**Status:** **MERGED** — PR #71 → `master` as **`bd3e0b2`**, 2026-08-05 18:41:16 +0700
+(2026-08-05T11:41:16Z), `--no-ff` (two parents: `4423c63` + `0aaab21`).
+Merge granted by founder + Steven. Master CI verified at job-log level below.
 
 Every number below is a re-run count, not an adjective.
 
@@ -283,6 +285,41 @@ wave was run against production**, and none should be read as a production state
 
 ---
 
+## Post-merge verification — master, at job-log level
+
+Merge commit **`bd3e0b2`**, 2026-08-05 18:41:16 +0700 (`11:41:16Z`).
+
+**CI run 414**, job *"API unit tests (incl. build-loop net)"*:
+
+| Evidence | Reading |
+|---|---|
+| `✓ money-suite-guard.test.ts (1 test)` | the guard ran, and it was **ARMED** — GitHub sets `CI=true`, and the workflow sets no `ALLOW_MONEY_TEST_SKIP`, so its `expect.fail` path was live rather than the local warn path |
+| `✓ account-deletion.test.ts (6 tests) 28074ms` | real test-mode Stripe |
+| `✓ change-plan.test.ts (7 tests) 24149ms` | real test-mode Stripe |
+| `✓ change-plan-immediate.test.ts (3 tests) 21930ms` | real test-mode Stripe |
+| `Test Files 145 passed (145)` · `Tests 1546 passed (1546)` | **zero test skips.** The money suites gate on `const skip = HAS_TEST_KEY ? describe : describe.skip`, so a missing key would surface as skipped tests. The single line containing "skipped" anywhere in the log is pnpm's `Lockfile is up to date, resolution step is skipped` — checked, not assumed. |
+
+**E2E run 397**: `168 passed, 2 flaky` (3.5 min), job conclusion success.
+`@auth` genuinely ran on master — **15 auth-desktop + 15 auth-mobile**, plus 140 `@public`.
+
+**The two flakes, named rather than rounded away** (both passed on retry; neither is on a
+path this wave touched):
+- `19-mobile-create-project.spec.ts:7` — also flaked on the PR run. **Two consecutive runs
+  is a pattern, not noise**, and it is worth a look before it erodes trust in the gate.
+- `26-settings-structure.spec.ts:49` ("Profile: edit name, save, persists across reload") —
+  first sighting.
+
+## Migration state — settled by the founder's probe
+
+`supabase/checks/migration_status.sql` was run in Supabase Studio: **0076–0100 ALL APPLIED.**
+Nothing is authored-but-unapplied in that range, including `0092` — so the re-attach risk I
+had wrongly asserted does not exist. Recorded as reported by the founder; this session has
+no database access and did not observe the output.
+
+The probe stays in the repo as the durable answer: it replaces inference from old wave
+reports (which is exactly how I got `0092` wrong) with a reading from the database. Re-run
+it after any wave that authors a migration.
+
 ## Consumption (Gesetz 5)
 
 One consumption change: an abandoned chat turn now runs to its natural stop instead of
@@ -293,8 +330,10 @@ reconciliation protocol.
 
 ## Migrations
 
-**None authored, none needed.** Every unit works against the current schema. `0092`
-(F-40's re-attach link) is still the founder's to apply — see below.
+**None authored, none needed.** Every unit works against the current schema.
+
+`0092` (F-40's re-attach link) was **not** outstanding, contrary to what an earlier draft of
+this report said: the probe confirms 0076–0100 all applied. See "Migration state" above.
 
 ---
 
@@ -324,10 +363,13 @@ reconciliation protocol.
    The founder's objection is well-founded — migrations are applied in ascending order, and
    `0097`/`0098` being applied makes `0092` almost certainly applied too.
 
-   What replaces the guess: `supabase/checks/migration_status.sql`, a read-only probe that
-   answers it from the database in one paste. The conditional statement that remains true is
-   narrow: *if* `session_id` were absent, `findActiveRun` returns null and agent re-attach is
-   never offered. The probe settles whether that "if" applies.
+   What replaced the guess: `supabase/checks/migration_status.sql`, a read-only probe.
+
+   **SETTLED — the founder ran it in Supabase Studio: 0076–0100 ALL APPLIED.** `0092` is
+   applied, so `agent_runs.session_id` exists, `findActiveRun` works, and F-40's agent
+   re-attach IS offered — the conditional risk I raised does not apply. There are no
+   authored-but-unapplied migrations in that range. (Recorded as reported by the founder;
+   this session has no database access and did not observe the output itself.)
 
    **This PR authors no migrations and depends on no unapplied one** — every unit works
    against the current schema.
@@ -378,9 +420,9 @@ reconciliation protocol.
    tell me what it said.
 2. **Check `/admin/promo` (30 s, phone).** It answers whether your test burned one code or
    two, and shows every code as *eingelöst/offen* with who has it.
-3. **Confirm migrations `0091` + `0092` are applied** (Supabase SQL editor). Still
-   outstanding from F-40. **Without `0092` the agent re-attach is silently never offered**,
-   which blunts half of U1.
+3. ~~Confirm migrations `0091` + `0092`.~~ **DONE** — probe run, 0076–0100 all applied.
+   Nothing outstanding; F-40's re-attach has the schema it needs. Re-run
+   `supabase/checks/migration_status.sql` after any future wave that authors one.
 4. **U6 needs nothing from you.** The falsification ran on the PR (run 394 red on 5 `@auth`
    tests, run 395 green after the revert). No Supabase dashboard step is required — Option B
    leaves the production project untouched.
@@ -388,4 +430,4 @@ reconciliation protocol.
    E4 needs a Vercel token; B3 needs the full-stack switch (step 2 of that doc tells you in
    two seconds whether it is on).
 
-**HALT** — PR open, merge founder-granted.
+**HALT** — merged and verified; nothing further in flight.
