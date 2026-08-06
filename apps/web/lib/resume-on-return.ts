@@ -23,6 +23,19 @@ export const SUSPEND_SUSPECT_MS = 3000;
 export interface ResumeVerdict {
   /** True when the socket must be treated as dead (re-attach even if we still think we're streaming). */
   force: boolean;
+  /**
+   * FOUNDER-WALK-4 · U1 — how long the hide lasted, or `null` when NO hide was ever observed.
+   *
+   * `force` collapses that distinction, and the collapse is a bug: a page iOS froze before
+   * delivering `visibilitychange` runs the handler at THAW, reads `visibilityState ===
+   * 'visible'`, and lands here with no measured hide at all. `force` is then false and the
+   * caller concludes nothing happened — over a stream that has been dead for a minute.
+   *
+   * Callers that can measure their own stream's liveness (the chat surface does) must use
+   * this raw value and decide with `shouldAskServerOnReturn` in `chat-recovery.ts` instead
+   * of trusting `force`. `force` is kept as-is for callers that cannot.
+   */
+  hiddenForMs: number | null;
 }
 
 export interface ResumeDetector {
@@ -45,13 +58,13 @@ export function createResumeDetector(opts?: {
       hiddenAt = now();
     },
     visible() {
-      const hiddenFor = hiddenAt === null ? 0 : now() - hiddenAt;
+      const hiddenForMs = hiddenAt === null ? null : now() - hiddenAt;
       hiddenAt = null;
-      return { force: hiddenFor >= SUSPEND_SUSPECT_MS };
+      return { force: hiddenForMs !== null && hiddenForMs >= SUSPEND_SUSPECT_MS, hiddenForMs };
     },
     restored() {
       hiddenAt = null;
-      return { force: true };
+      return { force: true, hiddenForMs: null };
     },
   };
 }
