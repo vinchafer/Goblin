@@ -1,37 +1,127 @@
-# U5 — Admin 401 chain: wiring verified, shared honest 401 state, Health copy calmed
+# U5 — Admin 401 chain: shared honest 401 state, Health copy calmed
 
-## 1. Wiring verification (code-correct — the 401 is an ENV VALUE mismatch, not a code bug)
-Confirmed firsthand, both sides use the SAME env var and the SAME header:
+> ## ⚠️ CORRECTED 2026-08-06 — this report's root-cause verdict was WRONG
+>
+> The original §1 concluded: *"the wiring is code-correct, therefore a 401 means the
+> `ADMIN_API_KEY` **value** on Vercel ≠ the value on Railway."* **That was an inference,
+> not an observation, and it was false.** The values were byte-identical the whole time.
+>
+> The real cause: the `/api/:path*` rewrite in `apps/web/next.config.ts` was returned as a
+> **bare array**, which Next treats as the `afterFiles` phase — checked **before dynamic
+> routes**. The admin proxy `app/api/admin/[...path]/route.ts` is a dynamic route, so the
+> rewrite shadowed it. Every `/api/admin/*` call went straight to Railway **with no
+> `x-admin-key` header at all**, and the API answered 401. No env value on either platform
+> could have fixed it.
+>
+> This report verified both **ends** of the chain and never checked whether the **middle**
+> was reachable. Fixed in **PR #72** (`598489f`, `d813fc9`, merged `6aa31b7`).
+>
+> **The cost:** the founder spent days re-entering and re-verifying two identical env values
+> across Vercel and Railway, and redeploying both, because §1 and the checklist below told
+> them to. Same failure mode as the migration-0092 propagation: **a wrong conclusion in a
+> report keeps working after it has been refuted.** The verdict outlived the evidence,
+> because it was written as a fact rather than as the inference it was.
 
-| Side | File:line | Env var | Header |
+## 1. Wiring verification — accurate as far as it went, wrong in its conclusion
+
+The table below was **correct** and still is. Both sides use the same env var and the same
+header, and there is no name/casing/prefix drift:
+
+| Side | File:line (current) | Env var | Header |
 |---|---|---|---|
-| Web admin proxy (injects key) | `apps/web/app/api/admin/[...path]/route.ts:6,48` | `ADMIN_API_KEY` | sends `x-admin-key` |
-| API validation | `apps/api/src/routes/admin.ts:14,15,18` | `ADMIN_API_KEY` | reads `x-admin-key` → 401 on mismatch |
+| Web admin proxy (injects key) | `apps/web/app/api/admin/[...path]/route.ts:10,52` | `ADMIN_API_KEY` | sends `x-admin-key` |
+| API validation | `apps/api/src/routes/admin.ts:14,15,17` | `ADMIN_API_KEY` | reads `x-admin-key` → 401 on mismatch |
 
-The header name and env var name match exactly on both sides — **no silent name drift**. A 401 therefore means the **value** of `ADMIN_API_KEY` on the web service (Vercel) ≠ the value on the API (Railway), or one is unset. The proxy already pre-empts an unset web key with a 500 `admin_key_unconfigured` (`route.ts:36-41`).
+The API compares the two strings **raw** (`adminKey !== expectedKey`) — no `.trim()`, no
+normalisation on either side.
+
+**What was invalid was the leap from there:** "the two ends match, so the only remaining
+variable is the value." That silently assumed the request reaches the proxy. It did not.
+Verifying the endpoints of a chain says nothing about its middle.
+
+The discriminator that would have caught this in one command, logged out:
+
+```
+curl -i https://www.justgoblin.com/api/admin/telemetry
+```
+
+* `403 {"error":"Forbidden"}` — the **proxy's own** gate (`route.ts:33-35`) rejecting a
+  non-admin session. The proxy is running; a 401 for a real admin would then genuinely mean
+  the values differ.
+* `401 {"error":"Unauthorized"}` — **Hono's** wording (`admin.ts:18`). The proxy was
+  bypassed entirely. This is what the broken state returned.
+
+A second, zero-command discriminator: `/admin/costs` is a server component that fetches
+Railway **directly** (`costs/page.tsx:28-31`), bypassing the rewrite. Costs rendering real
+data while `/admin/insight` 401s proves the values match and the proxy is being shadowed.
+That is exactly what the founder observed on device.
 
 ## 2. Shared, honest 401 state on EVERY admin page
-An empty table / silent-empty list on an auth failure is a false state (Feeling invariant). The Insight 401 copy — which names the `ADMIN_API_KEY` cause — is now the single source (`lib/admin/admin-error.ts` → `adminErrorMessage`) rendered by one component (`components/admin/AdminErrorState.tsx`):
+
+Still valid. An empty table / silent-empty list on an auth failure is a false state (Feeling
+invariant). One component (`components/admin/AdminErrorState.tsx`) renders one shared copy
+(`lib/admin/admin-error.ts` → `adminErrorMessage`):
 
 | Page | Before | After |
 |---|---|---|
 | Insight | rich 401 string (inline) | same string, now from the shared helper |
-| Costs (server, direct API) | bare `Error: API 401` | `AdminErrorState` — names the key cause (missing server key → 401 too) |
+| Costs (server, direct API) | bare `Error: API 401` | `AdminErrorState` |
 | Users | silent empty list on load 401 | `loadError` state → `AdminErrorState` |
-| Telemetry | generic `Could not load telemetry data.` | 401 → shared actionable copy; non-auth → honest German fallback |
+| Telemetry | generic `Could not load telemetry data.` | 401 → shared copy; non-auth → honest German fallback |
 | Models | silent empty table on load 401 | `loadError` state → `AdminErrorState` |
 
-Test: `lib/admin/admin-error.test.ts` (4/4) locks that 401 names `ADMIN_API_KEY`, 403/500/network/unknown degrade distinctly.
+**Corrected since:** the 401 *string* this report shipped inherited §1's false verdict —
+it asserted "ADMIN_API_KEY auf Web und API müssen übereinstimmen" as the cause, which is
+what sent the founder chasing env values. PR #72 replaced it: the copy now states what a
+401 actually proves (the API rejected the key), names **both** ways that happens, and gives
+the `curl` discriminator above. `lib/admin/admin-error.test.ts` now locks that honesty
+property, including an explicit assertion that the message does not re-narrow to a single
+unobservable cause.
 
 ## 3. Health "commits differ" — honest and calm
-`app/admin/health/page.tsx:138-144` rendered differing short SHAs in **red (`--danger`)**, which read as an alarm for an EXPECTED state (a web-only wave ships a new web commit; the API binary is unchanged). Now: in-sync → calm `--success`; differing → neutral **`--meta`** info with a one-line reason ("unterschiedliche Commits sind bei einem reinen Web-Deploy normal (API-Binary unverändert)") — never red unless a real health signal is.
 
-## Founder env checklist (align `ADMIN_API_KEY` on BOTH platforms)
-The 401 is fixed by making the value identical on both services — a founder action (no code change needed):
-1. **Railway (API):** Project → the API service → **Variables** → confirm `ADMIN_API_KEY` is set to a strong secret. This is the source of truth.
-2. **Vercel (Web):** Project → **Settings → Environment Variables** → set `ADMIN_API_KEY` to the **exact same value** (Production, and Preview if you use admin on previews). It is read server-side only (the proxy + the costs server page) — never exposed to the browser, no `NEXT_PUBLIC_` prefix.
-3. **Redeploy the web project** so the new env is picked up (Vercel env changes need a redeploy).
-4. Verify: open `/admin/insight` on the test account — data loads, no 401. If it still 401s, the two values differ (check for trailing whitespace / a rotated key on one side only).
+Still valid, unchanged. `app/admin/health/page.tsx` rendered differing short SHAs in **red
+(`--danger`)**, which read as an alarm for an EXPECTED state (a web-only wave ships a new web
+commit; the API binary is unchanged). Now: in-sync → calm `--success`; differing → neutral
+`--meta` info with a one-line reason — never red unless a real health signal is.
+
+Note: the `ADMIN_API_KEY: Set` row in that page's env panel reads the **web's** `process.env`
+only. It can never say anything about Railway's value, and must not be read as "both sides
+confirmed."
+
+## ~~Founder env checklist (align `ADMIN_API_KEY` on BOTH platforms)~~ — RETRACTED
+
+**This checklist was wrong and must not be followed.** It instructed the founder to align two
+env values, redeploy both services, and — if it still 401'd — to assume the values still
+differed and check for trailing whitespace or a rotated key. There was nothing to align. The
+loop it created had no exit: every failed verification pointed back to step 1.
+
+Nothing here required a founder env action. It required a one-line change to the rewrite
+phase in `next.config.ts`.
+
+## Regression protection (PR #72)
+
+`apps/web/lib/env/api-rewrites.ts` holds the rule; `apps/web/lib/env/api-rewrites.test.ts`
+models the documented Next routing order and resolves real paths against the real config plus
+the route handlers discovered on disk. It fails if:
+
+* the rule returns to `afterFiles` / the bare-array form (mutation-verified: 8 assertions red);
+* any **future** dynamic handler under `app/api/` is shadowed the same silent way;
+* a root-level catch-all is added — the precondition that makes the `fallback` phase safe, so
+  it is asserted rather than assumed.
+
+Verified against two real `next build` manifests: same source, same destination,
+byte-identical compiled regex; only the phase moved. `headers`, `redirects`, and the
+static/dynamic classification of every `/api` handler are unchanged.
 
 ## Honest limitation
-The shared 401 state and Health copy are verified in code + unit test. The live 401 disappearing is confirmable only once the founder aligns the two env values and redeploys — that's the action above, not something the code can assert.
+
+The shared 401 state, the corrected copy, and the rewrite phase are verified in code, unit
+test, and two build manifests. What this report cannot assert is the live 403 on
+`www.justgoblin.com` after the Vercel deploy of `6aa31b7` — that is the founder's one-command
+check above, not something the repo can prove.
+
+**Standing lesson:** state inferences as inferences. §1's verdict was written as a settled
+fact, so every later reader — including the copy shipped to the founder's screen — treated it
+as one and stopped looking. When a report concludes "therefore it must be X," record what was
+actually observed and what was assumed, and name the check that would falsify X.
