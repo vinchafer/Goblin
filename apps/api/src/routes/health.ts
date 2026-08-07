@@ -6,10 +6,28 @@ import { getGoblinHostedStatus } from '../services/goblin-hosted';
 const health = new Hono();
 const START_TIME = Date.now();
 
+/**
+ * The commit this API process is actually running.
+ *
+ * This used to read `VERCEL_GIT_COMMIT_SHA` only. The API does not run on Vercel —
+ * it runs on Railway (apps/api/railway.json), where that variable never exists — so
+ * the expression always fell through to the package version and `/health` answered
+ * a constant `0.2.0` no matter how old the deployment was. That made "is the fix I
+ * merged actually live on the API?" unanswerable from outside, which cost a founder
+ * diagnosis session (the web app answers the same question via /api/version's
+ * gitCommit, and only the API was blind). Railway's own variable is read first;
+ * the Vercel one is kept as a fallback so a preview/other host still reports.
+ */
+const COMMIT =
+  process.env.RAILWAY_GIT_COMMIT_SHA?.slice(0, 8) ??
+  process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 8) ??
+  process.env.npm_package_version ??
+  '0.0.1';
+
 health.get('/', (c) => c.json({
   status: 'ok',
   timestamp: new Date().toISOString(),
-  version: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 8) ?? process.env.npm_package_version ?? '0.0.1',
+  version: COMMIT,
 }));
 
 health.get('/deep', async (c) => {
@@ -106,7 +124,7 @@ health.get('/deep', async (c) => {
     {
       status: overallStatus,
       timestamp: new Date().toISOString(),
-      version: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 8) ?? process.env.npm_package_version ?? '0.0.1',
+      version: COMMIT,
       uptime: Math.floor((Date.now() - START_TIME) / 1000),
       checks,
     },
