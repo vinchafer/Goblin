@@ -4,6 +4,7 @@ import { aggregateTelemetry, type CompletionRow } from '../lib/goblin-telemetry'
 import { requestAccountDeletion, reactivateByUserId } from '../services/account-deletion';
 import { buildInsight, InsightReadError } from '../services/insight';
 import { isMissingSchema } from '../lib/schema-shape';
+import { readUsersTolerant, USERS_DELETED_AT_MIGRATION } from '../lib/users-soft-delete';
 import { metricsSnapshot } from '../lib/metrics';
 import { generatePromoCodes } from '../lib/promo-code';
 
@@ -31,23 +32,30 @@ admin.get('/users', async (c) => {
   const search = c.req.query('search') ?? '';
   const offset = (page - 1) * limit;
 
-  let query = supabase
-    .from('users')
-    .select(
-      'id, email, plan, created_at, ' +
-      'stripe_customer_id, stripe_subscription_id, subscription_current_period_end, ' +
-      'is_admin, is_suspended, deleted_at',
-      { count: 'exact' }
-    )
-    .is('deleted_at', null)
-    .order('created_at', { ascending: false })
-    .range(offset, offset + limit - 1);
-
-  if (search) {
-    query = query.ilike('email', `%${search}%`);
-  }
-
-  const { data, error, count } = await query;
+  // FOUNDER-WALK-5 · U2 — this read is why /admin/users answered
+  // "Fehler 500 — column users.deleted_at does not exist". No migration in this repo has
+  // ever created that column (see 0101), so on an un-migrated database both the projection
+  // and the filter reference a column that is not there. Every other pending-migration
+  // consumer in this codebase degrades; this one hard-failed the whole page.
+  //
+  // The fallback drops the column and its filter, which returns the SAME rows: a column
+  // that does not exist has never been written to, so the soft-delete filter is a no-op on
+  // every row (the authoritative record is `account_deletions`, untouched by this).
+  const { data, error, count, degraded } = await readUsersTolerant(({ hasDeletedAt }) => {
+    let query = supabase
+      .from('users')
+      .select(
+        'id, email, plan, created_at, ' +
+        'stripe_customer_id, stripe_subscription_id, subscription_current_period_end, ' +
+        'is_admin, is_suspended' + (hasDeletedAt ? ', deleted_at' : ''),
+        { count: 'exact' }
+      )
+      .order('created_at', { ascending: false })
+      .range(offset, offset + limit - 1);
+    if (hasDeletedAt) query = query.is('deleted_at', null);
+    if (search) query = query.ilike('email', `%${search}%`);
+    return query;
+  });
 
   if (error) return c.json({ error: error.message }, 500);
 
@@ -57,6 +65,10 @@ admin.get('/users', async (c) => {
     limit,
     total: count ?? 0,
     totalPages: Math.ceil((count ?? 0) / limit),
+    // Stated, not hidden: the list is unfiltered because the schema is older than this
+    // code. Naming the real migration file is the difference between an actionable notice
+    // and the placeholder the founder was shown on /admin/insight.
+    ...(degraded ? { schemaNotice: { column: 'users.deleted_at', migration: USERS_DELETED_AT_MIGRATION } } : {}),
   });
 });
 
@@ -64,15 +76,19 @@ admin.get('/users/:id', async (c) => {
   const supabase = getSupabaseAdmin();
   const { id } = c.req.param();
 
-  const { data: user, error: userError } = await supabase
-    .from('users')
-    .select(
-      'id, email, plan, created_at, ' +
-      'stripe_customer_id, stripe_subscription_id, subscription_current_period_end, ' +
-      'is_admin, is_suspended, deleted_at'
-    )
-    .eq('id', id)
-    .single();
+  // U2: same tolerance as the list above — a pending 0101 must not turn a detail view into
+  // a 404 that reads as "no such user".
+  const { data: user, error: userError } = await readUsersTolerant(({ hasDeletedAt }) =>
+    supabase
+      .from('users')
+      .select(
+        'id, email, plan, created_at, ' +
+        'stripe_customer_id, stripe_subscription_id, subscription_current_period_end, ' +
+        'is_admin, is_suspended' + (hasDeletedAt ? ', deleted_at' : '')
+      )
+      .eq('id', id)
+      .single(),
+  );
 
   if (userError) return c.json({ error: userError.message }, 404);
 
@@ -148,29 +164,34 @@ admin.get('/stats', async (c) => {
 
   const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
 
+  // U2: all three counts filter on `users.deleted_at`, so all three degrade together when
+  // 0101 is pending. Counting *something* honestly beats a 500 that reads as "the admin is
+  // down" — and pre-0101 the unfiltered counts are the same counts, because nothing has
+  // ever been written to a column that does not exist.
   const [
-    { count: totalUsers },
-    { count: active7d },
-    { data: planCounts },
+    { count: totalUsers, degraded: d1 },
+    { count: active7d, degraded: d2 },
+    { data: planCounts, degraded: d3 },
   ] = await Promise.all([
-    supabase
-      .from('users')
-      .select('*', { count: 'exact', head: true })
-      .is('deleted_at', null),
+    readUsersTolerant(({ hasDeletedAt }) => {
+      const q = supabase.from('users').select('*', { count: 'exact', head: true });
+      return hasDeletedAt ? q.is('deleted_at', null) : q;
+    }),
 
-    supabase
-      .from('users')
-      .select('*', { count: 'exact', head: true })
-      .is('deleted_at', null)
-      .eq('is_suspended', false)
-      .gte('updated_at', sevenDaysAgo),
+    readUsersTolerant(({ hasDeletedAt }) => {
+      const q = supabase.from('users').select('*', { count: 'exact', head: true });
+      return (hasDeletedAt ? q.is('deleted_at', null) : q)
+        .eq('is_suspended', false)
+        .gte('updated_at', sevenDaysAgo);
+    }),
 
-    supabase
-      .from('users')
-      .select('plan')
-      .is('deleted_at', null)
-      .in('plan', ['build', 'pro', 'power']),
+    readUsersTolerant<{ plan: string }[]>(({ hasDeletedAt }) => {
+      const q = supabase.from('users').select('plan');
+      return (hasDeletedAt ? q.is('deleted_at', null) : q)
+        .in('plan', ['build', 'pro', 'power']);
+    }),
   ]);
+  const statsDegraded = d1 || d2 || d3;
 
   const planMap = { build: 0, pro: 0, power: 0 } as { build: number; pro: number; power: number };
   (planCounts ?? []).forEach((row) => {
@@ -188,6 +209,7 @@ admin.get('/stats', async (c) => {
     paid_users:    paidUsers,
     estimated_mrr: estimatedMrr,
     plan_breakdown: planMap,
+    ...(statsDegraded ? { schemaNotice: { column: 'users.deleted_at', migration: USERS_DELETED_AT_MIGRATION } } : {}),
   });
 });
 
@@ -598,12 +620,18 @@ admin.get('/insight', async (c) => {
     if (err instanceof InsightReadError && err.schemaGap) {
       // 200, not 500: the API is healthy, the DB is simply older than this code. Named so
       // the founder can act — apply the migration — instead of hunting a config ghost.
+      // FOUNDER-WALK-5 · U2: `missing` says whether a TABLE or a COLUMN is absent. The old
+      // body carried only `table`, and the page rendered every gap as "Die Tabelle `users`
+      // fehlt" — a wrong cause, since `users` exists and only `deleted_at` was missing.
+      const missing = err.missing ?? { kind: 'table' as const, table: err.table };
+      const what = missing.kind === 'column' ? `${missing.table}.${missing.column}` : missing.table;
       return c.json({
         available: false,
         reason: 'schema_pending',
         table: err.table,
+        missing,
         migration: err.migration,
-        detail: `${err.table} is not there yet — apply migration ${err.migration} in the Supabase SQL editor. (${err.detail})`,
+        detail: `${what} is not there yet — apply migration ${err.migration} in the Supabase SQL editor. (${err.detail})`,
       });
     }
     // A genuine read failure. Say what failed and where, in BOTH body keys the web side
