@@ -25,7 +25,8 @@ import { shouldRouteToAgent, AGENT_HANDOFF_NARRATION } from "@/lib/run-intent";
 import { bindResumeOnReturn } from "@/lib/resume-on-return";
 import {
   createTurnGuard, recoverTurn, recoveryMessage, checkingMessage, offersResend,
-  shouldAskServerOnReturn, type TranscriptMessage,
+  resendHint, resendActionLabel,
+  shouldAskServerOnReturn, type TranscriptMessage, type TurnStatus,
 } from "@/lib/chat-recovery";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -43,6 +44,11 @@ interface StandaloneMessage {
   // "wartet auf Verbindung — erneut senden" state.
   clientMessageId?: string;
   sendFailed?: boolean;
+  // FOUNDER-WALK-5 · U1 — WHY this message is retryable, so the affordance stops claiming
+  // "wartet auf Verbindung" over a turn the server already discarded. Absent → the
+  // connection-failure default.
+  retryHint?: string;
+  retryAction?: string;
 }
 
 interface StreamChunk {
@@ -461,6 +467,23 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
           return d.messages ?? [];
         } catch { return null; }
       },
+      // FOUNDER-WALK-5 · U1 — the verified fate of the turn, which the transcript cannot
+      // express: "no answer yet" and "the answer was discarded by the 120s runtime guard"
+      // are the same absence. A failed read returns null, which recoverTurn treats as
+      // "could not ask" — never as "nothing is running".
+      fetchTurnStatus: async () => {
+        try {
+          const { data: { session } } = await (await import("@/lib/supabase/client")).createClient().auth.getSession();
+          const token = session?.access_token;
+          if (!token) return null;
+          const res = await fetch(`${apiBase}/api/chat-sessions/${sessionId}/turn-status`, {
+            headers: { Authorization: `Bearer ${token}` },
+            cache: "no-store",
+          });
+          if (!res.ok) return null;
+          return (await res.json()) as TurnStatus;
+        } catch { return null; }
+      },
       // A frame that arrived since we started looking means the stream was never dead.
       streamAlive: () =>
         lastStreamActivityRef.current !== null && lastStreamActivityRef.current !== activityAtStart,
@@ -497,7 +520,14 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
     // work the founder has already paid for.
     const resend = offersResend(outcome.kind);
     setMessages(baseMessagesRef.current.map((m) =>
-      m.id === pendingIdRef.current ? { ...m, sendFailed: resend } : m,
+      m.id === pendingIdRef.current
+        ? {
+            ...m,
+            sendFailed: resend,
+            retryHint: resend ? resendHint(outcome.kind, lang) : undefined,
+            retryAction: resend ? resendActionLabel(outcome.kind, lang) : undefined,
+          }
+        : m,
     ));
     setError(recoveryMessage(outcome.kind, lang));
   }, [sessionId, apiBase]);
@@ -868,7 +898,7 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
                   gap: 8, marginTop: 4, fontSize: 12, color: "var(--meta)",
                   fontFamily: "var(--font-sans)",
                 }}>
-                  <span>wartet auf Verbindung</span>
+                  <span>{m.retryHint ?? "wartet auf Verbindung"}</span>
                   <button
                     onClick={() => handleSubmit(m.content, selectedModel, { retry: { id: m.id, clientMessageId: m.clientMessageId! } })}
                     disabled={isStreaming}
@@ -878,7 +908,7 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
                       cursor: isStreaming ? "default" : "pointer", fontFamily: "var(--font-sans)",
                     }}
                   >
-                    erneut senden
+                    {m.retryAction ?? "erneut senden"}
                   </button>
                 </div>
               )}
