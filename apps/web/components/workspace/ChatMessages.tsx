@@ -6,6 +6,7 @@ import type { ChatMessage } from "@goblin/shared/src/schemas";
 import { GoblinLogo } from "@/components/brand/GoblinLogo";
 import { useStickToBottom } from "@/hooks/useStickToBottom";
 import { ScrollToEndChip } from "@/components/chat/ScrollToEndChip";
+import { noticeToneStyle, noticeToneFromText } from "@/lib/notice-tone";
 
 // ─── Pricing ──────────────────────────────────────────────────────────────────
 
@@ -142,7 +143,11 @@ export function ChatMessages({
     onContentChange();
   }, [messages, onContentChange]);
 
+  // FOUNDER-WALK-5 · U1 (visual): the same classifier the standalone banner uses, from the
+  // shared tone module — so the two chat surfaces cannot drift apart again. `isNoModel`
+  // still drives the "Add an API key" link; the COLOUR now comes from the tone.
   const isNoModel = error ? /no model|no key|api key|not connected|no provider/i.test(error) : false;
+  const tone = error ? noticeToneFromText(error) : 'error';
 
   return (
     <>
@@ -179,10 +184,8 @@ export function ChatMessages({
         {/* Error banner */}
         {error && (
           <div style={{
-            background: isNoModel ? 'rgba(212,169,74,0.08)' : 'var(--danger-soft)',
-            border: `1px solid ${isNoModel ? 'rgba(212,169,74,0.3)' : '#FCA5A5'}`,
+            ...noticeToneStyle(tone),
             borderRadius: 10, padding: '11px 14px', fontSize: 13,
-            color: isNoModel ? 'var(--text, var(--ink-1))' : '#991B1B',
             fontFamily: 'var(--font-sans)',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
           }}>

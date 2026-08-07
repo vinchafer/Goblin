@@ -11,6 +11,8 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { adminErrorMessage, readAdminErrorDetail } from '@/lib/admin/admin-error';
+import { schemaNoticeCopy, type MissingObject } from '@/lib/schema-notice';
+import { useLang } from '@/lib/use-lang';
 
 const ADMIN_BASE = '/api/admin';
 const mono = "'JetBrains Mono', monospace";
@@ -51,6 +53,13 @@ interface Insight {
  */
 interface Unavailable {
   available: false; reason: 'schema_pending'; table: string; migration: string; detail: string;
+  /**
+   * FOUNDER-WALK-5 · U2 — WHAT is missing. The body used to carry only `table`, and this
+   * page rendered every gap as "Die Tabelle X fehlt" — which was a wrong cause for the
+   * founder's actual failure (the `users` table exists; `users.deleted_at` did not).
+   * Optional so an older API build still renders, degrading to the table reading.
+   */
+  missing?: MissingObject;
 }
 
 function Card({ title, right, children }: { title: string; right?: React.ReactNode; children: React.ReactNode }) {
@@ -118,6 +127,9 @@ function Toggle({ on, onClick, children }: { on: boolean; onClick: () => void; c
 }
 
 export default function AdminInsightPage() {
+  // U2: this notice is now bilingual. The admin surface was DE-only, which was fine while
+  // the copy was one hard-coded sentence and is not fine now that it carries a diagnosis.
+  const lang = useLang();
   const [data, setData] = useState<Insight | null>(null);
   const [unavailable, setUnavailable] = useState<Unavailable | null>(null);
   const [loading, setLoading] = useState(true);
@@ -156,6 +168,15 @@ export default function AdminInsightPage() {
   useEffect(() => { load(); }, [load]);
 
   const funnel = data ? (days === 30 ? data.funnel30 : data.funnel7) : null;
+  // The notice's wording is derived from WHAT is missing, not hard-coded to "table".
+  // An older API build that sends no `missing` degrades to the table reading it always had.
+  const notice = unavailable
+    ? schemaNoticeCopy(
+        unavailable.missing ?? { kind: 'table', table: unavailable.table },
+        unavailable.migration,
+        lang === 'en' ? 'en' : 'de',
+      )
+    : null;
   const stuckCount = data?.journeys.filter((j) => j.stuck).length ?? 0;
 
   return (
@@ -190,20 +211,15 @@ export default function AdminInsightPage() {
 
       {/* FW4 U2: the DB is older than this code. Say exactly that, name the migration, and
           show NO numbers — an empty funnel here would read as "nobody signed up". */}
-      {unavailable ? (
+      {unavailable && notice ? (
         <div role="alert" style={{
           background: 'color-mix(in srgb, var(--brand-gold) 12%, transparent)',
           border: '1px solid var(--brand-gold)', borderRadius: 12, padding: 16,
           fontFamily: 'var(--font-sans)', fontSize: 13, lineHeight: 1.55, color: 'var(--text)',
         }}>
-          <strong style={{ display: 'block', marginBottom: 6 }}>
-            Diese Ansicht braucht eine Migration, die noch nicht eingespielt ist.
-          </strong>
+          <strong style={{ display: 'block', marginBottom: 6 }}>{notice.title}</strong>
           <div>
-            Die Tabelle <code style={{ fontFamily: mono }}>{unavailable.table}</code> fehlt in der
-            Datenbank. Spiel Migration <code style={{ fontFamily: mono }}>{unavailable.migration}</code>{' '}
-            im Supabase-SQL-Editor ein, dann lädt diese Seite. Solange zeige ich keine Zahlen —
-            eine leere Kurve wäre nicht „niemand da“, sondern „ich kann nicht nachsehen“.
+            {notice.cause} {notice.action} {notice.why}
           </div>
           <div style={{ marginTop: 8, fontSize: 11.5, color: 'var(--meta)', fontFamily: mono, wordBreak: 'break-word' }}>
             {unavailable.detail}

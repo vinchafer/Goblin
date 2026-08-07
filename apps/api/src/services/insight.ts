@@ -11,6 +11,7 @@
 
 import { getSupabaseAdmin } from '../lib/supabase';
 import { isMissingSchema } from '../lib/schema-shape';
+import { readUsersTolerant, isMissingDeletedAt, USERS_DELETED_AT_MIGRATION } from '../lib/users-soft-delete';
 
 // The canonical funnel, in order. `source: 'signup'` is derived from
 // users.created_at; every other stage is the first occurrence of its event.
@@ -66,16 +67,41 @@ function testEmailSet(): Set<string> {
  * genuine read failure (something else is wrong). The route turns that into an honest
  * answer instead of a bare 500.
  */
+/**
+ * FOUNDER-WALK-5 · U2 — the error now says WHICH OBJECT is missing, not just which table.
+ *
+ * The previous shape carried only a table name, and the /admin/insight notice rendered it as
+ * "Die Tabelle `users` fehlt in der Datenbank." The table was never missing. One COLUMN was.
+ * Naming a wrong cause sends the founder to look for something that is not wrong, which is
+ * the same failure as the retracted 401 verdict and the "Konfigurationsfehler" before it —
+ * a diagnosis nobody observed, stated with confidence.
+ *
+ * `missing` is what the surface must render, so the surface can no longer get it wrong.
+ */
+export type InsightMissingObject =
+  /** The whole relation is absent. */
+  | { kind: 'table'; table: string }
+  /** The relation exists; one column does not. */
+  | { kind: 'column'; table: string; column: string };
+
 export class InsightReadError extends Error {
   constructor(
     /** The table the failing read targeted. */
     readonly table: string,
-    /** The migration that supplies it — what the founder would actually apply. */
+    /**
+     * The migration that supplies it — what the founder would actually apply. This must be
+     * a REAL filename from supabase/migrations/, because it is rendered into
+     * "Spiel Migration <X> im Supabase-SQL-Editor ein". The value it replaces was the
+     * literal placeholder `(users.deleted_at — added out of band, no migration in repo)`,
+     * shown verbatim to the founder in the slot where a filename belongs.
+     */
     readonly migration: string,
     /** True when the DB is simply older than this code (missing table/column). */
     readonly schemaGap: boolean,
     /** The underlying Postgres/PostgREST message, verbatim. */
     readonly detail: string,
+    /** Exactly what is absent — a table or a named column. Drives the notice's wording. */
+    readonly missing: InsightMissingObject,
   ) {
     super(`insight ${table} read failed: ${detail}`);
     this.name = 'InsightReadError';
@@ -84,16 +110,28 @@ export class InsightReadError extends Error {
 
 async function loadUsers(): Promise<UserRow[]> {
   const sb = getSupabaseAdmin();
-  const { data, error } = await sb
-    .from('users')
-    .select('id, email, created_at')
-    .is('deleted_at', null)
-    .order('created_at', { ascending: false })
-    .limit(5000);
-  // `deleted_at` is written by account-deletion and read by /admin/users, but NO migration
-  // in this repo creates it — so name it here rather than let a 42703 read as a generic
-  // outage. Same read, same filter, same failure mode as admin.ts:41.
-  if (error) throw new InsightReadError('users', '(users.deleted_at — added out of band, no migration in repo)', isMissingSchema(error.message), error.message);
+  // U2: pre-migration tolerant, like every other consumer of a pending migration in this
+  // codebase. `users.deleted_at` is created by 0101 and by nothing before it; until that is
+  // applied the filter is dropped, which returns the same rows (nothing has ever been
+  // written to a column that does not exist — the real deletion record is
+  // `account_deletions`). A read that still fails is a genuine failure and is reported.
+  const { data, error } = await readUsersTolerant<UserRow[]>(({ hasDeletedAt }) => {
+    const q = sb.from('users').select('id, email, created_at');
+    return (hasDeletedAt ? q.is('deleted_at', null) : q)
+      .order('created_at', { ascending: false })
+      .limit(5000);
+  });
+  if (error) {
+    throw new InsightReadError(
+      'users',
+      isMissingDeletedAt(error.message) ? USERS_DELETED_AT_MIGRATION : '0001_initial_schema.sql',
+      isMissingSchema(error.message),
+      error.message,
+      isMissingDeletedAt(error.message)
+        ? { kind: 'column', table: 'users', column: 'deleted_at' }
+        : { kind: 'table', table: 'users' },
+    );
+  }
   return (data ?? []) as UserRow[];
 }
 
@@ -113,7 +151,17 @@ async function loadEvents(sinceDays: number): Promise<EventRow[]> {
   // consumer of this table is pre-migration tolerant by contract (insertPlatformEvent
   // silent-fails). Insight was the sole hard-failing one — which is exactly the shape of
   // "only /admin/insight is broken".
-  if (error) throw new InsightReadError('platform_events', '0078 + 0085', isMissingSchema(error.message), error.message);
+  // U2: real filenames here too — "0078 + 0085" was already close, but the notice puts this
+  // value straight into "Spiel Migration <X> ein", so it must be what the founder opens.
+  if (error) {
+    throw new InsightReadError(
+      'platform_events',
+      '0078_platform_events.sql + 0085_platform_events_funnel.sql',
+      isMissingSchema(error.message),
+      error.message,
+      { kind: 'table', table: 'platform_events' },
+    );
+  }
   return (data ?? []) as EventRow[];
 }
 

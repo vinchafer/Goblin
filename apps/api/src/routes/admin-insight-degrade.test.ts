@@ -32,10 +32,16 @@ const ADMIN_KEY = 'test-admin-key';
 /** What the fake DB does for a given table on this run. */
 type TableBehaviour = { rows: unknown[] } | { error: string };
 const behaviour: Record<string, TableBehaviour> = {};
+/**
+ * FW5 · U2: per-CALL behaviour, for the retry paths. `readUsersTolerant` runs the same read
+ * twice — once with the `deleted_at` filter, once without — so a test that needs the second
+ * to differ from the first cannot express it with a single static value.
+ */
+const behaviourFor: Record<string, (() => TableBehaviour) | undefined> = {};
 
 function builder(table: string) {
   const settle = () => {
-    const b = behaviour[table] ?? { rows: [] };
+    const b = behaviourFor[table]?.() ?? behaviour[table] ?? { rows: [] };
     return 'error' in b
       ? Promise.resolve({ data: null, error: { message: b.error } })
       : Promise.resolve({ data: b.rows, error: null });
@@ -60,6 +66,7 @@ const call = () =>
 beforeEach(() => {
   process.env.ADMIN_API_KEY = ADMIN_KEY;
   for (const k of Object.keys(behaviour)) delete behaviour[k];
+  for (const k of Object.keys(behaviourFor)) delete behaviourFor[k];
   behaviour.users = { rows: [] };
   behaviour.platform_events = { rows: [] };
 });
@@ -83,16 +90,54 @@ describe('/api/admin/insight — a pending migration is a stated fact, not an ou
     expect(String(body.detail)).toMatch(/apply migration/i);
   });
 
-  it('names the users read — and its missing column — when THAT is the gap instead', async () => {
-    // `users.deleted_at` is filtered on here and in /admin/users, yet no migration in this
-    // repo creates it. If it is ever the gap, the answer must say so rather than blame the
-    // table everyone assumes.
+  // ── FOUNDER-WALK-5 · U2 ────────────────────────────────────────────────────
+  //
+  // The founder hit this for real: /admin/users answered "Fehler 500 — column
+  // users.deleted_at does not exist" and /admin/insight blamed a missing TABLE while naming
+  // the migration as the literal placeholder "(users.deleted_at — added out of band, no
+  // migration in repo)". The table exists; only the column was absent, and no migration in
+  // the repo created it (0101 is the first).
+  it('recovers from the users.deleted_at gap instead of failing the page', async () => {
+    // Pre-migration tolerance: the filtered read fails, the fallback (same read, no filter)
+    // succeeds, and the page renders. Pre-0101 those return the same rows anyway — nothing
+    // has ever been written to a column that does not exist.
+    let call_n = 0;
+    behaviourFor.users = () =>
+      ++call_n === 1
+        ? { error: 'column users.deleted_at does not exist' }
+        : { rows: [{ id: 'u1', email: 'a@x.test', created_at: new Date().toISOString() }] };
+
+    const res = await call();
+    const body = await res.json() as Record<string, unknown>;
+
+    expect(res.status).toBe(200);
+    expect(body.available).toBe(true); // ← was a 500 on the founder's device
+  });
+
+  it('names the missing COLUMN — not the table — and a real migration file', async () => {
+    // When even the fallback cannot read `users`, the diagnosis must still be the right one.
     behaviour.users = { error: 'column users.deleted_at does not exist' };
 
-    const body = await (await call()).json() as Record<string, string | boolean>;
+    const body = await (await call()).json() as Record<string, unknown>;
     expect(body.available).toBe(false);
     expect(body.table).toBe('users');
-    expect(String(body.detail)).toContain('deleted_at');
+    // ① the right cause: a COLUMN, named.
+    expect(body.missing).toEqual({ kind: 'column', table: 'users', column: 'deleted_at' });
+    // ② a real filename, not the placeholder the founder was shown.
+    expect(String(body.migration)).toBe('0101_users_deleted_at.sql');
+    expect(String(body.migration)).not.toMatch(/out of band|no migration in repo/i);
+    expect(String(body.detail)).toContain('users.deleted_at');
+  });
+
+  it('names real migration FILES for the platform_events gap too', async () => {
+    behaviour.platform_events = {
+      error: "Could not find the table 'public.platform_events' in the schema cache",
+    };
+    const body = await (await call()).json() as Record<string, unknown>;
+    expect(body.missing).toEqual({ kind: 'table', table: 'platform_events' });
+    // "0078 + 0085" was a reference, not something to open. These are files.
+    expect(String(body.migration)).toContain('0078_platform_events.sql');
+    expect(String(body.migration)).toContain('0085_platform_events_funnel.sql');
   });
 
   it('still 500s on a genuine read failure — and says which read failed, in both body keys', async () => {

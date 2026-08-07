@@ -123,7 +123,13 @@ with checks(migration, what, applied, note) as (values
   ('0099', 'table ops_apps',
      to_regclass('public.ops_apps') is not null, 'Act-2 only'),
   ('0100', 'table ops_app_audit',
-     to_regclass('public.ops_app_audit') is not null, 'Act-2 only')
+     to_regclass('public.ops_app_audit') is not null, 'Act-2 only'),
+
+  -- ── Soft delete (FOUNDER-WALK-5 · U2) ───────────────────────────────────────
+  ('0101', 'users.deleted_at',
+     exists (select 1 from information_schema.columns
+              where table_schema='public' and table_name='users' and column_name='deleted_at'),
+     'LOUD if missing — /admin/users 500s; /admin/stats + Insight degrade to unfiltered')
 )
 select
   migration,
@@ -132,3 +138,72 @@ select
   note
 from checks
 order by (case when applied then 1 else 0 end), migration;
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- PART 2 — CODE-vs-SCHEMA DRIFT: objects the CODE reads that NO migration creates
+-- ═══════════════════════════════════════════════════════════════════════════════
+--
+-- WHY THIS SECTION EXISTS. Part 1 answers "did the migrations I wrote land?". It cannot
+-- answer "is there something the code needs that I never wrote a migration for at all" —
+-- and that is exactly the class that produced FOUNDER-WALK-5 · U2. `users.deleted_at` was
+-- read at five call sites and written at two, and `grep -rn deleted_at supabase/migrations/`
+-- matched NOTHING across 0001–0100. Part 1 could never have shown it, because there was no
+-- migration to check.
+--
+-- Everything below was found by sweeping every `.from(table).select|eq|is|order(column)` in
+-- apps/api and apps/web against the full migration set (see scripts/schema-drift-sweep.mjs,
+-- which regenerates this list). Each row is an object the code reads with no DDL anywhere in
+-- supabase/migrations/.
+--
+-- HOW TO READ A ROW
+--   PRESENT (out of band) — the object IS in this database but NOT in the repo. The app
+--     works; the repo cannot rebuild this database. Author a migration for it.
+--   *** ABSENT ***       — the code reads something that does not exist here. Whether that
+--     is loud or silent is in the note.
+--
+-- Nothing here is fixed by applying a migration, because none exists to apply. Read it as a
+-- worklist, not a status board.
+
+with drift(object, reads_it, present, effect) as (values
+
+  ('users.advanced_mode', 'routes/users.ts:50 — GET /api/users/me',
+     exists (select 1 from information_schema.columns
+              where table_schema='public' and table_name='users' and column_name='advanced_mode'),
+     'LOUD if absent — the select fails, data is null, /api/users/me answers 404 "User not found"'),
+
+  ('build_runs.commit_message', 'web app/dashboard/project/[id]/page.tsx:66',
+     exists (select 1 from information_schema.columns
+              where table_schema='public' and table_name='build_runs' and column_name='commit_message'),
+     'silent if absent — the deploys list on the project hub renders empty (best-effort read)'),
+
+  ('agent_runs.error_message', 'web app/admin/health/page.tsx:49',
+     exists (select 1 from information_schema.columns
+              where table_schema='public' and table_name='agent_runs' and column_name='error_message'),
+     'silent if absent — /admin/health shows no recent errors, which reads as "no errors"'),
+
+  ('free_api_usage.user_id', 'routes/models.ts:140 (and the 0021 index references it)',
+     exists (select 1 from information_schema.columns
+              where table_schema='public' and table_name='free_api_usage' and column_name='user_id'),
+     '0008 creates (id, provider, date, request_count) only — 0021 then indexes user_id, so 0021 cannot apply to a clean DB'),
+
+  ('free_api_usage.used_today', 'routes/models.ts:140',
+     exists (select 1 from information_schema.columns
+              where table_schema='public' and table_name='free_api_usage' and column_name='used_today'),
+     'silent if absent — the free-pool quota display falls back to hard-coded defaults'),
+
+  ('free_api_usage.daily_limit', 'routes/models.ts:140',
+     exists (select 1 from information_schema.columns
+              where table_schema='public' and table_name='free_api_usage' and column_name='daily_limit'),
+     'silent if absent — same fallback as used_today'),
+
+  ('table vercel_tokens', 'services/support-agent.ts:132',
+     to_regclass('public.vercel_tokens') is not null,
+     'silent if absent — the support agent reports the user has no Vercel connection')
+)
+select
+  object,
+  case when present then 'PRESENT (out of band)' else '*** ABSENT ***' end as status,
+  reads_it,
+  effect
+from drift
+order by (case when present then 1 else 0 end), object;

@@ -169,17 +169,52 @@ export interface TranscriptMessage {
 }
 
 /**
+ * FOUNDER-WALK-5 · U1 — the verdict `GET /api/chat-sessions/:id/turn-status` returns.
+ *
+ * `unknown` is a first-class answer, not a failure: the registry behind that endpoint is
+ * process-local, so a restart or a second replica legitimately has no record. What matters
+ * is that `unknown` NEVER becomes "running" on the way to the screen.
+ */
+export type TurnState = 'running' | 'completed' | 'lost' | 'unknown';
+export interface TurnStatus {
+  state: TurnState;
+  /** Why a `lost` turn ended. `max_runtime` is the CHAT_MAX_RUNTIME_MS ceiling. */
+  reason: 'max_runtime' | 'stream_failed' | 'persist_failed' | null;
+  /** True only when the server actually had a record. Never inferred from silence. */
+  verified: boolean;
+}
+
+/**
  * What the server said about the turn. Each variant is a DIFFERENT truth and gets different
  * copy — the founder asked which of these actually happens on a locked phone, and the
  * client can now answer that per incident instead of us inferring it once in a report.
+ *
+ * FOUNDER-WALK-5 · U1 — `still-running` used to be the fall-through: our message was on the
+ * server, no answer had appeared, therefore the turn "läuft auf dem Server zu Ende". That
+ * reasoning is invalid, and the founder paid for it. A turn the 120s runtime guard aborted
+ * looks EXACTLY the same from the transcript, and it persists nothing — the answer he was
+ * told to come back for had already been thrown away. So the fall-through is gone: this
+ * module now asks the server for the turn's recorded fate, and
+ *
+ *   • `still-running` is returned ONLY when the server confirmed `state: 'running'`;
+ *   • a turn the server recorded as `lost` gets its own outcome and its own honest line;
+ *   • when the server cannot confirm either way, that uncertainty is the outcome
+ *     (`indeterminate`) — it is not rounded up to the flattering one.
  */
 export type RecoveryOutcome =
   /** The turn finished while we were away. The transcript is the truth — adopt it. */
   | { kind: 'answered'; messages: TranscriptMessage[] }
-  /** Our message reached the server, but no answer had landed by the time we stopped looking. */
+  /** VERIFIED: the server says a turn for this session is executing right now. */
   | { kind: 'still-running' }
+  /** VERIFIED: the turn ended with no answer saved. The work is gone; only a resend gets it back. */
+  | { kind: 'lost'; reason: TurnStatus['reason'] }
   /** Our message is not on the server at all: the request died before it arrived. */
   | { kind: 'never-arrived' }
+  /**
+   * Our message is on the server, no answer arrived, and the server could not tell us
+   * whether the turn is alive. We do not know — and we say exactly that.
+   */
+  | { kind: 'indeterminate' }
   /** The local stream produced something mid-recovery — it is alive, leave it alone. */
   | { kind: 'stream-alive' }
   /** We could not reach the server to ask. We know nothing, and say so. */
@@ -190,6 +225,11 @@ export interface RecoverTurnDeps {
   prompt: string;
   /** Fetch the session transcript. `null` means the request failed or was not ok. */
   fetchTranscript: () => Promise<TranscriptMessage[] | null>;
+  /**
+   * Fetch the server's recorded fate for this session's most recent turn. `null` means the
+   * request failed — which is "we could not ask", NOT "nothing is running".
+   */
+  fetchTurnStatus: () => Promise<TurnStatus | null>;
   /** True once the local stream has produced anything since the recovery began. */
   streamAlive: () => boolean;
   sleep: (ms: number) => Promise<void>;
@@ -206,12 +246,14 @@ export interface RecoverTurnDeps {
 export async function recoverTurn({
   prompt,
   fetchTranscript,
+  fetchTurnStatus,
   streamAlive,
   sleep,
   attempts = RECOVERY_ATTEMPTS,
 }: RecoverTurnDeps): Promise<RecoveryOutcome> {
   let everReached = false;
   let sawOurMessage = false;
+  let lastStatus: TurnStatus | null = null;
 
   for (let attempt = 0; attempt < attempts; attempt++) {
     // Checked before every look: if the stream woke up, this turn was never dead and the
@@ -230,12 +272,32 @@ export async function recoverTurn({
       }
     }
 
+    // The transcript cannot distinguish "still being written" from "discarded", so ask the
+    // one place that knows. A recorded `lost` ends the recovery immediately: there is
+    // nothing left to wait for, and every further second of "…" is a second of the same
+    // false promise the founder already sat through.
+    //
+    // Note what this does NOT do: it does not set `everReached`. That flag means "we read
+    // the transcript", and only a transcript can tell us whether our message arrived.
+    // Reaching this endpoint while the transcript read fails leaves us unable to say
+    // "never-arrived" — so the recovery still lands on `unreachable`, which is the truth.
+    const status = await fetchTurnStatus();
+    if (status) {
+      lastStatus = status;
+      if (status.state === 'lost') return { kind: 'lost', reason: status.reason };
+    }
+
     if (attempt < attempts - 1) await sleep(recoveryDelayMs(attempt));
   }
 
   if (streamAlive()) return { kind: 'stream-alive' };
   if (!everReached) return { kind: 'unreachable' };
-  return sawOurMessage ? { kind: 'still-running' } : { kind: 'never-arrived' };
+  if (!sawOurMessage) return { kind: 'never-arrived' };
+  // The ONLY route to "läuft weiter": the server said so, on the record. `completed`
+  // without a visible answer, `unknown`, and a failed status read all land in
+  // `indeterminate` — states we genuinely cannot distinguish, reported as such.
+  if (lastStatus?.verified && lastStatus.state === 'running') return { kind: 'still-running' };
+  return { kind: 'indeterminate' };
 }
 
 // ─── Copy ─────────────────────────────────────────────────────────────────────
@@ -244,8 +306,13 @@ export async function recoverTurn({
  * One honest line per outcome, in both languages.
  *
  * `null` for `answered` and `stream-alive`: there is nothing to apologise for — the answer
- * simply appears. No branch here says "bitte versuch es erneut" about work that exists,
- * and only `never-arrived` (the message provably did not reach the server) offers a resend.
+ * simply appears. No branch here says "bitte versuch es erneut" about work that exists.
+ *
+ * FOUNDER-WALK-5 · U1 — the `still-running` line is unchanged in wording but changed in
+ * MEANING: `recoverTurn` now only returns that outcome when the server confirmed a live
+ * run, so the sentence is a report rather than a hope. The two states it used to absorb —
+ * a turn the runtime guard discarded, and a turn nobody can account for — have their own
+ * lines below, and both admit that the work is gone rather than promising a comeback.
  */
 export function recoveryMessage(outcome: RecoveryOutcome['kind'], lang: 'de' | 'en'): string | null {
   const en = lang === 'en';
@@ -257,6 +324,15 @@ export function recoveryMessage(outcome: RecoveryOutcome['kind'], lang: 'de' | '
       return en
         ? 'Your answer was still being written when I checked. It finishes on the server — reopen this chat in a moment to read it.'
         : 'Deine Antwort wurde noch geschrieben, als ich nachgesehen habe. Sie läuft auf dem Server zu Ende — öffne diesen Chat gleich nochmal, dann steht sie da.';
+    case 'lost':
+      // The founder's actual case. No "gleich nochmal öffnen": nothing will appear there.
+      return en
+        ? 'Your answer was lost — the turn hit its time limit on the server and nothing was saved. Shall I start it again?'
+        : 'Die Antwort ging verloren — der Lauf hat auf dem Server sein Zeitlimit erreicht, gespeichert wurde nichts. Ich starte sie neu?';
+    case 'indeterminate':
+      return en
+        ? "I can't tell whether your answer is still running or was lost — nothing has been saved for it. Shall I start it again?"
+        : 'Ich kann nicht feststellen, ob deine Antwort noch läuft oder verloren ging — gespeichert ist bisher nichts. Ich starte sie neu?';
     case 'never-arrived':
       return en
         ? 'Your message never reached the server — the phone locked before it got out. Nothing was lost; send it again.'
@@ -268,6 +344,33 @@ export function recoveryMessage(outcome: RecoveryOutcome['kind'], lang: 'de' | '
   }
 }
 
+/**
+ * The label beside the resend button, per outcome, in both languages.
+ *
+ * "wartet auf Verbindung" (the one hard-coded label this component used to show for every
+ * retryable state) is TRUE only for a send that never left the device. Over a turn the
+ * server discarded it is another small false claim: nothing is waiting for a connection —
+ * the work is gone and only a fresh run will produce it. One label per truth.
+ */
+export function resendHint(outcome: RecoveryOutcome['kind'], lang: 'de' | 'en'): string {
+  const en = lang === 'en';
+  switch (outcome) {
+    case 'lost':
+      return en ? 'answer lost' : 'Antwort verloren';
+    case 'indeterminate':
+      return en ? 'outcome unknown' : 'Ausgang unbekannt';
+    default:
+      return en ? 'waiting for connection' : 'wartet auf Verbindung';
+  }
+}
+
+/** What the resend button says: a lost turn is RE-STARTED, an undelivered message is re-SENT. */
+export function resendActionLabel(outcome: RecoveryOutcome['kind'], lang: 'de' | 'en'): string {
+  const en = lang === 'en';
+  if (outcome === 'lost' || outcome === 'indeterminate') return en ? 'start again' : 'neu starten';
+  return en ? 'send again' : 'erneut senden';
+}
+
 /** The line shown WHILE the recovery is asking. It promises nothing. */
 export function checkingMessage(lang: 'de' | 'en'): string {
   return lang === 'en'
@@ -275,7 +378,20 @@ export function checkingMessage(lang: 'de' | 'en'): string {
     : 'Verbindung unterbrochen — ich prüfe, ob deine Antwort fertig geworden ist …';
 }
 
-/** Only a provably-undelivered message gets the resend affordance. */
+/**
+ * Which outcomes get the one-tap resend.
+ *
+ * The rule is "no answer exists and none is coming" — never "we are impatient". `answered`
+ * and `still-running` are excluded because resending there would duplicate a turn the
+ * founder has already paid for; `unreachable` is excluded because we do not yet know what
+ * the server is holding.
+ *
+ * FOUNDER-WALK-5 · U1 adds the two states that used to hide inside `still-running`. A turn
+ * the runtime guard discarded persists NOTHING, so the resend is not a convenience — it is
+ * the only way to get the answer at all. The retry reuses the original prompt and the
+ * original `clientMessageId`, so the server dedupes the user message and only the missing
+ * completion is re-run.
+ */
 export function offersResend(outcome: RecoveryOutcome['kind']): boolean {
-  return outcome === 'never-arrived';
+  return outcome === 'never-arrived' || outcome === 'lost' || outcome === 'indeterminate';
 }
