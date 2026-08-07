@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { authMiddleware } from '../middleware/auth.js';
@@ -11,6 +12,12 @@ import { loadUserPreferences } from '../services/user-preferences.js';
 import { truncateTitle } from '../lib/truncate-title.js';
 import { trackEvent } from '../lib/platform-events.js';
 import { runChatWebSearch } from '../services/search/augment.js';
+import {
+  beginChatTurn,
+  settleChatTurn,
+  latestChatTurn,
+  type ChatTurnLostReason,
+} from '../services/chat-turn-registry.js';
 
 type Variables = { userId: string };
 const chatSessions = new Hono<{ Variables: Variables }>();
@@ -29,6 +36,17 @@ export function chatMaxRuntimeMs(): number {
   const raw = Number(process.env.CHAT_MAX_RUNTIME_MS);
   return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 120_000;
 }
+
+/**
+ * FOUNDER-WALK-5 · U1 — how long the loop keeps reading AFTER the abort was signalled.
+ *
+ * An abort tells the upstream generator to stop; it does not retroactively unmake the frames
+ * it already produced. A well-behaved generator ends within a tick or two of the signal, and
+ * during that window it may still hand over the `done` that completes an answer. Leaving
+ * immediately threw that answer away; waiting forever would defeat the guard. A few seconds
+ * is both far longer than a compliant wind-down and far shorter than any real turn.
+ */
+export const ABORT_DRAIN_GRACE_MS = 5_000;
 
 // GET /api/chat-sessions — list user sessions
 chatSessions.get('/', async (c) => {
@@ -93,6 +111,53 @@ chatSessions.get('/:id', async (c) => {
     .limit(50);
 
   return c.json({ session, messages: messages ?? [] });
+});
+
+/**
+ * GET /api/chat-sessions/:id/turn-status — FOUNDER-WALK-5 · U1.
+ *
+ * The endpoint that exists so no client ever has to infer a running turn from a missing
+ * answer. Four states, and the difference between the last two is the whole point:
+ *
+ *   running   — a turn for this session is executing in THIS process right now. VERIFIED.
+ *   completed — the answer was written; it is in `GET /api/chat-sessions/:id`.
+ *   lost      — the turn ended with no answer saved. `reason: 'max_runtime'` is the
+ *               CHAT_MAX_RUNTIME_MS ceiling; the work is gone and resending is the only
+ *               way to get it back.
+ *   unknown   — this process has no record (restart, or another replica took the turn).
+ *               We do not know. Saying "läuft weiter" here would be the same false claim
+ *               in a new place, so the client renders honest uncertainty instead.
+ *
+ * Ownership-scoped twice: the session must belong to the caller AND the registry record is
+ * matched on `userId`, so a forged session id can never reveal another user's turn.
+ */
+chatSessions.get('/:id/turn-status', async (c) => {
+  const userId = c.get('userId');
+  const sessionId = c.req.param('id');
+  const supabase = getSupabaseAdmin();
+
+  const { data: session } = await supabase
+    .from('chat_sessions')
+    .select('id')
+    .eq('id', sessionId)
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (!session) return c.json({ error: 'Session not found' }, 404);
+
+  const rec = latestChatTurn(sessionId, userId);
+  if (!rec) {
+    return c.json({ state: 'unknown', reason: null, verified: false, maxRuntimeMs: chatMaxRuntimeMs() });
+  }
+  return c.json({
+    state: rec.state,
+    reason: rec.reason,
+    // `verified: true` is the client's licence to make a claim about this turn. It is only
+    // ever set when a record exists — never derived from silence.
+    verified: true,
+    startedAt: new Date(rec.startedAt).toISOString(),
+    endedAt: rec.endedAt === null ? null : new Date(rec.endedAt).toISOString(),
+    maxRuntimeMs: chatMaxRuntimeMs(),
+  });
 });
 
 // POST /api/chat-sessions/:id/stream — stream a message (SSE)
@@ -276,9 +341,27 @@ chatSessions.post('/:id/stream', async (c) => {
     const onReqAbort = () => { clientGone = true; };
     c.req.raw.signal.addEventListener('abort', onReqAbort);
 
+    // FOUNDER-WALK-5 · U1 — this turn's fate, on the record.
+    //
+    // Everything below settles this exactly once, and the `finally` catches every path that
+    // did not. Without it the only server-side trace of an aborted turn was its ABSENCE from
+    // `standalone_messages` — indistinguishable from a turn still being written, which is
+    // precisely the ambiguity the client resolved in the flattering direction.
+    const turnId = randomUUID();
+    beginChatTurn({ turnId, sessionId, userId });
+    let persisted = false;
+
     // The backstop that replaces the disconnect-abort: an abandoned turn must still be
     // bounded, or a dropped socket could leave an upstream generator running indefinitely.
+    //
+    // U1: `guardFired` is kept separately from `signal.aborted` because the two answer
+    // different questions. The signal says "stop pulling from upstream"; `guardFired` says
+    // "this turn hit its ceiling and its answer, if any, is NOT trustworthy as complete".
+    let guardFired = false;
+    /** When the abort was first observed by the read loop — the drain window's origin. */
+    let abortedAt: number | null = null;
     const guard = setTimeout(() => {
+      guardFired = true;
       if (!abortController.signal.aborted) abortController.abort();
     }, chatMaxRuntimeMs());
     guard.unref?.();
@@ -342,9 +425,28 @@ chatSessions.post('/:id/stream', async (c) => {
         systemPrompt,
         reducedSystemPrompt,
       })) {
-        if (abortController.signal.aborted) break;
-
         const parsed = JSON.parse(jsonToken) as Record<string, unknown>;
+
+        // U1 — the guard bounds the RUN; it does not invalidate work already delivered.
+        //
+        // The old check sat BEFORE the parse and broke out on ANY aborted signal, so a
+        // completion the model had already produced could be thrown away by a timer that
+        // fired in the gap between the generator yielding and this loop body running (Node
+        // resumes a `for await` at an await point — exactly where a pending timer runs).
+        //
+        // The abort is a signal to the UPSTREAM to stop producing, so the honest response
+        // here is to let the generator wind down and honour whatever it has already handed
+        // over — including a trailing `done`, which model-router emits ONLY after the
+        // provider stream completed normally, so it can never be a truncated answer dressed
+        // up as a whole one. Dropping the deltas but keeping such a `done` would be worse
+        // than either: it would persist a half answer AS the finished one.
+        //
+        // The bound on that goodwill is `ABORT_DRAIN_GRACE_MS`: a generator that ignores its
+        // signal gets a few seconds, then the loop leaves regardless.
+        if (abortController.signal.aborted) {
+          if (abortedAt === null) abortedAt = Date.now();
+          if (Date.now() - abortedAt > ABORT_DRAIN_GRACE_MS) break;
+        }
 
         if (parsed.type === 'meta') {
           currentModel = (parsed.model as string) || currentModel;
@@ -373,6 +475,16 @@ chatSessions.post('/:id/stream', async (c) => {
               .select('id')
               .single();
             if (asstErr) console.error('[chat-sessions] failed to persist assistant message:', asstErr.message);
+            // U1: the verdict the client reads. `completed` is claimed only from HERE —
+            // the one line in this file that puts an answer in the transcript — and a
+            // failed insert settles `lost`, because a turn whose answer nobody can read
+            // is lost however cleanly the model finished.
+            if (asstErr) {
+              settleChatTurn(turnId, 'lost', 'persist_failed');
+            } else {
+              settleChatTurn(turnId, 'completed');
+            }
+            persisted = true;
 
             await supabase.from('chat_sessions')
               .update({ model_slug: currentModel, updated_at: new Date().toISOString() })
@@ -407,6 +519,18 @@ chatSessions.post('/:id/stream', async (c) => {
       clearTimeout(guard);
       c.req.raw.signal.removeEventListener('abort', onReqAbort);
       if (!abortController.signal.aborted) abortController.abort();
+      // U1 — the catch-all verdict. `settleChatTurn` is monotonic, so this cannot overwrite
+      // the `completed` written above; it only names the turns that left WITHOUT an answer.
+      // `max_runtime` is the founder's case: the 120s guard ended a turn that had produced
+      // text but never a `done`, and that text is NOT saved — persisting it would be passing
+      // a half-written answer off as the finished one.
+      if (!persisted) {
+        const reason: ChatTurnLostReason = guardFired ? 'max_runtime' : 'stream_failed';
+        settleChatTurn(turnId, 'lost', reason);
+        console.warn(
+          `[chat-sessions] turn ended without an answer (session=${sessionId} reason=${reason} chars_discarded=${fullResponse.length})`,
+        );
+      }
     }
   });
 });
