@@ -28,6 +28,7 @@ import {
   resendHint, resendActionLabel,
   shouldAskServerOnReturn, type TranscriptMessage, type TurnStatus,
 } from "@/lib/chat-recovery";
+import { noticeToneStyle, noticeToneFromText, recoveryTone, type NoticeTone } from "@/lib/notice-tone";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -328,6 +329,14 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
   );
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // U1 (visual): the notice's tone travels WITH it. `null` means "not stated" and falls back
+  // to the text classifier at render — the only place prose is still read for colour.
+  const [errorTone, setErrorTone] = useState<NoticeTone | null>(null);
+  /** Raise a notice and say what kind it is. The one way this component writes the banner. */
+  const showNotice = useCallback((text: string | null, tone?: NoticeTone) => {
+    setError(text);
+    setErrorTone(text === null ? null : tone ?? null);
+  }, []);
   const { selectedModel, setSelectedModel } = useChatModel();
   const { setChatProjectId } = useApp();
   const demoMode = useDemoMode();
@@ -445,7 +454,8 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
     const activityAtStart = lastStreamActivityRef.current;
 
     turnGuard.current.beginRecovery();
-    setError(checkingMessage(lang));
+    // A progress report about work that is fine — never the error treatment.
+    showNotice(checkingMessage(lang), recoveryTone('checking'));
 
     const outcome = await recoverTurn({
       prompt,
@@ -494,7 +504,7 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
 
     if (outcome.kind === "stream-alive") {
       // Back off completely: the turn is still live and still owns the screen.
-      setError(null);
+      showNotice(null);
       return;
     }
 
@@ -511,7 +521,7 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
       })) as typeof messages;
       setMessages(adopted);
       baseMessagesRef.current = adopted;
-      setError(null);
+      showNotice(null);
       return;
     }
 
@@ -529,8 +539,8 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
           }
         : m,
     ));
-    setError(recoveryMessage(outcome.kind, lang));
-  }, [sessionId, apiBase]);
+    showNotice(recoveryMessage(outcome.kind, lang), recoveryTone(outcome.kind));
+  }, [sessionId, apiBase, showNotice]);
 
   // The trigger the mount-only paths could never provide: iOS freezes the tab rather
   // than unmounting it, so only a visibility/bfcache/online event tells us we are back.
@@ -678,7 +688,7 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
     setMessages(withUser);
     baseMessagesRef.current = withUser;
     setIsStreaming(true);
-    setError(null);
+    showNotice(null);
     streamingContentRef.current = "";
 
     // U1: this turn's identity. Every write below carries `epoch`, and the guard refuses it
@@ -743,7 +753,7 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
             lastStreamActivityRef.current = null; // no stream is running any more
             setIsStreaming(false);
           } else if (d.type === "error") {
-            setError(friendlyError(d.message));
+            showNotice(friendlyError(d.message));
             setMessages(baseMessagesRef.current);
             streamingMsgRef.current = null;
             lastStreamActivityRef.current = null;
@@ -787,9 +797,10 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
         setMessages(baseMessagesRef.current.map(m =>
           m.id === tempId ? { ...m, sendFailed: true } : m
         ));
-        setError(copy);
+        // A connection blip with a visible retry: actionable, not broken.
+        showNotice(copy, 'warn');
       } else {
-        setError(friendlyError(err, "Senden fehlgeschlagen — bitte nochmal versuchen."));
+        showNotice(friendlyError(err, "Senden fehlgeschlagen — bitte nochmal versuchen."));
         setMessages(baseMessagesRef.current);
       }
       streamingMsgRef.current = null;
@@ -917,16 +928,18 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
         }
 
         {error && (
+          // U1 (visual): the tone is CARRIED, not sniffed from the prose. `errorTone` is set
+          // by whoever raised the notice; untagged upstream strings fall back to the text
+          // classifier. Every value is token-derived, so the box follows the theme instead
+          // of the hard-coded light-mode reds this banner used to paint in both themes.
           <div style={{
-            background: /no model|no key|api key/i.test(error) ? "rgba(212,169,74,0.08)" : "var(--danger-soft)",
-            border: `1px solid ${/no model|no key|api key/i.test(error) ? "rgba(212,169,74,0.3)" : "#FCA5A5"}`,
+            ...noticeToneStyle(errorTone ?? noticeToneFromText(error)),
             borderRadius: 10, padding: "12px 16px", fontSize: 13,
-            color: /no model|no key|api key/i.test(error) ? "var(--text)" : "#991B1B",
             fontFamily: "var(--font-sans)",
             display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
           }}>
             <span>{error}</span>
-            <button onClick={() => setError(null)} style={{ fontSize: 'var(--t-body-fs)', background: "none", border: "none", cursor: "pointer", color: "var(--meta)", padding: "0 2px" }}>×</button>
+            <button onClick={() => showNotice(null)} style={{ fontSize: 'var(--t-body-fs)', background: "none", border: "none", cursor: "pointer", color: "var(--meta)", padding: "0 2px" }}>×</button>
           </div>
         )}
 
