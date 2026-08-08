@@ -93,6 +93,15 @@ Am iPhone, eingeloggt als `vinc.hafner2@gmail.com` (dem Betreiber-Konto — sieh
    Änderung öffentlich tatsächlich sichtbar war.
 4. **Teardown** (später) — zwei Bestätigungen, App-Name muss getippt werden.
 
+**Gegenprobe nach Schritt 1, bevor irgendetwas anderes gefahren wird.** Im Browser
+`https://irgendwas.justgoblin.app` öffnen. Erwartet wird die **entworfene deutsche
+404-Seite des Routers** — das heißt: der Worker läuft, die Wildcard ist proxied, die
+Route ist gebunden. Kommt stattdessen ein **Cloudflare 522**, läuft der Worker
+nicht; dann ist der Wildcard-Eintrag vermutlich grau (nicht proxied), und der
+Schritt-Block der Router-Karte sagt wörtlich, was im Cloudflare-Dashboard zu klicken
+ist. In dem Fall **nicht** mit E2E oder Veröffentlichen weitermachen: beide würden
+auf einer Adresse messen, die niemand ausliefert.
+
 ### 2.4 Ergebnis kopieren
 
 Ein Knopf legt das Ergebnis als JSON in die Zwischenablage, bereinigt von
@@ -257,6 +266,64 @@ für den Prozess dasselbe, und `not_configured` sagt beides gleichzeitig.
 > ist er ohne ein eigenes Bearer-Token nicht direkt sichtbar. Für den Weg „ohne
 > Token, direkt am Telefon" bräuchte es zusätzlich eine Anzeige in der Web-Route —
 > bewusst **nicht** Teil dieser Änderung.
+
+---
+
+## 4b. Autorisierungs-Kohärenz — wer die Konsole bedienen darf, führt ihre Aktionen aus
+
+**FINDING (2026-08-08).** Die Konsole rendert, der Status-Kopf steht, und *jeder*
+Knopf antwortet 404. „Router ausrollen" → `POST /api/ops/router/provision` → 404.
+
+### Die Ursache, nachgemessen und nicht vermutet
+
+Zwei Zulassungslisten, die über denselben Menschen verschieden geurteilt haben:
+
+| Oberfläche | Gate | Liste |
+|---|---|---|
+| Die Konsole selbst (`/dashboard/konsole`, `/api/ops-console/*`) | `opsFounderGate` | `OPS_FOUNDER_ACCOUNTS` |
+| Die Aktionen, die ihre Knöpfe auslösen (`/api/ops/*`) | `opsGate` (`routes/ops.ts:41`) | `OPS_BETA_ACCOUNTS` |
+
+`middleware/ops-gate.ts` prüfte in Dimension 2 ausschließlich `isOpsBetaAccount()`.
+Auf `…2@` (Betreiber, auf `OPS_FOUNDER_ACCOUNTS`) traf `…3@` (CC-Testkonto, auf
+`OPS_BETA_ACCOUNTS`) — also: eine Konsole, die sagt „du darfst das bedienen", und
+Routen, die sagen „hier ist nichts". Das ist kein Anzeigefehler, den die Oberfläche
+hätte glattbügeln dürfen, sondern ein Fehler in der Autorisierung.
+
+### Das Prinzip (Gründer-Entscheidung, 2026-08-08)
+
+> **Wer die Konsole bedienen darf, darf ihre Aktionen ausführen.**
+
+Umgesetzt als **zweite hinreichende Liste** in `opsGate`, in genau der Form, die
+`routes/ops-admin.ts` seit Phase 2.5 benutzt: zwei unabhängige Wege hinein, **eine**
+ununterscheidbare Absage, und keiner der beiden Wege verrät, dass es den anderen
+gibt. Keine zweite Route, kein Proxy, keine Kopie der Handler.
+
+### Was ausdrücklich *nicht* mitgeändert wurde
+
+- **`OPS_HOSTING_ENABLED` bleibt vorgeschaltet und bleibt zuerst.** Der Gründer
+  bekommt keinen Weg *am Kill-Switch vorbei*, sondern eine zweite Art, Dimension 2
+  zu erfüllen. Steht der Schalter auf aus, antwortet `/api/ops/*` auch dem Gründer
+  mit 404 — und Supabase wird weiterhin **gar nicht erst gefragt**, wer da ruft.
+  Der Not-Aus, der das Dunkelschalten überleben muss, ist `/api/admin/ops` und war
+  nie an diesen Schalter gebunden.
+- **Der Beta-Pfad ist unangetastet.** `…3@` erreicht weiterhin genau das, was es
+  vorher erreicht hat, und weiterhin **nicht** die Konsole: die Beta-Liste ist
+  Sichtbarkeit, keine Betreiber-Vollmacht.
+- **Die Kohorte merkt nichts.** `OPS_FOUNDER_ACCOUNTS` ist ohne Wert leer, der
+  zweite Pfad lässt dann niemanden durch, und ein Akt-1-Nutzer auf keiner der
+  beiden Listen bekommt dieselbe byte-gleiche 404 wie immer.
+  `ops-cohort-protection.test.ts` beweist das und wurde **nicht angefasst**.
+- **Der Aktor bleibt die verifizierte E-Mail.** Das Prinzipal-Objekt ist unverändert
+  `{ userId, email }`, egal über welche Liste jemand hereinkam — die 0100-Zeile
+  jeder Betreiber-Handlung trägt damit dieselbe geprüfte Adresse wie zuvor.
+
+### Belege
+
+`ops-authorization-coherence.test.ts` fährt **jeden** Endpunkt, den die Konsole
+aufruft (beide Mounts, aus `console-client.tsx` abgelesen), durch drei Kohorten und
+durch den Kill-Switch. „Erreicht" ist gemessen, nicht angenommen: eine Absage ist
+die byte-gleiche Text-404, alles andere — auch eine JSON-404 eines Handlers, der
+gelaufen ist — heißt, dass das Gate eingelassen hat.
 
 ---
 

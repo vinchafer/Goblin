@@ -27,12 +27,46 @@
  *
  * This is honest degradation, not a phantom: nothing anywhere in the product
  * links to, mentions, or implies these routes while the flag is off.
+ *
+ * ── PHASE 2.5 · U-A1 — a SECOND allowlist, and why ───────────────────────────
+ * Everything above still holds, byte for byte. What changed is WHO the second
+ * dimension admits: the beta allowlist (`OPS_BETA_ACCOUNTS`) is no longer the only
+ * answer — an account on `OPS_FOUNDER_ACCOUNTS` passes too.
+ *
+ * The reason is coherence, not convenience. The founder console
+ * (/dashboard/konsole, routes/ops-console.ts) is gated on `OPS_FOUNDER_ACCOUNTS`,
+ * and its buttons drive THESE routes: router provision, router status, publish and
+ * the name check all live under /api/ops. With only the beta allowlist here, a
+ * founder who was not ALSO on the beta list got a console that rendered perfectly
+ * and whose every action answered 404 — the operator surface said "you may operate
+ * this" and the routes said "there is nothing here". Two allowlists disagreeing
+ * about the same human is a bug in the authorization, not something the UI should
+ * paper over. The principle, founder-approved on 2026-08-08: WHOEVER MAY OPERATE
+ * THE CONSOLE MAY EXECUTE ITS ACTIONS.
+ *
+ * The shape is deliberately the one routes/ops-admin.ts already uses: two
+ * independent ways in, one indistinguishable refusal, neither path leaking that
+ * the other exists.
+ *
+ * What did NOT change, and is the whole reason this is safe:
+ *   • Dimension 1 is untouched and still FIRST. `OPS_HOSTING_ENABLED` still ANDs
+ *     with everything below it, so publishing and every other hosting action still
+ *     goes dark for the founder too. The founder does not get a bypass around the
+ *     kill switch — they get a second way to satisfy dimension 2. (The operator
+ *     surface that must survive going dark is /api/admin/ops, and it always has.)
+ *   • With the switch off Supabase is still never asked who is calling, so the
+ *     founder allowlist cannot leak through a mis-parsed value either.
+ *   • `OPS_FOUNDER_ACCOUNTS` is unset by default → the second path admits nobody
+ *     and this file behaves exactly as it did before. An Act-1 user on neither list
+ *     gets the same byte-identical 404 as always (ops-cohort-protection.test.ts,
+ *     unchanged).
  */
 
 import { createMiddleware } from 'hono/factory';
 import type { Context } from 'hono';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { isOpsBetaAccount, opsBetaDenyReason, opsHostingEnabled } from '../services/ops-beta';
+import { isOpsFounderAccount, opsFounderDenyReason } from '../services/ops-founder';
 import logger from '../lib/logger';
 
 /**
@@ -79,15 +113,33 @@ export const opsGate = createMiddleware<{ Variables: OpsGateVariables }>(async (
     return notFound(c);
   }
 
-  // Dimension 2: the allowlist.
-  if (!isOpsBetaAccount(email)) {
+  // Dimension 2: an allowlist — either one. Beta is checked first because it is
+  // the ordinary path and because `opsBetaDenyReason` below is written for it; the
+  // founder list is the alternative, not an override.
+  const viaBeta = isOpsBetaAccount(email);
+  const viaFounder = !viaBeta && isOpsFounderAccount(email);
+
+  if (!viaBeta && !viaFounder) {
     logger.warn(
-      { path: c.req.path, userId, reason: opsBetaDenyReason(email) },
+      // Both reasons, because "why was this refused" now has two halves and a log
+      // that showed only one would send the next diagnosis down the wrong path.
+      { path: c.req.path, userId, reason: opsBetaDenyReason(email), founderReason: opsFounderDenyReason(email) },
       'ops_gate_denied',
     );
     return notFound(c);
   }
 
+  if (viaFounder) {
+    // Mirrors `ops_admin_founder_session`: an operator acting on the ops plane by
+    // founder authority is worth one line in the log. The beta path stays silent —
+    // it is the ordinary case and this is the exception.
+    logger.info({ path: c.req.path, actor: email }, 'ops_gate_founder_session');
+  }
+
+  // The principal shape is unchanged on purpose: `email` is the VERIFIED session
+  // email either way, which is what every downstream audit row records as its
+  // actor (services/ops-audit.ts). A founder-authorized action is therefore
+  // attributable to exactly the same degree a beta-authorized one is.
   c.set('opsPrincipal', { userId: userId!, email: email! });
   await next();
 });
