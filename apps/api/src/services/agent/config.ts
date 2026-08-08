@@ -1,13 +1,17 @@
 // FEEL-3a — agent loop configuration: the feature flag, eligibility, and budget knobs.
 //
-// Flags follow the codebase convention (plain `process.env.X === 'true'` reads, no
-// framework). The loop activates ONLY when: the flag is on (or the caller is the
+// Flags follow the codebase convention (`envFlag()` from lib/env-value.ts — a plain
+// `=== 'true'` read after the value is unwrapped, no framework; that unwrapping is the
+// only difference from the bare `process.env.X === 'true'` this used to do, and it
+// exists because a Railway field is filled by pasting). The loop activates ONLY when:
+// the flag is on (or the caller is the
 // test account), the chat is a PROJECT chat (D4 — tools are project-scoped), and the
 // model is on the verified-capable list (D2 — Swift default, Forge opt-in). Anything
 // else keeps today's behavior — no silent degradation into a broken agent.
 
 import { parseGoblinTier, type GoblinTierId } from '../goblin-hosted';
 import { FORGE_WEIGHT } from '../../lib/goblin-cap';
+import { envFlag, envString } from '../../lib/env-value';
 
 /** Budget: max model turns per run (spec §7 default 8). Env-overridable. */
 export function agentMaxIterations(): number {
@@ -115,9 +119,9 @@ export function isAgentEligibleModel(modelSlug?: string | null): boolean {
  * it in prod without flipping the flag for everyone.
  */
 export function isAgentLoopEnabled(userEmail?: string | null): boolean {
-  if (process.env.AGENT_LOOP === 'true') return true;
-  const testEmail = process.env.TEST_ACCOUNT_EMAIL;
-  if (testEmail && userEmail && userEmail.toLowerCase() === testEmail.toLowerCase()) return true;
+  if (envFlag('AGENT_LOOP')) return true;
+  const testEmail = envString('TEST_ACCOUNT_EMAIL');
+  if (testEmail && userEmail && userEmail.trim().toLowerCase() === testEmail.toLowerCase()) return true;
   return false;
 }
 

@@ -115,3 +115,79 @@ describe('independence — going dark must not disarm the operator', () => {
     expect(opsFounderDenyReason(FOUNDER)).toBe('not_configured');
   });
 });
+
+// ── The dashboard-paste shapes (FINDING-5) ───────────────────────────────────
+//
+// The console 404'd for the one account it was armed for because the allowlist was
+// read with a bare `.trim().toLowerCase()`: a value pasted with its quotes still on
+// produced an entry that matched no email that would ever sign in. The gate was
+// working exactly as designed — it was the parser that was wrong, and the failure
+// was silent because a fail-closed gate has nothing to say.
+//
+// Each shape below is asserted to admit the founder EXACTLY as the clean value does.
+// The negative direction is asserted alongside it: hardening the parser must not
+// start admitting anyone else, and must not repair a value that is genuinely wrong.
+describe('the value as a human actually pastes it into Railway', () => {
+  const SHAPES: Array<[string, string]> = [
+    ['plain', FOUNDER],
+    ['double-quoted', `"${FOUNDER}"`],
+    ['single-quoted', `'${FOUNDER}'`],
+    ['whitespace-padded', `   ${FOUNDER}   `],
+    ['newline-padded', `\n${FOUNDER}\n`],
+    ['quoted AND padded', `  "${FOUNDER}"  `],
+    ['trailing comma', `${FOUNDER},`],
+    ['leading comma', `,${FOUNDER}`],
+    ['mixed case', FOUNDER.toUpperCase()],
+    ['quoted, padded, mixed case, trailing comma', `  " ${FOUNDER.toUpperCase()} , "  `],
+  ];
+
+  it.each(SHAPES)('%s admits the founder, exactly as the clean value does', (_label, raw) => {
+    process.env.OPS_FOUNDER_ACCOUNTS = raw;
+    expect(opsFounderEmails()).toContain(FOUNDER);
+    expect(opsFounderConfigured()).toBe(true);
+    expect(isOpsFounderAccount(FOUNDER)).toBe(true);
+    expect(opsFounderDenyReason(FOUNDER)).toBeNull();
+  });
+
+  it.each(SHAPES)('%s still refuses everyone else', (_label, raw) => {
+    process.env.OPS_FOUNDER_ACCOUNTS = raw;
+    for (const who of [COHORT, BETA_NOT_FOUNDER, `x${FOUNDER}`, `${FOUNDER}.evil.example`]) {
+      expect(isOpsFounderAccount(who)).toBe(false);
+      expect(opsFounderDenyReason(who)).toBe('not_allowlisted');
+    }
+  });
+
+  it('a multi-entry list survives every quoting style', () => {
+    const SECOND = 'second.founder@example.com';
+    for (const raw of [
+      `${FOUNDER},${SECOND}`,
+      `"${FOUNDER},${SECOND}"`,
+      `'${FOUNDER},${SECOND}'`,
+      `"${FOUNDER}","${SECOND}"`,
+      `'${FOUNDER}','${SECOND}'`,
+      ` ${FOUNDER} , ${SECOND} ,`,
+    ]) {
+      process.env.OPS_FOUNDER_ACCOUNTS = raw;
+      expect(opsFounderEmails()).toEqual([FOUNDER, SECOND]);
+      expect(isOpsFounderAccount(FOUNDER)).toBe(true);
+      expect(isOpsFounderAccount(SECOND)).toBe(true);
+      expect(isOpsFounderAccount(COHORT)).toBe(false);
+    }
+  });
+
+  it('unwrapping never rescues a wrong address — fail-closed is preserved', () => {
+    process.env.OPS_FOUNDER_ACCOUNTS = `"vinc.hafner9@gmail.com"`;
+    expect(isOpsFounderAccount(FOUNDER)).toBe(false);
+    expect(opsFounderDenyReason(FOUNDER)).toBe('not_allowlisted');
+  });
+
+  it('a quote-only or empty value still admits NOBODY', () => {
+    for (const raw of ['""', "''", '"  "', '   ', ',', '""," "']) {
+      process.env.OPS_FOUNDER_ACCOUNTS = raw;
+      expect(opsFounderEmails()).toEqual([]);
+      expect(opsFounderConfigured()).toBe(false);
+      expect(isOpsFounderAccount(FOUNDER)).toBe(false);
+      expect(opsFounderDenyReason(FOUNDER)).toBe('not_configured');
+    }
+  });
+});

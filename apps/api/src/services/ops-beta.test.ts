@@ -142,3 +142,58 @@ describe('the two dimensions are ANDed — the truth table', () => {
     expect(results.filter(Boolean)).toHaveLength(1);
   });
 });
+
+// ── The dashboard-paste shapes (FINDING-5) ───────────────────────────────────
+//
+// Same hardening as the founder allowlist, applied to BOTH of this gate's
+// dimensions: the kill switch is a pasted value too, and a quoted `"true"` used to
+// read as OFF — which would have taken the whole of Act 2 dark while the Railway
+// dashboard showed a variable that plainly said true.
+describe('the value as a human actually pastes it into Railway', () => {
+  const ON_SHAPES = ['true', '"true"', "'true'", '  true  ', '"  true  "', 'TRUE', '"TRUE"', '\ntrue\n'];
+
+  it.each(ON_SHAPES)('kill switch: %j opens the gate, exactly as a clean `true` does', (raw) => {
+    process.env.OPS_HOSTING_ENABLED = raw;
+    expect(opsHostingEnabled()).toBe(true);
+  });
+
+  it('kill switch: every non-true value is still OFF, quoted or not', () => {
+    for (const raw of ['false', '"false"', "'false'", '1', '"1"', 'yes', '"yes"', '', '""', '   ']) {
+      process.env.OPS_HOSTING_ENABLED = raw;
+      expect(opsHostingEnabled()).toBe(false);
+    }
+  });
+
+  const LIST_SHAPES: Array<[string, string]> = [
+    ['plain', BETA],
+    ['double-quoted', `"${BETA}"`],
+    ['single-quoted', `'${BETA}'`],
+    ['whitespace-padded', `   ${BETA}   `],
+    ['trailing comma', `${BETA},`],
+    ['mixed case', BETA.toUpperCase()],
+    ['quoted, padded, mixed case, trailing comma', `  " ${BETA.toUpperCase()} , "  `],
+  ];
+
+  it.each(LIST_SHAPES)('allowlist: %s admits the beta account, exactly as the clean value does', (_label, raw) => {
+    process.env.OPS_HOSTING_ENABLED = 'true';
+    process.env.OPS_BETA_ACCOUNTS = raw;
+    expect(opsBetaEmails()).toContain(BETA);
+    expect(isOpsBetaAccount(BETA)).toBe(true);
+    expect(opsBetaDenyReason(BETA)).toBeNull();
+  });
+
+  it.each(LIST_SHAPES)('allowlist: %s still refuses the cohort', (_label, raw) => {
+    process.env.OPS_HOSTING_ENABLED = 'true';
+    process.env.OPS_BETA_ACCOUNTS = raw;
+    expect(isOpsBetaAccount(COHORT)).toBe(false);
+  });
+
+  it('a quote-only allowlist admits NOBODY even with the switch on', () => {
+    process.env.OPS_HOSTING_ENABLED = 'true';
+    for (const raw of ['""', "''", '"  "', '   ', ',']) {
+      process.env.OPS_BETA_ACCOUNTS = raw;
+      expect(opsBetaEmails()).toEqual([]);
+      expect(isOpsBetaAccount(BETA)).toBe(false);
+    }
+  });
+});

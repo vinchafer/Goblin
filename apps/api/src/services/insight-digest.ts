@@ -11,6 +11,7 @@
 import { buildInsight, type InsightPayload } from './insight';
 import { sendEmail } from '../lib/email';
 import logger from '../lib/logger';
+import { envFlag, envString } from '../lib/env-value';
 
 export interface Digest { subject: string; html: string }
 
@@ -74,7 +75,7 @@ export function buildDigest(insight: InsightPayload): Digest {
 }
 
 function digestRecipient(): string | null {
-  const to = process.env.FOUNDER_DIGEST_EMAIL || process.env.ADMIN_EMAIL;
+  const to = envString('FOUNDER_DIGEST_EMAIL') || envString('ADMIN_EMAIL');
   return to && to.includes('@') ? to : null;
 }
 
@@ -84,7 +85,7 @@ function digestRecipient(): string | null {
  * Returns a small status for the cron log / tests.
  */
 export async function sendFounderDigest(): Promise<{ sent: boolean; reason?: string }> {
-  if (process.env.GOBLIN_FOUNDER_DIGEST !== 'true') return { sent: false, reason: 'disabled' };
+  if (!envFlag('GOBLIN_FOUNDER_DIGEST')) return { sent: false, reason: 'disabled' };
   const to = digestRecipient();
   if (!to) return { sent: false, reason: 'no_recipient' };
 

@@ -8,9 +8,11 @@
 // byte-identical to today (LIVE-USERS: additive / opt-in). The founder flips it on after
 // wiring the OAuth app + applying migration 0096.
 
+
+import { envFlag } from '../../lib/env-value';
 /** Master opt-in. Off by default → no behavior change for existing users. */
 export function fullstackEnabled(): boolean {
-  return process.env.GOBLIN_FULLSTACK_ENABLED === 'true';
+  return envFlag('GOBLIN_FULLSTACK_ENABLED');
 }
 
 /** Supabase OAuth app client id (public-ish). Env only — never hard-coded. */

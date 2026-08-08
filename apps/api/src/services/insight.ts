@@ -12,6 +12,7 @@
 import { getSupabaseAdmin } from '../lib/supabase';
 import { isMissingSchema } from '../lib/schema-shape';
 import { readUsersTolerant, isMissingDeletedAt, USERS_DELETED_AT_MIGRATION } from '../lib/users-soft-delete';
+import { envString, splitEnvList } from '../lib/env-value';
 
 // The canonical funnel, in order. `source: 'signup'` is derived from
 // users.created_at; every other stage is the first occurrence of its event.
@@ -41,15 +42,13 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  */
 function testEmailSet(): Set<string> {
   const raw = [
-    process.env.INSIGHT_TEST_EMAILS,
-    process.env.ADMIN_EMAIL,
-    process.env.TEST_ACCOUNT_EMAIL,
+    envString('INSIGHT_TEST_EMAILS'),
+    envString('ADMIN_EMAIL'),
+    envString('TEST_ACCOUNT_EMAIL'),
   ]
     .filter(Boolean)
     .join(',');
-  return new Set(
-    raw.split(',').map((e) => e.trim().toLowerCase()).filter(Boolean),
-  );
+  return new Set(splitEnvList(raw));
 }
 
 /**

@@ -115,6 +115,7 @@ import { opsConsole } from './routes/ops-console';
 import { events } from './routes/events';
 import { feedback } from './routes/feedback';
 import { startCron } from './lib/cron';
+import { envList } from './lib/env-value';
 
 // WAVE-H · H5: `requestId` is a top-level context var so the correlation id set in the
 // logging middleware is readable in the error handler (and any downstream that wants it).
@@ -127,7 +128,7 @@ const CORS_EXACT = new Set([
   'https://www.justgoblin.com',
   process.env.NEXT_PUBLIC_APP_URL,
   // Additional origins from env var: ALLOWED_ORIGINS=https://a.com,https://b.com
-  ...(process.env.ALLOWED_ORIGINS?.split(',').map(s => s.trim()).filter(Boolean) ?? []),
+  ...envList('ALLOWED_ORIGINS'),
 ].filter(Boolean) as string[]);
 
 // Wildcard patterns: only allow Goblin's own Vercel deployments, not arbitrary *.vercel.app.
