@@ -39,15 +39,112 @@ import { createMiddleware } from 'hono/factory';
 import type { Context } from 'hono';
 import { getSupabaseAdmin } from '../lib/supabase';
 import { isOpsFounderAccount, opsFounderConfigured } from '../services/ops-founder';
+import { envFlag } from '../lib/env-value';
 import logger from '../lib/logger';
 
 /**
  * The single refusal. Byte-identical to Hono's built-in notFound response and to
  * middleware/ops-gate.ts's, so a console route refuses exactly as a non-existent
  * route does.
+ *
+ * `reason` is attached as a header ONLY under the debug window described below.
+ * With `OPS_FOUNDER_DEBUG` unset — the default and the production state — this
+ * function is byte-for-byte what it has always been: status, body and headers
+ * indistinguishable from a path that was never routed.
  */
-function notFound(c: Context) {
+function notFound(c: Context, reason?: string) {
+  if (reason) c.header(OPS_DEBUG_REASON_HEADER, reason);
   return c.text('404 Not Found', 404);
+}
+
+/** Env var name for the debug window. Unset = off = today's behaviour. */
+export const OPS_FOUNDER_DEBUG_ENV = 'OPS_FOUNDER_DEBUG';
+
+/** The header the reason rides on while the window is open. */
+export const OPS_DEBUG_REASON_HEADER = 'X-Goblin-Ops-Reason';
+
+/**
+ * ════════════════════════════════════════════════════════════════════════════════
+ * THE DEBUG WINDOW — why it exists, and exactly what it costs while it is open.
+ *
+ * The refusal above is deliberately mute. That is correct for production and it is
+ * also why a misconfigured allowlist cost a full diagnosis session: the founder set
+ * `OPS_FOUNDER_ACCOUNTS`, got the same 404 a stranger gets, and had no way to learn
+ * whether the variable had not landed, his email did not match, or his token had
+ * expired. The reason was written to the server log and nowhere else — and the log
+ * is exactly what a founder operating from a phone does not have.
+ *
+ * ── The trade, stated plainly ───────────────────────────────────────────────
+ * While `OPS_FOUNDER_DEBUG=true`, any human WITH A VALID GOBLIN LOGIN who requests
+ * a console path learns that something gated exists there. They cannot reach it,
+ * they learn nothing about who may, and the body stays `404 Not Found` — but the
+ * property "indistinguishable from an unrouted path" is gone for authenticated
+ * callers. That is a real reduction and it is why this is a WINDOW, not a feature:
+ * it is off by default, the founder opens it, reads one answer, and closes it.
+ *
+ * A caller with no token, a malformed token, or an invalid token learns exactly
+ * nothing — the same as today. The header is never attached unless the bearer
+ * resolved to a real Supabase user, so the surface is never widened for strangers,
+ * only for people who are already inside the front door.
+ *
+ * ── Why `not_configured` needs its own Supabase call ────────────────────────
+ * `resolveFounder()` checks the allowlist BEFORE it touches Supabase, on purpose:
+ * with nothing configured it never makes a network call and cannot leak through a
+ * mis-parsed env value. That ordering means that on the `not_configured` path we
+ * have not established whether the caller is a real user — and `not_configured` is
+ * precisely the answer the founder most needs. So the window, and ONLY the window,
+ * pays for one extra `getUser()` on that path. With the flag off the fast path is
+ * untouched and no extra call is ever made.
+ * ════════════════════════════════════════════════════════════════════════════════
+ */
+export function opsFounderDebugEnabled(): boolean {
+  return envFlag(OPS_FOUNDER_DEBUG_ENV);
+}
+
+/**
+ * Does this bearer belong to a real Supabase user? Used only to decide whether a
+ * refusal may carry its reason. Never throws — an unreachable Supabase answers
+ * `false`, i.e. say nothing, which is the fail-closed direction for a disclosure.
+ */
+async function bearerIsRealUser(authHeader: string | undefined): Promise<boolean> {
+  if (!authHeader || !authHeader.startsWith('Bearer ')) return false;
+  try {
+    const { data, error } = await getSupabaseAdmin().auth.getUser(authHeader.substring(7));
+    return !error && !!data?.user;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * The reason to disclose on this refusal, or `undefined` to stay mute.
+ *
+ * Short-circuits by reason so the window costs at most ONE extra Supabase call, and
+ * usually none:
+ *   • `no_bearer` / `invalid_token` — definitionally not a real user. Mute.
+ *   • `auth_error` — Supabase was unreachable, so realness is UNKNOWN. Mute, because
+ *     "we could not tell" must never be rendered as "you are known".
+ *   • `no_email` / `not_allowlisted` — `resolveFounder()` already resolved this token
+ *     to a real user. Disclose, no second call.
+ *   • `not_configured` — realness not yet established. One `getUser()`, window only.
+ */
+async function debugReason(
+  authHeader: string | undefined,
+  reason: FounderAuthDeny,
+): Promise<string | undefined> {
+  if (!opsFounderDebugEnabled()) return undefined;
+
+  switch (reason) {
+    case 'no_bearer':
+    case 'invalid_token':
+    case 'auth_error':
+      return undefined;
+    case 'no_email':
+    case 'not_allowlisted':
+      return reason;
+    case 'not_configured':
+      return (await bearerIsRealUser(authHeader)) ? reason : undefined;
+  }
 }
 
 export type OpsFounderPrincipal = { userId: string; email: string };
@@ -110,10 +207,13 @@ export async function founderFromBearer(authHeader: string | undefined): Promise
 }
 
 export const opsFounderGate = createMiddleware<{ Variables: OpsFounderVariables }>(async (c, next) => {
-  const result = await resolveFounder(c.req.header('Authorization'));
+  const authHeader = c.req.header('Authorization');
+  const result = await resolveFounder(authHeader);
   if (!result.ok) {
     logger.warn({ path: c.req.path, reason: result.reason }, 'ops_founder_denied');
-    return notFound(c);
+    // The log line above is unchanged and remains the authoritative record. The
+    // header below exists only while the debug window is open — see its header.
+    return notFound(c, await debugReason(authHeader, result.reason));
   }
 
   c.set('opsFounder', result.principal);

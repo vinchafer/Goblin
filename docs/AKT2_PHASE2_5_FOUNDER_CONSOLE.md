@@ -130,6 +130,109 @@ Diese Oberfläche antwortet seit vor Akt 2 mit 401 und muss weiter wie der Rest 
 
 ---
 
+## 4a. `OPS_FOUNDER_DEBUG` — das Diagnose-Fenster
+
+### Warum es das gibt
+
+Die Absage des Gates ist absichtlich stumm: jede Zurückweisung ist byte-gleich mit
+einem Pfad, den es nie gab. Das ist für die Produktion richtig — und es hat eine
+komplette Diagnose-Sitzung gekostet. Der Gründer setzte `OPS_FOUNDER_ACCOUNTS`,
+bekam dieselbe 404 wie ein Fremder, und hatte **keine Möglichkeit zu erfahren**, ob
+die Variable nicht angekommen war, seine E-Mail nicht passte oder sein Token
+abgelaufen war. Der Grund stand im Server-Log und sonst nirgends — und das Log ist
+genau das, was ein Gründer am Telefon nicht hat.
+
+### Was es tut
+
+```
+OPS_FOUNDER_DEBUG = true      (Railway, API-Service, production)
+```
+
+Ist die Variable **nicht gesetzt** — der Normalzustand — verhält sich das Gate
+byte-für-byte wie bisher: Status, Körper, Content-Type, keine zusätzlichen Header.
+Es gibt keinen Codepfad, der bei geschlossenem Fenster etwas anderes tut.
+
+Ist sie **an**, trägt dieselbe 404 zusätzlich einen Header:
+
+```
+X-Goblin-Ops-Reason: not_allowlisted
+```
+
+Mögliche Werte: `not_configured` · `not_allowlisted` · `no_email`.
+
+Der Header wird **nur** angehängt, wenn das Bearer-Token einen **echten
+Supabase-Nutzer** auflöst. Wer kein Token, ein kaputtes Token oder ein ungültiges
+Token schickt, erfährt weiterhin exakt nichts. Auch wenn Supabase nicht erreichbar
+ist, bleibt die Antwort stumm: „wir konnten es nicht feststellen" darf nie als
+„du bist bekannt" ausgeliefert werden.
+
+### Was es preisgibt, solange es an ist
+
+> **Jeder Mensch mit einem gültigen Goblin-Login erfährt, dass unter diesem Pfad
+> etwas Abgeschirmtes existiert.** Er kommt nicht hinein, er erfährt nichts darüber,
+> wer hineindarf, und der Körper bleibt `404 Not Found` — aber die Eigenschaft
+> „nicht unterscheidbar von einem nie gerouteten Pfad" ist für angemeldete Aufrufer
+> weg.
+>
+> Für Fremde ohne Login ändert sich **nichts**.
+
+Deshalb ist das ein **Fenster** und kein Feature: aufmachen, eine Antwort lesen,
+zumachen.
+
+### Die Schritte für genau ein Fenster
+
+1. Railway → API-Service → Variables → `OPS_FOUNDER_DEBUG` = `true`. Redeploy
+   abwarten (Railway startet den Service bei einer Variablen-Änderung selbst neu).
+2. Die Konsole aufrufen bzw. `/api/ops-console/status` mit dem eigenen Bearer-Token
+   abfragen und `X-Goblin-Ops-Reason` lesen.
+3. **`OPS_FOUNDER_DEBUG` wieder löschen** (nicht auf `false` setzen — löschen). Den
+   Redeploy abwarten und prüfen, dass der Header weg ist.
+
+| Wert | Bedeutung | Was zu tun ist |
+|---|---|---|
+| `not_configured` | `OPS_FOUNDER_ACCOUNTS` ist im Prozess nicht vorhanden | **Zuerst den NAMEN der Variablen zeichenweise prüfen, nicht den Wert** — siehe FINDING unten. Danach: richtiger Service? richtige Environment? |
+| `not_allowlisted` | Token gültig, E-Mail steht nicht auf der Liste | Die E-Mail des angemeldeten Kontos exakt eintragen (auf Anführungszeichen im Wert achten) |
+| `no_email` | Token gültig, Konto hat keine E-Mail-Adresse | Konto in Supabase prüfen |
+
+### FINDING (2026-08-08) — die gestylte 404 kam von einem abgeschnittenen Variablennamen
+
+**Symptom.** Der Gründer ist am iPhone angemeldet, ruft `/dashboard/konsole` auf und
+bekommt die gestylte Goblin-404. Das Log zeigt `ops_founder_denied` mit
+`reason: "not_configured"` — obwohl in Railway sichtbar eine Gründer-Variable steht,
+mit der richtigen E-Mail als Wert.
+
+**Ursache.** Die Variable hieß **`OPS_FOUNDER_ACC`** — abgeschnitten. Der Code liest
+`OPS_FOUNDER_ACCOUNTS`. Zwei verschiedene Namen sind zwei verschiedene Variablen: die
+gesetzte wird von niemandem gelesen, die gelesene ist nicht gesetzt, also ist die
+Allowlist leer, also lässt das fail-closed-Gate **niemanden** durch — auch den
+Gründer nicht.
+
+**Warum es so lange gedauert hat.** Der Blick fiel auf den *Wert*, weil der Wert das
+ist, was man eingetippt hat und was falsch aussehen könnte (Tippfehler in der
+E-Mail, Anführungszeichen aus einem Copy-Paste). Der *Name* wurde als gegeben
+angenommen — er stammt schließlich aus der Doku. In der Railway-Oberfläche steht der
+Name aber klein und schmal neben einem breiten Wertfeld, und ein abgeschnittener
+Name sieht genau so aus wie ein vollständiger.
+
+**Die Regel, die daraus folgt:** Bei `not_configured` ist die erste Prüfung immer der
+**Name**, Zeichen für Zeichen gegen `services/ops-founder.ts`
+(`OPS_FOUNDER_ACCOUNTS_ENV`) — nicht der Wert, nicht der Service, nicht die
+Environment. Ein falsch geschriebener Name und eine gar nicht gesetzte Variable sind
+für den Prozess dasselbe, und `not_configured` sagt beides gleichzeitig.
+
+> Das gilt für jede Akt-2-Variable: `OPS_BETA_ACCOUNTS`, `OPS_HOSTING_ENABLED`,
+> `OPS_APPS_DOMAIN`, `OPS_FOUNDER_DEBUG`. Eine falsch benannte Variable ist überall
+> lautlos — es gibt keinen Codepfad, der „diese Variable kenne ich nicht" melden
+> könnte, weil ein Prozess nicht wissen kann, welchen Namen jemand gemeint hat.
+
+> **Einschränkung, die ehrlich benannt gehört:** Der Header liegt auf der Antwort
+> der API an den *Vercel-Server_component-Fetch*, nicht an Safari. Vom iPhone aus
+> ist er ohne ein eigenes Bearer-Token nicht direkt sichtbar. Für den Weg „ohne
+> Token, direkt am Telefon" bräuchte es zusätzlich eine Anzeige in der Web-Route —
+> bewusst **nicht** Teil dieser Änderung.
+
+---
+
 ## 5. Ehrlichkeit, eingebaut statt versprochen
 
 - **UNBEKANNT ist ein Wert.** Jede Prüfung ist dreiwertig; `null` kommt als `null`
