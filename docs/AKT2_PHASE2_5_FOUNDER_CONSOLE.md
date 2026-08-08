@@ -327,6 +327,45 @@ gelaufen ist — heißt, dass das Gate eingelassen hat.
 
 ---
 
+## 4c. Die Projektliste — eine Spalte, die es nie gab
+
+**FINDING (2026-08-08).** Der Projekt-Auswähler sagte „Die Projektliste konnte
+nicht geladen werden", obwohl das Konto Projekte hat.
+
+**Es war nicht das Gate.** `/api/ops-console/projects` liegt hinter
+`opsFounderGate` und hat den Gründer die ganze Zeit eingelassen. Die Route hat
+`projects` nach `updated_at` gefragt und danach sortiert — **diese Spalte gibt es
+nicht**. Migration 0001 legt `projects` mit `created_at` und `last_active` an, und
+keine spätere Migration ergänzt ein `updated_at`; die reguläre Projektliste der App
+(`routes/projects.ts`) sortiert korrekt nach `last_active`. PostgREST antwortete
+also auf jeden Aufruf mit `42703`, die Route tat genau das Richtige und meldete
+`available:false`, und die Konsole sagte die Wahrheit — über einen Grund, den
+niemand sehen konnte.
+
+Behoben an der Ursache: die Route liest `last_active` (und behält `updatedAt` als
+Feldnamen auf der Leitung, damit sich für den Leser nichts ändert). Kein Rückfall,
+kein „dann eben ohne Sortierung".
+
+Zwei Dinge, damit das nicht wiederkommt:
+
+1. **Die Spalten sind jetzt eine exportierte Tatsache** (`PROJECT_PICKER_COLUMNS`,
+   `PROJECT_PICKER_ORDER`) statt eines Zeichenketten-Literals mitten im Aufruf.
+   Der Test hält sie gegen die **committeten Migrationen** — nicht gegen eine
+   zweite, von Hand geschriebene Liste, die denselben Fehler haben könnte. Der alte
+   Test konnte den Fehler nicht sehen: sein Mock schluckte die Argumente von
+   `select()` und `order()`, jeder Spaltenname wäre durchgegangen.
+2. **`available:false` trägt jetzt ein `detail`** — die Worte der Datenbank,
+   gekappt. Diese Oberfläche sieht nur der Betreiber, und er ist der Einzige, der
+   auf einen Schema-Fehler reagieren kann. Genau dieser Satz ohne alles dahinter
+   hat ein Fenster gekostet.
+
+Der ehrliche Leerzustand bleibt unverändert getrennt: „konnte nicht gelesen
+werden" (`available:false`) und „dieses Konto hat noch keine Projekte"
+(`available:true`, leere Liste) sind zwei verschiedene Sätze, und ein stumm leeres
+Auswahlfeld ist keiner von beiden.
+
+---
+
 ## 5. Ehrlichkeit, eingebaut statt versprochen
 
 - **UNBEKANNT ist ein Wert.** Jede Prüfung ist dreiwertig; `null` kommt als `null`
