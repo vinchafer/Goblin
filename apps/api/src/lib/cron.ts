@@ -8,6 +8,7 @@ import { retryFailedRefunds } from '../services/billing-service';
 import { sendFounderDigest } from '../services/insight-digest';
 import { sendFeedbackDigest } from '../services/feedback';
 import { pruneAgentAutoCheckpoints } from '../services/checkpoints/retention';
+import { envFlag } from './env-value';
 
 let scheduled = false;
 
@@ -18,7 +19,7 @@ let scheduled = false;
  */
 export function startCron(): void {
   if (scheduled) return;
-  if (process.env.ENABLE_CRON !== 'true') {
+  if (!envFlag('ENABLE_CRON')) {
     logger.info('cron disabled (ENABLE_CRON != true)');
     return;
   }

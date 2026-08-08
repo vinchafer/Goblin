@@ -37,20 +37,26 @@
  * ════════════════════════════════════════════════════════════════════════════════
  */
 
+import { envList } from '../lib/env-value';
+
 /** Env var name, exported so a health probe can report PRESENCE without the value. */
 export const OPS_FOUNDER_ACCOUNTS_ENV = 'OPS_FOUNDER_ACCOUNTS';
 
 /**
- * The founder emails, normalized (trimmed, lower-cased, blanks dropped).
+ * The founder emails, normalized (unwrapped, lower-cased, blanks dropped).
  * Comma-separated in env: `OPS_FOUNDER_ACCOUNTS=a@example.com,b@example.com`.
  * Read at call time, never cached, so a Railway change takes effect on the next
  * request after the redeploy and so tests can toggle it without module-cache games.
+ *
+ * Normalization goes through `lib/env-value.ts`, which strips a stray pair of
+ * surrounding quotes as well as whitespace. This used to be a bare
+ * `.trim().toLowerCase()`, and the difference is not cosmetic: a value pasted as
+ * `OPS_FOUNDER_ACCOUNTS="someone@example.com"` produced a one-entry list whose
+ * entry still carried its quotes, matched nobody, and refused the founder with
+ * the same silent 404 the gate gives a stranger.
  */
 export function opsFounderEmails(): string[] {
-  return (process.env[OPS_FOUNDER_ACCOUNTS_ENV] ?? '')
-    .split(',')
-    .map((e) => e.trim().toLowerCase())
-    .filter((e) => e.length > 0);
+  return envList(OPS_FOUNDER_ACCOUNTS_ENV);
 }
 
 /** True iff the allowlist is configured at all. False = the console is disarmed. */

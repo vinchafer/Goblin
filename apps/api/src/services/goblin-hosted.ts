@@ -34,6 +34,7 @@
 
 import OpenAI from 'openai';
 import { GoblinError } from './litellm-client';
+import { envFlag } from '../lib/env-value';
 
 export type GoblinTierId = 'goblin/efficient' | 'goblin/premium';
 
@@ -180,7 +181,7 @@ export const GOBLIN_MAX_TOKENS_PER_REQUEST = 8096;
 // ─── Flag + config ──────────────────────────────────────────────────────────
 
 export function isGoblinHostedEnabled(): boolean {
-  return process.env.GOBLIN_HOSTED_API === 'true';
+  return envFlag('GOBLIN_HOSTED_API');
 }
 
 /** Parse a routing slug into a Goblin tier id, or null if it isn't one. */

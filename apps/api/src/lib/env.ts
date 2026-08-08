@@ -9,11 +9,13 @@
  * dev/prod detection. The shield keys off GOBLIN_DEV_MODE exclusively.
  */
 
+import { envFlag, envString } from './env-value';
+
 /** True when the local process is explicitly flagged as a dev process. */
-export const IS_DEV_MODE = process.env.GOBLIN_DEV_MODE === 'true';
+export const IS_DEV_MODE = envFlag('GOBLIN_DEV_MODE');
 
 /** The only account permitted to be mutated while the shield is active. */
-export const TEST_USER_EMAIL = process.env.TEST_ACCOUNT_EMAIL;
+export const TEST_USER_EMAIL = envString('TEST_ACCOUNT_EMAIL') || undefined;
 
 /**
  * Vercel project the dev shield permits deploys to touch. Any deploy whose name is this

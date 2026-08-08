@@ -13,10 +13,11 @@
  *   Two independent dimensions, ANDed. Both must be true:
  *     1. `OPS_HOSTING_ENABLED === 'true'`  — the GLOBAL kill switch. Default OFF.
  *        Absent, empty, 'false', '1', 'yes' → OFF. Only the exact string 'true'
- *        (case-insensitively, trimmed) opens the gate. One Railway variable turns
- *        the whole of Act 2 dark for everyone, instantly, with no deploy.
- *     2. The subject's email ∈ `OPS_BETA_ACCOUNTS` (comma-separated, case- and
- *        whitespace-insensitive) — the per-account allowlist.
+ *        (case-insensitively, trimmed, and with a stray pair of pasted quotes
+ *        stripped — see lib/env-value.ts) opens the gate. One Railway variable
+ *        turns the whole of Act 2 dark for everyone, instantly, with no deploy.
+ *     2. The subject's email ∈ `OPS_BETA_ACCOUNTS` (comma-separated, case-,
+ *        whitespace- and quote-insensitive) — the per-account allowlist.
  *
  *   The switch is ordered FIRST on purpose: with the kill switch off, the
  *   allowlist is never consulted and cannot leak through a mis-parsed env value.
@@ -33,6 +34,8 @@
  */
 
 /** Env var names, exported so the health probe can report PRESENCE without values. */
+import { envFlag, envList } from '../lib/env-value';
+
 export const OPS_HOSTING_ENABLED_ENV = 'OPS_HOSTING_ENABLED';
 export const OPS_BETA_ACCOUNTS_ENV = 'OPS_BETA_ACCOUNTS';
 
@@ -43,20 +46,21 @@ export const OPS_BETA_ACCOUNTS_ENV = 'OPS_BETA_ACCOUNTS';
  * toggle it without module-cache games.
  */
 export function opsHostingEnabled(): boolean {
-  return (process.env[OPS_HOSTING_ENABLED_ENV] ?? '').trim().toLowerCase() === 'true';
+  return envFlag(OPS_HOSTING_ENABLED_ENV);
 }
 
 /**
- * The allowlisted emails, normalized (trimmed, lower-cased, blanks dropped).
+ * The allowlisted emails, normalized (unwrapped, lower-cased, blanks dropped).
  * Comma-separated in env: `OPS_BETA_ACCOUNTS=a@example.com,b@example.com`.
  * Returns [] when unset — an empty allowlist admits nobody, which is the safe
  * direction for a fail-closed gate.
+ *
+ * Normalization goes through `lib/env-value.ts`, so a value pasted with its
+ * quotes still on reads as the addresses it visibly contains. See that module's
+ * header for why a bare `.trim()` was not enough.
  */
 export function opsBetaEmails(): string[] {
-  return (process.env[OPS_BETA_ACCOUNTS_ENV] ?? '')
-    .split(',')
-    .map((e) => e.trim().toLowerCase())
-    .filter((e) => e.length > 0);
+  return envList(OPS_BETA_ACCOUNTS_ENV);
 }
 
 /** Anything that can identify a human here: a bare email, or an object carrying one. */

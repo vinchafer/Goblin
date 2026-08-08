@@ -13,6 +13,7 @@
 import { sendEmail } from '../lib/email';
 import logger from '../lib/logger';
 import { getSupabaseAdmin } from '../lib/supabase';
+import { envFlag, envString } from '../lib/env-value';
 
 export type FeedbackCategory = 'bug' | 'idea' | 'other';
 
@@ -56,7 +57,7 @@ export interface FeedbackInput {
 
 /** Founder recipient — reuses the Wave-I founder envs. */
 export function feedbackRecipient(): string | null {
-  const to = process.env.FEEDBACK_EMAIL ?? process.env.FOUNDER_DIGEST_EMAIL ?? process.env.ADMIN_EMAIL;
+  const to = envString('FEEDBACK_EMAIL') || envString('FOUNDER_DIGEST_EMAIL') || envString('ADMIN_EMAIL');
   return to && to.includes('@') ? to : null;
 }
 
@@ -122,7 +123,7 @@ export function buildFeedbackDigest(rows: DigestRow[]): { subject: string; html:
  * === 'true' + a recipient + Resend key), silent no-op otherwise, never throws.
  */
 export async function sendFeedbackDigest(now = new Date()): Promise<{ sent: boolean; reason?: string }> {
-  if (process.env.GOBLIN_FEEDBACK_DIGEST !== 'true') return { sent: false, reason: 'disabled' };
+  if (!envFlag('GOBLIN_FEEDBACK_DIGEST')) return { sent: false, reason: 'disabled' };
   const to = feedbackRecipient();
   if (!to) return { sent: false, reason: 'no_recipient' };
   try {

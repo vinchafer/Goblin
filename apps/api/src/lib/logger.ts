@@ -1,5 +1,6 @@
 import pino from 'pino';
 import { scrubSecrets } from './scrub-secrets';
+import { envFlag } from './env-value';
 
 const SENSITIVE_PATHS = ['apiKey', 'key', 'secret', 'password', 'token', 'key_encrypted', 'authorization'];
 
@@ -12,7 +13,7 @@ const logger = pino({
   formatters: {
     log: (obj: Record<string, unknown>) => scrubSecrets(obj),
   },
-  ...(process.env.PRETTY_LOGS === 'true' && {
+  ...(envFlag('PRETTY_LOGS') && {
     transport: {
       target: 'pino-pretty',
       options: { colorize: true, translateTime: 'HH:MM:ss', ignore: 'pid,hostname' },
