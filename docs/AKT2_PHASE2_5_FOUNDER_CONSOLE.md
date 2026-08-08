@@ -366,6 +366,43 @@ Auswahlfeld ist keiner von beiden.
 
 ---
 
+## 4d. Was eine Abweisung in der Konsole heißt
+
+Jede Ops-Route weist ab, indem sie antwortet wie eine Route, die es nie gab:
+Status 404, `text/plain`, Körper `404 Not Found`, byte-gleich. Das bleibt genau so
+— es ist das, was die Akt-1-Kohorte daran hindert, die Ops-Ebene durch Vergleichen
+von Antworten zu entdecken.
+
+Was sich ändert, ist, was die **Konsole** daraus macht. Bisher standen die vier
+rohen Worte unter „Das hat nicht funktioniert" — und genau diese Anzeige hat den
+Fehler aus §4b unsichtbar gemacht. Diese Oberfläche sieht nur der Betreiber; der
+eine Mensch, der sie sieht, darf erfahren, dass eine Abweisung eine Abweisung ist.
+
+Die Unterscheidung läuft über das Einzige, was die beiden Fälle wirklich trennt —
+die Bytes:
+
+| Antwort | Was die Konsole sagt |
+|---|---|
+| 404, `text/plain`, `404 Not Found` | **Abweisung.** Eigener Titel, eigener Satz, plus der Hinweis unten. |
+| 404 mit JSON-Körper (unbekannter Lauf, Projekt nicht da) | Der **eigene Satz der API**. Der Handler ist gelaufen — das ist das Gegenteil einer Abweisung. |
+
+Der Hinweis nennt **beide** möglichen Ursachen und behauptet keine: das Konto steht
+für diese Route nicht auf der Liste (`OPS_FOUNDER_ACCOUNTS` bzw.
+`OPS_BETA_ACCOUNTS`), **oder** der Hosting-Schalter steht auf aus
+(`OPS_HOSTING_ENABLED`). Von der Client-Seite aus sind die beiden mit Absicht
+ununterscheidbar; sich für die wahrscheinlichere zu entscheiden, wäre genau die
+erfundene Erklärung, die diese Phase ablehnt. Welche es war, steht im Server-Log —
+und, wenn der Gründer es öffnet, im Fenster aus §4a.
+
+Nur Variablen-**Namen**, nie Werte. Kein Stacktrace: der Detailblock enthält die
+Anfragezeile, den Status und den Antwortkörper wörtlich — den Austausch selbst,
+nicht die Innereien dieser App — und ist kopierbar.
+
+Die Übersetzung liegt in `refusal.ts` als reine Funktion, damit sie prüfbar ist:
+`refusal.test.ts` (22) hält beide Richtungen fest, in DE **und** EN.
+
+---
+
 ## 5. Ehrlichkeit, eingebaut statt versprochen
 
 - **UNBEKANNT ist ein Wert.** Jede Prüfung ist dreiwertig; `null` kommt als `null`
