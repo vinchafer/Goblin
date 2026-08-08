@@ -70,7 +70,12 @@ ABSOLUTE RULES — violating any of these is a failed session regardless of code
 5. NO live keys, service-role keys, or Cloudflare account tokens in this session, ever. Server-side
    secrets live only in Railway env; you write code that reads them, you never see values. Real-model
    or real-API gates run against the PROD API using ONLY test accounts vinc.hafner3@gmail.com
-   (fallback vinc.hafner4@gmail.com). NEVER the founder's personal account.
+   (fallback vinc.hafner4@gmail.com). NEVER the founder's personal account, and NEVER
+   vinc.hafner2@gmail.com. That last one is the Act-2 OPERATOR identity — the founder's
+   working account, also the /admin account, and what belongs on OPS_FOUNDER_ACCOUNTS. This
+   rule constrains what CC uses; it does not decide which human identity holds operator
+   authority. Founder decision 2026-08-08, verbatim in
+   docs/AKT2_PHASE2_5_FOUNDER_CONSOLE.md §0.
 6. NO new paid service, no new account, no live-money action. Where one is needed, output exact
    founder setup steps instead and mark the unit BLOCKED-ON-FOUNDER.
 7. CONSUMPTION LEDGER: any change affecting tokens or external costs updates
