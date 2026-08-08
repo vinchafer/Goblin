@@ -153,6 +153,26 @@ opsConsole.get('/apps', async (c) => {
 });
 
 /**
+ * The columns the picker reads, and the one it orders by.
+ *
+ * ── Why these are constants ──────────────────────────────────────────────────
+ * This route used to ask `projects` for `updated_at` and order by it. That column
+ * has never existed: `projects` is created in migration 0001 with `created_at` and
+ * `last_active`, and no later migration adds `updated_at` (the app's own list route,
+ * routes/projects.ts, correctly orders by `last_active`). PostgREST answered 42703
+ * on every call, the route did the honest thing and reported `available:false`, and
+ * the console said "Die Projektliste konnte nicht geladen werden" — truthfully, for
+ * a reason nobody could see. A typo in a string literal cost a founder window.
+ *
+ * Naming them here means the column set is one exported fact that a test can hold
+ * against the committed migrations (ops-console.test.ts) instead of a literal that
+ * is only ever validated in production.
+ */
+export const PROJECT_PICKER_COLUMNS = ['id', 'name', 'last_active'] as const;
+/** Newest-touched first — the same ordering the ordinary project list uses. */
+export const PROJECT_PICKER_ORDER = 'last_active';
+
+/**
  * GET /api/ops-console/projects — the signed-in account's projects, for the picker.
  *
  * Scoped to the founder's OWN user id, unlike /apps. Publishing is done as the
@@ -164,20 +184,39 @@ opsConsole.get('/projects', async (c) => {
   const founder = c.get('opsFounder');
   const { data, error } = await getSupabaseAdmin()
     .from('projects')
-    .select('id, name, updated_at')
+    .select(PROJECT_PICKER_COLUMNS.join(', '))
     .eq('user_id', founder.userId)
-    .order('updated_at', { ascending: false })
+    .order(PROJECT_PICKER_ORDER, { ascending: false })
     .limit(50);
 
   if (error) {
     logger.warn({ reason: error.message }, 'ops_console_projects_failed');
     // available:false, not an empty list — "we could not read your projects" and
     // "you have none" must not look alike in the picker.
-    return c.json({ available: false, projects: [] });
+    //
+    // `detail` is the database's own words, capped. This surface is founder-only
+    // (opsFounderGate above), the reader is the one person who can act on a schema
+    // error, and the alternative is what actually happened: a console that knew the
+    // reason and showed a sentence with nothing behind it.
+    return c.json({
+      available: false,
+      projects: [],
+      detail: `${error.code ?? ''} ${error.message ?? ''}`.trim().slice(0, 300) || null,
+    });
   }
   return c.json({
     available: true,
-    projects: (data ?? []).map((p) => ({ id: String(p.id), name: String(p.name ?? ''), updatedAt: p.updated_at ?? null })),
+    projects: (data ?? []).map((p) => {
+      const row = p as unknown as Record<string, unknown>;
+      return {
+        id: String(row.id),
+        name: String(row.name ?? ''),
+        // The picker's own name for it. `last_active` is what the column is called;
+        // `updatedAt` is what the console has always received, and renaming the wire
+        // field would have been a second change for no reader's benefit.
+        updatedAt: (row[PROJECT_PICKER_ORDER] as string | null) ?? null,
+      };
+    }),
   });
 });
 

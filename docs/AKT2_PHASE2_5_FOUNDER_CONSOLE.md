@@ -93,6 +93,15 @@ Am iPhone, eingeloggt als `vinc.hafner2@gmail.com` (dem Betreiber-Konto — sieh
    Änderung öffentlich tatsächlich sichtbar war.
 4. **Teardown** (später) — zwei Bestätigungen, App-Name muss getippt werden.
 
+**Gegenprobe nach Schritt 1, bevor irgendetwas anderes gefahren wird.** Im Browser
+`https://irgendwas.justgoblin.app` öffnen. Erwartet wird die **entworfene deutsche
+404-Seite des Routers** — das heißt: der Worker läuft, die Wildcard ist proxied, die
+Route ist gebunden. Kommt stattdessen ein **Cloudflare 522**, läuft der Worker
+nicht; dann ist der Wildcard-Eintrag vermutlich grau (nicht proxied), und der
+Schritt-Block der Router-Karte sagt wörtlich, was im Cloudflare-Dashboard zu klicken
+ist. In dem Fall **nicht** mit E2E oder Veröffentlichen weitermachen: beide würden
+auf einer Adresse messen, die niemand ausliefert.
+
 ### 2.4 Ergebnis kopieren
 
 Ein Knopf legt das Ergebnis als JSON in die Zwischenablage, bereinigt von
@@ -257,6 +266,140 @@ für den Prozess dasselbe, und `not_configured` sagt beides gleichzeitig.
 > ist er ohne ein eigenes Bearer-Token nicht direkt sichtbar. Für den Weg „ohne
 > Token, direkt am Telefon" bräuchte es zusätzlich eine Anzeige in der Web-Route —
 > bewusst **nicht** Teil dieser Änderung.
+
+---
+
+## 4b. Autorisierungs-Kohärenz — wer die Konsole bedienen darf, führt ihre Aktionen aus
+
+**FINDING (2026-08-08).** Die Konsole rendert, der Status-Kopf steht, und *jeder*
+Knopf antwortet 404. „Router ausrollen" → `POST /api/ops/router/provision` → 404.
+
+### Die Ursache, nachgemessen und nicht vermutet
+
+Zwei Zulassungslisten, die über denselben Menschen verschieden geurteilt haben:
+
+| Oberfläche | Gate | Liste |
+|---|---|---|
+| Die Konsole selbst (`/dashboard/konsole`, `/api/ops-console/*`) | `opsFounderGate` | `OPS_FOUNDER_ACCOUNTS` |
+| Die Aktionen, die ihre Knöpfe auslösen (`/api/ops/*`) | `opsGate` (`routes/ops.ts:41`) | `OPS_BETA_ACCOUNTS` |
+
+`middleware/ops-gate.ts` prüfte in Dimension 2 ausschließlich `isOpsBetaAccount()`.
+Auf `…2@` (Betreiber, auf `OPS_FOUNDER_ACCOUNTS`) traf `…3@` (CC-Testkonto, auf
+`OPS_BETA_ACCOUNTS`) — also: eine Konsole, die sagt „du darfst das bedienen", und
+Routen, die sagen „hier ist nichts". Das ist kein Anzeigefehler, den die Oberfläche
+hätte glattbügeln dürfen, sondern ein Fehler in der Autorisierung.
+
+### Das Prinzip (Gründer-Entscheidung, 2026-08-08)
+
+> **Wer die Konsole bedienen darf, darf ihre Aktionen ausführen.**
+
+Umgesetzt als **zweite hinreichende Liste** in `opsGate`, in genau der Form, die
+`routes/ops-admin.ts` seit Phase 2.5 benutzt: zwei unabhängige Wege hinein, **eine**
+ununterscheidbare Absage, und keiner der beiden Wege verrät, dass es den anderen
+gibt. Keine zweite Route, kein Proxy, keine Kopie der Handler.
+
+### Was ausdrücklich *nicht* mitgeändert wurde
+
+- **`OPS_HOSTING_ENABLED` bleibt vorgeschaltet und bleibt zuerst.** Der Gründer
+  bekommt keinen Weg *am Kill-Switch vorbei*, sondern eine zweite Art, Dimension 2
+  zu erfüllen. Steht der Schalter auf aus, antwortet `/api/ops/*` auch dem Gründer
+  mit 404 — und Supabase wird weiterhin **gar nicht erst gefragt**, wer da ruft.
+  Der Not-Aus, der das Dunkelschalten überleben muss, ist `/api/admin/ops` und war
+  nie an diesen Schalter gebunden.
+- **Der Beta-Pfad ist unangetastet.** `…3@` erreicht weiterhin genau das, was es
+  vorher erreicht hat, und weiterhin **nicht** die Konsole: die Beta-Liste ist
+  Sichtbarkeit, keine Betreiber-Vollmacht.
+- **Die Kohorte merkt nichts.** `OPS_FOUNDER_ACCOUNTS` ist ohne Wert leer, der
+  zweite Pfad lässt dann niemanden durch, und ein Akt-1-Nutzer auf keiner der
+  beiden Listen bekommt dieselbe byte-gleiche 404 wie immer.
+  `ops-cohort-protection.test.ts` beweist das und wurde **nicht angefasst**.
+- **Der Aktor bleibt die verifizierte E-Mail.** Das Prinzipal-Objekt ist unverändert
+  `{ userId, email }`, egal über welche Liste jemand hereinkam — die 0100-Zeile
+  jeder Betreiber-Handlung trägt damit dieselbe geprüfte Adresse wie zuvor.
+
+### Belege
+
+`ops-authorization-coherence.test.ts` fährt **jeden** Endpunkt, den die Konsole
+aufruft (beide Mounts, aus `console-client.tsx` abgelesen), durch drei Kohorten und
+durch den Kill-Switch. „Erreicht" ist gemessen, nicht angenommen: eine Absage ist
+die byte-gleiche Text-404, alles andere — auch eine JSON-404 eines Handlers, der
+gelaufen ist — heißt, dass das Gate eingelassen hat.
+
+---
+
+## 4c. Die Projektliste — eine Spalte, die es nie gab
+
+**FINDING (2026-08-08).** Der Projekt-Auswähler sagte „Die Projektliste konnte
+nicht geladen werden", obwohl das Konto Projekte hat.
+
+**Es war nicht das Gate.** `/api/ops-console/projects` liegt hinter
+`opsFounderGate` und hat den Gründer die ganze Zeit eingelassen. Die Route hat
+`projects` nach `updated_at` gefragt und danach sortiert — **diese Spalte gibt es
+nicht**. Migration 0001 legt `projects` mit `created_at` und `last_active` an, und
+keine spätere Migration ergänzt ein `updated_at`; die reguläre Projektliste der App
+(`routes/projects.ts`) sortiert korrekt nach `last_active`. PostgREST antwortete
+also auf jeden Aufruf mit `42703`, die Route tat genau das Richtige und meldete
+`available:false`, und die Konsole sagte die Wahrheit — über einen Grund, den
+niemand sehen konnte.
+
+Behoben an der Ursache: die Route liest `last_active` (und behält `updatedAt` als
+Feldnamen auf der Leitung, damit sich für den Leser nichts ändert). Kein Rückfall,
+kein „dann eben ohne Sortierung".
+
+Zwei Dinge, damit das nicht wiederkommt:
+
+1. **Die Spalten sind jetzt eine exportierte Tatsache** (`PROJECT_PICKER_COLUMNS`,
+   `PROJECT_PICKER_ORDER`) statt eines Zeichenketten-Literals mitten im Aufruf.
+   Der Test hält sie gegen die **committeten Migrationen** — nicht gegen eine
+   zweite, von Hand geschriebene Liste, die denselben Fehler haben könnte. Der alte
+   Test konnte den Fehler nicht sehen: sein Mock schluckte die Argumente von
+   `select()` und `order()`, jeder Spaltenname wäre durchgegangen.
+2. **`available:false` trägt jetzt ein `detail`** — die Worte der Datenbank,
+   gekappt. Diese Oberfläche sieht nur der Betreiber, und er ist der Einzige, der
+   auf einen Schema-Fehler reagieren kann. Genau dieser Satz ohne alles dahinter
+   hat ein Fenster gekostet.
+
+Der ehrliche Leerzustand bleibt unverändert getrennt: „konnte nicht gelesen
+werden" (`available:false`) und „dieses Konto hat noch keine Projekte"
+(`available:true`, leere Liste) sind zwei verschiedene Sätze, und ein stumm leeres
+Auswahlfeld ist keiner von beiden.
+
+---
+
+## 4d. Was eine Abweisung in der Konsole heißt
+
+Jede Ops-Route weist ab, indem sie antwortet wie eine Route, die es nie gab:
+Status 404, `text/plain`, Körper `404 Not Found`, byte-gleich. Das bleibt genau so
+— es ist das, was die Akt-1-Kohorte daran hindert, die Ops-Ebene durch Vergleichen
+von Antworten zu entdecken.
+
+Was sich ändert, ist, was die **Konsole** daraus macht. Bisher standen die vier
+rohen Worte unter „Das hat nicht funktioniert" — und genau diese Anzeige hat den
+Fehler aus §4b unsichtbar gemacht. Diese Oberfläche sieht nur der Betreiber; der
+eine Mensch, der sie sieht, darf erfahren, dass eine Abweisung eine Abweisung ist.
+
+Die Unterscheidung läuft über das Einzige, was die beiden Fälle wirklich trennt —
+die Bytes:
+
+| Antwort | Was die Konsole sagt |
+|---|---|
+| 404, `text/plain`, `404 Not Found` | **Abweisung.** Eigener Titel, eigener Satz, plus der Hinweis unten. |
+| 404 mit JSON-Körper (unbekannter Lauf, Projekt nicht da) | Der **eigene Satz der API**. Der Handler ist gelaufen — das ist das Gegenteil einer Abweisung. |
+
+Der Hinweis nennt **beide** möglichen Ursachen und behauptet keine: das Konto steht
+für diese Route nicht auf der Liste (`OPS_FOUNDER_ACCOUNTS` bzw.
+`OPS_BETA_ACCOUNTS`), **oder** der Hosting-Schalter steht auf aus
+(`OPS_HOSTING_ENABLED`). Von der Client-Seite aus sind die beiden mit Absicht
+ununterscheidbar; sich für die wahrscheinlichere zu entscheiden, wäre genau die
+erfundene Erklärung, die diese Phase ablehnt. Welche es war, steht im Server-Log —
+und, wenn der Gründer es öffnet, im Fenster aus §4a.
+
+Nur Variablen-**Namen**, nie Werte. Kein Stacktrace: der Detailblock enthält die
+Anfragezeile, den Status und den Antwortkörper wörtlich — den Austausch selbst,
+nicht die Innereien dieser App — und ist kopierbar.
+
+Die Übersetzung liegt in `refusal.ts` als reine Funktion, damit sie prüfbar ist:
+`refusal.test.ts` (22) hält beide Richtungen fest, in DE **und** EN.
 
 ---
 

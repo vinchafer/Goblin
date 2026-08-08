@@ -181,6 +181,20 @@ const de = {
     unauthorized: 'Die Sitzung wurde nicht akzeptiert. Melde dich neu an.',
     notFound: 'Diese Aktion gibt es hier nicht.',
     generic: 'Die API hat mit einem Fehler geantwortet.',
+
+    // ── U-A3: was eine Abweisung bedeutet ────────────────────────────────────
+    // Die Ops-Routen weisen ab, indem sie antworten wie eine Route, die es nie
+    // gab: Status 404, Text „404 Not Found". Das ist für die Kohorte gedacht und
+    // bleibt so. Diese Konsole sieht aber nur der Betreiber — deshalb darf hier
+    // stehen, was diese Antwort heißt, statt sie roh durchzureichen.
+    refusedTitle: 'Diese Aktion wurde abgelehnt.',
+    refused:
+      'Die Route hat diese Sitzung nicht angenommen und antwortet deshalb wie eine Route, die es gar nicht gibt. Das gilt absichtlich auch für dich.',
+    // Zwei Ursachen, die von außen gleich aussehen — und genau so bleiben sollen.
+    // Hier steht deshalb beides, ohne zu raten, welche davon zutrifft.
+    refusedWhy:
+      'Zwei Ursachen sehen von hier aus gleich aus, und die Antwort unterscheidet sie mit Absicht nicht: entweder steht dieses Konto für diese Route nicht auf der Liste (OPS_FOUNDER_ACCOUNTS bzw. OPS_BETA_ACCOUNTS), oder der Hosting-Schalter steht auf aus (OPS_HOSTING_ENABLED). Welche von beiden es war, steht im Server-Log — hier steht es bewusst nicht.',
+    noDetail: 'Die API hat kein Detail mitgeschickt.',
   },
 };
 
@@ -347,6 +361,13 @@ const en: typeof de = {
     unauthorized: 'The session was not accepted. Sign in again.',
     notFound: 'This action does not exist here.',
     generic: 'The API answered with an error.',
+
+    refusedTitle: 'This action was refused.',
+    refused:
+      'The route declined this session, so it answers exactly like a route that never existed. That applies to you as well, on purpose.',
+    refusedWhy:
+      'Two causes look the same from out here, and the answer separates them deliberately: either this account is missing from the list for that route (OPS_FOUNDER_ACCOUNTS / OPS_BETA_ACCOUNTS), or the hosting switch sits at off (OPS_HOSTING_ENABLED). Which of the two it was appears in the server log, on purpose only there.',
+    noDetail: 'The API sent no detail along.',
   },
 };
 

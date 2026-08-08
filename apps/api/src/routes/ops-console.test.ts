@@ -10,6 +10,9 @@
 //      no step appearing before the runner produced it.
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const getUser = vi.fn();
 const from = vi.fn();
@@ -38,7 +41,7 @@ vi.mock('../services/ops-e2e', () => ({
   runOpsE2E: (...a: unknown[]) => runOpsE2E(...a),
 }));
 
-const { opsConsole } = await import('./ops-console');
+const { opsConsole, PROJECT_PICKER_COLUMNS, PROJECT_PICKER_ORDER } = await import('./ops-console');
 const { __clearE2EJobsForTest } = await import('../services/ops-e2e-jobs');
 
 const FOUNDER = 'vinc.hafner3@gmail.com';
@@ -477,18 +480,22 @@ describe('the public-URL probe measures instead of assuming, and cannot be aimed
 });
 
 describe('the project picker offers only what could actually be published', () => {
+  /** What the route actually asked the database for, captured verbatim. */
+  let asked: { columns: string; orderedBy: string } = { columns: '', orderedBy: '' };
+
   function mockProjects(result: { data?: unknown; error?: unknown }) {
+    asked = { columns: '', orderedBy: '' };
     const chain = {
-      select: () => chain,
+      select: (cols: string) => { asked.columns = cols; return chain; },
       eq: () => chain,
-      order: () => chain,
+      order: (col: string) => { asked.orderedBy = col; return chain; },
       limit: () => Promise.resolve(result),
     };
     from.mockReturnValue(chain);
   }
 
   it('returns the founder\'s own projects', async () => {
-    mockProjects({ data: [{ id: 'p1', name: 'Testprojekt', updated_at: '2026-07-01' }], error: null });
+    mockProjects({ data: [{ id: 'p1', name: 'Testprojekt', last_active: '2026-07-01' }], error: null });
     const body = await (await get('/projects')).json();
     expect(body.available).toBe(true);
     expect(body.projects).toEqual([{ id: 'p1', name: 'Testprojekt', updatedAt: '2026-07-01' }]);
@@ -499,5 +506,86 @@ describe('the project picker offers only what could actually be published', () =
     const body = await (await get('/projects')).json();
     expect(body.available).toBe(false);
     expect(body.projects).toEqual([]);
+  });
+
+  it('says WHAT went wrong when it could not read them', async () => {
+    // The founder is the only reader of this surface and the only person who can
+    // act on a schema error. A sentence with nothing behind it is what cost a
+    // window: the console said "konnte nicht geladen werden" and the reason —
+    // `42703 column projects.updated_at does not exist` — was visible nowhere.
+    mockProjects({ data: null, error: { code: '42703', message: 'column projects.updated_at does not exist' } });
+    const body = await (await get('/projects')).json();
+    expect(body.available).toBe(false);
+    expect(body.detail).toContain('42703');
+    expect(body.detail).toContain('does not exist');
+  });
+
+  /**
+   * ── THE REGRESSION THAT MADE THIS NECESSARY ────────────────────────────────
+   * The route asked for `updated_at` and ordered by it. `projects` has no such
+   * column — 0001 creates it with `created_at` and `last_active`, and nothing
+   * since adds one. Every call answered 42703, the route reported `available:
+   * false` exactly as designed, and the picker was permanently empty.
+   *
+   * The old mock could not catch it: `select()` and `order()` swallowed their
+   * arguments, so any column name at all passed. So the columns are now a fact the
+   * route exports, and this holds it against the COMMITTED MIGRATIONS rather than
+   * against another hand-written list that could be wrong in the same direction.
+   */
+  describe('every column it asks for exists in the committed schema', () => {
+    const MIGRATIONS = fileURLToPath(new URL('../../../../supabase/migrations/', import.meta.url));
+
+    /** The real `projects` columns: the CREATE TABLE plus every ADD COLUMN since. */
+    const projectColumns = (() => {
+      const cols = new Set<string>();
+      for (const file of readdirSync(MIGRATIONS).filter((f) => f.endsWith('.sql')).sort()) {
+        const sql = readFileSync(join(MIGRATIONS, file), 'utf8');
+
+        const created = /create table (?:if not exists )?(?:public\.)?projects\s*\(([\s\S]*?)\n\);/i.exec(sql);
+        if (created) {
+          for (const line of created[1]!.split('\n')) {
+            const m = /^\s*([a-z_]+)\s+[a-z]/i.exec(line);
+            if (m && !/^(primary|foreign|unique|check|constraint)$/i.test(m[1]!)) cols.add(m[1]!.toLowerCase());
+          }
+        }
+
+        const altered = /alter table (?:public\.)?projects\b([\s\S]*?);/gi;
+        for (let m = altered.exec(sql); m; m = altered.exec(sql)) {
+          const adds = /add column (?:if not exists )?([a-z_]+)/gi;
+          for (let a = adds.exec(m[1]!); a; a = adds.exec(m[1]!)) cols.add(a[1]!.toLowerCase());
+        }
+      }
+      return cols;
+    })();
+
+    it('found a plausible schema to check against', () => {
+      // Guards the guard: a regex that stopped matching would otherwise turn this
+      // whole block into a test that always passes.
+      expect(projectColumns.has('id')).toBe(true);
+      expect(projectColumns.has('user_id')).toBe(true);
+      expect(projectColumns.has('name')).toBe(true);
+      expect(projectColumns.size).toBeGreaterThan(8);
+    });
+
+    it('has no updated_at — the column the picker used to ask for', () => {
+      expect(projectColumns.has('updated_at')).toBe(false);
+    });
+
+    for (const col of PROJECT_PICKER_COLUMNS) {
+      it(`selects "${col}", which the schema has`, () => {
+        expect(projectColumns.has(col)).toBe(true);
+      });
+    }
+
+    it(`orders by "${PROJECT_PICKER_ORDER}", which the schema has`, () => {
+      expect(projectColumns.has(PROJECT_PICKER_ORDER)).toBe(true);
+    });
+
+    it('sends exactly those columns and that ordering to the database', async () => {
+      mockProjects({ data: [], error: null });
+      await get('/projects');
+      expect(asked.columns.split(',').map((s) => s.trim())).toEqual([...PROJECT_PICKER_COLUMNS]);
+      expect(asked.orderedBy).toBe(PROJECT_PICKER_ORDER);
+    });
   });
 });

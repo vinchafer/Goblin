@@ -35,7 +35,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { API_URL, getAuthHeaders } from '@/lib/api';
 import { useLang } from '@/lib/use-lang';
-import { STR, summaryLine, scrubForCopy } from './strings';
+import { STR, summaryLine, scrubForCopy, type Lang } from './strings';
+import { explainFailure, explainNetworkFailure, whereLine, type HonestError } from './refusal';
 
 // ── shapes the API hands us ─────────────────────────────────────────────────
 
@@ -100,42 +101,39 @@ interface E2EJobView {
   } | null;
 }
 
-/** An error the founder can act on: a sentence, plus the raw material to paste. */
-interface HonestError {
-  message: string;
-  detail: string;
-}
+type CallResult<T> = { ok: true; data: T } | { ok: false; error: HonestError; status: number };
 
 // ── talking to the API ──────────────────────────────────────────────────────
 
-async function call<T>(path: string, init: RequestInit = {}): Promise<{ ok: true; data: T } | { ok: false; error: HonestError; status: number }> {
-  const t = STR.de.error; // the detail block is operator material and stays German
-  let res: Response;
-  try {
-    res = await fetch(`${API_URL}${path}`, { ...init, headers: { ...(await getAuthHeaders()), ...(init.headers ?? {}) } });
-  } catch (err) {
-    return { ok: false, status: 0, error: { message: t.network, detail: `${init.method ?? 'GET'} ${path}\n${(err as Error)?.message ?? String(err)}` } };
-  }
+/**
+ * The single place a response — or a thrown value — becomes text the founder reads.
+ *
+ * The translation itself lives in ./refusal.ts, where it is a pure function and
+ * therefore actually testable; this wrapper is only the fetch around it. The rule it
+ * enforces — a gate refusal is NAMED as a refusal, a handler's own 404 keeps its own
+ * German sentence, and neither ever guesses a cause — is documented there.
+ */
+function makeCall(lang: Lang) {
+  return async function call<T>(path: string, init: RequestInit = {}): Promise<CallResult<T>> {
+    const where = whereLine(init.method, path);
+    let res: Response;
+    try {
+      res = await fetch(`${API_URL}${path}`, { ...init, headers: { ...(await getAuthHeaders()), ...(init.headers ?? {}) } });
+    } catch (err) {
+      return { ok: false, status: 0, error: explainNetworkFailure(lang, where, err) };
+    }
 
-  const raw = await res.text();
-  let parsed: unknown = null;
-  try {
-    parsed = raw ? JSON.parse(raw) : null;
-  } catch {
-    /* not JSON — the raw text IS the detail, which is the honest thing to show */
-  }
+    const raw = await res.text();
+    let parsed: unknown = null;
+    try {
+      parsed = raw ? JSON.parse(raw) : null;
+    } catch {
+      /* not JSON — the raw text IS the detail, which is the honest thing to show */
+    }
 
-  if (!res.ok) {
-    const body = parsed as { message?: string; error?: string } | null;
-    // Prefer the API's own German sentence. It was written for this reader.
-    const message = body?.message ?? (res.status === 401 || res.status === 403 ? t.unauthorized : res.status === 404 ? t.notFound : t.generic);
-    return {
-      ok: false,
-      status: res.status,
-      error: { message, detail: `${init.method ?? 'GET'} ${path} → ${res.status}\n${raw.slice(0, 4000)}` },
-    };
-  }
-  return { ok: true, data: (parsed ?? {}) as T };
+    if (!res.ok) return { ok: false, status: res.status, error: explainFailure(lang, where, res.status, raw, parsed) };
+    return { ok: true, data: (parsed ?? {}) as T };
+  };
 }
 
 // ── small presentational pieces ─────────────────────────────────────────────
@@ -159,8 +157,11 @@ function ErrorBlock({ error, title, detailLabel, copyLabel }: { error: HonestErr
   const [copied, setCopied] = useState(false);
   return (
     <div className="oc-error" role="alert">
-      <span className="t">{title}</span>
+      {/* A refusal brings its own title: "das hat nicht funktioniert" would be
+          wrong for an answer the API gave on purpose. */}
+      <span className="t">{error.title ?? title}</span>
       <span className="m">{error.message}</span>
+      {error.hint ? <p className="oc-why">{error.hint}</p> : null}
       <details>
         <summary className="oc-note" style={{ cursor: 'pointer' }}>
           {detailLabel}
@@ -220,6 +221,11 @@ export function OpsConsole({ initialStatus }: { initialStatus: StatusPayload }) 
   const lang = useLang();
   const s = STR[lang];
 
+  // Bound to the language, so a refusal explains itself in the language the
+  // operator is reading. The raw detail block is not translated — it is the
+  // exchange itself, and paraphrasing it would defeat the point of copying it.
+  const call = useMemo(() => makeCall(lang), [lang]);
+
   const [status, setStatus] = useState<StatusPayload>(initialStatus);
   const [statusBusy, setStatusBusy] = useState(false);
   const [statusError, setStatusError] = useState<HonestError | null>(null);
@@ -241,7 +247,7 @@ export function OpsConsole({ initialStatus }: { initialStatus: StatusPayload }) 
       // would be a lie. The visible "last loaded" time is what keeps this honest.
       setStatusError(res.error);
     }
-  }, []);
+  }, [call]);
 
   // ── apps ──────────────────────────────────────────────────────────────────
 
@@ -259,22 +265,34 @@ export function OpsConsole({ initialStatus }: { initialStatus: StatusPayload }) 
       setAppsAvailable(null); // unknown, NOT "no apps"
       setAppsError(res.error);
     }
-  }, []);
+  }, [call]);
 
   // ── projects (the picker) ─────────────────────────────────────────────────
 
   const [projects, setProjects] = useState<Array<{ id: string; name: string }>>([]);
   const [projectsAvailable, setProjectsAvailable] = useState<Tri>(null);
+  const [projectsError, setProjectsError] = useState<HonestError | null>(null);
 
   const refreshProjects = useCallback(async () => {
-    const res = await call<{ available: boolean; projects: Array<{ id: string; name: string }> }>('/api/ops-console/projects');
+    const res = await call<{ available: boolean; detail?: string | null; projects: Array<{ id: string; name: string }> }>(
+      '/api/ops-console/projects',
+    );
     if (res.ok) {
       setProjects(res.data.projects);
       setProjectsAvailable(res.data.available);
+      // `available:false` is a 200 whose payload says "we could not read them".
+      // The API knows why (it carries the database's own words); showing the
+      // sentence without them is what left a schema error invisible for a week.
+      setProjectsError(
+        res.data.available
+          ? null
+          : { message: s.publish.projectsUnavailable, detail: `GET /api/ops-console/projects → 200 available:false\n${res.data.detail ?? s.error.noDetail}` },
+      );
     } else {
       setProjectsAvailable(null);
+      setProjectsError(res.error);
     }
-  }, []);
+  }, [call, s]);
 
   // The first load of the two lists the console needs but the server half did not
   // fetch. Both setState only after their awaits; the IIFE makes that explicit to
@@ -303,7 +321,7 @@ export function OpsConsole({ initialStatus }: { initialStatus: StatusPayload }) 
     } else {
       setRouterError(res.error);
     }
-  }, [refreshStatus]);
+  }, [call, refreshStatus]);
 
   // ── publish ───────────────────────────────────────────────────────────────
 
@@ -336,7 +354,7 @@ export function OpsConsole({ initialStatus }: { initialStatus: StatusPayload }) 
       });
     }, 450);
     return () => clearTimeout(timer);
-  }, [typedName, hostingOn]);
+  }, [call, typedName, hostingOn]);
 
   const nameState: 'idle' | 'checking' | 'free' | 'taken' | 'invalid' =
     !typedName || !hostingOn
@@ -361,7 +379,7 @@ export function OpsConsole({ initialStatus }: { initialStatus: StatusPayload }) 
     } else {
       setPublishError(res.error);
     }
-  }, [projectId, typedName, refreshApps]);
+  }, [call, projectId, typedName, refreshApps]);
 
   const publishBlockedBecause = !hostingOn
     ? s.publish.disabledNoHosting
@@ -407,7 +425,7 @@ export function OpsConsole({ initialStatus }: { initialStatus: StatusPayload }) 
     }
     // Window expired. The action still happened; we simply did not see it land.
     setMeasured((m) => ({ ...m, [app.appId]: { sec: null, running: false } }));
-  }, []);
+  }, [call]);
 
   const operate = useCallback(
     async (app: HostedApp, what: 'suspend' | 'unsuspend' | 'teardown') => {
@@ -431,7 +449,7 @@ export function OpsConsole({ initialStatus }: { initialStatus: StatusPayload }) 
       // 403 = the suspended page · 200 = restored · 404 = torn down.
       void measureUntil(app, what === 'suspend' ? 403 : what === 'unsuspend' ? 200 : 404);
     },
-    [reason, refreshApps, measureUntil],
+    [call, reason, refreshApps, measureUntil],
   );
 
   // ── E2E ───────────────────────────────────────────────────────────────────
@@ -467,7 +485,7 @@ export function OpsConsole({ initialStatus }: { initialStatus: StatusPayload }) 
       live = false;
       clearTimeout(timer);
     };
-  }, [jobId, refreshApps]);
+  }, [call, jobId, refreshApps]);
 
   const startE2E = useCallback(async () => {
     setJobStarting(true);
@@ -481,7 +499,7 @@ export function OpsConsole({ initialStatus }: { initialStatus: StatusPayload }) 
     } else {
       setJobError(res.error);
     }
-  }, [status.e2e.confirm]);
+  }, [call, status.e2e.confirm]);
 
   const e2eBlockedBecause = !hostingOn ? s.e2e.disabledNoHosting : job?.status === 'running' ? s.e2e.disabledRunning : null;
 
@@ -662,8 +680,13 @@ export function OpsConsole({ initialStatus }: { initialStatus: StatusPayload }) 
             ))}
           </select>
           {/* Same rule as the app list: not-a-confirmed-true means we could not
-              read them, and a silent empty picker would look like "no projects". */}
+              read them, and a silent empty picker would look like "no projects".
+              The block below then says what the API said about why — a refusal
+              names itself as one, a database error arrives with its own words. */}
           {projectsAvailable !== true ? <p className="oc-why">{s.publish.projectsUnavailable}</p> : null}
+          {projectsAvailable !== true && projectsError ? (
+            <ErrorBlock error={projectsError} title={s.error.title} detailLabel={s.error.detail} copyLabel={s.error.copyDetail} />
+          ) : null}
           {projectsAvailable === true && projects.length === 0 ? <p className="oc-why">{s.publish.noProjects}</p> : null}
         </div>
 
