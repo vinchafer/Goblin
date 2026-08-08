@@ -190,9 +190,40 @@ zumachen.
 
 | Wert | Bedeutung | Was zu tun ist |
 |---|---|---|
-| `not_configured` | `OPS_FOUNDER_ACCOUNTS` ist im Prozess nicht vorhanden | Falscher Service oder falsche Environment in Railway |
-| `not_allowlisted` | Token gültig, E-Mail steht nicht auf der Liste | Die E-Mail des angemeldeten Kontos exakt eintragen |
+| `not_configured` | `OPS_FOUNDER_ACCOUNTS` ist im Prozess nicht vorhanden | **Zuerst den NAMEN der Variablen zeichenweise prüfen, nicht den Wert** — siehe FINDING unten. Danach: richtiger Service? richtige Environment? |
+| `not_allowlisted` | Token gültig, E-Mail steht nicht auf der Liste | Die E-Mail des angemeldeten Kontos exakt eintragen (auf Anführungszeichen im Wert achten) |
 | `no_email` | Token gültig, Konto hat keine E-Mail-Adresse | Konto in Supabase prüfen |
+
+### FINDING (2026-08-08) — die gestylte 404 kam von einem abgeschnittenen Variablennamen
+
+**Symptom.** Der Gründer ist am iPhone angemeldet, ruft `/dashboard/konsole` auf und
+bekommt die gestylte Goblin-404. Das Log zeigt `ops_founder_denied` mit
+`reason: "not_configured"` — obwohl in Railway sichtbar eine Gründer-Variable steht,
+mit der richtigen E-Mail als Wert.
+
+**Ursache.** Die Variable hieß **`OPS_FOUNDER_ACC`** — abgeschnitten. Der Code liest
+`OPS_FOUNDER_ACCOUNTS`. Zwei verschiedene Namen sind zwei verschiedene Variablen: die
+gesetzte wird von niemandem gelesen, die gelesene ist nicht gesetzt, also ist die
+Allowlist leer, also lässt das fail-closed-Gate **niemanden** durch — auch den
+Gründer nicht.
+
+**Warum es so lange gedauert hat.** Der Blick fiel auf den *Wert*, weil der Wert das
+ist, was man eingetippt hat und was falsch aussehen könnte (Tippfehler in der
+E-Mail, Anführungszeichen aus einem Copy-Paste). Der *Name* wurde als gegeben
+angenommen — er stammt schließlich aus der Doku. In der Railway-Oberfläche steht der
+Name aber klein und schmal neben einem breiten Wertfeld, und ein abgeschnittener
+Name sieht genau so aus wie ein vollständiger.
+
+**Die Regel, die daraus folgt:** Bei `not_configured` ist die erste Prüfung immer der
+**Name**, Zeichen für Zeichen gegen `services/ops-founder.ts`
+(`OPS_FOUNDER_ACCOUNTS_ENV`) — nicht der Wert, nicht der Service, nicht die
+Environment. Ein falsch geschriebener Name und eine gar nicht gesetzte Variable sind
+für den Prozess dasselbe, und `not_configured` sagt beides gleichzeitig.
+
+> Das gilt für jede Akt-2-Variable: `OPS_BETA_ACCOUNTS`, `OPS_HOSTING_ENABLED`,
+> `OPS_APPS_DOMAIN`, `OPS_FOUNDER_DEBUG`. Eine falsch benannte Variable ist überall
+> lautlos — es gibt keinen Codepfad, der „diese Variable kenne ich nicht" melden
+> könnte, weil ein Prozess nicht wissen kann, welchen Namen jemand gemeint hat.
 
 > **Einschränkung, die ehrlich benannt gehört:** Der Header liegt auf der Antwort
 > der API an den *Vercel-Server_component-Fetch*, nicht an Safari. Vom iPhone aus
