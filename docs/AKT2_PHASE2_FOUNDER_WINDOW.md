@@ -61,8 +61,13 @@ OPS_HOSTING_ENABLED = true
 
 Kurz warten, bis der Redeploy durch ist.
 
-> Ab jetzt ist die Ops-Ebene **für das Konto `vinc.hafner3@gmail.com` erreichbar** —
+> Ab jetzt ist die Ops-Ebene **für die Konten auf `OPS_BETA_ACCOUNTS` erreichbar** —
 > und für sonst niemanden. Das ist bewiesen (U2.7), nicht gehofft.
+>
+> Betreiber-Identität ist `vinc.hafner2@gmail.com` (Gründer-Entscheidung 2026-08-08,
+> siehe `AKT2_PHASE2_5_FOUNDER_CONSOLE.md` §0). `vinc.hafner3@gmail.com` bleibt das
+> CC-Testkonto für Publish- und E2E-Läufe. Fährt der Gründer dieses Fenster selbst,
+> ist das Konto `…2@`; fährt CC einen Testlauf, ist es `…3@`.
 
 Du brauchst ein **Bearer-Token** dieses Kontos. Am einfachsten: im eingeloggten
 Browser die DevTools → Application → Local Storage → der Supabase-Session-Eintrag →
@@ -70,7 +75,7 @@ Browser die DevTools → Application → Local Storage → der Supabase-Session-
 
 ```bash
 export API=https://api.justgoblin.com          # falls die API-Domain anders heißt: anpassen
-export TOKEN="<access_token von vinc.hafner3@>"
+export TOKEN="<access_token des benutzten Kontos — Gründer: …2@, CC-Testlauf: …3@>"
 export ADMIN_KEY="<ADMIN_API_KEY aus Railway>"
 ```
 
@@ -173,7 +178,7 @@ Dann sperren und die gesperrte Seite ansehen:
 ```bash
 curl -s -X POST "$API/api/admin/ops/apps/vinc-test/suspend" \
   -H "x-admin-key: $ADMIN_KEY" -H "content-type: application/json" \
-  -H "x-admin-actor: vinc.hafner3@gmail.com" \
+  -H "x-admin-actor: vinc.hafner2@gmail.com" \
   -d '{"reason":"Test der Sperre am iPhone"}' | jq
 ```
 
@@ -224,7 +229,7 @@ Test-App per Teardown weg (Schritt 5) — das Umlegen des Schalters reicht dafü
 | Symptom | Bedeutung | Nächster Schritt |
 |---|---|---|
 | `provision` meldet `auth` | Dem Token fehlt ein Recht | `founderAction` im Ergebnis lesen — die Liste steht dort |
-| `404` von `/api/ops/...` | `OPS_HOSTING_ENABLED` ist nicht `true`, oder das Token gehört nicht zu `vinc.hafner3@` | Variable prüfen, Redeploy abwarten |
+| `404` von `/api/ops/...` | `OPS_HOSTING_ENABLED` ist nicht `true`, oder die Konto-E-Mail des Tokens steht nicht auf `OPS_BETA_ACCOUNTS` | Variable prüfen (auf Anführungszeichen achten), Redeploy abwarten, angemeldetes Konto prüfen |
 | E2E: `preflight:router` rot | DNS/Route fehlen | Schritt 3 — der Lauf überspringt dann bewusst alle URL-Schritte |
 | E2E: `registry_unavailable` | Migration 0099 fehlt doch | Anwenden, Lauf wiederholen |
 | E2E: `audit: "unavailable"` | Migration 0100 fehlt | Anwenden. Sperren funktionieren trotzdem, nur ohne Beweiszeile |

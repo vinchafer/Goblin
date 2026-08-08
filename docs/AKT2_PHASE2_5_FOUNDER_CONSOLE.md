@@ -16,6 +16,28 @@ bestehende Browser-Sitzung die Authentifizierung IST**.
 
 ---
 
+## 0. Wer der Betreiber ist (Gründer-Entscheidung, 2026-08-08)
+
+> **Wörtlich, wie festgelegt:**
+>
+> „Act-2 operator identity is vinc.hafner2@gmail.com (the founder's working
+> account, also used for /admin). vinc.hafner3@gmail.com remains CC's test account
+> for publish and E2E runs; CC must never use vinc.hafner2@. The methodology rule
+> ‚test accounts only' governs what CC uses, not which human identity holds
+> operator authority."
+
+| Konto | Rolle | Wer benutzt es |
+|---|---|---|
+| `vinc.hafner2@gmail.com` | **Betreiber-Identität für Akt 2.** Steht auf `OPS_FOUNDER_ACCOUNTS`. Auch das `/admin`-Konto. | **Nur der Gründer.** CC niemals. |
+| `vinc.hafner3@gmail.com` | CC-Testkonto für Publish- und E2E-Läufe. Fallback `…4@`. | CC |
+
+Die beiden Regeln stehen **nicht** im Widerspruch, auch wenn sie sich lange so
+gelesen haben: „nur Testaccounts" regelt, **womit CC arbeitet**. Es regelt nicht,
+**welche menschliche Identität die Betreiber-Vollmacht hält**. Die Vollmacht liegt
+beim Gründer, und der Gründer arbeitet mit `…2@`.
+
+---
+
 ## 1. Die URL
 
 ```
@@ -33,10 +55,15 @@ angefasst.
 ### 2.1 Railway-Variable setzen
 
 ```
-OPS_FOUNDER_ACCOUNTS = vinc.hafner3@gmail.com
+OPS_FOUNDER_ACCOUNTS = vinc.hafner2@gmail.com
 ```
 
 Kurz warten, bis der Redeploy durch ist.
+
+> **Das ist `…2@`, nicht `…3@`.** Diese Datei nannte bis 2026-08-08 das
+> CC-Testkonto `vinc.hafner3@gmail.com` — die Konsole wurde dadurch für ein Konto
+> scharfgeschaltet, mit dem der Gründer sich nie anmeldet, und antwortete ihm
+> deshalb mit derselben 404 wie einem Fremden. Siehe §0 für die Identitätsregel.
 
 > **Solange die Variable NICHT gesetzt ist, ist die Konsole für alle unerreichbar —
 > auch für den Gründer.** Die Route antwortet dann mit exakt derselben 404 wie ein
@@ -55,7 +82,7 @@ mitten in einem Vorfall genau das Werkzeug entwaffnen, das man dann braucht.
 
 ### 2.3 Die Konsole öffnen und das Phase-2-Fenster von dort fahren
 
-Am iPhone, eingeloggt als `vinc.hafner3@gmail.com`:
+Am iPhone, eingeloggt als `vinc.hafner2@gmail.com` (dem Betreiber-Konto — siehe §0):
 
 1. **Router ausrollen** — idempotent. Schlägt ein Schritt fehl, steht die genaue
    Klickfolge fürs Cloudflare-Dashboard wörtlich in einem kopierbaren Block.
