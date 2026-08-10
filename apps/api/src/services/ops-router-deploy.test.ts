@@ -184,6 +184,153 @@ describe('provisionRouter — refusals carry the exact founder action', () => {
   });
 });
 
+/**
+ * The 2026-08-10 provisioning failure: the founder read
+ *
+ *     binding APPS has no value — CF_KV_NAMESPACE_ID / CF_R2_BUCKET missing
+ *
+ * and went to re-check a KV namespace id that had been correct all along. The
+ * report already KNEW which of the two was empty — `APPS` is the R2 binding — and
+ * threw that knowledge away in the string. These tests pin the three states a
+ * pasted Railway value can be in, and pin that the message never again names a
+ * variable that is not the problem.
+ */
+describe('the binding set — present, absent, and pasted with quotes', () => {
+  /** Every step after the upload succeeding, so the worker step is what is read. */
+  function restGood() {
+    findZoneId.mockResolvedValue(ok('zone-abc'));
+    ensureWildcardDns.mockResolvedValue(ok({ created: false, recordId: 'r', proxied: true }));
+    ensureWorkerRoute.mockResolvedValue(ok({ created: false, updated: false, routeId: 'r' }));
+  }
+  const workerStep = (r: Awaited<ReturnType<typeof mod.provisionRouter>>) =>
+    r.steps.find((s) => s.step === 'worker')!;
+  const bindingsSent = () =>
+    (deployWorker.mock.calls[0] as [string, string, { bindings: Array<Record<string, string>> }])[2].bindings;
+
+  describe('present', () => {
+    it('assembles all four bindings and uploads', async () => {
+      allGood();
+      const r = await mod.provisionRouter();
+      expect(workerStep(r).status).toBe('ok');
+      expect(bindingsSent()).toEqual([
+        { type: 'kv_namespace', name: 'ROUTES', namespace_id: 'kv-1' },
+        { type: 'r2_bucket', name: 'APPS', bucket_name: 'goblin-apps' },
+        { type: 'plain_text', name: 'APPS_DOMAIN', text: 'justgoblin.app' },
+        { type: 'plain_text', name: 'SITE_URL', text: 'https://justgoblin.com' },
+      ]);
+    });
+  });
+
+  describe('absent — the message names the variable that is actually empty', () => {
+    it('an unset CF_R2_BUCKET names CF_R2_BUCKET and does NOT name CF_KV_NAMESPACE_ID', async () => {
+      delete process.env.CF_R2_BUCKET;
+      restGood();
+
+      const w = workerStep(await mod.provisionRouter());
+      expect(w.status).toBe('skip');
+      expect(w.detail).toContain('APPS');
+      expect(w.detail).toContain('CF_R2_BUCKET');
+      // The whole point of the fix: the variable that IS set is not accused.
+      expect(w.detail).not.toContain('CF_KV_NAMESPACE_ID');
+      expect(deployWorker).not.toHaveBeenCalled();
+    });
+
+    it('an unset CF_KV_NAMESPACE_ID names CF_KV_NAMESPACE_ID and does NOT name CF_R2_BUCKET', async () => {
+      delete process.env.CF_KV_NAMESPACE_ID;
+      restGood();
+
+      const w = workerStep(await mod.provisionRouter());
+      expect(w.detail).toContain('ROUTES');
+      expect(w.detail).toContain('CF_KV_NAMESPACE_ID');
+      expect(w.detail).not.toContain('CF_R2_BUCKET');
+    });
+
+    it('names BOTH when both are missing, so the second is not a surprise on the next run', async () => {
+      delete process.env.CF_KV_NAMESPACE_ID;
+      delete process.env.CF_R2_BUCKET;
+      restGood();
+
+      const w = workerStep(await mod.provisionRouter());
+      expect(w.detail).toContain('CF_KV_NAMESPACE_ID');
+      expect(w.detail).toContain('CF_R2_BUCKET');
+    });
+
+    it('a whitespace-only value is empty, not a value', async () => {
+      process.env.CF_R2_BUCKET = '   ';
+      restGood();
+
+      const w = workerStep(await mod.provisionRouter());
+      expect(w.status).toBe('skip');
+      expect(w.detail).toContain('CF_R2_BUCKET');
+      expect(deployWorker).not.toHaveBeenCalled();
+    });
+
+    it('carries a founderAction naming the variable — a skipped step used to carry none', async () => {
+      delete process.env.CF_R2_BUCKET;
+      restGood();
+
+      const w = workerStep(await mod.provisionRouter());
+      expect(w.founderAction).toBeTruthy();
+      expect(w.founderAction).toContain('CF_R2_BUCKET');
+      expect(w.founderAction).not.toContain('CF_KV_NAMESPACE_ID');
+      // Where the value comes from, and how to settle "but I set it" against the
+      // running process rather than against the dashboard.
+      expect(w.founderAction).toContain('Railway');
+      expect(w.founderAction).toContain('/api/ops/health');
+    });
+  });
+
+  describe('quoted — a pasted value is read as the value it plainly is', () => {
+    it('strips one pair of double quotes off both bindings', async () => {
+      process.env.CF_KV_NAMESPACE_ID = '"kv-1"';
+      process.env.CF_R2_BUCKET = '"goblin-apps"';
+      allGood();
+
+      const r = await mod.provisionRouter();
+      expect(workerStep(r).status).toBe('ok');
+      expect(bindingsSent()).toEqual(
+        expect.arrayContaining([
+          { type: 'kv_namespace', name: 'ROUTES', namespace_id: 'kv-1' },
+          { type: 'r2_bucket', name: 'APPS', bucket_name: 'goblin-apps' },
+        ]),
+      );
+    });
+
+    it('strips single quotes and surrounding whitespace too', async () => {
+      process.env.CF_R2_BUCKET = "  'goblin-apps'  ";
+      allGood();
+
+      await mod.provisionRouter();
+      expect(bindingsSent()).toContainEqual({ type: 'r2_bucket', name: 'APPS', bucket_name: 'goblin-apps' });
+    });
+
+    it('a quote-only value is empty, and is reported as the variable it is', async () => {
+      // `CF_R2_BUCKET=""` — the founder set the variable and set it to nothing.
+      // Unwrapping makes this EMPTY, which is the honest reading: before, the two
+      // quote characters counted as a value and were uploaded to Cloudflare as a
+      // bucket name, failing later and further away with a stranger message.
+      process.env.CF_R2_BUCKET = '""';
+      restGood();
+
+      const w = workerStep(await mod.provisionRouter());
+      expect(w.status).toBe('skip');
+      expect(w.detail).toContain('CF_R2_BUCKET');
+      expect(deployWorker).not.toHaveBeenCalled();
+    });
+
+    it('leaves an unmatched quote alone rather than guessing — it stays visible', async () => {
+      // One pair only. A stray single quote is a different mistake, and silently
+      // repairing it would hide it. It is non-empty, so the upload is attempted
+      // and Cloudflare gets to say what it thinks of the name.
+      process.env.CF_R2_BUCKET = '"goblin-apps';
+      allGood();
+
+      await mod.provisionRouter();
+      expect(bindingsSent()).toContainEqual({ type: 'r2_bucket', name: 'APPS', bucket_name: '"goblin-apps' });
+    });
+  });
+});
+
 describe('routerStatus — read-only, and tri-state on purpose', () => {
   it('reports what is in place without writing anything', async () => {
     getWorker.mockResolvedValue(ok({ scriptName: 'goblin-apps-router', size: 100 }));

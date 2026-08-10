@@ -160,6 +160,84 @@ describe('env presence — names and booleans, never values', () => {
   });
 });
 
+/**
+ * PR #77 hardened seventeen env parsers and left this file out (it reads
+ * identifiers, not comparison keys). That exemption does not survive contact with
+ * a Railway dashboard: a pasted `CF_R2_BUCKET="goblin-apps"` is non-empty, so it
+ * passes every presence check and every emptiness guard, and then addresses a
+ * bucket that does not exist. The failure lands far from the paste, which is the
+ * expensive kind.
+ */
+describe('pasted env values — one pair of quotes is stripped, nothing is repaired', () => {
+  it('addresses the bucket the founder meant, not the quoted string', async () => {
+    setEnv({ CF_R2_BUCKET: '"goblin-apps"' });
+    cf.__resetCfClientsForTest();
+    s3send.mockResolvedValue({ Contents: [], IsTruncated: false });
+
+    await cf.listAppFiles('app-1');
+    const cmd = s3send.mock.calls[0]![0] as AnyCmd;
+    expect(cmd.input.Bucket).toBe('goblin-apps');
+  });
+
+  it('strips single quotes and surrounding whitespace from an identifier used in a URL', async () => {
+    setEnv({ CF_ACCOUNT_ID: "  'acct-1234567890'  ", CF_KV_NAMESPACE_ID: '"kv-namespace-1234"' });
+    fetchMock.mockResolvedValue(cfRaw('app-1'));
+
+    await cf.getRoute('meine-app');
+    const url = fetchMock.mock.calls[0]![0] as string;
+    expect(url).toContain('/accounts/acct-1234567890/storage/kv/namespaces/kv-namespace-1234/');
+    expect(url).not.toContain('%22');
+    expect(url).not.toContain('%27');
+  });
+
+  it('sends the token without its quotes, and still redacts the unquoted value', async () => {
+    setEnv({ CF_API_TOKEN: `"${ENV.CF_API_TOKEN}"` });
+    fetchMock.mockResolvedValue(cfOk([]));
+
+    await cf.listWorkers();
+    const init = fetchMock.mock.calls[0]![1] as { headers: Record<string, string> };
+    expect(init.headers.Authorization).toBe(`Bearer ${ENV.CF_API_TOKEN}`);
+    expect(cf.redactSecrets(`leak ${ENV.CF_API_TOKEN}`)).not.toContain(ENV.CF_API_TOKEN);
+  });
+
+  it('a quote-only value is EMPTY — reported as unconfigured rather than sent upstream', async () => {
+    setEnv({ CF_R2_BUCKET: '""' });
+    cf.__resetCfClientsForTest();
+
+    const res = await cf.listAppFiles('app-1');
+    expect(res.ok).toBe(false);
+    if (!res.ok) {
+      expect(res.error.code).toBe('not_configured');
+      expect(res.error.message).toContain('CF_R2_BUCKET');
+    }
+    expect(s3send).not.toHaveBeenCalled();
+  });
+
+  it('leaves an unmatched quote alone — one pair only, so a different mistake stays visible', async () => {
+    setEnv({ CF_R2_BUCKET: '"goblin-apps' });
+    cf.__resetCfClientsForTest();
+    s3send.mockResolvedValue({ Contents: [], IsTruncated: false });
+
+    await cf.listAppFiles('app-1');
+    const cmd = s3send.mock.calls[0]![0] as AnyCmd;
+    expect(cmd.input.Bucket).toBe('"goblin-apps');
+  });
+
+  it('honours a quoted CF_TIMEOUT_MS instead of silently falling back to the default', async () => {
+    // Number('"250"') is NaN. Before unwrapping, a quoted override was ignored and
+    // nothing said so — the worst shape a configuration bug can take.
+    process.env.CF_TIMEOUT_MS = '"25"';
+    fetchMock.mockImplementation(() => new Promise(() => {})); // never answers
+
+    const res = await cf.listWorkers();
+    expect(res.ok).toBe(false);
+    if (!res.ok) {
+      expect(res.error.code).toBe('timeout');
+      expect(res.error.message).toContain('25ms');
+    }
+  });
+});
+
 describe('unconfigured — a typed error, never a throw', () => {
   it('names the missing vars for R2, KV and Workers', async () => {
     clearEnv();

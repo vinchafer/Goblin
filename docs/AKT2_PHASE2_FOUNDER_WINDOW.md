@@ -47,7 +47,41 @@ Cloudflare Dashboard → My Profile → API Tokens → das Goblin-Token bearbeit
 - Zone → DNS → **Edit**  *(neu)*
 - Zone → Workers Routes → **Edit**  *(neu)*
 
+- Account → Workers R2 Storage → **Edit**  *(das Upload hängt ein R2-Binding ein)*
+
 Zonen-Bereich: `justgoblin.app`.
+
+---
+
+## 1a. Die zwei Variablen, an denen der Upload hängt
+
+Der Router-Worker bekommt beim Upload **Bindings** mit — so erreicht er KV und R2,
+ohne selbst je ein Token zu halten. Zwei davon kommen aus der Umgebung, und wenn
+einer leer ist, wird **gar nicht hochgeladen** (ein Router ohne Bindings
+antwortet für jede App 503 — nicht deployen ist strikt besser):
+
+| Binding im Worker | Railway-Variable | Woher der Wert kommt |
+|---|---|---|
+| `ROUTES` (KV) | `CF_KV_NAMESPACE_ID` | Cloudflare → Storage & Databases → KV → die Namespace → **Namespace ID** (32-stelliger Hex-String), *nicht* der Titel |
+| `APPS` (R2) | `CF_R2_BUCKET` | Cloudflare → R2 → der Bucket → sein **Name** (`goblin-apps`), *nicht* die Bucket-ID und *nicht* die S3-URL |
+
+Die Schreibweise ist exakt so und **case-sensitive**. Ein Wert mit
+umschließenden Anführungszeichen ist in Ordnung — die API entfernt **ein** Paar.
+
+**Der Schiedsrichter, wenn Dashboard und Prozess sich widersprechen** („ich hab
+die doch gesetzt"):
+
+```bash
+curl -s "$API/api/ops/health" -H "Authorization: Bearer $TOKEN" | jq '.checks.env'
+```
+
+`missing` nennt jede Variable, die *dieser laufende Prozess* nicht sieht — nur
+Namen, nie Werte. Steht eine darin, obwohl das Dashboard sie zeigt, ist es fast
+immer eins von dreien: falscher Railway-Service, Redeploy noch nicht durch, oder
+der Wert ist leer bzw. nur Leerzeichen.
+
+Vollständige Liste aller Act-2-Variablen mit Herkunft: `apps/api/.env.example`,
+Abschnitt „AKT 2 · hosted apps".
 
 ---
 
@@ -229,6 +263,9 @@ Test-App per Teardown weg (Schritt 5) — das Umlegen des Schalters reicht dafü
 | Symptom | Bedeutung | Nächster Schritt |
 |---|---|---|
 | `provision` meldet `auth` | Dem Token fehlt ein Recht | `founderAction` im Ergebnis lesen — die Liste steht dort |
+| `worker: skip`, „binding APPS has no value" | `CF_R2_BUCKET` ist in **dieser** API-Umgebung leer. Die Meldung nennt genau die leere Variable — steht `CF_KV_NAMESPACE_ID` nicht dabei, ist die gesetzt und in Ordnung | §1a, dann `GET /api/ops/health` → `checks.env.missing` |
+| `worker: skip`, „binding ROUTES has no value" | Dasselbe für `CF_KV_NAMESPACE_ID` | §1a |
+| `route` meldet `10019 Cannot configure a route for a Worker which does not exist` | **Folgefehler**, keine eigene Ursache: der Worker wurde nie hochgeladen (siehe den `worker`-Schritt darüber) | Erst den `worker`-Schritt grün bekommen, dann `provision` wiederholen — die Route kommt dann von selbst |
 | `404` von `/api/ops/...` | `OPS_HOSTING_ENABLED` ist nicht `true`, oder die Konto-E-Mail des Tokens steht nicht auf `OPS_BETA_ACCOUNTS` | Variable prüfen (auf Anführungszeichen achten), Redeploy abwarten, angemeldetes Konto prüfen |
 | E2E: `preflight:router` rot | DNS/Route fehlen | Schritt 3 — der Lauf überspringt dann bewusst alle URL-Schritte |
 | E2E: `registry_unavailable` | Migration 0099 fehlt doch | Anwenden, Lauf wiederholen |
