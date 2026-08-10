@@ -245,8 +245,20 @@ describe('setLangChoice — persistence and instant apply', () => {
  * content pages that U2 found still on the wrong side.
  */
 describe('every PUBLIC surface takes its locale from the public binding', () => {
+  // WAVE-ABOUT-MANIFESTO changed two things here.
+  //
+  // (1) `app/about/page.tsx` → `app/about/AboutProse.tsx`. /about is now a server
+  //     component (so the route can export real metadata) wrapping a client
+  //     component that does the locale work. The file this guard must read is
+  //     the one that resolves the language — pointing it at the server half
+  //     would make it pass on a page with no binding at all.
+  // (2) `app/manifesto/ManifestoProse.tsx` joined the list. /manifesto was the
+  //     last page of this class and the worst instance of it: not the wrong
+  //     hook, NO hook — a server component with every string hardcoded in
+  //     English. It was never in this list because it had nothing to point at.
   const PUBLIC_PAGES = [
-    'app/about/page.tsx',
+    'app/about/AboutProse.tsx',
+    'app/manifesto/ManifestoProse.tsx',
     'app/help/page.tsx',
     'components/help/HelpArticleBody.tsx',
     'app/(auth)/login/page.tsx',
@@ -254,12 +266,65 @@ describe('every PUBLIC surface takes its locale from the public binding', () => 
     'app/auth/reset-password/page.tsx',
   ];
 
+  // FOLLOW-UP: the prose pages call `useProseLang()`, which is a thin wrapper
+  // over `useAuthLang()` that pins the selection to English until real German
+  // prose exists (lib/copy/prose-locale.ts). It is the public binding, not an
+  // escape from it — the test below this one pins that, so accepting the wrapper
+  // here cannot become a hole.
+  const PUBLIC_BINDING = /useAuthLang\(\)|useProseLang\(\)/;
+
   for (const rel of PUBLIC_PAGES) {
     it(`${rel} uses useAuthLang, never useLang`, () => {
       const src = readFileSync(join(__dirname, '..', rel), 'utf8');
-      expect(src).toMatch(/\bt\(lang,/);
-      expect(src).toMatch(/useAuthLang\(\)/);
+      // Two shipped idioms for consuming the resolved language, and the guard
+      // accepts either — what it will not accept is a page that resolves nothing:
+      //   `t(lang, 'de', 'en')`  — inline pairs, used by the form/help surfaces.
+      //   `COPY[lang]`           — a locale-keyed copy map, used by the long-form
+      //                            prose pages, where inline pairs would put whole
+      //                            paragraphs inside the JSX (lib/copy/about.ts).
+      expect(src).toMatch(/\bt\(lang,|_COPY\[lang\]/);
+      expect(src).toMatch(PUBLIC_BINDING);
       expect(src).not.toMatch(/^\s*const lang(: Lang)? = useLang\(\);/m);
+    });
+  }
+
+  // The wrapper the prose pages use must itself be the PUBLIC binding, and must
+  // not grow a second precedence of its own. If someone reimplements it on
+  // useLang() (surface default 'de'), the pages above would silently go German
+  // while still passing their own assertion — this is what stops that.
+  it('useProseLang wraps the public binding, and resolves nothing itself', () => {
+    const src = readFileSync(join(__dirname, 'copy/prose-locale.ts'), 'utf8');
+    expect(src).toMatch(/useAuthLang\(\)/);
+    expect(src).not.toMatch(/useLang\(\)/);
+    expect(src).not.toMatch(/resolveLang|localStorage/);
+  });
+
+  // Founder decision: both prose pages render English to everyone until real
+  // German prose exists. What must never happen is the two halves disagreeing —
+  // English copy under `lang="de"`, or German copy under `lang="en"`. They are
+  // pinned to one value, and the page must feed THAT value to HtmlLangSync.
+  it('the prose pages drive <html lang> from the same value as the copy', () => {
+    for (const rel of ['app/about/AboutProse.tsx', 'app/manifesto/ManifestoProse.tsx']) {
+      const src = readFileSync(join(__dirname, '..', rel), 'utf8');
+      expect(src).toMatch(/const lang = useProseLang\(\);/);
+      expect(src).toMatch(/_COPY\[lang\]/);
+      expect(src).toMatch(/<HtmlLangSync lang=\{lang\} \/>/);
+    }
+  });
+
+  // The prose pages carry the product's argument, so a hardcoded string here is
+  // the leak class at its most visible. Their JSX must contain no prose at all —
+  // every user-facing string comes from lib/copy/.
+  for (const rel of ['app/about/AboutProse.tsx', 'app/manifesto/ManifestoProse.tsx']) {
+    it(`${rel} holds no user-facing prose of its own`, () => {
+      const src = readFileSync(join(__dirname, '..', rel), 'utf8');
+      // Strip comments, then look for text nodes between JSX tags. The only
+      // literal text allowed through is the arrow glyph in the decorative spans.
+      const withoutComments = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+      const textNodes = [...withoutComments.matchAll(/>([^<>{}\n]+)</g)]
+        .map((m) => m[1].trim())
+        .filter((t) => t.length > 0 && t !== '→');
+      expect(textNodes).toEqual([]);
     });
   }
 });

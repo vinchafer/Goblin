@@ -1314,3 +1314,196 @@
   z-index: 200;
 }
 .landing-root .skip-link:focus { transform: translateY(8px); }
+
+/* =========================================================
+   18 · PROSE PAGES — /about and /manifesto
+   ---------------------------------------------------------
+   WAVE-ABOUT-MANIFESTO · U3.
+
+   These two are long-form reading, not marketing tiles: no cards, no icons,
+   no illustrations. Everything below is typography and vertical rhythm, on
+   the tokens already declared at the top of this file — no new colours.
+
+   The measure is the one real decision. The landing's `.lead` caps at 56ch
+   for scanning; sustained reading wants a little more air per line but not
+   more characters, so the column is 34rem/~62ch at a 19px body — long enough
+   not to feel choppy, short enough that the eye finds the next line.
+
+   SAFE AREA. Top: this page sits under the same FIXED nav as the landing, so
+   it repeats the hero's idiom exactly — the design padding plus the top inset,
+   because the nav grew by that inset and the first line would otherwise slide
+   under a taller bar. Left/right: the gutter, floored at the device inset, for
+   landscape notches. Bottom: deliberately NOT here. The footer is the last
+   element on these pages and already carries the bottom inset in its own rule
+   (§16) — adding it here too would be the #44/#55 double-inset bug.
+   ========================================================= */
+.landing-root .lp-prose {
+  --prose-pad-top: 112px;
+  --prose-measure: 34rem;
+  padding: var(--prose-pad-top) var(--gutter) 96px;
+  padding-top: calc(var(--prose-pad-top) + env(safe-area-inset-top, 0px));
+  padding-left: max(var(--gutter), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--gutter), env(safe-area-inset-right, 0px));
+}
+.landing-root .lp-prose-inner {
+  max-width: var(--prose-measure);
+  margin: 0 auto;
+}
+
+/* — the back link, above everything — */
+.landing-root .lp-prose-back {
+  display: inline-flex; align-items: center;
+  min-height: 44px;                       /* touch target */
+  color: var(--ink-3);
+  font-size: 13.5px; font-weight: 500;
+  transition: color .15s;
+}
+.landing-root .lp-prose-back:hover { color: var(--ink-1); }
+
+/* — masthead — */
+.landing-root .lp-prose-head { margin: 20px 0 56px; }
+.landing-root .lp-prose-head .eyebrow { margin-bottom: 26px; }
+.landing-root .lp-prose-h1 {
+  font-family: var(--lp2-font-sans), sans-serif;
+  /* Smaller than the landing's --h1: these headlines are whole sentences, not
+     two-word slogans, and at the hero scale they turn into five lines on a
+     375px screen. */
+  font-size: clamp(31px, 4.6vw, 50px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.12;
+  color: var(--ink-1);
+  text-wrap: balance;
+}
+
+/* — body copy — */
+.landing-root .lp-prose p {
+  font-size: 18.5px;
+  line-height: 1.68;
+  color: var(--ink-2);
+  text-wrap: pretty;
+}
+.landing-root .lp-prose p + p { margin-top: 1.25em; }
+/* The bolded lines are the memory hooks — they lift to full ink, not just to a
+   heavier weight, so they read as the sentence the paragraph was built toward. */
+.landing-root .lp-prose strong {
+  font-weight: 700;
+  color: var(--ink-1);
+}
+/* Emphasis takes the brand's serif italic — the same accent the landing uses in
+   its headlines, at a hair more size because the serif's x-height runs smaller
+   than Manrope's. */
+.landing-root .lp-prose em {
+  font-family: var(--lp2-font-serif), Georgia, serif;
+  font-style: italic;
+  font-size: 1.06em;
+  letter-spacing: -0.005em;
+}
+
+/* — section breaks (the /about H2s) — */
+.landing-root .lp-prose-section { margin-top: 72px; }
+.landing-root .lp-prose-h2 {
+  font-family: var(--lp2-font-sans), sans-serif;
+  font-size: clamp(23px, 2.6vw, 31px);
+  font-weight: 700;
+  letter-spacing: -0.024em;
+  line-height: 1.22;
+  color: var(--ink-1);
+  margin-bottom: 26px;
+  text-wrap: balance;
+}
+
+/* — the marked link out of /about into /manifesto — */
+.landing-root .lp-prose-link-out {
+  display: inline-flex; align-items: center; gap: 9px;
+  min-height: 44px;
+  margin-top: 30px;
+  font-size: 15.5px; font-weight: 600;
+  color: var(--ink-1);
+  border-bottom: 1px solid var(--line-strong);
+  transition: border-color .15s, color .15s;
+}
+.landing-root .lp-prose-link-out:hover { border-bottom-color: var(--ink-1); }
+.landing-root .lp-prose-link-out .arrow { color: var(--accent); }
+
+/* =========================================================
+   18b · THE SIX BELIEFS (/manifesto)
+   ---------------------------------------------------------
+   The numbered hierarchy is the whole navigation of this page, so the number is
+   a real typographic element rather than a list bullet: mono, accent-coloured,
+   on its own line above the claim, with a hairline rule running out from it.
+   `counter` rather than hardcoded digits — the count then cannot drift from the
+   number of items actually rendered.
+   ========================================================= */
+.landing-root .lp-beliefs { counter-reset: belief; margin-top: 64px; }
+.landing-root .lp-belief { counter-increment: belief; }
+.landing-root .lp-belief + .lp-belief {
+  margin-top: 60px;
+  padding-top: 60px;
+  border-top: 1px solid var(--line);
+}
+.landing-root .lp-belief-num {
+  display: flex; align-items: center; gap: 14px;
+  margin-bottom: 18px;
+  font-family: var(--lp2-font-mono), ui-monospace, monospace;
+  font-size: 11.5px; font-weight: 600;
+  letter-spacing: 0.18em;
+  color: var(--accent);
+}
+.landing-root .lp-belief-num::before { content: counter(belief, decimal-leading-zero); }
+.landing-root .lp-belief-num::after {
+  content: ''; flex: 1; max-width: 64px;
+  height: 1px; background: var(--line-strong);
+}
+.landing-root .lp-belief-title {
+  font-family: var(--lp2-font-sans), sans-serif;
+  font-size: clamp(22px, 2.5vw, 29px);
+  font-weight: 700;
+  letter-spacing: -0.024em;
+  line-height: 1.25;
+  color: var(--ink-1);
+  margin-bottom: 22px;
+  text-wrap: balance;
+}
+
+/* — the closing "So" + CTA — */
+.landing-root .lp-prose-close {
+  margin-top: 88px;
+  padding-top: 60px;
+  border-top: 1px solid var(--line-strong);
+}
+.landing-root .lp-prose-kicker {
+  margin-top: 1.25em;
+  font-family: var(--lp2-font-sans), sans-serif;
+  font-size: clamp(21px, 2.3vw, 27px);
+  font-weight: 700;
+  letter-spacing: -0.022em;
+  line-height: 1.3;
+  color: var(--ink-1);
+  text-wrap: balance;
+}
+.landing-root .lp-prose-cta { margin-top: 40px; }
+.landing-root .lp-prose-cta .btn { margin-bottom: 14px; }
+.landing-root .lp-prose-cta-sub {
+  font-family: var(--lp2-font-mono), ui-monospace, monospace;
+  font-size: 11.5px; font-weight: 500;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+/* — 375px-first checks, then the 320px floor — */
+@media (max-width: 560px) {
+  .landing-root .lp-prose { --prose-pad-top: 96px; padding-bottom: 72px; }
+  .landing-root .lp-prose p { font-size: 17.5px; line-height: 1.64; }
+  .landing-root .lp-prose-head { margin-bottom: 44px; }
+  .landing-root .lp-prose-section { margin-top: 56px; }
+  .landing-root .lp-beliefs { margin-top: 48px; }
+  .landing-root .lp-belief + .lp-belief { margin-top: 44px; padding-top: 44px; }
+  .landing-root .lp-prose-close { margin-top: 64px; padding-top: 44px; }
+}
+@media (max-width: 380px) {
+  /* At 320px the gutter is the difference between a readable column and a
+     cramped one; the type gives up a little size rather than the margins. */
+  .landing-root .lp-prose p { font-size: 17px; }
+  .landing-root .lp-prose-h1 { font-size: 29px; letter-spacing: -0.026em; }
+}
