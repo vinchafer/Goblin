@@ -75,9 +75,68 @@ All numbers below were produced by running the thing named, in this session.
 
 ---
 
+---
+
+## FOLLOW-UP (2026-08-10) — a seventh belief, and English-only prose
+
+### 1. Belief 7 — the pricing claim, verified before it shipped
+
+`/manifesto` gains a seventh belief, placed last: *"One price for the world isn't fair — it's lazy."* The H1 becomes **"Seven things we believe"**.
+
+This is the only belief on the page that makes a **checkable claim about what Goblin currently does**, on the page whose first belief is that we never claim an unverified state. So it was checked before it was written, not after.
+
+**What was verified — regional pricing is live, unflagged, in production today.**
+`GET /api/billing/geo-pricing` is a public, unauthenticated, unconditional endpoint. Queried against the live API (`goblinapi-production.up.railway.app`) on 2026-08-10:
+
+| Country | Tier | Build / Pro / Power |
+|---|---|---|
+| CH, US | 1 | $11 / **$19** / $39 |
+| AR, BR | 2 | $7 / **$12** / $25 |
+| NG, PH, IN | 3 | $4 / **$7** / $14 |
+
+There is **no feature flag** — no `ENABLE_GEO_*`, no gate of any kind; `getGeoTier()` is called directly on the `CF-IPCountry` header. The four cities the copy names resolve exactly as the copy says: Zurich Tier 1, Lagos and Manila Tier 3, Buenos Aires Tier 2. A standing guard test now pins those four (`apps/api/src/config/geo-pricing.test.ts`), so flattening them fails CI with a note that a shipped page says otherwise.
+
+**⚠ What this does NOT prove — and what the founder should check.**
+The verification above covers the price a visitor is **shown**. The price actually **charged** comes from `getPriceForTier()`, which reads `STRIPE_PRICE_<PLAN>_TIER<n>` and — by design, pinned by its own test — **silently falls back to the Tier 1 price id when a tier is unconfigured**. Three facts make that worth a look:
+
+- The startup guard (`apps/api/src/index.ts:7`) requires **only** `..._TIER1`. TIER2/TIER3 are optional; the API boots happily without them.
+- `docs/ENV_REFERENCE.md` documents **only** the three TIER1 vars. TIER2/TIER3 appear nowhere in it.
+- CI injects only the three TIER1 secrets, so even the real-Stripe money suites never exercise a tier-2/3 price id.
+
+If TIER2/TIER3 are not set in Railway, a Lagos visitor is **shown $7 and charged $11** — `amount` comes from the `PLAN_PRICES` table while `priceId` falls back to Tier 1, and the confirm-price check cannot catch it because both sides echo the same fallback id. I could not read production env from this session (no secrets in session, correctly), so this is **unverified, not disproven**. It is a money-path question and out of this copy wave's scope to change — reported, not touched. See founder actions.
+
+### 2. Both pages are now fully English, by decision
+
+Founder decision: German chrome ("Über uns", "Manifest", "← Zurück") above English prose read as a broken translation rather than a declared gap. Every user-facing string on `/about` and `/manifesto` — headings, chrome, meta — is now English for every visitor.
+
+**The i18n structure is untouched.** Both locales still exist, every string still lives in `lib/copy/`, nothing is hardcoded in a component, and the DE keys still carry `@needs-german` (16 on `/about`, 13 on `/manifesto`). Only the *selection* is pinned, in one place: `lib/copy/prose-locale.ts`, `PROSE_GERMAN_READY = false`.
+
+`<html lang>` reads from **that same value**, which is the part that matters: an English page must never announce itself as `lang="de"`, or a screen reader applies German pronunciation to English prose — the PR-#68 defect class, inverted. Content and `lang` cannot drift because they are one value. Flipping the constant turns both back on together.
+
+Nothing else on the site changes — `/help`, `/login`, the legal pages and the app all still resolve normally, and the footer DE·EN switcher still sets the language of sign-in and the app. A test pins that too.
+
+### Follow-up gates
+
+| Gate | Result |
+|---|---|
+| tsc (web) | clean |
+| next build | success; both routes still prerendered static |
+| web vitest | **414 / 414** (was 411) |
+| api vitest | **1723 / 1723** (was 1721) — the two new belief-7 guards |
+| money-suite guard, `CI=true` armed | **1 / 1** |
+| `assert-safe-area.mjs` | **80 / 80** |
+| `assert-safe-area-bottom.mjs` | **34 / 34** |
+| grep proof | **14 / 14** (was 10) — adds "no DE value is a literal" per page + the switch itself |
+| E2E full `@public` | **168 / 168** |
+| Renders | 24 re-shot; the DE runs now photograph a fully English page |
+
+Two of the new gates are worth naming, because they exist to catch this wave's specific failure mode: **"no DE value is a literal — all reference the EN copy"** (a German back-link cannot creep back in) and **"the prose pages drive `<html lang>` from the same value as the copy"** (the two halves cannot disagree).
+
 ## Honest Limitations
 
-1. **The German is not German.** 25 keys hold English text behind a `de` marker. A German-speaking visitor reads English prose in a German frame. This is the designed state, it is visible in the DE screenshots, and it is the founder's action below — but until then the page is not bilingual, it is bilingual-*shaped*.
+1. **The German is not German.** 29 keys hold English text behind a `de` marker, and as of the follow-up the page is English end-to-end for every visitor by decision. Until real German prose lands, these pages are not bilingual — they are bilingual-*shaped*, with the shape kept only so the German is a one-file edit when it comes.
+
+1b. **The charged price for tiers 2 and 3 is unverified.** Regional pricing is confirmed live on the display side (see the follow-up section), but whether `STRIPE_PRICE_*_TIER2/TIER3` are set in Railway could not be checked from this session, and the code silently falls back to Tier 1 if they are not. Belief 7's claim is verified for what a visitor is *shown*; it is unproven for what a card is *charged*.
 
 2. **One line is not stored verbatim.** `**Tell it what you want. It ships.**` is stored as `soKicker` without the `**` markers, because it renders as a display line (`.lp-prose-kicker`, weight 700) rather than as inline emphasis. It appears bold on the page — confirmed in the desktop render — but a byte-comparison against the source document reports 32/33 rather than 33/33, and that is the reason.
 
@@ -101,7 +160,8 @@ All numbers below were produced by running the thing named, in this session.
 
 ## Founder actions
 
-1. **Open both pages on a device.** `/about` and `/manifesto` on a physical iPhone, standalone-PWA if possible — the safe-area behaviour is the one thing the evidence here cannot show (Limitation 4).
-2. **Supply the German prose.** `apps/web/lib/copy/about.ts` and `apps/web/lib/copy/manifesto.ts`, the `de` blocks. Replace the values, delete the `@needs-german` markers. Nothing else needs to change; the DE/EN shape-parity test will catch a dropped paragraph.
+0. **Check Railway for `STRIPE_PRICE_BUILD_TIER2/TIER3`, `STRIPE_PRICE_PRO_TIER2/TIER3`, `STRIPE_PRICE_POWER_TIER2/TIER3`.** This is the one that carries money. If any is unset, a tier-2/3 customer is shown the regional amount and charged the Tier-1 price id, silently — and `/manifesto` now publicly promises regional pricing. Two minutes in the Railway dashboard settles it. If they are set, nothing to do; if they are not, that is a live billing bug independent of this PR, and the honest interim move is to hold belief 7 rather than the pricing.
+1. **Open both pages on a device.** `/about` and `/manifesto` on a physical iPhone, standalone-PWA if possible — the safe-area behaviour is the one thing the evidence here cannot show (Limitation 4). The PR's Vercel preview is the quickest route.
+2. **Supply the German prose.** `apps/web/lib/copy/about.ts` and `apps/web/lib/copy/manifesto.ts`, the `de` blocks. Replace the values, delete the `@needs-german` markers, and flip `PROSE_GERMAN_READY` to `true` in `apps/web/lib/copy/prose-locale.ts` — that one constant turns the copy *and* `<html lang>` back on together. Nothing else needs to change; the DE/EN shape-parity test will catch a dropped paragraph.
 3. **Read the copy as shipped**, not as written — the line breaks and the emphasis are a design decision this wave made on top of the prose (see the numbered-belief hierarchy and the serif italics).
 4. **Merge is yours.** PR opened, not merged.
