@@ -266,6 +266,13 @@ describe('every PUBLIC surface takes its locale from the public binding', () => 
     'app/auth/reset-password/page.tsx',
   ];
 
+  // FOLLOW-UP: the prose pages call `useProseLang()`, which is a thin wrapper
+  // over `useAuthLang()` that pins the selection to English until real German
+  // prose exists (lib/copy/prose-locale.ts). It is the public binding, not an
+  // escape from it — the test below this one pins that, so accepting the wrapper
+  // here cannot become a hole.
+  const PUBLIC_BINDING = /useAuthLang\(\)|useProseLang\(\)/;
+
   for (const rel of PUBLIC_PAGES) {
     it(`${rel} uses useAuthLang, never useLang`, () => {
       const src = readFileSync(join(__dirname, '..', rel), 'utf8');
@@ -276,10 +283,34 @@ describe('every PUBLIC surface takes its locale from the public binding', () => 
       //                            prose pages, where inline pairs would put whole
       //                            paragraphs inside the JSX (lib/copy/about.ts).
       expect(src).toMatch(/\bt\(lang,|_COPY\[lang\]/);
-      expect(src).toMatch(/useAuthLang\(\)/);
+      expect(src).toMatch(PUBLIC_BINDING);
       expect(src).not.toMatch(/^\s*const lang(: Lang)? = useLang\(\);/m);
     });
   }
+
+  // The wrapper the prose pages use must itself be the PUBLIC binding, and must
+  // not grow a second precedence of its own. If someone reimplements it on
+  // useLang() (surface default 'de'), the pages above would silently go German
+  // while still passing their own assertion — this is what stops that.
+  it('useProseLang wraps the public binding, and resolves nothing itself', () => {
+    const src = readFileSync(join(__dirname, 'copy/prose-locale.ts'), 'utf8');
+    expect(src).toMatch(/useAuthLang\(\)/);
+    expect(src).not.toMatch(/useLang\(\)/);
+    expect(src).not.toMatch(/resolveLang|localStorage/);
+  });
+
+  // Founder decision: both prose pages render English to everyone until real
+  // German prose exists. What must never happen is the two halves disagreeing —
+  // English copy under `lang="de"`, or German copy under `lang="en"`. They are
+  // pinned to one value, and the page must feed THAT value to HtmlLangSync.
+  it('the prose pages drive <html lang> from the same value as the copy', () => {
+    for (const rel of ['app/about/AboutProse.tsx', 'app/manifesto/ManifestoProse.tsx']) {
+      const src = readFileSync(join(__dirname, '..', rel), 'utf8');
+      expect(src).toMatch(/const lang = useProseLang\(\);/);
+      expect(src).toMatch(/_COPY\[lang\]/);
+      expect(src).toMatch(/<HtmlLangSync lang=\{lang\} \/>/);
+    }
+  });
 
   // The prose pages carry the product's argument, so a hardcoded string here is
   // the leak class at its most visible. Their JSX must contain no prose at all —

@@ -63,9 +63,12 @@ for (const rel of COMPONENTS) {
   check(`${rel}: no prose-shaped string literal`, suspects.length === 0,
     suspects.length ? `found: ${JSON.stringify(suspects)}` : '');
 
-  // 3 — it actually resolves a language and reads the copy map.
+  // 3 — it actually resolves a language and reads the copy map. `useProseLang()`
+  // is the public binding pinned to English until real German exists
+  // (lib/copy/prose-locale.ts); apps/web/lib/locale.test.ts pins that the
+  // wrapper is built on useAuthLang and resolves nothing of its own.
   check(`${rel}: bound to the public locale + a copy map`,
-    /useAuthLang\(\)/.test(code) && /_COPY\[lang\]/.test(code));
+    /useProseLang\(\)|useAuthLang\(\)/.test(code) && /_COPY\[lang\]/.test(code));
 }
 
 // The copy modules are the ONLY place prose may live, and both locales must be
@@ -76,7 +79,24 @@ for (const rel of COPY_MODULES) {
   const needsGerman = (src.match(/@needs-german/g) || []).length;
   check(`${rel}: German gap is declared, not hidden (${needsGerman} @needs-german markers)`,
     needsGerman > 0);
+  // FOLLOW-UP: the page is English end-to-end until real German prose exists, so
+  // no `de` value may carry a German literal — a translated back-link above
+  // English paragraphs is the half-finished look the founder rejected. Every DE
+  // value must therefore be a reference to its EN twin, never a string.
+  const deBlock = src.slice(src.indexOf('const de:'), src.indexOf('export const'));
+  const germanLiterals = [...deBlock.matchAll(/:\s*(['"])(.*?)\1/g)].map((m) => m[2]);
+  check(`${rel}: no DE value is a literal — all reference the EN copy`,
+    germanLiterals.length === 0,
+    germanLiterals.length ? `found: ${JSON.stringify(germanLiterals)}` : '');
 }
+
+// The selection switch itself: one value feeds both the copy and `<html lang>`,
+// so an English page can never be announced as German.
+const proseLocale = read('lib/copy/prose-locale.ts');
+check('prose-locale: the English pin is a single declared switch',
+  /export const PROSE_GERMAN_READY: boolean = false;/.test(proseLocale));
+check('prose-locale: wraps the PUBLIC binding, resolves nothing itself',
+  /useAuthLang\(\)/.test(proseLocale) && !/resolveLang|localStorage/.test(proseLocale));
 
 console.log('─'.repeat(62));
 console.log(`  ${pass} passed, ${fail} failed\n`);

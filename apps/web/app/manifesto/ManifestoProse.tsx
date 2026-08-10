@@ -20,10 +20,12 @@ import { Button } from '@/components/landing/ui/Button';
 import { MANIFESTO_COPY } from '@/lib/copy/manifesto';
 import { RichText } from '@/lib/copy/rich-text';
 import HtmlLangSync from '@/components/i18n/HtmlLangSync';
-import { useAuthLang } from '@/lib/use-auth-lang';
+import { useProseLang } from '@/lib/copy/prose-locale';
 
 export function ManifestoProse() {
-  const lang = useAuthLang();
+  // Pinned to English until real German prose exists — see AboutProse and
+  // lib/copy/prose-locale.ts. One value for both the copy and `<html lang>`.
+  const lang = useProseLang();
   const c = MANIFESTO_COPY[lang];
 
   return (

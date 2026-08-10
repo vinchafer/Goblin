@@ -19,15 +19,20 @@ import Link from 'next/link';
 import { ABOUT_COPY } from '@/lib/copy/about';
 import { RichText } from '@/lib/copy/rich-text';
 import HtmlLangSync from '@/components/i18n/HtmlLangSync';
-import { useAuthLang } from '@/lib/use-auth-lang';
+import { useProseLang } from '@/lib/copy/prose-locale';
 
 export function AboutProse() {
-  const lang = useAuthLang();
+  // The public/pre-auth binding, pinned to English until real German prose
+  // exists — founder decision, documented in lib/copy/prose-locale.ts. The same
+  // value drives `<html lang>` below, so the document cannot announce a language
+  // it is not written in.
+  const lang = useProseLang();
   const c = ABOUT_COPY[lang];
 
   return (
     <article className="lp-prose">
-      {/* `<html lang>` follows the language this surface actually resolved. The
+      {/* `<html lang>` follows the language this surface actually RENDERS IN —
+          the same value the copy is selected with, never a second source. The
           root layout hard-codes lang="en"; PR #68 flagged that, and the fix is
           per-surface (see components/i18n/HtmlLangSync.tsx) — not a second
           hardcoded value here. */}

@@ -101,16 +101,13 @@ test.describe('@public U2 DE/EN switcher', () => {
 
     expect(await page.evaluate(k => localStorage.getItem(k), CHOICE_KEY)).toBe('de');
 
-    // WAVE-ABOUT-MANIFESTO: /about's H1 is no longer a translated label ("Über
-    // uns") — it is the page's opening sentence, and its long-form copy is
-    // English in both locales until the founder supplies German prose (the
-    // `@needs-german` keys in apps/web/lib/copy/about.ts). The page's CHROME is
-    // still fully localised, so the back link is what carries the assertion
-    // here. It is a stronger check than the old one, not a weaker one: it proves
-    // the choice survived a navigation into a page whose body text is identical
-    // in both languages, so nothing can pass it by accident.
-    await page.goto('/about');
-    await expect(page.getByRole('link', { name: '← Zurück' })).toBeVisible();
+    // This step used to hop through /about. It cannot any more: /about and
+    // /manifesto are served in English to everyone until real German prose
+    // exists (founder decision — see the English-only block at the end of this
+    // file), so they would prove nothing about persistence. /help is the
+    // equivalent public content page that DOES still follow the switcher.
+    await page.goto('/help');
+    await expect(page.getByRole('heading', { name: 'Hilfe', exact: true })).toBeVisible();
 
     await page.goto('/login');
     await expect(page.getByRole('heading', { name: 'Willkommen zurück' })).toBeVisible();
@@ -142,11 +139,12 @@ test.describe('@public U2 locale propagation across the public surfaces', () => 
   // is English in both locales while the German prose is outstanding (the
   // `@needs-german` keys in apps/web/lib/copy/{about,manifesto}.ts). Their
   // localised element is the back link — so those two assert on a link.
+  // /about and /manifesto are deliberately NOT in this matrix — see the
+  // English-only describe block at the end of this file. They are the two
+  // surfaces that intentionally do not follow the switcher right now.
   const SURFACES = [
     { path: '/login', role: 'heading' as const, de: 'Willkommen zurück', en: 'Welcome back' },
     { path: '/login?mode=signup', role: 'heading' as const, de: 'Erstelle dein Konto', en: 'Create your account' },
-    { path: '/about', role: 'link' as const, de: '← Zurück', en: '← Back' },
-    { path: '/manifesto', role: 'link' as const, de: '← Zurück', en: '← Back' },
     { path: '/help', role: 'heading' as const, de: 'Hilfe', en: 'Help' },
     { path: '/auth/reset-password', role: 'heading' as const, de: 'Neues Passwort setzen', en: 'Set new password' },
   ];
@@ -174,17 +172,61 @@ test.describe('@public U2 locale propagation across the public surfaces', () => 
     await page.goto('/help');
     await expect(page.getByRole('heading', { name: 'Help', exact: true })).toBeVisible();
   });
+});
 
-  // WAVE-ABOUT-MANIFESTO — /manifesto was the remaining instance of the leak
-  // class this suite exists for, and the worst of them: not the wrong hook, NO
-  // hook. It was a server component with every string hardcoded in English, so a
-  // visitor who had pressed DE got English here with nothing to explain it.
-  test('/manifesto follows the switcher at all — the leak this wave closed', async ({ page }) => {
+/**
+ * FOLLOW-UP (founder decision 2026-08-10) — /about and /manifesto are served in
+ * English to EVERYONE until real German prose exists.
+ *
+ * The first cut translated the chrome ("Über uns", "← Zurück") while the
+ * long-form copy stayed English behind `@needs-german`, which read as a broken
+ * translation rather than a declared gap. These tests pin the decision, and —
+ * more importantly — pin that the two halves cannot drift apart: an English
+ * document must never announce itself as `lang="de"`.
+ *
+ * This is the one place in the suite where NOT following the switcher is the
+ * correct behaviour, so it is asserted explicitly rather than left to the
+ * absence of a test.
+ */
+test.describe('@public prose pages are English-only until the German lands', () => {
+  // The two strings that were German before this decision, per page. Asserting
+  // the eyebrow EXACTLY rather than by substring is deliberate: /manifesto's
+  // English eyebrow is "Manifesto", which contains the German "Manifest", so a
+  // substring check cannot tell the two apart.
+  const PAGES = [
+    { path: '/about', eyebrow: 'About', wasGerman: 'Über uns' },
+    { path: '/manifesto', eyebrow: 'Manifesto', wasGerman: 'Manifest' },
+  ];
+
+  for (const { path, eyebrow, wasGerman } of PAGES) {
+    test(`${path} stays English under an explicit DE choice`, async ({ page }) => {
+      await page.addInitScript(([k, v]) => localStorage.setItem(k, v), [CHOICE_KEY, 'de']);
+      await page.goto(path);
+
+      await expect(page.getByRole('link', { name: '← Back', exact: true })).toBeVisible();
+      await expect(page.getByText('← Zurück')).toHaveCount(0);
+      // The eyebrow is the other string that used to be translated. Exact text,
+      // so "Manifesto" cannot be mistaken for the German "Manifest".
+      await expect(page.locator('.lp-prose .eyebrow')).toHaveText(eyebrow);
+      await expect(page.locator('.lp-prose .eyebrow')).not.toHaveText(wasGerman);
+    });
+
+    test(`${path} declares lang="en" even for a DE visitor`, async ({ page }) => {
+      await page.addInitScript(([k, v]) => localStorage.setItem(k, v), [CHOICE_KEY, 'de']);
+      await page.goto(path);
+      // An English page announced as German is read aloud with the wrong
+      // pronunciation rules — the same defect class PR #68 raised, inverted.
+      await expect(page.locator('html')).toHaveAttribute('lang', 'en');
+    });
+  }
+
+  // The decision must not leak into the rest of the site: the switcher still
+  // works, and the surfaces that DO have German still get it.
+  test('the DE choice still applies everywhere else', async ({ page }) => {
     await page.addInitScript(([k, v]) => localStorage.setItem(k, v), [CHOICE_KEY, 'de']);
-    await page.goto('/manifesto');
-    await expect(page.getByRole('link', { name: '← Zurück', exact: true })).toBeVisible();
-    // And the document announces the language it is actually rendering, rather
-    // than inheriting the root layout's hardcoded lang="en".
-    await expect(page.locator('html')).toHaveAttribute('lang', 'de');
+    await page.goto('/about');
+    await expect(page.getByRole('link', { name: '← Back', exact: true })).toBeVisible();
+    await page.goto('/login');
+    await expect(page.getByRole('heading', { name: 'Willkommen zurück' })).toBeVisible();
   });
 });

@@ -117,9 +117,12 @@ const en: ManifestoCopy = {
 const de: ManifestoCopy = {
   metaTitle: en.metaTitle, // @needs-german
   metaDescription: en.metaDescription, // @needs-german
-  // Chrome, not prose — translated, because a UI label has no rhythm to lose.
-  back: '← Zurück',
-  eyebrow: 'Manifest',
+  // FOLLOW-UP (founder decision 2026-08-10): chrome was translated here
+  // ("← Zurück", "Manifest") above English prose, which read as half-finished.
+  // The whole page is English until real German exists — see lib/copy/about.ts
+  // for the full note and lib/copy/prose-locale.ts for the switch.
+  back: en.back, // @needs-german
+  eyebrow: en.eyebrow, // @needs-german
   h1: en.h1, // @needs-german
   beliefs: en.beliefs, // @needs-german
   soHead: en.soHead, // @needs-german

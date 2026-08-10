@@ -6,9 +6,17 @@
  * explicit-choice key (lib/locale.ts precedence 1) before load, which is exactly
  * what the DE·EN switcher writes.
  *
- * The DE shots are expected to show ENGLISH long-form prose with GERMAN chrome
- * (back link, eyebrow). That is the `@needs-german` state described in
- * lib/copy/about.ts, and photographing it is the point: the gap is visible.
+ * FOLLOW-UP (founder decision 2026-08-10): the DE shots are now expected to show
+ * the page ENTIRELY IN ENGLISH — chrome included. The earlier cut translated the
+ * back link and eyebrow above English prose, which read as a broken translation
+ * rather than a declared gap. Photographing the DE runs is still the point: they
+ * are the proof that a visitor who pressed DE gets a coherent English page and
+ * not a half-translated one.
+ *
+ * `<html lang>` is therefore 'en' on every run, including the DE ones — the
+ * document declares the language it is actually written in. That is asserted in
+ * tests/e2e/34-lang-switcher.spec.ts; here it is only the readiness signal we
+ * wait on before the screenshot.
  *
  *   node evidence/about-manifesto/shots.mjs [baseURL]
  */
@@ -61,9 +69,12 @@ for (const vp of VIEWPORTS) {
       for (const path of PAGES) {
         const page = await context.newPage();
         await page.goto(`${BASE}/${path}`, { waitUntil: 'networkidle' });
-        // The locale resolves in an effect on mount; wait for the DOM to carry
-        // it rather than sleeping a guessed number of milliseconds.
-        await page.waitForFunction((l) => document.documentElement.lang === l, locale);
+        // The language resolves in an effect on mount; wait for the DOM to carry
+        // it rather than sleeping a guessed number of milliseconds. It is 'en'
+        // for both locale settings while the German is outstanding — see the
+        // header. When PROSE_GERMAN_READY flips, change this to `locale` and the
+        // DE shots start showing German.
+        await page.waitForFunction(() => document.documentElement.lang === 'en');
         const file = join(OUT, `${path}-${vp.name}-${theme}-${locale}.png`);
         await page.screenshot({ path: file, fullPage: true });
         n += 1;

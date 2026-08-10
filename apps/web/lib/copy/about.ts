@@ -91,10 +91,14 @@ const en: AboutCopy = {
 const de: AboutCopy = {
   metaTitle: en.metaTitle, // @needs-german
   metaDescription: en.metaDescription, // @needs-german
-  // Chrome, not prose: these two ARE translated, because they are UI labels with
-  // no rhythm to lose. The long-form keys below are the ones waiting.
-  back: '← Zurück',
-  eyebrow: 'Über uns',
+  // FOLLOW-UP (founder decision 2026-08-10): the chrome was translated here
+  // ("← Zurück", "Über uns") while the prose stayed English. On screen that read
+  // as a half-finished translation rather than as a declared gap, so the whole
+  // page is English until the German prose exists — chrome included. The keys
+  // still exist and are still marked; only their values wait.
+  // See lib/copy/prose-locale.ts for the switch that pins the selection.
+  back: en.back, // @needs-german
+  eyebrow: en.eyebrow, // @needs-german
   h1: en.h1, // @needs-german
   intro: en.intro, // @needs-german
   gapHead: en.gapHead, // @needs-german
