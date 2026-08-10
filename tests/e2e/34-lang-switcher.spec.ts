@@ -101,8 +101,16 @@ test.describe('@public U2 DE/EN switcher', () => {
 
     expect(await page.evaluate(k => localStorage.getItem(k), CHOICE_KEY)).toBe('de');
 
+    // WAVE-ABOUT-MANIFESTO: /about's H1 is no longer a translated label ("Über
+    // uns") — it is the page's opening sentence, and its long-form copy is
+    // English in both locales until the founder supplies German prose (the
+    // `@needs-german` keys in apps/web/lib/copy/about.ts). The page's CHROME is
+    // still fully localised, so the back link is what carries the assertion
+    // here. It is a stronger check than the old one, not a weaker one: it proves
+    // the choice survived a navigation into a page whose body text is identical
+    // in both languages, so nothing can pass it by accident.
     await page.goto('/about');
-    await expect(page.getByRole('heading', { name: 'Über uns' })).toBeVisible();
+    await expect(page.getByRole('link', { name: '← Zurück' })).toBeVisible();
 
     await page.goto('/login');
     await expect(page.getByRole('heading', { name: 'Willkommen zurück' })).toBeVisible();
@@ -126,26 +134,34 @@ test.describe('@public U2 DE/EN switcher', () => {
 });
 
 test.describe('@public U2 locale propagation across the public surfaces', () => {
-  // Each entry: the surface, plus a heading that exists in exactly one locale.
+  // Each entry: the surface, plus a string that exists in exactly one locale.
+  //
+  // WAVE-ABOUT-MANIFESTO added the `role` field. Most of these surfaces are
+  // forms whose H1 IS a translated label, so a heading is the natural probe. The
+  // two prose pages are not: their H1 is the copy's opening line, and that copy
+  // is English in both locales while the German prose is outstanding (the
+  // `@needs-german` keys in apps/web/lib/copy/{about,manifesto}.ts). Their
+  // localised element is the back link — so those two assert on a link.
   const SURFACES = [
-    { path: '/login', de: 'Willkommen zurück', en: 'Welcome back' },
-    { path: '/login?mode=signup', de: 'Erstelle dein Konto', en: 'Create your account' },
-    { path: '/about', de: 'Über uns', en: 'About' },
-    { path: '/help', de: 'Hilfe', en: 'Help' },
-    { path: '/auth/reset-password', de: 'Neues Passwort setzen', en: 'Set new password' },
+    { path: '/login', role: 'heading' as const, de: 'Willkommen zurück', en: 'Welcome back' },
+    { path: '/login?mode=signup', role: 'heading' as const, de: 'Erstelle dein Konto', en: 'Create your account' },
+    { path: '/about', role: 'link' as const, de: '← Zurück', en: '← Back' },
+    { path: '/manifesto', role: 'link' as const, de: '← Zurück', en: '← Back' },
+    { path: '/help', role: 'heading' as const, de: 'Hilfe', en: 'Help' },
+    { path: '/auth/reset-password', role: 'heading' as const, de: 'Neues Passwort setzen', en: 'Set new password' },
   ];
 
   for (const s of SURFACES) {
     test(`${s.path} follows an explicit DE choice`, async ({ page }) => {
       await page.addInitScript(([k, v]) => localStorage.setItem(k, v), [CHOICE_KEY, 'de']);
       await page.goto(s.path);
-      await expect(page.getByRole('heading', { name: s.de, exact: true })).toBeVisible();
+      await expect(page.getByRole(s.role, { name: s.de, exact: true })).toBeVisible();
     });
 
     test(`${s.path} follows an explicit EN choice`, async ({ page }) => {
       await page.addInitScript(([k, v]) => localStorage.setItem(k, v), [CHOICE_KEY, 'en']);
       await page.goto(s.path);
-      await expect(page.getByRole('heading', { name: s.en, exact: true })).toBeVisible();
+      await expect(page.getByRole(s.role, { name: s.en, exact: true })).toBeVisible();
     });
   }
 
@@ -154,8 +170,21 @@ test.describe('@public U2 locale propagation across the public surfaces', () => 
     // surface default is German, so this exact visitor — one click from the
     // English landing footer — got a German page.
     await page.goto('/about');
-    await expect(page.getByRole('heading', { name: 'About', exact: true })).toBeVisible();
+    await expect(page.getByRole('link', { name: '← Back', exact: true })).toBeVisible();
     await page.goto('/help');
     await expect(page.getByRole('heading', { name: 'Help', exact: true })).toBeVisible();
+  });
+
+  // WAVE-ABOUT-MANIFESTO — /manifesto was the remaining instance of the leak
+  // class this suite exists for, and the worst of them: not the wrong hook, NO
+  // hook. It was a server component with every string hardcoded in English, so a
+  // visitor who had pressed DE got English here with nothing to explain it.
+  test('/manifesto follows the switcher at all — the leak this wave closed', async ({ page }) => {
+    await page.addInitScript(([k, v]) => localStorage.setItem(k, v), [CHOICE_KEY, 'de']);
+    await page.goto('/manifesto');
+    await expect(page.getByRole('link', { name: '← Zurück', exact: true })).toBeVisible();
+    // And the document announces the language it is actually rendering, rather
+    // than inheriting the root layout's hardcoded lang="en".
+    await expect(page.locator('html')).toHaveAttribute('lang', 'de');
   });
 });

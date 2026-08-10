@@ -119,7 +119,10 @@ const publicBottom = [
     /paddingBottom:\s*['"]max\(40px, calc\(env\(safe-area-inset-bottom/],
   ['.auth-page (confirm/reset): bottom inset', 'app/globals.css',
     /padding-bottom:\s*max\(24px, calc\(env\(safe-area-inset-bottom/],
-  ['.safe-prose-page (about/manifesto/changelog): bottom inset', 'app/globals.css',
+  // WAVE-ABOUT-MANIFESTO: /about and /manifesto moved into the landing frame and
+  // no longer use this utility — their bottom edge is the landing footer's, one
+  // row above. /changelog is the remaining user.
+  ['.safe-prose-page (changelog): bottom inset', 'app/globals.css',
     /\.safe-prose-page\s*\{[\s\S]*?padding-bottom:\s*calc\(64px \+ env\(safe-area-inset-bottom/],
   ['/help index: bottom inset', 'app/help/page.tsx',
     /paddingBottom:\s*['"]calc\(80px \+ env\(safe-area-inset-bottom/],
@@ -143,6 +146,18 @@ const footerBlock = landingCss.slice(
 );
 check('Landing footer: bottom inset applied exactly once (no double-inset)',
   (footerBlock.match(/env\(safe-area-inset-bottom/g) || []).length === 1);
+
+// WAVE-ABOUT-MANIFESTO — the same lesson, applied to the new prose frame. The
+// footer sits BELOW .lp-prose on /about and /manifesto and already carries the
+// bottom inset (asserted above), so .lp-prose must NOT carry one too. This
+// assertion is inverted on purpose: here the bug would be an inset that is
+// present, not one that is missing.
+const proseBlock = landingCss.slice(
+  landingCss.indexOf('.landing-root .lp-prose {'),
+  landingCss.indexOf('.landing-root .lp-prose-inner {'),
+);
+check('.lp-prose: no bottom inset — the footer below it owns that edge',
+  proseBlock.length > 0 && !/env\(safe-area-inset-bottom/.test(proseBlock));
 
 // ── report ──
 console.log('\nSAFEAREA-U-BOTTOM — bottom-anchored surface assertions\n' + '─'.repeat(56));

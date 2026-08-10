@@ -131,7 +131,12 @@ const isPublicBlock = middleware.slice(
 );
 const publicPaths = [...isPublicBlock.matchAll(/pathname\s*(?:===\s*|\.startsWith\(\s*)'([^']+)'/g)].map(m => m[1]);
 check(`middleware isPublic allowlist enumerated (${publicPaths.length} paths)`, publicPaths.length === 23);
-for (const p of ['/', '/login', '/status', '/badge', '/help', '/about', '/models', '/shared/'])
+// WAVE-ABOUT-MANIFESTO: /manifesto and /changelog joined this spot-check. Both
+// were already in the allowlist, but only /about was named here — so the two
+// public prose routes this wave rebuilt could have been dropped from middleware
+// without the gate saying anything. The count above (23) is unchanged: this wave
+// added no route, it only made two existing ones real.
+for (const p of ['/', '/login', '/status', '/badge', '/help', '/about', '/manifesto', '/changelog', '/models', '/shared/'])
   check(`isPublic covers ${p}`, publicPaths.includes(p));
 
 // (d) The landing page — the P0 of this wave. CSS lives in styles/landing.css.
@@ -199,13 +204,46 @@ const publicSurfaces = [
 ];
 for (const [label, path, re] of publicSurfaces) check(`Public inventory: ${label} treated`, re.test(read(path)));
 
-// The three prose pages must USE the utility (and must not have silently
+// /changelog is the remaining user of the utility (and must not have silently
 // regressed back to Tailwind's py-16, which would drop the inset).
-for (const p of ['app/about/page.tsx', 'app/manifesto/page.tsx', 'app/changelog/page.tsx']) {
+//
+// WAVE-ABOUT-MANIFESTO: /about and /manifesto left this list. They are no longer
+// bare prose columns on the app surface — they are rendered inside the LANDING's
+// frame (components/landing/PublicPageShell.tsx), so they inherit the landing's
+// own edge treatment and carry their own, in styles/landing.css §18. Their
+// assertions are the `.lp-prose` block below, not this one.
+for (const p of ['app/changelog/page.tsx']) {
   const src = read(p);
   check(`Public inventory: ${p} uses .safe-prose-page`,
     /className="max-w-2xl mx-auto safe-prose-page"/.test(src) && !/py-16/.test(src));
 }
+
+// ── WAVE-ABOUT-MANIFESTO — the two prose pages in the landing frame ──
+//
+// They sit under the same FIXED nav as the landing, so the top edge repeats the
+// hero's idiom: design padding PLUS the top inset, because the nav grew by that
+// inset and the first line would otherwise slide under a taller bar. The bottom
+// is deliberately absent here — the landing footer is the last element and owns
+// that edge (asserted in assert-safe-area-bottom.mjs). Both pages must actually
+// be in the frame, or these CSS rules would be dead letters.
+const landingCssTop = read('styles/landing.css');
+check('.lp-prose: top inset added to the nav-clearing padding',
+  /\.lp-prose\s*\{[\s\S]*?padding-top:\s*calc\(var\(--prose-pad-top[^)]*\) \+ env\(safe-area-inset-top/.test(landingCssTop));
+check('.lp-prose: landscape L/R insets floored at the gutter',
+  /\.lp-prose\s*\{[\s\S]*?padding-left:\s*max\(var\(--gutter\), env\(safe-area-inset-left/.test(landingCssTop) &&
+  /\.lp-prose\s*\{[\s\S]*?padding-right:\s*max\(var\(--gutter\), env\(safe-area-inset-right/.test(landingCssTop));
+check('PublicPageShell renders the landing frame (nav + footer own the edges)',
+  /<Nav[\s\S]*?\/>/.test(read('components/landing/PublicPageShell.tsx')) &&
+  /<Footer\s*\/>/.test(read('components/landing/PublicPageShell.tsx')));
+for (const p of ['app/about/page.tsx', 'app/manifesto/page.tsx']) {
+  check(`Public inventory: ${p} renders inside PublicPageShell`,
+    /<PublicPageShell>/.test(read(p)));
+}
+for (const p of ['app/about/AboutProse.tsx', 'app/manifesto/ManifestoProse.tsx']) {
+  check(`Public inventory: ${p} uses the .lp-prose frame`,
+    /className="lp-prose"/.test(read(p)));
+}
+
 
 // ── report ──
 console.log('\nSAFEAREA-U1 — swept-surface assertions\n' + '─'.repeat(52));
