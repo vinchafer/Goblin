@@ -34,8 +34,8 @@ export type ManifestoCopy = {
   back: string;
   eyebrow: string;
   h1: string;
-  /** Exactly six. The count is asserted in the unit test — "Six things we
-   *  believe" over five items would be the page lying about itself. */
+  /** Exactly seven. The count is asserted in the unit test — "Seven things we
+   *  believe" over six items would be the page lying about itself. */
   beliefs: Belief[];
   soHead: string;
   so: string[];
@@ -47,11 +47,13 @@ export type ManifestoCopy = {
 
 const en: ManifestoCopy = {
   metaTitle: 'Manifesto — Goblin',
+  // The count here is a claim too — it is the description a search result shows.
+  // It lists all seven, in order, so it cannot fall out of step with the page.
   metaDescription:
-    'Six things we believe: honest beats impressive, you own what you build, the phone is a real computer, no meter on your thinking, generating is not shipping, building should not need permission.',
+    'Seven things we believe: honest beats impressive, you own what you build, the phone is a real computer, no meter on your thinking, generating is not shipping, building should not need permission, and one price for the world is not fair.',
   back: '← Back',
   eyebrow: 'Manifesto',
-  h1: 'Six things we believe',
+  h1: 'Seven things we believe',
   beliefs: [
     {
       title: 'Honest beats impressive.',
@@ -96,6 +98,23 @@ const en: ManifestoCopy = {
       body: [
         "Not from an app store. Not from a laptop budget. Not from three subscriptions and a course you'll never finish.",
         'You have an idea and a screen. That should be the whole list.',
+      ],
+    },
+    // BELIEF 7 — the only belief on this page that makes a checkable claim about
+    // what Goblin currently DOES, so it was verified against production before
+    // being written (2026-08-10): GET /api/billing/geo-pricing on the live API
+    // returns tier 1 for CH/US ($11/$19/$39), tier 2 for AR/BR ($7/$12/$25) and
+    // tier 3 for NG/PH/IN ($4/$7/$14). The endpoint is public and unconditional —
+    // there is no feature flag — so the price a visitor is shown genuinely varies
+    // by region today. See docs/WAVE_ABOUT_MANIFESTO.md for the full check,
+    // including the one thing it does NOT prove (the charged Stripe price for
+    // tiers 2 and 3 depends on env vars the startup guard does not require).
+    {
+      title: "One price for the world isn't fair — it's lazy.",
+      body: [
+        "Almost every AI tool charges the same everywhere. Twenty dollars a month. In Zurich that's two coffees. In Lagos, Manila, Buenos Aires it can be a day's work — for the same software, doing the same thing, on the same internet.",
+        'Goblin is priced for where you actually live. Not as charity. Because a queue only rich countries can afford is still a queue — just with a better excuse.',
+        "Right now, somewhere, the best idea of the decade is being had by someone who can't get past the paywall to build it. That isn't their loss. It's everyone's.",
       ],
     },
   ],

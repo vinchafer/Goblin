@@ -9,10 +9,10 @@
  * public surface, so a visitor who pressed DE gets the same answer here as on
  * /login and /about.
  *
- * The six beliefs are numbered by a CSS counter (styles/landing.css §18b), not by
- * digits in the copy: the number a reader sees is then always the position of the
- * item actually rendered. "Six things we believe" over five items would be the
- * page contradicting its own first belief.
+ * The seven beliefs are numbered by a CSS counter (styles/landing.css §18b), not
+ * by digits in the copy: the number a reader sees is then always the position of
+ * the item actually rendered. "Seven things we believe" over six items would be
+ * the page contradicting its own first belief.
  */
 
 import Link from 'next/link';

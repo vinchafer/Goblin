@@ -12,10 +12,12 @@ import { MANIFESTO_COPY } from './manifesto';
  *      marker has to degrade to visible asterisks, not to a missing sentence —
  *      losing a line silently is exactly the failure this page's first belief is
  *      about.
- *   2. The page's structure must keep matching its own claims. "Six things we
- *      believe" over five rendered items is the page lying about itself, and the
+ *   2. The page's structure must keep matching its own claims. "Seven things we
+ *      believe" over six rendered items is the page lying about itself, and the
  *      German block is a hand-maintained mirror of the English one, so its shape
- *      can drift the moment the founder starts replacing values.
+ *      can drift the moment the founder starts replacing values. The count is
+ *      read OUT of the H1 rather than hardcoded — hardcoding it is why this test
+ *      stayed silent when the seventh belief was added.
  */
 
 describe('tokenizeEmphasis', () => {
@@ -68,10 +70,26 @@ describe('tokenizeEmphasis', () => {
 });
 
 describe('page copy structure', () => {
-  it('the manifesto ships exactly the six beliefs its H1 promises', () => {
-    expect(MANIFESTO_COPY.en.h1).toBe('Six things we believe');
-    expect(MANIFESTO_COPY.en.beliefs).toHaveLength(6);
-    expect(MANIFESTO_COPY.de.beliefs).toHaveLength(6);
+  // The H1 states a number, so the number is a claim the page makes about
+  // itself. Deriving the expected count FROM the heading rather than hardcoding
+  // it means adding an eighth belief without touching the H1 fails here — which
+  // is the actual failure mode (this test caught nothing when belief 7 was added
+  // until it was rewritten this way).
+  it('the manifesto ships exactly as many beliefs as its H1 promises', () => {
+    const WORD_TO_NUMBER: Record<string, number> = {
+      Five: 5, Six: 6, Seven: 7, Eight: 8, Nine: 9, Ten: 10,
+    };
+    const word = MANIFESTO_COPY.en.h1.split(' ')[0];
+    const promised = WORD_TO_NUMBER[word];
+    expect(promised, `H1 starts with "${word}" — add it to WORD_TO_NUMBER`).toBeDefined();
+    expect(MANIFESTO_COPY.en.beliefs).toHaveLength(promised);
+    expect(MANIFESTO_COPY.de.beliefs).toHaveLength(promised);
+  });
+
+  it('the seventh belief is the pricing one, and it is placed last', () => {
+    const beliefs = MANIFESTO_COPY.en.beliefs;
+    expect(beliefs).toHaveLength(7);
+    expect(beliefs[6].title).toBe("One price for the world isn't fair — it's lazy.");
   });
 
   it('every belief has a title and at least one paragraph, in both locales', () => {

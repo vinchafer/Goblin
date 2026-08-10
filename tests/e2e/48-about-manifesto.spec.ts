@@ -41,13 +41,13 @@ test.describe('@public about + manifesto', () => {
     await expect(link).toHaveAttribute('href', '/manifesto');
     await link.click();
     await expect(page).toHaveURL(/\/manifesto$/);
-    await expect(page.getByRole('heading', { name: 'Six things we believe', level: 1 })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Seven things we believe', level: 1 })).toBeVisible();
   });
 
-  test('/manifesto ships exactly six beliefs, numbered', async ({ page }) => {
+  test('/manifesto ships exactly seven beliefs, numbered', async ({ page }) => {
     await page.goto('/manifesto');
     const beliefs = page.getByTestId('manifesto-beliefs').locator('.lp-belief');
-    await expect(beliefs).toHaveCount(6);
+    await expect(beliefs).toHaveCount(7);
 
     const titles = [
       'Honest beats impressive.',
@@ -56,6 +56,7 @@ test.describe('@public about + manifesto', () => {
       'No meter on your thinking.',
       'Generating is not shipping.',
       "Building shouldn't need permission.",
+      "One price for the world isn't fair — it's lazy.",
     ];
     for (const [i, title] of titles.entries()) {
       await expect(beliefs.nth(i).getByRole('heading', { level: 3 })).toHaveText(title);
@@ -68,8 +69,8 @@ test.describe('@public about + manifesto', () => {
     // glyphs themselves are in the wave's screenshots. Every belief must carry
     // it, or one item would silently render without a number.
     const numbers = beliefs.locator('.lp-belief-num');
-    await expect(numbers).toHaveCount(6);
-    for (let i = 0; i < 6; i++) {
+    await expect(numbers).toHaveCount(titles.length);
+    for (let i = 0; i < titles.length; i++) {
       const content = await numbers.nth(i).evaluate(
         (el) => getComputedStyle(el, '::before').content,
       );

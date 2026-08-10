@@ -173,3 +173,44 @@ describe('getPriceForTier — env price-ID resolution', () => {
     expect(getPriceForTier('pro', 3)).toBe('price_pro_t3');
   });
 });
+
+/**
+ * WAVE-ABOUT-MANIFESTO FOLLOW-UP — the public manifesto now makes this a PROMISE.
+ *
+ * /manifesto belief 7 ("One price for the world isn't fair — it's lazy.") names
+ * four cities in its copy and tells the reader that Goblin is "priced for where
+ * you actually live". That turns the tier table from an implementation detail
+ * into a public claim, on the page whose FIRST belief is that we never claim a
+ * state we have not verified.
+ *
+ * So the exact countries the copy names are pinned here. If a future tier edit
+ * flattens them — Lagos priced like Zurich — this fails, and whoever made the
+ * change is told that a shipped page says otherwise.
+ *
+ * (Verified live against production on 2026-08-10 before the copy shipped:
+ * GET /api/billing/geo-pricing returned tier 1 for CH/US, 2 for AR/BR and 3 for
+ * NG/PH/IN. This test is the standing guard on that, not a substitute for it.)
+ */
+describe('/manifesto belief 7 — the cities the public copy names', () => {
+  it('Zurich is not priced like Lagos, Manila or Buenos Aires', () => {
+    const zurich = getGeoTier('CH');
+    expect(zurich).toBe(1);
+
+    for (const [label, code] of [['Lagos', 'NG'], ['Manila', 'PH'], ['Buenos Aires', 'AR']] as const) {
+      const tier = getGeoTier(code);
+      expect(tier, `${label} (${code}) must not sit in the standard tier`).not.toBe(1);
+      // The claim is about money, not about tier labels — assert the amount.
+      expect(
+        tierAmount('pro', tier),
+        `${label} (${code}) must pay less than Zurich for the same plan`,
+      ).toBeLessThan(tierAmount('pro', zurich));
+    }
+  });
+
+  it('the spread is real across every plan, not just one', () => {
+    for (const plan of ['build', 'pro', 'power'] as const) {
+      expect(tierAmount(plan, 3)).toBeLessThan(tierAmount(plan, 2));
+      expect(tierAmount(plan, 2)).toBeLessThan(tierAmount(plan, 1));
+    }
+  });
+});
