@@ -57,6 +57,20 @@ All numbers below were produced by running the thing named, in this session.
 | Copy verbatim vs. source document | **32 / 33** source paragraphs byte-identical (see Honest Limitations) |
 | eslint | 135 errors — **identical on clean `master`**; this wave's files: **0** |
 
+### CI, read at job-log level (PR #81, head `66b00a6`)
+
+| Workflow | Run | Result |
+|---|---|---|
+| CI | [31344170176](https://github.com/vinchafer/Goblin/actions/runs/31344170176) | **success** — typecheck shared + web, build, web vitest, api vitest **1721/1721** |
+| E2E Tests | [31344170158](https://github.com/vinchafer/Goblin/actions/runs/31344170158) | **success** — **197 passed, 1 flaky** |
+| Performance Budget | [31344170171](https://github.com/vinchafer/Goblin/actions/runs/31344170171) | **success** |
+
+**Money guard, armed.** GitHub sets `CI=true`, which arms `money-suite-guard.test.ts` — the job fails if the Stripe test-mode secrets are absent, so a green run cannot hide a silent money-test skip. The guard passed *and* the suites it guards actually executed: plan-change PROOFs 1–4 and 7, account-deletion PROOFs 1–6, immediate-proration PROOFs A–C, all against real test-mode Stripe. Zero skip lines in the log.
+
+**All 22 of this wave's new E2E tests passed in CI** (11 × `public-desktop` + `public-mobile`), verified by name in the job log.
+
+**The one flake is pre-existing and not this wave's.** `19-mobile-create-project.spec.ts` (@auth-mobile) timed out on `waitForURL` and passed on retry. The same test flaked on **master at this branch's exact base commit** — run [31249171854](https://github.com/vinchafer/Goblin/actions/runs/31249171854) (`70ff0619`) reported **2 flaky**, including this one. This branch has fewer flakes than its base, and the test is on an `@auth` dashboard path no file in this diff touches.
+
 **Renders:** 24 in `evidence/about-manifesto/` — both pages × {375, 320, desktop} × {dark, light} × {EN, DE}. Re-runnable: `node evidence/about-manifesto/shots.mjs [baseURL]`.
 
 ---
