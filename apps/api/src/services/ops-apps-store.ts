@@ -184,7 +184,13 @@ export async function findOpsAppById(appId: string, sb: Sb = getSupabaseAdmin())
  * re-publish. A project has at most one Living App on the lean plane, so a second
  * publish updates the first rather than claiming a second name.
  */
-export async function findOpsAppByProject(projectId: string, sb: Sb = getSupabaseAdmin()): Promise<OpsApp | null> {
+export async function findOpsAppByProject(projectId: string | null, sb: Sb = getSupabaseAdmin()): Promise<OpsApp | null> {
+  // No project → no app published FROM a project. Answered here rather than sent to
+  // Postgres, because `project_id` is a uuid column and neither null nor '' is a
+  // uuid to compare against: the query would be a guaranteed error dressed up as a
+  // lookup. `''` reaches this from a caller that means "no project" (the E2E run)
+  // and is the same answer.
+  if (!projectId) return null;
   if (!(await opsAppsTableAvailable(sb))) return null;
   const { data, error } = await sb
     .from('ops_apps')

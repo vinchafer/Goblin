@@ -219,7 +219,22 @@ export async function loadArtifact(projectId: string, deps: PublishDeps = defaul
 
 export interface PublishInput {
   userId: string;
-  projectId: string;
+  /**
+   * The project whose stored files become the app — or `null` for a publish that
+   * owns no project.
+   *
+   * `null` is not a convenience: `ops_apps.project_id` is a NULLABLE uuid (0099), so
+   * "no project" has exactly one correct value in the registry and `''` is not it.
+   * Postgres rejects `''` for a uuid column (22P02), the insert answers null, and
+   * the publish dies at `registry/registry_unavailable` — which is precisely how the
+   * E2E run failed while every manual publish, always carrying a real uuid from
+   * routes/ops.ts, succeeded on the identical code path. Typing it `string | null`
+   * is what makes that state expressible instead of smuggled through an empty
+   * string.
+   *
+   * The only caller that passes null is services/ops-e2e.ts.
+   */
+  projectId: string | null;
   /** Only used when the project has no app yet; a republish keeps its name. */
   name: string;
 }
@@ -233,6 +248,15 @@ export interface PublishInput {
  */
 export async function publishHostedApp(input: PublishInput, deps: PublishDeps = defaultPublishDeps): Promise<PublishResult> {
   const domain = deps.appsDomain();
+
+  // The file/verify deps are keyed by project and typed `string`; a publish with no
+  // project replaces all of them (ops-e2e.ts serves a synthetic artifact and
+  // verifies against what it uploaded), so what they receive here is inert. The
+  // value that is NOT inert is the one written to the registry and to the event —
+  // and that one stays `input.projectId`, null and all. Converting once, here, is
+  // what keeps the two from being confused again.
+  const projectKey = input.projectId ?? '';
+
   const existing = await deps.findOpsAppByProject(input.projectId);
   const republished = existing !== null;
 
@@ -255,7 +279,7 @@ export async function publishHostedApp(input: PublishInput, deps: PublishDeps = 
   const url = appUrl(name, domain);
 
   // 2. ARTIFACT.
-  const artifact = await loadArtifact(input.projectId, deps);
+  const artifact = await loadArtifact(projectKey, deps);
   if (artifact.files.length === 0) {
     return fail('artifact', 'empty_artifact', 'In diesem Projekt liegen noch keine Dateien, die veröffentlicht werden könnten.');
   }
@@ -270,6 +294,8 @@ export async function publishHostedApp(input: PublishInput, deps: PublishDeps = 
   // 3. SCAN — before anything is uploaded. A block means nothing went anywhere.
   const scan: HostedScanVerdict = deps.scan(artifact.scanFiles, {
     userId: input.userId,
+    // null, not '': this rides into the publish_blocked event, whose project_id is
+    // the same nullable-uuid shape as the registry's.
     projectId: input.projectId,
     appsDomain: domain,
   });
@@ -317,7 +343,7 @@ export async function publishHostedApp(input: PublishInput, deps: PublishDeps = 
   }
 
   // 7. VERIFY through the public URL.
-  const verification = await deps.verify(url, input.projectId, artifact.files);
+  const verification = await deps.verify(url, projectKey, artifact.files);
   if (!verification.ok) {
     await deps.markOpsAppFailed(appId);
     // A NEW app that never verified must not keep a public address: the route is

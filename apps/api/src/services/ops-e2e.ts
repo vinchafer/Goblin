@@ -19,7 +19,12 @@
  *
  * ── Safety rails, because this writes to production ──────────────────────────
  * • Names are always `e2e-<random>`, never anything a builder could own.
- * • project_id is null: the run needs no project and cannot touch one.
+ * • project_id is null — literally null, which is what `ops_apps.project_id` (a
+ *   NULLABLE uuid, 0099) accepts for "no project". It was `''` until the first real
+ *   run, and Postgres rejects `''` for a uuid column: every loop died at
+ *   registry/registry_unavailable while manual publishes — which always carry a real
+ *   project uuid down the identical code path — kept working. The run needs no
+ *   project and cannot touch one.
  * • It cleans up after itself, INCLUDING the released tombstone a rename leaves,
  *   so the run is repeatable rather than littering the namespace.
  * • It is behind opsGate AND an explicit confirm token — no link, prefetch or
@@ -261,7 +266,7 @@ export async function runOpsE2E(opts: E2EOptions): Promise<E2EReport> {
   for (let i = 1; i <= loops; i++) {
     // Loop 1 claims the name; loops 2..n exercise re-publish over the same app.
     const loopDeps: PublishDeps = i === 1 ? deps : { ...deps, findOpsAppByProject: async () => (appId ? await findOpsAppById(appId) : null) };
-    const result = await publishHostedApp({ userId: opts.userId, projectId: '', name }, loopDeps);
+    const result = await publishHostedApp({ userId: opts.userId, projectId: null, name }, loopDeps);
     if (result.ok) {
       appId = result.appId;
       publishOk += 1;
@@ -294,7 +299,7 @@ export async function runOpsE2E(opts: E2EOptions): Promise<E2EReport> {
   // 6. HOSTILE — refused, and nothing uploaded.
   const hostile = HOSTED_SCAN_FIXTURES['hostile-01-paypal-phish']!;
   const hostileResult = await publishHostedApp(
-    { userId: opts.userId, projectId: '', name: `e2e-${runId}-x` },
+    { userId: opts.userId, projectId: null, name: `e2e-${runId}-x` },
     { ...e2eDeps({ ...hostile }), findOpsAppByProject: async () => null },
   );
   const blocked = !hostileResult.ok && hostileResult.code === 'scan_blocked';
