@@ -37,6 +37,9 @@ import {
   listWorkerRoutes,
   opsAppsDomain,
   opsSiteUrl,
+  r2Jurisdiction,
+  redactSecrets,
+  R2_JURISDICTIONS,
   type CfBinding,
   type CfError,
 } from './cf-deploy';
@@ -114,7 +117,65 @@ const FOUNDER_ACTIONS = {
     'Cloudflare Dashboard → justgoblin.app → Workers Routes → Add route:',
     `  Route: *.justgoblin.app/*  ·  Worker: ${ROUTER_SCRIPT_NAME}`,
   ].join('\n'),
+  /**
+   * Cloudflare error 10085 — "R2 bucket '<name>' not found".
+   *
+   * This used to fall through to `token`, which told the founder to add three
+   * permissions the token demonstrably already had (the upload got far enough for
+   * Cloudflare to answer about a BUCKET, which needs the R2 scope to even ask).
+   * Sending someone back to a dashboard page that is already correct is worse than
+   * saying nothing: it burns the one thing they have, and it teaches them the
+   * report is guessing.
+   *
+   * The real cause, in the order it is worth checking: the bucket exists but in a
+   * JURISDICTION namespace, and the binding did not name it. "Not found" is
+   * literally true from the default namespace's point of view — the bucket is not
+   * there. It is in the EU one.
+   */
+  bucketNotFound: [
+    'Cloudflare says the R2 bucket does not exist. The token is NOT the problem —',
+    'an upload that gets an answer about a bucket already passed authorization.',
+    '',
+    'Most likely: the bucket has a JURISDICTION and the binding did not name it.',
+    'A jurisdiction bucket (EU / FedRAMP) lives in a separate namespace, so from the',
+    'default namespace it genuinely is "not found".',
+    '',
+    'Check: Cloudflare Dashboard → R2 → the bucket → its Location / Jurisdiction.',
+    '',
+    '  • It says "Jurisdiction: EU"  → Railway → the Goblin API service → Variables →',
+    '    set  CF_R2_JURISDICTION=eu   (lower case), save, wait for the redeploy.',
+    '  • It says no jurisdiction      → CF_R2_JURISDICTION must be UNSET or empty.',
+    '    A jurisdiction set here for a default-namespace bucket causes this same error.',
+    '  • The name differs from CF_R2_BUCKET → fix the variable. It is the bucket NAME',
+    '    (e.g. goblin-apps), not its id and not the S3 endpoint URL.',
+    '',
+    'A jurisdiction cannot be changed after a bucket is created — so the variable is',
+    'what moves, never the bucket.',
+    '',
+    'Then re-run POST /api/ops/router/provision.',
+  ].join('\n'),
 };
+
+/**
+ * `CF_R2_JURISDICTION` is set to something R2 does not define.
+ *
+ * A refusal rather than a fallback. See `r2Jurisdiction()` in the adapter: the
+ * founder was saying something about where user data lives, and the only honest
+ * responses are to do it or to say it did not happen.
+ */
+function invalidJurisdictionAction(raw: string): string {
+  return [
+    `CF_R2_JURISDICTION is set to ${JSON.stringify(redactSecrets(raw))}, which is not an R2 jurisdiction.`,
+    'The router was NOT uploaded — binding an EU bucket to the default namespace, or',
+    'the reverse, is a data-residency question and this refuses to guess at it.',
+    '',
+    'Railway → the Goblin API service → Variables → CF_R2_JURISDICTION:',
+    `  • the bucket shows "Jurisdiction: EU" in the R2 dashboard → set it to one of: ${R2_JURISDICTIONS.join(', ')}`,
+    '  • the bucket shows no jurisdiction → DELETE the variable (empty is also fine)',
+    '',
+    'Then re-run POST /api/ops/router/provision.',
+  ].join('\n');
+}
 
 /**
  * Which environment variable each env-backed binding's value comes from.
@@ -164,9 +225,24 @@ function isEnvBacked(name: string): name is EnvBackedBinding {
  * plainly is.
  */
 function routerBindings(): CfBinding[] {
+  // Jurisdiction rides ON the R2 binding, and only when set. An EU bucket lives in
+  // a different namespace from the default one, so a binding that omits it asks
+  // Cloudflare for a bucket that genuinely is not where it looked — which is the
+  // 10085 exactly. An unrecognised value never reaches here: provisionRouter()
+  // refuses the upload first rather than quietly falling back to the default
+  // namespace. See `r2Jurisdiction()` for why that distinction matters.
+  const jurisdiction = r2Jurisdiction();
   return [
     { type: 'kv_namespace', name: 'ROUTES', namespace_id: envString('CF_KV_NAMESPACE_ID') },
-    { type: 'r2_bucket', name: 'APPS', bucket_name: envString('CF_R2_BUCKET') },
+    {
+      type: 'r2_bucket',
+      name: 'APPS',
+      bucket_name: envString('CF_R2_BUCKET'),
+      // Spread rather than `jurisdiction: x ?? undefined`: the binding object is
+      // JSON-serialised onto the upload, and an explicit `undefined` is a key the
+      // next reader has to reason about for no gain.
+      ...(jurisdiction.ok && jurisdiction.jurisdiction ? { jurisdiction: jurisdiction.jurisdiction } : {}),
+    },
     { type: 'plain_text', name: 'APPS_DOMAIN', text: opsAppsDomain() },
     { type: 'plain_text', name: 'SITE_URL', text: opsSiteUrl() },
   ];
@@ -232,6 +308,29 @@ function actionFor(error: CfError, fallback: string): string {
 }
 
 /**
+ * Cloudflare's own error number for "R2 bucket not found", as it arrives inside
+ * the message the adapter assembles (`"10085 R2 bucket 'goblin-apps' not found."`).
+ *
+ * Matched on the NUMBER, not on the prose: the number is Cloudflare's stable
+ * identifier for this condition and the sentence around it is not. The word-shaped
+ * fallback is there only for the day the code stops being prefixed, and is kept
+ * narrow enough that it cannot swallow an unrelated 404.
+ */
+const BUCKET_NOT_FOUND = /\b10085\b|R2 bucket .* not found/i;
+
+/**
+ * The founder action for a failed script upload.
+ *
+ * Auth is still auth. But 10085 is NOT an auth failure and must stop being told
+ * it is — the token already proved itself by getting an answer about a bucket.
+ */
+function workerUploadAction(error: CfError): string {
+  if (error.code === 'auth') return FOUNDER_ACTIONS.token;
+  if (BUCKET_NOT_FOUND.test(error.message)) return FOUNDER_ACTIONS.bucketNotFound;
+  return FOUNDER_ACTIONS.token;
+}
+
+/**
  * Deploy the router and wire the hostname to it. Never throws; the report IS the
  * answer, including when it is a refusal.
  */
@@ -249,7 +348,21 @@ export async function provisionRouter(): Promise<RouterProvisionReport> {
   //    set can never drift away from the code that needs it.
   const bindings = routerBindings();
   const missing = emptyBindings(bindings);
-  if (missing.length > 0) {
+  const jurisdiction = r2Jurisdiction();
+  if (!jurisdiction.ok) {
+    // Its own branch, and reported ahead of an empty binding: an unreadable
+    // jurisdiction is not a missing value. If both are wrong at once, the
+    // jurisdiction is the one that cannot be guessed at, and folding it into the
+    // empty-binding refusal would send the founder to the wrong variable.
+    steps.push(
+      step(
+        'worker',
+        'skip',
+        `CF_R2_JURISDICTION is not an R2 jurisdiction — expected one of ${R2_JURISDICTIONS.join(', ')}, or unset for the default namespace`,
+        { founderAction: invalidJurisdictionAction(jurisdiction.raw) },
+      ),
+    );
+  } else if (missing.length > 0) {
     // Name the variable that is EMPTY, not the pair it could have been, and carry
     // the founder action — a skipped upload used to arrive with no action at all,
     // so the console rendered a red step and nothing to do about it.
@@ -269,10 +382,21 @@ export async function provisionRouter(): Promise<RouterProvisionReport> {
     const deployed = await deployWorker(ROUTER_SCRIPT_NAME, ROUTER_WORKER_SOURCE, { bindings });
     steps.push(
       deployed.ok
-        ? step('worker', 'ok', `uploaded ${ROUTER_SCRIPT_NAME} (${deployed.value.bytes} bytes) with ${bindings.length} bindings`)
+        ? step(
+            'worker',
+            'ok',
+            // The jurisdiction is named in the success line, not only in failures:
+            // this string ends up in an evidence file, and "which namespace did the
+            // router actually get bound to" is precisely the question a data-residency
+            // claim on the privacy page has to be answerable from.
+            `uploaded ${ROUTER_SCRIPT_NAME} (${deployed.value.bytes} bytes) with ${bindings.length} bindings` +
+              (jurisdiction.jurisdiction
+                ? ` (R2 jurisdiction: ${jurisdiction.jurisdiction})`
+                : ' (R2 default namespace)'),
+          )
         : step('worker', 'fail', deployed.error.message, {
             code: deployed.error.code,
-            founderAction: actionFor(deployed.error, FOUNDER_ACTIONS.token),
+            founderAction: workerUploadAction(deployed.error),
           }),
     );
   }

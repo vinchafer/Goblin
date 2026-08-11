@@ -161,8 +161,90 @@ export interface CfWorker {
  */
 export type CfBinding =
   | { type: 'kv_namespace'; name: string; namespace_id: string }
-  | { type: 'r2_bucket'; name: string; bucket_name: string }
+  | { type: 'r2_bucket'; name: string; bucket_name: string; jurisdiction?: R2Jurisdiction }
   | { type: 'plain_text'; name: string; text: string };
+
+/**
+ * The jurisdictions R2 can pin a bucket to. A bucket created with one lives in a
+ * SEPARATE namespace from the default one — same account, different address space
+ * — and the jurisdiction cannot be changed after creation.
+ *
+ * ── Why this had to be settled against live docs rather than recalled ────────
+ * Cloudflare's own reference pages disagree, and the disagreement is the whole
+ * bug. The Workers multipart-upload metadata reference
+ * (https://developers.cloudflare.com/workers/configuration/multipart-upload-metadata/,
+ * retrieved 2026-08-11) documents the r2_bucket binding as exactly
+ * `{type, name, bucket_name}` — no jurisdiction field at all. Reading only that
+ * page, an EU bucket is simply unbindable, which is what the 10085 looked like.
+ *
+ * Three sources say otherwise and they win:
+ *
+ *   1. R2 data location (https://developers.cloudflare.com/r2/reference/data-location/,
+ *      retrieved 2026-08-11): "To access R2 buckets that belong to a jurisdiction
+ *      from Workers, you need to specify the jurisdiction as well as the bucket
+ *      name as part of your bindings", with `jurisdiction` shown ON the r2_bucket
+ *      entry in both JSON and TOML.
+ *   2. Wrangler configuration (https://developers.cloudflare.com/workers/wrangler/configuration/,
+ *      retrieved 2026-08-11): `jurisdiction` is an optional field of an
+ *      `r2_buckets` entry — "The jurisdiction where this R2 bucket is located".
+ *   3. Cloudflare's own generated API client, which is the closest thing to the
+ *      API's schema that is publicly readable
+ *      (https://github.com/cloudflare/cloudflare-typescript, `src/resources/workers/scripts/scripts.ts`,
+ *      retrieved 2026-08-11): `WorkersBindingKindR2Bucket` is
+ *      `{bucket_name, name, type: 'r2_bucket', jurisdiction?: 'eu' | 'fedramp' | 'fedramp-high'}`.
+ *
+ * (3) is decisive, because it describes the REST API this adapter actually calls,
+ * not wrangler's config file. Wrangler has no private channel here — it uploads
+ * through the same script-upload endpoint — so a field wrangler can express must
+ * survive the wire. The corroborating evidence is that Cloudflare rejects a bad
+ * value with its own error 10021 "invalid jurisdiction" (reported alongside 10085
+ * in cloudflare/workers-sdk#9059): an API that did not parse the field could not
+ * validate it.
+ *
+ * MOST DEFENSIBLE READING, stated plainly: the metadata reference page is
+ * incomplete, not authoritative-by-omission. The field goes on the binding.
+ */
+export type R2Jurisdiction = 'eu' | 'fedramp' | 'fedramp-high';
+
+export const R2_JURISDICTIONS: readonly R2Jurisdiction[] = ['eu', 'fedramp', 'fedramp-high'];
+
+/**
+ * What `CF_R2_JURISDICTION` says, or why it cannot be honoured.
+ *
+ * Three-way rather than `R2Jurisdiction | null`, because "unset" and "set to
+ * something I do not recognise" must not collapse into the same answer. Unset
+ * legitimately means the default namespace. An unrecognised value means the
+ * founder was TRYING to say something about data residency and it did not land —
+ * and silently treating that as "default namespace" would bind a Worker to the
+ * wrong namespace on the strength of a typo. On a page that now names Cloudflare
+ * as a sub-processor with R2 in the EU, that is not a config nit.
+ */
+export type R2JurisdictionRead =
+  | { ok: true; jurisdiction: R2Jurisdiction | null }
+  | { ok: false; raw: string };
+
+/**
+ * Read `CF_R2_JURISDICTION` through the same hardened unwrapper as every other
+ * env value here, so a pasted `CF_R2_JURISDICTION="eu"` is read as `eu` and not
+ * as the four-character string `"eu"` — which Cloudflare would answer with 10021.
+ *
+ * Case-folded because a jurisdiction is an identifier the founder types by hand
+ * from a dashboard that displays it as "EU".
+ *
+ * Deliberately NOT added to CF_ENV_VARS: that list is what `/api/ops/health`
+ * treats as "every required variable", so a name added there is reported MISSING
+ * when unset. Unset is a correct, supported configuration (the default
+ * namespace), and a green health report must not turn degraded because of one.
+ * Same reasoning, same precedent as OPS_SITE_URL below.
+ */
+export function r2Jurisdiction(): R2JurisdictionRead {
+  const raw = unwrapEnv(process.env.CF_R2_JURISDICTION).toLowerCase();
+  if (raw.length === 0) return { ok: true, jurisdiction: null };
+  if ((R2_JURISDICTIONS as readonly string[]).includes(raw)) {
+    return { ok: true, jurisdiction: raw as R2Jurisdiction };
+  }
+  return { ok: false, raw };
+}
 
 /** A DNS record, as far as this adapter cares. */
 export interface CfDnsRecord {
