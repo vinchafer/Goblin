@@ -41,6 +41,7 @@ import {
   type CfError,
 } from './cf-deploy';
 import { ROUTER_SCRIPT_NAME, ROUTER_WORKER_SOURCE } from './ops-router/worker-source.generated';
+import { envString } from '../lib/env-value';
 import logger from '../lib/logger';
 
 export { ROUTER_SCRIPT_NAME };
@@ -85,6 +86,9 @@ const FOUNDER_ACTIONS = {
     'Add these permissions, then Save:',
     '  • Account → Workers Scripts → Edit',
     '  • Account → Workers KV Storage → Edit',
+    // Listed beside the KV line for the same reason: the upload attaches an R2
+    // binding, and a binding needs the permission for the resource it binds.
+    '  • Account → Workers R2 Storage → Edit',
     '  • Zone → Zone → Read            (for justgoblin.app)',
     '  • Zone → DNS → Edit             (for justgoblin.app)',
     '  • Zone → Workers Routes → Edit  (for justgoblin.app)',
@@ -112,14 +116,105 @@ const FOUNDER_ACTIONS = {
   ].join('\n'),
 };
 
-/** The router's runtime bindings — how it reaches KV and R2 without a credential. */
+/**
+ * Which environment variable each env-backed binding's value comes from.
+ *
+ * ONE table, and the refusal message reads FROM it, because the only thing that
+ * makes this particular refusal actionable is naming the variable that is really
+ * empty. The message used to name both candidates unconditionally —
+ * `CF_KV_NAMESPACE_ID / CF_R2_BUCKET missing` — which is a lie in the common case
+ * where exactly one of them is set, and it costs the founder a trip through a
+ * variable that was never the problem. The code already knows which binding came
+ * up empty; there is no reason to make the reader guess.
+ *
+ * Where a correct value comes from is written down beside the name for the same
+ * reason: `CF_R2_BUCKET` is the bucket's NAME, not its id and not its S3 URL, and
+ * that is exactly the kind of thing a dashboard makes easy to get subtly wrong.
+ */
+const BINDING_ENV_VAR = {
+  ROUTES: 'CF_KV_NAMESPACE_ID',
+  APPS: 'CF_R2_BUCKET',
+} as const;
+
+type EnvBackedBinding = keyof typeof BINDING_ENV_VAR;
+
+const BINDING_VALUE_SOURCE: Record<EnvBackedBinding, string> = {
+  ROUTES:
+    'CF_KV_NAMESPACE_ID — Cloudflare Dashboard → Storage & Databases → KV → the namespace → its Namespace ID (a 32-character hex string).',
+  APPS:
+    'CF_R2_BUCKET — Cloudflare Dashboard → R2 → the bucket → its NAME (e.g. goblin-apps). Not the bucket id, not the S3 endpoint URL.',
+};
+
+function isEnvBacked(name: string): name is EnvBackedBinding {
+  return Object.prototype.hasOwnProperty.call(BINDING_ENV_VAR, name);
+}
+
+/**
+ * The router's runtime bindings — how it reaches KV and R2 without a credential.
+ *
+ * Read through `envString` (PR #77's shared helper), not `process.env` directly.
+ * Every one of these is a Railway dashboard field, and a dashboard field is
+ * filled by pasting: `CF_R2_BUCKET="goblin-apps"` copied out of a `.env` file or
+ * a doc code block keeps its quotes, and a raw `.trim()` leaves them on. That
+ * would not land here as "missing" — it is worse than that. A quoted value is
+ * NON-empty, so it sails past `emptyBindings()` and gets uploaded to
+ * Cloudflare as a bucket literally named `"goblin-apps"`, quotes included, which
+ * fails at the API with a message about a bucket nobody ever created. Unwrapping
+ * here means a value the founder plainly meant to set is read as the value it
+ * plainly is.
+ */
 function routerBindings(): CfBinding[] {
   return [
-    { type: 'kv_namespace', name: 'ROUTES', namespace_id: (process.env.CF_KV_NAMESPACE_ID ?? '').trim() },
-    { type: 'r2_bucket', name: 'APPS', bucket_name: (process.env.CF_R2_BUCKET ?? '').trim() },
+    { type: 'kv_namespace', name: 'ROUTES', namespace_id: envString('CF_KV_NAMESPACE_ID') },
+    { type: 'r2_bucket', name: 'APPS', bucket_name: envString('CF_R2_BUCKET') },
     { type: 'plain_text', name: 'APPS_DOMAIN', text: opsAppsDomain() },
     { type: 'plain_text', name: 'SITE_URL', text: opsSiteUrl() },
   ];
+}
+
+/** Every env-backed binding whose value came back empty, paired with its variable. */
+function emptyBindings(bindings: CfBinding[]): Array<{ binding: EnvBackedBinding; envVar: string }> {
+  const out: Array<{ binding: EnvBackedBinding; envVar: string }> = [];
+  for (const b of bindings) {
+    const isEmpty =
+      (b.type === 'kv_namespace' && !b.namespace_id) || (b.type === 'r2_bucket' && !b.bucket_name);
+    if (isEmpty && isEnvBacked(b.name)) out.push({ binding: b.name, envVar: BINDING_ENV_VAR[b.name] });
+  }
+  return out;
+}
+
+/**
+ * The refusal, naming the variable that is actually empty — and only that one.
+ *
+ * `/api/ops/health` is quoted at the end on purpose: it reports env PRESENCE by
+ * name without ever touching a value, so the founder can settle "is it really not
+ * set?" against the running process instead of against the dashboard they already
+ * believe they filled in. That disagreement — dashboard says set, process says
+ * empty — is what a variable on the wrong Railway service looks like.
+ */
+function missingBindingAction(missing: Array<{ binding: EnvBackedBinding; envVar: string }>): string {
+  const names = missing.map((m) => m.envVar);
+  return [
+    `The router was NOT uploaded: ${names.join(' and ')} ${names.length === 1 ? 'has' : 'have'} no value in the API's environment.`,
+    '',
+    'Railway → the Goblin API service → Variables. Check the name letter for letter —',
+    'the variable is read by this exact spelling, and it is case-sensitive:',
+    ...names.map((n) => `  • ${n}`),
+    '',
+    'Where a correct value comes from:',
+    ...missing.map((m) => `  • ${BINDING_VALUE_SOURCE[m.binding]}`),
+    '',
+    'Three things that look set and are not:',
+    '  • the variable sits on a DIFFERENT Railway service or environment than the API',
+    '  • it was saved but the redeploy has not finished — the old process still has the old env',
+    '  • the value is blank or whitespace only',
+    '(A pasted value with surrounding quotes is fine — the API strips one pair.)',
+    '',
+    'Settle it without guessing: GET /api/ops/health → `checks.env.missing` lists every',
+    'variable this running API cannot see, by name and never by value.',
+    '',
+    'Then re-run POST /api/ops/router/provision.',
+  ].join('\n');
 }
 
 function step(
@@ -153,12 +248,22 @@ export async function provisionRouter(): Promise<RouterProvisionReport> {
   // 1. The script itself, with bindings. Uploaded on every provision so a binding
   //    set can never drift away from the code that needs it.
   const bindings = routerBindings();
-  const missingBinding = bindings.find(
-    (b) => (b.type === 'kv_namespace' && !b.namespace_id) || (b.type === 'r2_bucket' && !b.bucket_name),
-  );
-  if (missingBinding) {
+  const missing = emptyBindings(bindings);
+  if (missing.length > 0) {
+    // Name the variable that is EMPTY, not the pair it could have been, and carry
+    // the founder action — a skipped upload used to arrive with no action at all,
+    // so the console rendered a red step and nothing to do about it.
+    const names = missing.map((m) => m.envVar).join(', ');
+    const labels = missing.map((m) => m.binding).join(', ');
     steps.push(
-      step('worker', 'skip', `binding ${missingBinding.name} has no value — CF_KV_NAMESPACE_ID / CF_R2_BUCKET missing`),
+      step(
+        'worker',
+        'skip',
+        missing.length === 1
+          ? `binding ${labels} has no value — ${names} is empty or unset in this API's environment`
+          : `bindings ${labels} have no value — ${names} are empty or unset in this API's environment`,
+        { founderAction: missingBindingAction(missing) },
+      ),
     );
   } else {
     const deployed = await deployWorker(ROUTER_SCRIPT_NAME, ROUTER_WORKER_SOURCE, { bindings });

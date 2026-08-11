@@ -67,7 +67,9 @@ const de = {
     running: 'rollt aus …',
     provisioned: 'Alle Schritte grün — der Router steht.',
     blocked: 'Mindestens ein Schritt hat nicht funktioniert.',
-    founderActions: 'Das musst du selbst im Cloudflare-Dashboard tun:',
+    // Nicht mehr nur Cloudflare: fehlt einem Binding sein Wert, zeigt der Schritt
+    // auf die Railway-Variable, die leer ist — namentlich.
+    founderActions: 'Das musst du selbst erledigen (Cloudflare-Dashboard bzw. Railway):',
     steps: 'Schritte',
     disabledNoHosting: 'Nicht möglich, solange OPS_HOSTING_ENABLED aus ist — /api/ops antwortet dann mit 404.',
   },
@@ -247,7 +249,7 @@ const en: typeof de = {
     running: 'provisioning …',
     provisioned: 'Every step green — the router is up.',
     blocked: 'At least one step did not work.',
-    founderActions: 'This part you have to do yourself in the Cloudflare dashboard:',
+    founderActions: 'This part you have to do yourself (Cloudflare dashboard or Railway):',
     steps: 'Steps',
     disabledNoHosting: 'Not possible while OPS_HOSTING_ENABLED is off — /api/ops answers 404 then.',
   },

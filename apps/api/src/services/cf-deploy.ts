@@ -51,6 +51,7 @@ import {
   DeleteObjectsCommand,
 } from '@aws-sdk/client-s3';
 import type { S3ClientConfig } from '@aws-sdk/client-s3';
+import { unwrapEnv } from '../lib/env-value';
 import logger from '../lib/logger';
 
 // ── Result & error types ────────────────────────────────────────────────────
@@ -228,7 +229,9 @@ const DEFAULT_TIMEOUT_MS = 10_000;
 const DELETE_BATCH_SIZE = 1000;
 
 function timeoutMs(): number {
-  const raw = Number(process.env.CF_TIMEOUT_MS);
+  // Unwrapped for the same reason as env() below: Number('"10000"') is NaN, so a
+  // pasted-with-quotes override would silently fall back to the default.
+  const raw = Number(unwrapEnv(process.env.CF_TIMEOUT_MS));
   return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : DEFAULT_TIMEOUT_MS;
 }
 
@@ -238,12 +241,26 @@ function timeoutMs(): number {
  * calendar. Overridable via CF_WORKER_COMPAT_DATE when a Worker needs a newer one.
  */
 function workerCompatDate(): string {
-  const raw = (process.env.CF_WORKER_COMPAT_DATE ?? '').trim();
+  const raw = unwrapEnv(process.env.CF_WORKER_COMPAT_DATE);
   return /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : '2025-01-01';
 }
 
+/**
+ * Every credential and identifier this adapter uses, read through PR #77's shared
+ * unwrapper rather than a bare `.trim()`.
+ *
+ * These are all Railway dashboard fields, and a dashboard field is filled by
+ * pasting. `CF_R2_BUCKET="goblin-apps"` copied out of a `.env` file or a doc code
+ * block keeps its quotes; `.trim()` leaves them on, and the adapter then addresses
+ * a bucket that does not exist while the presence probe cheerfully reports the
+ * variable as set. Same rule as the web side (`apps/web/lib/env/origin.ts`) and
+ * the same rule as every other env parser in this API, so the two cannot drift.
+ *
+ * It unwraps; it does not validate or repair. An unset variable is still empty and
+ * still makes the surface report `not_configured`.
+ */
 function env(name: CfEnvVar): string {
-  return (process.env[name] ?? '').trim();
+  return unwrapEnv(process.env[name]);
 }
 
 /** Which of the adapter's env vars are present. Booleans only — never a value, never a length. */
@@ -1130,6 +1147,6 @@ export function opsAppsDomain(): string {
  * about a value that has a correct default.
  */
 export function opsSiteUrl(): string {
-  const raw = (process.env.OPS_SITE_URL ?? '').trim();
+  const raw = unwrapEnv(process.env.OPS_SITE_URL);
   return (raw || 'https://justgoblin.com').replace(/\/$/, '');
 }
