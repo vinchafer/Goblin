@@ -18,7 +18,13 @@ const getWorker = vi.fn();
 const listDnsRecords = vi.fn();
 const listWorkerRoutes = vi.fn();
 
-vi.mock('./cf-deploy', () => ({
+vi.mock('./cf-deploy', async () => ({
+  // The jurisdiction helpers are taken from the REAL adapter rather than restated
+  // here. They are pure env readers, and a hand-written stub of an env parser is
+  // exactly the kind of second implementation that agrees with the test and not
+  // with production — the quoted-paste behaviour below would pass against a naive
+  // stub while failing on the wire.
+  ...(await vi.importActual<typeof import('./cf-deploy')>('./cf-deploy')),
   deployWorker: (...a: unknown[]) => deployWorker(...a),
   findZoneId: (...a: unknown[]) => findZoneId(...a),
   ensureWildcardDns: (...a: unknown[]) => ensureWildcardDns(...a),
@@ -39,6 +45,9 @@ beforeEach(() => {
   process.env.OPS_APPS_DOMAIN = 'justgoblin.app';
   process.env.CF_KV_NAMESPACE_ID = 'kv-1';
   process.env.CF_R2_BUCKET = 'goblin-apps';
+  // Unset by default: the default namespace is the baseline, and every existing
+  // expectation in this file describes a binding with no jurisdiction on it.
+  delete process.env.CF_R2_JURISDICTION;
   for (const m of [deployWorker, findZoneId, ensureWildcardDns, ensureWorkerRoute, getWorker, listDnsRecords, listWorkerRoutes]) {
     m.mockReset();
   }
@@ -327,6 +336,185 @@ describe('the binding set — present, absent, and pasted with quotes', () => {
 
       await mod.provisionRouter();
       expect(bindingsSent()).toContainEqual({ type: 'r2_bucket', name: 'APPS', bucket_name: '"goblin-apps' });
+    });
+  });
+});
+
+/**
+ * CF_R2_JURISDICTION — the field that makes an EU bucket bindable at all.
+ *
+ * The live failure this was written against: the bucket `goblin-apps` exists with
+ * jurisdiction EU, the S3 round-trip against `<hash>.eu.r2.cloudflarestorage.com`
+ * reads and writes it, and the Worker upload still answers
+ * `10085 R2 bucket 'goblin-apps' not found` — because a jurisdiction bucket is in
+ * a different namespace and the binding never said which one.
+ */
+describe('the R2 binding carries its jurisdiction', () => {
+  const r2Binding = () =>
+    (deployWorker.mock.calls[0] as [string, string, { bindings: Array<Record<string, unknown>> }])[2].bindings.find(
+      (b) => b.type === 'r2_bucket',
+    );
+  const workerStep = (r: Awaited<ReturnType<typeof mod.provisionRouter>>) =>
+    r.steps.find((s) => s.step === 'worker')!;
+  /** Everything except the upload succeeding, so the worker step is the only variable. */
+  function restGood() {
+    findZoneId.mockResolvedValue(ok('zone-abc'));
+    ensureWildcardDns.mockResolvedValue(ok({ created: false, recordId: 'r', proxied: true }));
+    ensureWorkerRoute.mockResolvedValue(ok({ created: false, updated: false, routeId: 'r' }));
+  }
+
+  describe('set', () => {
+    it('CF_R2_JURISDICTION=eu puts jurisdiction on the R2 binding — and ONLY on it', async () => {
+      process.env.CF_R2_JURISDICTION = 'eu';
+      allGood();
+
+      await mod.provisionRouter();
+      expect(r2Binding()).toEqual({
+        type: 'r2_bucket',
+        name: 'APPS',
+        bucket_name: 'goblin-apps',
+        jurisdiction: 'eu',
+      });
+      // KV has no jurisdiction concept — Cloudflare's binding schema defines none,
+      // so inventing one here would be a field the API does not know.
+      const kv = (deployWorker.mock.calls[0] as [string, string, { bindings: Array<Record<string, unknown>> }])[2].bindings.find(
+        (b) => b.type === 'kv_namespace',
+      );
+      expect(kv).toEqual({ type: 'kv_namespace', name: 'ROUTES', namespace_id: 'kv-1' });
+    });
+
+    it('is read through the hardened unwrapper — a pasted "eu" with quotes still works', async () => {
+      // The same paste that produced PR #77. Unhandled, this reaches Cloudflare as
+      // `"eu"` and comes back as error 10021 "invalid jurisdiction".
+      process.env.CF_R2_JURISDICTION = '"eu"';
+      allGood();
+
+      await mod.provisionRouter();
+      expect(r2Binding()).toMatchObject({ jurisdiction: 'eu' });
+    });
+
+    it('is case-folded — the dashboard displays it as "EU"', async () => {
+      process.env.CF_R2_JURISDICTION = '  EU  ';
+      allGood();
+
+      await mod.provisionRouter();
+      expect(r2Binding()).toMatchObject({ jurisdiction: 'eu' });
+    });
+
+    it('names the jurisdiction in the success line, so evidence can answer where data lives', async () => {
+      process.env.CF_R2_JURISDICTION = 'eu';
+      allGood();
+
+      const w = workerStep(await mod.provisionRouter());
+      expect(w.status).toBe('ok');
+      expect(w.detail).toContain('R2 jurisdiction: eu');
+    });
+  });
+
+  describe('unset', () => {
+    it('adds no jurisdiction key at all — the default namespace is not a value', async () => {
+      allGood();
+
+      await mod.provisionRouter();
+      // toStrictEqual, not toEqual: `{..., jurisdiction: undefined}` passes toEqual
+      // and is NOT what should go on the wire.
+      expect(r2Binding()).toStrictEqual({ type: 'r2_bucket', name: 'APPS', bucket_name: 'goblin-apps' });
+      expect(workerStep(await mod.provisionRouter()).detail).toContain('default namespace');
+    });
+
+    it('an empty or whitespace-only value is the same as unset', async () => {
+      process.env.CF_R2_JURISDICTION = '   ';
+      allGood();
+
+      await mod.provisionRouter();
+      expect(r2Binding()).toStrictEqual({ type: 'r2_bucket', name: 'APPS', bucket_name: 'goblin-apps' });
+    });
+  });
+
+  describe('unrecognised — refused, never silently downgraded', () => {
+    it('does not upload, and does not fall back to the default namespace', async () => {
+      process.env.CF_R2_JURISDICTION = 'europe';
+      restGood();
+
+      const w = workerStep(await mod.provisionRouter());
+      expect(w.status).toBe('skip');
+      expect(deployWorker).not.toHaveBeenCalled();
+      expect(w.detail).toContain('CF_R2_JURISDICTION');
+    });
+
+    it('the founder action names the variable, the value and the accepted set', async () => {
+      process.env.CF_R2_JURISDICTION = 'europe';
+      restGood();
+
+      const w = workerStep(await mod.provisionRouter());
+      expect(w.founderAction).toContain('CF_R2_JURISDICTION');
+      expect(w.founderAction).toContain('europe');
+      expect(w.founderAction).toContain('eu');
+      // It must not accuse the bucket variable, which is fine.
+      expect(w.founderAction).not.toContain('CF_R2_BUCKET');
+    });
+
+    it('is reported as a jurisdiction problem even when a binding is ALSO empty', async () => {
+      // Two faults at once. The jurisdiction is the one that cannot be guessed at,
+      // and sending the founder to CF_R2_BUCKET first would be the wrong variable.
+      process.env.CF_R2_JURISDICTION = 'europe';
+      delete process.env.CF_R2_BUCKET;
+      restGood();
+
+      const w = workerStep(await mod.provisionRouter());
+      expect(w.status).toBe('skip');
+      expect(w.detail).toContain('CF_R2_JURISDICTION');
+      expect(deployWorker).not.toHaveBeenCalled();
+    });
+
+    it('the rest of the provision still runs — one bad variable is not four failed steps', async () => {
+      process.env.CF_R2_JURISDICTION = 'europe';
+      restGood();
+
+      const r = await mod.provisionRouter();
+      expect(r.provisioned).toBe(false);
+      expect(r.steps.map((s) => `${s.step}:${s.status}`)).toEqual([
+        'worker:skip',
+        'zone:ok',
+        'dns:ok',
+        'route:ok',
+      ]);
+    });
+  });
+
+  describe('10085 stops blaming the token', () => {
+    const upload10085 = () => {
+      deployWorker.mockResolvedValue(err('upstream', "workers:upload: 10085 R2 bucket 'goblin-apps' not found."));
+      restGood();
+    };
+
+    it('names the jurisdiction cause instead of permissions that are already granted', async () => {
+      upload10085();
+
+      const w = workerStep(await mod.provisionRouter());
+      expect(w.status).toBe('fail');
+      expect(w.founderAction).toContain('CF_R2_JURISDICTION');
+      expect(w.founderAction).toMatch(/jurisdiction/i);
+      // The regression itself: this used to be the token-permissions block, telling
+      // the founder to add three scopes the token demonstrably already had.
+      expect(w.founderAction).not.toContain('Workers R2 Storage → Edit');
+      expect(w.founderAction).not.toContain('My Profile → API Tokens');
+    });
+
+    it('an auth failure still points at the token — 10085 is the exception, not the rule', async () => {
+      deployWorker.mockResolvedValue(err('auth', 'Actor is not authorized'));
+      restGood();
+
+      const w = workerStep(await mod.provisionRouter());
+      expect(w.founderAction).toContain('API Tokens');
+    });
+
+    it('an unrelated upload failure is unchanged', async () => {
+      deployWorker.mockResolvedValue(err('upstream', 'workers:upload: 10021 something else entirely'));
+      restGood();
+
+      const w = workerStep(await mod.provisionRouter());
+      expect(w.founderAction).toContain('API Tokens');
     });
   });
 });

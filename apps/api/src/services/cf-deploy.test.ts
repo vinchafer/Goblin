@@ -638,6 +638,81 @@ describe('deployWorker bindings (Phase 2)', () => {
     const metadata = JSON.parse(await (body.get('metadata') as Blob).text());
     expect(metadata).not.toHaveProperty('bindings');
   });
+
+  it('carries an R2 jurisdiction through to the upload metadata verbatim', async () => {
+    // The wire format is the whole point of this test. Cloudflare's multipart
+    // metadata reference does not document `jurisdiction` on an r2_bucket binding;
+    // its generated API client does, and so does wrangler's config. This pins that
+    // the field reaches the request body rather than being dropped in assembly.
+    fetchMock.mockResolvedValue(cfOk({}));
+    await cf.deployWorker('goblin-apps-router', 'export default {}', {
+      bindings: [{ type: 'r2_bucket', name: 'APPS', bucket_name: 'goblin-apps', jurisdiction: 'eu' }],
+    });
+
+    const body = fetchMock.mock.calls[0]![1].body as FormData;
+    const metadata = JSON.parse(await (body.get('metadata') as Blob).text());
+    expect(metadata.bindings[0]).toEqual({
+      type: 'r2_bucket',
+      name: 'APPS',
+      bucket_name: 'goblin-apps',
+      jurisdiction: 'eu',
+    });
+  });
+});
+
+/**
+ * CF_R2_JURISDICTION — read like every other env value here, and three-way on
+ * purpose. "Unset" and "unrecognised" are different answers because one of them
+ * is a supported configuration and the other is a founder mistake about where
+ * user data lives.
+ */
+describe('r2Jurisdiction', () => {
+  beforeEach(() => {
+    delete process.env.CF_R2_JURISDICTION;
+  });
+
+  it('unset means the default namespace, not an error', () => {
+    expect(cf.r2Jurisdiction()).toEqual({ ok: true, jurisdiction: null });
+  });
+
+  it('empty and whitespace-only are unset', () => {
+    process.env.CF_R2_JURISDICTION = '';
+    expect(cf.r2Jurisdiction()).toEqual({ ok: true, jurisdiction: null });
+    process.env.CF_R2_JURISDICTION = '   ';
+    expect(cf.r2Jurisdiction()).toEqual({ ok: true, jurisdiction: null });
+  });
+
+  it('accepts every jurisdiction R2 defines', () => {
+    for (const j of cf.R2_JURISDICTIONS) {
+      process.env.CF_R2_JURISDICTION = j;
+      expect(cf.r2Jurisdiction()).toEqual({ ok: true, jurisdiction: j });
+    }
+  });
+
+  it('unwraps a pasted value and folds case', () => {
+    for (const raw of ['"eu"', "'eu'", '  EU  ', '"EU"']) {
+      process.env.CF_R2_JURISDICTION = raw;
+      expect(cf.r2Jurisdiction()).toEqual({ ok: true, jurisdiction: 'eu' });
+    }
+  });
+
+  it('reports an unrecognised value as unreadable, carrying it back for the message', () => {
+    process.env.CF_R2_JURISDICTION = 'europe';
+    expect(cf.r2Jurisdiction()).toEqual({ ok: false, raw: 'europe' });
+  });
+
+  it('never silently degrades an unrecognised value to the default namespace', () => {
+    // The failure mode this exists to prevent: a typo binding the Worker to the
+    // default namespace while the founder believes data is pinned to the EU.
+    process.env.CF_R2_JURISDICTION = 'eu-central';
+    const read = cf.r2Jurisdiction();
+    expect(read.ok).toBe(false);
+    expect(read).not.toHaveProperty('jurisdiction');
+  });
+
+  it('is not in CF_ENV_VARS — unset is correct, and health must not call it missing', () => {
+    expect([...cf.CF_ENV_VARS] as string[]).not.toContain('CF_R2_JURISDICTION');
+  });
 });
 
 describe('findZoneId', () => {
