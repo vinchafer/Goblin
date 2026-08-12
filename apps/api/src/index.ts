@@ -86,7 +86,6 @@ import { health } from './routes/health';
 import { sendToCode } from './routes/send-to-code';
 import { notifications } from './routes/notifications';
 import { models } from './routes/models';
-import { admin } from './routes/admin';
 import { investor } from './routes/investor';
 import { deploy } from './routes/deploy';
 import { builds } from './routes/builds';
@@ -101,7 +100,6 @@ import { onboardingAgent } from './routes/onboarding-agent';
 import { support } from './routes/support';
 import { secrets } from './routes/secrets';
 import { rankings } from './routes/rankings';
-import { adminRankings } from './routes/admin-rankings';
 import { account } from './routes/account';
 import { promo } from './routes/promo';
 import { auth2fa } from './routes/auth-2fa';
@@ -110,7 +108,7 @@ import { authEmailHook } from './routes/auth-email-hook';
 import { shared } from './routes/shared';
 import { waitlist } from './routes/waitlist';
 import { ops } from './routes/ops';
-import { opsAdmin } from './routes/ops-admin';
+import { mountAdminSurface } from './routes/admin-surface';
 import { opsConsole } from './routes/ops-console';
 import { events } from './routes/events';
 import { feedback } from './routes/feedback';
@@ -247,7 +245,6 @@ app.route('/api/billing', billing);
 app.route('/api/chat/send-to-code', sendToCode);
 app.route('/api/notifications', notifications);
 app.route('/api/models', models);
-app.route('/api/admin', admin);
 app.route('/api/investor', investor);
 app.route('/api/deploy', deploy);
 app.route('/api/builds', builds);
@@ -264,7 +261,6 @@ app.route('/api/events', events);
 app.route('/api/feedback', feedback);
 app.route('/api/projects', secrets);
 app.route('/api/rankings', rankings);
-app.route('/api/admin/rankings', adminRankings);
 app.route('/api/account', account);
 app.route('/api/promo', promo);
 app.route('/api/auth/2fa', auth2fa);
@@ -276,11 +272,10 @@ app.route('/api/waitlist', waitlist);
 // OPS_HOSTING_ENABLED=false (production default) this whole surface 404s for
 // everyone, so the live Act-1 cohort cannot reach or detect it.
 app.route('/api/ops', ops);
-// AKT 2 · PHASE 2 · U2.5 — the operator surface (suspend / unsuspend / teardown /
-// orphan sweep). Behind the SAME x-admin-key as the rest of /api/admin, NOT behind
-// the beta allowlist: the router serves from KV and never asks the API anything, so
-// the per-app emergency stop must keep working with OPS_HOSTING_ENABLED off.
-app.route('/api/admin/ops', opsAdmin);
+// The whole /api/admin surface — including the ops operator routes — in the one
+// order that lets each mount's own gate decide. routes/admin-surface.ts owns the
+// order and explains why; admin-surface.test.ts holds it there.
+mountAdminSurface(app);
 // AKT 2 · PHASE 2.5 · U-C2 — the founder console's own backing routes. Behind
 // opsFounderGate (OPS_FOUNDER_ACCOUNTS, unset by default → 404 for everyone,
 // byte-identical to an unrouted path). Its OWN mount rather than a sub-path of
