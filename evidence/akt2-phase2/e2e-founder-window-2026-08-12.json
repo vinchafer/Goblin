@@ -1,0 +1,49 @@
+{
+  "phase": "AKT 2 · Phase 2 — Gründer-Fenster",
+  "producedBy": "ops-console",
+  "producedAt": "2026-08-12T12:47:06.145Z",
+  "hostingEnabled": true,
+  "appsDomain": "justgoblin.app",
+  "router": {
+    "domain": "justgoblin.app",
+    "pattern": "*.justgoblin.app/*",
+    "workerDeployed": true,
+    "zoneFound": true,
+    "wildcardProxied": true,
+    "routeBound": true,
+    "notes": []
+  },
+  "migrations": { "registry": true, "audit": true },
+  "run": {
+    "passed": true,
+    "numbers": {
+      "publishLoops": "5/5",
+      "scanBattery": "9/9",
+      "suspensionRoundTrip": "3/3"
+    },
+    "steps": [
+      { "step": "preflight:router", "ok": true, "detail": "router deployed, wildcard proxied, route bound" },
+      { "step": "scan:battery", "ok": true, "detail": "9/9" },
+      { "step": "publish:1/5", "ok": true, "detail": "live at https://e2e-f13qoi.justgoblin.app (3 files, verified 2/2 assets byte-identical)" },
+      { "step": "publish:2/5", "ok": true, "detail": "live at https://e2e-f13qoi.justgoblin.app (3 files, verified 2/2 assets byte-identical)" },
+      { "step": "publish:3/5", "ok": true, "detail": "live at https://e2e-f13qoi.justgoblin.app (3 files, verified 2/2 assets byte-identical)" },
+      { "step": "publish:4/5", "ok": true, "detail": "live at https://e2e-f13qoi.justgoblin.app (3 files, verified 2/2 assets byte-identical)" },
+      { "step": "publish:5/5", "ok": true, "detail": "live at https://e2e-f13qoi.justgoblin.app (3 files, verified 2/2 assets byte-identical)" },
+      { "step": "public:serves", "ok": true, "detail": "https://e2e-f13qoi.justgoblin.app → 200 and contains the run marker", "propagationSec": 0 },
+      { "step": "rename", "ok": true, "detail": "e2e-f13qoi → e2e-f13qoi-b" },
+      { "step": "rename:old-410", "ok": true, "detail": "https://e2e-f13qoi.justgoblin.app → 410 (no redirect)", "propagationSec": 0 },
+      { "step": "rename:new-200", "ok": true, "detail": "https://e2e-f13qoi-b.justgoblin.app → 200", "propagationSec": 0 },
+      { "step": "hostile:blocked", "ok": true, "detail": "refused at the scan: PH-BRAND-CRED" },
+      { "step": "hostile:nothing-written", "ok": true, "detail": "no KV route was created for the blocked publish" },
+      { "step": "suspend:flip", "ok": true, "detail": "route ok, registry ok, audit written" },
+      { "step": "suspend:page-live", "ok": true, "detail": "https://e2e-f13qoi-b.justgoblin.app → 403 with the suspended page", "propagationSec": 0 },
+      { "step": "unsuspend:restored", "ok": true, "detail": "https://e2e-f13qoi-b.justgoblin.app → 200 again", "propagationSec": 0 },
+      { "step": "teardown", "ok": true, "detail": "3 Dateien in 1 Batch(es), Reste: 0, Route weg: true" },
+      { "step": "teardown:404", "ok": true, "detail": "https://e2e-f13qoi-b.justgoblin.app → 404", "propagationSec": 0 },
+      { "step": "cleanup:tombstone", "ok": true, "detail": "released route e2e-f13qoi removed" }
+    ],
+    "notes": [],
+    "tookMs": 13033
+  },
+  "summary": "E2E BESTANDEN · Veröffentlichungen 5/5 · Scan-Batterie 9/9 · Sperr-Runde 3/3 · Schritte 19/19 · 0 min"
+}

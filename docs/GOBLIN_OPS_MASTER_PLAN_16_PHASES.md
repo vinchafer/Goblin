@@ -186,6 +186,24 @@ with no deploy needed to keep it that way.
 **Gates:** 2.5 publish→verify 5/5 · caps demonstrably set (CF API read-back in evidence) · flag still off for real users.
 **HALT if:** wildcard DNS/SSL for `*.justgoblin.app` not yet configured — output exact founder steps (CF dashboard) and stop.
 
+**PHASE 2 — founder-window gate (U2.8) closure record.** The end-to-end run was executed by the
+**founder from the ops console** (`/dashboard/konsole` → „E2E starten") on **2026-08-12**, against the
+**real Cloudflare infrastructure** — real R2, real KV, the platform router Worker on `justgoblin.app`,
+the real `ops_apps` registry. As in Phase 1, the founder triggered one authorised request and the
+deployed code did the work: no session and no human touched a Cloudflare token. **Final result:
+`passed: true` · steps 19/19 · `publishLoops` 5/5 · `scanBattery` 9/9 · `suspensionRoundTrip` 3/3 ·
+`tookMs` 13033 — the gate is GREEN.** The run drove the whole loop on production: preflight, the
+9-fixture scan battery, five publish→verify loops, rename with a 410 on the old name, a hostile
+fixture, suspend and unsuspend, teardown and its own litter. Evidence:
+`evidence/akt2-phase2/e2e-founder-window-2026-08-12.json` — the console's own scrubbed report,
+committed here, and the source every figure in this record is read from — with
+`evidence/akt2-phase2/README.md` as the index. `passed` is not a verdict anyone typed: the report
+sets it only when every step is `ok`, so it and the 19/19 are the same fact stated twice. This closes the open item the Phase-2 PR named
+explicitly — the four requirements in `docs/ABUSE_RESPONSE.md` §8.3 were *built and test-covered but
+operationally unproven* („gebaut ≠ bewiesen"); they are now verified by run. **The honest limit:
+this is one run, on one day, from one place.** The counts are gates and they are met; the *timings*
+in that file are observations, not bounds — §8.3 says which one is which.
+
 ## PHASE 3 — PUBLISH UX + PRE-DEPLOY ABUSE SCAN
 **Objective:** "Live stellen" gets the hosted default path; nothing ships un-scanned.
 **Units:** (3.1) [DESIGN-SENSITIVE] Publish sheet v2: hosted path default ("Live auf name.justgoblin.app — nichts zu verbinden"), Vercel-connect remains as "Eigenes Vercel verbinden (für Fortgeschrittene)" — both honest, neither phantom; German + EN i18n. (3.2) Pre-deploy scan unit: deterministic ruleset (blocked patterns, external form-action targets, crypto-drainer signatures) + Swift-class content classifier on extracted text; verdict pass/review/block with honest user message; review queue table (migration AUTHORED). (3.3) Scan wired into publish path before upload; blocked = nothing uploaded. (3.4) Admin review surface (minimal list in /admin, reuse existing admin patterns).
