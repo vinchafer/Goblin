@@ -22,6 +22,12 @@ Rangfolge; sie werden nicht wiederverwendet.
 
 ---
 
+## 0 · DER EINE PUNKT, DER NICHT WARTEN SOLLTE
+
+| # | Offen | Zuhause | Fällig |
+|---|---|---|---|
+| **X1** | **Eine gelöschte App bleibt live.** `DELETE /projects/:id` räumt Vercel, Storage und Checkpoints ab — **nicht** die gehostete App. `ops_apps.project_id` ist `on delete cascade`, die Registry-Zeile verschwindet also, während der KV-Route-Record und das R2-Präfix stehen bleiben: die Seite ist weiter unter `{name}.justgoblin.app` erreichbar, und die Betreiber-Konsole findet sie nicht mehr, weil jede Betreiber-Handlung über `ops_apps` geht. `deleteAppFiles`/`deleteRoute` existieren und werden von **keinem** Löschpfad aufgerufen. `account-deletion.ts` hat dieselbe Lücke. **`0099:32-38` benennt genau das als PHASE-2-OBLIGATION — sie ist nicht erfüllt.** Radius heute klein (Allowlist, eine bekannte echte App), Klasse aber die teuerste, die es hier gibt: Inhalt auf Goblins Domain, den Goblin nicht mehr herunternehmen kann, ohne von Hand in Cloudflare zu greifen. | `apps/api/routes/projects.ts:400` · `apps/api/src/services/account-deletion.ts` · Warnung in `supabase/migrations/0099_ops_apps.sql:32` | **Vor Phase 4**, und unabhängig davon. Umriss, Reihenfolge und Regressionstest stehen in `docs/ACT2_PHASE4_PREFLIGHT.md` §1. Bewusst nicht in der Kehrarbeit repariert: das ändert Verhalten und braucht einen eigenen Commit mit eigenen Tests. |
+
 ## A · SCAN UND KLASSIFIZIERER (Phase 3)
 
 | # | Offen | Zuhause | Fällig |
@@ -62,7 +68,8 @@ Rangfolge; sie werden nicht wiederverwendet.
 | **D2** | **`E3` ist unentschieden: App-Inhalt geht an DeepInfra.** Ein neuer Verarbeitungszweck bei einem bestehenden Unterauftragsverarbeiter, offengelegt in AUP und Datenschutz — auf einer Rechtsseite, die anwaltlich ungeprüft ist. Der Text ist geschrieben; was fehlt, ist, dass der Gründer ihn mitträgt. | Phase-3-Bericht, Eskalation **E3** | Gründer-Entscheidung, unabhängig von D1. |
 | **D3** | **AGB, Datenschutz und Impressum sind englisch-only**, während die AUP zweisprachig ist. Eine vorbestehende Parität-Lücke; die in Akt 2 **neu** geschriebenen Abschnitte sind DE+EN. Die alten zu übersetzen hieße, Haftungswortlaut zu ändern — bewusst nicht nebenbei getan. | `HOSTING_CLAIMS_AUDIT.md` **G2/G3** | Gründer-Entscheidung, sinnvollerweise zusammen mit D1. |
 | **D4** | **Der Vercel-Meldeweg muss halbjährlich gegengeprüft werden** und das Datum in `ABUSE_RESPONSE` §4 aktualisiert. Zuletzt: 2026-07-28. | `ABUSE_RESPONSE.md` §7 | **Ab ~2026-01-28.** Eine Meldeadresse, die niemand nachprüft, ist eine Vermutung. |
-| **D5** | **`E5` — die Ledger-Marke ist `M-A2`, nicht `M-A1`.** `M-A1` war seit Akt 1 die Resend-Auth-Mail-Zeile; aufgelöst wie bei M15: nächste freie Marke plus Nummerierungsnotiz. Falls der Gründer eine andere Nomenklatur will, ist jetzt der billigste Zeitpunkt. | Ledger **M-A2**, Nummerierungsnotiz | Jetzt oder nie — je später, desto mehr Verweise. |
+| **D5** | **Es gibt keinen öffentlichen Missbrauchs-Meldeweg im Produkt.** Der Spike hat `/missbrauch-melden` und `POST /api/abuse/report` (Turnstile-geschützt, öffentlich) als §3.2-Lieferung benannt. **Beides existiert nicht** — nachgeprüft, null Treffer in `apps/`. Was existiert und was zählt, ist die **Kontaktadresse von Amts wegen**, `support@justgoblin.com`, auf allen Rechtsseiten und im Footer. Für statische Seiten ist das vertretbar: ein Melder hat einen Weg. Was fehlt, ist der niedrigschwellige. | `OPS_SPIKE_0_DECISION_TABLE.md` §3.2 und §6.2 (2) | **Wenn Apps fremde Daten entgegennehmen (Phase 4)** oder wenn die Allowlist fällt — je nachdem, was zuerst kommt. |
+| **D6** | **`E5` — die Ledger-Marke ist `M-A2`, nicht `M-A1`.** `M-A1` war seit Akt 1 die Resend-Auth-Mail-Zeile; aufgelöst wie bei M15: nächste freie Marke plus Nummerierungsnotiz. Falls der Gründer eine andere Nomenklatur will, ist jetzt der billigste Zeitpunkt. | Ledger **M-A2**, Nummerierungsnotiz | Jetzt oder nie — je später, desto mehr Verweise. |
 
 ## E · REPO-HYGIENE UND WERKZEUG
 

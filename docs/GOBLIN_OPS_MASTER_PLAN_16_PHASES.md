@@ -262,6 +262,15 @@ measure a gate is permitted in-session when booked in the ledger). E3–E5 remai
 **Ledger:** email sends line if not covered; caps documented.
 **Founder actions:** apply migrations; confirm Turnstile keys in Railway (setup steps provided).
 
+> **PREFLIGHT — read `docs/ACT2_PHASE4_PREFLIGHT.md` before writing the Phase-4 prompt.** It
+> re-checks the readiness note below against master, and gets specific where the note was vague:
+> the exact Turnstile field values and dashboard path, which of the two keys goes where and why the
+> sitekey is app-injected rather than `NEXT_PUBLIC_`, the exact lines in `cf-deploy.ts`,
+> `worker.js` and `ops-caps.ts` that have to change, and five decisions (P4-a…e) that cannot be
+> made inside a prompt. **It also found something that is not a Phase-4 item at all: a deleted
+> project leaves its hosted app live and unreachable by the console** (`0099`'s PHASE-2 OBLIGATION,
+> unfulfilled). That is carry-forward **X1** and it should be fixed before Phase 4, not by it.
+
 **PHASE 4 — readiness note (written 2026-08-13 at the close of Phase 3; a note for the next prompt,
 NOT a design).** What Phase 4 needs that does not exist today, checked against the code rather than
 recalled:
