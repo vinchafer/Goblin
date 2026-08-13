@@ -9,6 +9,19 @@
  * Deterministic, no external service, $0 per publish (ledger M-H1). See
  * hosted-scan-rules.ts for why the rule set is K3 plus exactly three additions.
  *
+ * ── PHASE 3: THIS FILE IS NOW STAGE 1 OF TWO ─────────────────────────────────
+ * `scanHostedArtifact` below is unchanged, still pure, still free, still the whole
+ * of the deterministic layer — the nine Phase-2 fixtures drive exactly this
+ * function and exactly these verdicts. What is new is `runHostedPublishScan` at
+ * the bottom: it runs stage 1 first and, ONLY on a stage-1 `pass`, hands the
+ * artifact to the Swift classifier (`abuse-classifier.ts`), which can add a third
+ * verdict — `review`. The ordering is not cosmetic:
+ *   • a stage-1 `block` is final; stage 2 never runs and never spends a token
+ *     re-litigating a decided refusal,
+ *   • stage 2 can never soften a block, only hold a pass,
+ *   • and a stage 2 that could not run holds the publish rather than waving it
+ *     through, because a check that did not run has not passed.
+ *
  * ── Fail CLOSED, unlike the Vercel path ──────────────────────────────────────
  * K3's runPublishGuard degrades OPEN when it cannot read files: a safety layer
  * must not be the reason an honest publish dies on someone else's hosting. Here
@@ -31,6 +44,8 @@ import {
   SEED_FIELD,
   type HostedPolicyArea,
 } from './hosted-scan-rules';
+import { classifyArtifact, type AupCategory, type ClassifierResult } from './abuse-classifier';
+import { reviewMessage } from './review-messages';
 import logger from '../../lib/logger';
 import { trackEvent } from '../../lib/platform-events';
 
@@ -283,4 +298,112 @@ export function scanHostedArtifactAndRecord(
   }
 
   return result;
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// PHASE 3 · U3.1/U3.2 — THE TWO-STAGE SCAN
+// ════════════════════════════════════════════════════════════════════════════
+
+/** The three things a hosted publish attempt can be told. */
+export type HostedVerdict = 'pass' | 'block' | 'review';
+
+export interface HostedScanOutcome {
+  verdict: HostedVerdict;
+  /** Which stage decided. `none` only when both stages passed. */
+  decidedBy: 'stage1' | 'stage2' | 'none';
+  /** The deterministic result, always present — stage 1 always runs. */
+  stage1: HostedScanVerdict;
+  /** The classifier result, or null when stage 1 blocked and stage 2 never ran. */
+  stage2: ClassifierResult | null;
+  /** Set on a stage-1 block. The deterministic category. */
+  area?: HostedPolicyArea;
+  /** Set on a stage-2 review. AUP categories, possibly empty (an incomplete check). */
+  categories: AupCategory[];
+  /** German, user-facing. A block message or a review message — never a model's words. */
+  message?: string;
+  ruleIds: string[];
+  scannedFiles: number;
+  scannedBytes: number;
+}
+
+export interface HostedScanContext {
+  userId: string;
+  projectId?: string | null;
+  appsDomain?: string;
+}
+
+/** Injectable so the battery and the publish tests can drive stage 2 deterministically. */
+export interface TwoStageDeps {
+  stage1: typeof scanHostedArtifactAndRecord;
+  classify: typeof classifyArtifact;
+}
+
+export const defaultTwoStageDeps: TwoStageDeps = {
+  stage1: scanHostedArtifactAndRecord,
+  classify: classifyArtifact,
+};
+
+/**
+ * The scan the publish path calls. Stage 1, then — only on a pass — stage 2.
+ *
+ * ── Why a review is not an event on the `publish_blocked` funnel ─────────────
+ * A block and a hold are different outcomes and folding them into one counter
+ * would make the block rate read higher than it is, which is the direction that
+ * flatters us. Stage 1 keeps emitting `publish_blocked` (unchanged, inside
+ * `scanHostedArtifactAndRecord`); a review emits nothing here and is recorded
+ * where it belongs — as a row in the review queue, written by the publish path,
+ * which is the only place that knows the app id it is about.
+ */
+export async function runHostedPublishScan(
+  files: HostedScanFile[],
+  ctx: HostedScanContext,
+  deps: TwoStageDeps = defaultTwoStageDeps,
+): Promise<HostedScanOutcome> {
+  const s1 = deps.stage1(files, ctx);
+
+  if (s1.verdict === 'block') {
+    return {
+      verdict: 'block',
+      decidedBy: 'stage1',
+      stage1: s1,
+      stage2: null,
+      ...(s1.area ? { area: s1.area } : {}),
+      categories: [],
+      ...(s1.message ? { message: s1.message } : {}),
+      ruleIds: s1.ruleIds,
+      scannedFiles: s1.scannedFiles,
+      scannedBytes: s1.scannedBytes,
+    };
+  }
+
+  const s2 = await deps.classify(files);
+
+  if (s2.verdict === 'review') {
+    // `complete` distinguishes "we read it and wondered" from "we could not read
+    // it". The builder gets a different sentence for each, because blaming their
+    // page for our provider outage would send them off rewriting nothing.
+    const complete = s2.reason === 'flagged';
+    return {
+      verdict: 'review',
+      decidedBy: 'stage2',
+      stage1: s1,
+      stage2: s2,
+      categories: s2.categories,
+      message: reviewMessage(s2.categories, complete),
+      ruleIds: s1.ruleIds,
+      scannedFiles: s1.scannedFiles,
+      scannedBytes: s1.scannedBytes,
+    };
+  }
+
+  return {
+    verdict: 'pass',
+    decidedBy: 'none',
+    stage1: s1,
+    stage2: s2,
+    categories: [],
+    ruleIds: s1.ruleIds,
+    scannedFiles: s1.scannedFiles,
+    scannedBytes: s1.scannedBytes,
+  };
 }
