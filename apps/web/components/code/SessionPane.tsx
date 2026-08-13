@@ -21,7 +21,19 @@ import { FileCardList } from "./FileCardList";
 import { Reader } from "./Reader";
 import { DiffSheet } from "./DiffSheet";
 import { VercelConnectSheet } from "./VercelConnectSheet";
-import { HostedPublishSheet } from "./HostedPublishSheet";
+// PHASE 3 · U3.4 — loaded as its OWN CHUNK, on demand.
+//
+// A static import would ship the hosted sheet's strings — "Live auf
+// {name}.justgoblin.app", the whole beta vocabulary — inside the main editor
+// bundle that every live Act-1 user downloads. The gate would still hold (the
+// component never renders and the API still 404s), but a curious cohort user
+// reading their own JS would learn that Goblin hosts apps for someone. Splitting
+// it out means the chunk is fetched only after the API has said this account is
+// allowlisted. `ssr: false` because it only ever mounts from a click.
+const HostedPublishSheet = dynamic(
+  () => import("./HostedPublishSheet").then((m) => m.HostedPublishSheet),
+  { ssr: false },
+);
 import { LineActionSheet } from "./LineActionSheet";
 import { EditorSearchOverlay } from "./EditorSearchOverlay";
 import { JitCard } from "./JitCard";
