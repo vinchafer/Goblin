@@ -18,8 +18,14 @@ const listAppFiles = vi.fn();
 const listAppPrefixes = vi.fn();
 const getRoute = vi.fn();
 const listRouteNames = vi.fn();
+const listD1Databases = vi.fn();
 
-vi.mock('./cf-deploy', () => ({
+vi.mock('./cf-deploy', async () => ({
+  // PHASE 4: the name helpers (`isAppDatabaseName`, `appIdFromDatabaseName`) come
+  // from the REAL adapter. They are the rule that decides which databases on the
+  // account are Goblin's at all, and a hand-written stub of that rule would agree
+  // with this test and not with production.
+  ...(await vi.importActual<typeof import('./cf-deploy')>('./cf-deploy')),
   setRoute: (...a: unknown[]) => setRoute(...a),
   deleteRoute: (...a: unknown[]) => deleteRoute(...a),
   deleteAppFiles: (...a: unknown[]) => deleteAppFiles(...a),
@@ -27,6 +33,7 @@ vi.mock('./cf-deploy', () => ({
   listAppPrefixes: (...a: unknown[]) => listAppPrefixes(...a),
   getRoute: (...a: unknown[]) => getRoute(...a),
   listRouteNames: (...a: unknown[]) => listRouteNames(...a),
+  listD1Databases: (...a: unknown[]) => listD1Databases(...a),
 }));
 
 const suspendOpsApp = vi.fn();
@@ -34,6 +41,7 @@ const unsuspendOpsApp = vi.fn();
 const markOpsAppDeleted = vi.fn();
 const allKnownAppIds = vi.fn();
 const allRegisteredAppNames = vi.fn();
+const registeredD1DatabaseIds = vi.fn();
 
 vi.mock('./ops-apps-store', () => ({
   suspendOpsApp: (...a: unknown[]) => suspendOpsApp(...a),
@@ -41,12 +49,16 @@ vi.mock('./ops-apps-store', () => ({
   markOpsAppDeleted: (...a: unknown[]) => markOpsAppDeleted(...a),
   allKnownAppIds: (...a: unknown[]) => allKnownAppIds(...a),
   allRegisteredAppNames: (...a: unknown[]) => allRegisteredAppNames(...a),
+  registeredD1DatabaseIds: (...a: unknown[]) => registeredD1DatabaseIds(...a),
   findOpsAppById: vi.fn(async () => null),
   findOpsAppByName: vi.fn(async () => null),
 }));
 
 const writeOpsAudit = vi.fn();
 vi.mock('./ops-audit', () => ({ writeOpsAudit: (...a: unknown[]) => writeOpsAudit(...a) }));
+
+const teardownAppDatabase = vi.fn();
+vi.mock('./ops-d1', () => ({ teardownAppDatabase: (...a: unknown[]) => teardownAppDatabase(...a) }));
 
 const { suspendApp, unsuspendApp, teardownApp, findOrphanedApps, purgeOrphans } = await import('./ops-operator');
 import type { OpsApp } from './ops-apps-store';
@@ -74,6 +86,11 @@ beforeEach(() => {
   allKnownAppIds.mockResolvedValue([]);
   listRouteNames.mockResolvedValue(ok([]));
   allRegisteredAppNames.mockResolvedValue([]);
+  listD1Databases.mockResolvedValue(ok([]));
+  registeredD1DatabaseIds.mockResolvedValue([]);
+  // The default app has no database (APP.d1DatabaseId is null), which is what the
+  // real helper answers for it.
+  teardownAppDatabase.mockResolvedValue({ attempted: false, gone: null });
   writeOpsAudit.mockResolvedValue('written');
 });
 
@@ -323,5 +340,131 @@ describe('orphan purge', () => {
     allKnownAppIds.mockResolvedValue([]);
     await purgeOrphans(['app-verwaist'], 'vinc', 'grund');
     expect(writeOpsAudit).toHaveBeenCalledWith(expect.objectContaining({ action: 'orphan_purge', actor: 'vinc' }));
+  });
+});
+
+// ── PHASE 4 · U4.1 — the plane X1's rule reaches next ───────────────────────
+
+describe('teardown · the app’s own database (X1’s rule, one plane further)', () => {
+  const WITH_DB: OpsApp = { ...APP, d1DatabaseId: 'aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee' };
+
+  it('deletes the database and folds the VERIFIED result into ok', async () => {
+    teardownAppDatabase.mockResolvedValue({ attempted: true, gone: true });
+    const r = await teardownApp(WITH_DB, 'vinc', 'missbrauch');
+    expect(teardownAppDatabase).toHaveBeenCalledWith(WITH_DB.d1DatabaseId);
+    expect(r.d1Attempted).toBe(true);
+    expect(r.d1Gone).toBe(true);
+    expect(r.ok).toBe(true);
+  });
+
+  it('a surviving database makes the whole teardown NOT ok — this is what blocks the project delete', async () => {
+    teardownAppDatabase.mockResolvedValue({ attempted: true, gone: false });
+    const r = await teardownApp(WITH_DB, 'vinc', 'missbrauch');
+    expect(r.ok).toBe(false);
+    expect(r.warning).toContain('Einsendungen');
+  });
+
+  it('a database whose deletion could not be VERIFIED is not ok either — null is not true', async () => {
+    teardownAppDatabase.mockResolvedValue({ attempted: true, gone: null });
+    const r = await teardownApp(WITH_DB, 'vinc', 'missbrauch');
+    expect(r.ok).toBe(false);
+    expect(r.d1Gone).toBeNull();
+    expect(r.warning).toContain('nicht bestätigen');
+  });
+
+  it('the database warning outranks the R2 one — leftover bytes are ours, leftover submissions are not', async () => {
+    teardownAppDatabase.mockResolvedValue({ attempted: true, gone: false });
+    listAppFiles.mockResolvedValue(ok([{ key: 'apps/app-1/index.html', path: 'index.html', size: 1 }]));
+    const r = await teardownApp(WITH_DB, 'vinc', 'missbrauch');
+    expect(r.warning).toContain('Formular-Datenbank');
+  });
+
+  it('an app with no form is unaffected — nothing attempted, and that is not a failure', async () => {
+    const r = await teardownApp(APP, 'vinc', 'missbrauch');
+    expect(r.d1Attempted).toBe(false);
+    expect(r.d1Gone).toBeNull();
+    expect(r.ok).toBe(true);
+  });
+
+  it('records the database outcome in the audit row', async () => {
+    teardownAppDatabase.mockResolvedValue({ attempted: true, gone: true });
+    await teardownApp(WITH_DB, 'vinc', 'missbrauch');
+    expect(writeOpsAudit).toHaveBeenCalledWith(
+      expect.objectContaining({ meta: expect.objectContaining({ d1Attempted: true, d1Gone: true }) }),
+    );
+  });
+});
+
+describe('the orphan sweep · D1 databases', () => {
+  const DB = (appId: string, id: string) => ({ id, name: `goblin-app-${appId}`, jurisdiction: 'eu' });
+
+  it('finds one of OUR databases that no registry row accounts for', async () => {
+    listD1Databases.mockResolvedValue(ok([DB('app-verwaist', 'db-verwaist')]));
+    registeredD1DatabaseIds.mockResolvedValue([]);
+    allKnownAppIds.mockResolvedValue([]);
+    const r = await findOrphanedApps();
+    expect(r.d1Orphans).toEqual(['goblin-app-app-verwaist (db-verwaist)']);
+    expect(r.notes.join(' ')).toContain('Einsendungen');
+  });
+
+  it('leaves databases that are not ours alone — the account may hold other things', async () => {
+    listD1Databases.mockResolvedValue(ok([{ id: 'db-x', name: 'meine-analytics', jurisdiction: null }]));
+    registeredD1DatabaseIds.mockResolvedValue([]);
+    allKnownAppIds.mockResolvedValue([]);
+    const r = await findOrphanedApps();
+    expect(r.d1Orphans).toEqual([]);
+    expect(r.d1InCloudflare).toBe(0);
+  });
+
+  it('a recorded database is not an orphan', async () => {
+    listD1Databases.mockResolvedValue(ok([DB('app-1', 'db-1')]));
+    registeredD1DatabaseIds.mockResolvedValue([{ databaseId: 'db-1', status: 'active', appId: 'app-1' }]);
+    allKnownAppIds.mockResolvedValue(['app-1']);
+    const r = await findOrphanedApps();
+    expect(r.d1Orphans).toEqual([]);
+  });
+
+  it('a database whose id was never written back is still matched by NAME — that is the orphan worth finding', async () => {
+    // Provisioning created it and died before setOpsAppD1Database ran. The registry
+    // knows the app, not the database. Reporting this as an orphan would send the
+    // founder to delete a live app's data.
+    listD1Databases.mockResolvedValue(ok([DB('app-1', 'db-nie-eingetragen')]));
+    registeredD1DatabaseIds.mockResolvedValue([]);
+    allKnownAppIds.mockResolvedValue(['app-1']);
+    const r = await findOrphanedApps();
+    expect(r.d1Orphans).toEqual([]);
+  });
+
+  it('separates a database on a `deleted` row — a teardown that did not finish', async () => {
+    listD1Databases.mockResolvedValue(ok([DB('app-1', 'db-1')]));
+    registeredD1DatabaseIds.mockResolvedValue([{ databaseId: 'db-1', status: 'deleted', appId: 'app-1' }]);
+    allKnownAppIds.mockResolvedValue(['app-1']);
+    const r = await findOrphanedApps();
+    expect(r.d1OnDeletedApps).toEqual(['goblin-app-app-1 (db-1)']);
+  });
+
+  it('refuses to answer about databases when D1 cannot be read — never a confident empty list', async () => {
+    listD1Databases.mockResolvedValue(cfErr('auth', 'kein Zugriff'));
+    const r = await findOrphanedApps();
+    expect(r.d1Orphans).toBeNull();
+    expect(r.d1InCloudflare).toBeNull();
+    expect(r.notes.join(' ')).toContain('D1 konnte nicht gelesen werden');
+  });
+
+  it('refuses to answer about databases when the registry cannot be read', async () => {
+    listD1Databases.mockResolvedValue(ok([DB('app-1', 'db-1')]));
+    registeredD1DatabaseIds.mockResolvedValue(null);
+    const r = await findOrphanedApps();
+    expect(r.d1Orphans).toBeNull();
+  });
+
+  it('answers about databases even when R2 is unreadable — the three halves are independent', async () => {
+    listAppPrefixes.mockResolvedValue(cfErr('upstream', 'R2 weg'));
+    listD1Databases.mockResolvedValue(ok([DB('app-verwaist', 'db-verwaist')]));
+    registeredD1DatabaseIds.mockResolvedValue([]);
+    allKnownAppIds.mockResolvedValue([]);
+    const r = await findOrphanedApps();
+    expect(r.orphans).toBeNull();
+    expect(r.d1Orphans).toEqual(['goblin-app-app-verwaist (db-verwaist)']);
   });
 });

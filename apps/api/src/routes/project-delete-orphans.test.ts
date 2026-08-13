@@ -21,16 +21,28 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 // ── The substrate: an in-memory R2 + KV the mocked adapter reads and writes ──
 const r2 = new Map<string, number>(); // key → size
 const kv = new Map<string, { name: string; appId: string; status: string }>();
+/** PHASE 4: the in-memory D1 account. id → the database Cloudflare would report. */
+const d1 = new Map<string, { id: string; name: string; jurisdiction: string | null }>();
 const deleteBatchSizes: number[] = [];
 /** Set to a message to make the next R2 delete fail — the "cannot finish" case. */
 let r2DeleteFails: string | null = null;
 let kvDeleteFails: string | null = null;
+/**
+ * PHASE 4 — make the database deletion fail. This is the newest way a teardown can
+ * half-complete, and the one where what is left behind is other people's data.
+ */
+let d1DeleteFails: string | null = null;
 
 const ok = <T>(value: T) => ({ ok: true as const, value });
 const cfErr = (message: string) => ({ ok: false as const, error: { code: 'upstream', message } });
 const DELETE_BATCH = 1000;
 
-vi.mock('../services/cf-deploy', () => ({
+vi.mock('../services/cf-deploy', async () => ({
+  // The pure helpers (`isAppDatabaseName`, `appIdFromDatabaseName`) come from the
+  // REAL adapter: they encode which databases on the account belong to Goblin, and
+  // restating that rule here would be a second implementation that agrees with the
+  // test rather than with production.
+  ...(await vi.importActual<typeof import('../services/cf-deploy')>('../services/cf-deploy')),
   opsAppsDomain: () => 'justgoblin.app',
   appPrefix: (appId: string) => `apps/${appId}/`,
   routeKey: (name: string) => `route:${name}`,
@@ -67,13 +79,19 @@ vi.mock('../services/cf-deploy', () => ({
     return ok({ name, appId, status: 'active' });
   },
   listRouteNames: async () => ok([...kv.keys()].map((k) => k.slice('route:'.length))),
+  listD1Databases: async () => ok([...d1.values()]),
+  getD1Database: async (id: string) => ok(d1.get(id) ?? null),
+  deleteD1Database: async (id: string) => {
+    if (d1DeleteFails) return cfErr(d1DeleteFails);
+    return ok({ deleted: d1.delete(id) });
+  },
 }));
 
 // ── The registry: an in-memory `ops_apps` ───────────────────────────────────
 interface Row {
   appId: string; userId: string; projectId: string | null; appName: string;
   status: string; capsProfile: string; r2Prefix: string; routeKey: string;
-  workerScriptName: null; d1DatabaseId: null; lastPublishedAt: null; createdAt: string;
+  workerScriptName: null; d1DatabaseId: string | null; lastPublishedAt: null; createdAt: string;
 }
 let registry: Row[] = [];
 let registryUnreadable = false;
@@ -104,6 +122,10 @@ vi.mock('../services/ops-apps-store', () => ({
   },
   allKnownAppIds: async () => registry.map((r) => r.appId),
   allRegisteredAppNames: async () => registry.map((r) => ({ appName: r.appName, status: r.status })),
+  registeredD1DatabaseIds: async () =>
+    registry
+      .filter((r) => r.d1DatabaseId)
+      .map((r) => ({ databaseId: r.d1DatabaseId as string, status: r.status, appId: r.appId })),
   suspendOpsApp: async () => true,
   unsuspendOpsApp: async () => true,
 }));
@@ -173,14 +195,23 @@ const APP_ID = 'a1111111-1111-4111-8111-111111111111';
 const PROJ = '11111111-1111-4111-8111-111111111111';
 const PROJ_B = '22222222-2222-4222-8222-222222222222';
 
-function publishApp(projectId: string, appId: string, appName: string, fileCount: number) {
+function publishApp(
+  projectId: string,
+  appId: string,
+  appName: string,
+  fileCount: number,
+  /** PHASE 4 — publish it WITH a form, i.e. with its own submissions database. */
+  opts: { withForm?: boolean } = {},
+) {
+  const databaseId = opts.withForm ? `db-${appId}` : null;
   registry.push({
     appId, userId: 'user-1', projectId, appName, status: 'active', capsProfile: 'free-static',
     r2Prefix: `apps/${appId}/`, routeKey: `route:${appName}`, workerScriptName: null,
-    d1DatabaseId: null, lastPublishedAt: null, createdAt: '2026-08-01T00:00:00Z',
+    d1DatabaseId: databaseId, lastPublishedAt: null, createdAt: '2026-08-01T00:00:00Z',
   });
   for (let i = 0; i < fileCount; i += 1) r2.set(`apps/${appId}/asset-${i}.js`, 100);
   kv.set(`route:${appName}`, { name: appName, appId, status: 'active' });
+  if (databaseId) d1.set(databaseId, { id: databaseId, name: `goblin-app-${appId}`, jurisdiction: 'eu' });
 }
 
 const del = (id: string) => projects.request(`/${id}`, { method: 'DELETE' });
@@ -190,9 +221,10 @@ const bulkDel = (ids: string[]) =>
   });
 
 beforeEach(() => {
-  r2.clear(); kv.clear(); registry = []; auditRows.length = 0;
+  r2.clear(); kv.clear(); d1.clear(); registry = []; auditRows.length = 0;
   deleteBatchSizes.length = 0; rowDeletes.length = 0;
-  r2DeleteFails = null; kvDeleteFails = null; rowDeleteFails = null; registryUnreadable = false;
+  r2DeleteFails = null; kvDeleteFails = null; d1DeleteFails = null;
+  rowDeleteFails = null; registryUnreadable = false;
   projectRows.clear();
   projectRows.set(PROJ, { id: PROJ, name: 'Mein Laden', preview_url: null });
   projectRows.set(PROJ_B, { id: PROJ_B, name: 'Zweites', preview_url: null });
@@ -402,5 +434,62 @@ describe('bulk delete', () => {
     const sweep = await findOrphanedApps();
     expect(sweep.orphans).toEqual([]);
     expect(sweep.routeOrphans).toEqual([]);
+  });
+});
+
+// ── PHASE 4 — the same rule, now that an app can hold other people's data ───
+//
+// X1 said: a deleted project must not leave a Living App serving. Phase 4 adds a
+// second thing a project can leave behind, and it is worse than a live URL — the
+// submissions strangers left in somebody's contact form. These four cases are the
+// X1 regression re-run against that object.
+
+describe('delete a project whose app has a FORM', () => {
+  it('removes the submissions database too — proven by reading D1 back', async () => {
+    publishApp(PROJ, APP_ID, 'meinladen', 3, { withForm: true });
+    expect(d1.size).toBe(1);
+
+    const res = await del(PROJ);
+    expect(res.status).toBe(200);
+
+    expect(d1.size).toBe(0);
+    const sweep = await findOrphanedApps();
+    expect(sweep.d1Orphans).toEqual([]);
+    expect(sweep.d1OnDeletedApps).toEqual([]);
+  });
+
+  it('REFUSES the delete when the database cannot be removed — and the project survives', async () => {
+    publishApp(PROJ, APP_ID, 'meinladen', 3, { withForm: true });
+    d1DeleteFails = 'D1 sagt nein';
+
+    const res = await del(PROJ);
+    // Same contract as the KV/R2 cases: 409, nothing released.
+    expect(res.status).toBe(409);
+    const body = (await res.json()) as { message?: string };
+    // The builder is told it is their visitors' data that is stuck, not "an address".
+    expect(body.message).toContain('Einsendungen');
+
+    expect(projectRows.has(PROJ)).toBe(true);
+    expect(registry.find((r) => r.appId === APP_ID)?.projectId).toBe(PROJ);
+    expect(d1.size).toBe(1);
+  });
+
+  it('a failed database teardown is retryable — the second attempt finishes the job', async () => {
+    publishApp(PROJ, APP_ID, 'meinladen', 3, { withForm: true });
+    d1DeleteFails = 'D1 sagt nein';
+    expect((await del(PROJ)).status).toBe(409);
+
+    d1DeleteFails = null;
+    expect((await del(PROJ)).status).toBe(200);
+    expect(d1.size).toBe(0);
+    expect(projectRows.has(PROJ)).toBe(false);
+  });
+
+  it('an app with NO form is untouched by any of this — no D1 call, no behaviour change', async () => {
+    publishApp(PROJ, APP_ID, 'meinladen', 3);
+    d1DeleteFails = 'this must never be reached';
+    const res = await del(PROJ);
+    expect(res.status).toBe(200);
+    expect(d1.size).toBe(0);
   });
 });

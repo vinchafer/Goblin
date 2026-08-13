@@ -457,6 +457,70 @@ export async function allRegisteredAppNames(
 }
 
 /**
+ * PHASE 4 · U4.1 — every D1 database id the registry has recorded, with the status
+ * of the app it belongs to. The D1 orphan sweep's right-hand side.
+ *
+ * `deleted` rows are INCLUDED, and that is the point: their database should be
+ * gone, and if Cloudflare still lists it, that is a teardown that did not finish —
+ * which for this plane means other people's submissions outliving the app they
+ * were sent to. Rows with no database (every app without a form) are skipped
+ * rather than returned as nulls; they are not a fact about D1.
+ *
+ * `null` on failure, never `[]` — the same rule as `allKnownAppIds`, for the same
+ * reason: "I could not ask" must not read as "there are none", which would mark
+ * every database on the account an orphan.
+ */
+export async function registeredD1DatabaseIds(
+  sb: Sb = getSupabaseAdmin(),
+): Promise<Array<{ databaseId: string; status: OpsAppStatus; appId: string }> | null> {
+  if (!(await opsAppsTableAvailable(sb))) return null;
+  const { data, error } = await sb.from('ops_apps').select('app_id, d1_database_id, status');
+  if (error) {
+    logger.warn({ reason: error.message }, 'ops_apps_list_d1_failed');
+    return null;
+  }
+  return (data ?? [])
+    .map((r) => r as { app_id: unknown; d1_database_id: unknown; status: unknown })
+    .filter((r) => typeof r.d1_database_id === 'string' && r.d1_database_id.length > 0)
+    .map((r) => ({
+      databaseId: String(r.d1_database_id),
+      status: String(r.status) as OpsAppStatus,
+      appId: String(r.app_id),
+    }));
+}
+
+/**
+ * Record the database that was just provisioned for an app.
+ *
+ * `d1_database_id` has been sitting nullable in 0099 since Phase 1, described
+ * there as the upgrade trigger written into the schema. This is the write that
+ * fills it, and Phase 4 needs NO migration because of it.
+ *
+ * `false` is a refusal the caller must act on, not a warning to log: an app whose
+ * database exists in Cloudflare but is not recorded here is an orphan the moment
+ * anything goes wrong afterwards — the sweep finds it only by name, the teardown
+ * never sees it at all. The publish path treats a `false` here as a failed
+ * publish and tears the database back down.
+ */
+export async function setOpsAppD1Database(
+  appId: string,
+  databaseId: string,
+  sb: Sb = getSupabaseAdmin(),
+): Promise<boolean> {
+  if (!(await opsAppsTableAvailable(sb))) return false;
+  const { error } = await sb
+    .from('ops_apps')
+    .update({ d1_database_id: databaseId, updated_at: new Date().toISOString() })
+    .eq('app_id', appId);
+  if (error) {
+    logger.warn({ appId, reason: error.message }, 'ops_apps_set_d1_failed');
+    return false;
+  }
+  logger.info({ appId }, 'ops_apps_d1_recorded');
+  return true;
+}
+
+/**
  * Cut a torn-down app loose from its project, so the tombstone OUTLIVES the
  * project row (X1).
  *

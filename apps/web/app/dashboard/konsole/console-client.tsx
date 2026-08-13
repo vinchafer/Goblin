@@ -1064,7 +1064,19 @@ export function OpsConsole({ initialStatus }: { initialStatus: StatusPayload }) 
         {orphanReport ? (
           (() => {
             const verdict = verdictOf(orphanReport);
+            // Ordered by CONSEQUENCE, heaviest first — an operator reading top to
+            // bottom on a phone should meet the worst finding before the cheapest.
+            // Phase 4 puts the two database rows at the top for that reason: a
+            // reachable orphaned hostname is a nuisance, an orphaned database is
+            // somebody's visitors' personal data with nobody accountable for it.
             const rows = [
+              { key: 'd1Orphans' as const, label: s.orphans.d1Orphans, meaning: s.orphans.d1OrphansMeaning, finding: findingOf(orphanReport.d1Orphans) },
+              {
+                key: 'd1OnDeletedApps' as const,
+                label: s.orphans.d1OnDeletedApps,
+                meaning: s.orphans.d1OnDeletedAppsMeaning,
+                finding: findingOf(orphanReport.d1OnDeletedApps),
+              },
               { key: 'routeOrphans' as const, label: s.orphans.routeOrphans, meaning: s.orphans.routeOrphansMeaning, finding: findingOf(orphanReport.routeOrphans) },
               {
                 key: 'routesOnDeletedApps' as const,
@@ -1078,6 +1090,9 @@ export function OpsConsole({ initialStatus }: { initialStatus: StatusPayload }) 
               [s.orphans.knownApps, orphanReport.knownApps],
               [s.orphans.routesInKv, orphanReport.routesInKv],
               [s.orphans.prefixesInR2, orphanReport.prefixesInR2],
+              // `?? null` and not `?? 0`: an API that does not send this has not
+              // counted zero databases, it has not counted at all.
+              [s.orphans.d1InCloudflare, orphanReport.d1InCloudflare ?? null],
             ];
             return (
               <>

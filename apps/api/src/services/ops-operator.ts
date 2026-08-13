@@ -25,11 +25,14 @@
  */
 
 import {
+  appIdFromDatabaseName,
   deleteAppFiles,
   deleteRoute,
   getRoute,
+  isAppDatabaseName,
   listAppFiles,
   listAppPrefixes,
+  listD1Databases,
   listRouteNames,
   setRoute,
 } from './cf-deploy';
@@ -39,10 +42,12 @@ import {
   findOpsAppById,
   findOpsAppByName,
   markOpsAppDeleted,
+  registeredD1DatabaseIds,
   suspendOpsApp,
   unsuspendOpsApp,
   type OpsApp,
 } from './ops-apps-store';
+import { teardownAppDatabase } from './ops-d1';
 import { writeOpsAudit, type OpsAuditAction, type OpsAuditOutcome } from './ops-audit';
 import { dailyRequestBudget } from './ops-caps';
 import logger from '../lib/logger';
@@ -157,6 +162,19 @@ export interface TeardownResult extends OperatorResult {
   /** The proof: R2 prefix empty AND KV route gone. null = the check itself failed. */
   orphansRemaining: number | null;
   routeGone: boolean | null;
+  /**
+   * PHASE 4. The app's own D1 database, RE-READ after the delete.
+   *
+   *   • `true`  — verified gone.
+   *   • `false` — the delete did not take. The submissions of other people's
+   *               visitors are still on Goblin's account with no app attached.
+   *   • `null`  — there was no database (an app without a form), or the
+   *               verification itself could not run. Distinguished by
+   *               `d1Attempted`, because "there was nothing to delete" and "I could
+   *               not check" must never collapse into the same answer.
+   */
+  d1Gone: boolean | null;
+  d1Attempted: boolean;
 }
 
 /**
@@ -165,10 +183,21 @@ export interface TeardownResult extends OperatorResult {
  *   route first  → the app stops being reachable before its files start vanishing,
  *                  so nobody ever gets a half-deleted app serving broken pages
  *   files second → batched (the #18 anti-pattern is not repeated)
+ *   D1 third     → PHASE 4. After the route, because a database deleted while the
+ *                  form is still reachable would answer real visitors with a
+ *                  failure; after the files, because the same is true of the page
+ *                  that carries the form.
  *   registry     → terminal state, row KEPT so the name stays out of circulation
- *   VERIFY       → re-list the prefix and re-read the route. "I deleted it" is a
- *                  claim; "I looked and nothing is there" is evidence, and this is
- *                  the one place in the phase where the difference is the point.
+ *   VERIFY       → re-list the prefix, re-read the route, re-read the database.
+ *                  "I deleted it" is a claim; "I looked and nothing is there" is
+ *                  evidence, and this is the one place in the phase where the
+ *                  difference is the point.
+ *
+ * PHASE 4 · X1's rule, one plane further: a D1 database that outlives its app is
+ * the same defect class as an orphaned route, and worse in kind — it is other
+ * people's personal data with no app and no owner attached. So `d1Gone !== true`
+ * makes the whole teardown `ok: false`, which is what makes the project delete
+ * refuse (ops-project-teardown.ts) instead of half-completing.
  */
 export async function teardownApp(
   app: OpsApp,
@@ -183,6 +212,9 @@ export async function teardownApp(
 ): Promise<TeardownResult> {
   const routeDelete = await deleteRoute(app.appName);
   const filesDelete = await deleteAppFiles(app.appId);
+  // PHASE 4 — the app's own submissions database. `teardownAppDatabase` re-reads
+  // after deleting, so `gone` is evidence rather than a claim.
+  const d1 = await teardownAppDatabase(app.d1DatabaseId);
   const registry = await markOpsAppDeleted(app.appId);
 
   // The orphan check, after the fact, against the substrate itself.
@@ -191,9 +223,15 @@ export async function teardownApp(
 
   const orphansRemaining = remaining.ok ? remaining.value.length : null;
   const routeGone = routeAfter.ok ? routeAfter.value === null : null;
+  // An app that never had a database has nothing to prove here; one that had one
+  // must prove it is gone. Written as an explicit two-case expression rather than
+  // a truthiness test, because `null` means two different things in this field.
+  const d1Ok = d1.attempted ? d1.gone === true : true;
 
   const result: TeardownResult = {
-    ok: routeDelete.ok && filesDelete.ok && registry && orphansRemaining === 0 && routeGone === true,
+    ok:
+      routeDelete.ok && filesDelete.ok && registry
+      && orphansRemaining === 0 && routeGone === true && d1Ok,
     appId: app.appId,
     appName: app.appName,
     route: routeDelete.ok ? 'ok' : 'failed',
@@ -203,10 +241,22 @@ export async function teardownApp(
     batches: filesDelete.ok ? filesDelete.value.batches : 0,
     orphansRemaining,
     routeGone,
+    d1Gone: d1.attempted ? d1.gone : null,
+    d1Attempted: d1.attempted,
   };
 
   if (!filesDelete.ok) result.detail = filesDelete.error.message;
-  if (orphansRemaining === null || routeGone === null) {
+  else if (d1.detail) result.detail = d1.detail;
+
+  // The D1 warning comes FIRST, ahead of the R2 and KV ones: leftover bytes are a
+  // cost and a reachable address is a nuisance, but a surviving database is other
+  // people's personal data. If only one line reaches the operator, it is this one.
+  if (d1.attempted && d1.gone !== true) {
+    result.warning =
+      d1.gone === false
+        ? 'Die Formular-Datenbank dieser App ist NICHT gelöscht — dort liegen noch Einsendungen von Besuchern.'
+        : 'Ob die Formular-Datenbank dieser App gelöscht ist, liess sich nicht bestätigen — bitte manuell nachsehen.';
+  } else if (orphansRemaining === null || routeGone === null) {
     result.warning = 'Die Prüfung auf Reste konnte nicht abgeschlossen werden — bitte manuell nachsehen.';
   } else if (orphansRemaining > 0) {
     result.warning = `${orphansRemaining} Datei(en) sind noch in R2 — die App ist nicht vollständig entfernt.`;
@@ -226,13 +276,18 @@ export async function teardownApp(
       batches: result.batches,
       orphansRemaining,
       routeGone,
+      d1Attempted: result.d1Attempted,
+      d1Gone: result.d1Gone,
       route: result.route,
       registry: result.registry,
       ...(opts.meta ?? {}),
     },
   });
 
-  logger.warn({ appId: app.appId, deleted: result.filesDeleted, orphansRemaining }, 'ops_app_teardown');
+  logger.warn(
+    { appId: app.appId, deleted: result.filesDeleted, orphansRemaining, d1Gone: result.d1Gone },
+    'ops_app_teardown',
+  );
   return result;
 }
 
@@ -252,9 +307,24 @@ export interface OrphanReport {
    * because the fix differs: here there IS a row, and it says this should be gone.
    */
   routesOnDeletedApps: string[] | null;
+  /**
+   * PHASE 4 · U4.1 — D1 databases this platform created whose app the registry no
+   * longer accounts for. Reported as `name (id)` so an operator can act on it in
+   * the Cloudflare dashboard without a second lookup.
+   *
+   * This is the newest and, of the three, the one that matters most: an orphaned
+   * R2 prefix is storage cost, an orphaned KV route is a reachable address, and an
+   * orphaned database is OTHER PEOPLE'S PERSONAL DATA sitting on Goblin's account
+   * with no app, no owner and no retention rule attached to it. `null` = the check
+   * could not be completed, never silently `[]`.
+   */
+  d1Orphans: string[] | null;
+  /** Databases whose registry row says `deleted` — a teardown that did not finish. */
+  d1OnDeletedApps: string[] | null;
   knownApps: number | null;
   prefixesInR2: number | null;
   routesInKv: number | null;
+  d1InCloudflare: number | null;
   notes: string[];
   timestamp: string;
 }
@@ -306,7 +376,59 @@ export async function findOrphanedApps(): Promise<OrphanReport> {
     }
   }
 
-  const base = { routeOrphans, routesOnDeletedApps, routesInKv, notes, timestamp: new Date().toISOString() };
+  // ── The D1 half (PHASE 4 · U4.1), swept independently for the same reason ──
+  // A database is matched to an app by its NAME (`goblin-app-{appId}`) and, as a
+  // second and stronger check, by the id the registry recorded. Name alone would
+  // miss a database whose app id was reused; id alone would miss one created by a
+  // provisioning run that died before it could write the id back — which is
+  // exactly the orphan worth finding. Both, therefore.
+  const databases = await listD1Databases();
+  const registeredIds = await registeredD1DatabaseIds();
+  let d1Orphans: string[] | null = null;
+  let d1OnDeletedApps: string[] | null = null;
+  const d1InCloudflare = databases.ok ? databases.value.filter((d) => isAppDatabaseName(d.name)).length : null;
+
+  if (!databases.ok) {
+    notes.push(`D1 konnte nicht gelesen werden: ${databases.error.message}`);
+  } else if (registeredIds === null || known === null) {
+    notes.push('Die Registry konnte nicht gelesen werden — ohne sie sähe jede Datenbank wie ein Waisenkind aus.');
+  } else {
+    const knownIds = new Set(known);
+    const byId = new Map(registeredIds.map((r) => [r.databaseId, r.status]));
+    const ours = databases.value.filter((d) => isAppDatabaseName(d.name));
+    d1Orphans = ours
+      .filter((d) => {
+        const appId = appIdFromDatabaseName(d.name);
+        return !byId.has(d.id) && !(appId !== null && knownIds.has(appId));
+      })
+      .map((d) => `${d.name} (${d.id})`);
+    d1OnDeletedApps = ours.filter((d) => byId.get(d.id) === 'deleted').map((d) => `${d.name} (${d.id})`);
+    if (d1Orphans.length > 0) {
+      logger.error({ count: d1Orphans.length }, 'ops_orphaned_d1_found');
+      notes.push(
+        `${d1Orphans.length} verwaiste Formular-Datenbank(en) ohne Registry-Zeile — dort liegen möglicherweise `
+        + 'Einsendungen von Besuchern einer App, die es nicht mehr gibt.',
+      );
+    }
+    if (d1OnDeletedApps.length > 0) {
+      logger.error({ count: d1OnDeletedApps.length }, 'ops_d1_on_deleted_apps_found');
+      notes.push(
+        `${d1OnDeletedApps.length} Formular-Datenbank(en) gehören zu einer als gelöscht markierten App — `
+        + 'der Abbau ist dort nicht fertig geworden.',
+      );
+    }
+  }
+
+  const base = {
+    routeOrphans,
+    routesOnDeletedApps,
+    routesInKv,
+    d1Orphans,
+    d1OnDeletedApps,
+    d1InCloudflare,
+    notes,
+    timestamp: new Date().toISOString(),
+  };
 
   if (!prefixes.ok) {
     notes.push(`R2 konnte nicht gelesen werden: ${prefixes.error.message}`);

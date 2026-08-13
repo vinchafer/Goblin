@@ -158,6 +158,18 @@ export interface CfWorker {
  * these: without them it could only talk to Cloudflare over the REST API, which
  * would mean shipping CF_API_TOKEN into a script that runs on every visitor
  * request. Bindings are the mechanism that keeps the token in Railway.
+ *
+ * ── PHASE 4: why NO `d1` case was added here ─────────────────────────────────
+ * The Phase-4 preflight expected this union to widen. It did not, and the reason
+ * is the reason the ingest endpoint is not in the router (decision P4-e):
+ * bindings are STATIC per Worker deploy, and Phase 4 gives every form-enabled app
+ * its OWN database. Binding N app databases to the one shared router would mean
+ * re-uploading the router on every provision — a fleet-wide redeploy triggered by
+ * one builder pressing publish — and the alternative (the router calling the D1
+ * REST API itself) means shipping CF_API_TOKEN to the edge, which the header of
+ * this file rules out. So the platform API talks to D1 over REST, no Worker holds
+ * a database, and this union stays closed. A `d1` case here would be code nothing
+ * calls.
  */
 export type CfBinding =
   | { type: 'kv_namespace'; name: string; namespace_id: string }
@@ -244,6 +256,87 @@ export function r2Jurisdiction(): R2JurisdictionRead {
     return { ok: true, jurisdiction: raw as R2Jurisdiction };
   }
   return { ok: false, raw };
+}
+
+/**
+ * The jurisdictions D1 can pin a DATABASE to — the same idea as R2's, and a
+ * DIFFERENT set of values, which is the whole reason this type exists separately.
+ *
+ * ── Checked against live docs, not recalled (retrieved 2026-08-13) ───────────
+ *   • https://developers.cloudflare.com/d1/configuration/data-location/ —
+ *     "Jurisdictions are used to create D1 databases that only run and store data
+ *     within a region to help comply with data locality regulations such as the
+ *     GDPR or FedRAMP." Supported: `eu`, `fedramp`. And the constraint that makes
+ *     this a provisioning-time decision rather than a setting: "Jurisdictions can
+ *     only be set on database creation and cannot be added or updated after the
+ *     database exists."
+ *   • https://developers.cloudflare.com/api/resources/d1/subresources/database/methods/create/
+ *     — `jurisdiction` is a documented body field of POST /d1/database, alongside
+ *     `primary_location_hint`, and it comes back on the created object.
+ *
+ * A LOCATION HINT IS NOT THIS. The same page says a hint "does not guarantee that
+ * D1 runs in your preferred location. Instead, it will run in the nearest possible
+ * location (by latency) to your preference." A hint is a preference; a
+ * jurisdiction is a constraint. The privacy page says data stays in the EU, so
+ * only the constraint is usable — and `d1Jurisdiction()` below refuses rather than
+ * quietly falling back to a hint.
+ *
+ * `fedramp-high` is deliberately absent: R2 has it, D1 does not, and mapping it to
+ * something D1 does accept would be inventing a residency claim.
+ */
+export type D1Jurisdiction = 'eu' | 'fedramp';
+
+export const D1_JURISDICTIONS: readonly D1Jurisdiction[] = ['eu', 'fedramp'];
+
+/**
+ * What jurisdiction a new app database must be created in — derived from the SAME
+ * variable that governs R2, never from one of its own.
+ *
+ * One variable, because the promise on the privacy page is one sentence about
+ * Goblin's storage and not one per product. A second variable would let R2 and D1
+ * drift apart silently, and the first anyone would notice is a data-residency
+ * claim that stopped being true.
+ *
+ * Three outcomes, all of them explicit:
+ *   • `{ ok: true, jurisdiction: 'eu' }`   — create the database in the EU.
+ *   • `{ ok: true, jurisdiction: null }`   — CF_R2_JURISDICTION is unset. The
+ *     default namespace is a supported configuration for R2 and it is one here.
+ *   • `{ ok: false, … }`                   — the founder said something about
+ *     residency that D1 cannot honour (`fedramp-high`), or said something nobody
+ *     recognises. Provisioning REFUSES. Rule 8 of this phase: escalate rather than
+ *     quietly storing EU data somewhere else.
+ */
+export type D1JurisdictionRead =
+  | { ok: true; jurisdiction: D1Jurisdiction | null }
+  | { ok: false; raw: string; reason: 'unrecognised' | 'unsupported_by_d1' };
+
+export function d1Jurisdiction(): D1JurisdictionRead {
+  const r2 = r2Jurisdiction();
+  if (!r2.ok) return { ok: false, raw: r2.raw, reason: 'unrecognised' };
+  if (r2.jurisdiction === null) return { ok: true, jurisdiction: null };
+  if ((D1_JURISDICTIONS as readonly string[]).includes(r2.jurisdiction)) {
+    return { ok: true, jurisdiction: r2.jurisdiction as D1Jurisdiction };
+  }
+  return { ok: false, raw: r2.jurisdiction, reason: 'unsupported_by_d1' };
+}
+
+/** A D1 database, as this adapter reads it back. */
+export interface CfD1Database {
+  /** Cloudflare calls it `uuid`; it is what every later call addresses. */
+  id: string;
+  name: string;
+  /** What Cloudflare says it is — recorded, never assumed from what we asked for. */
+  jurisdiction: string | null;
+  createdAt?: string;
+}
+
+/** One statement's result. `rows` is whatever the SELECT returned; never logged. */
+export interface CfD1QueryResult {
+  rows: Array<Record<string, unknown>>;
+  rowsRead: number;
+  rowsWritten: number;
+  /** Cloudflare's own duration, for the ledger's cost line. */
+  durationMs: number;
 }
 
 /** A DNS record, as far as this adapter cares. */
@@ -1134,6 +1227,239 @@ export async function listWorkers(): Promise<CfResult<{ count: number; latencyMs
   const res = await cfFetch<Array<{ id?: string }>>('workers:list', workersBase(), { method: 'GET' });
   if (!res.ok) return { ok: false, error: res.error };
   return ok({ count: Array.isArray(res.value) ? res.value.length : 0, latencyMs: Date.now() - started });
+}
+
+// ── D1 (Phase 4 · U4.1) ─────────────────────────────────────────────────────
+//
+// The first stateful thing on the user-app plane. Everything above this line
+// serves bytes; from here on Goblin holds other people's data, which is why these
+// five calls are written more defensively than the rest of the file.
+//
+// ── Why REST and not a Worker binding ────────────────────────────────────────
+// See the note on CfBinding. One database per app, one shared router: a binding
+// would have to be re-declared on every provision, and the router must never hold
+// CF_API_TOKEN. So the platform API is the only thing that ever touches a user
+// app's database, over the same authenticated REST channel as KV and Workers.
+//
+// ── The database NAME is load-bearing ────────────────────────────────────────
+// `goblin-app-{appId}` is not cosmetic. Cloudflare's list endpoint returns names
+// and ids, and the orphan sweep (U4.1) has to be able to ask "is this database
+// one of ours, and does the registry still know about it?" — the answer to the
+// first half is the prefix. A database of ours whose registry row is gone is the
+// same defect class as an orphaned KV route (X1's rule, extended to a plane that
+// did not exist when it was written).
+//
+// Cost: docs/GOBLIN_CONSUMPTION_LEDGER.md → M-F1.
+
+/** The one place an app's database name is composed. */
+export function d1AppDatabaseName(appId: string): string {
+  return `${D1_APP_DB_PREFIX}${appId}`;
+}
+
+export const D1_APP_DB_PREFIX = 'goblin-app-';
+
+/** Is this a database this platform created for an app? Name only — no I/O. */
+export function isAppDatabaseName(name: string): boolean {
+  return typeof name === 'string' && name.startsWith(D1_APP_DB_PREFIX);
+}
+
+/** The app id a platform database name carries, or null if it is not one of ours. */
+export function appIdFromDatabaseName(name: string): string | null {
+  if (!isAppDatabaseName(name)) return null;
+  const id = name.slice(D1_APP_DB_PREFIX.length);
+  return APP_ID_RE.test(id) ? id : null;
+}
+
+function d1Base(): string {
+  return `/accounts/${env('CF_ACCOUNT_ID')}/d1/database`;
+}
+
+/** Cloudflare's own shape for a database id — a uuid. Validated before it composes a URL. */
+const D1_ID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * Create the database for one app.
+ *
+ * The jurisdiction is NOT a parameter. It is read from the environment inside this
+ * function, because a caller that could pass one could pass the wrong one, and the
+ * value is unchangeable after creation — a mistake here is permanent for that
+ * app's data. A refusal (`d1Jurisdiction().ok === false`) is a `not_configured`
+ * error, not a silent creation in the default namespace.
+ */
+export async function createD1Database(appId: string): Promise<CfResult<CfD1Database>> {
+  const idErr = badAppId(appId);
+  if (idErr) return { ok: false, error: idErr };
+
+  const jur = d1Jurisdiction();
+  if (!jur.ok) {
+    return fail(
+      'not_configured',
+      jur.reason === 'unsupported_by_d1'
+        ? `CF_R2_JURISDICTION=${jur.raw} has no D1 equivalent — refusing to create an app database outside the jurisdiction the privacy page claims`
+        : `CF_R2_JURISDICTION is set to something unrecognised — refusing to create an app database with an unknown data residency`,
+    );
+  }
+
+  const res = await cfFetch<{ uuid?: string; name?: string; jurisdiction?: string; created_at?: string }>(
+    'd1:create',
+    d1Base(),
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: d1AppDatabaseName(appId),
+        ...(jur.jurisdiction ? { jurisdiction: jur.jurisdiction } : {}),
+      }),
+    },
+  );
+  if (!res.ok) return { ok: false, error: res.error };
+  const uuid = res.value?.uuid ?? '';
+  if (!D1_ID_RE.test(uuid)) {
+    return fail('upstream', 'd1:create: Cloudflare returned no usable database id');
+  }
+  // What Cloudflare SAYS it created, not what we asked for. If the two disagree the
+  // caller must be able to see it — a database we believe is in the EU and is not
+  // would make the privacy page false without anything failing.
+  const created: CfD1Database = {
+    id: uuid,
+    name: res.value?.name ?? d1AppDatabaseName(appId),
+    jurisdiction: res.value?.jurisdiction ?? null,
+    ...(res.value?.created_at ? { createdAt: res.value.created_at } : {}),
+  };
+  logger.info({ appId, jurisdiction: created.jurisdiction }, 'cf_d1_created');
+  return ok(created);
+}
+
+/** Read one database back. Absent → `null`, so "is it gone?" is answerable. */
+export async function getD1Database(databaseId: string): Promise<CfResult<CfD1Database | null>> {
+  if (!D1_ID_RE.test(databaseId)) return fail('invalid_input', 'invalid d1 database id');
+  const res = await cfFetch<{ uuid?: string; name?: string; jurisdiction?: string; created_at?: string }>(
+    'd1:get',
+    `${d1Base()}/${databaseId}`,
+    { method: 'GET' },
+    { notFoundIsNull: true },
+  );
+  if (!res.ok) {
+    if (res.error.code === 'not_found') return ok(null);
+    return { ok: false, error: res.error };
+  }
+  if (!res.value) return ok(null);
+  return ok({
+    id: res.value.uuid ?? databaseId,
+    name: res.value.name ?? '',
+    jurisdiction: res.value.jurisdiction ?? null,
+    ...(res.value.created_at ? { createdAt: res.value.created_at } : {}),
+  });
+}
+
+/**
+ * Every D1 database on the account — the orphan sweep's third left-hand side.
+ *
+ * Paginated, and running out of pages is an ERROR rather than a short list, for
+ * the same reason as `listRouteNames`: a truncated sweep that reads as complete
+ * would report "no orphans" about a namespace it never finished looking at.
+ */
+export async function listD1Databases(): Promise<CfResult<CfD1Database[]>> {
+  const out: CfD1Database[] = [];
+  const PER_PAGE = 100;
+  const MAX_PAGES = 100;
+
+  for (let page = 1; page <= MAX_PAGES; page += 1) {
+    const res = await cfFetch<Array<{ uuid?: string; name?: string; jurisdiction?: string; created_at?: string }>>(
+      'd1:list',
+      `${d1Base()}?page=${page}&per_page=${PER_PAGE}`,
+      { method: 'GET' },
+    );
+    if (!res.ok) return { ok: false, error: res.error };
+    const batch = res.value ?? [];
+    for (const db of batch) {
+      if (!db?.uuid) continue;
+      out.push({
+        id: db.uuid,
+        name: db.name ?? '',
+        jurisdiction: db.jurisdiction ?? null,
+        ...(db.created_at ? { createdAt: db.created_at } : {}),
+      });
+    }
+    if (batch.length < PER_PAGE) return ok(out);
+  }
+  return fail(
+    'upstream',
+    `d1:list: more than ${MAX_PAGES} pages of databases — refusing to report a partial list as a complete sweep`,
+  );
+}
+
+/**
+ * Delete a database. Already-gone is success — deletion is idempotent by intent,
+ * exactly as `deleteRoute` is.
+ *
+ * X1'S RULE APPLIES TO THE CALLER, NOT HERE. This function reports what happened;
+ * it is `teardownApp` that must refuse to call a teardown complete until
+ * `getD1Database` says the database is actually gone. "The delete did not throw"
+ * is not evidence, and a database that outlives its app holds other people's data
+ * with nobody accountable for it.
+ */
+export async function deleteD1Database(databaseId: string): Promise<CfResult<{ deleted: boolean }>> {
+  if (!D1_ID_RE.test(databaseId)) return fail('invalid_input', 'invalid d1 database id');
+  const res = await cfFetch<unknown>('d1:delete', `${d1Base()}/${databaseId}`, { method: 'DELETE' });
+  if (!res.ok) {
+    if (res.error.code === 'not_found') return ok({ deleted: false });
+    return { ok: false, error: res.error };
+  }
+  logger.warn({ databaseId }, 'cf_d1_deleted');
+  return ok({ deleted: true });
+}
+
+/**
+ * Run ONE statement against ONE database.
+ *
+ * ── The two rules this function exists to enforce ────────────────────────────
+ * 1. PARAMETERS, NEVER INTERPOLATION. `params` goes to Cloudflare as `params`; no
+ *    caller can hand this function a value to splice into `sql`. Submission
+ *    content reaches D1 exclusively through this path.
+ * 2. NO CONTENT IN ANY LOG OR ERROR. Neither `sql` nor `params` is logged, and the
+ *    upstream message is redacted and truncated by `cfFetch` before it can reach
+ *    a caller. A failing insert must be diagnosable without the visitor's message
+ *    appearing in a log line (Rule 8 of Phase 4, and the reason this comment is
+ *    here rather than in a doc).
+ *
+ * The database id comes from the caller and is validated as a uuid before it
+ * composes a URL — the isolation proof (U4.8) rests on the fact that the only
+ * source of that id in the ingest path is the registry row for the app being
+ * written to.
+ */
+export async function queryD1(
+  databaseId: string,
+  sql: string,
+  params: Array<string | number | null> = [],
+): Promise<CfResult<CfD1QueryResult>> {
+  if (!D1_ID_RE.test(databaseId)) return fail('invalid_input', 'invalid d1 database id');
+  if (typeof sql !== 'string' || sql.trim().length === 0) return fail('invalid_input', 'queryD1 called with empty sql');
+
+  const res = await cfFetch<Array<{ results?: unknown; success?: boolean; meta?: Record<string, unknown> }>>(
+    'd1:query',
+    `${d1Base()}/${databaseId}/query`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sql, params }),
+    },
+  );
+  if (!res.ok) return { ok: false, error: res.error };
+
+  const first = (res.value ?? [])[0];
+  if (!first || first.success === false) {
+    // Deliberately generic: Cloudflare's statement-level error text can quote the
+    // offending VALUE, and the offending value here is somebody's message.
+    return fail('upstream', 'd1:query: the statement did not succeed');
+  }
+  const meta = first.meta ?? {};
+  return ok({
+    rows: Array.isArray(first.results) ? (first.results as Array<Record<string, unknown>>) : [],
+    rowsRead: Number(meta.rows_read ?? 0) || 0,
+    rowsWritten: Number(meta.rows_written ?? 0) || 0,
+    durationMs: Number(meta.duration ?? 0) || 0,
+  });
 }
 
 // ── Zone, DNS, Worker routes (Phase 2 · U2.2) ───────────────────────────────
