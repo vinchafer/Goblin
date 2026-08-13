@@ -366,12 +366,29 @@ than an amendment.
   - **Per-scan input ≈ 710 est. tokens** (547 + 163) for a fixture-sized app; output is a single small
     JSON object, capped at 200 and observed far below it.
   - **≈ $0.00015 per scan** at the realistic Swift mix ($0.20/M): `740 ÷ 1e6 × $0.20`. At the worst
-    no-cache rate ($0.283/M): ≈ $0.00021.
+    no-cache rate ($0.283/M): ≈ $0.00021. **(Superseded by the measured figures in the next bullet —
+    kept because the gap between the two is the useful part.)**
   - **Estimation caveat, stated rather than buried:** “est. tokens” is `chars ÷ 4`
     (`CHARS_PER_TOKEN_ESTIMATE`), the conventional prose divisor. Markup is denser than prose, so this
     runs **low** on HTML. The numbers that will eventually reconcile against the CFO dashboard are the
     provider’s own `usage` fields, which the classifier already records
     (`ClassifierResult.tokens.input/output`) — not these.
+- **SECOND DATA POINT — REAL PROVIDER USAGE, MEASURED 2026-08-13.** The row above was authored from
+  `chars ÷ 4` and said so; the stage-2 battery gate (`apps/api/scripts/scan-battery-stage2.mts`) then
+  ran **50 real Swift completions** against DeepInfra and reported what the provider actually billed.
+  These numbers supersede the estimates for costing purposes:
+  - **Mean input: 916 tokens/scan. Mean output: 19 tokens/scan.** (50 calls, 10 fixtures × 5 runs.)
+  - **The estimator runs ~23 % LOW on markup** — 710 est. vs 916 real, the direction the row above
+    predicted and the reason `ClassifierResult.tokens` records the provider's figures.
+  - **≈ $0.00019 per scan** at the realistic Swift mix ($0.20/M): `935 ÷ 1e6 × $0.20`. At the worst
+    no-cache rate ($0.283/M): ≈ $0.00026.
+  - **The gate run itself cost ≈ $0.01** (50 calls × ~935 tok). Recorded here because it is real spend
+    and because M13 set the precedent for logging a one-off eval's cost
+    (`scripts/wave-k-refusal-gate.mts`, 8 completions, ~$0.001).
+  - Evidence: `evidence/akt2-phase3/stage2-battery.json` — the run's own report, from which every
+    number in this bullet is read.
+  - **Still not a production average.** Ten fixture-sized apps, one model, one day. A real hosted app
+    is bigger than a fixture, so the per-scan figure will rise toward the cap below.
 - **Ceiling per scan (the hard cap, which is the real cost control):** `CLASSIFIER_MAX_INPUT_TOKENS`
   = **6,000 est. tokens** of candidate text. An artifact whose text exceeds it is **not truncated and
   classified anyway** — it is held for human review with **zero tokens spent**. So the arithmetic worst
@@ -405,9 +422,10 @@ than an amendment.
   size, hard-capped at `× $0.0019`. At beta scale it is arithmetically negligible (10,000 scans ≈ $1.50
   realistic, ≈ $19 at the absolute per-scan ceiling); it is registered because the standing rule is
   “cost-relevant mechanism → ledger line in the same commit”, not because it is currently material.
-  | Status: **MEASURED (input size, 9 fixtures, 2026-08-13) + FORMULA (dollar figures)** — **no
-  provider-billed usage has been observed for this path.** Reconcile against real `usage` once the
-  founder window has run stage 2 on the deployed path.
+  | Status: **MEASURED (50 real completions, 2026-08-13)** — provider-billed usage HAS now been
+  observed for this path, from the stage-2 battery gate; the dollar figures remain arithmetic from the
+  unit prices above. What is still unobserved is **production** volume: how many hosted publishes per
+  month reach stage 2. Reconcile once the founder window and real beta traffic exist.
 
 ### M6 — Reserved (not yet built; add rows before shipping)
 Extended thinking · new third-party connectors beyond GitHub/Vercel/Brave. *FEEL-3a agent loop → **M10**;

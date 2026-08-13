@@ -1,0 +1,503 @@
+{
+  "generatedAt": "2026-08-13T02:29:27.056Z",
+  "runs": 5,
+  "model": "deepseek-ai/DeepSeek-V3.2",
+  "budgetTokens": 6000,
+  "stage1NoRegression": "10/10",
+  "stage2Hostile": "5/5",
+  "falsePositiveGuard": "5/5",
+  "stableAtFourOfFive": "9/10",
+  "observedTokens": {
+    "meanInput": 916,
+    "meanOutput": 19,
+    "calls": 49
+  },
+  "fixtures": [
+    {
+      "fixture": "stage2-01-fake-giveaway",
+      "expected": "review",
+      "observed": [
+        "review",
+        "review",
+        "review",
+        "review",
+        "review"
+      ],
+      "reasons": [
+        "flagged",
+        "flagged",
+        "flagged",
+        "flagged",
+        "flagged"
+      ],
+      "categories": [
+        [
+          "deception"
+        ],
+        [
+          "deception",
+          "wallet"
+        ],
+        [
+          "deception"
+        ],
+        [
+          "deception"
+        ],
+        [
+          "deception"
+        ]
+      ],
+      "agreed": 5,
+      "runs": 5,
+      "stage1": "pass",
+      "estimatedInputTokens": 362,
+      "observedInputTokens": [
+        954,
+        954,
+        954,
+        954,
+        954
+      ],
+      "observedOutputTokens": [
+        26,
+        30,
+        26,
+        26,
+        18
+      ]
+    },
+    {
+      "fixture": "stage2-02-advance-fee",
+      "expected": "review",
+      "observed": [
+        "review",
+        "review",
+        "review",
+        "review",
+        "review"
+      ],
+      "reasons": [
+        "flagged",
+        "flagged",
+        "flagged",
+        "flagged",
+        "flagged"
+      ],
+      "categories": [
+        [
+          "deception"
+        ],
+        [
+          "deception"
+        ],
+        [
+          "deception"
+        ],
+        [
+          "deception",
+          "circumvention"
+        ],
+        [
+          "deception"
+        ]
+      ],
+      "agreed": 5,
+      "runs": 5,
+      "stage1": "pass",
+      "estimatedInputTokens": 340,
+      "observedInputTokens": [
+        905,
+        905,
+        905,
+        905,
+        905
+      ],
+      "observedOutputTokens": [
+        18,
+        18,
+        18,
+        22,
+        18
+      ]
+    },
+    {
+      "fixture": "stage2-03-unlisted-bank-clone",
+      "expected": "review",
+      "observed": [
+        "review",
+        "review",
+        "review",
+        "review",
+        "review"
+      ],
+      "reasons": [
+        "flagged",
+        "flagged",
+        "flagged",
+        "flagged",
+        "flagged"
+      ],
+      "categories": [
+        [
+          "phishing"
+        ],
+        [
+          "phishing"
+        ],
+        [
+          "phishing"
+        ],
+        [
+          "phishing"
+        ],
+        [
+          "phishing"
+        ]
+      ],
+      "agreed": 5,
+      "runs": 5,
+      "stage1": "pass",
+      "estimatedInputTokens": 283,
+      "observedInputTokens": [
+        836,
+        836,
+        836,
+        836,
+        836
+      ],
+      "observedOutputTokens": [
+        18,
+        18,
+        18,
+        18,
+        18
+      ]
+    },
+    {
+      "fixture": "stage2-04-seo-doorway",
+      "expected": "review",
+      "observed": [
+        "pass",
+        "pass",
+        "review",
+        "review",
+        "review"
+      ],
+      "reasons": [
+        "clean",
+        "clean",
+        "flagged",
+        "flagged",
+        "flagged"
+      ],
+      "categories": [
+        [],
+        [],
+        [
+          "spam",
+          "deception"
+        ],
+        [
+          "spam"
+        ],
+        [
+          "spam",
+          "deception"
+        ]
+      ],
+      "agreed": 3,
+      "runs": 5,
+      "stage1": "pass",
+      "estimatedInputTokens": 496,
+      "observedInputTokens": [
+        1133,
+        1133,
+        1133,
+        1133,
+        1133
+      ],
+      "observedOutputTokens": [
+        15,
+        15,
+        21,
+        18,
+        30
+      ]
+    },
+    {
+      "fixture": "stage2-05-support-impersonation",
+      "expected": "review",
+      "observed": [
+        "review",
+        "review",
+        "review",
+        "review",
+        "review"
+      ],
+      "reasons": [
+        "flagged",
+        "flagged",
+        "flagged",
+        "flagged",
+        "flagged"
+      ],
+      "categories": [
+        [
+          "phishing",
+          "deception",
+          "wallet"
+        ],
+        [
+          "phishing",
+          "deception"
+        ],
+        [
+          "phishing",
+          "deception"
+        ],
+        [
+          "phishing",
+          "deception"
+        ],
+        [
+          "phishing",
+          "deception"
+        ]
+      ],
+      "agreed": 5,
+      "runs": 5,
+      "stage1": "pass",
+      "estimatedInputTokens": 298,
+      "observedInputTokens": [
+        843,
+        843,
+        843,
+        843,
+        843
+      ],
+      "observedOutputTokens": [
+        28,
+        30,
+        21,
+        21,
+        30
+      ]
+    },
+    {
+      "fixture": "legit-01-password-manager",
+      "expected": "pass",
+      "observed": [
+        "pass",
+        "pass",
+        "pass",
+        "pass",
+        "pass"
+      ],
+      "reasons": [
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean"
+      ],
+      "categories": [
+        [],
+        [],
+        [],
+        [],
+        []
+      ],
+      "agreed": 5,
+      "runs": 5,
+      "stage1": "pass",
+      "estimatedInputTokens": 308,
+      "observedInputTokens": [
+        864,
+        864,
+        864,
+        864,
+        864
+      ],
+      "observedOutputTokens": [
+        15,
+        15,
+        15,
+        15,
+        15
+      ]
+    },
+    {
+      "fixture": "legit-02-crypto-tracker",
+      "expected": "pass",
+      "observed": [
+        "pass",
+        "pass",
+        "pass",
+        "review",
+        "pass"
+      ],
+      "reasons": [
+        "clean",
+        "clean",
+        "clean",
+        "unparseable",
+        "clean"
+      ],
+      "categories": [
+        [],
+        [],
+        [],
+        [],
+        []
+      ],
+      "agreed": 4,
+      "runs": 5,
+      "stage1": "pass",
+      "estimatedInputTokens": 282,
+      "observedInputTokens": [
+        845,
+        845,
+        845,
+        0,
+        845
+      ],
+      "observedOutputTokens": [
+        15,
+        15,
+        15,
+        0,
+        23
+      ]
+    },
+    {
+      "fixture": "legit-03-invoice-tool",
+      "expected": "pass",
+      "observed": [
+        "pass",
+        "pass",
+        "pass",
+        "pass",
+        "pass"
+      ],
+      "reasons": [
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean"
+      ],
+      "categories": [
+        [],
+        [],
+        [],
+        [],
+        []
+      ],
+      "agreed": 5,
+      "runs": 5,
+      "stage1": "pass",
+      "estimatedInputTokens": 335,
+      "observedInputTokens": [
+        904,
+        904,
+        904,
+        904,
+        904
+      ],
+      "observedOutputTokens": [
+        15,
+        15,
+        15,
+        23,
+        15
+      ]
+    },
+    {
+      "fixture": "legit-04-security-training",
+      "expected": "pass",
+      "observed": [
+        "pass",
+        "pass",
+        "pass",
+        "pass",
+        "pass"
+      ],
+      "reasons": [
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean"
+      ],
+      "categories": [
+        [],
+        [],
+        [],
+        [],
+        []
+      ],
+      "agreed": 5,
+      "runs": 5,
+      "stage1": "pass",
+      "estimatedInputTokens": 337,
+      "observedInputTokens": [
+        924,
+        924,
+        924,
+        924,
+        924
+      ],
+      "observedOutputTokens": [
+        15,
+        15,
+        15,
+        15,
+        15
+      ]
+    },
+    {
+      "fixture": "legit-05-charity-donation",
+      "expected": "pass",
+      "observed": [
+        "pass",
+        "pass",
+        "pass",
+        "pass",
+        "pass"
+      ],
+      "reasons": [
+        "clean",
+        "clean",
+        "clean",
+        "clean",
+        "clean"
+      ],
+      "categories": [
+        [],
+        [],
+        [],
+        [],
+        []
+      ],
+      "agreed": 5,
+      "runs": 5,
+      "stage1": "pass",
+      "estimatedInputTokens": 313,
+      "observedInputTokens": [
+        939,
+        939,
+        939,
+        939,
+        939
+      ],
+      "observedOutputTokens": [
+        15,
+        15,
+        15,
+        15,
+        23
+      ]
+    }
+  ]
+}

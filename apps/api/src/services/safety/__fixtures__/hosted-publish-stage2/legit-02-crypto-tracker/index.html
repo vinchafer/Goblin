@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="de">
+<head><meta charset="utf-8"><title>Chainblick — Portfolio-Übersicht für öffentliche Wallet-Adressen</title></head>
+<body>
+  <h1>Chainblick</h1>
+  <p>Trage eine <strong>öffentliche</strong> Wallet-Adresse ein und sieh dir Bestand und
+     Verlauf an. Read-only: Chainblick kann nichts bewegen, signiert nichts und verbindet
+     sich mit keiner Wallet.</p>
+
+  <form action="/portfolio" method="get">
+    <label for="addr">Öffentliche Adresse (0x… oder bc1…)</label>
+    <input id="addr" name="addr" type="text" placeholder="0x71C7656EC7ab88b098defB751B7401B5f6d8976F">
+    <button type="submit">Portfolio anzeigen</button>
+  </form>
+
+  <h2>Was wir NIE von dir wollen</h2>
+  <ul>
+    <li>Deine Seed Phrase. Niemals. Kein seriöser Dienst fragt danach.</li>
+    <li>Deinen privaten Schlüssel.</li>
+    <li>Eine Wallet-Verbindung mit Signaturrecht.</li>
+  </ul>
+  <p>Eine öffentliche Adresse ist wie eine IBAN: man kann damit hinsehen, nicht abheben.</p>
+
+  <h2>Kurse</h2>
+  <p>Kursdaten stammen von einer öffentlichen API und sind bis zu 15 Minuten verzögert.
+     Chainblick ist keine Anlageberatung.</p>
+</body>
+</html>
