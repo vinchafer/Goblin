@@ -349,10 +349,56 @@ Ehrlichkeits-Niederlage.** S2/S3 zuerst mit dem Menschen klären.
    deterministische Schicht erkennt Muster, keine Absicht; die sechs bekannten Lücken aus
    Abschnitt 6 gelten unverändert.
 
-**Was Phase 3 hier ergänzt (und was heute NICHT existiert):** der Swift-Klassifizierer, die
-Review-Queue und die Admin-Oberfläche. Die deterministische Schicht erfüllt die Zusage; sie
-ist nicht klug. Sie erkennt Muster, keine Absicht — die sechs bekannten Lücken aus
-Abschnitt 6 gelten unverändert weiter.
+**Was Phase 3 hier ergänzt — GEBAUT (2026-08-13), Abnahme im Gründer-Fenster offen.**
+Hier stand bis zum 2026-08-13: „der Swift-Klassifizierer, die Review-Queue und die
+Admin-Oberfläche … existieren heute NICHT". Alle drei existieren jetzt im Code. Was noch
+aussteht, ist der Nachweis auf der echten Infrastruktur (das Gründer-Fenster) — genau die
+Unterscheidung, die Phase 2 zwischen „gebaut" und „im Betrieb bewiesen" gezogen hat.
+
+5. **Stufe 2 — der Klassifizierer** (`apps/api/src/services/safety/abuse-classifier.ts`).
+   Läuft **nur auf dem gehosteten Weg** und **nur, wenn Stufe 1 bereits „pass" gesagt hat**
+   — eine bereits entschiedene Blockierung kostet keine Tokens. Er kennt genau zwei
+   Urteile: `pass` und `review`. **Er kann nicht sperren**, und das ist eine Entscheidung,
+   kein Rest: ein probabilistischer Leser darf die Veröffentlichung eines ehrlichen Bauers
+   nicht beenden. Jeder Fehlerfall — über dem Token-Budget, Dienst nicht erreichbar,
+   Timeout, unbrauchbare Antwort — landet auf `review`, nie auf `pass`. Eine Prüfung, die
+   nicht laufen konnte, hat nichts bestanden. Kosten: Ledger **M-A2**.
+6. **Das dritte Urteil — die Review-Queue** (Migration **0102**, AUTHORED). Ein `review`
+   lädt **nichts** hoch, schreibt keine Route und keine Registry-Zeile — dasselbe Nichts
+   wie eine Blockierung; der Unterschied ist nur, wer als Nächstes entscheidet. Die Zeile
+   hält den Kandidaten als **Referenz** (Nutzer + Projekt + Wunschname), nie als Kopie:
+   eine nicht freigegebene App zusätzlich in Postgres zu kopieren wäre eine zweite Kopie
+   ohne eigenen Löschweg. Kann die Queue die Sperre **nicht** aufnehmen (0102 fehlt), sagt
+   die Meldung an den Nutzer das auch — statt einen Menschen zu versprechen, der nie
+   nachsieht.
+7. **Die Betreiber-Oberfläche** — als Karte in der **bestehenden** Gründer-Konsole
+   (`/dashboard/konsole`), nicht als zweite Admin-UI. Freigeben und Ablehnen; **Ablehnen
+   verlangt einen Grund** (dieselbe Regel wie die Sperre, aus 8.4). Jede Entscheidung
+   schreibt eine `ops_app_audit`-Zeile mit der E-Mail des Handelnden — Aktion
+   `review_approve` / `review_block`. **Formhinweis fürs Lesen des Protokolls:** ein
+   Kandidat hat keine App-ID, deshalb tragen `app_id`/`app_name` dort die ID der
+   Queue-Zeile und den Wunschnamen, und `meta.subject = 'review_queue_item'` sagt das.
+   Die Vorschau des Inhalts ist **reiner Text** — nie ein iframe, nie eingebettetes HTML,
+   kein Sanitizer: der Browser, der hier liest, ist der mit den Gründer-Rechten.
+   Eine Freigabe überstimmt **den Klassifizierer, nicht die harten Regeln**: Stufe 1 läuft
+   bei der anschließenden Veröffentlichung erneut und vollständig.
+
+**Was das an der öffentlichen Zusage ändert — und wo es nachgezogen wurde.** Die
+Nutzungsrichtlinie sagte „ohne externen Dienst", „liest sie nicht durch" und „keine
+manuelle Vorabkontrolle". Auf dem gehosteten Weg ist seit Phase 3 **alles drei falsch**:
+der Text der App geht an DeepInfra, und angehaltene Apps sieht ein Mensch an, bevor sie
+live gehen. Korrigiert im selben PR in `docs/ACCEPTABLE_USE_POLICY.md`, auf
+`/acceptable-use` und in der Datenschutzerklärung (neuer Zweck beim bestehenden
+Unterauftragsverarbeiter DeepInfra).
+
+**Und was Phase 3 NICHT ändert.** Die deterministische Schicht bleibt, wie sie war, und
+bleibt die einzige, die sperren kann. Der Klassifizierer ist nicht klug, nur weniger
+wörtlich: gemessen am 2026-08-13 über 10 Fixtures × 5 Läufe hält er die fünf feindlichen
+Fixtures mehrheitlich (5/5) und lässt die fünf legitimen mehrheitlich durch (5/5), aber
+nur **9 von 10** erreichen die Stabilitätsschwelle von 4/5 — `stage2-04-seo-doorway` liegt
+bei 3/5. **Die sechs bekannten Lücken aus Abschnitt 6 gelten unverändert weiter;** keine
+davon wird durch Stufe 2 geschlossen, einige nur seltener getroffen. Beleg:
+`evidence/akt2-phase3/stage2-battery.json`.
 
 ### 8.4 Nutzer benachrichtigen
 

@@ -138,18 +138,52 @@ veröffentlichen darfst:
 
 ### Was Goblin prüft — und was nicht
 
-Ehrlich, damit du dich nicht auf etwas verlässt, das es nicht gibt:
+> **Geändert 2026-08-13 (AKT 2 · Phase 3).** Bis hierher stand hier, die Prüfung laufe
+> „ohne externen Dienst", Goblin lese Apps „nicht durch" und es gebe „keine manuelle
+> Vorabkontrolle". Für den Vercel-Weg stimmt das unverändert. Für den **von Goblin
+> gehosteten Weg** stimmt es seit Phase 3 **nicht mehr**: dort läuft eine zweite Stufe,
+> die den Text der App an ein Sprachmodell gibt, und Apps, bei denen diese Stufe unsicher
+> ist, sieht sich ein Mensch an, **bevor** sie live gehen. Ein Text, der weniger
+> beschreibt, als tatsächlich passiert, ist genauso falsch wie einer, der mehr verspricht.
+
+Ehrlich, damit du dich nicht auf etwas verlässt, das es nicht gibt — und damit du weißt,
+was tatsächlich mit deiner App passiert:
+
+**Auf beiden Wegen (Stufe 1):**
 
 - Goblin führt **vor dem Veröffentlichen automatische Prüfungen** durch: eine feste,
   deterministische Regelliste über die HTML-/JS-Dateien (`publish-scan.ts` /
-  `scan-rules.ts`), ohne externen Dienst. Klare Phishing- und Malware-Treffer
-  **blockieren** die Veröffentlichung; schwächere Signale werden nur **protokolliert** und
-  blockieren nicht.
+  `scan-rules.ts`), ohne externen Dienst und ohne Sprachmodell. Klare Phishing- und
+  Malware-Treffer **blockieren** die Veröffentlichung; schwächere Signale werden nur
+  **protokolliert** und blockieren nicht.
 - Diese Prüfung ist bewusst eng: Marken werden nur erkannt, wenn sie in einer bekannten
   Liste stehen und in Titel/Überschrift auftauchen. Verschleierter Code allein blockiert
   nicht.
-- Goblin **prüft nicht jede App inhaltlich** und liest sie nicht durch. Es gibt keine
-  manuelle Vorabkontrolle und keine Rund-um-die-Uhr-Überwachung.
+
+**Nur auf dem von Goblin gehosteten Weg (`*.justgoblin.app`), zusätzlich (Stufe 2):**
+
+- Besteht eine App Stufe 1, wird ihr Text und Markup **an ein Sprachmodell übergeben**
+  (Goblin Swift, betrieben von **DeepInfra**, siehe Datenschutzerklärung). Das ist ein
+  **externer Dienst**, und zwar der einzige in dieser Prüfung. Deine Projektdateien
+  bleiben ansonsten privat; hier geht der Inhalt der App, die du gerade öffentlich
+  machen willst, einmalig zur Prüfung hinaus.
+- Diese Stufe **blockiert nichts**. Sie kann nur zwei Dinge: durchlassen, oder die
+  Veröffentlichung **anhalten**. Wird sie angehalten, ist **nichts hochgeladen** und
+  nichts online — und ein **Mensch sieht sie sich an**, bevor sie live geht. Es gibt für
+  diesen Blick keine zugesicherte Frist; Goblin wird von einer Einzelperson betrieben.
+- Konnte diese Stufe **nicht laufen** (App zu groß für das Prüf-Budget, Dienst nicht
+  erreichbar, unbrauchbare Antwort), wird die Veröffentlichung **ebenfalls angehalten**
+  statt durchgelassen. Eine Prüfung, die nicht laufen konnte, hat nichts bestanden.
+- Sie ist **kein Urteil und keine Freigabe**. Ein Sprachmodell erkennt Absichten
+  manchmal falsch — in beide Richtungen. Deshalb darf es nicht sperren.
+
+**Was es weiterhin NICHT gibt:**
+
+- Goblin **liest nicht jede App durch**: die Stufe-2-Prüfung ist maschinell, und ein
+  Mensch sieht nur die Apps an, die angehalten wurden — nicht alle.
+- Es gibt **keine Rund-um-die-Uhr-Überwachung** und keine laufende Kontrolle nach der
+  Veröffentlichung.
+- Auf dem Vercel-Weg gibt es Stufe 2 gar nicht.
 - Goblin **reagiert auf Meldungen** (siehe „Missbrauch melden").
 
 Die Verantwortung für deine App bleibt bei **dir**. Dass eine App veröffentlicht wurde,
@@ -269,16 +303,47 @@ limits apply. You may **not** build or publish with Goblin:
 
 ### What Goblin checks — and what it does not
 
-Stated honestly, so you don't rely on something that doesn't exist:
+> **Changed 2026-08-13 (ACT 2 · Phase 3).** This section used to say the check runs "with
+> no external service", that Goblin does not read apps, and that there is "no manual
+> pre-approval". For the Vercel path that is all still true. For the **Goblin-hosted
+> path** it is no longer: a second stage there passes the app's text to a language model,
+> and an app that stage is unsure about is looked at by a human **before** it goes live.
+> A policy that describes less than actually happens is as wrong as one that promises more.
+
+Stated honestly, so you don't rely on something that doesn't exist — and so you know what
+actually happens to your app:
+
+**On both paths (stage 1):**
 
 - Goblin runs **automated checks before publishing**: a fixed, deterministic rule list over
-  the HTML/JS files (`publish-scan.ts` / `scan-rules.ts`), with no external service.
-  Clear phishing and malware hits **block** the publish; weaker signals are only **logged**
-  and do not block.
+  the HTML/JS files (`publish-scan.ts` / `scan-rules.ts`), with no external service and no
+  language model. Clear phishing and malware hits **block** the publish; weaker signals are
+  only **logged** and do not block.
 - Those checks are deliberately narrow: brands are recognised only if they appear in a
   known list and show up in a title or heading. Obfuscated code alone does not block.
-- Goblin does **not review the content of every app** and does not read them. There is no
-  manual pre-approval and no round-the-clock monitoring.
+
+**On the Goblin-hosted path only (`*.justgoblin.app`), additionally (stage 2):**
+
+- If an app clears stage 1, its text and markup are **passed to a language model** (Goblin
+  Swift, run by **DeepInfra** — see the privacy policy). That is an **external service**,
+  and the only one in this check. Your project files otherwise stay private; what leaves
+  here is the content of the app you are about to make public, once, for the check.
+- This stage **blocks nothing**. It can do exactly two things: let the publish through, or
+  **hold** it. If it holds, **nothing was uploaded** and nothing is online — and a **human
+  looks at it** before it goes live. There is no guaranteed turnaround for that look;
+  Goblin is run by one person.
+- If this stage **could not run** (app too large for the scan budget, service unreachable,
+  unusable answer), the publish is **held as well** rather than let through. A check that
+  could not run has not passed.
+- It is **not a verdict and not an approval**. A language model reads intent wrongly
+  sometimes, in both directions. That is exactly why it is not allowed to block.
+
+**What still does NOT exist:**
+
+- Goblin does **not read every app**: stage 2 is machine-run, and a human sees only the
+  apps that were held — not all of them.
+- There is **no round-the-clock monitoring** and no ongoing review after publication.
+- On the Vercel path there is no stage 2 at all.
 - Goblin **does react to reports** (see "Reporting abuse").
 
 Responsibility for your app stays with **you**. The fact that an app was published is not

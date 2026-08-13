@@ -152,18 +152,43 @@ export default function AcceptableUsePage() {
           </li>
         </ul>
 
+        {/* AKT 2 · PHASE 3 · U3.1/U3.2 — corrected in the same PR as the mechanism.
+            The old text said the check runs with no external service, that Goblin does
+            not read apps, and that there is no manual pre-approval. Stage 2 makes all
+            three false ON THE HOSTED PATH, so all three are corrected here rather than
+            left to describe a product that no longer exists. Canonical wording:
+            docs/ACCEPTABLE_USE_POLICY.md. */}
         <h3 style={H3}>Was Goblin prüft — und was nicht</h3>
         <p style={P}>
-          Ehrlich, damit du dich nicht auf etwas verlässt, das es nicht gibt: Goblin führt vor dem
-          Veröffentlichen <strong style={{ color: "var(--ink-2)" }}>automatische Prüfungen</strong> durch —
-          eine feste Regelliste über die Dateien deiner App. Klare Phishing- und Malware-Treffer
-          blockieren die Veröffentlichung; schwächere Signale werden nur protokolliert.
+          Ehrlich, damit du dich nicht auf etwas verlässt, das es nicht gibt. <strong style={{ color: "var(--ink-2)" }}>Auf
+          beiden Wegen</strong> führt Goblin vor dem Veröffentlichen{" "}
+          <strong style={{ color: "var(--ink-2)" }}>automatische Prüfungen</strong> durch — eine feste
+          Regelliste über die Dateien deiner App, ohne externen Dienst und ohne Sprachmodell. Klare
+          Phishing- und Malware-Treffer blockieren die Veröffentlichung; schwächere Signale werden nur
+          protokolliert.
         </p>
         <p style={P}>
-          Goblin <strong style={{ color: "var(--ink-2)" }}>prüft aber nicht jede App inhaltlich</strong> und
-          liest sie nicht durch. Es gibt keine manuelle Vorabkontrolle und keine Rund-um-die-Uhr-Überwachung.
-          Auf Meldungen reagieren wir. Die Verantwortung für deine App bleibt bei dir — dass sie
-          veröffentlicht wurde, ist keine Freigabe und keine Prüfung durch Goblin.
+          <strong style={{ color: "var(--ink-2)" }}>Nur auf dem von Goblin gehosteten Weg</strong>{" "}
+          (<code>*.justgoblin.app</code>) kommt eine zweite Stufe dazu: Text und Markup deiner App werden
+          an ein Sprachmodell übergeben (Goblin Swift, betrieben von DeepInfra — siehe
+          Datenschutzerklärung). Das ist ein <strong style={{ color: "var(--ink-2)" }}>externer Dienst</strong>,
+          und der einzige in dieser Prüfung.
+        </p>
+        <p style={P}>
+          Diese zweite Stufe <strong style={{ color: "var(--ink-2)" }}>blockiert nichts</strong>. Sie kann
+          nur durchlassen oder <strong style={{ color: "var(--ink-2)" }}>anhalten</strong>. Wird angehalten,
+          ist nichts hochgeladen und nichts online — und ein Mensch sieht sich die App an, bevor sie live
+          geht. Eine feste Frist dafür gibt es nicht; Goblin wird von einer Einzelperson betrieben. Konnte
+          die Stufe nicht laufen (App zu groß, Dienst nicht erreichbar), wird ebenfalls angehalten statt
+          durchgelassen: eine Prüfung, die nicht laufen konnte, hat nichts bestanden.
+        </p>
+        <p style={P}>
+          Was es weiterhin nicht gibt: Goblin{" "}
+          <strong style={{ color: "var(--ink-2)" }}>liest nicht jede App durch</strong> — die zweite Stufe
+          ist maschinell, und ein Mensch sieht nur die angehaltenen Apps, nicht alle. Es gibt keine
+          Rund-um-die-Uhr-Überwachung. Auf dem Vercel-Weg gibt es die zweite Stufe gar nicht. Auf Meldungen
+          reagieren wir. Die Verantwortung für deine App bleibt bei dir — dass sie veröffentlicht wurde,
+          ist keine Freigabe und keine Prüfung durch Goblin.
         </p>
 
         <h3 style={H3}>Missbrauch melden</h3>
@@ -307,16 +332,33 @@ export default function AcceptableUsePage() {
 
         <h3 style={H3}>What Goblin checks — and what it does not</h3>
         <p style={P}>
-          Stated honestly, so you don&rsquo;t rely on something that doesn&rsquo;t exist: Goblin runs{" "}
+          Stated honestly, so you don&rsquo;t rely on something that doesn&rsquo;t exist.{" "}
+          <strong style={{ color: "var(--ink-2)" }}>On both paths</strong>, Goblin runs{" "}
           <strong style={{ color: "var(--ink-2)" }}>automated checks before publishing</strong> — a fixed
-          rule list over your app&rsquo;s files. Clear phishing and malware hits block the publish; weaker
-          signals are only logged.
+          rule list over your app&rsquo;s files, with no external service and no language model. Clear
+          phishing and malware hits block the publish; weaker signals are only logged.
         </p>
         <p style={P}>
-          But Goblin <strong style={{ color: "var(--ink-2)" }}>does not review the content of every app</strong>{" "}
-          and does not read them. There is no manual pre-approval and no round-the-clock monitoring. We do
-          react to reports. Responsibility for your app stays with you — the fact that it was published is
-          not an approval or a review by Goblin.
+          <strong style={{ color: "var(--ink-2)" }}>On the Goblin-hosted path only</strong>{" "}
+          (<code>*.justgoblin.app</code>) a second stage is added: your app&rsquo;s text and markup are
+          passed to a language model (Goblin Swift, run by DeepInfra — see the privacy policy). That is an{" "}
+          <strong style={{ color: "var(--ink-2)" }}>external service</strong>, and the only one in this check.
+        </p>
+        <p style={P}>
+          That second stage <strong style={{ color: "var(--ink-2)" }}>blocks nothing</strong>. It can only
+          let a publish through or <strong style={{ color: "var(--ink-2)" }}>hold</strong> it. If it holds,
+          nothing was uploaded and nothing is online — and a human looks at the app before it goes live.
+          There is no guaranteed turnaround for that; Goblin is run by one person. If the stage could not
+          run (app too large, service unreachable), the publish is held as well rather than let through: a
+          check that could not run has not passed.
+        </p>
+        <p style={P}>
+          What still does not exist: Goblin{" "}
+          <strong style={{ color: "var(--ink-2)" }}>does not read every app</strong> — the second stage is
+          machine-run, and a human sees only the apps that were held, not all of them. There is no
+          round-the-clock monitoring. On the Vercel path there is no second stage at all. We do react to
+          reports. Responsibility for your app stays with you — the fact that it was published is not an
+          approval or a review by Goblin.
         </p>
 
         <h3 style={H3}>Reporting abuse</h3>
