@@ -395,6 +395,97 @@ export async function allKnownAppIds(sb: Sb = getSupabaseAdmin()): Promise<strin
   return (data ?? []).map((r) => String((r as { app_id: unknown }).app_id));
 }
 
+/**
+ * The app a project delete has to deal with — INCLUDING one a previous attempt
+ * already marked `deleted` (X1).
+ *
+ * `findOpsAppByProject` filters `status != 'deleted'`, which is right for publish
+ * idempotency and wrong here. `teardownApp` sets the terminal state whether or not
+ * the substrate deletes actually succeeded, so a teardown that failed halfway leaves
+ * a row saying `deleted` next to an R2 prefix and a KV route that are still there.
+ * Asked through the publish lookup, the retry would be told "this project has no
+ * app", release the project row, and produce the exact orphan the gate exists to
+ * prevent — a failed attempt would have ARMED the bug instead of blocking it.
+ *
+ * `project_id IS NOT NULL AND status = 'deleted'` is therefore a meaningful state and
+ * not a contradiction: it means "teardown started and was never confirmed". A
+ * CONFIRMED teardown detaches the row (`detachOpsAppFromProject`), so a finished one
+ * is never returned here.
+ */
+export async function findOpsAppForProjectTeardown(
+  projectId: string | null,
+  sb: Sb = getSupabaseAdmin(),
+): Promise<OpsApp | null> {
+  if (!projectId) return null;
+  if (!(await opsAppsTableAvailable(sb))) return null;
+  const { data, error } = await sb.from('ops_apps').select(COLUMNS).eq('project_id', projectId).limit(1);
+  if (error) {
+    logger.warn({ projectId, reason: error.message }, 'ops_apps_lookup_for_teardown_failed');
+    // A lookup that could not run must not read as "no app" — the caller treats a
+    // throw as a refusal to delete, which is the safe direction.
+    throw new Error(`ops_apps lookup failed: ${error.message}`);
+  }
+  const row = (data ?? [])[0];
+  return row ? toOpsApp(row as unknown as Record<string, unknown>) : null;
+}
+
+/**
+ * Every registered app NAME with its status — the route sweep's right-hand side.
+ *
+ * The id list above answers "which R2 prefixes are accounted for". KV records are
+ * keyed by NAME, so the reachability sweep needs the other column. Status rides
+ * along because the two findings are different: a route for a name the registry
+ * has never heard of is an orphan, and a route for a name whose row says
+ * `deleted` is a teardown that did not finish.
+ *
+ * `null` on failure, never `[]` — the same rule as `allKnownAppIds`, for the same
+ * reason: "I could not ask" must not read as "there are none".
+ */
+export async function allRegisteredAppNames(
+  sb: Sb = getSupabaseAdmin(),
+): Promise<Array<{ appName: string; status: OpsAppStatus }> | null> {
+  if (!(await opsAppsTableAvailable(sb))) return null;
+  const { data, error } = await sb.from('ops_apps').select('app_name, status');
+  if (error) {
+    logger.warn({ reason: error.message }, 'ops_apps_list_names_failed');
+    return null;
+  }
+  return (data ?? []).map((r) => {
+    const row = r as { app_name: unknown; status: unknown };
+    return { appName: String(row.app_name), status: String(row.status) as OpsAppStatus };
+  });
+}
+
+/**
+ * Cut a torn-down app loose from its project, so the tombstone OUTLIVES the
+ * project row (X1).
+ *
+ * `ops_apps.project_id` is `ON DELETE CASCADE`. That cascade is what created X1 in
+ * the first place, and it does not stop being a problem once teardown runs first:
+ * without this call the row that `markOpsAppDeleted` deliberately KEPT — so the
+ * name stays out of circulation and the audit trail has something to point at —
+ * would be deleted moments later by the very project delete that tore the app
+ * down. Detaching first leaves the cascade nothing to reach.
+ *
+ * Only ever called on a row already in the `deleted` state, and the `.eq('status',
+ * 'deleted')` guard enforces that here rather than trusting the caller: detaching a
+ * LIVE app from its project would hide a real app from `findOpsAppByProject`, which
+ * is how a republish becomes a second name.
+ */
+export async function detachOpsAppFromProject(appId: string, sb: Sb = getSupabaseAdmin()): Promise<boolean> {
+  if (!(await opsAppsTableAvailable(sb))) return false;
+  const { error } = await sb
+    .from('ops_apps')
+    .update({ project_id: null, updated_at: new Date().toISOString() })
+    .eq('app_id', appId)
+    .eq('status', 'deleted');
+  if (error) {
+    logger.warn({ appId, reason: error.message }, 'ops_apps_detach_project_failed');
+    return false;
+  }
+  return true;
+}
+
 /** Move an app to a new name. The old route's tombstone is the caller's job. */
 export async function renameOpsApp(appId: string, newName: string, sb: Sb = getSupabaseAdmin()): Promise<boolean> {
   if (!(await opsAppsTableAvailable(sb))) return false;

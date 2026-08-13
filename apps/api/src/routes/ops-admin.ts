@@ -185,10 +185,15 @@ opsAdmin.delete('/apps/:idOrName', async (c) => {
 });
 
 /**
- * GET /api/admin/ops/orphans — R2 prefixes with no registry row (§8.3 gap 3).
+ * GET /api/admin/ops/orphans — substrate with no registry row (§8.3 gap 3 · X1).
  *
- * Report only. A deleted project cascades its row away without touching its files,
- * so this is the only way to see what a deletion left behind.
+ * Report only. Two independent halves, because they answer different questions:
+ *   `orphans`      — R2 prefixes nothing points at: storage COGS nobody is billed for
+ *   `routeOrphans` — KV routes nothing points at: a PUBLIC hostname nobody can find,
+ *                    suspend or account for. This is the half X1 was about, and until
+ *                    X1 it was not swept at all.
+ * Plus `routesOnDeletedApps`: a row that says `deleted` next to an address that still
+ * resolves — a teardown that did not finish.
  */
 opsAdmin.get('/orphans', async (c) => {
   return c.json(await findOrphanedApps());

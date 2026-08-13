@@ -14,13 +14,16 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 type Row = Record<string, unknown>;
-const store: { projects: Row[] } = { projects: [] };
+// `ops_apps` is present-but-empty: these fixtures predate Act 2, so no project here
+// has a Living App and the X1 gate is a no-op — which is the property to keep.
+const store: { projects: Row[]; ops_apps: Row[] } = { projects: [], ops_apps: [] };
 
 const P_ALICE = '11111111-1111-4111-8111-111111111111';
 const P_ALICE_2 = '55555555-5555-4555-8555-555555555555';
 const P_BOB = '22222222-2222-4222-8222-222222222222';
 
 function seed() {
+  store.ops_apps = [];
   store.projects = [
     { id: P_ALICE, user_id: 'alice', name: 'Alice One', preview_url: 'https://alice-one.vercel.app', intent: 'web_app' },
     { id: P_ALICE_2, user_id: 'alice', name: 'Alice Two', preview_url: 'https://alice-two.vercel.app', intent: 'web_app' },

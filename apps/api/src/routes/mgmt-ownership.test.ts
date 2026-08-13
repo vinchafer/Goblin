@@ -14,7 +14,9 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 // delete/single/order/limit) and resolves filters against the store on await.
 
 type Row = Record<string, unknown>;
-const store: { projects: Row[]; chat_sessions: Row[] } = { projects: [], chat_sessions: [] };
+// `ops_apps` present-but-empty — no Living App in this fixture, so the X1 gate on
+// project delete is a no-op and ownership behaviour is unchanged.
+const store: { projects: Row[]; chat_sessions: Row[]; ops_apps: Row[] } = { projects: [], chat_sessions: [], ops_apps: [] };
 
 // Valid UUIDs so the zod `.uuid()` guards on the bulk routes accept them.
 const P_ALICE = '11111111-1111-4111-8111-111111111111';

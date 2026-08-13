@@ -9,6 +9,7 @@ import { useLang } from '@/lib/use-lang';
 import { manageLabels } from '@/components/manage/labels';
 import { ProjectRowMenu } from '@/components/sidebar/ProjectRowMenu';
 import { ConfirmDialog } from '@/components/manage/ManageDialogs';
+import { fetchHostedApps, hostedAppForProject } from '@/lib/hosted-apps';
 import { PageLoading } from '@/components/ui/PageLoading';
 
 interface Project {
@@ -39,6 +40,7 @@ export default function ProjectsOverviewPage() {
   const [selecting, setSelecting] = useState(false);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [confirmBulk, setConfirmBulk] = useState(false);
+  const [hostedUrls, setHostedUrls] = useState<string[]>([]);
 
   const load = useCallback(async () => {
     const supabase = createClient();
@@ -67,13 +69,37 @@ export default function ProjectsOverviewPage() {
   const toggleAll = () => setSelected(allSelected ? new Set() : new Set(projects.map((p) => p.id)));
   const exitSelect = () => { setSelecting(false); setSelected(new Set()); };
 
+  // X1 — name the published addresses in the confirm text. Same shape as the
+  // single-row menu: looked up on open, generic body until (and unless) it answers.
+  const askToBulkDelete = () => {
+    setHostedUrls([]);
+    setConfirmBulk(true);
+    fetchHostedApps().then((apps) => {
+      setHostedUrls(
+        [...selected]
+          .map((id) => hostedAppForProject(apps, id)?.url)
+          .filter((u): u is string => Boolean(u)),
+      );
+    });
+  };
+
   const doBulkDelete = async () => {
     const ids = [...selected];
     try {
-      await apiPost('/api/projects/bulk-delete', { ids });
-      toast.success(L.deleted);
-    } catch {
-      toast.error(L.deleteFailed);
+      const res = await apiPost<{ deleted?: number; blocked?: Array<{ name: string; message?: string }> }>(
+        '/api/projects/bulk-delete',
+        { ids },
+      );
+      // X1 — some projects can be refused while the rest go through. Reporting only
+      // the success would leave the builder believing all of them are gone.
+      const blocked = res?.blocked ?? [];
+      if (blocked.length > 0) {
+        toast.error(blocked[0]?.message ?? L.deleteFailed);
+      } else {
+        toast.success(L.deleted);
+      }
+    } catch (e) {
+      toast.error(e instanceof Error && e.message ? e.message : L.deleteFailed);
     }
     setConfirmBulk(false);
     exitSelect();
@@ -143,14 +169,14 @@ export default function ProjectsOverviewPage() {
           <span style={{ fontFamily: 'var(--font-mono, monospace)', fontSize: 'var(--t-small-fs)', color: 'var(--bone, #F4ECD8)' }}>
             {L.selectedCount(selected.size)}
           </span>
-          <button onClick={() => setConfirmBulk(true)} data-testid="bulk-delete" style={bulkDangerBtn}>{L.delete}</button>
+          <button onClick={askToBulkDelete} data-testid="bulk-delete" style={bulkDangerBtn}>{L.delete}</button>
         </div>
       )}
 
       <ConfirmDialog
         open={confirmBulk}
         title={L.bulkDeleteProjectsTitle(selected.size)}
-        body={L.bulkDeleteProjectsBody}
+        body={hostedUrls.length > 0 ? `${L.bulkDeleteProjectsBody} ${L.bulkDeleteHosted(hostedUrls)}` : L.bulkDeleteProjectsBody}
         confirmLabel={L.delete}
         cancelLabel={L.cancel}
         onConfirm={doBulkDelete}

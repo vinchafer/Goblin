@@ -786,7 +786,18 @@ async function cfFetch<T>(
   label: string,
   path: string,
   init: { method: string; body?: BodyInit; headers?: Record<string, string> },
-  opts: { raw?: boolean; notFoundIsNull?: boolean } = {},
+  opts: {
+    raw?: boolean;
+    notFoundIsNull?: boolean;
+    /**
+     * Cloudflare puts pagination state in `result_info`, next to `result`. cfFetch
+     * unwraps `result` and would otherwise throw that away — which is fine for every
+     * single-object endpoint and fatal for a listing one, because losing the cursor
+     * silently turns "the first page" into "everything". Handed to the caller instead
+     * of widening the return type, so no existing call site changes shape.
+     */
+    captureInfo?: (info: Record<string, unknown>) => void;
+  } = {},
 ): Promise<CfResult<T | null>> {
   const missing = missingFor('workers');
   if (missing.length > 0) return fail('not_configured', `Cloudflare API not configured — missing: ${missing.join(', ')}`);
@@ -839,6 +850,9 @@ async function cfFetch<T>(
     if (!parsed.success) {
       const msgs = (parsed.errors ?? []).map((e) => `${e.code ?? ''} ${e.message ?? ''}`.trim()).filter(Boolean);
       return fail('upstream', `${label}: ${msgs.join('; ') || 'request unsuccessful'}`, res.status);
+    }
+    if (opts.captureInfo) {
+      opts.captureInfo((parsed as { result_info?: Record<string, unknown> }).result_info ?? {});
     }
     return ok((parsed.result ?? null) as T);
   } catch {
@@ -943,6 +957,57 @@ export async function getRoute(name: string): Promise<CfResult<CfRoute | null>> 
     // Tolerated legacy/simple shape: the value is the app id itself.
     return ok({ name, appId: raw.trim(), status: 'active' });
   }
+}
+
+/**
+ * Every hostname label that has a route record in KV — the orphan sweep's OTHER
+ * left-hand side (X1).
+ *
+ * `listAppPrefixes` asks the bucket what is stored; this asks KV what is
+ * REACHABLE, and those are different questions. A route whose files were deleted
+ * but whose KV record survived is invisible to the R2 sweep, and it is the more
+ * dangerous of the two: R2 without a route is only storage cost, a route without
+ * a registry row is a public hostname nobody can find, suspend or account for.
+ *
+ * Paginates on `result_info.cursor`. Running out of pages is an ERROR, not a short
+ * list: a truncated sweep that reads as complete would report "no orphans" about a
+ * namespace it never finished looking at.
+ */
+export async function listRouteNames(): Promise<CfResult<string[]>> {
+  if (missingFor('kv').length > 0) return kvUnconfigured();
+  const prefix = routeKey('');
+  const names: string[] = [];
+  let cursor = '';
+
+  // 1000 keys per page — 200 pages is 200 000 routes. A backstop against an
+  // unbounded loop, not a ceiling anyone is expected to reach.
+  const MAX_PAGES = 200;
+  for (let page = 0; page < MAX_PAGES; page += 1) {
+    let info: Record<string, unknown> = {};
+    const query = new URLSearchParams({ prefix, limit: '1000' });
+    if (cursor) query.set('cursor', cursor);
+
+    const res = await cfFetch<Array<{ name?: string }>>(
+      'kv:list-keys',
+      `${kvBase()}/keys?${query.toString()}`,
+      { method: 'GET' },
+      { captureInfo: (i) => { info = i; } },
+    );
+    if (!res.ok) return { ok: false, error: res.error };
+
+    for (const key of res.value ?? []) {
+      const name = typeof key?.name === 'string' ? key.name.slice(prefix.length) : '';
+      if (name) names.push(name);
+    }
+
+    const next = typeof info.cursor === 'string' ? info.cursor : '';
+    if (!next) return ok(names);
+    cursor = next;
+  }
+  return fail(
+    'upstream',
+    `kv:list-keys: more than ${MAX_PAGES} pages of route records — refusing to report a partial list as a complete sweep`,
+  );
 }
 
 /** Remove a route. Already-gone is success — deletion is idempotent by intent. */

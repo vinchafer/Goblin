@@ -20,6 +20,16 @@ export function manageLabels(lang: Lang) {
     deleteProjectTitle: 'Projekt löschen?',
     deleteProjectBody:
       'Das Projekt und alle seine Chats und Builds werden endgültig entfernt. Eine bereits veröffentlichte Live-Seite wird ebenfalls offline genommen. Die Löschung greift sofort — bis die Seite aus allen Regionen verschwindet, kann es aber ein paar Minuten dauern.',
+    // X1 — appended to the delete body when this project has a Goblin-hosted
+    // Living App. Named, not implied: "eine bereits veröffentlichte Live-Seite"
+    // reads as the Vercel preview to anyone who has one, and the two behave
+    // differently. The address is retired for good (the registry keeps the
+    // tombstone so nobody re-claims the name), and saying so before the click is
+    // the whole point — afterwards there is nothing to undo.
+    deleteProjectHosted: (url: string) =>
+      `Diese App ist unter ${url} veröffentlicht. Mit dem Löschen geht sie sofort offline, ihre Dateien werden entfernt, und die Adresse bleibt dauerhaft vergeben — auch du kannst sie nicht neu beanspruchen. Das lässt sich nicht rückgängig machen.`,
+    bulkDeleteHosted: (urls: string[]) =>
+      `${urls.length === 1 ? 'Eine der ausgewählten Apps ist veröffentlicht' : `${urls.length} der ausgewählten Apps sind veröffentlicht`} (${urls.join(', ')}). Sie ${urls.length === 1 ? 'geht' : 'gehen'} sofort offline, die Dateien werden entfernt, und die Adressen bleiben dauerhaft vergeben. Das lässt sich nicht rückgängig machen.`,
     deleteChatTitle: 'Chat löschen?',
     deleteChatBody: 'Dieser Chat und sein Verlauf werden endgültig entfernt.',
     deleted: 'Gelöscht',
@@ -63,6 +73,10 @@ export function manageLabels(lang: Lang) {
     deleteProjectTitle: 'Delete project?',
     deleteProjectBody:
       'The project and all of its chats and builds will be permanently removed. An already-published live site will be taken down too. Removal is immediate, but the live site may take a few minutes to disappear from all regions.',
+    deleteProjectHosted: (url: string) =>
+      `This app is published at ${url}. Deleting takes it offline immediately, removes its files, and retires the address for good — not even you can claim it again. This cannot be undone.`,
+    bulkDeleteHosted: (urls: string[]) =>
+      `${urls.length === 1 ? 'One of the selected projects is published' : `${urls.length} of the selected projects are published`} (${urls.join(', ')}). ${urls.length === 1 ? 'It goes' : 'They go'} offline immediately, the files are removed, and the addresses are retired for good. This cannot be undone.`,
     deleteChatTitle: 'Delete chat?',
     deleteChatBody: 'This chat and its history will be permanently removed.',
     deleted: 'Deleted',

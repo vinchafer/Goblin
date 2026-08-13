@@ -443,6 +443,58 @@ describe('KV routes', () => {
   });
 });
 
+// X1 — the reachability half of the orphan sweep. `listAppPrefixes` says what is
+// stored; this says what still resolves, and only the second one can be serving.
+describe('listRouteNames', () => {
+  const cfPage = (names: string[], cursor = '') => ({
+    ok: true,
+    status: 200,
+    statusText: 'OK',
+    text: async () =>
+      JSON.stringify({
+        success: true,
+        result: names.map((n) => ({ name: `route:${n}` })),
+        result_info: { cursor },
+      }),
+  });
+
+  it('asks only for route records, and strips the key prefix', async () => {
+    fetchMock.mockResolvedValueOnce(cfPage(['meinladen', 'zweites']));
+    const res = await cf.listRouteNames();
+    expect(res.ok).toBe(true);
+    if (res.ok) expect(res.value).toEqual(['meinladen', 'zweites']);
+    const [url] = fetchMock.mock.calls[0]!;
+    expect(String(url)).toContain('/keys?');
+    expect(String(url)).toContain('prefix=route%3A');
+  });
+
+  it('follows the cursor — a namespace bigger than one page lists completely', async () => {
+    fetchMock
+      .mockResolvedValueOnce(cfPage(['a', 'b'], 'CURSOR-1'))
+      .mockResolvedValueOnce(cfPage(['c'], ''));
+    const res = await cf.listRouteNames();
+    if (res.ok) expect(res.value).toEqual(['a', 'b', 'c']);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(String(fetchMock.mock.calls[1]![0])).toContain('cursor=CURSOR-1');
+  });
+
+  it('FAILS rather than returning a partial list when the cursor never ends', async () => {
+    // A truncated sweep that reads as complete would report "no orphans" about a
+    // namespace it never finished looking at — the one wrong answer that matters.
+    fetchMock.mockResolvedValue(cfPage(['x'], 'ENDLESS'));
+    const res = await cf.listRouteNames();
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.error.message).toMatch(/refusing to report a partial list/i);
+  });
+
+  it('reports not_configured instead of guessing when KV env is missing', async () => {
+    clearEnv();
+    const res = await cf.listRouteNames();
+    expect(res.ok).toBe(false);
+    if (!res.ok) expect(res.error.code).toBe('not_configured');
+  });
+});
+
 describe('Workers', () => {
   it('uploads an ES module with a fixed compatibility date', async () => {
     fetchMock.mockResolvedValue(cfOk({ id: 'goblin-router' }));
