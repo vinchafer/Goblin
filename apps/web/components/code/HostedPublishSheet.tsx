@@ -18,10 +18,11 @@
  *
  * ── The Vercel path is INTACT here too, not a stub ───────────────────────────
  * "Eigenes Vercel verbinden (für Fortgeschrittene)" does not open a reduced
- * version of the Vercel flow: it hands control back to SessionPane's existing
- * `liveStellen()`, which is the same function the button ran before this phase
- * existed — pre-check, connect JIT, deploy, truth-gated stream, all of it. The
- * hosted path became the DEFAULT; it did not become the only door.
+ * version of the Vercel flow: it hands control back to SessionPane's
+ * `liveStellenViaVercel()`, which is the body of the pre-phase `liveStellen()`
+ * moved into its own function and otherwise untouched — pre-check, connect JIT,
+ * deploy, truth-gated stream, all of it. The hosted path became the DEFAULT; it
+ * did not become the only door.
  *
  * ── Honest affordances ───────────────────────────────────────────────────────
  * • The name check says what it is: a check, not a reservation. Two people can
@@ -48,14 +49,24 @@ interface Props {
   onPublished: (url: string) => void;
 }
 
-type NameState =
-  | { kind: "idle" }
-  | { kind: "checking" }
-  | { kind: "free"; url: string }
-  | { kind: "taken"; message: string }
-  | { kind: "invalid"; message: string }
+/**
+ * A RESOLVED answer, and the name it is an answer about.
+ *
+ * `forName` is not bookkeeping — it is what makes "checking" a DERIVED state
+ * rather than a stored one. Storing "checking" would mean setting state
+ * synchronously inside the effect on every keystroke (cascading renders, and a
+ * react-hooks/set-state-in-effect error), and worse, it would let a stale answer
+ * for "mein-lade" be displayed under the name "mein-laden". Keeping the answer
+ * tied to its subject makes the mismatch itself the signal.
+ */
+type NameAnswer =
+  | { forName: string; kind: "free"; url: string }
+  | { forName: string; kind: "taken"; message: string }
+  | { forName: string; kind: "invalid"; message: string }
   /** The check itself failed. Not "taken", not "free" — unknown, and said so. */
-  | { kind: "unknown" };
+  | { forName: string; kind: "unknown" };
+
+type NameState = { kind: "idle" } | { kind: "checking" } | NameAnswer;
 
 type Outcome =
   | { kind: "none" }
@@ -72,18 +83,18 @@ function normalize(raw: string): string {
 export function HostedPublishSheet({ projectId, appsDomain, onUseVercel, onClose, onPublished }: Props) {
   const lang = useLang();
   const [name, setName] = useState("");
-  const [nameState, setNameState] = useState<NameState>({ kind: "idle" });
+  const [answer, setAnswer] = useState<NameAnswer | null>(null);
   const [outcome, setOutcome] = useState<Outcome>({ kind: "none" });
   const seq = useRef(0);
 
   const normalized = normalize(name);
 
-  // Debounced availability check. `seq` discards a stale answer: typing fast
+  // Debounced availability check. Every setState happens INSIDE the timeout, never
+  // synchronously in the effect body. `seq` discards a stale answer: typing fast
   // otherwise lets an earlier "frei" land after a later "vergeben".
   useEffect(() => {
-    if (!normalized) { setNameState({ kind: "idle" }); return; }
+    if (!normalized) return;
     const mine = ++seq.current;
-    setNameState({ kind: "checking" });
     const timer = setTimeout(() => {
       void (async () => {
         try {
@@ -91,20 +102,28 @@ export function HostedPublishSheet({ projectId, appsDomain, onUseVercel, onClose
             `/api/ops/apps/name-check?name=${encodeURIComponent(normalized)}`,
           );
           if (mine !== seq.current) return;
-          if (r.available) setNameState({ kind: "free", url: r.url ?? `https://${normalized}.${appsDomain}` });
-          else if (r.reason === "taken" || r.reason === "released") setNameState({ kind: "taken", message: r.message ?? "" });
-          else setNameState({ kind: "invalid", message: r.message ?? "" });
+          if (r.available) setAnswer({ forName: normalized, kind: "free", url: r.url ?? `https://${normalized}.${appsDomain}` });
+          else if (r.reason === "taken" || r.reason === "released") setAnswer({ forName: normalized, kind: "taken", message: r.message ?? "" });
+          else setAnswer({ forName: normalized, kind: "invalid", message: r.message ?? "" });
         } catch {
           if (mine !== seq.current) return;
           // A failed check is UNKNOWN. Rendering it as "frei" would invite someone
           // to publish into a collision; as "vergeben" it would refuse a name that
           // is theirs for the taking.
-          setNameState({ kind: "unknown" });
+          setAnswer({ forName: normalized, kind: "unknown" });
         }
       })();
     }, 400);
     return () => clearTimeout(timer);
   }, [normalized, appsDomain]);
+
+  // DERIVED, not stored: an answer that is not about the name currently in the
+  // field is not an answer yet.
+  const nameState: NameState = !normalized
+    ? { kind: "idle" }
+    : answer && answer.forName === normalized
+      ? answer
+      : { kind: "checking" };
 
   const publish = useCallback(async () => {
     if (!normalized) return;
