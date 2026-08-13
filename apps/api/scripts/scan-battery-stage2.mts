@@ -24,7 +24,7 @@
  *
  * ── Usage ────────────────────────────────────────────────────────────────────
  *   cd apps/api
- *   GOBLIN_HOSTED_ENABLED=true DEEPINFRA_API_KEY=… \
+ *   GOBLIN_HOSTED_API=true DEEPINFRA_API_KEY=… \
  *     pnpm exec tsx scripts/scan-battery-stage2.mts [runs] [outFile]
  *
  * Cost: 10 fixtures × 5 runs ≈ 50 Swift calls ≈ $0.008 at the ledger's M-A2 figure.
@@ -89,7 +89,7 @@ async function main() {
     console.error(
       'REFUSED: Goblin-hosted inference is not configured in this environment.\n' +
         'Every fixture would be held with reason=unavailable, which is the classifier behaving\n' +
-        'correctly and says nothing about its accuracy. Set GOBLIN_HOSTED_ENABLED=true and\n' +
+        'correctly and says nothing about its accuracy. Set GOBLIN_HOSTED_API=true and\n' +
         'DEEPINFRA_API_KEY, then run again.',
     );
     process.exit(2);
