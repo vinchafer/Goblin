@@ -44,6 +44,7 @@ import {
   type PublishResponseBody,
 } from '@/lib/publish-outcome';
 import { PublishOutcomeView } from './publish-outcome-view';
+import { findingOf, findingClass, verdictOf, verdictClass, type OrphanReportBody } from './orphan-view';
 
 // ── shapes the API hands us ─────────────────────────────────────────────────
 
@@ -612,6 +613,39 @@ export function OpsConsole({ initialStatus }: { initialStatus: StatusPayload }) 
     [call, reason, refreshApps, measureUntil],
   );
 
+  // ── orphan sweep (X1-S) ───────────────────────────────────────────────────
+  //
+  // Read-only, and started by hand. It is NOT part of the initial load on purpose:
+  // the sweep lists every KV route and every R2 prefix in the account, and that is
+  // a cost and a latency the founder should be spending deliberately rather than
+  // every time they open the console on a phone.
+  //
+  // It calls the SAME endpoint the terminal command in ACT2_X1_PROJECT_DELETION §5
+  // calls — `GET /api/admin/ops/orphans` — over the founder-session path that has
+  // existed since Phase 2.5 (U-C1). No new API surface, no admin key in a browser:
+  // CORS on the API allows `Authorization` and not `x-admin-key`, so the key path
+  // was never available here anyway.
+
+  const [orphanBusy, setOrphanBusy] = useState(false);
+  const [orphanReport, setOrphanReport] = useState<OrphanReportBody | null>(null);
+  const [orphanError, setOrphanError] = useState<HonestError | null>(null);
+
+  const runOrphanCheck = useCallback(async () => {
+    setOrphanBusy(true);
+    setOrphanError(null);
+    const res = await call<OrphanReportBody>('/api/admin/ops/orphans');
+    setOrphanBusy(false);
+    if (res.ok) {
+      setOrphanReport(res.data);
+      return;
+    }
+    // The previous report is dropped rather than left on screen next to a failure:
+    // a stale sweep read as current is exactly the "nothing found" a failed check
+    // must never look like.
+    setOrphanReport(null);
+    setOrphanError(res.error);
+  }, [call]);
+
   // ── E2E ───────────────────────────────────────────────────────────────────
 
   const [job, setJob] = useState<E2EJobView | null>(null);
@@ -1012,6 +1046,112 @@ export function OpsConsole({ initialStatus }: { initialStatus: StatusPayload }) 
         })}
 
         {appError ? <ErrorBlock error={appError} title={s.error.title} detailLabel={s.error.detail} copyLabel={s.error.copyDetail} /> : null}
+      </section>
+
+      {/* ── WAISEN-PRÜFUNG (X1-S) ──────────────────────────────────────────
+          Read-only by construction: this card can start the sweep and render
+          what came back, and there is no code path from here to a deletion.
+          Purging is named-id-only with a mandatory reason, and it stays out of
+          a surface whose whole job is to be safe to tap. */}
+      <section className="gobl-panel oc-card">
+        <h2>{s.orphans.heading}</h2>
+        <p className="oc-lead">{s.orphans.lead}</p>
+
+        <Action label={s.orphans.action} busyLabel={s.orphans.running} busy={orphanBusy} onClick={() => void runOrphanCheck()} variant="secondary" />
+
+        {!orphanReport && !orphanError ? <p className="oc-why">{s.orphans.notRun}</p> : null}
+
+        {orphanReport ? (
+          (() => {
+            const verdict = verdictOf(orphanReport);
+            const rows = [
+              { key: 'routeOrphans' as const, label: s.orphans.routeOrphans, meaning: s.orphans.routeOrphansMeaning, finding: findingOf(orphanReport.routeOrphans) },
+              {
+                key: 'routesOnDeletedApps' as const,
+                label: s.orphans.routesOnDeletedApps,
+                meaning: s.orphans.routesOnDeletedAppsMeaning,
+                finding: findingOf(orphanReport.routesOnDeletedApps),
+              },
+              { key: 'orphans' as const, label: s.orphans.r2Orphans, meaning: s.orphans.r2OrphansMeaning, finding: findingOf(orphanReport.orphans) },
+            ];
+            const counts: Array<[string, number | null]> = [
+              [s.orphans.knownApps, orphanReport.knownApps],
+              [s.orphans.routesInKv, orphanReport.routesInKv],
+              [s.orphans.prefixesInR2, orphanReport.prefixesInR2],
+            ];
+            return (
+              <>
+                <div className="oc-row">
+                  <span className="k">{s.orphans.verdictRow}</span>
+                  <span className="v">
+                    <span className={`oc-state ${verdictClass(verdict)}`}>
+                      {verdict === 'clean' ? s.orphans.clean : verdict === 'found' ? s.orphans.found : verdict === 'incomplete' ? s.status.unknown : s.orphans.notChecked}
+                    </span>
+                  </span>
+                </div>
+                <p className="oc-lead">
+                  {verdict === 'clean'
+                    ? s.orphans.verdictClean
+                    : verdict === 'found'
+                      ? s.orphans.verdictFound
+                      : verdict === 'incomplete'
+                        ? s.orphans.verdictIncomplete
+                        : s.orphans.verdictUnknown}
+                </p>
+
+                {rows.map((r) => (
+                  <div className="oc-app" key={r.key}>
+                    <div className="top">
+                      <span className="nm">{r.label}</span>
+                      {/* The pill carries a WORD and a count, never a sentence —
+                          F4: a sentence inside .oc-state does not wrap and pushed
+                          a card past 390px. */}
+                      <span className={`oc-state ${findingClass(r.finding)}`}>
+                        {r.finding.kind === 'unknown'
+                          ? s.orphans.notChecked
+                          : r.finding.kind === 'clean'
+                            ? s.orphans.clean
+                            : `${r.finding.names.length} ${s.orphans.found}`}
+                      </span>
+                    </div>
+                    <p className="oc-note">{r.meaning}</p>
+                    {/* null gets its own sentence, every time it occurs. Saying it
+                        once at the top would leave a reader who scrolled straight
+                        to a row with a dash and no explanation. */}
+                    {r.finding.kind === 'unknown' ? <p className="oc-why">{s.orphans.notCheckedNote}</p> : null}
+                    {r.finding.kind === 'found' ? <pre className="oc-detail">{r.finding.names.join('\n')}</pre> : null}
+                  </div>
+                ))}
+
+                <p className="oc-note">{s.orphans.counts}</p>
+                <div className="oc-rows">
+                  {counts.map(([label, value]) => (
+                    <Row k={label} key={label}>
+                      {/* A count is tri-state too: `null` is what the API sends
+                          when it could not read that side at all. */}
+                      {value === null || value === undefined ? <span className="oc-state unknown">{U}</span> : value}
+                    </Row>
+                  ))}
+                </div>
+
+                {orphanReport.notes.length > 0 ? (
+                  <>
+                    <p className="oc-note">{s.orphans.notes}</p>
+                    {/* The sweep's own words, verbatim — they name WHICH read failed. */}
+                    <pre className="oc-detail">{orphanReport.notes.join('\n')}</pre>
+                  </>
+                ) : null}
+
+                <p className="oc-note">
+                  {s.orphans.checkedAt}: {new Date(orphanReport.timestamp).toLocaleString(lang === 'de' ? 'de-DE' : 'en-GB')}
+                </p>
+                <p className="oc-note">{s.orphans.noPurge}</p>
+              </>
+            );
+          })()
+        ) : null}
+
+        {orphanError ? <ErrorBlock error={orphanError} title={s.error.title} detailLabel={s.error.detail} copyLabel={s.error.copyDetail} /> : null}
       </section>
 
       {/* ── Prüfliste (PHASE 3 · U3.3) ─────────────────────────────────────

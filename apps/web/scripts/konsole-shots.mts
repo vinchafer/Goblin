@@ -115,6 +115,16 @@ async function main() {
       await page.addScriptTag({ content: js });
       await page.waitForTimeout(600);
 
+      // X1-S: the orphan card does nothing until it is asked to, by design. Click
+      // it in BOTH scenarios — the degraded one is the screenshot that proves a
+      // null renders as NICHT GEPRÜFT and not as a green zero.
+      const orphanBtn = page
+        .locator('.oc-card', { hasText: lang === 'de' ? 'Waisen-Prüfung' : 'Orphan check' })
+        .locator('button', { hasText: lang === 'de' ? 'Prüfung starten' : 'Run the check' })
+        .first();
+      await orphanBtn.click().catch(() => {});
+      await page.waitForTimeout(300);
+
       // Open the first review item's preview and its decision panel, so the
       // screenshot shows the thing the gate is actually about: candidate source
       // rendered as inert text, and a reason field that gates the reject button.
@@ -150,6 +160,12 @@ async function main() {
         .locator('.oc-card', { hasText: lang === 'de' ? 'Prüfliste' : 'Review queue' })
         .first()
         .screenshot({ path: join(OUT, `reviewcard-390-${scenario}-${lang}.png`) })
+        .catch(() => {});
+
+      await page
+        .locator('.oc-card', { hasText: lang === 'de' ? 'Waisen-Prüfung' : 'Orphan check' })
+        .first()
+        .screenshot({ path: join(OUT, `orphancard-390-${scenario}-${lang}.png`) })
         .catch(() => {});
 
       // A DOM dump beside each PNG: a pixel diff says "something changed", the

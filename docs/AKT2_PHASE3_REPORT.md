@@ -238,14 +238,20 @@ der rot wird, wenn `process.env` in `cf-deploy.ts` je wieder auftaucht.
 > **Stand 2026-08-13, vor dem Merge: E1 und E2 sind vom Gründer ENTSCHIEDEN, F9 ist
 > angenommen. E3–E5 bleiben offen.** Die Zeilen unten sind entsprechend gestempelt; der
 > Wortlaut der Vorlage bleibt stehen, damit nachlesbar ist, worüber entschieden wurde.
+>
+> **NACHTRAG 2026-08-13, nach dem Merge von PR #89/#90:** **E4 und E5 sind entschieden — von CC,
+> unter stehenden Prinzipien, umkehrbar durch den Gründer.** **E3 bleibt beim Gründer**, weil es
+> auf Recht trifft und die Eskalationsregel der Arbeitsmethodik genau das nicht selbst wählen
+> lässt. Die vollständige Tabelle mit Begründung je Zeile steht ab jetzt in
+> `docs/ACT2_DECISIONS_AND_CLOSEOUT.md` §1 — dort, und nicht mehr nur in einem Chatverlauf.
 
 | # | Frage | Von CC vorläufig entschieden | Status / warum es die Gründer-Entscheidung braucht |
 |---|---|---|---|
 | E1 | **Wer zahlt den Scan?** | Plattform-COGS, nicht die Nutzer-Allowance | **ENTSCHIEDEN 2026-08-13: ja — Scannen ist Plattform-COGS und wird dem Nutzer-Kontingent nie verrechnet.** (Vorlage: es ist bares Geld ohne Messung; dem Bauer sein Kontingent dafür abzuziehen hieße, ihm unsere Haftung zu berechnen.) Gebucht in Ledger **M-A2**. |
 | E2 | **Darf Stufe 2 je sperren?** | Nein — nur `pass` oder `review` | **ENTSCHIEDEN 2026-08-13: nein — Stufe 2 darf ausschließlich auf `review` leiten. Sperren bleibt deterministisch (Stufe 1) oder menschlich (Konsole).** (Vorlage: sperrte sie, könnte ein Modell einen ehrlichen Bauer aussperren; sperrt sie nie, skaliert die Prüfliste mit der Beta — das ist der akzeptierte Preis.) |
 | E3 | **App-Inhalt geht an DeepInfra** | Offengelegt in AUP + Datenschutz, Zweck ergänzt | Neuer Verarbeitungszweck bei einem bestehenden Unterauftragsverarbeiter, auf einer Rechtsseite, die anwaltlich ungeprüft ist. Gründer muss den Text mittragen. |
-| E4 | **3/5 bei `stage2-04`** | Als 3/5 berichtet, nicht getunt | Ob das für die Kategorie „Spam/SEO" reicht, ist eine Produktentscheidung. Der Fehler fällt in die mildere Richtung (Doorway geht live, statt Bauer blockiert). |
-| E5 | **Ledger-Marke `M-A2` statt `M-A1`** | Nächste freie Marke + Notiz | Repo schlägt Prompt (Regel 1); wenn der Gründer eine andere Nomenklatur will, jetzt sagen. |
+| E4 | **3/5 bei `stage2-04`** | Als 3/5 berichtet, nicht getunt | **ENTSCHIEDEN 2026-08-13 von CC unter stehenden Prinzipien, der Gründer kann umkehren: es wird nicht getunt, die Zahl wird berichtet.** Folgt aus Gesetz 2 („Erfolgsraten als Zahl, nie als Adjektiv" — gegen die eigenen Fixtures zu tunen misst das Tuning), aus `ABUSE_RESPONSE` §7 (nachgeschärft wird an **echten** Fällen, und es gibt keinen), und aus Gründer-Entscheid **E2**, der die Fehlerrichtung bereits abgewogen hat: Doorway geht live, statt Bauer blockiert. Was dem Gründer offen bleibt: ob 3/5 für die Kategorie produktseitig reicht. Ausgeführt in `ACT2_DECISIONS_AND_CLOSEOUT.md` §2.1. |
+| E5 | **Ledger-Marke `M-A2` statt `M-A1`** | Nächste freie Marke + Notiz | **ENTSCHIEDEN 2026-08-13 von CC unter stehenden Prinzipien, der Gründer kann umkehren: `M-A2` bleibt.** Folgt aus Gesetz 10 (State-first — der Prompt ist ein Plan, das Repo ist die Wahrheit), aus dem Präzedenzfall **M15** (dieselbe Kollision, dieselbe Auflösung) und daraus, dass Umbenennen jede Referenz in Bericht, Register, Ledger und Preflight kostet, ohne dass Geld, Recht oder ein Nutzerdatum daran hängt. Carry-forward **D6** ist damit geschlossen. |
 
 ---
 
@@ -284,8 +290,9 @@ wo das Thema wohnt.
    unverändert.
 4. **Rechtstexte gegenlesen** (E3): AUP-Abschnitt „Was Goblin prüft", `/acceptable-use`, die
    DeepInfra-Zeile im Datenschutz.
-5. **E3–E5 entscheiden** — E1 (Plattform-COGS) und E2 (Stufe 2 sperrt nie) sind am
-   2026-08-13 entschieden und in der Tabelle gestempelt.
+5. ~~**E3–E5 entscheiden**~~ — E1 und E2 sind am 2026-08-13 vom Gründer entschieden, **E4 und E5
+   am selben Tag von CC** unter stehenden Prinzipien (umkehrbar). **Offen bleibt allein E3**, und
+   das ist Schritt 4 oben — keine zusätzliche Aufgabe. Siehe `ACT2_DECISIONS_AND_CLOSEOUT.md`.
 6. **Über die GitHub-App mergen.** CC merged nicht.
 7. Danach **„Phase 4" an Steven** (Formulare — wo die Living App zustandsbehaftet wird).
 

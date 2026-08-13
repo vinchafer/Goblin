@@ -1,6 +1,9 @@
 # AKT 2 · PHASE 4 (DATA-1F, FORMULARE) — PREFLIGHT
 
 **Geschrieben: 2026-08-13 · Autor: CC · Geprüft gegen master `418e43f`**
+**Nachgeprüft: 2026-08-13 gegen master `31d2290` (enthält PR #89 und #90). Was gedriftet war, ist
+unten korrigiert und als Korrektur gekennzeichnet; die Liste der Änderungen steht in
+`docs/ACT2_DECISIONS_AND_CLOSEOUT.md` §5.**
 
 Die Bereitschaftsnotiz am Ende von Phase 3 (`GOBLIN_OPS_MASTER_PLAN_16_PHASES.md`, Phase 4) sagt,
 was Phase 4 braucht. Dieses Dokument prüft sie **noch einmal gegen den Code, wie er heute steht**,
@@ -14,12 +17,37 @@ Phase-4-Prompt geschrieben wird, damit dessen STATE-CHECK nicht bei null anfäng
 Ungenauigkeit meinerseits (§5) — aber die Prüfung hat **einen echten, heute offenen Defekt**
 gefunden, der nichts mit Phase 4 zu tun hat und vor Phase 4 gehört (§1).
 
+**Stand nach der Nachprüfung vom 2026-08-13:** der Defekt aus §1 ist **behoben** (PR #90) — §1 ist
+jetzt Historie, und der dort skizzierte Umriss war in einem Punkt **falsch** und wurde beim Bauen
+begründet verworfen. Wer aus diesem Dokument einen Prompt schreibt, liest §1 also als Warnung und
+nicht als Bauanleitung.
+
 ---
 
-## 1. HALT-Kandidat: eine gelöschte App bleibt live
+## 1. ~~HALT-Kandidat~~ BEHOBEN: eine gelöschte App bleibt live
 
-**Das ist kein Phase-4-Punkt. Es ist heute wahr, auf Produktion, und es ist das Einzige in diesem
-Dokument, das ich als dringend bezeichnen würde.**
+> **STAND 2026-08-13 — GESCHLOSSEN durch PR #90 (`6f3d949`, gemergt als `31d2290`).** Der Befund
+> darunter bleibt stehen, weil er der Grund ist, aus dem der Fix entstanden ist; gestrichen ist
+> allein der Satz, der ihn als heute dringend bezeichnete. Was ein Leser ab hier wissen muss, steht
+> in diesen vier Punkten:
+>
+> - **Der Defekt ist weg.** `teardownProjectApp()` (`apps/api/src/services/ops-project-teardown.ts`)
+>   fährt den Abbau **vor** der Kaskade, und sein **verifizierter** Abschluss ist **Vorbedingung**
+>   des Löschens. Lässt er sich nicht bestätigen, antwortet das Löschen mit **409** und lässt
+>   Projekt **und** Registry-Zeile stehen. Dasselbe in `account-deletion.ts`.
+> - **Der Umriss unten, Punkt 1, ist FALSCH und wurde begründet verworfen.** Er empfiehlt die
+>   Best-effort-Regel des Vercel-Teardowns („ein Teardown-Fehler blockiert das Löschen nicht,
+>   sondern kommt als `orphanUrl` zurück"). Genau diese Bauform **erzeugt** das Waisenkind: eine
+>   `orphanUrl` in der Antwort meldet an jemanden, der nichts mehr tun kann, weil die Zeile, über
+>   die jede Betreiber-Handlung liefe, in derselben Antwort gelöscht wurde. Ausgeführt in
+>   `docs/ACT2_X1_PROJECT_DELETION.md` §2. **Wer aus diesem Umriss einen Prompt schreibt, baut den
+>   Defekt wieder ein.**
+> - **Offen bleibt allein der Bestands-Sweep** (Carry-forward **X1-S**): der Fix verhindert neue
+>   Waisen und sagt nichts über alte. Er läuft seit dieser Sitzung als Nur-Lese-Karte in der
+>   Gründer-Konsole und ist ein Tippen.
+> - **§7 Punkt 5 dieses Dokuments („§1 zuerst") ist damit erfüllt.**
+
+**Der Befund, wie er am 2026-08-13 vor dem Fix aufgeschrieben wurde — ab hier historisch:**
 
 `supabase/migrations/0099_ops_apps.sql:32-38` trägt eine Warnung, die als **PHASE-2-OBLIGATION**
 formuliert ist:
@@ -57,14 +85,17 @@ mit anschließendem Projektlöschen ist trotzdem der billigste Weg, eine unlösc
 Verhalten. Es ist ein eigener Fix mit eigenen Tests und einem eigenen Commit, und der Gründer
 sequenziert ihn.
 
-**Der Umriss, damit der Prompt nicht neu hergeleitet werden muss.**
+**Der Umriss, damit der Prompt nicht neu hergeleitet werden muss.** *(Historisch. Punkt 1 ist beim
+Bauen widerlegt worden — siehe den Kasten oben; Punkte 2–4 sind so umgesetzt.)*
 1. Vor dem `projects.delete` in `projects.ts`: `ops_apps`-Zeilen für dieses Projekt lesen, für jede
    `deleteRoute(name)` und `deleteAppFiles(appId)` aufrufen, **dann erst** löschen — dieselbe
    Reihenfolge und dieselbe Best-effort-Regel wie beim Vercel-Teardown darüber, also ein
    Teardown-Fehler blockiert das Löschen nicht, sondern kommt als `orphanUrl` zurück.
 2. Dasselbe in `account-deletion.ts`, sonst hat die Kontolöschung dieselbe Lücke.
 3. Der Code muss tolerant bleiben, wenn `ops_apps` nicht existiert — dieselbe Feature-Erkennung, die
-   der Rest von Akt 2 benutzt (`opsAppsAvailable`).
+   der Rest von Akt 2 benutzt (`opsAppsTableAvailable` in `ops-apps-store.ts`; im ursprünglichen
+   Umriss stand `opsAppsAvailable`, ein Bezeichner, den es nie gab — **Korrektur 2026-08-13**, weil
+   eine Notiz zum Grepen grepbar sein muss).
 4. Regressionstest: Projekt mit gehosteter App löschen ⇒ `deleteRoute` und `deleteAppFiles` wurden
    aufgerufen, **bevor** die Zeile weg war.
 
@@ -98,7 +129,8 @@ keine Variable dafür reserviert — weder in `apps/api/.env.example` noch in `C
 Ingest-Endpunkt im Router-Worker sitzt (§3), braucht *der Worker* das Secret als Binding, nicht die
 Railway-API. Das ist eine Architekturentscheidung, keine Konfigurationsfrage, und sie muss **vor**
 dem Widget-Anlegen fallen, weil sie bestimmt, wo der Wert überhaupt hin soll. Solange der Router die
-Verifikation macht, kommt zu `routerBindings()` (`ops-router-deploy.ts:246`) ein vierter Eintrag
+Verifikation macht, kommt zu `routerBindings()` (`ops-router-deploy.ts:227` — **Korrektur
+2026-08-13**, vorher stand hier `:246`) ein vierter Eintrag
 dazu — und `plain_text` ist für ein Secret die falsche Bindungsart.
 
 **Kosten: $0.00.** Free-Plan, *„Unlimited challenges"*, bis 20 Widgets, 10 Hostnames pro Widget
@@ -136,7 +168,10 @@ wartet genau darauf. Das **Schema** erweitert sich also ohne Migration — der *
 
 ### 3.2 Der Router liefert nur Bytes, und weist alles andere aktiv ab
 
-`worker-source.generated.ts`, im `fetch`-Einstieg (Zeile ~489):
+`worker.js:476`, im `fetch`-Einstieg — und weil das die **Quelle** ist, steht dieselbe Zeile als
+Ausgabe in `worker-source.generated.ts:490`. *(Korrektur 2026-08-13: vorher nannte dieser Absatz nur
+die generierte Datei, und mit einer inzwischen verschobenen Zeilennummer. Die generierte ist genau
+die, die man nicht editiert.)*
 
 ```js
 if (request.method !== 'GET' && request.method !== 'HEAD') {
@@ -185,7 +220,12 @@ vermutlich, die Monatszahl dort zu zählen, wo die Einsendung ohnehin gespeicher
   Betreiber-Handlung braucht also keine Migration. *(Mit der Einschränkung aus dem
   Carry-forward **B1**: dass `0100` angewendet ist, ist nicht bestätigt.)*
 - **Die Dashboard-Hülle**, in der der Posteingang leben wird.
-- **Die nächste freie Migrationsnummer ist `0103`.** `0102` ist die letzte vergebene.
+- **Die nächste freie Migrationsnummer ist `0103`.** `0102` ist die letzte vergebene. *(2026-08-13
+  erneut nachgesehen: unverändert, PR #90 brauchte keine Migration.)*
+- **Der Projekt-Abbau-Pfad (`ops-project-teardown.ts`, neu mit PR #90)** — Phase 4 erbt ihn und muss
+  ihn kennen: Löschen eines Projekts **blockiert** jetzt, wenn der Abbau der gehosteten App nicht
+  bestätigt werden kann (409). Das ist der Ort, an dem `P4-d` („wohin gehen Einsendungen, wenn der
+  Besitzer sein Projekt löscht?") landen wird — dieselbe Kaskade, ein Objekt weiter.
 
 ---
 
@@ -204,6 +244,27 @@ Alles Übrige — Turnstile fehlt vollständig, die geschlossene `CfBinding`-Uni
 Byte-Router, die eine Dimension in `ops-caps.ts`, die nullable `d1_database_id`, der generierte
 Worker — habe ich gegen den heutigen Code nachgeprüft und bestätigt gefunden.
 
+**Nachprüfung 2026-08-13 gegen master `31d2290`.** Alles oben gilt weiter, jede Behauptung erneut
+gegen den Code gehalten statt erinnert:
+
+| Behauptung | Heute |
+|---|---|
+| Turnstile kommt in keiner Codezeile vor | **bestätigt** — 0 Treffer in `apps/`, `packages/`, `workers/` |
+| `CfBinding` ist eine geschlossene Union aus drei Fällen, `cf-deploy.ts:162` | **bestätigt**, unverändert |
+| die beiden `D1`-Treffer in `cf-deploy.ts` sind Kommentare | **bestätigt** (Zeilen 10 und 22) |
+| `CapsProfile` hat eine Dimension plus Beschreibung | **bestätigt**, unverändert |
+| `ops_apps.d1_database_id` liegt nullable bereit | **bestätigt**, `0099:73` |
+| nächste freie Migrationsnummer `0103` | **bestätigt** |
+| `SECRET_ENV_VARS` ist der Redaktions-Mechanismus für den Turnstile-Secret | **bestätigt**, `cf-deploy.ts:300` |
+| §1 („eine gelöschte App bleibt live") | **überholt — behoben, PR #90.** Siehe den Kasten in §1 |
+| `opsAppsAvailable` (§1, Umriss Punkt 3) | **falsch** — heißt `opsAppsTableAvailable`, korrigiert |
+| `routerBindings()` in `ops-router-deploy.ts:246` | **falsch** — `:227`, korrigiert |
+| der 405-Wächter in `worker-source.generated.ts:~489` | **ungenau** — Quelle ist `worker.js:476`, Ausgabe `…generated.ts:490`, korrigiert |
+
+**Die Turnstile-Schritte in §2 sind unverändert korrekt und vollständig** — Dashboard-Pfad,
+Hostname-Regel, beide Schlüssel mit ihrem Zielort, und die Falle mit der serverseitigen
+Verifikation. Es fehlt dort nichts, was der Gründer nachschlagen müsste.
+
 ---
 
 ## 6. Entscheidungen, die vor der ersten Zeile Code fallen müssen
@@ -213,7 +274,7 @@ Worker — habe ich gegen den heutigen Code nachgeprüft und bestätigt gefunden
 | **P4-a** | **D1 überhaupt?** | Das ist die schwerste. `OPS_SPIKE_0` D2 wurde am 2026-07-27 ausdrücklich **ohne** D1 entschieden, und der Ledger hält „$0.00/Monat committed" fest. Eine Datenbank pro App eröffnet diese Entscheidung neu — es ist ein **Substratwechsel**, kein Inkrement: Workers Paid oder WfP, eine neue feste Kostenzeile, und der Upgrade-Auslöser feuert nicht (das Free-Limit beißt nicht, „eine App braucht serverseitigen Code" trifft nur zu, wenn man den Formularpfad in die App legt statt auf die Plattform). **Es gibt eine Alternative, die den Auslöser nicht anfasst:** Einsendungen in **Postgres** (Supabase) statt in per-App-D1. Dann bleibt die Plattformebene die Plattformebene, D1 bleibt zu, und der Preis ist, dass die Mandantentrennung logisch statt physisch ist und die „Export = deine Datenbankdatei"-Erzählung nicht kommt. Gehört in eine Entscheidungstabelle, nicht in einen Prompt. Verbunden mit Carry-forward **C1**, **C3**, **C5**. |
 | **P4-b** | **Verhalten über der Obergrenze** (PROPOSED: ablehnen, ehrlich an den Besucher, Besitzer benachrichtigen) | Der **erste Goblin-Mechanismus, der einen echten Endnutzer abweist** — nicht einen Bauer. Was ein Besucher zu sehen bekommt, wenn das Formular eines Fremden voll ist, ist eine Produkt- und Tonfallentscheidung. |
 | **P4-c** | **Die Zahl 500/Monat** (PROPOSED, nicht entschieden) | Braucht dieselbe Behandlung wie die 10 000/Tag: eine begründete Zahl, gründer-verstellbar, an den Beta-Umfang gebunden. |
-| **P4-d** | **Wohin gehen Einsendungen, wenn der Besitzer sein Projekt löscht?** | Dieselbe Kaskadenfrage wie §1 — und §1 zeigt, dass die heutige Antwort auf die verwandte Frage „falsch" ist. Diesmal geht es um **fremde** Daten: die E-Mail-Adresse eines Besuchers, die jemand hinterlassen hat. Löschen, exportieren, aufbewahren — das ist eine DSGVO-Frage, keine Aufräumfrage. |
+| **P4-d** | **Wohin gehen Einsendungen, wenn der Besitzer sein Projekt löscht?** | Dieselbe Kaskadenfrage wie §1, ein Objekt weiter. **Aktualisiert 2026-08-13:** für die App **ist** sie inzwischen beantwortet — der Abbau ist Vorbedingung des Löschens, und ein nicht bestätigter Abbau blockiert (409, PR #90). Für **Einsendungen** ist sie es nicht, und diesmal geht es um **fremde** Daten: die E-Mail-Adresse eines Besuchers, die jemand hinterlassen hat. Löschen, exportieren, aufbewahren — das ist eine DSGVO-Frage, keine Aufräumfrage. Der Abbau-Pfad ist der Ort, an dem die Antwort einzuhängen ist, nicht ein neuer. |
 | **P4-e** | **Wo wird Turnstile verifiziert — Router oder API?** | §2 zeigt, warum diese vor dem Widget-Anlegen fallen muss: sie bestimmt, wohin das Secret gehört und ob `routerBindings()` eine Bindung dazubekommt. |
 
 ---
@@ -240,6 +301,8 @@ Worker — habe ich gegen den heutigen Code nachgeprüft und bestätigt gefunden
    Rechtsseiten — also ein Meldeweg, der zählt, aber kein Formular. Für statische Seiten ist das
    vertretbar. Sobald Apps **fremde Daten entgegennehmen**, wird die Lücke größer, ohne dass Phase 4
    sie erwähnt. Neu ins Carry-forward aufgenommen als **D5**.
-5. **§1 zuerst.** Ein Formularpfad auf eine App zu bauen, die man nach dem Löschen des Projekts nicht
-   mehr herunternehmen kann, verdoppelt den Schaden: dann liegen dort auch noch die Daten fremder
-   Leute.
+5. ~~**§1 zuerst.**~~ **ERFÜLLT 2026-08-13 (PR #90).** Der Satz stimmt weiter und ist der Grund, warum
+   §1 vor Phase 4 gehörte: einen Formularpfad auf eine App zu bauen, die man nach dem Löschen des
+   Projekts nicht mehr herunternehmen kann, verdoppelt den Schaden — dann liegen dort auch noch die
+   Daten fremder Leute. Diese Vorbedingung steht jetzt. **Offen bleibt der Bestands-Sweep
+   (X1-S)**, und er ist eine Gründer-Aktion, kein Bau-Schritt.

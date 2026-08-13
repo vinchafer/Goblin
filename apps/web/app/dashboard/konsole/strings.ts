@@ -147,6 +147,48 @@ const de = {
     auditFailed: 'Die Protokollzeile konnte nicht geschrieben werden.',
   },
 
+  // ── X1-S — die Waisen-Prüfung ─────────────────────────────────────────────
+  // Nur-Lesen. Der Ton hier trägt eine einzige Last: der Unterschied zwischen
+  // „nichts gefunden" und „konnte nicht nachsehen" darf nirgends verschwimmen —
+  // weder im Wort noch in der Farbe.
+  orphans: {
+    heading: 'Waisen-Prüfung',
+    lead: 'Fragt Cloudflare (KV und R2) und die Registry und meldet, was auf dem Substrat liegt, ohne dass eine Registry-Zeile darauf zeigt. Reiner Bericht — diese Karte löscht nichts.',
+    action: 'Prüfung starten',
+    running: 'prüft …',
+    notRun:
+      'Noch nicht geprüft. Die Prüfung läuft absichtlich nicht beim Öffnen der Seite: sie listet KV und R2 vollständig auf, und das gehört ausgelöst statt nebenbei getan.',
+    checkedAt: 'Geprüft am',
+    verdictRow: 'Befund',
+    verdictClean: 'Nichts gefunden — und alle drei Prüfungen sind durchgelaufen.',
+    verdictFound: 'Es gibt einen Befund. Jede Zeile einzeln ansehen, bevor irgendetwas passiert.',
+    verdictIncomplete:
+      'UNVOLLSTÄNDIG — ein Teil der Prüfung ist nicht durchgelaufen. Was durchgelaufen ist, steht unten; der Rest ist offen, nicht sauber.',
+    verdictUnknown:
+      'UNBEKANNT — es konnte gar nichts geprüft werden. Das ist keine Entwarnung, das ist eine ausgefallene Prüfung.',
+    routeOrphans: 'Verwaiste KV-Routen',
+    routeOrphansMeaning:
+      'Eine Adresse, die auflöst, ohne dass die Registry sie kennt: öffentlich erreichbar, für die Konsole unsichtbar, nicht sperrbar. Das ist der eigentliche X1-Befund.',
+    routesOnDeletedApps: 'Routen auf gelöschten Apps',
+    routesOnDeletedAppsMeaning:
+      'Hier gibt es eine Zeile, und sie sagt „gelöscht" — die Adresse löst trotzdem noch auf. Der Abbau ist nicht fertig geworden; er lässt sich über „Gehostete Apps" wiederholen.',
+    r2Orphans: 'Verwaiste R2-Präfixe',
+    r2OrphansMeaning:
+      'Dateien ohne Zeile. Kein öffentlicher Zugang, solange keine Route darauf zeigt — es sind Speicherkosten, die niemandem zugeordnet sind.',
+    clean: 'keine gefunden',
+    found: 'gefunden',
+    notChecked: 'NICHT GEPRÜFT',
+    notCheckedNote:
+      'Dieses Feld kam leer im Sinne von „unbekannt" zurück (null). Das heißt NICHT „keine gefunden" — es heißt, dass die Prüfung nicht abgeschlossen werden konnte. Der Grund steht in den Hinweisen.',
+    counts: 'Gezählt',
+    knownApps: 'Registry-Zeilen',
+    prefixesInR2: 'Präfixe in R2',
+    routesInKv: 'Routen in KV',
+    notes: 'Hinweise der Prüfung',
+    noPurge:
+      'Es gibt hier bewusst keinen Lösch-Knopf. Aufräumen verlangt benannte App-IDs, einen Grund fürs Protokoll und eine erneute Prüfung gegen die Registry unmittelbar vor dem Löschen — das bleibt ein eigener, ausdrücklicher Schritt und kein Knopf neben einem Bericht.',
+  },
+
   // ── PHASE 3 · U3.3 — die Prüfliste ────────────────────────────────────────
   // Der Ton hier ist bewusst anders als bei „Gehostete Apps": dort geht es um
   // etwas, das live ist. Hier geht es um etwas, das NICHT live ist und auch
@@ -402,6 +444,43 @@ const en: typeof de = {
     auditWritten: 'Audit row written.',
     auditUnavailable: 'No audit row — migration 0100 is missing. The action is in the application log.',
     auditFailed: 'The audit row could not be written.',
+  },
+
+  orphans: {
+    heading: 'Orphan check',
+    lead: 'Asks Cloudflare (KV and R2) and the registry, and reports whatever sits on the substrate with no registry row pointing at it. Report only — this card deletes nothing.',
+    action: 'Run the check',
+    running: 'checking …',
+    notRun:
+      'Not checked yet. The sweep deliberately does not run when the page opens: it lists KV and R2 in full, which belongs to a deliberate tap rather than to a page load.',
+    checkedAt: 'Checked at',
+    verdictRow: 'Finding',
+    verdictClean: 'Nothing found — and all three checks completed.',
+    verdictFound: 'There is a finding. Look at each line individually before anything happens to it.',
+    verdictIncomplete:
+      'INCOMPLETE — part of the sweep did not complete. What did complete is below; the rest is open, which differs from clear.',
+    verdictUnknown: 'UNKNOWN — nothing at all could be checked. That is a failed sweep, never an all-clear.',
+    routeOrphans: 'Orphaned KV routes',
+    routeOrphansMeaning:
+      'A hostname that resolves while the registry has never heard of it: publicly reachable, invisible to this console, impossible to suspend. This is the actual X1 finding.',
+    routesOnDeletedApps: 'Routes on deleted apps',
+    routesOnDeletedAppsMeaning:
+      'Here a row does exist, and it says "deleted" — yet the hostname still resolves. The teardown never finished; it can be retried from "Hosted apps".',
+    r2Orphans: 'Orphaned R2 prefixes',
+    r2OrphansMeaning:
+      'Files with no row. No public access as long as no route points at them — this is storage cost nobody is billed for.',
+    clean: 'none found',
+    found: 'found',
+    notChecked: 'NOT CHECKED',
+    notCheckedNote:
+      'This field came back as null, i.e. unknown. That does NOT mean "none found" — it means the check could not be completed. The reason appears in the notes.',
+    counts: 'Counted',
+    knownApps: 'Registry rows',
+    prefixesInR2: 'Prefixes in R2',
+    routesInKv: 'Routes in KV',
+    notes: 'Notes from the sweep',
+    noPurge:
+      'There is deliberately no delete button here. Cleaning up demands named app ids, a reason for the audit log, and a fresh registry check immediately before deletion — that stays its own explicit step, not a button beside a report.',
   },
 
   reviews: {

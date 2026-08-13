@@ -1,0 +1,140 @@
+Akt 2 · Ops
+Gründer-Konsole
+Angemeldet als vinc.hafner3@gmail.com
+Zustand
+Hosting-Schalter
+AUS
+Worker deployt
+UNBEKANNT
+Zone gefunden
+UNBEKANNT
+Wildcard proxied
+UNBEKANNT
+Route gebunden
+UNBEKANNT
+0099 · Registry (ops_apps)
+UNBEKANNT
+0100 · Protokoll (ops_app_audit)
+NICHT ANGEWENDET
+App-Domain
+justgoblin.app
+
+Der dokumentierte Stolperstein: ein *-Eintrag kann existieren und trotzdem nicht proxied sein (graue Wolke). Dann läuft der Worker nie.
+
+OPS_HOSTING_ENABLED ist aus. Die Ops-Ebene (/api/ops) antwortet damit für alle mit 404 — Veröffentlichen und Router-Aktionen funktionieren erst, wenn der Schalter an ist. Sperren und Teardown funktionieren trotzdem: sie hängen bewusst nicht an diesem Schalter.
+
+Ohne 0100 funktionieren Sperren weiterhin, aber jede Aktion meldet „audit: unavailable" statt eine Beweiszeile zu schreiben.
+
+Der Wert konnte nicht ermittelt werden — nicht verwechseln mit „nicht vorhanden".
+
+Zuletzt geladen: 29.7.2026, 09:14:00
+
+Neu laden
+Router ausrollen
+
+Lädt den Worker hoch, sucht die Zone, setzt den Wildcard-Eintrag und bindet die Route. Idempotent — mehrfach ausführen ist ausdrücklich in Ordnung.
+
+Router ausrollen
+
+Nicht möglich, solange OPS_HOSTING_ENABLED aus ist — /api/ops antwortet dann mit 404.
+
+Test-App veröffentlichen
+
+Veröffentlicht ein Projekt dieses Kontos unter einem eigenen Namen. Der Scan läuft vorher, die Prüfung danach.
+
+Projekt
+Projekt wählen …
+
+Die Projektliste konnte nicht geladen werden.
+
+Das hat nicht funktioniert.
+Die API hat mit einem Fehler geantwortet.
+Details
+Details kopieren
+Name
+
+Kleinbuchstaben, Ziffern und Bindestriche. Die Prüfung ist keine Reservierung — erst das Veröffentlichen entscheidet.
+
+Veröffentlichen
+
+Nicht möglich, solange OPS_HOSTING_ENABLED aus ist.
+
+Gehostete Apps
+
+Alle Apps aus der Registry. Sperren und Teardown wirken auf die App von jedem Konto — das ist Betreiber-Werkzeug.
+
+Die Registry konnte nicht gelesen werden. Das heißt NICHT „keine Apps" — es heißt, dass hier gerade niemand nachsehen kann. Prüfe Migration 0099.
+
+Waisen-Prüfung
+
+Fragt Cloudflare (KV und R2) und die Registry und meldet, was auf dem Substrat liegt, ohne dass eine Registry-Zeile darauf zeigt. Reiner Bericht — diese Karte löscht nichts.
+
+Prüfung starten
+Befund
+NICHT GEPRÜFT
+
+UNBEKANNT — es konnte gar nichts geprüft werden. Das ist keine Entwarnung, das ist eine ausgefallene Prüfung.
+
+Verwaiste KV-Routen
+NICHT GEPRÜFT
+
+Eine Adresse, die auflöst, ohne dass die Registry sie kennt: öffentlich erreichbar, für die Konsole unsichtbar, nicht sperrbar. Das ist der eigentliche X1-Befund.
+
+Dieses Feld kam leer im Sinne von „unbekannt" zurück (null). Das heißt NICHT „keine gefunden" — es heißt, dass die Prüfung nicht abgeschlossen werden konnte. Der Grund steht in den Hinweisen.
+
+Routen auf gelöschten Apps
+NICHT GEPRÜFT
+
+Hier gibt es eine Zeile, und sie sagt „gelöscht" — die Adresse löst trotzdem noch auf. Der Abbau ist nicht fertig geworden; er lässt sich über „Gehostete Apps" wiederholen.
+
+Dieses Feld kam leer im Sinne von „unbekannt" zurück (null). Das heißt NICHT „keine gefunden" — es heißt, dass die Prüfung nicht abgeschlossen werden konnte. Der Grund steht in den Hinweisen.
+
+Verwaiste R2-Präfixe
+NICHT GEPRÜFT
+
+Dateien ohne Zeile. Kein öffentlicher Zugang, solange keine Route darauf zeigt — es sind Speicherkosten, die niemandem zugeordnet sind.
+
+Dieses Feld kam leer im Sinne von „unbekannt" zurück (null). Das heißt NICHT „keine gefunden" — es heißt, dass die Prüfung nicht abgeschlossen werden konnte. Der Grund steht in den Hinweisen.
+
+Gezählt
+
+Registry-Zeilen
+UNBEKANNT
+Routen in KV
+UNBEKANNT
+Präfixe in R2
+UNBEKANNT
+
+Hinweise der Prüfung
+
+Die Registry konnte nicht gelesen werden — ohne sie sähe jede Route wie ein Waisenkind aus.
+
+Geprüft am: 13.8.2026, 09:20:00
+
+Es gibt hier bewusst keinen Lösch-Knopf. Aufräumen verlangt benannte App-IDs, einen Grund fürs Protokoll und eine erneute Prüfung gegen die Registry unmittelbar vor dem Löschen — das bleibt ein eigener, ausdrücklicher Schritt und kein Knopf neben einem Bericht.
+
+Prüfliste
+
+Veröffentlichungen, die die feste Regelliste bestanden haben und die der Klassifizierer angehalten hat. Es ist nichts hochgeladen und nichts online — es wartet auf deine Entscheidung.
+
+Die Prüfliste konnte nicht gelesen werden. Das heißt NICHT „nichts wartet" — es heißt, dass hier gerade niemand nachsehen kann. Prüfe Migration 0102.
+
+Ende-zu-Ende-Lauf
+
+Fährt die komplette Schleife auf der echten Infrastruktur: Preflight, Scan-Batterie, fünf Veröffentlichungen, Umbenennen mit 410, feindliche Datei, Sperren und Entsperren, Teardown. Dauert 5–15 Minuten.
+
+Der Fortschritt liegt im Arbeitsspeicher der API. Ein Redeploy löscht diese ANSICHT — der Lauf selbst kann trotzdem weiterlaufen und fertig werden, denn seine Schreibvorgänge gehen direkt an Cloudflare und Supabase. Kopiere das Ergebnis, bevor du etwas neu deployst.
+
+E2E starten
+
+Nicht möglich, solange OPS_HOSTING_ENABLED aus ist — der Lauf käme über den Preflight nicht hinaus.
+
+Ergebnis kopieren
+
+Kopiert das Ergebnis als JSON in die Zwischenablage — ohne Tokens, Schlüssel und Adressen.
+
+Bereinigt: E-Mail-Adressen und alles, was nach einem Schlüssel aussieht, sind entfernt.
+
+Ergebnis kopieren
+
+Es gibt noch kein Ergebnis zum Kopieren.
