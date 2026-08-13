@@ -394,7 +394,9 @@ than an amendment.
   classified anyway** — it is held for human review with **zero tokens spent**. So the arithmetic worst
   case for one scan is `6,000 + 547 + 200 = 6,747 tokens` ≈ **$0.00135** ($0.20/M) to **$0.0019**
   (no-cache), and there is no input shape that can exceed it.
-- **Billed to — PLATFORM COGS, not the user’s allowance (founder decision, this phase).** Scanning is
+- **Billed to — PLATFORM COGS, not the user’s allowance (founder decision, CONFIRMED 2026-08-13 as
+  escalation E1 of the Phase-3 report: scanning is platform COGS and is never billed to a user’s
+  quota).** Scanning is
   something Goblin does for its **own** protection as the hoster; charging a builder’s monthly quota for
   the privilege of being checked would be billing them for our liability. Concretely: this path does not
   go through `model-router.ts`, writes **no `completion_costs` row**, and is therefore invisible to

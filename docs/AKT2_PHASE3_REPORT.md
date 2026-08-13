@@ -218,18 +218,25 @@ der rot wird, wenn `process.env` in `cf-deploy.ts` je wieder auftaucht.
   Begründung: das Alternativergebnis wäre gewesen, das zentrale Gate der Phase als
   UNGEMESSEN zu melden; M13 hat den Präzedenzfall (`scripts/wave-k-refusal-gate.mts`, 8
   Completions, ~$0.001, im Ledger vermerkt); die Kosten sind **≈ $0.01** und stehen in M-A2.
-  Kein Nutzerkonto, keine Produktionsdaten, kein neuer Dienst. **Wenn der Gründer das anders
-  sieht, ist es eine Abweichung, keine Auslegung** — dann bitte künftig ausdrücklich
-  untersagen.
+  Kein Nutzerkonto, keine Produktionsdaten, kein neuer Dienst.
+  **ANGENOMMEN 2026-08-13 — ausdrücklich keine Verletzung, sondern eine Präzisierung von
+  Gesetz 8:** lesende Inferenz-Aufrufe zum Messen eines Gates sind in-session erlaubt, wenn
+  ihre Kosten im Ledger verbucht werden; alles Zustandsändernde (Deploy, Storage, DNS, Geld)
+  bleibt ausgeschlossen. Als Dauer-Regel eingetragen in `docs/GOBLIN_ARBEITSMETHODIK.md`,
+  Gesetz 8.
 
 ---
 
 ## ESKALATIONEN — Entscheidungstabelle
 
-| # | Frage | Von CC vorläufig entschieden | Warum es die Gründer-Entscheidung braucht |
+> **Stand 2026-08-13, vor dem Merge: E1 und E2 sind vom Gründer ENTSCHIEDEN, F9 ist
+> angenommen. E3–E5 bleiben offen.** Die Zeilen unten sind entsprechend gestempelt; der
+> Wortlaut der Vorlage bleibt stehen, damit nachlesbar ist, worüber entschieden wurde.
+
+| # | Frage | Von CC vorläufig entschieden | Status / warum es die Gründer-Entscheidung braucht |
 |---|---|---|---|
-| E1 | **Wer zahlt den Scan?** | Plattform-COGS, nicht die Nutzer-Allowance | Der Prompt gibt es so vor („founder decision"), aber es ist bares Geld ohne Messung: Scannen ist Goblins eigener Schutz, dem Bauer sein Kontingent dafür abzuziehen hieße, ihm unsere Haftung zu berechnen. Bestätigen. |
-| E2 | **Darf Stufe 2 je sperren?** | Nein — nur `pass` oder `review` | Eine Philosophie-Frage. Sperrt sie nie, braucht jede gehaltene App einen Menschen und die Prüfliste skaliert mit der Beta. Sperrte sie, könnte ein Modell einen ehrlichen Bauer aussperren. |
+| E1 | **Wer zahlt den Scan?** | Plattform-COGS, nicht die Nutzer-Allowance | **ENTSCHIEDEN 2026-08-13: ja — Scannen ist Plattform-COGS und wird dem Nutzer-Kontingent nie verrechnet.** (Vorlage: es ist bares Geld ohne Messung; dem Bauer sein Kontingent dafür abzuziehen hieße, ihm unsere Haftung zu berechnen.) Gebucht in Ledger **M-A2**. |
+| E2 | **Darf Stufe 2 je sperren?** | Nein — nur `pass` oder `review` | **ENTSCHIEDEN 2026-08-13: nein — Stufe 2 darf ausschließlich auf `review` leiten. Sperren bleibt deterministisch (Stufe 1) oder menschlich (Konsole).** (Vorlage: sperrte sie, könnte ein Modell einen ehrlichen Bauer aussperren; sperrt sie nie, skaliert die Prüfliste mit der Beta — das ist der akzeptierte Preis.) |
 | E3 | **App-Inhalt geht an DeepInfra** | Offengelegt in AUP + Datenschutz, Zweck ergänzt | Neuer Verarbeitungszweck bei einem bestehenden Unterauftragsverarbeiter, auf einer Rechtsseite, die anwaltlich ungeprüft ist. Gründer muss den Text mittragen. |
 | E4 | **3/5 bei `stage2-04`** | Als 3/5 berichtet, nicht getunt | Ob das für die Kategorie „Spam/SEO" reicht, ist eine Produktentscheidung. Der Fehler fällt in die mildere Richtung (Doorway geht live, statt Bauer blockiert). |
 | E5 | **Ledger-Marke `M-A2` statt `M-A1`** | Nächste freie Marke + Notiz | Repo schlägt Prompt (Regel 1); wenn der Gründer eine andere Nomenklatur will, jetzt sagen. |
@@ -252,7 +259,8 @@ der rot wird, wenn `process.env` in `cf-deploy.ts` je wieder auftaucht.
    unverändert.
 4. **Rechtstexte gegenlesen** (E3): AUP-Abschnitt „Was Goblin prüft", `/acceptable-use`, die
    DeepInfra-Zeile im Datenschutz.
-5. **E1–E5 entscheiden.**
+5. **E3–E5 entscheiden** — E1 (Plattform-COGS) und E2 (Stufe 2 sperrt nie) sind am
+   2026-08-13 entschieden und in der Tabelle gestempelt.
 6. **Über die GitHub-App mergen.** CC merged nicht.
 7. Danach **„Phase 4" an Steven** (Formulare — wo die Living App zustandsbehaftet wird).
 
