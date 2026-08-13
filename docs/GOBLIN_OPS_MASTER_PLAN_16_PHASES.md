@@ -210,12 +210,94 @@ in that file are observations, not bounds — §8.3 says which one is which.
 **Gates:** scan battery: 10 seeded samples (7 benign, 3 hostile from 3.2's own test fixtures) → expected verdicts 10/10 · publish UX walk on test account with screenshots · no English leaks (grep i18n).
 **Ledger:** M-A1 (scan tokens: formula = extracted-text tokens × classifier rate; platform-COGS).
 
+**PHASE 3 — closure record: GEBAUT — IM BETRIEB NOCH NICHT BEWIESEN.** Merged as PR #86 on
+**2026-08-13** (`5b17cb2`; API and web both confirmed running `5b17cb21` / the Phase-3 web content
+within three minutes of the merge). Migration **0102** (`ops_review_queue`) applied by the founder.
+**This record deliberately does NOT read like the Phase-2 one above, because the thing Phase 2 had is
+exactly the thing Phase 3 does not: a run on the real infrastructure.**
+
+*What was measured, and is therefore stated as a number:* stage-1 battery **9/9** (unchanged — its own
+fixture directory, its own "exactly nine" assertion, so Phase 3 could not have loosened it) · the ten
+new fixtures all clear stage 1 and so genuinely reach stage 2 **10/10** · stage-2 hostile fixtures held
+by a majority of runs **5/5** · false-positive guard passed by a majority **5/5** · flakiness law
+(≥4/5 of five runs) met by **9/10** fixtures · cohort exclusion, both dimensions, **148/148** ·
+full suites **1909/1909** (API) and **432/432** (web), `tsc` clean on both. The stage-2 figures come
+from **50 real Swift completions against DeepInfra** — `evidence/akt2-phase3/stage2-battery.json`, the
+run's own report, which is where every number in this sentence is read from. Cost ≈ $0.01, booked in
+ledger **M-A2** (the first Act-2 mechanism that spends model tokens; E1 confirms it is platform-COGS
+and never billed to a user's quota).
+
+*What is NOT measured, said plainly so nobody reads built as proven:* **the publish path with stage 2
+has never run against real R2 or real KV.** Not once. Every "a review uploads nothing" figure —
+no bytes, no route, no registry row — comes from **tests with doubles** (`ops-publish.test.ts`
+asserting `putAppFiles` / `setRoute` / `claimOpsApp` were never called). That is a strong argument
+about the code's structure and it is **not** the KV/R2 read-back that Phase 2's `hostile:nothing-written`
+step performed on production. Likewise unproven in operation: the console's approve and block actions,
+the two `ops_app_audit` rows they write, and the builder-facing publish sheet v2. The one honest
+sentence is: *the mechanism is built and test-covered; the operational proof is the founder window and
+it has not been run.* Pending window: `docs/AKT2_PHASE3_FOUNDER_WINDOW.md`. Full report, with twelve
+honest limitations and nine findings: `docs/AKT2_PHASE3_REPORT.md`; what Phase 3 knowingly leaves open
+is the carry-forward section of that same report.
+
+*Founder decisions taken at merge:* **E1** — scanning is platform-COGS, never a user's quota.
+**E2** — stage 2 may only route to `review`; blocking stays deterministic (stage 1) or human (console).
+**F9** accepted as a precision of Law 8 in `docs/GOBLIN_ARBEITSMETHODIK.md` (read-only inference to
+measure a gate is permitted in-session when booked in the ledger). E3–E5 remain open.
+
 ## PHASE 4 — DATA-1F: FORMS (the "living" precondition)
 **Objective:** Every Living App can receive form submissions; the owner sees them.
 **Units:** (4.1) D1 provisioning on first form-enabled publish (per-app DB; record d1_id). (4.2) Ingest endpoint `/f/:appId/:formId` as platform Worker: Turnstile verify → schema-light validation → D1 insert → Resend notify owner (German template, honest: what arrived, when, from which form — no invented context). (4.3) Dashboard inbox: mobile-first card list per app, mark-read, CSV export; design tokens only. (4.4) Caps per plan (PROPOSED 500/mo Build-tier; read from config, not hardcoded) + honest over-cap behavior (submission stored? NO — rejected with honest message to visitor AND owner notified; decide-and-document in code comment referencing this phase). (4.5) Form snippet auto-injected into generated apps that declare a form (builder-side minimal change).
 **Gates:** real round-trip on prod test app: submit → D1 row (evidence: row dump) → owner email received (evidence: screenshot from test-account inbox) 3/3 · Turnstile failure path honest.
 **Ledger:** email sends line if not covered; caps documented.
 **Founder actions:** apply migrations; confirm Turnstile keys in Railway (setup steps provided).
+
+**PHASE 4 — readiness note (written 2026-08-13 at the close of Phase 3; a note for the next prompt,
+NOT a design).** What Phase 4 needs that does not exist today, checked against the code rather than
+recalled:
+
+*Founder must obtain before the phase can finish.* **Turnstile keys.** There is no Turnstile
+anywhere in the repo — the string appears only in `OPS_SPIKE_0_DECISION_TABLE.md` §(e)/§73 and the
+Blueprint, never in code, and no env var is reserved for it. The founder creates a widget in the
+Cloudflare dashboard and puts **two** values in Railway: the **sitekey** (public, must reach the
+generated app's HTML, so a `NEXT_PUBLIC_`-style or app-injected value) and the **secret key**
+(server/Worker side, never in a bundle). The spike already verified the relevant free-tier facts:
+unlimited challenges, 20 widgets, 10 hostnames per widget, **no wildcard hostnames — but a hostname
+covers all its subdomains**, so a single `justgoblin.app` entry covers every Living App. Worth
+re-reading that row before writing the prompt.
+
+*Decisions still open.* **(a) D1 at all** — `OPS_SPIKE_0` D2 chose the lean plane explicitly
+*without* D1, and ledger M-H1 records "no D1, no Workers for Platforms, $0.00/month committed". A
+per-app D1 reopens that decision; it is a substrate change, not an increment, and it belongs in a
+decision table before anyone writes code. **(b) The over-cap behaviour** is already flagged PROPOSED
+in the unit list above (reject with an honest message to the visitor *and* notify the owner) — it
+needs a founder yes, because it is the first Goblin mechanism that turns away a real end user, not a
+builder. **(c) The 500/month Build-tier figure** is PROPOSED, not decided. **(d) Where submissions
+live for an app whose owner deletes the project** — the same cascade question 0099 already carries a
+warning about.
+
+*What Phase 4 must CHANGE rather than extend.* Three places, and they are the reason this note
+exists:
+1. **`cf-deploy.ts` has no D1 at all** — `grep -c d1` returns 0, and `CfBinding` is a closed union of
+   `kv_namespace | r2_bucket | plain_text`. Phase 4 widens that union and adds D1 create/query calls.
+   The `ops_apps.d1_database_id` column has been sitting nullable since 0099 waiting for exactly this,
+   so the *schema* extends cleanly; the *adapter* does not.
+2. **The router Worker only serves bytes.** `worker.js` resolves `route:{name}` from KV and streams the
+   matching R2 object; there is no request-method branching and no non-GET path. An ingest endpoint
+   `/f/:appId/:formId` means the router grows a second responsibility — and the Worker source is
+   **generated** (`ops-router/worker-source.generated.ts`, via `pnpm ops:gen-router`), so the change
+   is to the generator, not to a checked-in file someone might edit by hand.
+3. **`ops-caps.ts` knows only `dailyRequests`.** A submissions-per-month cap is a new dimension on
+   `CapsProfile`, and 0099 stores the profile as a *name* precisely so this needs no migration.
+
+*What extends cleanly, for contrast:* Resend (`lib/email.ts` is the same client M-A1 already routes
+auth mail through), the beta gate and kill switch (`isOpsBetaAccount`, unchanged), the audit trail
+(0100's `action` has no CHECK, so a form-related operator action needs no migration), and the
+dashboard shell the inbox will live in.
+
+*One inherited hazard worth naming up front:* Phase 3's classifier reads the artifact at publish time.
+A form-enabled app is **stateful** — what arrives later is not scanned by anything, and nothing in
+Phase 3 pretends otherwise. Whatever the Phase-4 prompt says about abuse, it should not imply that the
+pre-publish scan covers submitted content. It does not.
 
 ## PHASE 5 — KEEPER-1a: HEARTBEAT & HONEST STATUS (K0)
 **Objective:** Goblin factually knows whether each Living App is up — and shows it without cosmetics.

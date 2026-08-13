@@ -243,6 +243,25 @@ der rot wird, wenn `process.env` in `cf-deploy.ts` je wieder auftaucht.
 
 ---
 
+## CARRY-FORWARD — was Phase 3 offen an die Nachwelt übergibt
+
+Nichts davon ist in dieser Phase repariert worden, und nichts davon soll es sein. Jede Zeile
+nennt die Stelle, die sie künftig besitzt — damit ein späterer Leser nicht neu herleiten muss,
+wo das Thema wohnt.
+
+| # | Offen | Zuhause |
+|---|---|---|
+| C1 | **`stage2-04-seo-doorway` liegt bei 3/5**, unter der Stabilitätsschwelle. Bewusst nicht durch Prompt-Tuning grün gemacht — gegen dieselben zehn Fixtures zu tunen, gegen die man den Prompt danach zitiert, misst das Tuning. Ehrliche Aussage: *der Klassifizierer hält SEO-Doorway-Seiten etwa drei von fünf Malen.* Fehlerrichtung ist die mildere (Doorway geht live statt Bauer blockiert). | `evidence/akt2-phase3/stage2-battery.json` als Messwert · `hosted-scan-battery-v2.ts` als Tabelle · Neubewertung, wenn ein echter Spam-Fall auftritt (ABUSE_RESPONSE §7: „jeden echten Missbrauchsfall als neue Regel + Fixture gießen") |
+| C2 | **Die sechs bekannten Lücken.** Stufe 2 schließt **keine** davon. Sie erkennt Absichten statt Muster und trifft damit einige seltener — das ist etwas anderes als „geschlossen". | `docs/ABUSE_RESPONSE.md` §6 (Residual-Risk-Register), unverändert gültig |
+| C3 | **Die Klassifizierer-Ausgabe wird nirgends verbucht.** Kein `completion_costs`-Eintrag, also unsichtbar für `goblinWeightedUsage()` und `isOverMonthlyAllowance()`. Begrenzt ist sie **nur** durch den harten Cap pro Aufruf und die Zahl möglicher Publishes eines Beta-Kontos. Sobald das die Allowlist verlässt, braucht es einen gemessenen Pfad (eigene `platform_cogs`-Zeile). | Ledger **M-A2**, Abschnitt „Billed to" — dort steht die Konsequenz bereits ausgeschrieben |
+| C4 | **Ein Provider-Ausfall füllt die Prüfliste, ungefedert.** Fail-closed heißt: DeepInfra weg ⇒ jede gehostete Veröffentlichung wird gehalten. Gewollte Richtung, aber es gibt heute nichts, was den Stau abfängt — keine Warteschlangen-Wiederholung, keine Benachrichtigung an den Betreiber, keinen Automatik-Retry. | `abuse-classifier.ts` (Verhalten) · Kandidat für die Keeper-Phasen 5–7, wo Betreiber-Benachrichtigung sowieso gebaut wird |
+| C5 | **Der Token-Schätzer läuft 23 % zu tief** — 710 geschätzt gegen 916 gemessen, weil `chars ÷ 4` eine Prosa-Zahl ist und Markup dichter ist. Kostenseitig harmlos (der Ledger rechnet mit dem gemessenen Wert); **budgetseitig ist es die falsche Richtung**: eine App knapp unter der geschätzten Decke kann real darüber liegen. | `CHARS_PER_TOKEN_ESTIMATE` in `abuse-classifier.ts` · Zahlen in Ledger **M-A2** |
+| C6 | **Das 6 000-Token-Budget hält vermutlich jede Framework-App.** 6 000 ≈ 24 000 Zeichen extrahierter Text; ein einziges gebündeltes Vite-/React-`index-*.js` liegt deutlich darüber. Eine schlichte statische Seite passt bequem — ein echter Build landet **by design** in der Prüfliste. Beim Schreiben des Gründer-Fensters aufgefallen, **nicht gemessen**: keine echte Framework-App ist bisher durch diesen Pfad gegangen. | `OPS_SCAN_CLASSIFIER_MAX_TOKENS` (Stellschraube, kein Deploy nötig) · zu messen im Gründer-Fenster, Schritt 4 Weg A |
+| C7 | **Die Konsole meldet eine gehaltene Veröffentlichung als „Live."** — die Publish-Karte prüft nur `response.ok` und 202 ist ok. False-Green im Betreiber-Werkzeug; der Publish-Pfad selbst ist korrekt. Gefunden in der Closing-Wave, dort ausdrücklich docs-only, deshalb **nicht** behoben. | `console-client.tsx` → `publish()` · Umgehung und Beweisweg stehen in `docs/AKT2_PHASE3_FOUNDER_WINDOW.md` §1 |
+| C8 | **Die Protokollzeilen einer Prüflisten-Entscheidung sind in keiner Oberfläche lesbar.** `GET /api/admin/ops/apps/:idOrName` findet sie nicht: ein Kandidat hat keine App-ID, also trägt `app_id` die ID der Queue-Zeile, zu der es keine `ops_apps`-Zeile gibt. Nur per SQL sichtbar. | `ops-audit.ts` (Formhinweis) · `ops-admin.ts` als künftige Lesestelle · Abfrage in `AKT2_PHASE3_FOUNDER_WINDOW.md` §6 |
+
+---
+
 ## FOUNDER ACTIONS
 
 1. **Migration 0102 anwenden** (`supabase/migrations/0102_ops_review_queue.sql`, Supabase
