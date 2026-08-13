@@ -1,7 +1,10 @@
 # Missbrauchs-Runbook (ABUSE_RESPONSE) — für den Gründer
 
-**Stand: 2026-07-28 · Wave-K, Layer 5 (die menschliche Schicht) · erweitert um Abschnitt 8
-(von Goblin gehostete Apps, AKT 2 · Pre-Phase-2).**
+**Stand: 2026-08-12 · Wave-K, Layer 5 (die menschliche Schicht) · erweitert um Abschnitt 8
+(von Goblin gehostete Apps, AKT 2 · Pre-Phase-2) · Abschnitt 8.3 am 2026-08-12 auf den
+U2.8-Lauf umgestellt: die vier Phase-2-Anforderungen sind nicht mehr nur gebaut, sondern auf
+der echten Infrastruktur bewiesen, und die geschätzte Sperr-Zeit ist durch einen Messwert
+ersetzt (`evidence/akt2-phase2/`).**
 
 Dieses Runbook ist der Handlungs-Leitfaden, wenn ein Missbrauchs-Verdacht auftaucht.
 Es setzt die fünf Schutzschichten voraus (K1 Nutzungsrichtlinie · K2 Generierungs-Refusal ·
@@ -230,32 +233,70 @@ Ehrlichkeits-Niederlage.** S2/S3 zuerst mit dem Menschen klären.
 | `ops_apps.status = 'suspended'` | DB (Migration 0099) | Der vorgesehene Not-Aus pro App. Ein `UPDATE`, sofort umkehrbar — das Gegenteil vom Löschen. |
 | `deleteAppFiles(appId)` / `deleteRoute(name)` | `apps/api/src/services/cf-deploy.ts:552` / `:752` | Harte Entfernung: R2-Prefix bzw. KV-Route. **Nicht umkehrbar.** Erst nach Beweissicherung. |
 
-**Die vier Phase-2-Anforderungen — Stand nach AKT 2 · Phase 2 (2026-07-28):**
+**Die vier Phase-2-Anforderungen — Stand nach dem U2.8-Fenster (2026-08-12):**
 
-> **Im Code erledigt, im Betrieb noch unbelegt.** Alle vier sind gebaut und durch Tests
-> abgedeckt. Der Beweis auf der echten Infrastruktur steht aus, bis der Gründer das
-> U2.8-Fenster gefahren hat (`docs/AKT2_PHASE2_FOUNDER_WINDOW.md`). Bis dahin gilt hier:
-> gebaut ≠ bewiesen.
+> **Alle vier: IM BETRIEB BEWIESEN — nicht mehr nur gebaut.** Hier stand bis zum 2026-08-12
+> „im Code erledigt, im Betrieb noch unbelegt": alle vier waren gebaut und durch Tests
+> abgedeckt, der Beweis auf der echten Infrastruktur stand aus. Er ist erbracht. Der Gründer
+> hat das U2.8-Fenster am **2026-08-12** aus der Gründer-Konsole gefahren, gegen die **echte
+> Cloudflare-Infrastruktur** (echtes R2, echtes KV, der Router-Worker auf `justgoblin.app`,
+> die echte `ops_apps`-Registry): **19/19 Schritte grün · Veröffentlichungen 5/5 ·
+> Scan-Batterie 9/9 · Sperr-Runde 3/3 · Laufzeit 13 033 ms.** Beweis:
+> `evidence/akt2-phase2/e2e-founder-window-2026-08-12.json` — der eingecheckte Bericht des
+> Laufs selbst, aus dem jede Zahl in diesem Absatz gelesen ist; Index dazu:
+> `evidence/akt2-phase2/README.md`.
+>
+> **Und die Grenze dieses Satzes, im selben Atemzug:** bewiesen heißt hier *einmal
+> beobachtet*, am 2026-08-12, von einem Ort aus. Die **Zählungen** sind Gates und sie sind
+> erfüllt. Die **Zeiten** aus diesem Lauf sind Messwerte, keine Zusicherungen — das gilt
+> besonders für die Sperr-Zeit in Punkt 1.
 
-1. ~~Der Router respektiert `status = 'suspended'` noch nicht~~ **GEBAUT (U2.1).** Es gibt
+1. ~~Der Router respektiert `status = 'suspended'` noch nicht~~ **GEBAUT (U2.1) · IM BETRIEB
+   BEWIESEN (U2.8, 2026-08-12).** Es gibt
    jetzt einen Router Worker (`apps/api/src/services/ops-router/worker.js`). Er liest
    `route:{name}` aus KV und weist eine gesperrte App mit einer **gestalteten deutschen
    Seite** ab (403, „Diese App wurde vorübergehend gesperrt.", Link auf die
    Nutzungsrichtlinie). Der Not-Aus braucht **keine Datenbank**: der Router fragt die API
    nie etwas, also wirkt die Sperre auch dann, wenn die API steht.
-   **Eine ehrliche Einschränkung:** KV-Lesevorgänge haben 60 Sekunden Cache pro Standort.
-   Eine Sperre greift also innerhalb einer Minute, nicht in derselben Sekunde. Der
-   U2.8-Lauf misst die tatsächliche Zeit und schreibt sie als `propagationSec` ins Ergebnis.
-2. ~~Es gibt keinen Schreibpfad für die Suspendierung~~ **GEBAUT (U2.5).** Kein Hand-`UPDATE`
+   **Wie schnell eine Sperre öffentlich sichtbar wurde — gemessen, nicht geschätzt:** hier
+   stand eine Schätzung („greift innerhalb einer Minute, nicht in derselben Sekunde"),
+   abgeleitet aus dem 60-Sekunden-Cache, den KV-Lesevorgänge pro Standort haben. Der
+   U2.8-Lauf hat es stattdessen gemessen. **Messwert vom 2026-08-12: die Sperre war nach
+   1 Sekunde öffentlich sichtbar** (Messung der Konsole); der Lauf selbst schreibt
+   `propagationSec: 0` ins Ergebnis, weil er in ganzen Sekunden zählt und die erste
+   Abfrage bereits die gesperrte Seite bekam. Die Schätzung war also zu pessimistisch.
+   **Was dieser Messwert ist und was nicht:** er ist **eine Beobachtung aus einem einzigen
+   Lauf**, von einem Standort aus, am 2026-08-12 — **keine Zusicherung**. Niemandem darf
+   „innerhalb einer Sekunde" versprochen werden, weder einem Melder, noch einem Opfer, noch
+   in einer Rechtsseite. Der Mechanismus gibt das nicht her: der 60-Sekunden-KV-Cache
+   existiert unverändert, und ein anderer Cloudflare-Standort, der die alte Route frisch
+   gecacht hat, kann sie bis zu einer Minute weiter ausliefern. **Die belastbare Aussage
+   bleibt: innerhalb einer Minute — und einmal gemessen waren es 1 Sekunde.**
+   *(Gründer-Entscheid 2026-08-12: die Minute bleibt stehen. Der Messwert von 1 Sekunde hebt
+   den 60-Sekunden-Cache des Mechanismus nicht auf; das Runbook nennt den schlechtesten Fall
+   und den Messwert daneben, nicht den Messwert statt des schlechtesten Falls.)*
+   Jeder weitere Lauf schreibt seine eigene Zeit als `propagationSec` ins Ergebnis; wer die
+   Zahl hier ändert, ersetzt sie durch einen neuen Messwert, nicht durch eine bessere
+   Schätzung. Im Lauf vom 2026-08-12 waren **alle sechs** gemessenen Propagationszeiten `0`
+   (`public:serves`, `rename:old-410`, `rename:new-200`, `suspend:page-live`,
+   `unsuspend:restored`, `teardown:404`) — sechs Nullen von **einem** Standort aus, was über
+   einen anderen Standort mit frisch gecachter alter Route weiterhin nichts aussagt.
+2. ~~Es gibt keinen Schreibpfad für die Suspendierung~~ **GEBAUT (U2.5) · IM BETRIEB BEWIESEN
+   (U2.8, 2026-08-12 — Sperr-Runde 3/3 über die echten Endpunkte).** Kein Hand-`UPDATE`
    mehr im SQL-Editor. Stattdessen:
    `POST /api/admin/ops/apps/{name}/suspend` · `.../unsuspend` · `DELETE /api/admin/ops/apps/{name}`.
    Jeder Aufruf **verlangt einen Grund** (ohne Grund: 400) — weil Abschnitt 8.4 dem Nutzer
    diesen Satz schuldet und 8.5 ohne ihn keinen Widerspruch führen kann. Jede Aktion
-   schreibt eine Zeile in `ops_app_audit` (Migration **0100**, siehe 8.7).
+   schreibt eine Zeile in `ops_app_audit` (Migration **0100**, siehe 8.7). Auch das ist im
+   U2.8-Lauf nachgewiesen und nicht bloß behauptet: `migrations.audit: true`, und der Schritt
+   `suspend:flip` meldet `route ok, registry ok, audit written` — die Sperre hat ihre
+   Beweiszeile wirklich geschrieben, statt auf `audit: "unavailable"` zurückzufallen.
    Gehängt an den **Admin-Key**, nicht an die Beta-Allowlist, und **absichtlich nicht** an
    `OPS_HOSTING_ENABLED`: dieser Schalter legt die API-Oberfläche still und den Router
    nicht. Act 2 dunkel zu schalten darf nicht die einzige Sperre entwaffnen.
-3. ~~Es gibt keinen Orphan-Sweep~~ **GEBAUT (U2.5), mit Grenze.** `GET /api/admin/ops/orphans`
+3. ~~Es gibt keinen Orphan-Sweep~~ **GEBAUT (U2.5) · IM BETRIEB BEWIESEN (U2.8, 2026-08-12 —
+   der Teardown hat sein Ergebnis auf echtem R2/KV nachgewiesen), mit unveränderter Grenze.**
+   `GET /api/admin/ops/orphans`
    listet R2-Prefixe ohne Registry-Zeile — genau das, was das Löschen eines Projekts
    hinterlässt. Ein Teardown **beweist** sein Ergebnis, statt es zu behaupten: er listet
    den Prefix danach erneut und liest die Route erneut (`orphansRemaining`, `routeGone`).
@@ -265,7 +306,8 @@ Ehrlichkeits-Niederlage.** S2/S3 zuerst mit dem Menschen klären.
    **Weiterhin offen:** die Projektlöschung selbst räumt nicht automatisch auf. Sie
    entfernt die Zeile per Cascade wie bisher; die Dateien findet erst der Sweep. Das ist
    eine bewusste Phasengrenze (Act-1-Code wird hier nicht angefasst), keine Vergesslichkeit.
-4. ~~Der Publish-Scan (K3) ist an den Vercel-Pfad gebunden~~ **GEBAUT (U2.3).** Der
+4. ~~Der Publish-Scan (K3) ist an den Vercel-Pfad gebunden~~ **GEBAUT (U2.3) · IM BETRIEB
+   BEWIESEN (U2.8, 2026-08-12 — Scan-Batterie 9/9 auf Produktion).** Der
    CF-Publish-Pfad läuft durch **dieselben K3-Regeln** — wiederverwendet, nicht
    nachgebaut, denn zwei Scanner wären zwei Antworten auf dieselbe Richtlinie. Dazu drei
    Ergänzungen, nur wo *Hoster sein* den Unterschied macht: Wallet-Drainer,
@@ -280,6 +322,32 @@ Ehrlichkeits-Niederlage.** S2/S3 zuerst mit dem Menschen klären.
    größere — darunter eine Seite, die Seed Phrases *erklärt* und nicht blockiert werden darf.
    **Damit ist die öffentliche AUP-Zusage „automatische Prüfungen vor dem Veröffentlichen"
    ab der ersten gehosteten Veröffentlichung wahr** — nicht erst mit Phase 3.
+
+   **Der Beleg dafür, aus dem U2.8-Lauf selbst (2026-08-12).** Bis hierher stützte sich diese
+   Zusage auf eingecheckte Fixtures — also darauf, dass der Scan im Test das Richtige tut. Der
+   Lauf hat es auf dem echten Publish-Pfad wiederholt: er hat die feindliche Fixture
+   (`hostile-01-paypal-phish`, ein Zugangsdaten abgreifender PayPal-Login-Klon) durch
+   `publishHostedApp` geschickt, so wie ein echter Nutzer es täte. Ergebnis, zwei getrennte
+   Schritte, beide grün:
+
+   - `hostile:blocked` — **am Scan verweigert, Regel `PH-BRAND-CRED`**, `code: 'scan_blocked'`.
+     Die Regel-ID steht im Ergebnis für uns; sie geht **nicht** an den Nutzer hinaus
+     (`ops-publish.test.ts:239`) — eine Blockierliste, die sich selbst vorliest, ist eine
+     Bauanleitung zum Umgehen.
+   - `hostile:nothing-written` — **es wurde nichts geschrieben.** Der Lauf behauptet das nicht,
+     er sieht nach: er liest die KV-Route der abgelehnten App danach erneut und verlangt
+     `null`. Keine Route, keine Registry-Zeile, keine Bytes in R2 — der Scan läuft eben
+     *bevor* das erste Byte landet, und dieser Lauf ist der Nachweis auf der echten
+     Infrastruktur, nicht im Testdouble.
+
+   **Das ist die Evidenz hinter dem Satz in der Nutzungsrichtlinie.** Wer die AUP-Zusage
+   „automatische Prüfungen vor dem Veröffentlichen" je verteidigen muss — gegenüber einem
+   Melder, einem Anwalt, einem Provider —, zeigt diese beiden Schritte in
+   `evidence/akt2-phase2/e2e-founder-window-2026-08-12.json`. **Und sagt im selben Atemzug
+   dazu, was sie nicht sind:** ein Beleg, dass *diese* Regel *diese* Fixture erkennt und
+   dann nichts schreibt — kein Beleg, dass der Scan jede feindliche Seite erkennt. Die
+   deterministische Schicht erkennt Muster, keine Absicht; die sechs bekannten Lücken aus
+   Abschnitt 6 gelten unverändert.
 
 **Was Phase 3 hier ergänzt (und was heute NICHT existiert):** der Swift-Klassifizierer, die
 Review-Queue und die Admin-Oberfläche. Die deterministische Schicht erfüllt die Zusage; sie
