@@ -204,6 +204,17 @@ const de = {
     auditWritten: 'Protokollzeile geschrieben.',
     auditUnavailable: 'Keine Protokollzeile — Migration 0100 fehlt. Die Entscheidung steht im Anwendungs-Log.',
     auditFailed: 'Die Protokollzeile konnte nicht geschrieben werden.',
+    // ── C8 (2026-08-13): der Entscheidungs-Verlauf, ohne SQL ─────────────────
+    decidedHeading: 'Zuletzt entschieden',
+    decidedNone: 'Es wurde noch nichts entschieden.',
+    decidedBy: 'Entschieden von',
+    decidedAt: 'Entschieden am',
+    decidedReason: 'Grund',
+    decidedNoReason: 'kein Grund hinterlegt',
+    statusApproved: 'freigegeben',
+    statusBlocked: 'abgelehnt',
+    decidedNote:
+      'Gelesen aus der Prüfliste selbst. Die Beweiszeile in ops_app_audit ist davon unberührt und bleibt 12 Monate — sie überlebt auch das Löschen des Kontos, diese Liste nicht.',
   },
 
   e2e: {
@@ -445,6 +456,16 @@ const en: typeof de = {
     auditWritten: 'Audit row written.',
     auditUnavailable: 'No audit row — migration 0100 is missing. The decision is in the application log.',
     auditFailed: 'The audit row could not be written.',
+    decidedHeading: 'Recently decided',
+    decidedNone: 'Nothing has been decided yet.',
+    decidedBy: 'Decided by',
+    decidedAt: 'Decided at',
+    decidedReason: 'Reason',
+    decidedNoReason: 'no reason recorded',
+    statusApproved: 'approved',
+    statusBlocked: 'rejected',
+    decidedNote:
+      'Read from the review queue itself. The evidence row in ops_app_audit is untouched by this and is kept for 12 months — it outlives account deletion, this list does not.',
   },
 
   e2e: {

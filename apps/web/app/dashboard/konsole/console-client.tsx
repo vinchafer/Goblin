@@ -89,6 +89,17 @@ interface ReviewItemView {
   createdAt: string;
 }
 
+/** PHASE 3 · C8 — one settled item: who decided what, when, and why. */
+interface ReviewDecisionView {
+  id: string;
+  requestedName: string;
+  status: string;
+  categories: string[];
+  decidedBy: string | null;
+  decidedAt: string | null;
+  decisionReason: string | null;
+}
+
 interface PreviewView {
   available: boolean;
   files: Array<{ path: string; text: string; bytes: number; truncated: boolean }>;
@@ -336,6 +347,7 @@ export function OpsConsole({ initialStatus }: { initialStatus: StatusPayload }) 
 
   const [reviews, setReviews] = useState<ReviewItemView[]>([]);
   const [reviewsAvailable, setReviewsAvailable] = useState<Tri>(null);
+  const [decided, setDecided] = useState<ReviewDecisionView[]>([]);
   const [reviewsError, setReviewsError] = useState<HonestError | null>(null);
   const [openReview, setOpenReview] = useState<string | null>(null);
   const [reviewReason, setReviewReason] = useState('');
@@ -344,9 +356,12 @@ export function OpsConsole({ initialStatus }: { initialStatus: StatusPayload }) 
   const [reviewDone, setReviewDone] = useState<Record<string, { decision: string; audit?: string; published?: boolean; message?: string }>>({});
 
   const refreshReviews = useCallback(async () => {
-    const res = await call<{ available: boolean; items: ReviewItemView[] }>('/api/ops-console/reviews');
+    const res = await call<{ available: boolean; items: ReviewItemView[]; decided?: ReviewDecisionView[] }>(
+      '/api/ops-console/reviews',
+    );
     if (res.ok) {
       setReviews(res.data.items);
+      setDecided(res.data.decided ?? []);
       setReviewsAvailable(res.data.available);
       setReviewsError(null);
     } else {
@@ -1160,6 +1175,41 @@ export function OpsConsole({ initialStatus }: { initialStatus: StatusPayload }) 
             </div>
           );
         })}
+
+        {/* ── C8: the decision trail, so the founder never needs SQL to see
+            who decided what, when and why. Read from the queue row itself —
+            see listRecentReviewDecisions for why not from ops_app_audit. ── */}
+        {reviewsAvailable === true ? (
+          <div className="oc-field" data-testid="review-decided">
+            <h3 className="oc-lead"><strong>{s.reviews.decidedHeading}</strong></h3>
+            {decided.length === 0 ? <p className="oc-why">{s.reviews.decidedNone}</p> : null}
+            {decided.map((d) => (
+              <div className="oc-app" key={d.id}>
+                <div className="top">
+                  <span className="nm">{d.requestedName}</span>
+                  <span className={`oc-state ${d.status === 'approved' ? 'ok' : 'bad'}`}>
+                    {d.status === 'approved' ? s.reviews.statusApproved : s.reviews.statusBlocked}
+                  </span>
+                </div>
+                <Row k={s.reviews.decidedBy}>
+                  {d.decidedBy ?? <span className="oc-state unknown">{s.status.unknown}</span>}
+                </Row>
+                <Row k={s.reviews.decidedAt}>
+                  {d.decidedAt ? (
+                    new Date(d.decidedAt).toLocaleString(lang === 'de' ? 'de-CH' : 'en-GB')
+                  ) : (
+                    <span className="oc-state unknown">{s.status.unknown}</span>
+                  )}
+                </Row>
+                <Row k={s.reviews.decidedReason}>
+                  {d.decisionReason ?? <span className="oc-note">{s.reviews.decidedNoReason}</span>}
+                </Row>
+                {d.categories.length > 0 ? <Row k={s.reviews.categories}>{d.categories.join(' · ')}</Row> : null}
+              </div>
+            ))}
+            <p className="oc-note">{s.reviews.decidedNote}</p>
+          </div>
+        ) : null}
 
         {reviewsError ? (
           <ErrorBlock error={reviewsError} title={s.error.title} detailLabel={s.error.detail} copyLabel={s.error.copyDetail} />

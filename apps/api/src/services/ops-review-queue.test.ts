@@ -11,6 +11,7 @@ import {
   enqueueReview,
   findReviewItem,
   listPendingReviews,
+  listRecentReviewDecisions,
   opsReviewQueueAvailable,
 } from './ops-review-queue';
 
@@ -21,7 +22,7 @@ function fakeSb(results: QueryResult[]) {
   const calls: string[] = [];
   let i = 0;
   const builder: Record<string, unknown> = {};
-  for (const m of ['select', 'insert', 'update', 'eq', 'order', 'limit', 'single', 'maybeSingle']) {
+  for (const m of ['select', 'insert', 'update', 'eq', 'neq', 'order', 'limit', 'single', 'maybeSingle']) {
     builder[m] = (...args: unknown[]) => {
       calls.push(`${m}(${args.map((a) => (typeof a === 'object' ? JSON.stringify(a) : String(a))).join(',')})`);
       return builder;
@@ -89,6 +90,11 @@ describe('pre-migration (0102 not applied)', () => {
     const { sb } = fakeSb([ABSENT]);
     await expect(decideReview('r1', 'approved', 'founder@example.com', null, sb)).resolves.toBeNull();
   });
+
+  it('reports the DECISION trail as unavailable rather than as "nothing decided"', async () => {
+    const { sb } = fakeSb([ABSENT]);
+    await expect(listRecentReviewDecisions(sb)).resolves.toEqual({ available: false, items: [] });
+  });
 });
 
 describe('a transport error is not "not migrated"', () => {
@@ -141,5 +147,45 @@ describe('post-migration', () => {
   it('answers null when the row was already settled by someone else', async () => {
     const { sb } = fakeSb([PRESENT, { data: null, error: null }]);
     await expect(decideReview('r1', 'approved', 'founder@example.com', null, sb)).resolves.toBeNull();
+  });
+});
+
+// ── C8: the decision trail, readable without SQL ────────────────────────────
+
+describe('the decision trail', () => {
+  const DECIDED = {
+    ...ROW,
+    status: 'blocked',
+    decided_by: 'founder@example.com',
+    decided_at: '2026-08-13T09:00:00.000Z',
+    decision_reason: 'Fake-Shop',
+  };
+
+  it('lists settled rows only, newest decision first', async () => {
+    const { sb, calls } = fakeSb([PRESENT, { data: [DECIDED], error: null }]);
+    const r = await listRecentReviewDecisions(sb);
+    expect(r.available).toBe(true);
+    expect(r.items).toHaveLength(1);
+    // Pending items belong in the OTHER list; a queue that mixed them would make
+    // "waiting on you" and "already handled" look the same at a glance.
+    expect(calls.join('|')).toContain('neq(status,pending)');
+    expect(calls.join('|')).toContain('order(decided_at');
+  });
+
+  it('carries who, when and why — the four facts the founder needed SQL for', async () => {
+    const { sb } = fakeSb([PRESENT, { data: [DECIDED], error: null }]);
+    const [item] = (await listRecentReviewDecisions(sb)).items;
+    expect(item).toMatchObject({
+      requestedName: 'meinladen',
+      status: 'blocked',
+      decidedBy: 'founder@example.com',
+      decidedAt: '2026-08-13T09:00:00.000Z',
+      decisionReason: 'Fake-Shop',
+    });
+  });
+
+  it('treats a failed read as unavailable, not as an empty trail', async () => {
+    const { sb } = fakeSb([PRESENT, { data: null, error: { code: '57014', message: 'timeout' } }]);
+    await expect(listRecentReviewDecisions(sb)).resolves.toEqual({ available: false, items: [] });
   });
 });
