@@ -4,6 +4,11 @@
 Scope of the sweep: `apps/`, `packages/`, `docs/` — legal pages, i18n dictionaries,
 help/FAQ corpus, onboarding copy, product copy, internal docs.
 
+> **Line numbers are as of 2026-07-28 and have since drifted** (checked 2026-08-13, Act-2
+> consistency sweep). The *file* in each row is still the right file; grep the quoted string
+> rather than trusting the `:NN`. The claims and their statuses were re-checked and are correct
+> — the one row that had changed is S5, now stamped below.
+
 ## Why this file exists
 
 From Phase 2 onward Goblin publishes user apps to `https://{name}.justgoblin.app` on a
@@ -56,7 +61,7 @@ revisited when hosting leaves beta:
 | # | Location | Note |
 |---|---|---|
 | S4 | `apps/web/components/code/VercelConnectSheet.tsx:80-86` | "connect your Vercel account once" — the Vercel path still exists and is still the default. |
-| S5 | `apps/web/components/code/VercelConnectSheet.tsx:4` | Stale comment citing the **2026-07-07 founder decision** "Goblin does NOT host". That ruling was reopened 2026-07-11 (`docs/GOBLIN_THESIS_v3_DRAFT.md:11`) and is now superseded. Comment only, no user-visible text. |
+| S5 | `apps/web/components/code/VercelConnectSheet.tsx` (now :10–16) | ~~Stale comment citing the **2026-07-07 founder decision** "Goblin does NOT host".~~ **CORRECTED in this same PR (U-B1/S5)** — the comment now carries a `SUPERSEDED PREMISE` block naming the 2026-07-11 reopening and the Phase-2 hosting path. Comment only; the sheet's behaviour and user-visible text are unchanged, which is also why the file's diff stayed empty through all of Phase 3. |
 | S6 | `apps/web/components/settings/ConnectorsPage.tsx:263, :290` | „Goblin pusht in deinen eigenen Vercel-Account." Accurate for the Vercel connector. |
 | S7 | `apps/web/app/welcome/_components/i18n.ts:380, :641` | „Du bringst dein eigenes Vercel mit." Accurate as the default onboarding path. |
 | S8 | `apps/web/app/welcome/integrations/page.tsx:120, :140` | "bring your own Vercel" explainer. |

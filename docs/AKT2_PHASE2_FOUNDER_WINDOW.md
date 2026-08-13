@@ -2,6 +2,16 @@
 
 **Stand: 2026-07-28 · gehört zu PR „AKT 2 · Phase 2 — Hosted Publish".**
 
+> **BEIDE FENSTER SIND GELAUFEN — dies ist ab jetzt ein Protokoll, keine Aufgabenliste.**
+> (Stempel 2026-08-13, Akt-2-Konsistenzlauf.) U2.2: der Router steht auf `justgoblin.app`;
+> die letzte offene Ursache war die R2-Jurisdiktion und ist geschlossen
+> (`docs/ROUTER_R2_JURISDICTION_BINDING.md`). U2.8: der Ende-zu-Ende-Lauf war am **2026-08-12
+> grün** — `passed: true`, 19/19 Schritte, `publishLoops` 5/5, `scanBattery` 9/9,
+> `suspensionRoundTrip` 3/3, Beleg `evidence/akt2-phase2/e2e-founder-window-2026-08-12.json`.
+> Der Fehlerteil (§7) bleibt nützlich und gültig, falls ein Lauf je wieder rot wird.
+> Für die Konsole von heute — inklusive der Prüfliste aus Phase 3 — gilt
+> `docs/AKT2_PHASE3_FOUNDER_WINDOW.md`.
+
 Zwei Dinge kann eine CC-Session nicht selbst tun, und beide stehen hier als exakte
 Befehlsfolge: das **Bereitstellen des Routers** (U2.2 — schreibt DNS und eine
 Worker-Route) und der **Ende-zu-Ende-Lauf auf Produktion** (U2.8).

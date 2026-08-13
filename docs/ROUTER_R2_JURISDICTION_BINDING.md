@@ -131,6 +131,13 @@ disagree again, **the variable is what moves, never the bucket.**
 
 ## 5. Founder action
 
+> **DONE — this action was carried out and the fix held.** Read the section as the record of
+> what was asked for, not as an open item. The evidence is one step downstream: the Phase-2
+> founder-window E2E ran green on 2026-08-12 (19/19 steps, `publishLoops` 5/5) against the real
+> router on `justgoblin.app` — `evidence/akt2-phase2/e2e-founder-window-2026-08-12.json`. The
+> router cannot be provisioned at all while the binding fails, so a green publish loop is proof
+> the variable is set and the EU namespace is bound. Stamped 2026-08-13, Act-2 consistency sweep.
+
 One variable, in Railway → the Goblin API service → Variables:
 
 ```

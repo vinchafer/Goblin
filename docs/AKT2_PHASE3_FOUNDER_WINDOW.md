@@ -1,6 +1,7 @@
 # AKT 2 · PHASE 3 — das Gründer-Fenster (U3.2 / U3.3, ausstehend)
 
-**Stand: 2026-08-13 · gehört zu PR #86 (`5b17cb2`, gemerged) · NOCH NICHT GEFAHREN.**
+**Stand: 2026-08-13 · Code aus PR #86 (`5b17cb2`) + #88 (`458eda6`), beide gemerged und
+ausgerollt · NOCH NICHT GEFAHREN.**
 
 Phase 3 ist **gebaut und testgedeckt, im Betrieb aber nicht bewiesen.** Der Klassifizierer hat
 50 echte Completions gegen DeepInfra gemacht — der **Publish-Pfad mit Stufe 2** ist noch nie
@@ -24,7 +25,7 @@ Oberfläche: **`justgoblin.com/dashboard/konsole`** — direkt eintippen, es ver
 | 1 | PR #86 gemerged, API und Web ausgerollt | **ERLEDIGT** 2026-08-13 (`5b17cb21`) |
 | 2 | Migration `0102_ops_review_queue.sql` anwenden | **ERLEDIGT** (Gründer) |
 | 3 | `OPS_HOSTING_ENABLED=true` in Railway | muss an sein, sonst antwortet `/api/ops` mit 404 — die Konsole sagt es dir in der Kopfzeile („Hosting-Schalter") |
-| 4 | **BLOCKER — siehe §1** | offen |
+| 4 | C7/C8 behoben (PR #88, `458eda6`) — die Konsole meldet keinen falschen „Live." mehr, und der Entscheidungs-Verlauf ist ohne SQL lesbar | **ERLEDIGT** 2026-08-13 |
 
 > Diese Session hat **keinen Datenbank-Zugang** und hat Punkt 2 nicht selbst nachgeprüft; sie
 > übernimmt die Angabe des Gründers. Falls 0102 doch fehlt, sagt es dir Schritt 3 des Fensters
@@ -33,37 +34,25 @@ Oberfläche: **`justgoblin.com/dashboard/konsole`** — direkt eintippen, es ver
 
 ---
 
-## 1. BLOCKER: die Konsole meldet eine gehaltene Veröffentlichung als „Live."
+## 1. Historisch: die Konsole meldete eine gehaltene Veröffentlichung als „Live."
 
-**Gefunden beim Schreiben dieses Dokuments, 2026-08-13, nicht behoben** (die Closing-Wave war
-ausdrücklich docs-only). Es ist eine False-Green-Anzeige im Betreiber-Werkzeug und trifft
-**genau Schritt 3 unten**.
+**Gefunden beim Schreiben dieses Dokuments am 2026-08-13, behoben vor dem Fenster (PR #88,
+`dcb6fd3`).** Steht hier, weil ein Fehler, der es einmal bis in ein Gründer-Fenster geschafft
+hat, nicht spurlos verschwinden soll — und weil die Ursache lehrreicher ist als der Fehler.
 
-Der Publish-Pfad ist korrekt: ein `review` lädt nichts hoch und die API antwortet
-**HTTP 202** mit `{"status":"review", "message": …, "reviewId": …}`. Die **Publish-Karte der
-Konsole** (`console-client.tsx`, `publish()`) prüft aber nur `response.ok` — und 202 ist ok.
-Sie schreibt das Ergebnis in ihren `published`-State und rendert:
+Die Publish-Karte prüfte nur `response.ok`, und eine gehaltene Veröffentlichung antwortet
+**HTTP 202** — das ist ok. Sie rendete daraufhin **„Live."** plus einen leeren Link für etwas,
+das **nichts** hochgeladen hatte, und verwarf die ehrliche deutsche Meldung der API. Die
+Ursache war nicht der fehlende Zweig, sondern der fehlende gemeinsame Leser: zwei Oberflächen
+klassifizierten dieselbe Antwort jede für sich, und das Bauer-Sheet hatte zufällig recht.
 
-> **Live.** [leerer Link]
+**Heute:** `apps/web/lib/publish-outcome.ts` ist der eine Leser für beide Oberflächen. Fünf
+Ausgänge, und die Voreinstellung ist **Zweifel** — „live" gibt es nur bei einer tatsächlich
+vorhandenen Server-URL, alles Unbekannte fällt auf **UNKLAR**, ausdrücklich weder live noch
+fehlgeschlagen.
 
-Also: *„Live."* für eine Veröffentlichung, die **nichts** hochgeladen hat, plus ein `<a>` mit
-`href=undefined`. Der Text der ehrlichen deutschen Meldung wird verworfen.
-
-**Was das für das Fenster heißt:** die Konsolen-Publish-Karte ist in Schritt 3 **nicht
-vertrauenswürdig**. Der Hold ist trotzdem echt — der Beweis steht eine Karte tiefer in der
-**Prüfliste**, und die ist korrekt. Fahre das Fenster also so:
-
-- **Ignoriere in Schritt 3, was die Publish-Karte sagt.**
-- Scrolle zur **Prüfliste**. Erscheint der Eintrag dort, ist der Hold passiert.
-- Prüfe zusätzlich unter **„Gehostete Apps"**, dass **keine** App mit diesem Namen auftaucht,
-  und rufe die Adresse `https://<name>.justgoblin.app` auf: sie muss **404** liefern. Das ist
-  der eigentliche Beweis — er ist stärker als jede Konsolen-Anzeige, weil er das echte KV/R2
-  fragt statt unsere eigene UI.
-
-*Betroffen ist nur die Konsolen-Karte.* Das Sheet, das ein echter Bauer sieht
-(`HostedPublishSheet`), behandelt 202 korrekt und zeigt die deutsche Halte-Meldung. Der Fix
-ist klein (den 202-Fall in `publish()` verzweigen, wie es das Sheet tut) und gehört in die
-nächste Welle — Entscheidung liegt beim Gründer.
+*(Diese Fixture ist damit auch die erste Gelegenheit, den Fix im Betrieb zu sehen: Schritt 2
+unten muss „Angehalten — nichts veröffentlicht." zeigen, nicht „Live.".)*
 
 ---
 
@@ -115,9 +104,12 @@ veröffentlicht **Projekte dieses Kontos**, keine Repo-Fixtures. Der Weg ist des
 3. Zurück in die **Konsole**, Karte „Test-App veröffentlichen", dieses Projekt wählen, Name
    z. B. `p3-hold-<datum>`, **„Veröffentlichen"**.
 
-**Erwartet — und hier gilt §1:**
+**Erwartet:**
 
-- Die Publish-Karte sagt fälschlich **„Live."**. **Ignorieren.**
+- Die Publish-Karte sagt **„Angehalten — nichts veröffentlicht."**, darunter die ehrliche
+  deutsche Meldung der API und den Hinweis auf die Prüfliste. **Kein Link, nirgends „Live.".**
+  Sagt sie doch „Live." oder **UNKLAR**, brich hier ab und melde es — dann stimmt etwas mit dem
+  Fix aus PR #88 nicht.
 - Karte **„Prüfliste"**: ein neuer Eintrag mit dem Wunschnamen, Pille **„STUFE 2
   (KLASSIFIZIERER)"**, Zeilen **Stufe 1 (feste Regeln): PASS**, **Kategorien: deception**,
   **Sicherheit**, **Geprüft: 1 Dateien**, **Tokens (rein/raus)**, und der Satz „Der
@@ -181,18 +173,21 @@ Entscheidung wird nicht gelöscht, weil ein Netzwerkaufruf fehlschlug.
 
 ---
 
-## 6. Die zwei Protokollzeilen — wo sie stehen, und wo nicht
+## 6. Die zwei Entscheidungen — in der Konsole, und die Beweiszeile per SQL
 
-**Die Konsole zeigt sie nicht.** Sie bestätigt nur unmittelbar nach der Aktion
-„Protokollzeile geschrieben." (bzw. „Keine Protokollzeile — Migration 0100 fehlt"). Eine
-Liste der Zeilen gibt es in keiner Oberfläche.
+**In der Konsole, seit PR #88 (`fb9f09e`):** die Prüflisten-Karte hat unter den wartenden
+Einträgen einen Abschnitt **„Zuletzt entschieden"**. Dort steht je Eintrag der Name, ob
+**freigegeben** oder **abgelehnt**, **wer** entschieden hat, **wann**, und **mit welchem
+Grund**. Nach Schritt 3 und 4 müssen dort **zwei Einträge** stehen — das ist die Abnahme,
+und sie braucht kein SQL mehr.
 
-`GET /api/admin/ops/apps/:idOrName` liefert zwar `audit`, **findet diese beiden Zeilen aber
-nicht**: eine Prüflisten-Entscheidung betrifft einen *Kandidaten* ohne App-ID, also tragen
-`app_id`/`app_name` dort die **ID der Queue-Zeile** und den Wunschnamen — und dazu gibt es
-keine `ops_apps`-Zeile, die Route antwortet 404. Ehrliche Lücke, im Carry-forward notiert.
+Unmittelbar nach jeder Aktion bestätigt die Karte zusätzlich **„Protokollzeile
+geschrieben."** (bzw. „Keine Protokollzeile — Migration 0100 fehlt").
 
-**Also: Supabase → SQL Editor.**
+**Und trotzdem die SQL, als tiefere Prüfung.** Was die Konsole zeigt, ist die
+**Queue-Zeile**; die **Beweiszeile** liegt in `ops_app_audit`, wird 12 Monate aufbewahrt und
+überlebt bewusst auch das Löschen des Kontos — die Queue-Zeile nicht. Wer wirklich
+nachsehen will, ob die Evidenz existiert, fragt die Evidenz:
 
 ```sql
 select created_at, action, actor, app_name, reason, meta
@@ -207,10 +202,14 @@ limit 10;
 `subject: "review_queue_item"`, die `review_id`, `stage2_reason` und die Kategorien — der
 Marker, an dem man erkennt, dass `app_id` hier eine Queue-Zeile meint und keine App.
 
+*(Diese Formunterscheidung ist der Grund, warum `GET /api/admin/ops/apps/:idOrName` diese
+Zeilen nicht findet: ein Kandidat hat keine App-ID. Bewusst so gelassen — die Route antwortet
+„hier ist eine App", und ein Kandidat ist keine.)*
+
 Und der Zustand der Queue selbst:
 
 ```sql
-select created_at, requested_name, status, stage2_reason, categories, decided_by, decision_reason
+select created_at, requested_name, status, stage2_reason, decided_by, decision_reason
 from public.ops_review_queue order by created_at desc limit 10;
 ```
 
@@ -260,6 +259,8 @@ mit Datum, Zahlen und dem Satz, was **eine** Beobachtung von **einem** Ort aus w
    mit Adjektiven.
 3. `ABUSE_RESPONSE.md` §8.3: die drei Phase-3-Punkte (5/6/7) stehen dort als **GEBAUT**; nach
    einem grünen Fenster sind sie **belegt**.
-4. Über den Blocker aus §1 entscheiden.
+4. Offene Carry-forward-Punkte im Register nachführen (`docs/ACT2_CARRY_FORWARD.md`) — vor
+   allem C6: ob ein echter Framework-Build am Budget hängen bleibt, ist hier zum ersten Mal
+   beobachtbar (Schritt 4, Weg A).
 5. Dann „Phase 4" an Steven — Formulare. Bereitschaftsnotiz steht im 16-Phasen-Plan unter
    PHASE 4.

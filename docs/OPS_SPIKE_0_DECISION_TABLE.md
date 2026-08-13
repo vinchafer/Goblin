@@ -14,6 +14,36 @@ Companion to `GOBLIN_THESIS_v3_DRAFT.md` · `GOBLIN_OPS_EXECUTION_BLUEPRINT_v1.m
 > subscribes to a plan, or touches a key. The founder decides D1 and D2; §6 is the click-by-click list
 > for executing them if the answer is GO.
 
+> ## ⚠️ DECIDED — AND D2 WAS AMENDED. READ THIS BEFORE §5.2 OR §6.
+>
+> Both decisions have since been made, and **one of them did not go the way this document
+> recommends.** This banner was added 2026-08-13 during the Act-2 consistency sweep; the body below
+> is left exactly as written on 2026-07-25, because it is the *evidence record* the decision was made
+> against, not the decision.
+>
+> | | Recommended here | What the founder actually decided |
+> |---|---|---|
+> | **D1** — hosting go/no-go | GO | **GO** (unchanged) |
+> | **D2** — substrate + fixed cost | Option A: Cloudflare **Workers for Platforms $25/mo** + D1 + per-app Workers | **Cloudflare Workers FREE, 2026-07-27.** No WfP subscription, no dispatch namespace, no per-app Workers, no D1. One platform-owned router Worker + KV route records + R2 (EU jurisdiction). **Committed fixed cost: $0.00/month.** The Free plan's 100,000-requests/day account-wide hard stop is the cost ceiling by design. |
+>
+> The amendment of record — with the cost consequences and the documented upgrade trigger back to
+> the paid plane — is `docs/GOBLIN_CONSUMPTION_LEDGER.md` §"Substrate & plan (founder decision
+> 2026-07-27, amending D2 …)". The built substrate is described in
+> `apps/api/src/services/cf-deploy.ts` (module header).
+>
+> **Concretely, three things below are now wrong as instructions** (they remain correct as the
+> 2026-07-25 analysis):
+> 1. **§5.2's recommendation** — Option A at $25–35/month was **not** adopted. See §5.2's own banner.
+> 2. **§6.1 steps 3, 4 and 8** — do **not** subscribe to Workers for Platforms, do **not** create a
+>    dispatch namespace, and `CF_DISPATCH_NAMESPACE` is **not** a variable this codebase reads. See
+>    §6.1's own banner for the variables that actually exist.
+> 3. **Every D1 (database) row in §1.2, §2.2 and §4.2** describes a component that was never
+>    provisioned. Note that "D1" is overloaded in this document: **decision D1** (hosting go/no-go)
+>    is live and was a GO; **Cloudflare D1** (the SQLite database product) is not in use.
+>
+> The pricing evidence itself has *not* been re-verified since 2026-07-25 and should be re-fetched
+> before it is relied on again — the ledger names that re-run as a condition of any upgrade.
+
 ---
 
 ## 0. STATE CHECK (Law 1) — repo reality vs. this prompt
@@ -628,6 +658,14 @@ naming architecture changes and Phase 2 must re-plan before it starts.
 
 ## 5.2 D2 — Substrate + fixed-cost sign-off
 
+> **⚠️ AMENDED 2026-07-27 — the recommendation below was NOT adopted.** Cloudflare *was* confirmed as
+> the substrate; the **paid** shape of it was rejected. The decision of record is Workers **FREE** —
+> no WfP subscription, no dispatch namespace, no per-app Workers, no D1 — at **$0.00/month
+> committed**, with the Free plan's 100,000-requests/day account-wide limit accepted as the cost
+> ceiling. Ledger: `docs/GOBLIN_CONSUMPTION_LEDGER.md` §"Substrate & plan". The section below stands
+> as the analysis the amendment was made against, and its §2.3 headroom maths becomes relevant again
+> only if the documented upgrade trigger fires.
+
 **The question.** Is Cloudflare the substrate, and is the new monthly fixed line approved?
 
 | Option | Fixed cost | Evidence | Assessment |
@@ -665,6 +703,29 @@ requires counsel, and the AUP already carries an "KI verfasst, nicht anwaltlich 
 # 6. FOUNDER EXECUTION LIST
 
 ## 6.1 If D1 = GO and D2 = A — the one-sitting setup
+
+> **⚠️ SUPERSEDED — DO NOT WORK THROUGH THIS LIST.** It was written for D2 = A (Workers for
+> Platforms). D2 was amended to Workers **FREE** on 2026-07-27, and the setup was in fact executed in
+> that amended form during Act 2 Phases 1–2. Working through the list today would subscribe Goblin to
+> a $25/month plan it does not use and create a dispatch namespace nothing reads. Kept as the record
+> of what was planned.
+>
+> **What changed, step by step:** F-0 stands (the domain question was real, and the answer was
+> `justgoblin.app`, not `goblin.app` — every `goblin.app` string below reads `justgoblin.app` today).
+> Steps 1, 2, 5, 7 and 10 happened essentially as written. **Step 3 (subscribe to WfP, $25/mo) did
+> not happen** — and therefore neither did F6(i), which is moot on the Free plan. **Step 4 (dispatch
+> namespace) did not happen.** **Step 9 (Turnstile widget) has not happened** — Turnstile is Phase-4
+> work and appears in no code today. Step 6's token scopes were narrowed accordingly: no D1 scope
+> was ever added.
+>
+> **Step 8 is the one to correct explicitly.** `CF_DISPATCH_NAMESPACE` is **not** read anywhere in
+> this codebase. The variables the adapter actually reads are the eight in
+> `CF_ENV_VARS` (`apps/api/src/services/cf-deploy.ts`):
+> `CF_ACCOUNT_ID` · `CF_API_TOKEN` · `CF_R2_ACCESS_KEY_ID` · `CF_R2_SECRET_ACCESS_KEY` ·
+> `CF_R2_ENDPOINT` · `CF_R2_BUCKET` · `CF_KV_NAMESPACE_ID` · `OPS_APPS_DOMAIN`.
+> (`CF_R2_API_TOKEN` also exists in Railway but is deliberately reserved-unused;
+> `CF_R2_JURISDICTION`, `CF_API_BASE`, `CF_TIMEOUT_MS` and `CF_WORKER_COMPAT_DATE` are optional
+> overrides with defaults.) `GET /ops/health` reports presence by name — it never touches a value.
 
 Laptop recommended (the Cloudflare dashboard's token UI is awkward on iPhone). **Nothing here is done
 by CC; every step is a founder action** (Rule 4).

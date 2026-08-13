@@ -2,6 +2,14 @@
 
 **Stand: 2026-07-29 · gehört zu PR „AKT 2 · Phase 2.5 — Founder Ops Console".**
 
+> **Die Konsole ist seitdem gewachsen.** (Hinweis 2026-08-13, Akt-2-Konsistenzlauf.) Phase 3 hat
+> die **Prüflisten-Karte** (`review`-Queue: freigeben / ablehnen), den **Entscheidungs-Verlauf**
+> („Zuletzt entschieden") und die **Vorschau** dazugebaut, und hat den Veröffentlichungs-Ausgang
+> auf einen gemeinsamen Leser umgestellt (`apps/web/lib/publish-outcome.ts`), damit ein gehaltener
+> Publish nicht mehr als „Live." erscheinen kann. Dieses Dokument beschreibt die Konsole **wie
+> sie in Phase 2.5 aussah** und bleibt als solche gültig; der aktuelle Stand steht in
+> `docs/AKT2_PHASE3_REPORT.md` und `docs/AKT2_PHASE3_FOUNDER_WINDOW.md`.
+
 Phase 2 hat eine funktionierende Hosting-Ebene geliefert. Jede Betreiber-Handlung
 brauchte danach aber ein Terminal, ein von Hand kopiertes Bearer-Token und einen
 Admin-Key — also einen Laptop. Der Gründer arbeitet vom iPhone. Das Phase-2-Fenster

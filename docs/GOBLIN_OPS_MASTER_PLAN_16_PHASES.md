@@ -53,8 +53,15 @@ AI build-and-deploy platform for non-technical builders, live on Vercel (Next.js
 apps/web + apps/api + packages/shared. Repo: vinchafer/Goblin. You are building the OPS PLATFORM
 extension ("Living App" hosting + "Keeper" operations agent) per docs/GOBLIN_THESIS_v3_DRAFT.md and
 docs/GOBLIN_OPS_EXECUTION_BLUEPRINT_v1.md — read both in Phase 0 of every session. The user-app plane
-runs on Cloudflare (Workers for Platforms, D1 per app, R2, Turnstile, Cron, Queues); the platform
-plane (existing stack) is NOT rewritten.
+runs on Cloudflare. CORRECTED 2026-08-13 against shipped code: it runs on the Workers **FREE** plan —
+ONE platform-owned router Worker resolving {name}.justgoblin.app via **KV** and serving static files
+from **R2** (EU jurisdiction). There is NO Workers for Platforms, NO dispatch namespace and NO D1
+today (founder decision D2-amended 2026-07-27; see the Phase-1 LEAN amendment below, and
+CF_ENV_VARS in apps/api/src/services/cf-deploy.ts for the variables that actually exist). Turnstile,
+Cron and Queues are likewise NOT wired yet — Turnstile appears in no code at all. This block
+previously described the pre-amendment plan as current fact, and it is pasted into every phase
+prompt, so it was teaching each new session a substrate that does not exist. The platform plane
+(existing stack) is NOT rewritten.
 
 ABSOLUTE RULES — violating any of these is a failed session regardless of code quality:
 1. STATE-FIRST. Before any work: git log --oneline -15, check /api/version endpoints, verify every
@@ -128,7 +135,7 @@ G1 (validation numbers) gates Phases 1–15 · Phase 0 is paper and may run pre-
 
 ## PHASE 1 — FOUNDATION: DEPLOY ADAPTER & NAMESPACE (post-G1, post-D1/D2)
 **Objective:** The platform plane can talk to the user-app plane. Nothing user-visible yet.
-**Preconditions:** G1 passed · CF account exists · `CF_ACCOUNT_ID`, `CF_API_TOKEN`, `CF_DISPATCH_NAMESPACE` set in Railway (verify presence via a health probe, never print values).
+**Preconditions:** G1 passed · CF account exists · `CF_ACCOUNT_ID`, `CF_API_TOKEN`, ~~`CF_DISPATCH_NAMESPACE`~~ set in Railway (verify presence via a health probe, never print values). **`CF_DISPATCH_NAMESPACE` is SUPERSEDED** by the LEAN amendment below and is read by no code — the shipped list is `CF_ENV_VARS` in `cf-deploy.ts` (account, token, four R2 vars, KV namespace, apps domain). Struck here rather than deleted so the spec still reads as written; do not set it.
 **Units:** (1.1) `apps/api/src/services/cf-deploy.ts`: typed adapter — uploadUserWorker, uploadStaticAssets, setTenantLimits, provisionD1, bindResources, deleteApp (batched — remember the unbatched-deleteProject anti-pattern). (1.2) `ops_apps` table migration (AUTHORED only): app_id, user_id, namespace_script_id, d1_id, status, caps_profile, created_at. (1.3) Health probe `GET /api/ops/health`: CF reachable, namespace exists, token scope correct — deterministic, no secrets in output. (1.4) Integration test against a throwaway script in the namespace: create → verify exists via CF API read-back → delete → verify gone (evidence: API responses in test output).
 **Gates:** 1.4 round-trip 3/3 · migration file exists but NOT applied · code tolerant to missing table (feature-flag `OPS_HOSTING_ENABLED=false` default).
 **Ledger:** M-H1 line authored (hosting COGS class, platform-COGS).
@@ -160,9 +167,11 @@ and serves that app's static files from **R2** (`goblin-apps`, key prefix `apps/
 per-app Workers and no D1 on Free. `CF_DISPATCH_NAMESPACE` is therefore **not** a Phase-1 variable — the
 adapter reads `CF_ACCOUNT_ID`, `CF_API_TOKEN`, `CF_R2_*`, `CF_KV_NAMESPACE_ID`, `OPS_APPS_DOMAIN`. The
 domain is `justgoblin.app`. Phases 2 and 3 said `goblin.app` and were corrected in this document on
-2026-07-28 on founder instruction; Phase 12 never named a domain. **`OPS_SPIKE_0_DECISION_TABLE.md`
-still says `goblin.app` throughout** — it is a dated evidence record and is deliberately NOT rewritten,
-so read it with that substitution in mind. The adapter
+2026-07-28 on founder instruction; Phase 12 never named a domain. **`OPS_SPIKE_0_DECISION_TABLE.md`,
+`GOBLIN_OPS_EXECUTION_BLUEPRINT_v1.md` and `GOBLIN_THESIS_v3_DRAFT.md` still say `goblin.app`
+throughout** — they are dated records (a spike, a blueprint and a thesis draft) and are deliberately
+NOT rewritten, so read them with that substitution in mind. All three now carry a banner or a note
+saying so. The adapter
 interface is deliberately substrate-agnostic so the documented upgrade trigger (Free limit bites OR
 server-side app code needed → Workers Paid / WfP, D1, per-app Workers) is an added implementation behind
 the same surface, not a rewrite.
@@ -182,8 +191,8 @@ with no deploy needed to keep it that way.
 
 ## PHASE 2 — HOSTED PUBLISH (STATIC): THE FIRST LIVING URL
 **Objective:** A Goblin project publishes to `name.justgoblin.app` through the existing truth-gated pipeline.
-**Units:** (2.1) Wildcard routing: dispatch Worker resolving `{name}.justgoblin.app` → tenant script (plus reserved-names list: www, api, admin, status, mail…). (2.2) Publish path in API: build artifact (existing) → cf-deploy upload → setTenantLimits(default caps) → record in ops_apps. (2.3) Extend the EXISTING verification loop: entry 200 via public URL, N assets byte-checked, headers sane; reuse, don't fork, the current verifier. (2.4) Name claim flow: availability check, honest German errors ("Dieser Name ist vergeben"), rename = new deploy + old released. (2.5) E2E on prod API with test account: publish test app → verification green → screenshot of live URL fetched server-side (curl output as evidence, since sandbox has no browser — label it deterministic).
-**Gates:** 2.5 publish→verify 5/5 · caps demonstrably set (CF API read-back in evidence) · flag still off for real users.
+**Units:** (2.1) Wildcard routing: ~~dispatch Worker resolving `{name}.justgoblin.app` → tenant script~~ **as built (D2 amendment, Workers Free): ONE platform-owned router Worker resolving `{name}.justgoblin.app` → a `route:{name}` record in KV → the matching R2 object.** There is no dispatch namespace and no per-tenant script (plus reserved-names list: www, api, admin, status, mail…). (2.2) Publish path in API: build artifact (existing) → cf-deploy upload → ~~setTenantLimits(default caps)~~ **no CF-native per-tenant caps: `setTenantLimits` does not exist and cannot on Free. Built instead in U2.6 as Goblin's own — a per-app daily request budget (`ops-caps.ts`, default 10,000/UTC-day) written onto the KV route record and enforced at the router, coarse by design (KV is eventually consistent, so it undercounts under a burst) and fail-open** → record in ops_apps. (2.3) Extend the EXISTING verification loop: entry 200 via public URL, N assets byte-checked, headers sane; reuse, don't fork, the current verifier. (2.4) Name claim flow: availability check, honest German errors ("Dieser Name ist vergeben"), rename = new deploy + old released. (2.5) E2E on prod API with test account: publish test app → verification green → screenshot of live URL fetched server-side (curl output as evidence, since sandbox has no browser — label it deterministic).
+**Gates:** 2.5 publish→verify 5/5 · ~~caps demonstrably set (CF API read-back in evidence)~~ **superseded with (2.2): there is no CF per-tenant cap to read back. The read-back that replaces it is the KV route record carrying `dailyBudget`, which is what the router actually enforces** · flag still off for real users.
 **HALT if:** wildcard DNS/SSL for `*.justgoblin.app` not yet configured — output exact founder steps (CF dashboard) and stop.
 
 **PHASE 2 — founder-window gate (U2.8) closure record.** The end-to-end run was executed by the
@@ -236,8 +245,10 @@ step performed on production. Likewise unproven in operation: the console's appr
 the two `ops_app_audit` rows they write, and the builder-facing publish sheet v2. The one honest
 sentence is: *the mechanism is built and test-covered; the operational proof is the founder window and
 it has not been run.* Pending window: `docs/AKT2_PHASE3_FOUNDER_WINDOW.md`. Full report, with twelve
-honest limitations and nine findings: `docs/AKT2_PHASE3_REPORT.md`; what Phase 3 knowingly leaves open
-is the carry-forward section of that same report.
+honest limitations and nine findings: `docs/AKT2_PHASE3_REPORT.md`. **What Act 2 as a whole leaves
+open now lives in one place: `docs/ACT2_CARRY_FORWARD.md`** — the Phase-3 report's carry-forward
+table plus everything the closing consistency sweep surfaced across the other Act-2 documents. Read
+that register before writing the Phase-4 prompt; it is the list, and it is meant to be the only one.
 
 *Founder decisions taken at merge:* **E1** — scanning is platform-COGS, never a user's quota.
 **E2** — stage 2 may only route to `review`; blocking stays deterministic (stage 1) or human (console).
@@ -250,6 +261,15 @@ measure a gate is permitted in-session when booked in the ledger). E3–E5 remai
 **Gates:** real round-trip on prod test app: submit → D1 row (evidence: row dump) → owner email received (evidence: screenshot from test-account inbox) 3/3 · Turnstile failure path honest.
 **Ledger:** email sends line if not covered; caps documented.
 **Founder actions:** apply migrations; confirm Turnstile keys in Railway (setup steps provided).
+
+> **PREFLIGHT — read `docs/ACT2_PHASE4_PREFLIGHT.md` before writing the Phase-4 prompt.** It
+> re-checks the readiness note below against master, and gets specific where the note was vague:
+> the exact Turnstile field values and dashboard path, which of the two keys goes where and why the
+> sitekey is app-injected rather than `NEXT_PUBLIC_`, the exact lines in `cf-deploy.ts`,
+> `worker.js` and `ops-caps.ts` that have to change, and five decisions (P4-a…e) that cannot be
+> made inside a prompt. **It also found something that is not a Phase-4 item at all: a deleted
+> project leaves its hosted app live and unreachable by the console** (`0099`'s PHASE-2 OBLIGATION,
+> unfulfilled). That is carry-forward **X1** and it should be fixed before Phase 4, not by it.
 
 **PHASE 4 — readiness note (written 2026-08-13 at the close of Phase 3; a note for the next prompt,
 NOT a design).** What Phase 4 needs that does not exist today, checked against the code rather than
