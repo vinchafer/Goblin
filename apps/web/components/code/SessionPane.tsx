@@ -21,6 +21,7 @@ import { FileCardList } from "./FileCardList";
 import { Reader } from "./Reader";
 import { DiffSheet } from "./DiffSheet";
 import { VercelConnectSheet } from "./VercelConnectSheet";
+import { HostedPublishSheet } from "./HostedPublishSheet";
 import { LineActionSheet } from "./LineActionSheet";
 import { EditorSearchOverlay } from "./EditorSearchOverlay";
 import { JitCard } from "./JitCard";
@@ -113,6 +114,16 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
   // token-less "Live stellen" is detected (pre-check, or a NO_VERCEL_TOKEN deploy
   // error) so the user connects inline instead of hitting a dead end.
   const [vercelJit, setVercelJit] = useState(false);
+  // AKT 2 · PHASE 3 · U3.4 — the hosted publish sheet, for allowlisted accounts only.
+  //
+  // `hostedEligible` is TRI-STATE and starts null: unknown, not "no". It is
+  // resolved LAZILY, on the first "Live stellen" tap, so an account that never
+  // publishes never sends a request to a route that (for them) does not exist.
+  // A 404 — which is what /api/ops answers for everyone outside the allowlist,
+  // byte-identically — resolves it to false and the old sheet is what they get.
+  const [hostedEligible, setHostedEligible] = useState<boolean | null>(null);
+  const [hostedDomain, setHostedDomain] = useState<string | null>(null);
+  const [hostedSheet, setHostedSheet] = useState(false);
   // M4: the inline truth-gated publish stream. `message` mirrors the server's
   // progress (incl. "wird geprüft, n/6"); phase never becomes "live" until the
   // server's success event — no completion claim before the checks pass.
@@ -580,7 +591,46 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
   // progress ("wird geprüft, n/6"); it only flips to "Live" on the success event —
   // the deploy is truth-gated server-side (verifyDeployment), so we never claim a
   // published state before the checks pass.
-  const liveStellen = async () => {
+  /**
+   * PHASE 3 · U3.4 — resolve hosted eligibility once, then route the publish.
+   *
+   * Returns true when the hosted sheet was opened and `liveStellen` must NOT run.
+   * Anything other than a clean 200 — 404, network failure, malformed body —
+   * falls through to the Vercel path unchanged. Failing towards the path that has
+   * always worked is the only safe direction here: a bug in this check must not
+   * be able to take publishing away from the live Act-1 cohort.
+   */
+  const routeToHostedSheet = async (): Promise<boolean> => {
+    let eligible = hostedEligible;
+    let domain = hostedDomain;
+    if (eligible === null) {
+      try {
+        const r = await apiGet<{ hosted?: boolean; appsDomain?: string }>("/api/ops/eligibility");
+        eligible = r?.hosted === true && !!r.appsDomain;
+        domain = r?.appsDomain ?? null;
+      } catch {
+        eligible = false;
+        domain = null;
+      }
+      setHostedEligible(eligible);
+      setHostedDomain(domain);
+    }
+    if (!eligible || !domain || !projectId) return false;
+    setDeployConfirm(false);
+    setDeploying(false);
+    setPublishStream(null);
+    setHostedSheet(true);
+    return true;
+  };
+
+  /**
+   * The Vercel publish flow, byte-for-byte what "Live stellen" has always done.
+   *
+   * PHASE 3 · U3.4 split this out of `liveStellen` so the hosted sheet can hand
+   * control BACK to it — "Eigenes Vercel verbinden (für Fortgeschrittene)" runs
+   * this exact function, not a reduced copy of it. Nothing inside changed.
+   */
+  const liveStellenViaVercel = async () => {
     setDeployConfirm(false);
     // CW-3 (Speed & Haptik F-41): flip to the publishing state on the SAME tick as
     // the confirm — BEFORE the Vercel pre-check round-trip. Previously the button
@@ -639,6 +689,22 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
       const msg = (error ?? "Veröffentlichen fehlgeschlagen").replace(/^NO_VERCEL_TOKEN —\s*/, "");
       setPublishStream({ phase: "error", message: msg });
     }
+  };
+
+  /**
+   * PHASE 3 · U3.4 — the one entry point the button calls.
+   *
+   * Allowlisted → the hosted sheet. Everyone else → `liveStellenViaVercel`, which
+   * is the unchanged flow. The optimistic "Wird vorbereitet …" flip happens here
+   * for both, so the eligibility round-trip cannot make the button read as a dead
+   * tap either.
+   */
+  const liveStellen = async () => {
+    setDeployConfirm(false);
+    setDeploying(true);
+    setPublishStream({ phase: "publishing", message: "Wird vorbereitet …" });
+    if (await routeToHostedSheet()) return;
+    await liveStellenViaVercel();
   };
 
   // ── Status line state ──
@@ -1154,6 +1220,24 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
           )}
         </div>
       </div>
+
+      {/* PHASE 3 · U3.4: the hosted sheet. Rendered ONLY when the API said this
+          account is allowlisted; every other account never reaches this branch
+          and sees VercelConnectSheet below, which this phase did not touch. */}
+      {hostedSheet && hostedDomain && projectId && (
+        <HostedPublishSheet
+          projectId={projectId}
+          appsDomain={hostedDomain}
+          onClose={() => setHostedSheet(false)}
+          // The Vercel path, handed back to the flow that has always run it.
+          onUseVercel={() => { setHostedSheet(false); void liveStellenViaVercel(); }}
+          onPublished={(url) => {
+            setLiveUrl(url);
+            setLiveDismissed(false);
+            if (projectId) { bumpPublishCount(projectId); setJitTick(v => v + 1); }
+          }}
+        />
+      )}
 
       {/* P1.11: publish-moment JIT — connect Vercel inline, then resume the publish. */}
       {vercelJit && (

@@ -71,6 +71,11 @@ const ROUTES: Array<{ method: string; path: string; body?: unknown }> = [
   { method: 'POST', path: '/apps/publish', body: { projectId: 'proj-1', name: 'meinladen' } },
   { method: 'POST', path: '/apps/app-1/rename', body: { name: 'neuername' } },
   { method: 'POST', path: '/e2e?confirm=RUN-E2E' },
+  // PHASE 3 · U3.4/U3.7. The web app asks this route whether to show the hosted
+  // publish sheet, so its 404 IS the cohort's exclusion from that sheet: a
+  // non-allowlisted account gets the answer "there is no such route" and renders
+  // the Vercel sheet it has always rendered.
+  { method: 'GET', path: '/eligibility' },
 ];
 
 function call(route: { method: string; path: string; body?: unknown }, headers: Record<string, string> = {}) {
@@ -223,6 +228,27 @@ describe('the operator surface is admin-gated, and adds no new signal', () => {
     process.env.OPS_HOSTING_ENABLED = 'false';
     const res = await opsAdmin.request('/orphans', { headers: { 'x-admin-key': 'admin-key-for-tests' } });
     expect(res.status).not.toBe(404);
+  });
+
+  it('PHASE 3 · U3.7 — EVERY admin route survives the kill switch, not just the read', async () => {
+    // Re-proved rather than assumed: the previous test asserted one GET. The
+    // sentence the runbook actually relies on is "the kill switch must never
+    // disarm the kill switch", and that is about the WRITES — suspend above all.
+    process.env.OPS_HOSTING_ENABLED = 'false';
+    for (const route of ADMIN_ROUTES) {
+      const res = await opsAdmin.request(route.path, {
+        method: route.method,
+        headers: { 'x-admin-key': 'admin-key-for-tests', ...(route.body ? { 'content-type': 'application/json' } : {}) },
+        ...(route.body ? { body: JSON.stringify(route.body) } : {}),
+      });
+      // 401 is the admin gate's refusal and the only status that would mean the
+      // kill switch disarmed the stop. A 404 here is the HANDLER answering "no
+      // such app" against a database this test does not have — the route ran,
+      // which is the whole claim. (It is also JSON, where a gate refusal is
+      // text/plain, so the two are not confusable.)
+      expect(res.status, `${route.method} ${route.path} was gate-refused with the switch off`).not.toBe(401);
+      if (res.status === 404) expect(res.headers.get('content-type')).toContain('json');
+    }
   });
 });
 

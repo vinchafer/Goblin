@@ -232,10 +232,43 @@ ops.post('/apps/publish', async (c) => {
   const result = await publishHostedApp({ userId: principal.userId, projectId, name });
 
   if (!result.ok) {
+    // PHASE 3: a REVIEW is not an error and must not be answered like one. 202
+    // says the request was accepted and is not finished — which is exactly what a
+    // held publish is. Answering 422 (as a block does) would tell the client "you
+    // did something wrong", and the builder did nothing wrong.
+    if (result.code === 'scan_review') {
+      return c.json({ status: 'review', stage: result.stage, message: result.message, reviewId: result.reviewId, name: result.name }, 202);
+    }
+    // `review_unqueued` IS ours to own: held, and we could not even record it. 503
+    // — try again later — matches what the German message already says.
+    if (result.code === 'review_unqueued') {
+      return c.json({ error: result.code, stage: result.stage, message: result.message }, 503);
+    }
     const status = result.code === 'scan_blocked' ? 422 : result.code === 'name_taken' || result.code === 'name_released' || result.code === 'invalid_name' ? 409 : 502;
     return c.json({ error: result.code, stage: result.stage, message: result.message, ...(result.url ? { url: result.url } : {}) }, status);
   }
   return c.json(result);
+});
+
+/**
+ * GET /api/ops/eligibility — "may this account publish on the hosted path?"
+ *
+ * The whole point is that there is no interesting body. The ANSWER is the status
+ * code: behind `opsGate`, this route is a byte-identical 404 for everyone who is
+ * not allowlisted (and for everyone, allowlisted or not, when
+ * `OPS_HOSTING_ENABLED` is off). So the web app asks, and a 404 means "show the
+ * sheet you have always shown" — it never learns that an allowlist exists.
+ *
+ * Why the web app needs a route at all: `OPS_BETA_ACCOUNTS` lives in the API's
+ * environment. Copying it into Vercel would be a second place to get it wrong and
+ * a second place for it to leak into a client bundle (the same argument
+ * app/dashboard/konsole/page.tsx makes for the founder gate).
+ *
+ * It is a READ and it claims nothing: eligibility is not a reservation, not a
+ * quota grant, and not a promise that the publish will succeed.
+ */
+ops.get('/eligibility', async (c) => {
+  return c.json({ hosted: true, appsDomain: opsAppsDomain() });
 });
 
 /**
