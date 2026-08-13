@@ -183,12 +183,17 @@ Admin-Dashboard („Sicherheit"-Karte) + zügige Reaktion auf Feedback/Meldungen
   AGB Abschnitt 7 formuliert.
 - ~~**Aufbewahrungsfrist für Beweise (12 Monate, 8.7)**~~ **BESTÄTIGT (Gründer-Entscheid
   2026-07-28):** 12 Monate, CSAM ausgenommen (dort gilt das Verfahren der Behörden).
-- ~~**Vier Phase-2-Anforderungen aus 8.3 abnehmen**~~ **IM CODE ERLEDIGT (AKT 2 · Phase 2,
-  2026-07-28) — Abnahme steht aus.** Alle vier sind gebaut und getestet (Details in 8.3).
-  Was noch fehlt, ist der Beweis auf der echten Infrastruktur: **das U2.8-Fenster fahren**
-  (`docs/AKT2_PHASE2_FOUNDER_WINDOW.md`) und Migration **0100** anwenden (**0099** ist seit
-  PR #57 angewendet).
-  Vorher darf keine fremde App live gehen — gebaut ist nicht bewiesen.
+- ~~**Vier Phase-2-Anforderungen aus 8.3 abnehmen**~~ **ABGENOMMEN 2026-08-12.** Das
+  U2.8-Fenster ist gelaufen und war **grün**: `passed: true`, 19/19 Schritte, darunter der
+  `suspensionRoundTrip` 3/3, der genau diese vier Anforderungen auf der echten
+  Infrastruktur bewegt. Beleg: `evidence/akt2-phase2/e2e-founder-window-2026-08-12.json`.
+  Damit ist „gebaut ist nicht bewiesen" für diese vier aufgelöst — **durch einen Lauf, an
+  einem Tag, von einer Stelle**; die Zahlen sind Gates, die Zeiten sind Beobachtungen.
+  *Offen bleibt eine Kleinigkeit:* dass Migration **0100** (Audit-Tabelle) angewendet ist,
+  wurde in dieser Sitzung **nicht direkt geprüft** — der Audit-Schreiber ist absichtlich
+  tolerant gegenüber ihrem Fehlen, ein grüner Lauf beweist sie also nicht. Die Konsole sagt
+  es beim nächsten Blick von selbst („Keine Protokollzeile — Migration 0100 fehlt").
+  **0099** ist seit PR #57 angewendet, **0102** seit 2026-08-13.
 
 ---
 
