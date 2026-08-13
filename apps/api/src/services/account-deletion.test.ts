@@ -43,6 +43,7 @@ interface Tables {
   goblin_hosted_waitlist: Row[];
   projects: Row[];
   platform_events: Row[];
+  ops_apps: Row[];
 }
 const tables: Tables = {
   users: [],
@@ -52,6 +53,8 @@ const tables: Tables = {
   goblin_hosted_waitlist: [],
   projects: [],
   platform_events: [],
+  // X1: no Living App in this fixture — the teardown gate is a no-op here.
+  ops_apps: [],
 };
 const authUsers = new Map<string, Row>();
 const deletedAuthIds: string[] = [];
@@ -77,6 +80,7 @@ class Query {
   upsert(p: any, opts?: any) { this.op = 'upsert'; this.payload = p; this.conflict = opts?.onConflict ?? null; return this._run(); }
   eq(c: string, v: any) { this.filters.push([c, v]); return this; }
   lte(c: string, v: any) { this.filters.push(['__lte', c, v]); return this; }
+  limit(_n: number) { return this; }
   maybeSingle() { this._single = true; return this._run(); }
   then(res: any, rej: any) { return this._run().then(res, rej); }
   async _run(): Promise<any> {

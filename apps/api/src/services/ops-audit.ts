@@ -39,7 +39,13 @@ type Sb = ReturnType<typeof getSupabaseAdmin>;
  */
 export type OpsAuditAction =
   | 'suspend' | 'unsuspend' | 'teardown' | 'orphan_purge'
-  | 'review_approve' | 'review_block';
+  | 'review_approve' | 'review_block'
+  // X1: the same physical teardown, but triggered by the BUILDER deleting their
+  // project rather than by an operator taking an app down. A separate action string
+  // because the two read completely differently in an appeal — "we removed your app"
+  // and "you removed your app" must never be confused — and because `actor` is the
+  // builder's own id here, not a founder email.
+  | 'project_delete_teardown';
 
 /** Did the evidence actually land? Never collapsed into a boolean. */
 export type OpsAuditOutcome = 'written' | 'unavailable' | 'failed';

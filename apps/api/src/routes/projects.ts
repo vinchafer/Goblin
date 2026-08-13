@@ -10,6 +10,7 @@ import { getSupabaseAdmin } from '../lib/supabase';
 import { createTwoFilesPatch } from 'diff';
 import { createProjectFromTemplate } from './templates';
 import { teardownVercelProject } from '../services/vercel-service';
+import { teardownProjectApp } from '../services/ops-project-teardown';
 import logger from '../lib/logger';
 import { trackEvent } from '../lib/platform-events';
 import { checkUploadType, MAX_UPLOAD_BYTES } from '../services/upload-policy';
@@ -316,6 +317,8 @@ projects.patch('/:id', async (c) => {
 // Vercel site IS torn down per project here (best-effort, rule b): teardown is
 // attempted BEFORE the DB cascade so we still have the project name; a teardown
 // failure never blocks the delete — the orphaned URL is returned in `orphans`.
+// A Goblin-hosted Living App is different and is NOT best-effort (X1): its
+// verified removal gates that one project's delete, per project.
 projects.post('/bulk-delete', async (c) => {
   const userId = c.get('userId');
   const body = await c.req.json().catch(() => ({}));
@@ -334,12 +337,58 @@ projects.post('/bulk-delete', async (c) => {
 
   const ownedRows = (owned ?? []) as Array<{ id: string; name: string; preview_url: string | null }>;
   if (ownedRows.length === 0) return c.json({ success: true, deleted: 0, orphans: [] });
-  const ownedIds = ownedRows.map((r) => r.id);
 
-  // Tear down each project's live Vercel site FIRST (need the name pre-cascade).
+  // X1 — the Goblin-hosted Living App comes down FIRST, and its verified removal
+  // gates that project's delete (see the single-delete handler for the full
+  // argument). Per project, so one builder's stuck app cannot hold up the other
+  // nineteen: a project whose teardown did not finish is dropped from the delete set
+  // and reported in `blocked`, with its row — and therefore its app's only remaining
+  // owner link — intact for the retry.
+  //
+  // This runs BEFORE the Vercel loop on purpose. Vercel teardown is irreversible
+  // too, and tearing down the site of a project we are then going to refuse to
+  // delete would be its own half-delete.
+  const blocked: Array<{ id: string; name: string; url?: string; message?: string }> = [];
+  const hostedTornDown: Array<{ id: string; url?: string }> = [];
+  const deletable: typeof ownedRows = [];
+  for (const row of ownedRows) {
+    try {
+      const hosted = await teardownProjectApp(row.id, userId);
+      if (!hosted.ok) {
+        blocked.push({ id: row.id, name: row.name, ...(hosted.appUrl ? { url: hosted.appUrl } : {}), ...(hosted.message ? { message: hosted.message } : {}) });
+        continue;
+      }
+      if (hosted.attempted) hostedTornDown.push({ id: row.id, ...(hosted.appUrl ? { url: hosted.appUrl } : {}) });
+      deletable.push(row);
+    } catch (err) {
+      // A throw here is not "no app" — it is "we do not know". Refuse this one.
+      logger.error({ project_id: row.id, err: err instanceof Error ? err.message : String(err) }, 'ops_project_teardown_threw');
+      blocked.push({ id: row.id, name: row.name });
+    }
+  }
+
+  if (deletable.length === 0) {
+    // `message` at the top level on purpose: the web client's error path reads that
+    // key, and a 409 that surfaces as "API-Fehler 409" would tell the builder
+    // nothing about the one thing they need to know — nothing was deleted.
+    return c.json(
+      {
+        success: false,
+        deleted: 0,
+        orphans: [],
+        blocked,
+        hostedAppsRemoved: hostedTornDown,
+        message: blocked[0]?.message
+          ?? 'Die veröffentlichte App konnte nicht entfernt werden. Es wurde NICHTS gelöscht — bitte in ein paar Minuten erneut versuchen.',
+      },
+      409,
+    );
+  }
+
+  // Tear down each project's live Vercel site (need the name pre-cascade).
   // Best-effort + isolated per project (rule b/c): one failure never blocks the rest.
   const orphans: Array<{ id: string; url: string | null }> = [];
-  for (const row of ownedRows) {
+  for (const row of deletable) {
     try {
       const t = await teardownVercelProject(userId, row.name);
       if (!t.ok) {
@@ -352,21 +401,28 @@ projects.post('/bulk-delete', async (c) => {
     }
   }
 
+  const deletableIds = deletable.map((r) => r.id);
   const { error } = await supabase
     .from('projects')
     .delete()
-    .in('id', ownedIds)
+    .in('id', deletableIds)
     .eq('user_id', userId);
-  if (error) return c.json({ error: 'Failed to delete' }, 500);
+  if (error) return c.json({ error: 'Failed to delete', hostedAppsRemoved: hostedTornDown }, 500);
 
   // Best-effort storage cleanup per project — never block the response.
-  for (const id of ownedIds) {
+  for (const id of deletableIds) {
     deleteProject(id, { userId }).catch((err) =>
       logger.error({ project_id: id, err: err instanceof Error ? err.message : String(err) }, 'storage_cleanup_failed')
     );
   }
 
-  return c.json({ success: true, deleted: ownedIds.length, orphans });
+  return c.json({
+    success: true,
+    deleted: deletableIds.length,
+    orphans,
+    ...(blocked.length > 0 ? { blocked } : {}),
+    ...(hostedTornDown.length > 0 ? { hostedAppsRemoved: hostedTornDown } : {}),
+  });
 });
 
 // POST /api/projects/from-template
@@ -415,7 +471,35 @@ projects.delete('/:id', async (c) => {
     return c.json({ error: 'Project not found' }, 404);
   }
 
-  // Tear down the live Vercel site FIRST (need the name before the DB cascade).
+  // X1 — the Goblin-hosted Living App comes down FIRST, and its verified removal
+  // GATES the delete. `ops_apps.project_id` is ON DELETE CASCADE, so the row is
+  // gone the instant the project row is: if the R2 prefix and the KV route are not
+  // provably gone before that, `{name}.justgoblin.app` keeps serving with nothing
+  // pointing at it — unfindable, unsuspendable, still billed.
+  //
+  // This is the ONE step in this handler that refuses rather than degrades, and the
+  // asymmetry with the Vercel teardown below is deliberate. A stranded Vercel
+  // deployment lives on the USER'S own connected account, where they can still see
+  // and delete it. A stranded Living App lives on GOBLIN'S plane, where — once the
+  // registry row cascades — literally nobody can. Best-effort is a defensible answer
+  // only when someone is still left holding the thing.
+  //
+  // No app (every Act-1 project, every pre-0099 database) → one indexed lookup and
+  // straight through, unchanged.
+  const hosted = await teardownProjectApp(projectId, userId);
+  if (!hosted.ok) {
+    return c.json(
+      {
+        error: 'hosted_teardown_failed',
+        message: hosted.message,
+        app: { name: hosted.appName, url: hosted.appUrl },
+        ...(hosted.detail ? { detail: hosted.detail } : {}),
+      },
+      409,
+    );
+  }
+
+  // Tear down the live Vercel site (need the name before the DB cascade).
   // Best-effort (rule b): a teardown failure NEVER blocks the delete — the
   // orphaned URL is returned so the client/caller can surface it.
   let orphan: string | null = null;
@@ -430,10 +514,26 @@ projects.delete('/:id', async (c) => {
     logger.error({ project_id: projectId, err: err instanceof Error ? err.message : String(err) }, 'vercel_teardown_threw');
   }
 
-  await supabase
+  const { error: rowDeleteErr } = await supabase
     .from('projects')
     .delete()
     .eq('id', projectId);
+  if (rowDeleteErr) {
+    // The row survived. Say so instead of returning success — and say what the
+    // teardown above already did, because that part is NOT undoable and the builder
+    // would otherwise retry expecting their app to still be up.
+    logger.error({ project_id: projectId, err: rowDeleteErr.message }, 'project_row_delete_failed');
+    return c.json(
+      {
+        error: 'delete_failed',
+        message: hosted.attempted
+          ? `Die veröffentlichte App unter ${hosted.appUrl} ist offline genommen — das Projekt selbst konnte danach nicht gelöscht werden. Bitte erneut versuchen.`
+          : 'Das Projekt konnte nicht gelöscht werden. Bitte erneut versuchen.',
+        hostedAppRemoved: hosted.attempted,
+      },
+      500,
+    );
+  }
 
   // Best-effort storage cleanup — don't block response on failure
   deleteProject(projectId, { userId }).catch((err) =>
@@ -446,7 +546,24 @@ projects.delete('/:id', async (c) => {
     logger.error({ project_id: projectId, err: err instanceof Error ? err.message : String(err) }, 'checkpoint_cleanup_failed')
   );
 
-  return c.json({ success: true, orphanUrl: orphan });
+  return c.json({
+    success: true,
+    orphanUrl: orphan,
+    // Proof, not a claim: these come from the post-delete re-list and re-read.
+    ...(hosted.attempted
+      ? {
+          hostedApp: {
+            name: hosted.appName,
+            url: hosted.appUrl,
+            filesDeleted: hosted.filesDeleted,
+            batches: hosted.batches,
+            orphansRemaining: hosted.orphansRemaining,
+            routeGone: hosted.routeGone,
+            audit: hosted.audit,
+          },
+        }
+      : {}),
+  });
 });
 
 // Generate project

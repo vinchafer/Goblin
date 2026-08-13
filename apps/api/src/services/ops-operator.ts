@@ -30,10 +30,12 @@ import {
   getRoute,
   listAppFiles,
   listAppPrefixes,
+  listRouteNames,
   setRoute,
 } from './cf-deploy';
 import {
   allKnownAppIds,
+  allRegisteredAppNames,
   findOpsAppById,
   findOpsAppByName,
   markOpsAppDeleted,
@@ -41,7 +43,7 @@ import {
   unsuspendOpsApp,
   type OpsApp,
 } from './ops-apps-store';
-import { writeOpsAudit, type OpsAuditOutcome } from './ops-audit';
+import { writeOpsAudit, type OpsAuditAction, type OpsAuditOutcome } from './ops-audit';
 import { dailyRequestBudget } from './ops-caps';
 import logger from '../lib/logger';
 
@@ -168,7 +170,17 @@ export interface TeardownResult extends OperatorResult {
  *                  claim; "I looked and nothing is there" is evidence, and this is
  *                  the one place in the phase where the difference is the point.
  */
-export async function teardownApp(app: OpsApp, actor: string, reason: string): Promise<TeardownResult> {
+export async function teardownApp(
+  app: OpsApp,
+  actor: string,
+  reason: string,
+  /**
+   * X1 reuses this exact path for a builder-initiated project delete. Only the
+   * evidence row differs — same batching, same ordering, same orphan proof, so
+   * there is one teardown in the codebase and not a second one that drifts.
+   */
+  opts: { action?: OpsAuditAction; meta?: Record<string, unknown> } = {},
+): Promise<TeardownResult> {
   const routeDelete = await deleteRoute(app.appName);
   const filesDelete = await deleteAppFiles(app.appId);
   const registry = await markOpsAppDeleted(app.appId);
@@ -206,7 +218,7 @@ export async function teardownApp(app: OpsApp, actor: string, reason: string): P
     appId: app.appId,
     appName: app.appName,
     userId: app.userId,
-    action: 'teardown',
+    action: opts.action ?? 'teardown',
     actor,
     reason,
     meta: {
@@ -216,6 +228,7 @@ export async function teardownApp(app: OpsApp, actor: string, reason: string): P
       routeGone,
       route: result.route,
       registry: result.registry,
+      ...(opts.meta ?? {}),
     },
   });
 
@@ -226,10 +239,22 @@ export async function teardownApp(app: OpsApp, actor: string, reason: string): P
 // ── The orphan sweep (§8.3 gap 3) ───────────────────────────────────────────
 
 export interface OrphanReport {
-  /** null = the check could not be completed. Never silently 0. */
+  /** R2 prefixes with no registry row. null = the check could not be completed. Never silently 0. */
   orphans: string[] | null;
+  /**
+   * KV route labels the registry has never heard of — a PUBLICLY REACHABLE hostname
+   * with nothing pointing at it. null = the check could not be completed.
+   */
+  routeOrphans: string[] | null;
+  /**
+   * KV route labels whose registry row says `deleted` — a teardown that removed the
+   * row's claim but left the address resolving. Reported apart from `routeOrphans`
+   * because the fix differs: here there IS a row, and it says this should be gone.
+   */
+  routesOnDeletedApps: string[] | null;
   knownApps: number | null;
   prefixesInR2: number | null;
+  routesInKv: number | null;
   notes: string[];
   timestamp: string;
 }
@@ -253,15 +278,45 @@ export async function findOrphanedApps(): Promise<OrphanReport> {
   const prefixes = await listAppPrefixes();
   const known = await allKnownAppIds();
 
+  // ── The KV half, swept independently ──────────────────────────────────────
+  // Its own reads and its own failure modes: R2 being unreadable must not cost us
+  // the answer about reachable routes, which is the half that can be serving a
+  // stranger's phishing page right now.
+  const routes = await listRouteNames();
+  const registered = await allRegisteredAppNames();
+  let routeOrphans: string[] | null = null;
+  let routesOnDeletedApps: string[] | null = null;
+  const routesInKv = routes.ok ? routes.value.length : null;
+
+  if (!routes.ok) {
+    notes.push(`KV konnte nicht gelesen werden: ${routes.error.message}`);
+  } else if (registered === null) {
+    notes.push('Die Registry konnte nicht gelesen werden — ohne sie sähe jede Route wie ein Waisenkind aus.');
+  } else {
+    const byName = new Map(registered.map((r) => [r.appName, r.status]));
+    routeOrphans = routes.value.filter((name) => !byName.has(name));
+    routesOnDeletedApps = routes.value.filter((name) => byName.get(name) === 'deleted');
+    if (routeOrphans.length > 0) {
+      logger.warn({ count: routeOrphans.length }, 'ops_orphaned_routes_found');
+      notes.push(`${routeOrphans.length} verwaiste KV-Route(n) ohne Registry-Zeile — diese Adressen sind öffentlich erreichbar.`);
+    }
+    if (routesOnDeletedApps.length > 0) {
+      logger.warn({ count: routesOnDeletedApps.length }, 'ops_routes_on_deleted_apps_found');
+      notes.push(`${routesOnDeletedApps.length} Route(n) zeigen auf eine als gelöscht markierte App — der Abbau ist dort nicht fertig geworden.`);
+    }
+  }
+
+  const base = { routeOrphans, routesOnDeletedApps, routesInKv, notes, timestamp: new Date().toISOString() };
+
   if (!prefixes.ok) {
     notes.push(`R2 konnte nicht gelesen werden: ${prefixes.error.message}`);
-    return { orphans: null, knownApps: known?.length ?? null, prefixesInR2: null, notes, timestamp: new Date().toISOString() };
+    return { ...base, orphans: null, knownApps: known?.length ?? null, prefixesInR2: null };
   }
   if (known === null) {
     // Without the registry, EVERY prefix would look like an orphan. Refusing to
     // answer is the only safe response.
     notes.push('Die Registry konnte nicht gelesen werden — ohne sie sähe jede App wie ein Waisenkind aus.');
-    return { orphans: null, knownApps: null, prefixesInR2: prefixes.value.length, notes, timestamp: new Date().toISOString() };
+    return { ...base, orphans: null, knownApps: null, prefixesInR2: prefixes.value.length };
   }
 
   const knownSet = new Set(known);
@@ -271,13 +326,7 @@ export async function findOrphanedApps(): Promise<OrphanReport> {
     notes.push(`${orphans.length} verwaiste App-Prefix(e) in R2 ohne Registry-Zeile.`);
   }
 
-  return {
-    orphans,
-    knownApps: known.length,
-    prefixesInR2: prefixes.value.length,
-    notes,
-    timestamp: new Date().toISOString(),
-  };
+  return { ...base, orphans, knownApps: known.length, prefixesInR2: prefixes.value.length };
 }
 
 export interface OrphanPurgeResult {

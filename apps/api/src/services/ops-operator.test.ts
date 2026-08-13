@@ -17,6 +17,7 @@ const deleteAppFiles = vi.fn();
 const listAppFiles = vi.fn();
 const listAppPrefixes = vi.fn();
 const getRoute = vi.fn();
+const listRouteNames = vi.fn();
 
 vi.mock('./cf-deploy', () => ({
   setRoute: (...a: unknown[]) => setRoute(...a),
@@ -25,18 +26,21 @@ vi.mock('./cf-deploy', () => ({
   listAppFiles: (...a: unknown[]) => listAppFiles(...a),
   listAppPrefixes: (...a: unknown[]) => listAppPrefixes(...a),
   getRoute: (...a: unknown[]) => getRoute(...a),
+  listRouteNames: (...a: unknown[]) => listRouteNames(...a),
 }));
 
 const suspendOpsApp = vi.fn();
 const unsuspendOpsApp = vi.fn();
 const markOpsAppDeleted = vi.fn();
 const allKnownAppIds = vi.fn();
+const allRegisteredAppNames = vi.fn();
 
 vi.mock('./ops-apps-store', () => ({
   suspendOpsApp: (...a: unknown[]) => suspendOpsApp(...a),
   unsuspendOpsApp: (...a: unknown[]) => unsuspendOpsApp(...a),
   markOpsAppDeleted: (...a: unknown[]) => markOpsAppDeleted(...a),
   allKnownAppIds: (...a: unknown[]) => allKnownAppIds(...a),
+  allRegisteredAppNames: (...a: unknown[]) => allRegisteredAppNames(...a),
   findOpsAppById: vi.fn(async () => null),
   findOpsAppByName: vi.fn(async () => null),
 }));
@@ -68,6 +72,8 @@ beforeEach(() => {
   unsuspendOpsApp.mockResolvedValue(true);
   markOpsAppDeleted.mockResolvedValue(true);
   allKnownAppIds.mockResolvedValue([]);
+  listRouteNames.mockResolvedValue(ok([]));
+  allRegisteredAppNames.mockResolvedValue([]);
   writeOpsAudit.mockResolvedValue('written');
 });
 
@@ -232,6 +238,59 @@ describe('the orphan sweep (§8.3 gap 3)', () => {
   it('refuses to answer when R2 cannot be read', async () => {
     listAppPrefixes.mockResolvedValue(cfErr('auth'));
     expect((await findOrphanedApps()).orphans).toBeNull();
+  });
+});
+
+// ── X1: the KV half of the same sweep ───────────────────────────────────────
+// The R2 sweep above answers "what is STORED with nothing pointing at it". It cannot
+// answer "what is REACHABLE with nothing pointing at it", and that is the half that
+// can be serving a stranger's page right now: a route whose files were deleted but
+// whose KV record survived is invisible to a prefix listing.
+describe('the orphan sweep · KV routes', () => {
+  it('finds a route the registry has never heard of', async () => {
+    listRouteNames.mockResolvedValue(ok(['meinladen', 'verwaist']));
+    allRegisteredAppNames.mockResolvedValue([{ appName: 'meinladen', status: 'active' }]);
+    const r = await findOrphanedApps();
+    expect(r.routeOrphans).toEqual(['verwaist']);
+    expect(r.routesInKv).toBe(2);
+    expect(r.notes.join(' ')).toContain('öffentlich erreichbar');
+  });
+
+  it('separates a route on a `deleted` row — a teardown that did not finish', async () => {
+    listRouteNames.mockResolvedValue(ok(['abgebaut']));
+    allRegisteredAppNames.mockResolvedValue([{ appName: 'abgebaut', status: 'deleted' }]);
+    const r = await findOrphanedApps();
+    // Not an orphan (there IS a row) but not clean either — the row says this
+    // address should be gone, and it is still resolving.
+    expect(r.routeOrphans).toEqual([]);
+    expect(r.routesOnDeletedApps).toEqual(['abgebaut']);
+  });
+
+  it('a suspended app is NOT an orphan — its route is supposed to be there', async () => {
+    listRouteNames.mockResolvedValue(ok(['gesperrt']));
+    allRegisteredAppNames.mockResolvedValue([{ appName: 'gesperrt', status: 'suspended' }]);
+    const r = await findOrphanedApps();
+    expect(r.routeOrphans).toEqual([]);
+    expect(r.routesOnDeletedApps).toEqual([]);
+  });
+
+  it('refuses to answer about routes when KV cannot be read', async () => {
+    listRouteNames.mockResolvedValue(cfErr('rate limited'));
+    const r = await findOrphanedApps();
+    expect(r.routeOrphans).toBeNull();
+    expect(r.routesInKv).toBeNull();
+    expect(r.notes.join(' ')).toContain('KV konnte nicht gelesen werden');
+  });
+
+  it('answers about routes even when R2 is unreadable — the halves are independent', async () => {
+    // Losing the storage answer must not cost us the reachability answer: an
+    // unreachable bucket is a cost problem, a stray route is a live public URL.
+    listAppPrefixes.mockResolvedValue(cfErr('auth'));
+    listRouteNames.mockResolvedValue(ok(['verwaist']));
+    allRegisteredAppNames.mockResolvedValue([]);
+    const r = await findOrphanedApps();
+    expect(r.orphans).toBeNull();
+    expect(r.routeOrphans).toEqual(['verwaist']);
   });
 });
 

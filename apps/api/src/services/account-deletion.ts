@@ -5,6 +5,7 @@ import { sendEmail } from '../lib/email';
 import { deleteUserStorage, purgeProjectStorage } from './file-storage';
 import { purgeProjectCheckpoints } from './checkpoints/retention';
 import { teardownVercelProject } from './vercel-service';
+import { teardownProjectApp } from './ops-project-teardown';
 import { supabaseProvider } from './fullstack/supabase-provider';
 import { listUserBackendsForTeardown, setBackendStatus } from './fullstack/backend-store';
 import logger from '../lib/logger';
@@ -522,6 +523,33 @@ export async function hardDeleteUser(userId: string): Promise<HardDeleteOutcome>
         'account-deletion: vercel teardown not confirmed — purge held, retry next cron pass',
       );
     }
+  }
+
+  // X1 — the SAME cascade, one level up. `ops_apps` hangs off both `projects` and
+  // `users` with ON DELETE CASCADE, so the auth cascade below drops a deleted user's
+  // Living-App rows while their `{name}.justgoblin.app` keeps serving on Goblin's own
+  // plane. That is worse than the project-delete case it mirrors: there is no account
+  // left to ask, and Art. 17 does not stop at the database. Same blocking posture as
+  // the Vercel and Supabase teardowns around it — not confirmed gone → hold the
+  // purge, retry next cron pass. teardownApp is idempotent (a second pass finds an
+  // empty prefix and a missing route and verifies clean), and a user with no Living
+  // App costs one indexed lookup per project.
+  const failedAppTeardowns: string[] = [];
+  for (const id of projectIds) {
+    const td = await teardownProjectApp(id, 'system', 'Konto gelöscht (Art. 17)');
+    if (!td.ok) {
+      failedAppTeardowns.push(td.appName ?? id);
+      logger.warn(
+        { userIdHash: sha256(userId), orphansRemaining: td.orphansRemaining, routeGone: td.routeGone },
+        'account-deletion: living-app teardown not confirmed — purge held, retry next cron pass',
+      );
+    }
+  }
+  if (failedAppTeardowns.length > 0) {
+    throw new Error(
+      `living-app teardown incomplete: ${failedAppTeardowns.length} app(s) still reachable `
+      + `(${failedAppTeardowns.join(', ')}) — the hosted app must come down before the PII cascade; cron will retry`,
+    );
   }
 
   if (projectIds.length > 0) {
