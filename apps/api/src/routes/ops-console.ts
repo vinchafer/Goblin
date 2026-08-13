@@ -39,7 +39,7 @@ import { opsHostingEnabled, opsBetaEmails } from '../services/ops-beta';
 import { routerStatus } from '../services/ops-router-deploy';
 import { listAllOpsApps, opsAppsTableAvailable } from '../services/ops-apps-store';
 import { opsAuditTableAvailable, writeOpsAudit } from '../services/ops-audit';
-import { decideReview, findReviewItem, listPendingReviews } from '../services/ops-review-queue';
+import { decideReview, findReviewItem, listPendingReviews, listRecentReviewDecisions } from '../services/ops-review-queue';
 import { loadCandidatePreview } from '../services/ops-review-preview';
 import { publishHostedApp } from '../services/ops-publish';
 import { appUrl } from '../services/ops-app-names';
@@ -369,9 +369,24 @@ opsConsole.get('/e2e/status/:id', async (c) => {
  * believes the queue is empty when it is unreadable stops looking.
  */
 opsConsole.get('/reviews', async (c) => {
-  const { available, items } = await listPendingReviews();
+  // PHASE 3 · C8 — pending AND recently decided, in ONE call. A phone on mobile
+  // data should not need two round-trips to answer "what is waiting, and what did
+  // I just do about it".
+  const [{ available, items }, decided] = await Promise.all([listPendingReviews(), listRecentReviewDecisions()]);
   return c.json({
     available,
+    // The decision trail: who decided what, when, and why — without SQL.
+    decided: decided.items.map((i) => ({
+      id: i.id,
+      requestedName: i.requestedName,
+      status: i.status,
+      categories: i.categories,
+      stage2: { reason: i.stage2Reason },
+      decidedBy: i.decidedBy,
+      decidedAt: i.decidedAt,
+      decisionReason: i.decisionReason,
+      createdAt: i.createdAt,
+    })),
     items: items.map((i) => ({
       id: i.id,
       requestedName: i.requestedName,

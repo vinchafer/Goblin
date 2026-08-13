@@ -191,6 +191,46 @@ export async function listPendingReviews(
   return { available: true, items: (data ?? []).map((r) => toItem(r as unknown as Record<string, unknown>)) };
 }
 
+/**
+ * PHASE 3 · C8 — what was DECIDED, most recent first.
+ *
+ * ── Why the decision trail is read from HERE and not from `ops_app_audit` ────
+ * The audit row is the retention-grade evidence (12 months, outlives the
+ * account); the queue row is the operational record, and it is the one
+ * `decideReview` writes transactionally, guarded on `status = 'pending'`. Both
+ * carry who/what/when/why. Reading the queue is the smaller, truer fix.
+ *
+ * The alternative — teaching `GET /api/admin/ops/apps/:idOrName` to resolve a
+ * queue-row id — was rejected: that route answers "here is an APP", and a
+ * candidate is not an app. It would have had to return a fabricated or null
+ * `app` object beside the audit rows, which is a shape lie in a surface whose
+ * entire job is not to tell them.
+ *
+ * ── The honest limit of reading it here ──────────────────────────────────────
+ * `ops_review_queue` cascades on user and project deletion (0102). The audit row
+ * does not — deliberately, per ABUSE_RESPONSE §8.7. So if the builder's account
+ * or project is deleted, this list loses the entry while the evidence survives in
+ * `ops_app_audit`. That is the correct behaviour for both tables and it means
+ * this list is a convenience, not the record of record.
+ */
+export async function listRecentReviewDecisions(
+  sb: Sb = getSupabaseAdmin(),
+  limit = 20,
+): Promise<{ available: boolean; items: ReviewItem[] }> {
+  if (!(await opsReviewQueueAvailable(sb))) return { available: false, items: [] };
+  const { data, error } = await sb
+    .from('ops_review_queue')
+    .select(COLUMNS)
+    .neq('status', 'pending')
+    .order('decided_at', { ascending: false })
+    .limit(limit);
+  if (error) {
+    logger.warn({ reason: error.message }, 'ops_review_queue_decided_list_failed');
+    return { available: false, items: [] };
+  }
+  return { available: true, items: (data ?? []).map((r) => toItem(r as unknown as Record<string, unknown>)) };
+}
+
 export async function findReviewItem(id: string, sb: Sb = getSupabaseAdmin()): Promise<ReviewItem | null> {
   if (!(await opsReviewQueueAvailable(sb))) return null;
   const { data, error } = await sb.from('ops_review_queue').select(COLUMNS).eq('id', id).maybeSingle();

@@ -92,6 +92,17 @@ const de = {
     running: 'veröffentlicht …',
     published: 'Live.',
     open: 'Öffnen',
+    // ── C7 (2026-08-13): drei Ausgänge, drei Sätze ──────────────────────────
+    // Vorher rannte jede 2xx-Antwort in „Live." — auch die 202 einer gehaltenen
+    // Veröffentlichung, die NICHTS hochgeladen hat. Jeder Ausgang hat jetzt seine
+    // eigene Zeile, und der unbekannte Fall sagt „unklar" statt „live".
+    heldTitle: 'Angehalten — nichts veröffentlicht.',
+    heldPointer: 'Der Eintrag steht unten in der Prüfliste. Dort kannst du ihn ansehen und entscheiden.',
+    refusedTitle: 'Abgelehnt von der festen Regelliste — nichts veröffentlicht.',
+    unclearTitle: 'UNKLAR — die Antwort war nicht eindeutig.',
+    unclearBody:
+      'Die API hat etwas geantwortet, das diese Karte nicht sicher deuten kann. Das heißt NICHT „live" und nicht „fehlgeschlagen". Sieh in „Gehostete Apps" und in der Prüfliste nach, was tatsächlich passiert ist, und ruf die Adresse selbst auf.',
+    notRecordedTitle: 'Angehalten — und nicht vorgemerkt.',
     disabledNoHosting: 'Nicht möglich, solange OPS_HOSTING_ENABLED aus ist.',
     disabledNoProject: 'Erst ein Projekt wählen.',
     disabledNoName: 'Erst einen Namen eingeben.',
@@ -193,6 +204,17 @@ const de = {
     auditWritten: 'Protokollzeile geschrieben.',
     auditUnavailable: 'Keine Protokollzeile — Migration 0100 fehlt. Die Entscheidung steht im Anwendungs-Log.',
     auditFailed: 'Die Protokollzeile konnte nicht geschrieben werden.',
+    // ── C8 (2026-08-13): der Entscheidungs-Verlauf, ohne SQL ─────────────────
+    decidedHeading: 'Zuletzt entschieden',
+    decidedNone: 'Es wurde noch nichts entschieden.',
+    decidedBy: 'Entschieden von',
+    decidedAt: 'Entschieden am',
+    decidedReason: 'Grund',
+    decidedNoReason: 'kein Grund hinterlegt',
+    statusApproved: 'freigegeben',
+    statusBlocked: 'abgelehnt',
+    decidedNote:
+      'Gelesen aus der Prüfliste selbst. Die Beweiszeile in ops_app_audit ist davon unberührt und bleibt 12 Monate — sie überlebt auch das Löschen des Kontos, diese Liste nicht.',
   },
 
   e2e: {
@@ -331,6 +353,13 @@ const en: typeof de = {
     running: 'publishing …',
     published: 'Live.',
     open: 'Open',
+    heldTitle: 'Held — nothing published.',
+    heldPointer: 'The item is in the review queue below. You can look at it and decide there.',
+    refusedTitle: 'Refused by the fixed rule list — nothing published.',
+    unclearTitle: 'UNCLEAR — the answer was not conclusive.',
+    unclearBody:
+      'The API answered something this card cannot read with confidence. That does NOT mean "live" and does not mean "failed". Check "Hosted apps" and the review queue for what actually happened, and open the address yourself.',
+    notRecordedTitle: 'Held — and not recorded.',
     disabledNoHosting: 'Not possible while OPS_HOSTING_ENABLED is off.',
     disabledNoProject: 'Choose a project first.',
     disabledNoName: 'Enter a name first.',
@@ -427,6 +456,16 @@ const en: typeof de = {
     auditWritten: 'Audit row written.',
     auditUnavailable: 'No audit row — migration 0100 is missing. The decision is in the application log.',
     auditFailed: 'The audit row could not be written.',
+    decidedHeading: 'Recently decided',
+    decidedNone: 'Nothing has been decided yet.',
+    decidedBy: 'Decided by',
+    decidedAt: 'Decided at',
+    decidedReason: 'Reason',
+    decidedNoReason: 'no reason recorded',
+    statusApproved: 'approved',
+    statusBlocked: 'rejected',
+    decidedNote:
+      'Read from the review queue itself. The evidence row in ops_app_audit is untouched by this and is kept for 12 months — it outlives account deletion, this list does not.',
   },
 
   e2e: {

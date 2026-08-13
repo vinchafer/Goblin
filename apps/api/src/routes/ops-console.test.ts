@@ -40,10 +40,12 @@ vi.mock('../services/ops-audit', () => ({
 // PHASE 3 · U3.3 — the review queue's three collaborators. Mocked at the module
 // boundary so this file keeps testing ROUTES rather than Cloudflare and Postgres.
 const listPendingReviews = vi.fn();
+const listRecentReviewDecisions = vi.fn();
 const findReviewItem = vi.fn();
 const decideReview = vi.fn();
 vi.mock('../services/ops-review-queue', () => ({
   listPendingReviews: (...a: unknown[]) => listPendingReviews(...a),
+  listRecentReviewDecisions: (...a: unknown[]) => listRecentReviewDecisions(...a),
   findReviewItem: (...a: unknown[]) => findReviewItem(...a),
   decideReview: (...a: unknown[]) => decideReview(...a),
 }));
@@ -654,6 +656,7 @@ describe('4 — the review queue', () => {
   beforeEach(() => {
     process.env.OPS_FOUNDER_ACCOUNTS = FOUNDER;
     listPendingReviews.mockResolvedValue({ available: true, items: [REVIEW_ITEM] });
+    listRecentReviewDecisions.mockResolvedValue({ available: true, items: [] });
     findReviewItem.mockResolvedValue(REVIEW_ITEM);
     decideReview.mockResolvedValue({ ...REVIEW_ITEM, status: 'approved' });
     writeOpsAudit.mockResolvedValue('written');
@@ -772,5 +775,57 @@ describe('4 — the review queue', () => {
     }
     expect(decideReview).not.toHaveBeenCalled();
     expect(publishHostedApp).not.toHaveBeenCalled();
+  });
+});
+
+// ── 5 — C8: the decision trail is readable without SQL ──────────────────────
+
+describe('5 — the decision trail', () => {
+  const DECIDED = {
+    ...REVIEW_ITEM,
+    id: 'rv-9',
+    status: 'blocked' as const,
+    decidedBy: FOUNDER,
+    decidedAt: '2026-08-13T09:00:00.000Z',
+    decisionReason: 'Fake-Gewinnspiel, verlangt Vorauszahlung',
+  };
+
+  beforeEach(() => {
+    process.env.OPS_FOUNDER_ACCOUNTS = FOUNDER;
+    listPendingReviews.mockResolvedValue({ available: true, items: [] });
+    listRecentReviewDecisions.mockResolvedValue({ available: true, items: [DECIDED] });
+  });
+
+  it('returns who decided what, when and why — in the SAME call as the queue', async () => {
+    const body = await (await get('/reviews')).json();
+    // One round-trip: a phone on mobile data should not need two.
+    expect(listPendingReviews).toHaveBeenCalled();
+    expect(listRecentReviewDecisions).toHaveBeenCalled();
+    expect(body.decided).toHaveLength(1);
+    expect(body.decided[0]).toMatchObject({
+      requestedName: 'meinladen',
+      status: 'blocked',
+      decidedBy: FOUNDER,
+      decidedAt: '2026-08-13T09:00:00.000Z',
+      decisionReason: 'Fake-Gewinnspiel, verlangt Vorauszahlung',
+    });
+  });
+
+  it('is empty, not absent, when nothing has been decided', async () => {
+    listRecentReviewDecisions.mockResolvedValue({ available: true, items: [] });
+    const body = await (await get('/reviews')).json();
+    expect(body.decided).toEqual([]);
+  });
+
+  it('exposes the trail to NOBODY but the founder gate', async () => {
+    getUser.mockResolvedValue({ data: { user: { id: 'u2', email: COHORT } }, error: null });
+    const res = await opsConsole.request('/reviews', { headers: { Authorization: 'Bearer t' } });
+    expect(res.status).toBe(404);
+    expect(await res.text()).toBe('404 Not Found');
+  });
+
+  it('does not weaken the audit write path — the trail is a READ, nothing else', async () => {
+    await get('/reviews');
+    expect(writeOpsAudit).not.toHaveBeenCalled();
   });
 });

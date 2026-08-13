@@ -37,6 +37,13 @@ import { API_URL, getAuthHeaders } from '@/lib/api';
 import { useLang } from '@/lib/use-lang';
 import { STR, summaryLine, scrubForCopy, type Lang } from './strings';
 import { explainFailure, explainNetworkFailure, whereLine, type HonestError } from './refusal';
+import {
+  classifyPublishOutcome,
+  isLive,
+  type PublishOutcome,
+  type PublishResponseBody,
+} from '@/lib/publish-outcome';
+import { PublishOutcomeView } from './publish-outcome-view';
 
 // ── shapes the API hands us ─────────────────────────────────────────────────
 
@@ -82,6 +89,17 @@ interface ReviewItemView {
   createdAt: string;
 }
 
+/** PHASE 3 · C8 — one settled item: who decided what, when, and why. */
+interface ReviewDecisionView {
+  id: string;
+  requestedName: string;
+  status: string;
+  categories: string[];
+  decidedBy: string | null;
+  decidedAt: string | null;
+  decisionReason: string | null;
+}
+
 interface PreviewView {
   available: boolean;
   files: Array<{ path: string; text: string; bytes: number; truncated: boolean }>;
@@ -123,7 +141,13 @@ interface E2EJobView {
   } | null;
 }
 
-type CallResult<T> = { ok: true; data: T } | { ok: false; error: HonestError; status: number };
+// C7: the failure branch used to drop the parsed body, and the success branch
+// dropped the status — so a caller could not tell a 200 from a 202, nor read the
+// honest German out of a 422. Both now carry both. `body` is the parsed payload
+// (or null when the response was not JSON).
+type CallResult<T> =
+  | { ok: true; data: T; status: number }
+  | { ok: false; error: HonestError; status: number; body: unknown };
 
 // ── talking to the API ──────────────────────────────────────────────────────
 
@@ -142,7 +166,7 @@ function makeCall(lang: Lang) {
     try {
       res = await fetch(`${API_URL}${path}`, { ...init, headers: { ...(await getAuthHeaders()), ...(init.headers ?? {}) } });
     } catch (err) {
-      return { ok: false, status: 0, error: explainNetworkFailure(lang, where, err) };
+      return { ok: false, status: 0, body: null, error: explainNetworkFailure(lang, where, err) };
     }
 
     const raw = await res.text();
@@ -153,8 +177,8 @@ function makeCall(lang: Lang) {
       /* not JSON — the raw text IS the detail, which is the honest thing to show */
     }
 
-    if (!res.ok) return { ok: false, status: res.status, error: explainFailure(lang, where, res.status, raw, parsed) };
-    return { ok: true, data: (parsed ?? {}) as T };
+    if (!res.ok) return { ok: false, status: res.status, body: parsed, error: explainFailure(lang, where, res.status, raw, parsed) };
+    return { ok: true, status: res.status, data: (parsed ?? {}) as T };
   };
 }
 
@@ -323,6 +347,7 @@ export function OpsConsole({ initialStatus }: { initialStatus: StatusPayload }) 
 
   const [reviews, setReviews] = useState<ReviewItemView[]>([]);
   const [reviewsAvailable, setReviewsAvailable] = useState<Tri>(null);
+  const [decided, setDecided] = useState<ReviewDecisionView[]>([]);
   const [reviewsError, setReviewsError] = useState<HonestError | null>(null);
   const [openReview, setOpenReview] = useState<string | null>(null);
   const [reviewReason, setReviewReason] = useState('');
@@ -331,9 +356,12 @@ export function OpsConsole({ initialStatus }: { initialStatus: StatusPayload }) 
   const [reviewDone, setReviewDone] = useState<Record<string, { decision: string; audit?: string; published?: boolean; message?: string }>>({});
 
   const refreshReviews = useCallback(async () => {
-    const res = await call<{ available: boolean; items: ReviewItemView[] }>('/api/ops-console/reviews');
+    const res = await call<{ available: boolean; items: ReviewItemView[]; decided?: ReviewDecisionView[] }>(
+      '/api/ops-console/reviews',
+    );
     if (res.ok) {
       setReviews(res.data.items);
+      setDecided(res.data.decided ?? []);
       setReviewsAvailable(res.data.available);
       setReviewsError(null);
     } else {
@@ -437,7 +465,7 @@ export function OpsConsole({ initialStatus }: { initialStatus: StatusPayload }) 
   const [appName, setAppName] = useState('');
   const [nameCheck, setNameCheck] = useState<{ name: string; result: 'free' | 'taken' | 'invalid' | 'unknown' } | null>(null);
   const [publishBusy, setPublishBusy] = useState(false);
-  const [published, setPublished] = useState<{ url: string; files: number } | null>(null);
+  const [published, setPublished] = useState<PublishOutcome | null>(null);
   const [publishError, setPublishError] = useState<HonestError | null>(null);
 
   const typedName = appName.trim().toLowerCase();
@@ -473,20 +501,44 @@ export function OpsConsole({ initialStatus }: { initialStatus: StatusPayload }) 
           ? 'idle'
           : nameCheck.result;
 
+  /**
+   * C7 — publish, classified by what the API actually said.
+   *
+   * The old body was `if (res.ok) setPublished(res.data)`, and a HELD publish
+   * answers 202, which is ok. So the console reported "Live." for something that
+   * uploaded nothing. Now the response goes through the shared classifier
+   * (`lib/publish-outcome.ts`), the same one the builder-facing sheet uses, and
+   * only `kind: 'live'` is treated as a live app.
+   *
+   * The transport/gate failures still go to `publishError`, because those really
+   * are "that did not work". A scan refusal is NOT one of those — it is a
+   * deliberate answer — so it is classified out of the error path and gets its
+   * own line, the same reasoning refusal.ts applies to a gate 404.
+   */
   const publish = useCallback(async () => {
     setPublishBusy(true);
     setPublishError(null);
-    const res = await call<{ url: string; files: number }>('/api/ops/apps/publish', {
+    setPublished(null);
+    const res = await call<PublishResponseBody>('/api/ops/apps/publish', {
       method: 'POST',
       body: JSON.stringify({ projectId, name: typedName }),
     });
     setPublishBusy(false);
-    if (res.ok) {
-      setPublished(res.data);
-      void refreshApps();
-    } else {
+
+    const outcome = classifyPublishOutcome(res.status, (res.ok ? res.data : res.body) as PublishResponseBody | null);
+
+    // An `unclear` that came from a real transport failure still deserves the
+    // detail block — that is where the pasteable exchange lives.
+    if (!res.ok && outcome.kind === 'unclear') {
       setPublishError(res.error);
+      return;
     }
+
+    setPublished(outcome);
+    // Only a live app changes the registry list. A hold or a refusal wrote
+    // nothing, so refreshing would be a request that can only return the same
+    // answer — and would imply to the reader that something might have changed.
+    if (isLive(outcome)) void refreshApps();
   }, [call, projectId, typedName, refreshApps]);
 
   const publishBlockedBecause = !hostingOn
@@ -834,14 +886,8 @@ export function OpsConsole({ initialStatus }: { initialStatus: StatusPayload }) 
           onClick={() => void publish()}
         />
 
-        {published ? (
-          <p className="oc-lead">
-            {s.publish.published}{' '}
-            <a href={published.url} target="_blank" rel="noreferrer">
-              {published.url}
-            </a>
-          </p>
-        ) : null}
+        {/* C7 — one branch per outcome, in its own testable component. */}
+        <PublishOutcomeView outcome={published} lang={lang} />
         {publishError ? <ErrorBlock error={publishError} title={s.error.title} detailLabel={s.error.detail} copyLabel={s.error.copyDetail} /> : null}
       </section>
 
@@ -1129,6 +1175,41 @@ export function OpsConsole({ initialStatus }: { initialStatus: StatusPayload }) 
             </div>
           );
         })}
+
+        {/* ── C8: the decision trail, so the founder never needs SQL to see
+            who decided what, when and why. Read from the queue row itself —
+            see listRecentReviewDecisions for why not from ops_app_audit. ── */}
+        {reviewsAvailable === true ? (
+          <div className="oc-field" data-testid="review-decided">
+            <h3 className="oc-lead"><strong>{s.reviews.decidedHeading}</strong></h3>
+            {decided.length === 0 ? <p className="oc-why">{s.reviews.decidedNone}</p> : null}
+            {decided.map((d) => (
+              <div className="oc-app" key={d.id}>
+                <div className="top">
+                  <span className="nm">{d.requestedName}</span>
+                  <span className={`oc-state ${d.status === 'approved' ? 'ok' : 'bad'}`}>
+                    {d.status === 'approved' ? s.reviews.statusApproved : s.reviews.statusBlocked}
+                  </span>
+                </div>
+                <Row k={s.reviews.decidedBy}>
+                  {d.decidedBy ?? <span className="oc-state unknown">{s.status.unknown}</span>}
+                </Row>
+                <Row k={s.reviews.decidedAt}>
+                  {d.decidedAt ? (
+                    new Date(d.decidedAt).toLocaleString(lang === 'de' ? 'de-CH' : 'en-GB')
+                  ) : (
+                    <span className="oc-state unknown">{s.status.unknown}</span>
+                  )}
+                </Row>
+                <Row k={s.reviews.decidedReason}>
+                  {d.decisionReason ?? <span className="oc-note">{s.reviews.decidedNoReason}</span>}
+                </Row>
+                {d.categories.length > 0 ? <Row k={s.reviews.categories}>{d.categories.join(' · ')}</Row> : null}
+              </div>
+            ))}
+            <p className="oc-note">{s.reviews.decidedNote}</p>
+          </div>
+        ) : null}
 
         {reviewsError ? (
           <ErrorBlock error={reviewsError} title={s.error.title} detailLabel={s.error.detail} copyLabel={s.error.copyDetail} />
