@@ -245,8 +245,10 @@ step performed on production. Likewise unproven in operation: the console's appr
 the two `ops_app_audit` rows they write, and the builder-facing publish sheet v2. The one honest
 sentence is: *the mechanism is built and test-covered; the operational proof is the founder window and
 it has not been run.* Pending window: `docs/AKT2_PHASE3_FOUNDER_WINDOW.md`. Full report, with twelve
-honest limitations and nine findings: `docs/AKT2_PHASE3_REPORT.md`; what Phase 3 knowingly leaves open
-is the carry-forward section of that same report.
+honest limitations and nine findings: `docs/AKT2_PHASE3_REPORT.md`. **What Act 2 as a whole leaves
+open now lives in one place: `docs/ACT2_CARRY_FORWARD.md`** — the Phase-3 report's carry-forward
+table plus everything the closing consistency sweep surfaced across the other Act-2 documents. Read
+that register before writing the Phase-4 prompt; it is the list, and it is meant to be the only one.
 
 *Founder decisions taken at merge:* **E1** — scanning is platform-COGS, never a user's quota.
 **E2** — stage 2 may only route to `review`; blocking stays deterministic (stage 1) or human (console).
