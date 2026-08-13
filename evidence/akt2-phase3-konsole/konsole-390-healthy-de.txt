@@ -1,0 +1,184 @@
+Akt 2 · Ops
+Gründer-Konsole
+Angemeldet als vinc.hafner3@gmail.com
+Zustand
+Hosting-Schalter
+AN
+Worker deployt
+JA
+Zone gefunden
+JA
+Wildcard proxied
+JA
+Route gebunden
+JA
+0099 · Registry (ops_apps)
+ANGEWENDET
+0100 · Protokoll (ops_app_audit)
+ANGEWENDET
+App-Domain
+justgoblin.app
+
+Der dokumentierte Stolperstein: ein *-Eintrag kann existieren und trotzdem nicht proxied sein (graue Wolke). Dann läuft der Worker nie.
+
+Zuletzt geladen: 29.7.2026, 09:14:00
+
+Neu laden
+Router ausrollen
+
+Lädt den Worker hoch, sucht die Zone, setzt den Wildcard-Eintrag und bindet die Route. Idempotent — mehrfach ausführen ist ausdrücklich in Ordnung.
+
+Router ausrollen
+Test-App veröffentlichen
+
+Veröffentlicht ein Projekt dieses Kontos unter einem eigenen Namen. Der Scan läuft vorher, die Prüfung danach.
+
+Projekt
+Projekt wählen …
+Mein Testprojekt
+Name
+
+Kleinbuchstaben, Ziffern und Bindestriche. Die Prüfung ist keine Reservierung — erst das Veröffentlichen entscheidet.
+
+Veröffentlichen
+
+Erst ein Projekt wählen.
+
+Gehostete Apps
+
+Alle Apps aus der Registry. Sperren und Teardown wirken auf die App von jedem Konto — das ist Betreiber-Werkzeug.
+
+goblin-test-app
+AKTIV
+https://goblin-test-app.justgoblin.app
+Öffentliche URL öffnen
+Sperren / Teardown
+ein-sehr-langer-app-name-zum-testen
+GESPERRT
+https://ein-sehr-langer-app-name-zum-testen.justgoblin.app
+Öffentliche URL öffnen
+Entsperren / Teardown
+Prüfliste
+
+Veröffentlichungen, die die feste Regelliste bestanden haben und die der Klassifizierer angehalten hat. Es ist nichts hochgeladen und nichts online — es wartet auf deine Entscheidung.
+
+gewinnspiel-2026
+STUFE 2 (KLASSIFIZIERER)
+Wartet seit
+13.8.2026, 07:41:00
+Stufe 1 (feste Regeln)
+PASS
+Kategorien
+deception
+Sicherheit
+medium
+Geprüft
+3 Dateien
+Tokens (rein/raus)
+812 / 21
+
+Der Klassifizierer hat die Seite gelesen und etwas gefunden, das ein Mensch ansehen sollte.
+
+Inhalt einklappen
+Freigeben / Ablehnen
+
+Roher Quelltext, als Text dargestellt. Er wird hier nirgends ausgeführt, nicht als HTML eingebettet und lädt nichts nach — deshalb siehst du Markup und keine Seite.
+
+index.html · 152 B
+<!doctype html>
+<h1>Du hast gewonnen!</h1>
+<script>document.title = "x"</script>
+<form action="https://beispiel.invalid/collect">
+  <input name="iban">
+</form>
+
+Nicht-Text-Dateien (nur Namen): logo.png
+
+Grund
+
+Bei einer Freigabe optional — steht trotzdem im Protokoll.
+
+Eine Ablehnung braucht einen Grund — der Nutzer bekommt ihn zu lesen.
+
+Die Freigabe startet die Veröffentlichung sofort. Die feste Regelliste läuft dabei erneut: eine Freigabe überstimmt den Klassifizierer, nicht die harten Regeln.
+
+Eine Ablehnung nimmt nichts vom Netz — es war nie etwas online. Sie schließt den Eintrag und schreibt die Protokollzeile.
+
+Freigeben
+Ablehnen
+ein-sehr-langer-kandidaten-name-zum-testen
+STUFE 2 (KLASSIFIZIERER)
+Wartet seit
+13.8.2026, 06:02:00
+Stufe 1 (feste Regeln)
+PASS
+Kategorien
+UNBEKANNT
+
+keine — die Prüfung konnte nicht abgeschlossen werden
+
+Sicherheit
+UNBEKANNT
+Geprüft
+41 Dateien
+Tokens (rein/raus)
+0 / 0
+
+Die Seite war größer als das Prüf-Budget. Sie wurde NICHT gekürzt und beurteilt — sie wurde gar nicht beurteilt. Das sagt nichts über den Inhalt aus.
+
+Inhalt ansehen
+Freigeben / Ablehnen
+Ende-zu-Ende-Lauf
+
+Fährt die komplette Schleife auf der echten Infrastruktur: Preflight, Scan-Batterie, fünf Veröffentlichungen, Umbenennen mit 410, feindliche Datei, Sperren und Entsperren, Teardown. Dauert 5–15 Minuten.
+
+Der Fortschritt liegt im Arbeitsspeicher der API. Ein Redeploy löscht diese ANSICHT — der Lauf selbst kann trotzdem weiterlaufen und fertig werden, denn seine Schreibvorgänge gehen direkt an Cloudflare und Supabase. Kopiere das Ergebnis, bevor du etwas neu deployst.
+
+E2E starten
+Zustand
+FERTIG
+Laufzeit
+720s
+Schritte gemeldet
+6
+
+Keine Fortschrittsanzeige in Prozent: wie viele Schritte ein Lauf hat, steht erst am Ende fest — ein blockierter Preflight endet nach zwei. Angezeigt wird, was gemeldet wurde.
+
+✓
+preflight:router
+router deployed, wildcard proxied, route bound
+✓
+scan:battery
+9/9
+✓
+publish:5/5
+live at https://e2e-ab12.justgoblin.app (3 files, verified 3/3 assets byte-identical)
+✓
+rename:old-410
+https://e2e-ab12.justgoblin.app → 410 (no redirect) · Propagation 34s
+✓
+hostile:blocked
+refused at the scan: AUP-PHISH-01
+✓
+suspend:page-live
+https://e2e-ab12-b.justgoblin.app → 403 with the suspended page · Propagation 41s
+
+Alle Schritte grün.
+
+VERÖFFENTLICHUNGEN
+5/5
+SCAN-BATTERIE
+9/9
+SPERR-RUNDE
+3/3
+Ergebnis kopieren
+
+Kopiert das Ergebnis als JSON in die Zwischenablage — ohne Tokens, Schlüssel und Adressen.
+
+Bereinigt: E-Mail-Adressen und alles, was nach einem Schlüssel aussieht, sind entfernt.
+
+Ergebnis kopieren
+
+Zusammenfassung
+
+E2E BESTANDEN · Veröffentlichungen 5/5 · Scan-Batterie 9/9 · Sperr-Runde 3/3 · Schritte 6/6 · 12 min
