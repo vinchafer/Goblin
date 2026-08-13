@@ -1,0 +1,140 @@
+Act 2 · Ops
+Founder console
+Signed in as vinc.hafner3@gmail.com
+State
+Hosting switch
+OFF
+Worker deployed
+UNKNOWN
+Zone found
+UNKNOWN
+Wildcard proxied
+UNKNOWN
+Route bound
+UNKNOWN
+0099 · registry (ops_apps)
+UNKNOWN
+0100 · audit (ops_app_audit)
+NOT APPLIED
+Apps domain
+justgoblin.app
+
+The documented trap: a * record can exist and still not be proxied (grey cloud). Then the Worker never runs.
+
+OPS_HOSTING_ENABLED is off. The ops plane (/api/ops) therefore answers 404 for everyone — publishing and router actions only work once the switch is on. Suspend and teardown still work: they deliberately do not hang on this switch.
+
+Without 0100 suspensions still work, but every action reports "audit: unavailable" instead of writing an evidence row.
+
+The value could not be determined — not to be confused with "not there".
+
+Last loaded: 29/07/2026, 09:14:00
+
+Reload
+Provision the router
+
+Uploads the Worker, finds the zone, sets the wildcard record and binds the route. Idempotent — running it repeatedly is explicitly fine.
+
+Provision the router
+
+Not possible while OPS_HOSTING_ENABLED is off — /api/ops answers 404 then.
+
+Publish a test app
+
+Publishes a project of this account under its own name. The scan runs before, the verification after.
+
+Project
+Choose a project …
+
+The project list could not be loaded.
+
+That did not work.
+The API answered with an error.
+Details
+Copy details
+Name
+
+Lower-case letters, digits and hyphens. The check is not a reservation — only publishing decides.
+
+Publish
+
+Not possible while OPS_HOSTING_ENABLED is off.
+
+Hosted apps
+
+Every app in the registry. Suspend and teardown act on any account’s app — this is operator tooling.
+
+The registry could not be read. That does NOT mean "no apps" — it means nobody can look right now. Check migration 0099.
+
+Orphan check
+
+Asks Cloudflare (KV and R2) and the registry, and reports whatever sits on the substrate with no registry row pointing at it. Report only — this card deletes nothing.
+
+Run the check
+Finding
+NOT CHECKED
+
+UNKNOWN — nothing at all could be checked. That is a failed sweep, never an all-clear.
+
+Orphaned KV routes
+NOT CHECKED
+
+A hostname that resolves while the registry has never heard of it: publicly reachable, invisible to this console, impossible to suspend. This is the actual X1 finding.
+
+This field came back as null, i.e. unknown. That does NOT mean "none found" — it means the check could not be completed. The reason appears in the notes.
+
+Routes on deleted apps
+NOT CHECKED
+
+Here a row does exist, and it says "deleted" — yet the hostname still resolves. The teardown never finished; it can be retried from "Hosted apps".
+
+This field came back as null, i.e. unknown. That does NOT mean "none found" — it means the check could not be completed. The reason appears in the notes.
+
+Orphaned R2 prefixes
+NOT CHECKED
+
+Files with no row. No public access as long as no route points at them — this is storage cost nobody is billed for.
+
+This field came back as null, i.e. unknown. That does NOT mean "none found" — it means the check could not be completed. The reason appears in the notes.
+
+Counted
+
+Registry rows
+UNKNOWN
+Routes in KV
+UNKNOWN
+Prefixes in R2
+UNKNOWN
+
+Notes from the sweep
+
+Die Registry konnte nicht gelesen werden — ohne sie sähe jede Route wie ein Waisenkind aus.
+
+Checked at: 13/08/2026, 09:20:00
+
+There is deliberately no delete button here. Cleaning up demands named app ids, a reason for the audit log, and a fresh registry check immediately before deletion — that stays its own explicit step, not a button beside a report.
+
+Review queue
+
+Publishes that cleared the fixed rule list and were then held by the classifier. Nothing was uploaded and nothing is online — it is waiting on your decision.
+
+The review queue could not be read. That does NOT mean "nothing is waiting" — it means nobody can look right now. Check migration 0102.
+
+End-to-end run
+
+Drives the whole loop on the real infrastructure: preflight, scan battery, five publishes, rename with 410, hostile file, suspend and unsuspend, teardown. Takes 5–15 minutes.
+
+Progress is held in the API’s memory. A redeploy wipes this VIEW — the run itself may well carry on and finish, because its writes go straight to Cloudflare and Supabase. Copy the result before you deploy anything.
+
+Start E2E
+
+Not possible while OPS_HOSTING_ENABLED is off — the run would not get past the preflight.
+
+Copy the result
+
+Copies the result as JSON to the clipboard — without tokens, keys and addresses.
+
+Scrubbed: email addresses and anything that looks like a key have been removed.
+
+Copy the result
+
+There is no result to copy yet.

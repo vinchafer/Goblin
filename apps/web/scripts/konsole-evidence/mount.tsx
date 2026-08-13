@@ -135,6 +135,46 @@ const PREVIEW_STUB = {
   note: 'Roher Quelltext, als Text ausgeliefert. Er wird nirgends ausgeführt oder als HTML eingebettet.',
 };
 
+/**
+ * X1-S — the orphan sweep's two answers.
+ *
+ * HEALTHY is deliberately MIXED rather than all-clear: it is the only way one
+ * screenshot can carry all three states of a field side by side — a real finding,
+ * an earned zero, and a `null` that means "could not check". A card that renders
+ * the third one like the second is the single failure this card must not have, and
+ * an all-green stub would never show it.
+ *
+ * DEGRADED is every field `null`. That is the screenshot that would expose a null
+ * quietly turning into "keine gefunden".
+ */
+const ORPHANS_HEALTHY = {
+  // A publicly reachable hostname the registry has never heard of — the actual X1 finding.
+  routeOrphans: ['verwaiste-adresse-aus-einer-loeschung'],
+  // Checked, and genuinely empty.
+  routesOnDeletedApps: [],
+  // R2 could not be listed. NOT zero.
+  orphans: null,
+  knownApps: 2,
+  prefixesInR2: null,
+  routesInKv: 3,
+  notes: [
+    'R2 konnte nicht gelesen werden: 10001 Unauthorized',
+    '1 verwaiste KV-Route(n) ohne Registry-Zeile — diese Adressen sind öffentlich erreichbar.',
+  ],
+  timestamp: '2026-08-13T09:20:00.000Z',
+};
+
+const ORPHANS_DEGRADED = {
+  routeOrphans: null,
+  routesOnDeletedApps: null,
+  orphans: null,
+  knownApps: null,
+  prefixesInR2: null,
+  routesInKv: null,
+  notes: ['Die Registry konnte nicht gelesen werden — ohne sie sähe jede Route wie ein Waisenkind aus.'],
+  timestamp: '2026-08-13T09:20:00.000Z',
+};
+
 interface EvidenceStep {
   step: string;
   ok: boolean;
@@ -206,6 +246,7 @@ window.fetch = (async (input: RequestInfo | URL) => {
     // Degraded: the queue could not be read. Not "nothing is waiting".
     return healthy ? json(REVIEWS_HEALTHY) : json({ available: false, items: [] });
   }
+  if (url.startsWith('/api/admin/ops/orphans')) return json(healthy ? ORPHANS_HEALTHY : ORPHANS_DEGRADED);
   if (url.startsWith('/api/ops-console/e2e/status/')) return json(E2E_DONE);
   return json({ error: 'not_stubbed' }, 404);
 }) as typeof fetch;
