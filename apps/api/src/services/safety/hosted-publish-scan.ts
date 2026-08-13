@@ -330,6 +330,20 @@ export interface HostedScanContext {
   userId: string;
   projectId?: string | null;
   appsDomain?: string;
+  /**
+   * An operator has already looked at this candidate and approved it (U3.3).
+   *
+   * Skips STAGE 2 ONLY. Stage 1 still runs, in full, every time — an approval is a
+   * human overriding a probabilistic hold, not a human waiving the deterministic
+   * ruleset, and re-running the free layer costs nothing. If the artifact changed
+   * between the hold and the approval in a way that trips a hard rule, the block
+   * still lands and the operator's approval does not override it.
+   *
+   * Re-running stage 2 here would be worse than pointless: the same artifact would
+   * be held again by the same model, so an approve button that re-classified would
+   * be a button that cannot work.
+   */
+  operatorApproved?: boolean;
 }
 
 /** Injectable so the battery and the publish tests can drive stage 2 deterministically. */
@@ -370,6 +384,22 @@ export async function runHostedPublishScan(
       ...(s1.area ? { area: s1.area } : {}),
       categories: [],
       ...(s1.message ? { message: s1.message } : {}),
+      ruleIds: s1.ruleIds,
+      scannedFiles: s1.scannedFiles,
+      scannedBytes: s1.scannedBytes,
+    };
+  }
+
+  if (ctx.operatorApproved) {
+    logger.warn({ userId: ctx.userId, projectId: ctx.projectId ?? null }, 'hosted_scan_stage2_skipped_operator_approved');
+    return {
+      verdict: 'pass',
+      decidedBy: 'none',
+      stage1: s1,
+      // null, not a fabricated pass: no classifier ran, and the success payload
+      // reports `classifier: 'not_run'` rather than implying a clean read.
+      stage2: null,
+      categories: [],
       ruleIds: s1.ruleIds,
       scannedFiles: s1.scannedFiles,
       scannedBytes: s1.scannedBytes,

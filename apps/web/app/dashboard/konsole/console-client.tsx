@@ -68,6 +68,28 @@ interface HostedApp {
   lastPublishedAt: string | null;
 }
 
+/** PHASE 3 · U3.3 — one held candidate, as the console reads it. */
+interface ReviewItemView {
+  id: string;
+  requestedName: string;
+  projectId: string | null;
+  stage1: { verdict: string; ruleIds: string[] };
+  stage2: { verdict: string; reason: string; confidence: string | null };
+  categories: string[];
+  scannedFiles: number | null;
+  scannedBytes: number | null;
+  tokens: { input: number | null; output: number | null };
+  createdAt: string;
+}
+
+interface PreviewView {
+  available: boolean;
+  files: Array<{ path: string; text: string; bytes: number; truncated: boolean }>;
+  binaryFiles: string[];
+  omittedFiles: string[];
+  totalFiles: number;
+}
+
 interface RouterStep {
   step: string;
   status: string;
@@ -297,12 +319,98 @@ export function OpsConsole({ initialStatus }: { initialStatus: StatusPayload }) 
   // The first load of the two lists the console needs but the server half did not
   // fetch. Both setState only after their awaits; the IIFE makes that explicit to
   // a reader (and to the lint rule) rather than leaving it to be inferred.
+  // ── reviews (PHASE 3 · U3.3) ──────────────────────────────────────────────
+
+  const [reviews, setReviews] = useState<ReviewItemView[]>([]);
+  const [reviewsAvailable, setReviewsAvailable] = useState<Tri>(null);
+  const [reviewsError, setReviewsError] = useState<HonestError | null>(null);
+  const [openReview, setOpenReview] = useState<string | null>(null);
+  const [reviewReason, setReviewReason] = useState('');
+  const [reviewBusy, setReviewBusy] = useState<string | null>(null);
+  const [previews, setPreviews] = useState<Record<string, PreviewView | 'loading'>>({});
+  const [reviewDone, setReviewDone] = useState<Record<string, { decision: string; audit?: string; published?: boolean; message?: string }>>({});
+
+  const refreshReviews = useCallback(async () => {
+    const res = await call<{ available: boolean; items: ReviewItemView[] }>('/api/ops-console/reviews');
+    if (res.ok) {
+      setReviews(res.data.items);
+      setReviewsAvailable(res.data.available);
+      setReviewsError(null);
+    } else {
+      // Unknown, NOT "nothing is waiting". An operator who believes the queue is
+      // empty when it is unreadable stops looking, which is the failure mode.
+      setReviewsAvailable(null);
+      setReviewsError(res.error);
+    }
+  }, [call]);
+
+  const loadPreview = useCallback(
+    async (id: string) => {
+      setPreviews((p) => ({ ...p, [id]: 'loading' }));
+      const res = await call<PreviewView>(`/api/ops-console/reviews/${id}/preview`);
+      setPreviews((p) => ({
+        ...p,
+        [id]: res.ok ? res.data : { available: false, files: [], binaryFiles: [], omittedFiles: [], totalFiles: 0 },
+      }));
+    },
+    [call],
+  );
+
+  const decide = useCallback(
+    async (item: ReviewItemView, decision: 'approve' | 'block') => {
+      setReviewBusy(`${item.id}:${decision}`);
+      setReviewsError(null);
+      const res = await call<{ audit?: string; published?: boolean; publish?: { message?: string } }>(
+        `/api/ops-console/reviews/${item.id}/${decision}`,
+        { method: 'POST', body: JSON.stringify({ reason: reviewReason.trim() }) },
+      );
+      setReviewBusy(null);
+      if (!res.ok) {
+        setReviewsError(res.error);
+        return;
+      }
+      setReviewDone((d) => ({
+        ...d,
+        [item.id]: {
+          decision,
+          ...(res.data.audit ? { audit: res.data.audit } : {}),
+          ...(decision === 'approve' ? { published: res.data.published === true } : {}),
+          ...(res.data.publish?.message ? { message: res.data.publish.message } : {}),
+        },
+      }));
+      setOpenReview(null);
+      setReviewReason('');
+      void refreshReviews();
+      // An approval that published creates an app; the list below must not keep
+      // showing a world without it.
+      if (decision === 'approve') void refreshApps();
+    },
+    [call, reviewReason, refreshReviews, refreshApps],
+  );
+
+  /** The five stage-2 reasons in words. UNKNOWN stays UNKNOWN. */
+  const reviewReasonText = useCallback(
+    (reason: string): string => {
+      const map: Record<string, string> = {
+        flagged: s.reviews.reasonFlagged,
+        over_budget: s.reviews.reasonOverBudget,
+        unavailable: s.reviews.reasonUnavailable,
+        timeout: s.reviews.reasonTimeout,
+        unparseable: s.reviews.reasonUnparseable,
+        error: s.reviews.reasonUnavailable,
+      };
+      return map[reason] ?? s.reviews.reasonUnknown;
+    },
+    [s],
+  );
+
   useEffect(() => {
     void (async () => {
       await refreshApps();
       await refreshProjects();
+      await refreshReviews();
     })();
-  }, [refreshApps, refreshProjects]);
+  }, [refreshApps, refreshProjects, refreshReviews]);
 
   // ── router ────────────────────────────────────────────────────────────────
 
@@ -858,6 +966,173 @@ export function OpsConsole({ initialStatus }: { initialStatus: StatusPayload }) 
         })}
 
         {appError ? <ErrorBlock error={appError} title={s.error.title} detailLabel={s.error.detail} copyLabel={s.error.copyDetail} /> : null}
+      </section>
+
+      {/* ── Prüfliste (PHASE 3 · U3.3) ─────────────────────────────────────
+          The preview below renders candidate source through React's ordinary
+          text child inside a <pre>. That is the whole safety property and it is
+          deliberately boring: no dangerouslySetInnerHTML, no iframe, no
+          sanitiser. The operator's browser is the one holding founder
+          privileges, and the content in this card is exactly the content the
+          platform has NOT cleared. */}
+      <section className="gobl-panel oc-card">
+        <h2>{s.reviews.heading}</h2>
+        <p className="oc-lead">{s.reviews.lead}</p>
+
+        {reviewsAvailable !== true ? <p className="oc-why">{s.reviews.unavailable}</p> : null}
+        {reviewsAvailable === true && reviews.length === 0 ? <p className="oc-why">{s.reviews.none}</p> : null}
+
+        {reviews.map((item) => {
+          const isOpen = openReview === item.id;
+          const preview = previews[item.id];
+          const done = reviewDone[item.id];
+          return (
+            <div className="oc-app" key={item.id}>
+              <div className="top">
+                <span className="nm">{item.requestedName}</span>
+                <span className="oc-state warn">{s.reviews.stage2}</span>
+              </div>
+
+              <Row k={s.reviews.waitingSince}>{new Date(item.createdAt).toLocaleString(lang === 'de' ? 'de-CH' : 'en-GB')}</Row>
+              <Row k={s.reviews.stage1}>
+                <span className="oc-state ok">{item.stage1.verdict}</span>
+              </Row>
+              {/* The pill carries a WORD; the explanation is a line of its own.
+                  A sentence inside `.oc-state` does not wrap and pushed the card
+                  614px wide at a 390px viewport — caught by the overflow check in
+                  scripts/konsole-shots.mts, not by looking at it. */}
+              <Row k={s.reviews.categories}>
+                {item.categories.length > 0 ? item.categories.join(' · ') : <span className="oc-state unknown">{s.status.unknown}</span>}
+              </Row>
+              {item.categories.length === 0 ? <p className="oc-note">{s.reviews.noCategories}</p> : null}
+              <Row k={s.reviews.confidence}>
+                {item.stage2.confidence && item.stage2.confidence !== 'unknown' ? (
+                  item.stage2.confidence
+                ) : (
+                  <span className="oc-state unknown">{s.status.unknown}</span>
+                )}
+              </Row>
+              <Row k={s.reviews.scanned}>
+                {item.scannedFiles ?? '—'} {s.reviews.files}
+              </Row>
+              <Row k={s.reviews.tokens}>
+                {item.tokens.input ?? '—'} / {item.tokens.output ?? '—'}
+              </Row>
+
+              <p className="oc-lead">{reviewReasonText(item.stage2.reason)}</p>
+
+              <div className="oc-actions">
+                <button
+                  type="button"
+                  className="gobl-btn secondary sm"
+                  onClick={() => {
+                    if (preview) { setPreviews((p) => { const n = { ...p }; delete n[item.id]; return n; }); return; }
+                    void loadPreview(item.id);
+                  }}
+                >
+                  {preview ? s.reviews.previewHide : s.reviews.preview}
+                </button>
+                <button type="button" className="gobl-btn secondary sm" onClick={() => setOpenReview(isOpen ? null : item.id)}>
+                  {s.reviews.approve} / {s.reviews.block}
+                </button>
+              </div>
+
+              {preview === 'loading' ? <p className="oc-why">{s.reviews.previewLoading}</p> : null}
+              {preview && preview !== 'loading' ? (
+                <>
+                  <p className="oc-note">{s.reviews.previewNote}</p>
+                  {!preview.available ? <p className="oc-why">{s.reviews.previewUnavailable}</p> : null}
+                  {preview.files.map((f) => (
+                    <div key={f.path} className="oc-field">
+                      <span className="oc-note">
+                        {f.path} · {f.bytes} B{f.truncated ? ` · ${s.reviews.previewTruncated}` : ''}
+                      </span>
+                      {/* Text child, never markup. */}
+                      <pre className="oc-detail">{f.text}</pre>
+                    </div>
+                  ))}
+                  {preview.binaryFiles.length > 0 ? (
+                    <p className="oc-note">
+                      {s.reviews.previewBinary}: {preview.binaryFiles.join(', ')}
+                    </p>
+                  ) : null}
+                  {preview.omittedFiles.length > 0 ? (
+                    <p className="oc-why">
+                      {s.reviews.previewOmitted}: {preview.omittedFiles.join(', ')}
+                    </p>
+                  ) : null}
+                </>
+              ) : null}
+
+              {isOpen ? (
+                <>
+                  <div className="oc-field">
+                    <label className="gobl-field-label" htmlFor={`oc-rv-reason-${item.id}`}>
+                      {s.reviews.reason}
+                    </label>
+                    <input
+                      id={`oc-rv-reason-${item.id}`}
+                      className="gobl-input"
+                      value={reviewReason}
+                      onChange={(e) => setReviewReason(e.target.value)}
+                      placeholder={s.reviews.reasonPlaceholder}
+                    />
+                    <p className="oc-note">{s.reviews.reasonOptionalApprove}</p>
+                    {!reviewReason.trim() ? <p className="oc-why">{s.reviews.reasonRequiredBlock}</p> : null}
+                  </div>
+
+                  <p className="oc-note">{s.reviews.approveNote}</p>
+                  <p className="oc-note">{s.reviews.blockNote}</p>
+
+                  <div className="oc-actions">
+                    <button
+                      type="button"
+                      className="gobl-btn primary sm"
+                      disabled={reviewBusy !== null}
+                      onClick={() => void decide(item, 'approve')}
+                    >
+                      {reviewBusy === `${item.id}:approve` ? s.reviews.approving : s.reviews.approve}
+                    </button>
+                    <button
+                      type="button"
+                      className="gobl-btn danger sm"
+                      disabled={!reviewReason.trim() || reviewBusy !== null}
+                      onClick={() => void decide(item, 'block')}
+                    >
+                      {reviewBusy === `${item.id}:block` ? s.reviews.blocking : s.reviews.block}
+                    </button>
+                  </div>
+                </>
+              ) : null}
+
+              {done ? (
+                <p className="oc-lead">
+                  {done.decision === 'block'
+                    ? s.reviews.blocked
+                    : done.published
+                      ? s.reviews.published
+                      : s.reviews.approved}
+                  {done.decision === 'approve' && done.published === false ? ` ${s.reviews.publishFailed}` : ''}
+                  {done.message ? ` ${done.message}` : ''}
+                  {done.audit ? (
+                    <span className="oc-note">
+                      {' '}
+                      {done.audit === 'written'
+                        ? s.reviews.auditWritten
+                        : done.audit === 'unavailable'
+                          ? s.reviews.auditUnavailable
+                          : s.reviews.auditFailed}
+                    </span>
+                  ) : null}
+                </p>
+              ) : null}
+            </div>
+          );
+        })}
+
+        {reviewsError ? (
+          <ErrorBlock error={reviewsError} title={s.error.title} detailLabel={s.error.detail} copyLabel={s.error.copyDetail} />
+        ) : null}
       </section>
 
       {/* ── E2E ────────────────────────────────────────────────────────── */}

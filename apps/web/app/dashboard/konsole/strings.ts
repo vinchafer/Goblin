@@ -136,6 +136,65 @@ const de = {
     auditFailed: 'Die Protokollzeile konnte nicht geschrieben werden.',
   },
 
+  // ── PHASE 3 · U3.3 — die Prüfliste ────────────────────────────────────────
+  // Der Ton hier ist bewusst anders als bei „Gehostete Apps": dort geht es um
+  // etwas, das live ist. Hier geht es um etwas, das NICHT live ist und auch
+  // nicht war. Jede Zeile, die klingt wie „abschalten", wäre falsch.
+  reviews: {
+    heading: 'Prüfliste',
+    lead: 'Veröffentlichungen, die die feste Regelliste bestanden haben und die der Klassifizierer angehalten hat. Es ist nichts hochgeladen und nichts online — es wartet auf deine Entscheidung.',
+    none: 'Es wartet nichts auf Prüfung.',
+    unavailable:
+      'Die Prüfliste konnte nicht gelesen werden. Das heißt NICHT „nichts wartet" — es heißt, dass hier gerade niemand nachsehen kann. Prüfe Migration 0102.',
+    requestedName: 'Gewünschter Name',
+    waitingSince: 'Wartet seit',
+    stage1: 'Stufe 1 (feste Regeln)',
+    stage2: 'Stufe 2 (Klassifizierer)',
+    categories: 'Kategorien',
+    noCategories: 'keine — die Prüfung konnte nicht abgeschlossen werden',
+    confidence: 'Sicherheit',
+    scanned: 'Geprüft',
+    files: 'Dateien',
+    tokens: 'Tokens (rein/raus)',
+    // Die fünf Gründe, in Klartext. „Angehalten" ist nicht dasselbe wie „verdächtig".
+    reasonFlagged: 'Der Klassifizierer hat die Seite gelesen und etwas gefunden, das ein Mensch ansehen sollte.',
+    reasonOverBudget:
+      'Die Seite war größer als das Prüf-Budget. Sie wurde NICHT gekürzt und beurteilt — sie wurde gar nicht beurteilt. Das sagt nichts über den Inhalt aus.',
+    reasonUnavailable: 'Der Klassifizierer war nicht erreichbar oder nicht konfiguriert. Eine Prüfung, die nicht laufen konnte, ist nicht bestanden.',
+    reasonTimeout: 'Der Klassifizierer hat nicht rechtzeitig geantwortet. Das sagt nichts über den Inhalt aus.',
+    reasonUnparseable: 'Die Antwort des Klassifizierers war nicht auswertbar. Das sagt nichts über den Inhalt aus.',
+    reasonUnknown: 'UNBEKANNT — der Grund wurde nicht mitgeliefert.',
+    preview: 'Inhalt ansehen',
+    previewHide: 'Inhalt einklappen',
+    previewLoading: 'lädt …',
+    previewNote:
+      'Roher Quelltext, als Text dargestellt. Er wird hier nirgends ausgeführt, nicht als HTML eingebettet und lädt nichts nach — deshalb siehst du Markup und keine Seite.',
+    previewUnavailable:
+      'Die Dateien konnten nicht gelesen werden — das Projekt wurde womöglich gelöscht. Das heißt NICHT „die App ist leer".',
+    previewTruncated: 'Gekürzt — die Datei ist länger als hier gezeigt.',
+    previewBinary: 'Nicht-Text-Dateien (nur Namen)',
+    previewOmitted: 'Weitere Text-Dateien, hier nicht gezeigt',
+    approve: 'Freigeben',
+    approving: 'gibt frei …',
+    block: 'Ablehnen',
+    blocking: 'lehnt ab …',
+    reason: 'Grund',
+    reasonPlaceholder: 'Wird protokolliert und dem Nutzer gezeigt.',
+    reasonRequiredBlock: 'Eine Ablehnung braucht einen Grund — der Nutzer bekommt ihn zu lesen.',
+    reasonOptionalApprove: 'Bei einer Freigabe optional — steht trotzdem im Protokoll.',
+    approveNote:
+      'Die Freigabe startet die Veröffentlichung sofort. Die feste Regelliste läuft dabei erneut: eine Freigabe überstimmt den Klassifizierer, nicht die harten Regeln.',
+    blockNote: 'Eine Ablehnung nimmt nichts vom Netz — es war nie etwas online. Sie schließt den Eintrag und schreibt die Protokollzeile.',
+    approved: 'Freigegeben.',
+    blocked: 'Abgelehnt.',
+    publishFailed:
+      'Die Freigabe steht und ist protokolliert — die Veröffentlichung selbst ist nicht durchgelaufen. Der Eintrag geht dadurch nicht zurück in die Warteschlange.',
+    published: 'Freigegeben und live.',
+    auditWritten: 'Protokollzeile geschrieben.',
+    auditUnavailable: 'Keine Protokollzeile — Migration 0100 fehlt. Die Entscheidung steht im Anwendungs-Log.',
+    auditFailed: 'Die Protokollzeile konnte nicht geschrieben werden.',
+  },
+
   e2e: {
     heading: 'Ende-zu-Ende-Lauf',
     lead: 'Fährt die komplette Schleife auf der echten Infrastruktur: Preflight, Scan-Batterie, fünf Veröffentlichungen, Umbenennen mit 410, feindliche Datei, Sperren und Entsperren, Teardown. Dauert 5–15 Minuten.',
@@ -313,6 +372,60 @@ const en: typeof de = {
     measuredNote: 'Measured, not assumed: the API polled the public URL repeatedly.',
     auditWritten: 'Audit row written.',
     auditUnavailable: 'No audit row — migration 0100 is missing. The action is in the application log.',
+    auditFailed: 'The audit row could not be written.',
+  },
+
+  reviews: {
+    heading: 'Review queue',
+    lead: 'Publishes that cleared the fixed rule list and were then held by the classifier. Nothing was uploaded and nothing is online — it is waiting on your decision.',
+    none: 'Nothing is waiting for review.',
+    unavailable:
+      'The review queue could not be read. That does NOT mean "nothing is waiting" — it means nobody can look right now. Check migration 0102.',
+    requestedName: 'Requested name',
+    waitingSince: 'Waiting since',
+    stage1: 'Stage 1 (fixed rules)',
+    stage2: 'Stage 2 (classifier)',
+    categories: 'Categories',
+    noCategories: 'none — the check could not be completed',
+    confidence: 'Confidence',
+    scanned: 'Scanned',
+    files: 'files',
+    tokens: 'Tokens (in/out)',
+    reasonFlagged: 'The classifier read the page and found something a human should look at.',
+    reasonOverBudget:
+      'The page was larger than the scan budget. It was NOT truncated and judged — it was not judged at all. That says nothing about its content.',
+    reasonUnavailable: 'The classifier was unreachable or unconfigured. A check that could not run has not passed.',
+    reasonTimeout: 'The classifier did not answer in time. That says nothing about the content.',
+    reasonUnparseable: 'The classifier’s answer could not be parsed. That says nothing about the content.',
+    reasonUnknown: 'UNKNOWN — no reason was supplied.',
+    preview: 'Show the content',
+    previewHide: 'Hide the content',
+    previewLoading: 'loading …',
+    previewNote:
+      'Raw source, shown as text. Nothing here is executed, embedded as HTML, or allowed to fetch anything — which is why you see markup and not a page.',
+    previewUnavailable:
+      'The files could not be read — the project may have been deleted. That does NOT mean "the app is empty".',
+    previewTruncated: 'Truncated — the file is longer than shown here.',
+    previewBinary: 'Non-text files (names only)',
+    previewOmitted: 'Further text files, not shown here',
+    approve: 'Approve',
+    approving: 'approving …',
+    block: 'Reject',
+    blocking: 'rejecting …',
+    reason: 'Reason',
+    reasonPlaceholder: 'Recorded, and shown to the user.',
+    reasonRequiredBlock: 'A rejection needs a reason — the user gets to read it.',
+    reasonOptionalApprove: 'Optional for an approval — recorded either way.',
+    approveNote:
+      'Approving starts the publish immediately. The fixed rule list runs again: an approval overrides the classifier, not the hard rules.',
+    blockNote: 'A rejection takes nothing offline — nothing ever was. It closes the item and writes the audit row.',
+    approved: 'Approved.',
+    blocked: 'Rejected.',
+    publishFailed:
+      'The approval stands and is recorded — the publish itself did not go through. The item does not return to the queue because of that.',
+    published: 'Approved and live.',
+    auditWritten: 'Audit row written.',
+    auditUnavailable: 'No audit row — migration 0100 is missing. The decision is in the application log.',
     auditFailed: 'The audit row could not be written.',
   },
 

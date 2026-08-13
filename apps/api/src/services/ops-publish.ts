@@ -250,6 +250,14 @@ export interface PublishInput {
   projectId: string | null;
   /** Only used when the project has no app yet; a republish keeps its name. */
   name: string;
+  /**
+   * PHASE 3 · U3.3 — an operator resolved a review-queue item as approved.
+   *
+   * Skips stage 2 (see HostedScanContext.operatorApproved). Stage 1 still runs.
+   * The ONLY caller is the console's approve action, behind the founder gate; it
+   * is not reachable from any builder-facing route.
+   */
+  operatorApproved?: boolean;
 }
 
 /**
@@ -314,6 +322,7 @@ export async function publishHostedApp(input: PublishInput, deps: PublishDeps = 
     // the same nullable-uuid shape as the registry's.
     projectId: input.projectId,
     appsDomain: domain,
+    ...(input.operatorApproved ? { operatorApproved: true } : {}),
   });
   if (scan.verdict === 'block') {
     logger.warn({ userId: input.userId, projectId: input.projectId, ruleIds: scan.ruleIds }, 'hosted_publish_blocked');
