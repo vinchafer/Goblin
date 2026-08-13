@@ -122,6 +122,24 @@ The structural sentence for the pitch (after reconciliation): *the builder line 
 **Platform plane (exists, unchanged):** Next.js 15 on Vercel (justgoblin.com) · Hono on Railway (API) · Supabase (platform DB/auth) · Backblaze B2 (project storage) · DeepInfra (Swift/Forge) · Stripe Live · Resend. Nothing is rewritten. The company we have keeps running.
 
 **User-app plane (new, isolated):** Cloudflare stack —
+
+> **⚠️ BUILT DIFFERENTLY — read this before the bullet list.** The plane *was* built on Cloudflare, but
+> **lean, not paid.** Founder decision 2026-07-27 amended D2 of `OPS_SPIKE_0_DECISION_TABLE.md` §5.2 to
+> **Workers FREE**: one platform-owned router Worker, KV route records, R2 (EU jurisdiction),
+> **$0.00/month committed**, with the Free plan's 100,000-requests/day account-wide limit accepted as
+> the cost ceiling. Of the six bullets below, as of 2026-08-13: Workers for Platforms — **not
+> subscribed**, no dispatch namespace, no per-user Workers. Static delivery — **built**, but as R2
+> objects streamed by the router Worker, not Static Assets. D1 — **not provisioned**; per-app data has
+> no substrate yet and is Phase-4 work. R2 — **built**. Cloudflare for SaaS — **not built**; custom
+> domains are a later phase. Turnstile, Queues and Cron — **not built**; Turnstile appears in no code
+> at all. The bullets stand as the target architecture the upgrade trigger in
+> `docs/GOBLIN_CONSUMPTION_LEDGER.md` would move toward; they are not a description of production.
+> The substrate as built: `apps/api/src/services/cf-deploy.ts` (module header).
+>
+> **Also read `goblin.app` as `justgoblin.app` everywhere in this file** (lines 64, 162, 191). The
+> apex Goblin actually registered and serves apps from is `justgoblin.app`; `goblin.app` was the
+> working name and was never acquired.
+
 - **Workers for Platforms** ($25/mo base): dispatch namespace, one user-Worker per Living App, **per-tenant custom limits** (CPU/request caps = runaway-bill and denial-of-wallet protection, natively supported);
 - **Static Assets / Pages-class delivery**: unlimited bandwidth, the static tier of every app;
 - **D1 (SQLite) one database per app**: perfect tenant isolation, and the export story writes itself — *export = the SQLite file*;

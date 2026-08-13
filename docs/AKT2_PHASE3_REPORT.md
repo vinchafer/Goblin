@@ -1,6 +1,9 @@
 # AKT 2 · PHASE 3 — Publish-UX + Abuse-Scan (Stufe 2)
 
-**Stand: 2026-08-13 · Branch `claude/publish-abuse-scan-phase3-tlc5qb` · gebaut, Abnahme offen.**
+**Stand: 2026-08-13 · gemerged als PR #86 (`5b17cb2`) · gebaut, Abnahme im Gründer-Fenster offen.**
+*(Nachtrag 2026-08-13: C7 und C8 unten sind inzwischen behoben — PR #88, `458eda6`. Die Zeilen
+in der Carry-forward-Tabelle sind entsprechend gestempelt. Das Register aller offenen Punkte
+lebt jetzt in `docs/ACT2_CARRY_FORWARD.md`; diese Tabelle bleibt als Phasen-Beleg stehen.)*
 
 Der Scan bekommt eine zweite Stufe, die fängt, was Muster nicht fangen; ein drittes Urteil
 (`review`), das mehrdeutige Apps hält, ohne ehrliche Bauer:innen zu blockieren; eine
@@ -166,9 +169,12 @@ der rot wird, wenn `process.env` in `cf-deploy.ts` je wieder auftaucht.
 6. **Ein Provider-Ausfall füllt die Prüfliste.** Fail-closed heißt: DeepInfra weg ⇒ jede
    gehostete Veröffentlichung wird gehalten. Das ist die gewollte Richtung und es ist ein
    Single Point of Friction, den heute nichts abfedert.
-7. **Migration 0102 ist AUTHORED, nicht angewendet.** Bis der Gründer sie fährt, kann kein
+7. ~~**Migration 0102 ist AUTHORED, nicht angewendet.** Bis der Gründer sie fährt, kann kein
    Hold aufgezeichnet werden; der Code sagt das dann ehrlich (`review_unqueued`, HTTP 503)
-   statt einen Menschen zu versprechen.
+   statt einen Menschen zu versprechen.~~
+   → **ERLEDIGT 2026-08-13:** der Gründer hat 0102 angewendet. Der Code bleibt in beiden
+   Zuständen tolerant und in beiden getestet — das war der Punkt, nicht ein Zwischenzustand,
+   den man wegräumt.
 8. **Die Audit-Zeile einer Review-Entscheidung hat eine andere Form** als eine Sperre: ein
    Kandidat hat keine App-ID, also tragen `app_id`/`app_name` die ID der Queue-Zeile und den
    Wunschnamen. `meta.subject = 'review_queue_item'` markiert das. Ein Leser des Protokolls
@@ -257,8 +263,8 @@ wo das Thema wohnt.
 | C4 | **Ein Provider-Ausfall füllt die Prüfliste, ungefedert.** Fail-closed heißt: DeepInfra weg ⇒ jede gehostete Veröffentlichung wird gehalten. Gewollte Richtung, aber es gibt heute nichts, was den Stau abfängt — keine Warteschlangen-Wiederholung, keine Benachrichtigung an den Betreiber, keinen Automatik-Retry. | `abuse-classifier.ts` (Verhalten) · Kandidat für die Keeper-Phasen 5–7, wo Betreiber-Benachrichtigung sowieso gebaut wird |
 | C5 | **Der Token-Schätzer läuft 23 % zu tief** — 710 geschätzt gegen 916 gemessen, weil `chars ÷ 4` eine Prosa-Zahl ist und Markup dichter ist. Kostenseitig harmlos (der Ledger rechnet mit dem gemessenen Wert); **budgetseitig ist es die falsche Richtung**: eine App knapp unter der geschätzten Decke kann real darüber liegen. | `CHARS_PER_TOKEN_ESTIMATE` in `abuse-classifier.ts` · Zahlen in Ledger **M-A2** |
 | C6 | **Das 6 000-Token-Budget hält vermutlich jede Framework-App.** 6 000 ≈ 24 000 Zeichen extrahierter Text; ein einziges gebündeltes Vite-/React-`index-*.js` liegt deutlich darüber. Eine schlichte statische Seite passt bequem — ein echter Build landet **by design** in der Prüfliste. Beim Schreiben des Gründer-Fensters aufgefallen, **nicht gemessen**: keine echte Framework-App ist bisher durch diesen Pfad gegangen. | `OPS_SCAN_CLASSIFIER_MAX_TOKENS` (Stellschraube, kein Deploy nötig) · zu messen im Gründer-Fenster, Schritt 4 Weg A |
-| C7 | **Die Konsole meldet eine gehaltene Veröffentlichung als „Live."** — die Publish-Karte prüft nur `response.ok` und 202 ist ok. False-Green im Betreiber-Werkzeug; der Publish-Pfad selbst ist korrekt. Gefunden in der Closing-Wave, dort ausdrücklich docs-only, deshalb **nicht** behoben. | `console-client.tsx` → `publish()` · Umgehung und Beweisweg stehen in `docs/AKT2_PHASE3_FOUNDER_WINDOW.md` §1 |
-| C8 | **Die Protokollzeilen einer Prüflisten-Entscheidung sind in keiner Oberfläche lesbar.** `GET /api/admin/ops/apps/:idOrName` findet sie nicht: ein Kandidat hat keine App-ID, also trägt `app_id` die ID der Queue-Zeile, zu der es keine `ops_apps`-Zeile gibt. Nur per SQL sichtbar. | `ops-audit.ts` (Formhinweis) · `ops-admin.ts` als künftige Lesestelle · Abfrage in `AKT2_PHASE3_FOUNDER_WINDOW.md` §6 |
+| C7 | **BEHOBEN 2026-08-13 (PR #88, `dcb6fd3`).** ~~Die Konsole meldet eine gehaltene Veröffentlichung als „Live."** — die Publish-Karte prüft nur `response.ok` und 202 ist ok. False-Green im Betreiber-Werkzeug; der Publish-Pfad selbst ist korrekt. Gefunden in der Closing-Wave, dort ausdrücklich docs-only.~~ Behoben durch einen gemeinsamen Leser (`apps/web/lib/publish-outcome.ts`) für Konsole und Bauer-Sheet; die Voreinstellung ist jetzt Zweifel statt Erfolg. | `console-client.tsx` → `publish()` · Historie in `docs/AKT2_PHASE3_FOUNDER_WINDOW.md` §1 |
+| C8 | **BEHOBEN 2026-08-13 (PR #88, `fb9f09e`).** ~~Die Protokollzeilen einer Prüflisten-Entscheidung sind in keiner Oberfläche lesbar.** `GET /api/admin/ops/apps/:idOrName` findet sie nicht: ein Kandidat hat keine App-ID, also trägt `app_id` die ID der Queue-Zeile, zu der es keine `ops_apps`-Zeile gibt. Nur per SQL sichtbar.~~ Die Prüflisten-Karte hat jetzt einen Abschnitt „Zuletzt entschieden" (wer/was/wann/warum), gelesen aus der Queue-Zeile; die Beweiszeile in `ops_app_audit` bleibt unberührt und ist weiter per SQL die tiefere Prüfung. | `ops-review-queue.ts` → `listRecentReviewDecisions` · `AKT2_PHASE3_FOUNDER_WINDOW.md` §6 |
 
 ---
 

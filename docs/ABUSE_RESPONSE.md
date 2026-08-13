@@ -363,7 +363,8 @@ Unterscheidung, die Phase 2 zwischen „gebaut" und „im Betrieb bewiesen" gezo
    nicht beenden. Jeder Fehlerfall — über dem Token-Budget, Dienst nicht erreichbar,
    Timeout, unbrauchbare Antwort — landet auf `review`, nie auf `pass`. Eine Prüfung, die
    nicht laufen konnte, hat nichts bestanden. Kosten: Ledger **M-A2**.
-6. **Das dritte Urteil — die Review-Queue** (Migration **0102**, AUTHORED). Ein `review`
+6. **Das dritte Urteil — die Review-Queue** (Migration **0102**; geschrieben in Phase 3, vom
+   Gründer am **2026-08-13 angewendet** — Angabe des Gründers, nicht selbst geprüft). Ein `review`
    lädt **nichts** hoch, schreibt keine Route und keine Registry-Zeile — dasselbe Nichts
    wie eine Blockierung; der Unterschied ist nur, wer als Nächstes entscheidet. Die Zeile
    hält den Kandidaten als **Referenz** (Nutzer + Projekt + Wunschname), nie als Kopie:

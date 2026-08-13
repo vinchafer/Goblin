@@ -208,3 +208,8 @@ curl -s -X POST "$API/api/ops/router/provision" -H "Authorization: Bearer $TOKEN
   `ROUTES` is checked first and passed — not off the founder's dashboard.
 - The EU-jurisdiction binding question in §3 is unresolved and stays unresolved
   until an upload actually runs.
+  → **Resolved 2026-08-11** — the upload ran, answered `10085`, and the cause was the
+  jurisdiction. `docs/ROUTER_R2_JURISDICTION_BINDING.md` carries the full answer: the
+  bucket did **not** have to be recreated, one Railway variable (`CF_R2_JURISDICTION=eu`)
+  closed it, and the router has published through it since — Phase-2 E2E green 2026-08-12,
+  `evidence/akt2-phase2/e2e-founder-window-2026-08-12.json`. (Stamped 2026-08-13.)
