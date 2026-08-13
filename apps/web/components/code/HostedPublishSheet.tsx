@@ -37,6 +37,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/ui/icon";
 import { apiGet, apiPost } from "@/lib/api";
+import { classifyPublishOutcome, type PublishResponseBody } from "@/lib/publish-outcome";
 import { useLang, t } from "@/lib/use-lang";
 
 interface Props {
@@ -129,19 +130,24 @@ export function HostedPublishSheet({ projectId, appsDomain, onUseVercel, onClose
     if (!normalized) return;
     setOutcome({ kind: "publishing", message: t(lang, "Wird geprüft und veröffentlicht …", "Checking and publishing …") });
     try {
-      const r = await apiPost<{ url?: string; status?: string; message?: string }>("/api/ops/apps/publish", {
-        projectId,
-        name: normalized,
-      });
-      // 202 → held for review. The server's own German is shown verbatim; this
-      // component does not author a sentence about why a publish was held.
-      if (r?.status === "review") {
-        setOutcome({ kind: "review", message: r.message ?? "" });
+      const r = await apiPost<PublishResponseBody>("/api/ops/apps/publish", { projectId, name: normalized });
+
+      // C7 (2026-08-13): classified by the SHARED reader in lib/publish-outcome.ts
+      // rather than by hand here. This component already got the 202 case right —
+      // the console did not, because each surface classified the same response in
+      // its own vocabulary. One reader now, so the two cannot drift apart again.
+      // (`apiPost` resolves only on 2xx and throws otherwise, so a 422/503 lands
+      // in the catch below with the API's own German as the thrown message.)
+      const outcome = classifyPublishOutcome(200, r ?? null);
+      if (outcome.kind === "live") {
+        setOutcome({ kind: "live", url: outcome.url });
+        onPublished(outcome.url);
         return;
       }
-      if (r?.url) {
-        setOutcome({ kind: "live", url: r.url });
-        onPublished(r.url);
+      if (outcome.kind === "review" || outcome.kind === "not_recorded") {
+        // The server's own German, verbatim. This component authors no sentence
+        // about why a publish was held.
+        setOutcome({ kind: "review", message: outcome.message });
         return;
       }
       setOutcome({ kind: "error", message: t(lang, "Die Antwort war unvollständig.", "The response was incomplete.") });

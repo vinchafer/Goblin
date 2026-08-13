@@ -92,6 +92,17 @@ const de = {
     running: 'veröffentlicht …',
     published: 'Live.',
     open: 'Öffnen',
+    // ── C7 (2026-08-13): drei Ausgänge, drei Sätze ──────────────────────────
+    // Vorher rannte jede 2xx-Antwort in „Live." — auch die 202 einer gehaltenen
+    // Veröffentlichung, die NICHTS hochgeladen hat. Jeder Ausgang hat jetzt seine
+    // eigene Zeile, und der unbekannte Fall sagt „unklar" statt „live".
+    heldTitle: 'Angehalten — nichts veröffentlicht.',
+    heldPointer: 'Der Eintrag steht unten in der Prüfliste. Dort kannst du ihn ansehen und entscheiden.',
+    refusedTitle: 'Abgelehnt von der festen Regelliste — nichts veröffentlicht.',
+    unclearTitle: 'UNKLAR — die Antwort war nicht eindeutig.',
+    unclearBody:
+      'Die API hat etwas geantwortet, das diese Karte nicht sicher deuten kann. Das heißt NICHT „live" und nicht „fehlgeschlagen". Sieh in „Gehostete Apps" und in der Prüfliste nach, was tatsächlich passiert ist, und ruf die Adresse selbst auf.',
+    notRecordedTitle: 'Angehalten — und nicht vorgemerkt.',
     disabledNoHosting: 'Nicht möglich, solange OPS_HOSTING_ENABLED aus ist.',
     disabledNoProject: 'Erst ein Projekt wählen.',
     disabledNoName: 'Erst einen Namen eingeben.',
@@ -331,6 +342,13 @@ const en: typeof de = {
     running: 'publishing …',
     published: 'Live.',
     open: 'Open',
+    heldTitle: 'Held — nothing published.',
+    heldPointer: 'The item is in the review queue below. You can look at it and decide there.',
+    refusedTitle: 'Refused by the fixed rule list — nothing published.',
+    unclearTitle: 'UNCLEAR — the answer was not conclusive.',
+    unclearBody:
+      'The API answered something this card cannot read with confidence. That does NOT mean "live" and does not mean "failed". Check "Hosted apps" and the review queue for what actually happened, and open the address yourself.',
+    notRecordedTitle: 'Held — and not recorded.',
     disabledNoHosting: 'Not possible while OPS_HOSTING_ENABLED is off.',
     disabledNoProject: 'Choose a project first.',
     disabledNoName: 'Enter a name first.',
