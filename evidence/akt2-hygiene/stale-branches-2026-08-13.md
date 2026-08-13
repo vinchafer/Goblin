@@ -1,21 +1,44 @@
-# Merged remote branches deleted on 2026-08-13
+# Stale branch inventory — 2026-08-13
 
-Act-2 closing hygiene, Unit 5. Every branch below was fully contained in
-`origin/master` at deletion time (`git branch -r --merged origin/master`), so
-nothing is lost — the commits are in master. Any one of them is restorable with:
+Act-2 closing hygiene, Unit 5. **The deletion was attempted and REFUSED.**
 
+`git push origin --delete` returns `HTTP 403` for every branch, individually and in
+batches. It is not the agent proxy — `__agentproxy/status` reports no relay failures, and
+the same credentials pushed a new branch to this repo minutes earlier. This session's git
+credentials can create and update refs but not delete them, and the GitHub MCP surface has
+no delete-branch tool either. **Nothing was deleted; there is no partial state** — all 45
+merged branches were still present on a re-fetch afterwards.
+
+So this file is an inventory and a hand-off, not a record of a deletion.
+
+## What the founder can run
+
+```bash
+# from a clone with delete rights
+git fetch origin --prune
+git branch -r --merged origin/master \
+  | grep -v 'origin/master$' \
+  | grep -v 'claude/publish-abuse-scan-phase3-tlc5qb' \
+  | sed 's|^ *origin/||' \
+  | xargs -n 20 git push origin --delete
 ```
-git push origin <sha>:refs/heads/<name>
-```
 
-`origin/master` at deletion: `458eda65d964ed7baac38766fd0aafde886054ef`
+The `--merged origin/master` filter is the safety: a branch only appears if every one of
+its commits is already in master. Re-run the filter at the time rather than trusting the
+list below — master will have moved.
 
-**Deliberately NOT deleted:** `claude/publish-abuse-scan-phase3-tlc5qb` (merged, but it is the branch this session's
-standing instructions name as the development branch — keeping it costs nothing) and every
-UNMERGED branch. The unmerged ones are listed at the bottom untouched, because "stale" and
-"unmerged" are different facts and only the founder knows which of them still matter.
+`origin/master` when this was taken: `458eda65d964ed7baac38766fd0aafde886054ef`
 
-## Deleted (44)
+**Two deliberate exclusions.** `claude/publish-abuse-scan-phase3-tlc5qb` is merged but is the branch this session's standing
+instructions name as the development branch — keeping it costs nothing. And every UNMERGED
+branch is left alone: "stale" and "unmerged" are different facts, and only the founder
+knows which of the 32 below still matter. They are listed so that judgement has something
+to work from.
+
+## Merged into master — safe to delete (44)
+
+Tip SHAs recorded so any of these is restorable after deletion with
+`git push origin <sha>:refs/heads/<name>`.
 
 | branch | tip sha |
 |---|---|
@@ -64,10 +87,9 @@ UNMERGED branch. The unmerged ones are listed at the bottom untouched, because "
 | `wave-b-build` | `8c676c4f2e2cd3b323e2a81b11c95cdfaa8ad348` |
 | `wave-e-build` | `4dafeef891c3f87019ee23e754ecdb2047a2e285` |
 
-## Left alone — UNMERGED (32)
+## Unmerged — left alone (33)
 
-Not stale by any test this session can apply. Listed so the founder can decide.
-
+- `claude/act2-consistency-sweep`
 - `claude/cloud-rider-v2-launch-g0pmca`
 - `claude/f40-resumable-runs-czgx0g`
 - `claude/feeling-walk-2-evidence-fth9oz`
