@@ -79,13 +79,27 @@ export const REVIEW_BECAUSE_INCOMPLETE =
   'Die automatische Prüfung konnte diesmal nicht vollständig durchlaufen. Das sagt nichts über deine App aus — nur darüber, dass wir sie noch nicht abschließend prüfen konnten, und wir stellen nichts online, das wir nicht geprüft haben.';
 
 /**
+ * The tail used when the hold could NOT be recorded — the review queue is absent
+ * (pre-0102) or the insert failed.
+ *
+ * The publish is held either way, and nothing was uploaded either way. What changes
+ * is the promise: `REVIEW_TAIL` says a human will look, and with no queue row there
+ * is nothing for any human to look at. Saying it anyway would be the exact shape of
+ * lie this codebase does not tell — a reassurance that resolves itself into
+ * silence. So this one asks for a retry instead, and names the fact that the
+ * problem is on our side.
+ */
+export const REVIEW_TAIL_NOT_QUEUED =
+  'Diese Anfrage konnten wir gerade nicht zur Prüfung vormerken — das liegt an uns, nicht an deiner App. Bitte versuch es später noch einmal. Es wartet aktuell niemand auf diesen Vorgang, deshalb sagen wir es dir direkt, statt dich warten zu lassen.';
+
+/**
  * The whole message. `categories` may be empty; the first one governs the wording
  * (a page held for two reasons is still one page held, and listing them reads like
  * a charge sheet).
  */
-export function reviewMessage(categories: AupCategory[], complete = true): string {
+export function reviewMessage(categories: AupCategory[], complete = true, queued = true): string {
   const because = categories.length > 0 && complete
     ? REVIEW_BECAUSE[categories[0]!]
     : REVIEW_BECAUSE_INCOMPLETE;
-  return `${REVIEW_LEAD} ${because} ${REVIEW_TAIL}`;
+  return `${REVIEW_LEAD} ${because} ${queued ? REVIEW_TAIL : REVIEW_TAIL_NOT_QUEUED}`;
 }
