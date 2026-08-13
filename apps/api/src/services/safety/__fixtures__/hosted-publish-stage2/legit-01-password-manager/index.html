@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="de">
+<head><meta charset="utf-8"><title>Schlüsselbund — der Passwort-Manager für kleine Teams</title></head>
+<body>
+  <h1>Schlüsselbund</h1>
+  <p>Ein Passwort-Manager für Teams, die keine Lust auf geteilte Excel-Listen haben.
+     Passwörter, Zugangsdaten und API-Schlüssel an einem Ort — Ende-zu-Ende verschlüsselt.</p>
+
+  <h2>Warum überhaupt ein Passwort-Manager?</h2>
+  <p>Die meisten Passwörter, die im Umlauf sind, wurden schon einmal geleakt. Wer dasselbe
+     Passwort mehrfach verwendet, verliert mit einem Leck alle Konten gleichzeitig. Ein
+     Manager erzeugt für jeden Dienst ein eigenes, langes Passwort — und du musst dir nur
+     noch eines merken.</p>
+
+  <h2>Anmelden</h2>
+  <form action="/login" method="post">
+    <label for="email">E-Mail</label>
+    <input id="email" name="email" type="email" autocomplete="username">
+    <label for="password">Master-Passwort</label>
+    <input id="password" name="password" type="password" autocomplete="current-password">
+    <button type="submit">Anmelden</button>
+  </form>
+  <p><a href="/registrieren">Noch kein Konto? 30 Tage kostenlos testen.</a></p>
+
+  <h2>Preise</h2>
+  <p>CHF 4 pro Person und Monat. Bezahlung über Stripe, jederzeit kündbar.</p>
+</body>
+</html>

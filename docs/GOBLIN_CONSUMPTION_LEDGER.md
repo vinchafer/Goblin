@@ -316,6 +316,7 @@ Deploy truth-gating (P0.2: HTTP checks only) · STC integrity checks (client/sha
 - **NEW MITIGATION — the per-app daily request budget (U2.6, spike F3):** `ops-caps.ts` sets `free-static = 10,000 requests/app/day`, enforced at the router from a KV counter, answering an honest 429 past it. This does **not** change any rate; it bounds the multiplier. It is the first mitigation for the "no per-app fairness" hole named in the availability note above: one app can no longer silently consume the account's whole 100k/day. **The arithmetic, stated honestly: at 10,000/app/day, ten simultaneously-busy apps still exhaust the account's daily allowance.** That is a beta-scale number, tunable in code without a migration (which is why 0099 stores `caps_profile` as a name), and it should be revisited the moment the beta widens.
 - **HONEST LIMIT OF THAT MITIGATION:** the counter is **coarse**. KV reads are eventually consistent with a 60-second per-colo cache and writes propagate asynchronously, so under a burst it undercounts and an app can serve materially more than its budget before the limit bites. It bounds sustained runaway traffic over hours; it is **not** a rate limiter and must not be quoted as one. A precise counter needs a Durable Object, which is not on the Free plane.
 - **The orphan hole is now measurable, not closed by assumption.** The Phase-1 note said "an orphan-app sweep is unbuilt". `findOrphanedApps()` (U2.5) now lists R2 prefixes with no registry row — so unaccounted storage can be *found* and explicitly purged. It is report-only by design; nothing deletes automatically. Storage is still reclaimed only by an explicit teardown, and there is still no retention/GC job.
+- **PHASE-3 POINTER (added 2026-08-13):** the sentence “the pre-publish scan is $0” above is still true of the **deterministic** scan and of this hosting-COGS row, which remains zero-token. It is **no longer the whole of the hosted scan**: Phase 3 adds a second stage that spends Swift tokens, registered separately as **M-A2** exactly as this amendment promised. This row’s formulas are unchanged; the inference cost lives there.
 - **Status: unchanged — FORMULA.** Phase 2 adds real callers but **no Cloudflare invoice, dashboard reading or usage figure has been observed yet.** The first real numbers come from the founder's U2.8 window (`docs/AKT2_PHASE2_FOUNDER_WINDOW.md`); until then every figure in this row remains arithmetic from list rates, not measurement.
 
 ### M-A1 — Auth mail delivery moved onto Resend (AKT 1 · FEHLERSTRANG-1 · U3)
@@ -328,6 +329,105 @@ Deploy truth-gating (P0.2: HTTP checks only) · STC integrity checks (client/sha
 - **Knobs / adjustment levers:** `SUPABASE_AUTH_HOOK_SECRET` (unset ⇒ the hook refuses every call ⇒ Supabase keeps sending ⇒ zero Resend volume from this path — this is the kill switch, and its default); the dashboard toggle for the hook itself; `RESEND_FROM` (sender identity, no cost effect); `NEXT_PUBLIC_APP_URL` (link origin, no cost effect).
 - **Second-order effect worth stating:** the previous path was Supabase's built-in mailer, whose own per-hour send limit is low by design. Moving off it removes that limit as a signup-burst ceiling — a capacity gain, not a cost, but it is the reason the change matters beyond deliverability.
 - **CFO dependency:** none today. If auth-mail volume ever pushes the shared Resend allowance into a paid tier, that becomes a real fixed line — size it from the Resend dashboard's own figures, not from an estimate here. | Status: **STRUCTURAL** (mechanism authored and unit-tested; **no Resend invoice, dashboard figure or production send through this path has been observed** — the hook is not enabled yet).
+
+### M-A2 — Swift abuse classifier: stage 2 of the hosted pre-publish scan (AKT 2 · Phase 3 · U3.1)
+
+> **Numbering note (state-first, same resolution as M15).** The Phase-3 prompt asks for this row under
+> the label **“M-A1”**. **M-A1 is already taken** — it is the Resend auth-mail row directly above, merged
+> with AKT 1 · FEHLERSTRANG-1. Repo truth beats the prompt, so this is the next free label in that
+> series, **M-A2**. It is also the row that M-H1’s Phase-2 amendment promised in writing: *“When the
+> Swift classifier lands in Phase 3, THAT gets its own M-line — an inference cost per publish is a
+> different cost family and must not be folded into this row.”* Anyone looking for “M-A1 · classifier”
+> is looking at this section.
+
+**THE FIRST ACT-2 MECHANISM THAT SPENDS MODEL TOKENS.** Every Act-2 row before this one (M-H1 hosting,
+and the K3 half of M13) is explicitly zero-token. This one is not, which is why it gets a row rather
+than an amendment.
+
+- **Trigger:** one Swift completion per hosted publish attempt that **reaches stage 2** — i.e. the
+  deterministic stage-1 scan already answered `pass`. A stage-1 **block spends nothing**: stage 2 never
+  runs on a decided refusal (`runHostedPublishScan`, `apps/api/src/services/safety/hosted-publish-scan.ts`).
+  Also zero when `OPS_HOSTING_ENABLED=false` (no publish path reaches the scan at all) or when
+  `OPS_SCAN_CLASSIFIER_ENABLED=false`. **Not** triggered by the Vercel publish path — K3 there is
+  unchanged and still deterministic-only (M13).
+- **Formula:** `input_tokens = system_prompt (fixed) + extracted_artifact_text` ·
+  `output_tokens ≤ CLASSIFIER_MAX_OUTPUT_TOKENS (200)` · `cost = (input + output) × Swift unit price`.
+  Extracted text = every readable file of the artifact (HTML/JS/TS/JSON/MD/TXT), markup kept, whitespace
+  runs collapsed, concatenated with `--- path ---` separators. **1 Swift token = 1 cost unit** (unit
+  system above), so this mechanism’s units are its tokens, unweighted.
+- **FIRST DATA POINT — MEASURED 2026-08-13, and labelled honestly.** These are **fixture measurements of
+  input SIZE**, taken by running `extractCandidateText()` over the checked-in battery
+  (`apps/api/src/services/safety/__fixtures__/hosted-publish/`, the same nine artifacts the Phase-2 scan
+  battery uses). **They are not a production average, and they are not provider-billed usage** — no
+  DeepInfra invoice, dashboard figure or `completion_costs` row for this path has been observed.
+  - Fixed system prompt: **2,185 chars ≈ 547 est. tokens**, paid on every stage-2 call.
+  - Candidate text, the **six** fixtures that reach stage 2 (the three hostile ones are blocked at
+    stage 1 and cost nothing): **110 · 156 · 157 · 127 · 163 · 262 est. tokens** → **mean 163, max 262**.
+  - **Per-scan input ≈ 710 est. tokens** (547 + 163) for a fixture-sized app; output is a single small
+    JSON object, capped at 200 and observed far below it.
+  - **≈ $0.00015 per scan** at the realistic Swift mix ($0.20/M): `740 ÷ 1e6 × $0.20`. At the worst
+    no-cache rate ($0.283/M): ≈ $0.00021. **(Superseded by the measured figures in the next bullet —
+    kept because the gap between the two is the useful part.)**
+  - **Estimation caveat, stated rather than buried:** “est. tokens” is `chars ÷ 4`
+    (`CHARS_PER_TOKEN_ESTIMATE`), the conventional prose divisor. Markup is denser than prose, so this
+    runs **low** on HTML. The numbers that will eventually reconcile against the CFO dashboard are the
+    provider’s own `usage` fields, which the classifier already records
+    (`ClassifierResult.tokens.input/output`) — not these.
+- **SECOND DATA POINT — REAL PROVIDER USAGE, MEASURED 2026-08-13.** The row above was authored from
+  `chars ÷ 4` and said so; the stage-2 battery gate (`apps/api/scripts/scan-battery-stage2.mts`) then
+  ran **50 real Swift completions** against DeepInfra and reported what the provider actually billed.
+  These numbers supersede the estimates for costing purposes:
+  - **Mean input: 916 tokens/scan. Mean output: 19 tokens/scan.** (50 calls, 10 fixtures × 5 runs.)
+  - **The estimator runs ~23 % LOW on markup** — 710 est. vs 916 real, the direction the row above
+    predicted and the reason `ClassifierResult.tokens` records the provider's figures.
+  - **≈ $0.00019 per scan** at the realistic Swift mix ($0.20/M): `935 ÷ 1e6 × $0.20`. At the worst
+    no-cache rate ($0.283/M): ≈ $0.00026.
+  - **The gate run itself cost ≈ $0.01** (50 calls × ~935 tok). Recorded here because it is real spend
+    and because M13 set the precedent for logging a one-off eval's cost
+    (`scripts/wave-k-refusal-gate.mts`, 8 completions, ~$0.001).
+  - Evidence: `evidence/akt2-phase3/stage2-battery.json` — the run's own report, from which every
+    number in this bullet is read.
+  - **Still not a production average.** Ten fixture-sized apps, one model, one day. A real hosted app
+    is bigger than a fixture, so the per-scan figure will rise toward the cap below.
+- **Ceiling per scan (the hard cap, which is the real cost control):** `CLASSIFIER_MAX_INPUT_TOKENS`
+  = **6,000 est. tokens** of candidate text. An artifact whose text exceeds it is **not truncated and
+  classified anyway** — it is held for human review with **zero tokens spent**. So the arithmetic worst
+  case for one scan is `6,000 + 547 + 200 = 6,747 tokens` ≈ **$0.00135** ($0.20/M) to **$0.0019**
+  (no-cache), and there is no input shape that can exceed it.
+- **Billed to — PLATFORM COGS, not the user’s allowance (founder decision, CONFIRMED 2026-08-13 as
+  escalation E1 of the Phase-3 report: scanning is platform COGS and is never billed to a user’s
+  quota).** Scanning is
+  something Goblin does for its **own** protection as the hoster; charging a builder’s monthly quota for
+  the privilege of being checked would be billing them for our liability. Concretely: this path does not
+  go through `model-router.ts`, writes **no `completion_costs` row**, and is therefore invisible to
+  `goblinWeightedUsage()` / `isOverMonthlyAllowance()`. **The honest consequence of that choice, stated
+  plainly: this spend is not currently metered anywhere.** It is bounded per call by the cap above and
+  per day by how many publishes an allowlisted beta account can make, and that is the whole of the
+  control today. A metered path (its own `platform_cogs` line) is the right follow-up the moment this
+  leaves the beta allowlist.
+- **Knobs / adjustment levers** (all `apps/api/src/services/safety/abuse-classifier.ts` unless noted):
+  - `OPS_SCAN_CLASSIFIER_ENABLED` — stage-2 kill switch. `false` ⇒ **zero tokens**, publish behaves
+    exactly as Phase 2 (deterministic layer alone). Default ON.
+  - `OPS_SCAN_CLASSIFIER_MAX_TOKENS` (default 6,000) — the hard input cap above; the single biggest
+    lever on both cost and how often an app lands in review.
+  - `OPS_SCAN_CLASSIFIER_TIMEOUT_MS` (default 20,000) — per-call deadline; a Railway-time lever, and a
+    timeout costs the provider-side tokens of an abandoned call.
+  - `CLASSIFIER_MAX_OUTPUT_TOKENS` (200, code constant) — the output ceiling.
+  - `CLASSIFIER_SYSTEM_PROMPT` — every edit to it changes the fixed per-scan input cost; the 547-token
+    figure above is measured against the version in this commit.
+  - `OPS_HOSTING_ENABLED` / `OPS_BETA_ACCOUNTS` — upstream of everything: with the switch off, no
+    publish reaches the scan and this mechanism costs $0.00.
+- **Second-order effect worth stating:** the failure direction is deliberately expensive in *human* time
+  rather than in money. Provider down, over budget, unparseable answer → **review**, never a silent pass.
+  A DeepInfra outage therefore does not raise this bill — it fills the founder’s review queue instead.
+- **CFO dependency:** a NEW small **platform-COGS** line, `stage-2 scans/month × ≈$0.00015` at fixture
+  size, hard-capped at `× $0.0019`. At beta scale it is arithmetically negligible (10,000 scans ≈ $1.50
+  realistic, ≈ $19 at the absolute per-scan ceiling); it is registered because the standing rule is
+  “cost-relevant mechanism → ledger line in the same commit”, not because it is currently material.
+  | Status: **MEASURED (50 real completions, 2026-08-13)** — provider-billed usage HAS now been
+  observed for this path, from the stage-2 battery gate; the dollar figures remain arithmetic from the
+  unit prices above. What is still unobserved is **production** volume: how many hosted publishes per
+  month reach stage 2. Reconcile once the founder window and real beta traffic exist.
 
 ### M6 — Reserved (not yet built; add rows before shipping)
 Extended thinking · new third-party connectors beyond GitHub/Vercel/Brave. *FEEL-3a agent loop → **M10**;

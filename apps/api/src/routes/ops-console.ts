@@ -38,7 +38,10 @@ import { opsFounderGate, type OpsFounderVariables } from '../middleware/ops-foun
 import { opsHostingEnabled, opsBetaEmails } from '../services/ops-beta';
 import { routerStatus } from '../services/ops-router-deploy';
 import { listAllOpsApps, opsAppsTableAvailable } from '../services/ops-apps-store';
-import { opsAuditTableAvailable } from '../services/ops-audit';
+import { opsAuditTableAvailable, writeOpsAudit } from '../services/ops-audit';
+import { decideReview, findReviewItem, listPendingReviews } from '../services/ops-review-queue';
+import { loadCandidatePreview } from '../services/ops-review-preview';
+import { publishHostedApp } from '../services/ops-publish';
 import { appUrl } from '../services/ops-app-names';
 import { opsAppsDomain } from '../services/cf-deploy';
 import { startE2EJob, getE2EJob, runningE2EJob } from '../services/ops-e2e-jobs';
@@ -341,6 +344,198 @@ opsConsole.get('/e2e/status/:id', async (c) => {
     );
   }
   return c.json(job);
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// PHASE 3 · U3.3 — THE REVIEW QUEUE
+//
+// Extends this console rather than adding a second admin UI, deliberately: two
+// operator surfaces means two places to check at 3am and two places to keep
+// honest. Everything below sits behind the same `opsFounderGate` as the rest of
+// the file, so a non-founder gets the same byte-identical 404 as always.
+//
+// NOTE ON `OPS_HOSTING_ENABLED`: these routes hang on the founder gate and NOT on
+// the hosting switch, matching /api/admin/ops and for the same reason — turning
+// Act 2 dark must not disarm the operator's ability to act on what is already
+// held. Approving while hosting is off will still fail at the publish call, which
+// DOES hang on the switch; that refusal is honest and is shown as-is.
+// ════════════════════════════════════════════════════════════════════════════
+
+/**
+ * GET /api/ops-console/reviews — what is waiting.
+ *
+ * `available:false` means the queue could not be read (pre-0102, or a failed
+ * read). The console renders UNKNOWN, not "nothing pending" — an operator who
+ * believes the queue is empty when it is unreadable stops looking.
+ */
+opsConsole.get('/reviews', async (c) => {
+  const { available, items } = await listPendingReviews();
+  return c.json({
+    available,
+    items: items.map((i) => ({
+      id: i.id,
+      requestedName: i.requestedName,
+      userId: i.userId,
+      projectId: i.projectId,
+      // Both stage verdicts, so the operator sees what each layer said rather
+      // than only the one that held it.
+      stage1: { verdict: i.stage1Verdict, ruleIds: i.stage1RuleIds },
+      stage2: { verdict: i.stage2Verdict, reason: i.stage2Reason, confidence: i.stage2Confidence },
+      categories: i.categories,
+      scannedFiles: i.scannedFiles,
+      scannedBytes: i.scannedBytes,
+      tokens: { input: i.tokensInput, output: i.tokensOutput },
+      createdAt: i.createdAt,
+    })),
+    timestamp: new Date().toISOString(),
+  });
+});
+
+/**
+ * GET /api/ops-console/reviews/:id/preview — the candidate's source as INERT TEXT.
+ *
+ * Never markup, never a rendered page, never an iframe. See ops-review-preview.ts
+ * for why: this is content the platform has not cleared, and the browser reading
+ * it is the one holding founder privileges.
+ */
+opsConsole.get('/reviews/:id/preview', async (c) => {
+  const item = await findReviewItem(c.req.param('id'));
+  if (!item) return c.json({ error: 'unknown_review', message: 'Dieser Eintrag ist nicht (mehr) in der Prüfliste.' }, 404);
+
+  const preview = await loadCandidatePreview(item.projectId);
+  return c.json({
+    id: item.id,
+    requestedName: item.requestedName,
+    ...preview,
+    note: preview.available
+      ? 'Roher Quelltext, als Text ausgeliefert. Er wird nirgends ausgeführt oder als HTML eingebettet.'
+      : 'Die Dateien konnten nicht gelesen werden — das Projekt wurde womöglich gelöscht. Das heißt NICHT „die App ist leer".',
+  });
+});
+
+/**
+ * POST /api/ops-console/reviews/:id/approve — a human says yes; the publish runs.
+ *
+ * Order: settle the row FIRST, then publish. If the publish then fails (name gone,
+ * upload broke, hosting switched off), the item does not silently return to
+ * pending — the decision was made and is recorded, and the response says plainly
+ * that the approval stands while the publish did not. Re-queueing it would erase
+ * a human decision because a network call failed.
+ *
+ * Stage 1 runs again inside the publish. An approval overrides a probabilistic
+ * hold, never the deterministic ruleset.
+ */
+opsConsole.post('/reviews/:id/approve', async (c) => {
+  const founder = c.get('opsFounder');
+  const id = c.req.param('id');
+
+  const item = await findReviewItem(id);
+  if (!item) return c.json({ error: 'unknown_review', message: 'Dieser Eintrag ist nicht (mehr) in der Prüfliste.' }, 404);
+  if (item.status !== 'pending') {
+    return c.json({ error: 'already_decided', message: `Dieser Eintrag wurde bereits entschieden (${item.status}).` }, 409);
+  }
+
+  const body = await c.req.json<{ reason?: string }>().catch(() => ({}) as { reason?: string });
+  const reason = (body.reason ?? '').trim() || null;
+
+  const settled = await decideReview(id, 'approved', founder.email, reason);
+  if (!settled) {
+    return c.json(
+      { error: 'not_settled', message: 'Der Eintrag konnte nicht auf „freigegeben" gesetzt werden — vielleicht war jemand schneller, oder Migration 0102 fehlt. Es wurde nichts veröffentlicht.' },
+      409,
+    );
+  }
+
+  const audit = await writeOpsAudit({
+    // A candidate has no app id. See the OpsAuditAction comment: these two columns
+    // carry the QUEUE row's identity, and meta.subject says so.
+    appId: item.id,
+    appName: item.requestedName,
+    userId: item.userId,
+    action: 'review_approve',
+    actor: founder.email,
+    reason,
+    meta: {
+      subject: 'review_queue_item',
+      review_id: item.id,
+      stage2_reason: item.stage2Reason,
+      categories: item.categories,
+    },
+  });
+
+  const result = await publishHostedApp({
+    userId: item.userId,
+    projectId: item.projectId,
+    name: item.requestedName,
+    operatorApproved: true,
+  });
+
+  return c.json({
+    decision: 'approved',
+    actor: founder.email,
+    audit,
+    published: result.ok,
+    // The publish result verbatim, success or failure. An approval that did not
+    // reach a live URL must not be reported as if it had.
+    publish: result.ok
+      ? { url: result.url, appId: result.appId, files: result.files, scan: result.scan }
+      : { stage: result.stage, code: result.code, message: result.message },
+  });
+});
+
+/**
+ * POST /api/ops-console/reviews/:id/block — a human says no. A reason is REQUIRED.
+ *
+ * The same rule as suspend (U2.5), for the same reason: ABUSE_RESPONSE §8.4 owes
+ * the user a sentence, and §8.5 cannot run an appeal against a decision nobody
+ * wrote down. Without a reason: 400, and nothing is decided.
+ *
+ * Blocking takes nothing down, because nothing ever went up. It settles the queue
+ * row and writes the evidence line.
+ */
+opsConsole.post('/reviews/:id/block', async (c) => {
+  const founder = c.get('opsFounder');
+  const id = c.req.param('id');
+
+  const body = await c.req.json<{ reason?: string }>().catch(() => ({}) as { reason?: string });
+  const reason = (body.reason ?? '').trim();
+  if (!reason) {
+    return c.json(
+      { error: 'reason_required', message: 'Eine Ablehnung braucht einen Grund — der Nutzer bekommt ihn zu lesen (ABUSE_RESPONSE §8.4).' },
+      400,
+    );
+  }
+
+  const item = await findReviewItem(id);
+  if (!item) return c.json({ error: 'unknown_review', message: 'Dieser Eintrag ist nicht (mehr) in der Prüfliste.' }, 404);
+  if (item.status !== 'pending') {
+    return c.json({ error: 'already_decided', message: `Dieser Eintrag wurde bereits entschieden (${item.status}).` }, 409);
+  }
+
+  const settled = await decideReview(id, 'blocked', founder.email, reason);
+  if (!settled) {
+    return c.json(
+      { error: 'not_settled', message: 'Der Eintrag konnte nicht auf „abgelehnt" gesetzt werden — vielleicht war jemand schneller, oder Migration 0102 fehlt.' },
+      409,
+    );
+  }
+
+  const audit = await writeOpsAudit({
+    appId: item.id,
+    appName: item.requestedName,
+    userId: item.userId,
+    action: 'review_block',
+    actor: founder.email,
+    reason,
+    meta: {
+      subject: 'review_queue_item',
+      review_id: item.id,
+      stage2_reason: item.stage2Reason,
+      categories: item.categories,
+    },
+  });
+
+  return c.json({ decision: 'blocked', actor: founder.email, audit, reason });
 });
 
 export { opsConsole };

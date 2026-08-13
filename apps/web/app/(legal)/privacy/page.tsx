@@ -110,6 +110,29 @@ export default function PrivacyPage() {
             SOC&nbsp;2 / ISO&nbsp;27001 certified; zero data retention for the
             open-source models we use; international transfers covered by EU
             Standard Contractual Clauses (SCCs).
+            {/* AKT 2 · PHASE 3 · U3.1 — a NEW purpose for an existing sub-processor,
+                disclosed in the same PR as the mechanism. Until now everything sent
+                to DeepInfra was something the user typed. The pre-publish classifier
+                sends the app's own source, automatically, without a prompt — which a
+                user would not expect from the sentence above on its own. */}
+            <br />
+            <span>
+              Seit AKT&nbsp;2 · Phase&nbsp;3 zusätzlich: Beim Veröffentlichen auf
+              dem Goblin-Hosting (<code>*.justgoblin.app</code>) wird der Text und
+              das Markup der zu veröffentlichenden App einmalig an dieses Modell
+              übergeben — als automatische Missbrauchsprüfung vor dem Livegang
+              (Nutzungsrichtlinie, „Was Goblin prüft"). Das geschieht ohne
+              Eingabe des Nutzers und betrifft nur den gehosteten Weg, nicht den
+              Vercel-Weg und nicht die übrigen Projektdateien.
+              <br />
+              Since ACT&nbsp;2 · Phase&nbsp;3, additionally: when publishing on
+              Goblin hosting (<code>*.justgoblin.app</code>), the text and markup
+              of the app being published are passed once to this model as an
+              automated abuse check before it goes live (AUP, &ldquo;What Goblin
+              checks&rdquo;). This happens without any user input and applies only
+              to the hosted path — not the Vercel path, and not your other project
+              files.
+            </span>
           </li>
           <li>
             Anthropic, OpenAI and other model providers — only when you connect

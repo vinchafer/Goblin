@@ -31,7 +31,32 @@ vi.mock('../services/ops-apps-store', () => ({
 }));
 
 const opsAuditTableAvailable = vi.fn();
-vi.mock('../services/ops-audit', () => ({ opsAuditTableAvailable: () => opsAuditTableAvailable() }));
+const writeOpsAudit = vi.fn();
+vi.mock('../services/ops-audit', () => ({
+  opsAuditTableAvailable: () => opsAuditTableAvailable(),
+  writeOpsAudit: (...a: unknown[]) => writeOpsAudit(...a),
+}));
+
+// PHASE 3 · U3.3 — the review queue's three collaborators. Mocked at the module
+// boundary so this file keeps testing ROUTES rather than Cloudflare and Postgres.
+const listPendingReviews = vi.fn();
+const findReviewItem = vi.fn();
+const decideReview = vi.fn();
+vi.mock('../services/ops-review-queue', () => ({
+  listPendingReviews: (...a: unknown[]) => listPendingReviews(...a),
+  findReviewItem: (...a: unknown[]) => findReviewItem(...a),
+  decideReview: (...a: unknown[]) => decideReview(...a),
+}));
+
+const loadCandidatePreview = vi.fn();
+vi.mock('../services/ops-review-preview', () => ({
+  loadCandidatePreview: (...a: unknown[]) => loadCandidatePreview(...a),
+}));
+
+const publishHostedApp = vi.fn();
+vi.mock('../services/ops-publish', () => ({
+  publishHostedApp: (...a: unknown[]) => publishHostedApp(...a),
+}));
 
 vi.mock('../services/cf-deploy', () => ({ opsAppsDomain: () => 'justgoblin.app' }));
 
@@ -93,7 +118,10 @@ afterEach(() => {
 });
 
 describe('1 — the whole mount is invisible to everyone but the founder', () => {
-  const paths = ['/status', '/apps', '/projects', '/e2e/status/anything'];
+  // PHASE 3 — the review routes join the same invisibility gate. Listed here
+  // rather than in their own describe so a future route cannot be added to the
+  // mount without also being added to the cohort-exclusion proof.
+  const paths = ['/status', '/apps', '/projects', '/e2e/status/anything', '/reviews', '/reviews/r1/preview'];
 
   it('404s every route for an anonymous request', async () => {
     for (const p of paths) {
@@ -587,5 +615,162 @@ describe('the project picker offers only what could actually be published', () =
       expect(asked.columns.split(',').map((s) => s.trim())).toEqual([...PROJECT_PICKER_COLUMNS]);
       expect(asked.orderedBy).toBe(PROJECT_PICKER_ORDER);
     });
+  });
+});
+
+// ── 4 — the review queue (PHASE 3 · U3.3) ───────────────────────────────────
+
+const REVIEW_ITEM = {
+  id: 'rv-1',
+  userId: 'u-builder',
+  projectId: 'p-1',
+  requestedName: 'meinladen',
+  status: 'pending' as const,
+  stage1Verdict: 'pass',
+  stage1RuleIds: [],
+  stage2Verdict: 'review',
+  stage2Reason: 'flagged' as const,
+  categories: ['deception' as const],
+  stage2Confidence: 'medium',
+  scannedFiles: 2,
+  scannedBytes: 900,
+  tokensInput: 700,
+  tokensOutput: 18,
+  decidedBy: null,
+  decidedAt: null,
+  decisionReason: null,
+  createdAt: '2026-08-13T00:00:00.000Z',
+};
+
+function postJson(path: string, body: unknown, headers: Record<string, string> = founderHeaders()) {
+  return opsConsole.request(path, {
+    method: 'POST',
+    headers: { ...headers, 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
+describe('4 — the review queue', () => {
+  beforeEach(() => {
+    process.env.OPS_FOUNDER_ACCOUNTS = FOUNDER;
+    listPendingReviews.mockResolvedValue({ available: true, items: [REVIEW_ITEM] });
+    findReviewItem.mockResolvedValue(REVIEW_ITEM);
+    decideReview.mockResolvedValue({ ...REVIEW_ITEM, status: 'approved' });
+    writeOpsAudit.mockResolvedValue('written');
+    publishHostedApp.mockResolvedValue({ ok: true, stage: 'live', appId: 'a1', name: 'meinladen', url: 'https://meinladen.justgoblin.app', files: 2, bytes: 900, republished: false, verification: { ok: true }, scan: { verdict: 'pass', scannedFiles: 2, hits: 0, classifier: 'not_run' } });
+  });
+
+  it('lists what is waiting, with BOTH stage verdicts', async () => {
+    const body = await (await get('/reviews')).json();
+    expect(body.available).toBe(true);
+    expect(body.items[0]).toMatchObject({
+      id: 'rv-1', requestedName: 'meinladen',
+      stage1: { verdict: 'pass' }, stage2: { verdict: 'review', reason: 'flagged' },
+      categories: ['deception'],
+    });
+  });
+
+  it('reports an unreadable queue as UNAVAILABLE, never as "nothing waiting"', async () => {
+    listPendingReviews.mockResolvedValue({ available: false, items: [] });
+    const body = await (await get('/reviews')).json();
+    expect(body.available).toBe(false);
+    expect(body.items).toEqual([]);
+  });
+
+  it('serves the preview as inert TEXT and says so', async () => {
+    loadCandidatePreview.mockResolvedValue({
+      files: [{ path: 'index.html', text: '<script>alert(1)</script>', bytes: 25, truncated: false }],
+      binaryFiles: [], omittedFiles: [], totalFiles: 1, available: true,
+    });
+    const body = await (await get('/reviews/rv-1/preview')).json();
+    // The markup arrives as a STRING in a JSON field. Nothing in the payload is
+    // html/* content-typed, and nothing asks a browser to parse it.
+    expect(body.files[0].text).toBe('<script>alert(1)</script>');
+    expect(body.note).toContain('nirgends ausgeführt');
+  });
+
+  it('says "could not read" rather than "empty" when the project is gone', async () => {
+    loadCandidatePreview.mockResolvedValue({ files: [], binaryFiles: [], omittedFiles: [], totalFiles: 0, available: false });
+    const body = await (await get('/reviews/rv-1/preview')).json();
+    expect(body.note).toContain('NICHT');
+  });
+
+  it('404s a preview for an item that is not in the queue', async () => {
+    findReviewItem.mockResolvedValue(null);
+    expect((await get('/reviews/nope/preview')).status).toBe(404);
+  });
+
+  // ── approve ──
+  it('approve settles the row, writes the audit with the ACTOR, then publishes', async () => {
+    const res = await postJson('/reviews/rv-1/approve', { reason: 'Sieht harmlos aus' });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+
+    expect(decideReview).toHaveBeenCalledWith('rv-1', 'approved', FOUNDER, 'Sieht harmlos aus');
+    expect(writeOpsAudit).toHaveBeenCalledWith(expect.objectContaining({
+      action: 'review_approve', actor: FOUNDER,
+      meta: expect.objectContaining({ subject: 'review_queue_item', review_id: 'rv-1' }),
+    }));
+    expect(publishHostedApp).toHaveBeenCalledWith(expect.objectContaining({ operatorApproved: true, name: 'meinladen' }));
+    expect(body).toMatchObject({ decision: 'approved', actor: FOUNDER, audit: 'written', published: true });
+  });
+
+  it('reports a failed publish as failed — an approval is not a live URL', async () => {
+    publishHostedApp.mockResolvedValue({ ok: false, stage: 'name', code: 'name_taken', message: 'Dieser Name ist vergeben.' });
+    const body = await (await postJson('/reviews/rv-1/approve', {})).json();
+    expect(body.published).toBe(false);
+    expect(body.publish).toMatchObject({ code: 'name_taken' });
+    // And the decision is NOT rolled back — a human decided, a network call did not.
+    expect(decideReview).toHaveBeenCalledWith('rv-1', 'approved', FOUNDER, null);
+  });
+
+  it('409s an item somebody else already decided, and publishes nothing', async () => {
+    findReviewItem.mockResolvedValue({ ...REVIEW_ITEM, status: 'blocked' });
+    expect((await postJson('/reviews/rv-1/approve', {})).status).toBe(409);
+    expect(publishHostedApp).not.toHaveBeenCalled();
+  });
+
+  it('409s and publishes nothing when the row could not be settled', async () => {
+    decideReview.mockResolvedValue(null);
+    expect((await postJson('/reviews/rv-1/approve', {})).status).toBe(409);
+    expect(publishHostedApp).not.toHaveBeenCalled();
+  });
+
+  // ── block ──
+  it('REFUSES a block with no reason — 400, nothing decided, nothing logged', async () => {
+    const res = await postJson('/reviews/rv-1/block', { reason: '   ' });
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toBe('reason_required');
+    expect(decideReview).not.toHaveBeenCalled();
+    expect(writeOpsAudit).not.toHaveBeenCalled();
+  });
+
+  it('block settles the row and writes the audit with the actor and the reason', async () => {
+    decideReview.mockResolvedValue({ ...REVIEW_ITEM, status: 'blocked' });
+    const body = await (await postJson('/reviews/rv-1/block', { reason: 'Fake-Shop' })).json();
+    expect(decideReview).toHaveBeenCalledWith('rv-1', 'blocked', FOUNDER, 'Fake-Shop');
+    expect(writeOpsAudit).toHaveBeenCalledWith(expect.objectContaining({ action: 'review_block', actor: FOUNDER, reason: 'Fake-Shop' }));
+    expect(body).toMatchObject({ decision: 'blocked', audit: 'written' });
+    // A block takes nothing offline, because nothing ever went up.
+    expect(publishHostedApp).not.toHaveBeenCalled();
+  });
+
+  it('passes an unavailable audit through verbatim instead of claiming a row', async () => {
+    writeOpsAudit.mockResolvedValue('unavailable');
+    decideReview.mockResolvedValue({ ...REVIEW_ITEM, status: 'blocked' });
+    const body = await (await postJson('/reviews/rv-1/block', { reason: 'Fake-Shop' })).json();
+    expect(body.audit).toBe('unavailable');
+  });
+
+  it('404s both decisions for a cohort user, and decides nothing', async () => {
+    getUser.mockResolvedValue({ data: { user: { id: 'u2', email: COHORT } }, error: null });
+    const headers = { Authorization: 'Bearer t', 'content-type': 'application/json' };
+    for (const p of ['/reviews/rv-1/approve', '/reviews/rv-1/block']) {
+      const res = await opsConsole.request(p, { method: 'POST', headers, body: JSON.stringify({ reason: 'x' }) });
+      expect(res.status, p).toBe(404);
+      expect(await res.text()).toBe('404 Not Found');
+    }
+    expect(decideReview).not.toHaveBeenCalled();
+    expect(publishHostedApp).not.toHaveBeenCalled();
   });
 });

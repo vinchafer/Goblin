@@ -73,6 +73,68 @@ const APPS_HEALTHY = {
   ],
 };
 
+/**
+ * PHASE 3 · U3.3 — the review queue's two states.
+ *
+ * The HEALTHY set is deliberately not one comfortable row. It carries the two
+ * shapes an operator has to be able to tell apart at a glance and that the card
+ * would most easily blur:
+ *   • a FLAGGED item with a category and a confidence — the model read it,
+ *   • an item held because the check could NOT run (over budget, no category,
+ *     unknown confidence) — which must never look like a suspicion.
+ */
+const REVIEWS_HEALTHY = {
+  available: true,
+  items: [
+    {
+      id: 'rv-1',
+      requestedName: 'gewinnspiel-2026',
+      userId: 'u-builder',
+      projectId: 'p-2',
+      stage1: { verdict: 'pass', ruleIds: [] },
+      stage2: { verdict: 'review', reason: 'flagged', confidence: 'medium' },
+      categories: ['deception'],
+      scannedFiles: 3,
+      scannedBytes: 4210,
+      tokens: { input: 812, output: 21 },
+      createdAt: '2026-08-13T07:41:00.000Z',
+    },
+    {
+      id: 'rv-2',
+      requestedName: 'ein-sehr-langer-kandidaten-name-zum-testen',
+      userId: 'u-builder',
+      projectId: 'p-3',
+      stage1: { verdict: 'pass', ruleIds: [] },
+      stage2: { verdict: 'review', reason: 'over_budget', confidence: 'unknown' },
+      categories: [],
+      scannedFiles: 41,
+      scannedBytes: 1_204_880,
+      tokens: { input: 0, output: 0 },
+      createdAt: '2026-08-13T06:02:00.000Z',
+    },
+  ],
+};
+
+const PREVIEW_STUB = {
+  id: 'rv-1',
+  requestedName: 'gewinnspiel-2026',
+  available: true,
+  totalFiles: 3,
+  binaryFiles: ['logo.png'],
+  omittedFiles: [],
+  // Deliberately hostile-looking source: the screenshot is the proof that it
+  // arrives as visible text and is not parsed, embedded or executed.
+  files: [
+    {
+      path: 'index.html',
+      text: '<!doctype html>\n<h1>Du hast gewonnen!</h1>\n<script>document.title = "x"</script>\n<form action="https://beispiel.invalid/collect">\n  <input name="iban">\n</form>',
+      bytes: 152,
+      truncated: false,
+    },
+  ],
+  note: 'Roher Quelltext, als Text ausgeliefert. Er wird nirgends ausgeführt oder als HTML eingebettet.',
+};
+
 interface EvidenceStep {
   step: string;
   ok: boolean;
@@ -138,6 +200,11 @@ window.fetch = (async (input: RequestInfo | URL) => {
     return healthy
       ? json({ available: true, projects: [{ id: 'p1', name: 'Mein Testprojekt' }] })
       : json({ error: 'x' }, 500);
+  }
+  if (url.includes('/preview')) return json(PREVIEW_STUB);
+  if (url.startsWith('/api/ops-console/reviews')) {
+    // Degraded: the queue could not be read. Not "nothing is waiting".
+    return healthy ? json(REVIEWS_HEALTHY) : json({ available: false, items: [] });
   }
   if (url.startsWith('/api/ops-console/e2e/status/')) return json(E2E_DONE);
   return json({ error: 'not_stubbed' }, 404);

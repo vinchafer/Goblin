@@ -24,8 +24,22 @@ import logger from '../lib/logger';
 
 type Sb = ReturnType<typeof getSupabaseAdmin>;
 
-/** The operator actions Phase 2 can record. Free text in the DB — see 0100. */
-export type OpsAuditAction = 'suspend' | 'unsuspend' | 'teardown' | 'orphan_purge';
+/**
+ * The operator actions recorded here. Free text in the DB — see 0100, which
+ * deliberately has no CHECK so a later phase can add one without a migration.
+ *
+ * PHASE 3 adds the two review-queue decisions. They are a slightly different
+ * SHAPE of row and the difference is worth knowing when reading the trail: a
+ * suspend acts on a published app, so `app_id`/`app_name` are that app's. A review
+ * decision acts on a CANDIDATE that was never published and has no app id at all,
+ * so those columns carry the review-queue row's id and the name that was
+ * requested, and `meta.subject` says `review_queue_item` so nobody mistakes the
+ * id for an `ops_apps.app_id`. On an approve that then publishes, the app's own id
+ * lands in `meta.published_app_id`.
+ */
+export type OpsAuditAction =
+  | 'suspend' | 'unsuspend' | 'teardown' | 'orphan_purge'
+  | 'review_approve' | 'review_block';
 
 /** Did the evidence actually land? Never collapsed into a boolean. */
 export type OpsAuditOutcome = 'written' | 'unavailable' | 'failed';

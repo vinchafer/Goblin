@@ -28,7 +28,9 @@
  */
 
 import { getFileBytes, listFiles } from './file-storage';
-import { scanHostedArtifactAndRecord, type HostedScanFile, type HostedScanVerdict } from './safety/hosted-publish-scan';
+import { runHostedPublishScan, type HostedScanFile, type HostedScanOutcome } from './safety/hosted-publish-scan';
+import { reviewMessage } from './safety/review-messages';
+import { enqueueReview } from './ops-review-queue';
 import { deleteRoute, getRoute, listAppFiles, opsAppsDomain, putAppFiles, setRoute, type CfAppFile, type CfResult } from './cf-deploy';
 import {
   claimOpsApp,
@@ -66,7 +68,13 @@ export interface PublishSuccess {
   /** True when this replaced an existing publish rather than creating one. */
   republished: boolean;
   verification: HostedVerification;
-  scan: { verdict: 'pass'; scannedFiles: number; hits: number };
+  /**
+   * `classifier` names what stage 2 did: a `ClassifierReason` when it ran, or
+   * `not_run` when it did not. A publish reported live with `classifier: 'skipped'`
+   * cleared the deterministic layer only, and the caller must not describe it as
+   * having passed both.
+   */
+  scan: { verdict: 'pass'; scannedFiles: number; hits: number; classifier: string };
 }
 
 export interface PublishFailure {
@@ -75,11 +83,14 @@ export interface PublishFailure {
   /** Machine-readable, for tests and the E2E runner. */
   code:
     | 'invalid_name' | 'name_taken' | 'name_released' | 'no_entry' | 'empty_artifact'
-    | 'scan_blocked' | 'registry_unavailable' | 'upload_failed' | 'route_failed' | 'not_verified';
+    | 'scan_blocked' | 'scan_review' | 'review_unqueued'
+    | 'registry_unavailable' | 'upload_failed' | 'route_failed' | 'not_verified';
   /** German, user-facing, in Max-language. Never a stack trace, never a rule id. */
   message: string;
   /** Present when a scan blocked — the rule ids belong in the log and the appeal. */
   ruleIds?: string[];
+  /** Present when stage 2 held the publish: the queue row a human will resolve. */
+  reviewId?: string;
   appId?: string;
   name?: string;
   url?: string;
@@ -90,7 +101,8 @@ export type PublishResult = PublishSuccess | PublishFailure;
 export interface PublishDeps {
   listFiles: (projectId: string) => Promise<string[]>;
   getFileBytes: (projectId: string, path: string) => Promise<{ bytes: Buffer } | null>;
-  scan: typeof scanHostedArtifactAndRecord;
+  scan: typeof runHostedPublishScan;
+  enqueueReview: typeof enqueueReview;
   putAppFiles: (appId: string, files: CfAppFile[]) => Promise<CfResult<{ files: number; bytes: number }>>;
   setRoute: typeof setRoute;
   getRoute: typeof getRoute;
@@ -108,7 +120,8 @@ export interface PublishDeps {
 export const defaultPublishDeps: PublishDeps = {
   listFiles,
   getFileBytes,
-  scan: scanHostedArtifactAndRecord,
+  scan: runHostedPublishScan,
+  enqueueReview,
   putAppFiles,
   setRoute,
   getRoute,
@@ -237,6 +250,14 @@ export interface PublishInput {
   projectId: string | null;
   /** Only used when the project has no app yet; a republish keeps its name. */
   name: string;
+  /**
+   * PHASE 3 · U3.3 — an operator resolved a review-queue item as approved.
+   *
+   * Skips stage 2 (see HostedScanContext.operatorApproved). Stage 1 still runs.
+   * The ONLY caller is the console's approve action, behind the founder gate; it
+   * is not reachable from any builder-facing route.
+   */
+  operatorApproved?: boolean;
 }
 
 /**
@@ -291,17 +312,61 @@ export async function publishHostedApp(input: PublishInput, deps: PublishDeps = 
     );
   }
 
-  // 3. SCAN — before anything is uploaded. A block means nothing went anywhere.
-  const scan: HostedScanVerdict = deps.scan(artifact.scanFiles, {
+  // 3. SCAN — before anything is uploaded. A block means nothing went anywhere,
+  //    and so does a REVIEW: the two differ in who decides next, never in what
+  //    reached R2. Both return before step 4, which is the property the KV/R2
+  //    read-back in the tests and in the E2E run actually verifies.
+  const scan: HostedScanOutcome = await deps.scan(artifact.scanFiles, {
     userId: input.userId,
     // null, not '': this rides into the publish_blocked event, whose project_id is
     // the same nullable-uuid shape as the registry's.
     projectId: input.projectId,
     appsDomain: domain,
+    ...(input.operatorApproved ? { operatorApproved: true } : {}),
   });
   if (scan.verdict === 'block') {
     logger.warn({ userId: input.userId, projectId: input.projectId, ruleIds: scan.ruleIds }, 'hosted_publish_blocked');
     return fail('scan', 'scan_blocked', scan.message ?? 'Diese Veröffentlichung wurde gestoppt.', { ruleIds: scan.ruleIds });
+  }
+
+  // 3b. THE THIRD VERDICT (Phase 3 · U3.2). Stage 2 held it for a human.
+  //
+  // A REPUBLISH is held on exactly the same terms as a first publish. The
+  // tempting exception — "this app is already live, let the update through" —
+  // would make the check trivially bypassable: publish something harmless, then
+  // replace it. The app that is already live stays live and untouched, because
+  // nothing here has written anything; what does not happen is the update.
+  if (scan.verdict === 'review') {
+    const s2 = scan.stage2;
+    const queued = await deps.enqueueReview({
+      userId: input.userId,
+      projectId: input.projectId,
+      requestedName: name,
+      stage1Verdict: 'pass',
+      stage1RuleIds: scan.ruleIds,
+      stage2Reason: s2?.reason ?? 'unavailable',
+      categories: scan.categories,
+      stage2Confidence: s2?.confidence ?? 'unknown',
+      scannedFiles: scan.scannedFiles,
+      scannedBytes: scan.scannedBytes,
+      tokensInput: s2?.tokens.input ?? 0,
+      tokensOutput: s2?.tokens.output ?? 0,
+    });
+
+    if (!queued) {
+      // Held, but not recorded — so nobody is going to look. The builder is told
+      // that, rather than told to wait for a review that does not exist.
+      return fail(
+        'scan',
+        'review_unqueued',
+        reviewMessage(scan.categories, s2?.reason === 'flagged', false),
+      );
+    }
+
+    return fail('scan', 'scan_review', scan.message ?? reviewMessage(scan.categories, s2?.reason === 'flagged'), {
+      reviewId: queued.id,
+      name,
+    });
   }
 
   // 4. REGISTRY, before the upload. See ops-apps-store: a write that answers null
@@ -368,7 +433,14 @@ export async function publishHostedApp(input: PublishInput, deps: PublishDeps = 
     bytes: artifact.totalBytes,
     republished,
     verification,
-    scan: { verdict: 'pass', scannedFiles: scan.scannedFiles, hits: scan.hits.length },
+    scan: {
+      verdict: 'pass',
+      scannedFiles: scan.scannedFiles,
+      hits: scan.stage1.hits.length,
+      // Which of the two stages actually ran, so a green publish cannot be read as
+      // "both stages cleared it" when stage 2 was switched off or skipped.
+      classifier: scan.stage2 ? scan.stage2.reason : 'not_run',
+    },
   };
 }
 

@@ -51,7 +51,7 @@ import {
   DeleteObjectsCommand,
 } from '@aws-sdk/client-s3';
 import type { S3ClientConfig } from '@aws-sdk/client-s3';
-import { unwrapEnv } from '../lib/env-value';
+import { envString } from '../lib/env-value';
 import logger from '../lib/logger';
 
 // ── Result & error types ────────────────────────────────────────────────────
@@ -238,7 +238,7 @@ export type R2JurisdictionRead =
  * Same reasoning, same precedent as OPS_SITE_URL below.
  */
 export function r2Jurisdiction(): R2JurisdictionRead {
-  const raw = unwrapEnv(process.env.CF_R2_JURISDICTION).toLowerCase();
+  const raw = envString('CF_R2_JURISDICTION').toLowerCase();
   if (raw.length === 0) return { ok: true, jurisdiction: null };
   if ((R2_JURISDICTIONS as readonly string[]).includes(raw)) {
     return { ok: true, jurisdiction: raw as R2Jurisdiction };
@@ -310,10 +310,10 @@ const DEFAULT_TIMEOUT_MS = 10_000;
 /** S3 hard limit: DeleteObjects accepts at most 1000 keys per request. */
 const DELETE_BATCH_SIZE = 1000;
 
-function timeoutMs(): number {
+export function timeoutMs(): number {
   // Unwrapped for the same reason as env() below: Number('"10000"') is NaN, so a
   // pasted-with-quotes override would silently fall back to the default.
-  const raw = Number(unwrapEnv(process.env.CF_TIMEOUT_MS));
+  const raw = Number(envString('CF_TIMEOUT_MS'));
   return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : DEFAULT_TIMEOUT_MS;
 }
 
@@ -322,8 +322,8 @@ function timeoutMs(): number {
  * deploy is reproducible and does not silently change runtime semantics with the
  * calendar. Overridable via CF_WORKER_COMPAT_DATE when a Worker needs a newer one.
  */
-function workerCompatDate(): string {
-  const raw = unwrapEnv(process.env.CF_WORKER_COMPAT_DATE);
+export function workerCompatDate(): string {
+  const raw = envString('CF_WORKER_COMPAT_DATE');
   return /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : '2025-01-01';
 }
 
@@ -340,9 +340,20 @@ function workerCompatDate(): string {
  *
  * It unwraps; it does not validate or repair. An unset variable is still empty and
  * still makes the surface report `not_configured`.
+ *
+ * ── PHASE 3 · U3.6 — one helper, not two shapes of the same helper ───────────
+ * Every env read in this file now goes through `envString(name)`. Three of them
+ * (`CF_R2_JURISDICTION`, `CF_TIMEOUT_MS`, `CF_WORKER_COMPAT_DATE`) previously
+ * called `unwrapEnv(process.env.X)` directly. That was already HARDENED — same
+ * unwrapper, same behaviour, and the carried finding from PR #77/#82 was in
+ * substance already closed by #82/#83, which is worth saying plainly rather than
+ * claiming a fix that was not needed. What it was not, was uniform: two spellings
+ * of the same read invite a fourth variable to be added with a bare
+ * `process.env.X` because that is what the line above it looks like. There is now
+ * one spelling, and `process.env` does not appear in this file at all.
  */
 function env(name: CfEnvVar): string {
-  return unwrapEnv(process.env[name]);
+  return envString(name);
 }
 
 /** Which of the adapter's env vars are present. Booleans only — never a value, never a length. */
@@ -1229,6 +1240,6 @@ export function opsAppsDomain(): string {
  * about a value that has a correct default.
  */
 export function opsSiteUrl(): string {
-  const raw = unwrapEnv(process.env.OPS_SITE_URL);
+  const raw = envString('OPS_SITE_URL');
   return (raw || 'https://justgoblin.com').replace(/\/$/, '');
 }

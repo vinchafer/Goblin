@@ -715,6 +715,63 @@ describe('r2Jurisdiction', () => {
   });
 });
 
+/**
+ * PHASE 3 · U3.6 — the three CF_* SCALARS, against the three shapes a Railway
+ * dashboard field actually arrives in: quoted, padded, empty.
+ *
+ * `CF_R2_JURISDICTION` is covered above and is the one that matters most (a
+ * mis-read there puts user data in the wrong jurisdiction while the probe reports
+ * the variable as set). These two are the remainder, and they were the ones with
+ * a quoted case and no padded/empty case.
+ */
+describe('CF_* scalars — quoted · padded · empty', () => {
+  beforeEach(() => {
+    delete process.env.CF_TIMEOUT_MS;
+    delete process.env.CF_WORKER_COMPAT_DATE;
+  });
+
+  describe('CF_TIMEOUT_MS', () => {
+    it.each([
+      ['quoted', '"25000"', 25_000],
+      ['single-quoted', "'25000'", 25_000],
+      ['padded', '  25000  ', 25_000],
+      ['quoted and padded', '  "25000" ', 25_000],
+      ['empty', '', 10_000],
+      ['whitespace only', '   ', 10_000],
+      ['unparseable', 'bald', 10_000],
+      ['zero', '0', 10_000],
+      ['negative', '-5', 10_000],
+    ])('%s → %s ms', (_label, raw, want) => {
+      process.env.CF_TIMEOUT_MS = raw as string;
+      expect(cf.timeoutMs()).toBe(want);
+    });
+  });
+
+  describe('CF_WORKER_COMPAT_DATE', () => {
+    it.each([
+      ['quoted', '"2026-03-01"', '2026-03-01'],
+      ['single-quoted', "'2026-03-01'", '2026-03-01'],
+      ['padded', '  2026-03-01  ', '2026-03-01'],
+      ['empty', '', '2025-01-01'],
+      ['whitespace only', '   ', '2025-01-01'],
+      ['not a date', 'gestern', '2025-01-01'],
+    ])('%s → %s', (_label, raw, want) => {
+      process.env.CF_WORKER_COMPAT_DATE = raw;
+      expect(cf.workerCompatDate()).toBe(want);
+    });
+  });
+
+  it('cf-deploy.ts reads no env variable outside the shared helper', async () => {
+    // The structural half of the unit: a future CF_* variable added with a bare
+    // process.env read fails here rather than in production.
+    const { readFileSync } = await import('node:fs');
+    const { fileURLToPath } = await import('node:url');
+    const src = readFileSync(fileURLToPath(new URL('./cf-deploy.ts', import.meta.url)), 'utf8');
+    const offenders = src.split('\n').filter((l) => l.includes('process.env') && !l.trimStart().startsWith('*') && !l.trimStart().startsWith('//'));
+    expect(offenders).toEqual([]);
+  });
+});
+
 describe('findZoneId', () => {
   it('returns the id of the exactly-matching zone', async () => {
     fetchMock.mockResolvedValue(cfOk([{ id: 'zone-abc', name: 'justgoblin.app' }]));

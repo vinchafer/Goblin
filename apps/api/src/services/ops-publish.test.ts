@@ -21,6 +21,9 @@ import {
   type PublishDeps,
 } from './ops-publish';
 import type { OpsApp } from './ops-apps-store';
+import type { ReviewItem } from './ops-review-queue';
+import type { AupCategory } from './safety/abuse-classifier';
+import { reviewMessage } from './safety/review-messages';
 
 const ok = <T>(value: T) => ({ ok: true as const, value });
 const cfErr = (code: string, message = 'nope') =>
@@ -37,6 +40,42 @@ function app(overrides: Partial<OpsApp> = {}): OpsApp {
   };
 }
 
+/**
+ * PHASE 3 — the scan dep is now the two-stage runner and is async. These builders
+ * produce the three outcomes it can return, so a test names the verdict it wants
+ * rather than assembling the shape.
+ */
+const stage1Pass = { verdict: 'pass' as const, ruleIds: [], hits: [], scannedFiles: 1, scannedBytes: 10 };
+
+function passOutcome() {
+  return {
+    verdict: 'pass' as const, decidedBy: 'none' as const, stage1: stage1Pass,
+    stage2: { verdict: 'pass' as const, reason: 'clean' as const, categories: [], confidence: 'high' as const,
+      tokens: { estimatedInput: 100, input: 700, output: 20 }, sentChars: 400, model: 'deepseek-ai/DeepSeek-V3.2', tookMs: 5 },
+    categories: [], ruleIds: [], scannedFiles: 1, scannedBytes: 10,
+  };
+}
+
+function blockOutcome() {
+  return {
+    verdict: 'block' as const, decidedBy: 'stage1' as const,
+    stage1: { ...stage1Pass, verdict: 'block' as const, ruleIds: ['PH-BRAND-CRED'] },
+    stage2: null, area: 'phishing' as const, categories: [],
+    message: 'Diese Veröffentlichung wurde gestoppt: …Nutzungsrichtlinie… Feedback-Knopf…',
+    ruleIds: ['PH-BRAND-CRED'], scannedFiles: 1, scannedBytes: 10,
+  };
+}
+
+function reviewOutcome(reason: 'flagged' | 'unavailable' = 'flagged', categories: AupCategory[] = ['deception']) {
+  return {
+    verdict: 'review' as const, decidedBy: 'stage2' as const, stage1: stage1Pass,
+    stage2: { verdict: 'review' as const, reason, categories, confidence: 'medium' as const,
+      tokens: { estimatedInput: 100, input: 700, output: 20 }, sentChars: 400, model: 'deepseek-ai/DeepSeek-V3.2', tookMs: 5 },
+    categories, message: reviewMessage(categories, reason === 'flagged'),
+    ruleIds: [], scannedFiles: 1, scannedBytes: 10,
+  };
+}
+
 /** Fake deps: a one-file project, everything succeeds, nothing published yet. */
 function deps(overrides: Partial<PublishDeps> = {}, files: Record<string, string> = { 'index.html': INDEX }): PublishDeps {
   return {
@@ -44,7 +83,8 @@ function deps(overrides: Partial<PublishDeps> = {}, files: Record<string, string
     getFileBytes: vi.fn(async (_p: string, path: string) =>
       files[path] === undefined ? null : { bytes: Buffer.from(files[path]!, 'utf8') },
     ),
-    scan: vi.fn(() => ({ verdict: 'pass' as const, ruleIds: [], hits: [], scannedFiles: 1, scannedBytes: 10 })),
+    scan: vi.fn(async () => passOutcome()),
+    enqueueReview: vi.fn(async () => ({ id: 'review-1' }) as unknown as ReviewItem),
     putAppFiles: vi.fn(async () => ok({ files: 1, bytes: 10 })),
     setRoute: vi.fn(async () => ok({ name: 'meinladen', appId: 'app-1', status: 'active' as const })),
     getRoute: vi.fn(async () => ok(null)),
@@ -168,7 +208,7 @@ describe('publish — the happy path', () => {
       vi.fn((...a: Parameters<T>) => { order.push(label); return fn(...a); });
 
     const d = deps({
-      scan: track('scan', () => ({ verdict: 'pass' as const, ruleIds: [], hits: [], scannedFiles: 1, scannedBytes: 1 })),
+      scan: track('scan', async () => passOutcome()),
       claimOpsApp: track('claim', async () => app({ status: 'provisioning' })),
       putAppFiles: track('upload', async () => ok({ files: 1, bytes: 10 })),
       setRoute: track('route', async () => ok({ name: 'meinladen', appId: 'app-1', status: 'active' as const })),
@@ -204,15 +244,7 @@ describe('publish — the happy path', () => {
 describe('publish — a scan block stops everything', () => {
   const blocked = () =>
     deps({
-      scan: vi.fn(() => ({
-        verdict: 'block' as const,
-        area: 'phishing' as const,
-        message: 'Diese Veröffentlichung wurde gestoppt: …Nutzungsrichtlinie… Feedback-Knopf…',
-        ruleIds: ['PH-BRAND-CRED'],
-        hits: [],
-        scannedFiles: 1,
-        scannedBytes: 10,
-      })),
+      scan: vi.fn(async () => blockOutcome()),
     });
 
   it('uploads nothing, routes nothing, registers nothing', async () => {
@@ -243,6 +275,76 @@ describe('publish — a scan block stops everything', () => {
     const d = blocked();
     await publishHostedApp(input, d);
     expect(d.claimOpsApp).not.toHaveBeenCalled();
+  });
+});
+
+// ── The third verdict (PHASE 3 · U3.2) ──────────────────────────────────────
+
+describe('publish — a stage-2 review holds everything', () => {
+  const held = (over: Partial<PublishDeps> = {}, reason: 'flagged' | 'unavailable' = 'flagged') =>
+    deps({ scan: vi.fn(async () => reviewOutcome(reason)), ...over } as unknown as Partial<PublishDeps>);
+
+  it('uploads nothing, routes nothing, registers nothing — the same as a block', async () => {
+    const d = held();
+    await publishHostedApp(input, d);
+    expect(d.putAppFiles).not.toHaveBeenCalled();
+    expect(d.setRoute).not.toHaveBeenCalled();
+    expect(d.claimOpsApp).not.toHaveBeenCalled();
+    expect(d.markOpsAppPublished).not.toHaveBeenCalled();
+  });
+
+  it('records the hold in the queue and hands back its id', async () => {
+    const d = held();
+    const r = await publishHostedApp(input, d);
+    if (r.ok) throw new Error('expected a review');
+    expect(r.code).toBe('scan_review');
+    expect(r.reviewId).toBe('review-1');
+    expect(d.enqueueReview).toHaveBeenCalledWith(expect.objectContaining({
+      userId: 'user-1', projectId: 'proj-1', requestedName: 'meinladen',
+      stage1Verdict: 'pass', stage2Reason: 'flagged', categories: ['deception'],
+    }));
+  });
+
+  it('says what happened, in German, and commits to no timeline', async () => {
+    const r = await publishHostedApp(input, held());
+    if (r.ok) throw new Error('expected a review');
+    expect(r.message).toContain('Hochgeladen wurde nichts');
+    expect(r.message).toContain('Eine feste Frist gibt es dafür nicht');
+    // No invented duration anywhere in the sentence.
+    expect(r.message).not.toMatch(/\d+\s*(Stunden|Stunde|Tagen|Tage|Minuten|Werktag)/i);
+  });
+
+  it('names the CATEGORY and never the mechanism behind it', async () => {
+    const r = await publishHostedApp(input, held());
+    if (r.ok) throw new Error('expected a review');
+    for (const leak of ['deception', 'classifier', 'Stage', 'stage2', 'confidence', 'DeepSeek', 'Swift']) {
+      expect(r.message).not.toContain(leak);
+    }
+  });
+
+  it('blames the check, not the app, when the check could not finish', async () => {
+    const r = await publishHostedApp(input, held({}, 'unavailable'));
+    if (r.ok) throw new Error('expected a review');
+    expect(r.message).toContain('Das sagt nichts über deine App aus');
+  });
+
+  it('does NOT promise a human when the hold could not be recorded', async () => {
+    const d = held({ enqueueReview: vi.fn(async () => null) });
+    const r = await publishHostedApp(input, d);
+    if (r.ok) throw new Error('expected a review');
+    expect(r.code).toBe('review_unqueued');
+    expect(r.message).toContain('Bitte versuch es später noch einmal');
+    expect(r.message).not.toContain('Sobald jemand daraufgesehen hat');
+    expect(d.putAppFiles).not.toHaveBeenCalled();
+  });
+
+  it('holds a REPUBLISH too — the live app stays untouched, the update does not land', async () => {
+    const d = held({ findOpsAppByProject: vi.fn(async () => app({ appName: 'meinladen' })) });
+    const r = await publishHostedApp(input, d);
+    expect(r.ok).toBe(false);
+    expect(d.putAppFiles).not.toHaveBeenCalled();
+    expect(d.deleteRoute).not.toHaveBeenCalled(); // the live route is left alone
+    expect(d.markOpsAppFailed).not.toHaveBeenCalled();
   });
 });
 

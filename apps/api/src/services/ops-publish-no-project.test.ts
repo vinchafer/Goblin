@@ -109,6 +109,18 @@ describe('findOpsAppByProject with no project', () => {
   });
 });
 
+/** A two-stage scan that cleared both stages. Shape only — the verdicts are tested in ops-publish.test.ts. */
+const PASS_OUTCOME = {
+  verdict: 'pass' as const,
+  decidedBy: 'none' as const,
+  stage1: { verdict: 'pass' as const, ruleIds: [], hits: [], scannedFiles: 1, scannedBytes: 10 },
+  stage2: null,
+  categories: [],
+  ruleIds: [],
+  scannedFiles: 1,
+  scannedBytes: 10,
+};
+
 describe('the publish path with projectId: null — the E2E run, end to end at the registry', () => {
   /** The E2E run's shape: a synthetic artifact, a real registry, everything else faked. */
   function e2eLikeDeps(sb: Parameters<typeof claimOpsApp>[1], overrides: Partial<PublishDeps> = {}): PublishDeps {
@@ -117,7 +129,9 @@ describe('the publish path with projectId: null — the E2E run, end to end at t
       listFiles: async () => Object.keys(files),
       getFileBytes: async (_p: string, path: string) =>
         files[path] === undefined ? null : { bytes: Buffer.from(files[path]!, 'utf8') },
-      scan: () => ({ verdict: 'pass' as const, ruleIds: [], hits: [], scannedFiles: 1, scannedBytes: 10 }),
+      // PHASE 3: the two-stage runner. A pass here means both stages passed.
+      scan: async () => PASS_OUTCOME,
+      enqueueReview: async () => null,
       putAppFiles: async () => ({ ok: true as const, value: { files: 1, bytes: 10 } }),
       setRoute: async () => ({ ok: true as const, value: { name: 'e2e-abc123', appId: 'a', status: 'active' as const } }),
       getRoute: async () => ({ ok: true as const, value: null }),
@@ -160,7 +174,7 @@ describe('the publish path with projectId: null — the E2E run, end to end at t
   });
 
   it('passes null into the scan context too, so a blocked publish records no bogus project', async () => {
-    const scan = vi.fn(() => ({ verdict: 'pass' as const, ruleIds: [], hits: [], scannedFiles: 1, scannedBytes: 10 }));
+    const scan = vi.fn(async () => PASS_OUTCOME);
     const { sb } = fakePostgres();
     await publishHostedApp(
       { userId: USER_UUID, projectId: null, name: 'e2e-abc123' },

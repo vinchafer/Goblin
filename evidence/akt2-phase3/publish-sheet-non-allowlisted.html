@@ -1,0 +1,34 @@
+<div style="position:absolute;inset:0;z-index:84;background:var(--surface-overlay, rgba(0,0,0,0.4))">
+</div>
+<div role="dialog" aria-label="Vercel verbinden, um live zu gehen" data-testid="vercel-jit-sheet" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--ed-chrome-2);border:1px solid var(--ed-rule);border-radius:16px;padding:24px 24px 20px;z-index:85;width:min(420px, calc(100% - 32px));max-height:calc(100dvh - 48px);overflow:auto;box-shadow:0 20px 48px rgba(15,43,30,0.3)">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+<div style="display:flex;align-items:center;gap:10px">
+<span style="width:34px;height:34px;border-radius:9px;background:var(--ed-canvas);border:1px solid var(--ed-rule);display:inline-flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:700;font-size:13px;color:var(--ed-fg-2)">V</span>
+<span style="font-size:17px;font-weight:700;color:var(--ed-fg-1);font-family:var(--font-sans)">Noch ein Schritt bis live</span>
+</div>
+<button aria-label="Schließen" style="background:transparent;border:none;color:var(--ed-fg-3);cursor:pointer;display:inline-flex;padding:4px">
+<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-x" style="vertical-align:middle" aria-hidden="true">
+<path d="M18 6 6 18">
+</path>
+<path d="m6 6 12 12">
+</path>
+</svg>
+</button>
+</div>
+<p style="margin:0 0 6px;font-size:14px;line-height:1.55;color:var(--ed-fg-2);font-family:var(--font-sans)">Um live zu gehen, verbinde einmalig dein Vercel-Konto — das dauert etwa 2 Minuten.</p>
+<p style="margin:0 0 16px;font-size:12.5px;line-height:1.5;color:var(--ed-fg-3);font-family:var(--font-sans)">Deine Seite läuft dann in deinem eigenen Vercel-Account — deine Deployments, deine Kosten, unter einer echten öffentlichen Adresse.</p>
+<ol style="margin:0 0 14px;padding-left:18px;display:flex;flex-direction:column;gap:4px">
+<li style="font-size:12.5px;color:var(--ed-fg-3);line-height:1.5;font-family:var(--font-sans)">In Vercel: Settings → Tokens → Token erstellen <a href="https://vercel.com/account/tokens" target="_blank" rel="noopener noreferrer" style="color:var(--ed-accent);text-decoration:none">vercel.com/account/tokens ↗</a>
+</li>
+<li style="font-size:12.5px;color:var(--ed-fg-3);line-height:1.5;font-family:var(--font-sans)">Token hier einfügen und verbinden</li>
+</ol>
+<input type="password" placeholder="Vercel-Token einfügen" autoComplete="off" spellCheck="false" data-testid="vercel-jit-token" style="width:100%;padding:10px 12px;border-radius:9px;box-sizing:border-box;border:1px solid var(--ed-rule);background:var(--ed-canvas);color:var(--ed-fg-1);font-size:13px;font-family:var(--font-mono);outline:none" value=""/>
+<div style="display:flex;gap:8px;margin-top:16px">
+<button disabled="" data-testid="vercel-jit-connect" style="flex:1;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 16px;border-radius:10px;border:none;background:transparent;color:var(--ed-fg-3);font-size:14px;font-weight:700;cursor:not-allowed;font-family:var(--font-sans)">
+<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-play" style="vertical-align:middle" aria-hidden="true">
+<polygon points="6 3 20 12 6 21 6 3">
+</polygon>
+</svg> Verbinden &amp; live stellen</button>
+</div>
+<div style="margin-top:10px;font-size:11px;color:var(--ed-fg-3);line-height:1.45;font-family:var(--font-sans)">Wird gegen die Vercel-API geprüft und verschlüsselt gespeichert. Nur Account-Ebene.</div>
+</div>
