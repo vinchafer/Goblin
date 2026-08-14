@@ -1,5 +1,12 @@
 # AKT 2 · PHASE 3 — das Gründer-Fenster (U3.2 / U3.3, ausstehend)
 
+> **ÜBERHOLT FÜR DEN ABLAUF, 2026-08-14 — gefahren wird
+> `docs/AKT2_PHASE3_UND_4_FOUNDER_WINDOW.md`.** Phase 3 und Phase 4 laufen in EINER Sitzung, weil
+> Phase 4 durch Phase 3's Scan veröffentlicht: getrennt gefahren wirft jeder Formular-Befund erst
+> die Frage auf, ob er nicht doch ein Scan-Befund ist. Dieses Dokument bleibt als **ausführliche
+> Referenz für Phase 3** stehen — hier steht die Begründung, dort der Ablauf. Bei Widerspruch gilt das
+> gemeinsame Fenster, weil es das jüngste ist.
+
 **Stand: 2026-08-13 · Code aus PR #86 (`5b17cb2`) + #88 (`458eda6`), beide gemerged und
 ausgerollt · NOCH NICHT GEFAHREN.**
 

@@ -1,5 +1,12 @@
 # AKT 2 · PHASE 4 — DAS GRÜNDER-FENSTER (Formulare)
 
+> **ÜBERHOLT FÜR DEN ABLAUF, 2026-08-14 — gefahren wird
+> `docs/AKT2_PHASE3_UND_4_FOUNDER_WINDOW.md`.** Phase 3 und Phase 4 laufen in EINER Sitzung, weil
+> Phase 4 durch Phase 3's Scan veröffentlicht: getrennt gefahren wirft jeder Formular-Befund erst
+> die Frage auf, ob er nicht doch ein Scan-Befund ist. Dieses Dokument bleibt als **ausführliche
+> Referenz für Phase 4** stehen — hier steht die Begründung, dort der Ablauf. Bei Widerspruch gilt das
+> gemeinsame Fenster, weil es das jüngste ist.
+
 **Geschrieben: 2026-08-14 · Für: den Gründer, mit dem iPhone und der Konsole · Dauer: ~25 Minuten**
 
 Phase 4 ist gebaut, getestet und **nicht in Betrieb bewiesen**. Alles, was echte Cloudflare- oder
@@ -57,9 +64,15 @@ von selbst. Das ist kein Phase-4-Blocker.
 
 ### Schritt 1 — Der Gesundheitscheck (1 Minute)
 
-Konsole → die vorhandene Karte. Erwartet: unverändert grün. **Turnstile taucht dort absichtlich
-nicht auf**: die beiden neuen Variablen stehen bewusst **nicht** in `CF_ENV_VARS`, weil diese Liste
-„jede erforderliche Variable" bedeutet und eine Instanz ohne Formulare eine korrekte Instanz ist.
+Konsole → die vorhandene Karte. Erwartet: unverändert grün.
+
+**KORREKTUR 2026-08-14:** dieser Absatz sagte, Turnstile tauche in der Konsole „absichtlich nicht
+auf". Das galt für die vier Prüfungen unter `status` — die beiden Schlüssel stehen bewusst **nicht**
+in `CF_ENV_VARS`, weil diese Liste „jede erforderliche Variable" bedeutet und eine Instanz ohne
+Formulare eine korrekte Instanz ist. Es galt aber auch dafür, dass der Gründer sie **nirgends** sehen
+konnte, und das war ein Loch. Seit `01cea38` hat die Kopfzeile eine eigene Zeile **„Formulare"**:
+Vorhandensein **nach Namen**, die Adresse **nach Form**, nie ein Wert — und sie beeinflusst den
+Gesamtstatus nicht. Ablauf im gemeinsamen Fenster, Abschnitt 0.2.
 
 ### Schritt 2 — Waisen-Prüfung, VOR dem ersten Formular (2 Minuten)
 
