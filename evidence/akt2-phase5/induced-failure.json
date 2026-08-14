@@ -1,0 +1,160 @@
+{
+  "cadenceMinutes": 5,
+  "freshnessMs": 1200000,
+  "runs": [
+    {
+      "run": 1,
+      "cyclesToFirstSignal": 1,
+      "cyclesToDown": 2,
+      "cyclesToRecover": 2,
+      "observations": [
+        {
+          "cycle": 1,
+          "behaviour": "ok",
+          "state": "healthy",
+          "reason": "all_ok",
+          "measuredAt": "2026-08-14T12:05:00.000Z"
+        },
+        {
+          "cycle": 2,
+          "behaviour": "broken",
+          "state": "degraded",
+          "reason": "mixed",
+          "measuredAt": "2026-08-14T12:10:00.000Z"
+        },
+        {
+          "cycle": 3,
+          "behaviour": "broken",
+          "state": "down",
+          "reason": "sustained_failure",
+          "measuredAt": "2026-08-14T12:15:00.000Z"
+        },
+        {
+          "cycle": 4,
+          "behaviour": "ok",
+          "state": "degraded",
+          "reason": "mixed",
+          "measuredAt": "2026-08-14T12:20:00.000Z"
+        },
+        {
+          "cycle": 5,
+          "behaviour": "ok",
+          "state": "healthy",
+          "reason": "all_ok",
+          "measuredAt": "2026-08-14T12:25:00.000Z"
+        }
+      ]
+    },
+    {
+      "run": 2,
+      "cyclesToFirstSignal": 1,
+      "cyclesToDown": 2,
+      "cyclesToRecover": 2,
+      "observations": [
+        {
+          "cycle": 1,
+          "behaviour": "ok",
+          "state": "healthy",
+          "reason": "all_ok",
+          "measuredAt": "2026-08-14T12:30:00.000Z"
+        },
+        {
+          "cycle": 2,
+          "behaviour": "broken",
+          "state": "degraded",
+          "reason": "mixed",
+          "measuredAt": "2026-08-14T12:35:00.000Z"
+        },
+        {
+          "cycle": 3,
+          "behaviour": "broken",
+          "state": "down",
+          "reason": "sustained_failure",
+          "measuredAt": "2026-08-14T12:40:00.000Z"
+        },
+        {
+          "cycle": 4,
+          "behaviour": "ok",
+          "state": "degraded",
+          "reason": "mixed",
+          "measuredAt": "2026-08-14T12:45:00.000Z"
+        },
+        {
+          "cycle": 5,
+          "behaviour": "ok",
+          "state": "healthy",
+          "reason": "all_ok",
+          "measuredAt": "2026-08-14T12:50:00.000Z"
+        }
+      ]
+    },
+    {
+      "run": 3,
+      "cyclesToFirstSignal": 1,
+      "cyclesToDown": 2,
+      "cyclesToRecover": 2,
+      "observations": [
+        {
+          "cycle": 1,
+          "behaviour": "ok",
+          "state": "healthy",
+          "reason": "all_ok",
+          "measuredAt": "2026-08-14T12:55:00.000Z"
+        },
+        {
+          "cycle": 2,
+          "behaviour": "broken",
+          "state": "degraded",
+          "reason": "mixed",
+          "measuredAt": "2026-08-14T13:00:00.000Z"
+        },
+        {
+          "cycle": 3,
+          "behaviour": "broken",
+          "state": "down",
+          "reason": "sustained_failure",
+          "measuredAt": "2026-08-14T13:05:00.000Z"
+        },
+        {
+          "cycle": 4,
+          "behaviour": "ok",
+          "state": "degraded",
+          "reason": "mixed",
+          "measuredAt": "2026-08-14T13:10:00.000Z"
+        },
+        {
+          "cycle": 5,
+          "behaviour": "ok",
+          "state": "healthy",
+          "reason": "all_ok",
+          "measuredAt": "2026-08-14T13:15:00.000Z"
+        }
+      ]
+    }
+  ],
+  "unknownPath": {
+    "whileRunning": "healthy",
+    "whilePaused": "unknown",
+    "pausedReason": "stale",
+    "pausedMeasuredAt": "2026-08-14T13:25:00.000Z",
+    "afterResume": "healthy"
+  },
+  "consistent": true,
+  "summary": {
+    "cyclesToFirstSignal": [
+      1,
+      1,
+      1
+    ],
+    "cyclesToDown": [
+      2,
+      2,
+      2
+    ],
+    "cyclesToRecover": [
+      2,
+      2,
+      2
+    ]
+  }
+}
