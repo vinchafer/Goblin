@@ -330,3 +330,21 @@ Ehrlich zusammengefasst: **die Instrumente sind vereinigt, die Aufmerksamkeit ni
    wahrscheinlich unser Ausgang → alles als UNBEKANNT schreiben". Das wäre Interpolation — gemessene
    Tatsachen mit einer Wahrscheinlichkeitsannahme überschreiben — und hätte die einzige Eigenschaft
    aufgegeben, für die diese Phase existiert.
+
+---
+
+## 8 · GRÜNDER-KENNTNISNAHMEN (2026-08-14, bei der Merge-Freigabe)
+
+Zwei Punkte aus diesem Bericht sind vom Gründer **wie berichtet angenommen** worden. Beide sind
+ausdrücklich **nicht blockierend** — die PR wurde in Kenntnis beider gemergt. Beide stehen mit ihrem
+**Auslöser** im Carry-forward-Register, damit sie nicht nur hier liegen:
+
+| Was | Kenntnisnahme | Auslöser | Register |
+|---|---|---|---|
+| **Cron-Decke: 5 (Free), nicht 250 (Paid)** — Spike-Befund **F2** bricht damit bei **fünf** Apps, nicht bei 250 (§2.5, §7.1) | angenommen, nicht blockierend | **Sobald irgendeine Phase einen Cloudflare-Cron-Trigger anlegen will.** Heute folgenlos: Phase 5 verbraucht **0 von 5**. | **K9** |
+| **G-P5-1** — ab **209 aktiven Apps** reicht der 5-%-Anteil des Tagesbudgets nicht mehr (§2.5, §6) | angenommen, nicht blockierend | **Die 209. aktive App** — oder früher, sobald `overBudget` in der Konsole auftaucht. Der Läufer meldet es; still überzogen wird nichts. | **K4** |
+
+**Was diese Kenntnisnahme NICHT ist:** eine Entscheidung. Bei **K9** ist nichts zu entscheiden — es
+ist eine korrigierte Zahl, die ein späterer Entwurf voraussetzen muss. Bei **K4/G-P5-1** bleibt die
+Entscheidung offen und hat einen Preis (Anteil erhöhen · Workers Paid $5/Monat, was zugleich **P6**
+und **G-P4-1** löst · Takt strecken und die Zusage mitverschieben); sie ist nur **noch nicht fällig**.
