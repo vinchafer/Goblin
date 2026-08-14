@@ -21,6 +21,7 @@ import {
   type PublishDeps,
 } from './ops-publish';
 import type { OpsApp } from './ops-apps-store';
+import { wireForms } from './ops-form-wiring';
 import type { ReviewItem } from './ops-review-queue';
 import type { AupCategory } from './safety/abuse-classifier';
 import { reviewMessage } from './safety/review-messages';
@@ -97,6 +98,13 @@ function deps(overrides: Partial<PublishDeps> = {}, files: Record<string, string
     markOpsAppFailed: vi.fn(async () => true),
     renameOpsApp: vi.fn(async () => true),
     appsDomain: () => 'justgoblin.app',
+    // PHASE 4. The REAL wiring, not a stub: these fixtures carry no form, so it is a
+    // no-op — and that is exactly the property worth holding. A stub here would let
+    // the Phase-4 branch drift out from under every Phase-2/3 test in this file.
+    wireForms,
+    provisionAppDatabase: vi.fn(async () => { throw new Error('no form here — must never be reached'); }),
+    setOpsAppD1Database: vi.fn(async () => true),
+    teardownAppDatabase: vi.fn(async () => ({ attempted: false, gone: null })),
     ...overrides,
   } as unknown as PublishDeps;
 }
@@ -531,5 +539,143 @@ describe('rename — the old address tells the truth', () => {
     const r = await renameHostedApp(app(), 'neuername', d);
     expect(r.ok).toBe(true);
     expect(r.tombstoned).toBe(false);
+  });
+});
+
+// ── PHASE 4 · U4.7 — the form branch of the publish path ───────────────────
+
+describe('publish — an app that declares a form', () => {
+  const FORM_PAGE = '<!doctype html><html lang="de"><body><form id="kontakt"><input name="email"></form></body></html>';
+  const withForm = { 'index.html': FORM_PAGE };
+
+  /** Everything the form branch needs to succeed. */
+  const formDeps = (over: Partial<PublishDeps> = {}) =>
+    deps(
+      {
+        wireForms: ((files: Array<{ path: string; bytes: Buffer }>) =>
+          wireForms(files, { endpoint: 'https://api.justgoblin.com', siteKey: '0xkey' })) as PublishDeps['wireForms'],
+        provisionAppDatabase: vi.fn(async () => ({ ok: true as const, databaseId: 'db-1', jurisdiction: 'eu' })),
+        ...over,
+      } as unknown as Partial<PublishDeps>,
+      withForm,
+    );
+
+  it('wires the form, provisions the database, and reports both', async () => {
+    const d = formDeps();
+    const r = await publishHostedApp(input, d);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.forms.wired).toEqual([{ path: 'index.html', formId: 'kontakt' }]);
+    expect(d.provisionAppDatabase).toHaveBeenCalledWith('app-1');
+    expect(d.setOpsAppD1Database).toHaveBeenCalledWith('app-1', 'db-1');
+  });
+
+  it('SCANS WHAT IT UPLOADS — the injected bytes go through the scan like every other byte', async () => {
+    const scan = vi.fn(async () => passOutcome());
+    const d = formDeps({ scan: scan as unknown as PublishDeps['scan'] });
+    await publishHostedApp(input, d);
+
+    // What the scan saw…
+    const scanned = ((scan.mock.calls as unknown as unknown[][])[0]?.[0] ?? []) as Array<{ path: string; content?: string }>;
+    const scannedHtml = scanned.find((f) => f.path === 'index.html')?.content ?? '';
+    expect(scannedHtml).toContain('data-goblin-form="kontakt"');
+    expect(scannedHtml).toContain('cf-turnstile');
+
+    // …is byte-identical to what was uploaded.
+    const uploaded = ((d.putAppFiles as unknown as { mock: { calls: unknown[][] } }).mock.calls[0]?.[1] ?? []) as Array<{
+      path: string;
+      content: Buffer;
+    }>;
+    const uploadedHtml = uploaded.find((f) => f.path === 'index.html')?.content?.toString('utf8') ?? '';
+    expect(uploadedHtml).toBe(scannedHtml);
+  });
+
+  it('provisions the database BEFORE the upload — never a live app with an unhosted form', async () => {
+    const order: string[] = [];
+    const d = formDeps({
+      provisionAppDatabase: vi.fn(async () => {
+        order.push('d1');
+        return { ok: true as const, databaseId: 'db-1', jurisdiction: 'eu' };
+      }) as unknown as PublishDeps['provisionAppDatabase'],
+      putAppFiles: vi.fn(async () => {
+        order.push('upload');
+        return ok({ files: 1, bytes: 10 });
+      }) as unknown as PublishDeps['putAppFiles'],
+    });
+    await publishHostedApp(input, d);
+    expect(order).toEqual(['d1', 'upload']);
+  });
+
+  it('a database that cannot be created REFUSES the publish — nothing uploaded, nothing routed', async () => {
+    const d = formDeps({
+      provisionAppDatabase: vi.fn(async () => ({
+        ok: false as const,
+        code: 'limit_reached' as const,
+        message: 'Goblin kann gerade keine weitere App mit Formular veröffentlichen.',
+      })) as unknown as PublishDeps['provisionAppDatabase'],
+    });
+    const r = await publishHostedApp(input, d);
+    expect(r).toMatchObject({ ok: false, code: 'd1_unavailable', stage: 'registry' });
+    expect(d.putAppFiles).not.toHaveBeenCalled();
+    expect(d.setRoute).not.toHaveBeenCalled();
+    expect(d.markOpsAppFailed).toHaveBeenCalledWith('app-1');
+  });
+
+  it('a database that cannot be RECORDED is torn back down — an unrecorded database is an orphan', async () => {
+    const d = formDeps({ setOpsAppD1Database: vi.fn(async () => false) as unknown as PublishDeps['setOpsAppD1Database'] });
+    const r = await publishHostedApp(input, d);
+    expect(r).toMatchObject({ ok: false, code: 'd1_unavailable' });
+    expect(d.teardownAppDatabase).toHaveBeenCalledWith('db-1');
+    expect(d.putAppFiles).not.toHaveBeenCalled();
+  });
+
+  it('an unhostable form refuses the publish before the scan — the live app stays exactly as it is', async () => {
+    const d = deps(
+      {
+        wireForms: (() => ({ ok: false as const, code: 'no_site_key' as const, message: 'Wir veröffentlichen sie deshalb NICHT.' })) as unknown as PublishDeps['wireForms'],
+      } as unknown as Partial<PublishDeps>,
+      withForm,
+    );
+    const r = await publishHostedApp(input, d);
+    expect(r).toMatchObject({ ok: false, code: 'form_unwirable', stage: 'artifact' });
+    expect(d.scan).not.toHaveBeenCalled();
+    expect(d.claimOpsApp).not.toHaveBeenCalled();
+    expect(d.putAppFiles).not.toHaveBeenCalled();
+  });
+
+  it('a REPUBLISH reuses the database it already has — a second one would abandon the owner’s submissions', async () => {
+    const existing = app({ status: 'active', d1DatabaseId: 'db-existing' });
+    const d = formDeps({ findOpsAppByProject: vi.fn(async () => existing) as unknown as PublishDeps['findOpsAppByProject'] });
+    const r = await publishHostedApp(input, d);
+    expect(r.ok).toBe(true);
+    expect(d.provisionAppDatabase).not.toHaveBeenCalled();
+  });
+
+  it('an app with NO form never gets a database — the ten-database ceiling is not spent on nothing', async () => {
+    const d = deps();
+    const r = await publishHostedApp(input, d);
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.forms.wired).toEqual([]);
+    expect(d.provisionAppDatabase).not.toHaveBeenCalled();
+  });
+
+  it('reports a form it deliberately left alone, so the builder is not left guessing', async () => {
+    const d = formDeps();
+    const r = await publishHostedApp(
+      input,
+      deps(
+        {
+          wireForms: ((files: Array<{ path: string; bytes: Buffer }>) =>
+            wireForms(files, { endpoint: 'https://api.justgoblin.com', siteKey: '0xkey' })) as PublishDeps['wireForms'],
+          provisionAppDatabase: d.provisionAppDatabase,
+        } as unknown as Partial<PublishDeps>,
+        { 'index.html': '<!doctype html><html><body><form action="https://formspree.io/x"><input name="a"></form></body></html>' },
+      ),
+    );
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.forms.wired).toEqual([]);
+    expect(r.forms.skipped).toEqual([{ path: 'index.html', why: 'has_action' }]);
   });
 });

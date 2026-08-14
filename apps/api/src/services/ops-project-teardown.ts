@@ -72,6 +72,14 @@ export interface ProjectAppTeardown {
   batches?: number;
   orphansRemaining?: number | null;
   routeGone?: boolean | null;
+  /**
+   * PHASE 4 — was the app's submissions database verified gone? `null` when the
+   * app never had one. Carried through rather than folded into `ok` alone, because
+   * the builder's message differs: leftover bytes are ours to clean up, leftover
+   * submissions are their visitors' data and they deserve to be told which it is.
+   */
+  d1Gone?: boolean | null;
+  d1Attempted?: boolean;
   /** Did the evidence row land? Passed through verbatim — never collapsed. */
   audit?: 'written' | 'unavailable' | 'failed';
   /** Did the tombstone survive the cascade? See `detachOpsAppFromProject`. */
@@ -132,20 +140,36 @@ export async function teardownProjectApp(
     batches: result.batches,
     orphansRemaining: result.orphansRemaining,
     routeGone: result.routeGone,
+    d1Gone: result.d1Gone,
+    d1Attempted: result.d1Attempted,
     audit: result.audit,
   };
 
   if (!result.ok) {
     logger.error(
-      { projectId, appId: app.appId, orphansRemaining: result.orphansRemaining, routeGone: result.routeGone },
+      {
+        projectId,
+        appId: app.appId,
+        orphansRemaining: result.orphansRemaining,
+        routeGone: result.routeGone,
+        d1Gone: result.d1Gone,
+      },
       'ops_project_teardown_incomplete — project delete refused',
     );
+    // PHASE 4 — when the DATABASE is the part that did not come down, say so. The
+    // generic sentence ("the address would stay online") is true but is not the
+    // thing that happened, and the person deleting this project needs to know that
+    // what is still standing holds their visitors' data.
+    const d1Stuck = result.d1Attempted && result.d1Gone !== true;
     return {
       ...base,
-      message:
-        `Die veröffentlichte App unter ${url} konnte nicht vollständig entfernt werden. `
-        + 'Das Projekt wurde deshalb NICHT gelöscht — sonst bliebe die Adresse online, ohne dass '
-        + 'sie noch jemandem zugeordnet wäre. Bitte in ein paar Minuten erneut versuchen.',
+      message: d1Stuck
+        ? `Die Formular-Daten der App unter ${url} konnten nicht vollständig entfernt werden. `
+          + 'Das Projekt wurde deshalb NICHT gelöscht — sonst blieben die Einsendungen deiner Besucher '
+          + 'zurück, ohne dass sie noch jemandem gehören. Bitte in ein paar Minuten erneut versuchen.'
+        : `Die veröffentlichte App unter ${url} konnte nicht vollständig entfernt werden. `
+          + 'Das Projekt wurde deshalb NICHT gelöscht — sonst bliebe die Adresse online, ohne dass '
+          + 'sie noch jemandem zugeordnet wäre. Bitte in ein paar Minuten erneut versuchen.',
       ...(result.warning || result.detail ? { detail: [result.warning, result.detail].filter(Boolean).join(' — ') } : {}),
     };
   }

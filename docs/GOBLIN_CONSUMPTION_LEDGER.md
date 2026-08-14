@@ -429,6 +429,130 @@ than an amendment.
   unit prices above. What is still unobserved is **production** volume: how many hosted publishes per
   month reach stage 2. Reconcile once the founder window and real beta traffic exist.
 
+### M-F1 — Per-app form storage: D1 databases on the Workers Free plan (AKT 2 · Phase 4 · U4.1)
+
+**ZERO MODEL TOKENS.** No completion, no `completion_costs` row, no user allowance. This is a second
+row of the *hosting* COGS family M-H1 opened, and it is registered separately rather than folded in
+because it is the row where Goblin starts holding **other people's personal data**, which has a cost
+shape M-H1 does not: it grows without anybody at Goblin doing anything, and it cannot be reclaimed by
+deleting a cache.
+
+> **LATE BY ONE COMMIT, stated rather than tidied away.** The standing rule is "cost-relevant
+> mechanism → ledger line in the SAME commit". The D1 mechanism landed in the U4.1 commit and this row
+> lands in the U4.5 one. That is a real miss against the rule; recording it here is cheaper than a
+> rewritten history that pretends otherwise.
+
+- **Trigger:** one database created per app, at the FIRST form-enabled publish (`ops-d1.ts` →
+  `provisionAppDatabase`). An app with no form never gets one. Thereafter: one `INSERT` per accepted
+  submission plus one counter `UPSERT`, and reads only when the owner opens their inbox or exports.
+- **Substrate & plan — CHECKED AGAINST LIVE DOCS 2026-08-13, not recalled:** Cloudflare **D1 on the
+  Workers FREE plan**. `https://developers.cloudflare.com/d1/platform/limits/` and
+  `/d1/platform/pricing/`:
+  - **10 databases** (Free) / 50,000 (Workers Paid)
+  - **500 MB** per database (Free) / 10 GB (Paid)
+  - **5 GB** total storage (Free)
+  - **5,000,000 rows read/day** (Free)
+  - **100,000 rows written/day** (Free)
+  - **Committed fixed cost: $0.00/month.** M-H1's "no committed spend" survives Phase 4 intact.
+- **THE PREFLIGHT'S PREMISE WAS WRONG, AND IT MATTERS FOR THE DECISION.**
+  `docs/ACT2_PHASE4_PREFLIGHT.md` §6 records P4-a on the premise that a per-app database means
+  "Workers Paid oder WfP, eine neue feste Kostenzeile". Against live docs it does not: D1 is on the
+  Free plan, and the documented upgrade trigger in M-H1 ("the Free limit bites OR an app needs
+  server-side code") is **not** fired by this phase. No app runs server-side code — the platform API
+  does the writing. The substrate did not change; it gained a product that was already on the plan.
+- **What the Free plan DOES impose, and it is real: TEN DATABASES.** That is a hard ceiling of ten
+  form-enabled apps across the whole account. It is enforced honestly rather than discovered
+  (`D1_FREE_PLAN_DATABASE_LIMIT`): the eleventh form-enabled publish is REFUSED with a German sentence
+  naming the ceiling, and publishing the same app WITHOUT a form still works. **Going past ten is a
+  founder decision with a price: Workers Paid at $5/month.** It is one constant in one file so the day
+  that decision is taken is a one-line day.
+- **Formulas (Workers Paid rates, for the day the ceiling is raised — list rates as at the retrieval
+  above, NOT an invoice):** rows read `first 25e9/month included, then $0.001/1e6`; rows written
+  `first 50e6/month included, then $1.00/1e6`; storage `first 5 GB included, then $0.75/GB-month`.
+- **Arithmetic at the beta's own ceilings:** 10 apps × the 500/month cap = **5,000 rows written per
+  month**, against a Free allowance of **100,000 per DAY**. Three orders of magnitude of headroom.
+  A submission is ≤ 16 KB, so 5,000/month ≈ **80 MB/month** across the fleet against 5 GB. **The
+  binding constraint on this row is the database COUNT, not bytes and not operations.**
+- **Billed to: PLATFORM COGS.** Not a user quota. Same reasoning as M-H1: a Living App's storage is
+  Goblin's hosting product. The per-app 500/month cap (M-F-adjacent, `ops-caps.ts`) is the user-side
+  limit, and it exists to bound how much of a stranger's data one form collects — not to meter a
+  resource.
+- **Knobs:** `D1_FREE_PLAN_DATABASE_LIMIT` (10) · `CAPS_PROFILES['free-static'].monthlySubmissions`
+  (500, a planning number) · `OPS_FORMS_ENABLED` (fleet kill switch — off means zero new rows, though
+  existing databases keep their storage) · `CF_R2_JURISDICTION` (governs D1's jurisdiction too; an
+  unhonourable value REFUSES provisioning rather than creating a database outside the residency the
+  privacy page claims).
+- **RECLAMATION IS PROVEN, NOT ASSUMED — the difference from M-H1's Phase-1 state.** M-H1 shipped with
+  "there is no orphan sweep" as an honest limitation. This row does not: `teardownApp` deletes the
+  database and RE-READS it, a database that is not verifiably gone blocks the project delete with a
+  409, and `findOrphanedApps()` lists databases with no registry row. Storage that outlives its app is
+  findable on day one.
+- **CFO dependency:** none today, $0.00 committed. The line to watch is not a dollar figure, it is a
+  COUNT: at ten form-enabled apps the beta stops being able to grow without a $5/month decision.
+  | Status: **FORMULA** (limits and rates from live docs retrieved 2026-08-13; **no D1 database has
+  been created, no dashboard figure observed** — nothing on this plane exists until the founder window
+  runs).
+
+### M-F2 — Turnstile: the spam layer on the form ingest (AKT 2 · Phase 4 · U4.3)
+
+**ZERO MODEL TOKENS. ZERO DOLLARS.** Registered anyway, because a dependency with no invoice is still
+a dependency, and because this one has a failure mode that is a cost of a different kind.
+
+- **Trigger:** one `POST` to `https://challenges.cloudflare.com/turnstile/v0/siteverify` per form
+  submission that has already passed the local layers (kill switch, registry, origin, shape, rate
+  limit). A refusal at any of those costs **zero** siteverify calls — the rate limit is deliberately
+  ordered *before* Turnstile so a flood cannot buy one upstream call per request.
+- **Rate: $0.00.** Free tier: unlimited challenges, 20 widgets, 10 hostnames per widget
+  (`OPS_SPIKE_0_DECISION_TABLE.md` §2.4, re-checked in the Phase-4 preflight §2). There is no paid
+  tier in play and no overage.
+- **Billed to:** nothing. There is no bill.
+- **The cost that is NOT money — stated because it is the one that can hurt:** this is an external
+  dependency in the path of every submission, with a 5-second per-call timeout. When it is
+  unreachable, the ingest **fails closed** and real visitors are turned away with an honest message.
+  That is a deliberate availability trade: an ingest that fails OPEN under load is an ingest a flood
+  can switch off. The alternative cost — accepting unverified traffic into strangers' inboxes — is
+  worse than a form that is briefly honest about being unavailable.
+- **Knobs:** `CF_TURNSTILE_SECRET_KEY` (absent ⇒ every submission refused, loudly logged — NOT
+  accepted) · `CF_TURNSTILE_SITE_KEY` (absent ⇒ the publish path refuses to wire a form at all, rather
+  than shipping a widget with no key) · `OPS_FORMS_ENABLED`.
+  | Status: **STRUCTURAL** (mechanism authored and unit-tested; **no production verification has been
+  performed** — the widget exists in the founder's Cloudflare account but no real challenge has been
+  verified through this code).
+
+### M-F3 — Owner notification for form submissions (AKT 2 · Phase 4 · U4.5)
+
+**ZERO MODEL TOKENS.** No model writes a word of these mails: the templates are fixed German strings
+and the only variable content is what a visitor typed, HTML-escaped. Registered because it adds a real
+**send volume** to the shared Resend allowance M-A1 describes.
+
+- **Trigger:** one Resend send per ACCEPTED submission, plus one per app per hour when a burst crosses
+  the threshold, plus one per app per hour when the monthly cap is reached.
+- **Formula:** `sends/month ≈ accepted_submissions + burst_notices + over_cap_notices`, and the first
+  term is **hard-bounded by the cap**: at 500 submissions/app/month across 10 form apps, the ceiling is
+  **5,000 sends/month** from this path, fleet-wide. The burst brake pulls the realistic number well
+  below that — past 10 mails in an hour for one app, individual sends stop and one notice takes over.
+- **Rate:** Resend's free tier is the binding allowance and it is **SHARED** with M-A1's auth mail and
+  with support/feedback/digest sends. *(Provenance: the tier's numeric limits are deliberately not
+  quoted here — read them off the Resend dashboard before using them in a plan. What this row asserts
+  is the SHAPE and the ceiling, not the headroom.)*
+- **Billed to: PLATFORM COGS.** Following E1's principle: the owner did not ask for each of these
+  mails, and a notification that their own product's form received something is not a feature they
+  consume. **It is deliberately not a user-quota question**, and if it ever becomes one that is a
+  founder decision, not an implementation detail.
+- **HONEST LIMIT OF THE BURST BRAKE:** the counter is **in-process**. With several Railway instances
+  the effective threshold is (instances × 10) per hour. It is a courtesy brake on a mailbox, not a
+  quota, and the fleet-wide ceiling above — which is enforced in D1 and is exact — is the number that
+  actually bounds the volume.
+- **Knobs:** the per-app opt-out (`meta.notify` in the app's own database — the owner's switch, not
+  ours) · `NOTIFY_BURST_THRESHOLD` (10/hour) · `RESEND_API_KEY` (absent ⇒ zero sends and a logged
+  warning; the submission is still stored and still visible in the inbox) · the monthly cap, which is
+  the hard ceiling on the first term.
+- **One thing this row does NOT cover:** the over-cap mail is deliberately **not** silenced by the
+  per-submission opt-out. "Stop mailing me every message" is a different wish from "do not tell me my
+  form has stopped accepting messages", and collapsing the two would make a broken form silent.
+  | Status: **STRUCTURAL** (authored and unit-tested; **no production send through this path has been
+  observed** — the founder window is the first).
+
 ### M6 — Reserved (not yet built; add rows before shipping)
 Extended thinking · new third-party connectors beyond GitHub/Vercel/Brave. *FEEL-3a agent loop → **M10**;
 FEEL-3b publish/self-heal folded into M10; web search → **M11** above.*

@@ -66,6 +66,102 @@ export default function PrivacyPage() {
         </p>
       </section>
 
+      {/* AKT 2 · PHASE 4 · U4.2/U4.3 — the section this page did not need until now.
+          Everything above is about the BUILDER's data. From Phase 4 on, Goblin also
+          stores data belonging to people who have no Goblin account and never agreed
+          to anything with us: the visitors of a builder's app. Goblin is the
+          processor there and the app's owner is the controller, and that has to be
+          said on the page rather than assumed from the sub-processor list. */}
+      <section className="mb-8">
+        <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--ink-1)' }}>
+          1a. Formulare in veröffentlichten Apps / Forms in published apps
+        </h2>
+        <p className="mb-3" style={{ color: 'var(--ink-3)' }}>
+          Wenn eine über das Goblin-Hosting veröffentlichte App ein Formular
+          enthält, speichert Goblin, was Besucherinnen und Besucher dort absenden.
+          Für diese Daten ist die Person verantwortlich, der die App gehört
+          (Verantwortliche im Sinne der DSGVO); Goblin verarbeitet sie in deren
+          Auftrag.
+        </p>
+        <ul className="list-disc pl-5 space-y-1 mb-3" style={{ color: 'var(--ink-3)' }}>
+          <li>
+            <strong>Was gespeichert wird:</strong> die Feldinhalte des Formulars —
+            also genau das, was die absendende Person selbst eingetragen hat —,
+            der Zeitpunkt, die Kennung des Formulars, die Größe der Einsendung und
+            ob sie bereits gelesen wurde.
+          </li>
+          <li>
+            <strong>Was ausdrücklich NICHT gespeichert wird:</strong> keine
+            IP-Adresse, kein Browser-Kennzeichen (User-Agent), keine Verweisseite,
+            keine Cookies, keine Kennung, die eine Person über mehrere Besuche
+            hinweg wiedererkennbar machen würde.
+          </li>
+          <li>
+            <strong>Wo:</strong> in einer eigenen Datenbank pro App (Cloudflare D1,
+            EU-Jurisdiktion). Die Daten einer App liegen physisch getrennt von
+            denen jeder anderen App.
+          </li>
+          <li>
+            <strong>Spam-Schutz:</strong> vor dem Speichern läuft eine Prüfung über
+            Cloudflare Turnstile. Cloudflare sieht dabei die Verbindung der
+            absendenden Person; Goblin übermittelt dafür keine zusätzlichen Daten.
+          </li>
+          <li>
+            <strong>Benachrichtigung:</strong> der App-Eigentümerin oder dem
+            App-Eigentümer wird der Inhalt der Einsendung per E-Mail zugestellt
+            (Versand über Resend). Das lässt sich pro App abschalten.
+          </li>
+          <li>
+            <strong>Aufbewahrung und Löschung:</strong> es gibt keine automatische
+            Löschfrist — die Daten bleiben, bis sie gelöscht werden. Der oder die
+            App-Eigentümer:in kann einzelne Einsendungen oder alle auf einmal
+            löschen und sie vorher als CSV exportieren.{' '}
+            <strong>
+              Mit der App gehen sie mit: Wird die App oder das zugehörige Projekt
+              gelöscht, wird die gesamte Datenbank dieser App gelöscht.
+            </strong>{' '}
+            Wer eine Einsendung gemacht hat und sie gelöscht haben möchte, wendet
+            sich an die Betreiberin oder den Betreiber der App; erreicht man
+            niemanden, hilft <a href="mailto:support@justgoblin.com" style={{ color: 'var(--ink-1)' }}>support@justgoblin.com</a>.
+          </li>
+          <li>
+            <strong>Was Goblin NICHT tut:</strong> die Inhalte von Einsendungen
+            werden nicht inhaltlich geprüft, nicht durchsucht und nicht an ein
+            KI-Modell übergeben. Die automatische Missbrauchsprüfung weiter unten
+            betrifft ausschließlich die App selbst zum Zeitpunkt der
+            Veröffentlichung, nicht das, was später jemand einsendet.
+          </li>
+        </ul>
+        <p className="mb-3" style={{ color: 'var(--ink-3)' }}>
+          If an app published via Goblin hosting contains a form, Goblin stores
+          what visitors submit through it. The person who owns the app is the
+          controller of that data; Goblin processes it on their behalf.{' '}
+          <strong>Stored:</strong> the form&rsquo;s field contents — exactly what
+          the sender typed — plus the time, the form&rsquo;s identifier, the size
+          of the submission and whether it has been read.{' '}
+          <strong>Deliberately not stored:</strong> no IP address, no user agent,
+          no referrer, no cookies, no identifier that would make a person
+          recognisable across visits.{' '}
+          <strong>Where:</strong> in a separate database per app (Cloudflare D1, EU
+          jurisdiction), physically separate from every other app&rsquo;s.{' '}
+          <strong>Spam protection:</strong> Cloudflare Turnstile runs before
+          storage; Cloudflare sees the sender&rsquo;s connection, and Goblin
+          transmits no additional data for it.{' '}
+          <strong>Notification:</strong> the app owner receives the submission by
+          e-mail (via Resend); this can be switched off per app.{' '}
+          <strong>Retention and deletion:</strong> there is no automatic retention
+          period — data stays until it is deleted. The owner can delete individual
+          submissions or all of them, and export them as CSV first. Deleting the
+          app or its project deletes that app&rsquo;s entire database. If you sent
+          a submission and want it removed, contact whoever runs the app; if you
+          cannot reach them, write to support@justgoblin.com.{' '}
+          <strong>What Goblin does not do:</strong> submitted content is not
+          checked, searched or passed to any AI model. The automated abuse check
+          described below applies to the app itself at publish time, never to what
+          somebody submits afterwards.
+        </p>
+      </section>
+
       <section className="mb-8">
         <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--ink-1)' }}>2. Sub-processors</h2>
         <p className="mb-3" style={{ color: 'var(--ink-3)' }}>
@@ -89,19 +185,20 @@ export default function PrivacyPage() {
           <li>
             Cloudflare — Hosting und Auslieferung der von Nutzern veröffentlichten
             Apps (<code>*.justgoblin.app</code>); genutzte Dienste: Workers, R2,
-            KV. Der R2-Speicher ist in der EU-Jurisdiktion konfiguriert; Workers
-            und KV laufen auf Cloudflares global verteiltem Edge-Netz, sind also
-            nicht auf die EU begrenzt. Betrifft nur Apps, die über das
-            Goblin-Hosting veröffentlicht werden — derzeit eine eingeschränkte
-            Beta für ausgewählte Konten.
+            KV, D1. Der R2-Speicher und die D1-Datenbanken sind in der
+            EU-Jurisdiktion konfiguriert; Workers und KV laufen auf Cloudflares
+            global verteiltem Edge-Netz, sind also nicht auf die EU begrenzt.
+            Betrifft nur Apps, die über das Goblin-Hosting veröffentlicht werden —
+            derzeit eine eingeschränkte Beta für ausgewählte Konten.
             <br />
             <span>
               Cloudflare — hosting and delivery of user-published apps
-              (<code>*.justgoblin.app</code>); services used: Workers, R2, KV. R2
-              storage is configured in the EU jurisdiction; Workers and KV run on
-              Cloudflare&rsquo;s globally distributed edge network and are
-              therefore not EU-confined. Applies only to apps published via Goblin
-              hosting — currently a limited beta for selected accounts.
+              (<code>*.justgoblin.app</code>); services used: Workers, R2, KV, D1.
+              R2 storage and D1 databases are configured in the EU jurisdiction;
+              Workers and KV run on Cloudflare&rsquo;s globally distributed edge
+              network and are therefore not EU-confined. Applies only to apps
+              published via Goblin hosting — currently a limited beta for selected
+              accounts.
             </span>
           </li>
           <li>Resend — transactional email</li>

@@ -28,6 +28,36 @@
 export interface CapsProfile {
   /** Requests per app per UTC day, enforced at the router. */
   dailyRequests: number;
+  /**
+   * PHASE 4 · U4.6 — form submissions per app per UTC MONTH, enforced at the
+   * ingest endpoint.
+   *
+   * ── Why a second dimension and not a second number on the first ─────────────
+   * `dailyRequests` defends the FLEET's shared allowance: one app must not be able
+   * to eat every other app's serving budget. This one defends something else
+   * entirely — the storage the platform is holding on behalf of strangers, and the
+   * e-mail volume a single form can generate. They have different units, different
+   * enforcement points and different failure modes, so they are different fields.
+   *
+   * ── The DIFFERENT enforcement point, stated because it is easy to miss ──────
+   * `dailyRequests` is enforced at the ROUTER, out of the KV record, with no
+   * database round-trip. A monthly number cannot be: it needs a counter that
+   * survives a month, and the router's KV day-counter expires after 48 hours. So
+   * this one is counted where the submission is stored — in the app's own database
+   * (`usage_months`) — which is also the only place that can count it exactly once.
+   *
+   * ── The number (P4-c) ───────────────────────────────────────────────────────
+   * 500/month is a PLANNING NUMBER, not a measured one, and the founder has not
+   * ratified it. It is here rather than in a constant somewhere so it can be
+   * retuned for the whole fleet without a deploy of anything but this file, exactly
+   * as 10.000/day can. Where it comes from: at ten form apps (the D1 free-plan
+   * ceiling) it is 5.000 rows a month against a free allowance of 100.000 rows
+   * WRITTEN PER DAY — three orders of magnitude of headroom, so the number is not
+   * defending the Cloudflare bill. It is defending the owner's inbox and the
+   * plausibility of a beta contact form. A real business hitting 500 leads a month
+   * through a Goblin form is a conversation, not an incident.
+   */
+  monthlySubmissions: number;
   /** Human-readable, for the report and any future UI. */
   description: string;
 }
@@ -37,7 +67,10 @@ export const DEFAULT_CAPS_PROFILE = 'free-static';
 export const CAPS_PROFILES: Record<string, CapsProfile> = {
   'free-static': {
     dailyRequests: 10_000,
-    description: 'Beta-Profil: statische App auf dem kostenlosen Kontingent, 10.000 Aufrufe pro Tag.',
+    monthlySubmissions: 500,
+    description:
+      'Beta-Profil: statische App auf dem kostenlosen Kontingent, 10.000 Aufrufe pro Tag '
+      + 'und 500 Formular-Einsendungen pro Monat.',
   },
 };
 
@@ -51,4 +84,16 @@ export const CAPS_PROFILES: Record<string, CapsProfile> = {
 export function dailyRequestBudget(capsProfile: string | null | undefined): number {
   const profile = CAPS_PROFILES[(capsProfile ?? '').trim() || DEFAULT_CAPS_PROFILE];
   return (profile ?? CAPS_PROFILES[DEFAULT_CAPS_PROFILE]!).dailyRequests;
+}
+
+/**
+ * The monthly submission ceiling for a profile name.
+ *
+ * Same rule as above, and it matters more here: an UNKNOWN profile falls back to
+ * the DEFAULT, never to "unlimited". A typo in a column must not be the reason an
+ * app can accept an unbounded amount of other people's personal data.
+ */
+export function monthlySubmissionBudget(capsProfile: string | null | undefined): number {
+  const profile = CAPS_PROFILES[(capsProfile ?? '').trim() || DEFAULT_CAPS_PROFILE];
+  return (profile ?? CAPS_PROFILES[DEFAULT_CAPS_PROFILE]!).monthlySubmissions;
 }

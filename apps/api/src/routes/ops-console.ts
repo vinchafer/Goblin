@@ -39,6 +39,7 @@ import { opsHostingEnabled, opsBetaEmails } from '../services/ops-beta';
 import { routerStatus } from '../services/ops-router-deploy';
 import { listAllOpsApps, opsAppsTableAvailable } from '../services/ops-apps-store';
 import { opsAuditTableAvailable, writeOpsAudit } from '../services/ops-audit';
+import { formsConfigReport } from '../services/ops-forms-config';
 import { decideReview, findReviewItem, listPendingReviews, listRecentReviewDecisions } from '../services/ops-review-queue';
 import { loadCandidatePreview } from '../services/ops-review-preview';
 import { publishHostedApp } from '../services/ops-publish';
@@ -110,6 +111,10 @@ opsConsole.get('/status', async (c) => {
           notes: router.notes,
         }
       : null,
+    // PHASE 4 — the founder console is the ONLY one of the two surfaces that is
+    // reachable from a phone, so the forms configuration has to land here too.
+    // Same function as /api/ops/health, so the two cannot disagree.
+    forms: formsConfigReport(),
     migrations: {
       // 0099 — the registry. Without it the publish path refuses by design.
       registry: registryAvailable,

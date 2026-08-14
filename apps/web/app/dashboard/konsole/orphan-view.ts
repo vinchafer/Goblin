@@ -1,8 +1,8 @@
 /**
  * AKT 2 · X1-S — how the orphan sweep's answer is READ, as a pure function.
  *
- * `GET /api/admin/ops/orphans` answers three independent lists, and each of them
- * can be `null`. `null` does not mean "none" — it means the check could not be
+ * `GET /api/admin/ops/orphans` answers five independent lists (three until Phase 4
+ * added the two about databases), and each of them can be `null`. `null` does not mean "none" — it means the check could not be
  * completed (KV unreadable, R2 unreadable, registry unreadable). Confusing the two
  * is the single way this card could do damage: an operator who reads "0" where the
  * truth is "we could not look" stops looking, and a publicly reachable orphaned
@@ -29,9 +29,18 @@ export interface OrphanReportBody {
   orphans: string[] | null;
   routeOrphans: string[] | null;
   routesOnDeletedApps: string[] | null;
+  /**
+   * PHASE 4 · U4.1. Optional in the TYPE, deliberately: an API deployed before
+   * Phase 4 does not send these, and `findingOf(undefined)` is `unknown` — so an
+   * older API reads as "not checked", never as a clean sweep of a plane it has
+   * never heard of.
+   */
+  d1Orphans?: string[] | null;
+  d1OnDeletedApps?: string[] | null;
   knownApps: number | null;
   prefixesInR2: number | null;
   routesInKv: number | null;
+  d1InCloudflare?: number | null;
   notes: string[];
   timestamp: string;
 }
@@ -58,13 +67,22 @@ export function findingOf(value: string[] | null | undefined): OrphanFinding {
  *   • `unknown` (nothing at all could be checked) is called out separately from
  *     `incomplete` (some of it could), because they need different next steps:
  *     the first is "the call did not work", the second is "one half of it did".
- *   • `clean` is only ever returned when all three lists really came back empty.
+ *   • `clean` is only ever returned when EVERY list really came back empty.
  *     There is no path in here from a null to a green.
  */
 export type OrphanVerdict = 'found' | 'unknown' | 'incomplete' | 'clean';
 
 export function verdictOf(report: OrphanReportBody): OrphanVerdict {
-  const fields = [report.routeOrphans, report.routesOnDeletedApps, report.orphans];
+  const fields = [
+    report.routeOrphans,
+    report.routesOnDeletedApps,
+    report.orphans,
+    // PHASE 4. A surviving app database outranks everything else on this card in
+    // consequence — it is somebody's visitors' personal data with no app attached
+    // — so it must be able to turn the verdict, not sit below a green one.
+    report.d1Orphans,
+    report.d1OnDeletedApps,
+  ];
   const findings = fields.map(findingOf);
   if (findings.some((f) => f.kind === 'found')) return 'found';
   if (findings.every((f) => f.kind === 'unknown')) return 'unknown';

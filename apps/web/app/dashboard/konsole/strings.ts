@@ -53,6 +53,16 @@ const de = {
     notApplied: 'nicht angewendet',
     auditMissingNote:
       'Ohne 0100 funktionieren Sperren weiterhin, aber jede Aktion meldet „audit: unavailable" statt eine Beweiszeile zu schreiben.',
+    forms: 'Formulare',
+    formsReady: 'eingerichtet',
+    formsNotConfigured: 'nicht eingerichtet',
+    formsIncomplete: 'HALB EINGERICHTET',
+    formsMalformed: 'ADRESSE NICHT IN ORDNUNG',
+    formsMissing: 'Fehlt noch',
+    formsEndpointProblem:
+      'Die Adresse für Einsendungen ist gesetzt, aber keine reine Herkunft (Schema + Host, ohne Pfad). Eine App mit Formular wird damit NICHT veröffentlicht',
+    formsTrailingSlash:
+      'Die Adresse hatte einen Schrägstrich am Ende. Der wurde entfernt — kein Fehler, aber gut zu wissen, falls dort noch mehr steht als gedacht.',
     registryMissingNote:
       'Ohne 0099 verweigert der Veröffentlichungs-Pfad die Arbeit — absichtlich: hochgeladene Dateien ohne Registry-Zeile wären ein Waisenkind.',
     appsDomain: 'App-Domain',
@@ -153,14 +163,14 @@ const de = {
   // weder im Wort noch in der Farbe.
   orphans: {
     heading: 'Waisen-Prüfung',
-    lead: 'Fragt Cloudflare (KV und R2) und die Registry und meldet, was auf dem Substrat liegt, ohne dass eine Registry-Zeile darauf zeigt. Reiner Bericht — diese Karte löscht nichts.',
+    lead: 'Fragt Cloudflare (KV, R2 und D1) und die Registry und meldet, was auf dem Substrat liegt, ohne dass eine Registry-Zeile darauf zeigt. Reiner Bericht — diese Karte löscht nichts.',
     action: 'Prüfung starten',
     running: 'prüft …',
     notRun:
       'Noch nicht geprüft. Die Prüfung läuft absichtlich nicht beim Öffnen der Seite: sie listet KV und R2 vollständig auf, und das gehört ausgelöst statt nebenbei getan.',
     checkedAt: 'Geprüft am',
     verdictRow: 'Befund',
-    verdictClean: 'Nichts gefunden — und alle drei Prüfungen sind durchgelaufen.',
+    verdictClean: 'Nichts gefunden — und jede einzelne Prüfung ist durchgelaufen.',
     verdictFound: 'Es gibt einen Befund. Jede Zeile einzeln ansehen, bevor irgendetwas passiert.',
     verdictIncomplete:
       'UNVOLLSTÄNDIG — ein Teil der Prüfung ist nicht durchgelaufen. Was durchgelaufen ist, steht unten; der Rest ist offen, nicht sauber.',
@@ -175,6 +185,12 @@ const de = {
     r2Orphans: 'Verwaiste R2-Präfixe',
     r2OrphansMeaning:
       'Dateien ohne Zeile. Kein öffentlicher Zugang, solange keine Route darauf zeigt — es sind Speicherkosten, die niemandem zugeordnet sind.',
+    d1Orphans: 'Verwaiste Formular-Datenbanken',
+    d1OrphansMeaning:
+      'Eine Datenbank, die Goblin für eine App angelegt hat, ohne dass die Registry diese App noch kennt. Darin liegen möglicherweise Einsendungen von Besuchern — fremde personenbezogene Daten, für die niemand mehr zuständig ist. Von den Zeilen auf dieser Karte ist das die schwerste.',
+    d1OnDeletedApps: 'Datenbanken gelöschter Apps',
+    d1OnDeletedAppsMeaning:
+      'Hier gibt es eine Zeile, und sie sagt „gelöscht" — die Datenbank steht trotzdem noch. Der Abbau ist nicht fertig geworden; er lässt sich über „Gehostete Apps" wiederholen.',
     clean: 'keine gefunden',
     found: 'gefunden',
     notChecked: 'NICHT GEPRÜFT',
@@ -184,6 +200,7 @@ const de = {
     knownApps: 'Registry-Zeilen',
     prefixesInR2: 'Präfixe in R2',
     routesInKv: 'Routen in KV',
+    d1InCloudflare: 'Formular-Datenbanken bei Cloudflare',
     notes: 'Hinweise der Prüfung',
     noPurge:
       'Es gibt hier bewusst keinen Lösch-Knopf. Aufräumen verlangt benannte App-IDs, einen Grund fürs Protokoll und eine erneute Prüfung gegen die Registry unmittelbar vor dem Löschen — das bleibt ein eigener, ausdrücklicher Schritt und kein Knopf neben einem Bericht.',
@@ -358,6 +375,16 @@ const en: typeof de = {
     notApplied: 'not applied',
     auditMissingNote:
       'Without 0100 suspensions still work, but every action reports "audit: unavailable" instead of writing an evidence row.',
+    forms: 'Forms',
+    formsReady: 'configured',
+    formsNotConfigured: 'not configured',
+    formsIncomplete: 'HALF CONFIGURED',
+    formsMalformed: 'ENDPOINT NOT VALID',
+    formsMissing: 'Still missing',
+    formsEndpointProblem:
+      'The submissions endpoint is set but is not a bare origin (scheme + host, no path). An app with a form will NOT be published',
+    formsTrailingSlash:
+      'The endpoint had a trailing slash. It was removed — not an error, but worth knowing in case more is on the end than intended.',
     registryMissingNote:
       'Without 0099 the publish path refuses to work — deliberately: uploaded files with no registry row would be an orphan.',
     appsDomain: 'Apps domain',
@@ -448,14 +475,14 @@ const en: typeof de = {
 
   orphans: {
     heading: 'Orphan check',
-    lead: 'Asks Cloudflare (KV and R2) and the registry, and reports whatever sits on the substrate with no registry row pointing at it. Report only — this card deletes nothing.',
+    lead: 'Asks Cloudflare (KV, R2 and D1) and the registry, and reports whatever sits on the substrate with no registry row pointing at it. Report only — this card deletes nothing.',
     action: 'Run the check',
     running: 'checking …',
     notRun:
       'Not checked yet. The sweep deliberately does not run when the page opens: it lists KV and R2 in full, which belongs to a deliberate tap rather than to a page load.',
     checkedAt: 'Checked at',
     verdictRow: 'Finding',
-    verdictClean: 'Nothing found — and all three checks completed.',
+    verdictClean: 'Nothing found — and every single check completed.',
     verdictFound: 'There is a finding. Look at each line individually before anything happens to it.',
     verdictIncomplete:
       'INCOMPLETE — part of the sweep did not complete. What did complete is below; the rest is open, which differs from clear.',
@@ -469,6 +496,12 @@ const en: typeof de = {
     r2Orphans: 'Orphaned R2 prefixes',
     r2OrphansMeaning:
       'Files with no row. No public access as long as no route points at them — this is storage cost nobody is billed for.',
+    d1Orphans: 'Orphaned form databases',
+    d1OrphansMeaning:
+      'A database Goblin created for an app the registry no longer knows about. It may hold visitors\' submissions — other people\'s personal data, with nobody accountable for it. Of every line on this card, this is the heaviest.',
+    d1OnDeletedApps: 'Databases of deleted apps',
+    d1OnDeletedAppsMeaning:
+      'Here a row does exist, and it says "deleted" — yet the database is still standing. The teardown never finished; it can be retried from "Hosted apps".',
     clean: 'none found',
     found: 'found',
     notChecked: 'NOT CHECKED',
@@ -478,6 +511,7 @@ const en: typeof de = {
     knownApps: 'Registry rows',
     prefixesInR2: 'Prefixes in R2',
     routesInKv: 'Routes in KV',
+    d1InCloudflare: 'Form databases at Cloudflare',
     notes: 'Notes from the sweep',
     noPurge:
       'There is deliberately no delete button here. Cleaning up demands named app ids, a reason for the audit log, and a fresh registry check immediately before deletion — that stays its own explicit step, not a button beside a report.',

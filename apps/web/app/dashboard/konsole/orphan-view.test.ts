@@ -12,9 +12,12 @@ function report(over: Partial<OrphanReportBody> = {}): OrphanReportBody {
     orphans: [],
     routeOrphans: [],
     routesOnDeletedApps: [],
+    d1Orphans: [],
+    d1OnDeletedApps: [],
     knownApps: 1,
     prefixesInR2: 1,
     routesInKv: 1,
+    d1InCloudflare: 0,
     notes: [],
     timestamp: '2026-08-13T00:00:00.000Z',
     ...over,
@@ -44,14 +47,31 @@ describe('findingOf — three states, and null is its own', () => {
 });
 
 describe('verdictOf', () => {
-  it('is clean only when all three lists really came back empty', () => {
+  it('is clean only when EVERY list really came back empty', () => {
     expect(verdictOf(report())).toBe('clean');
     expect(verdictClass('clean')).toBe('ok');
   });
 
   it('is unknown when nothing at all could be checked', () => {
-    expect(verdictOf(report({ orphans: null, routeOrphans: null, routesOnDeletedApps: null }))).toBe('unknown');
+    expect(
+      verdictOf(
+        report({
+          orphans: null, routeOrphans: null, routesOnDeletedApps: null,
+          d1Orphans: null, d1OnDeletedApps: null,
+        }),
+      ),
+    ).toBe('unknown');
     expect(verdictClass('unknown')).toBe('unknown');
+  });
+
+  it('an API from before Phase 4 reads as INCOMPLETE, never as clean', () => {
+    // The field is absent because that deployment never looked at D1. Rendering a
+    // green sweep over a plane nobody checked is precisely the lie this file exists
+    // to prevent — and the one that would be easiest to ship by accident.
+    const preD1 = report();
+    delete (preD1 as { d1Orphans?: unknown }).d1Orphans;
+    delete (preD1 as { d1OnDeletedApps?: unknown }).d1OnDeletedApps;
+    expect(verdictOf(preD1)).toBe('incomplete');
   });
 
   it('is incomplete when one half answered and the other did not', () => {
@@ -63,7 +83,7 @@ describe('verdictOf', () => {
   });
 
   it('never turns a null into a clean sweep', () => {
-    for (const key of ['orphans', 'routeOrphans', 'routesOnDeletedApps'] as const) {
+    for (const key of ['orphans', 'routeOrphans', 'routesOnDeletedApps', 'd1Orphans', 'd1OnDeletedApps'] as const) {
       expect(verdictOf(report({ [key]: null }))).not.toBe('clean');
     }
   });
@@ -77,5 +97,13 @@ describe('verdictOf', () => {
 
   it('flags a route on a deleted app on its own', () => {
     expect(verdictOf(report({ routesOnDeletedApps: ['halb-abgebaut'] }))).toBe('found');
+  });
+
+  it('flags an orphaned FORM DATABASE on its own — the heaviest finding on the card', () => {
+    // Nothing else is wrong: KV clean, R2 clean, registry readable. A database of
+    // somebody's visitors' submissions with no app attached must still turn the
+    // whole card, on its own, with no help from the other four lists.
+    expect(verdictOf(report({ d1Orphans: ['goblin-app-xyz (db-1)'] }))).toBe('found');
+    expect(verdictOf(report({ d1OnDeletedApps: ['goblin-app-xyz (db-1)'] }))).toBe('found');
   });
 });

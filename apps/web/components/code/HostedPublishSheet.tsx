@@ -38,6 +38,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/ui/icon";
 import { apiGet, apiPost } from "@/lib/api";
 import { classifyPublishOutcome, type PublishResponseBody } from "@/lib/publish-outcome";
+import { HostedInboxSheet } from "./HostedInboxSheet";
 import { useLang, t } from "@/lib/use-lang";
 
 interface Props {
@@ -81,8 +82,26 @@ function normalize(raw: string): string {
   return raw.trim().toLowerCase().replace(/[^a-z0-9-]/g, "-").replace(/-{2,}/g, "-").replace(/^-|-$/g, "");
 }
 
+/**
+ * PHASE 4 · U4.4 — the app already published from this project, if it has an inbox.
+ *
+ * The inbox lives HERE rather than on a new dashboard page for one reason: this is
+ * the surface a builder already opens to think about their published app, and a
+ * second place to look would be a second place to forget. `hasForms` is the API's
+ * own boolean; a published app without a form has no inbox and the button does not
+ * appear — no phantom affordance for a feature the app does not have.
+ */
+interface OwnApp {
+  appId: string;
+  name: string;
+  projectId: string | null;
+  hasForms?: boolean;
+}
+
 export function HostedPublishSheet({ projectId, appsDomain, onUseVercel, onClose, onPublished }: Props) {
   const lang = useLang();
+  const [inboxApp, setInboxApp] = useState<OwnApp | null>(null);
+  const [showInbox, setShowInbox] = useState(false);
   const [name, setName] = useState("");
   const [answer, setAnswer] = useState<NameAnswer | null>(null);
   const [outcome, setOutcome] = useState<Outcome>({ kind: "none" });
@@ -117,6 +136,23 @@ export function HostedPublishSheet({ projectId, appsDomain, onUseVercel, onClose
     }, 400);
     return () => clearTimeout(timer);
   }, [normalized, appsDomain]);
+
+  // PHASE 4. One read on mount. A failure resolves to "no inbox" rather than
+  // surfacing: this sheet's job is publishing, and an inbox lookup that could not
+  // answer must never be the reason somebody cannot go live.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const r = await apiGet<{ apps?: OwnApp[] }>("/api/ops/apps");
+        const mine = (r?.apps ?? []).find((a) => a.projectId === projectId && a.hasForms === true);
+        if (!cancelled) setInboxApp(mine ?? null);
+      } catch {
+        if (!cancelled) setInboxApp(null);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [projectId]);
 
   // DERIVED, not stored: an answer that is not about the name currently in the
   // field is not an answer yet.
@@ -292,6 +328,28 @@ export function HostedPublishSheet({ projectId, appsDomain, onUseVercel, onClose
           </div>
         )}
 
+        {/* ── PHASE 4 · the inbox, only when this app actually has one ── */}
+        {inboxApp && (
+          <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid var(--ed-rule)" }}>
+            <button
+              onClick={() => setShowInbox(true)}
+              data-testid="hosted-open-inbox"
+              style={{
+                width: "100%", padding: "10px 14px", borderRadius: 10,
+                border: "1px solid var(--ed-rule)", background: "transparent", color: "var(--ed-fg-2)",
+                fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-sans)",
+              }}
+            >
+              {t(lang, "Posteingang öffnen", "Open inbox")}
+            </button>
+            <p style={{ margin: "6px 0 0", fontSize: 11, lineHeight: 1.45, color: "var(--ed-fg-3)", fontFamily: "var(--font-sans)" }}>
+              {t(lang,
+                "Was Besucher über das Formular dieser App geschickt haben. Nur du siehst das.",
+                "What visitors have sent through this app’s form. Only you can see it.")}
+            </p>
+          </div>
+        )}
+
         {/* ── The Vercel path, beside it and fully intact ── */}
         <div style={{ marginTop: 18, paddingTop: 14, borderTop: "1px solid var(--ed-rule)" }}>
           <button
@@ -313,6 +371,10 @@ export function HostedPublishSheet({ projectId, appsDomain, onUseVercel, onClose
           </p>
         </div>
       </div>
+
+      {showInbox && inboxApp && (
+        <HostedInboxSheet appId={inboxApp.appId} appName={inboxApp.name} onClose={() => setShowInbox(false)} />
+      )}
     </>
   );
 }
