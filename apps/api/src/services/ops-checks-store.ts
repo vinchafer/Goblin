@@ -67,7 +67,19 @@ const COLUMNS = 'app_id, subject_key, outcome, http_status, latency_ms, days_rem
  * the founder applies the migration.
  */
 export async function opsChecksTableAvailable(sb: Sb = getSupabaseAdmin()): Promise<boolean> {
-  const { error } = await sb.from('ops_app_checks').select('id').limit(1);
+  let error: { code?: string; message?: string } | null | undefined;
+  try {
+    ({ error } = await sb.from('ops_app_checks').select('id').limit(1));
+  } catch (err) {
+    // The client THREW rather than answering — no transport, no configuration, a
+    // broken pool. We could not ask, so every caller must degrade: reads answer
+    // `available:false` (which renders UNKNOWN), the writer refuses, and the
+    // runner stops. Answering `true` here would send each caller on to make its
+    // own query and throw one level further up, where a route would turn it into
+    // a 500 instead of an honest "we could not look".
+    logger.warn({ reason: (err as Error)?.message }, 'ops_app_checks_probe_threw');
+    return false;
+  }
   if (!error) return true;
   // 42P01 = undefined_table; PGRST205 = PostgREST schema-cache miss (table absent).
   const signature = `${error.code ?? ''} ${error.message ?? ''}`;
@@ -75,6 +87,42 @@ export async function opsChecksTableAvailable(sb: Sb = getSupabaseAdmin()): Prom
   // Any other error (RLS, permissions, transport) means the table DOES exist and
   // something else went wrong — do not mistake that for "not migrated yet".
   return true;
+}
+
+/**
+ * Run a query and turn a THROWN failure into the same shape a returned error
+ * produces.
+ *
+ * The availability probe above catches a client that cannot be reached at all,
+ * but it cannot cover every later query: a pool that dies mid-flight, or a
+ * PostgREST client shape that does not support a filter, throws from inside the
+ * builder rather than answering with an `error`. Without this, that exception
+ * travels up through the report assembler and out of a route as a 500 — which the
+ * console would render as "something went wrong" instead of the honest UNKNOWN
+ * the same failure produces one line earlier.
+ *
+ * Every read below therefore degrades identically whether the database says no or
+ * the client explodes: `available: false`, no rows, and UNKNOWN on the surface.
+ */
+async function attempt<T>(
+  label: string,
+  // `PromiseLike`, not `Promise`: a PostgREST builder is thenable but is not a
+  // Promise, so awaiting it works while typing it as one does not.
+  fn: () => PromiseLike<{ data?: unknown[] | null; error?: { code?: string; message?: string } | null }>,
+  onFail: T,
+  onOk: (rows: Array<Record<string, unknown>>) => T,
+): Promise<T> {
+  try {
+    const { data, error } = await fn();
+    if (error) {
+      logger.warn({ reason: error.message, query: label }, 'ops_app_checks_query_failed');
+      return onFail;
+    }
+    return onOk((data ?? []) as Array<Record<string, unknown>>);
+  } catch (err) {
+    logger.warn({ reason: (err as Error)?.message, query: label }, 'ops_app_checks_query_threw');
+    return onFail;
+  }
 }
 
 function toRow(row: Record<string, unknown>): CheckRow & { appId: string | null; subjectKey: string } {
@@ -110,23 +158,24 @@ export async function recordChecks(
     logger.debug({ count: measurements.length }, 'ops_app_checks_absent (pre-0103) — nothing recorded');
     return false;
   }
-  const { error } = await sb.from('ops_app_checks').insert(
-    measurements.map((m) => ({
-      app_id: m.appId,
-      subject_key: m.subjectKey,
-      outcome: m.outcome,
-      http_status: m.httpStatus ?? null,
-      latency_ms: m.latencyMs ?? null,
-      days_remaining: m.daysRemaining ?? null,
-      detail: m.detail ? m.detail.slice(0, DETAIL_MAX) : null,
-      measured_at: m.measuredAt,
-    })),
+  return attempt(
+    'recordChecks',
+    () =>
+      sb.from('ops_app_checks').insert(
+        measurements.map((m) => ({
+          app_id: m.appId,
+          subject_key: m.subjectKey,
+          outcome: m.outcome,
+          http_status: m.httpStatus ?? null,
+          latency_ms: m.latencyMs ?? null,
+          days_remaining: m.daysRemaining ?? null,
+          detail: m.detail ? m.detail.slice(0, DETAIL_MAX) : null,
+          measured_at: m.measuredAt,
+        })),
+      ),
+    false,
+    () => true,
   );
-  if (error) {
-    logger.warn({ reason: error.message, count: measurements.length }, 'ops_app_checks_insert_failed');
-    return false;
-  }
-  return true;
 }
 
 /**
@@ -145,18 +194,19 @@ export async function recentChecksForApp(
   sb: Sb = getSupabaseAdmin(),
 ): Promise<{ available: boolean; rows: StoredCheckRow[] }> {
   if (!(await opsChecksTableAvailable(sb))) return { available: false, rows: [] };
-  const { data, error } = await sb
-    .from('ops_app_checks')
-    .select(COLUMNS)
-    .eq('app_id', appId)
-    .order('measured_at', { ascending: false })
-    .limit(opts.limit ?? 200);
-  if (error) {
-    logger.warn({ appId, reason: error.message }, 'ops_app_checks_read_failed');
+  return attempt(
+    'recentChecksForApp',
+    () =>
+      sb
+        .from('ops_app_checks')
+        .select(COLUMNS)
+        .eq('app_id', appId)
+        .order('measured_at', { ascending: false })
+        .limit(opts.limit ?? 200),
     // The table exists but the read failed. Not "no checks" — unknown.
-    return { available: false, rows: [] };
-  }
-  return { available: true, rows: (data ?? []).map((r) => toRow(r as unknown as Record<string, unknown>)) };
+    { available: false as boolean, rows: [] as StoredCheckRow[] },
+    (rows) => ({ available: true, rows: rows.map(toRow) }),
+  );
 }
 
 /**
@@ -176,19 +226,20 @@ export async function entryChecksInWindow(
 ): Promise<{ available: boolean; rows: StoredCheckRow[] }> {
   if (!(await opsChecksTableAvailable(sb))) return { available: false, rows: [] };
   const since = new Date((opts.now ?? Date.now()) - windowMs).toISOString();
-  const { data, error } = await sb
-    .from('ops_app_checks')
-    .select(COLUMNS)
-    .eq('app_id', appId)
-    .eq('subject_key', 'entry')
-    .gte('measured_at', since)
-    .order('measured_at', { ascending: false })
-    .limit(opts.limit ?? 5_000);
-  if (error) {
-    logger.warn({ appId, reason: error.message }, 'ops_app_checks_window_read_failed');
-    return { available: false, rows: [] };
-  }
-  return { available: true, rows: (data ?? []).map((r) => toRow(r as unknown as Record<string, unknown>)) };
+  return attempt(
+    'entryChecksInWindow',
+    () =>
+      sb
+        .from('ops_app_checks')
+        .select(COLUMNS)
+        .eq('app_id', appId)
+        .eq('subject_key', 'entry')
+        .gte('measured_at', since)
+        .order('measured_at', { ascending: false })
+        .limit(opts.limit ?? 5_000),
+    { available: false as boolean, rows: [] as StoredCheckRow[] },
+    (rows) => ({ available: true, rows: rows.map(toRow) }),
+  );
 }
 
 /**
@@ -200,17 +251,12 @@ export async function recentPlatformChecks(
   sb: Sb = getSupabaseAdmin(),
 ): Promise<{ available: boolean; rows: StoredCheckRow[] }> {
   if (!(await opsChecksTableAvailable(sb))) return { available: false, rows: [] };
-  const { data, error } = await sb
-    .from('ops_app_checks')
-    .select(COLUMNS)
-    .is('app_id', null)
-    .order('measured_at', { ascending: false })
-    .limit(opts.limit ?? 200);
-  if (error) {
-    logger.warn({ reason: error.message }, 'ops_app_checks_platform_read_failed');
-    return { available: false, rows: [] };
-  }
-  return { available: true, rows: (data ?? []).map((r) => toRow(r as unknown as Record<string, unknown>)) };
+  return attempt(
+    'recentPlatformChecks',
+    () => sb.from('ops_app_checks').select(COLUMNS).is('app_id', null).order('measured_at', { ascending: false }).limit(opts.limit ?? 200),
+    { available: false as boolean, rows: [] as StoredCheckRow[] },
+    (rows) => ({ available: true, rows: rows.map(toRow) }),
+  );
 }
 
 /**
@@ -229,18 +275,15 @@ export async function newestChecksForAllApps(
 ): Promise<{ available: boolean; rows: StoredCheckRow[]; truncated: boolean }> {
   if (!(await opsChecksTableAvailable(sb))) return { available: false, rows: [], truncated: false };
   const limit = opts.limit ?? 4_000;
-  const { data, error } = await sb
-    .from('ops_app_checks')
-    .select(COLUMNS)
-    .not('app_id', 'is', null)
-    .order('measured_at', { ascending: false })
-    .limit(limit);
-  if (error) {
-    logger.warn({ reason: error.message }, 'ops_app_checks_fleet_read_failed');
-    return { available: false, rows: [], truncated: false };
-  }
-  const rows = (data ?? []).map((r) => toRow(r as unknown as Record<string, unknown>));
-  return { available: true, rows, truncated: rows.length >= limit };
+  return attempt(
+    'newestChecksForAllApps',
+    () => sb.from('ops_app_checks').select(COLUMNS).not('app_id', 'is', null).order('measured_at', { ascending: false }).limit(limit),
+    { available: false as boolean, rows: [] as StoredCheckRow[], truncated: false },
+    (raw) => {
+      const rows = raw.map(toRow);
+      return { available: true as boolean, rows, truncated: rows.length >= limit };
+    },
+  );
 }
 
 /**
@@ -257,23 +300,20 @@ export async function lastMeasuredAtBySubject(
   sb: Sb = getSupabaseAdmin(),
 ): Promise<{ available: boolean; last: Map<string, string> }> {
   if (!(await opsChecksTableAvailable(sb))) return { available: false, last: new Map() };
-  const { data, error } = await sb
-    .from('ops_app_checks')
-    .select('app_id, subject_key, measured_at')
-    .order('measured_at', { ascending: false })
-    .limit(opts.limit ?? 2_000);
-  if (error) {
-    logger.warn({ reason: error.message }, 'ops_app_checks_due_read_failed');
-    return { available: false, last: new Map() };
-  }
-  const last = new Map<string, string>();
-  for (const raw of data ?? []) {
-    const row = raw as unknown as Record<string, unknown>;
-    const key = subjectCacheKey(row.app_id ? String(row.app_id) : null, String(row.subject_key));
-    // Newest-first, so the first time a key appears is its newest row.
-    if (!last.has(key)) last.set(key, String(row.measured_at));
-  }
-  return { available: true, last };
+  return attempt(
+    'lastMeasuredAtBySubject',
+    () => sb.from('ops_app_checks').select('app_id, subject_key, measured_at').order('measured_at', { ascending: false }).limit(opts.limit ?? 2_000),
+    { available: false as boolean, last: new Map<string, string>() },
+    (rows) => {
+      const last = new Map<string, string>();
+      for (const row of rows) {
+        const key = subjectCacheKey(row.app_id ? String(row.app_id) : null, String(row.subject_key));
+        // Newest-first, so the first time a key appears is its newest row.
+        if (!last.has(key)) last.set(key, String(row.measured_at));
+      }
+      return { available: true, last };
+    },
+  );
 }
 
 /** The key `lastMeasuredAtBySubject` returns, so callers cannot build it differently. */
@@ -298,10 +338,10 @@ export async function pruneOldChecks(
   if (!(await opsChecksTableAvailable(sb))) return null;
   const days = opts.retentionDays ?? CHECK_RETENTION_DAYS;
   const cutoff = new Date((opts.now ?? Date.now()) - days * 24 * 60 * 60_000).toISOString();
-  const { error } = await sb.from('ops_app_checks').delete().lt('measured_at', cutoff);
-  if (error) {
-    logger.warn({ reason: error.message }, 'ops_app_checks_prune_failed');
-    return null;
-  }
-  return { ok: true, cutoff };
+  return attempt(
+    'pruneOldChecks',
+    () => sb.from('ops_app_checks').delete().lt('measured_at', cutoff),
+    null,
+    () => ({ ok: true as const, cutoff }),
+  );
 }

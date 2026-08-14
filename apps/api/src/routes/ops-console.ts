@@ -45,6 +45,10 @@ import { loadCandidatePreview } from '../services/ops-review-preview';
 import { publishHostedApp } from '../services/ops-publish';
 import { appUrl } from '../services/ops-app-names';
 import { opsAppsDomain } from '../services/cf-deploy';
+// PHASE 5 · U5.4 — the same assembler the owner's card uses, so the two surfaces
+// cannot disagree about the same rows.
+import { fleetHealthReport } from '../services/ops-check-report';
+import { lastCheckTick, runCheckTick } from '../services/ops-check-runner';
 import { startE2EJob, getE2EJob, runningE2EJob } from '../services/ops-e2e-jobs';
 import { E2E_CONFIRM } from '../services/ops-e2e';
 import { getSupabaseAdmin } from '../lib/supabase';
@@ -349,6 +353,79 @@ opsConsole.get('/e2e/status/:id', async (c) => {
     );
   }
   return c.json(job);
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// PHASE 5 · U5.4 / U5.5 — THE FLEET'S STATE
+//
+// Extends this console rather than adding a second operator surface, for the same
+// reason the review queue did: two places to check at 3am is two places to keep
+// honest. Same `opsFounderGate`, same byte-identical 404 for everyone else.
+//
+// NOTE ON `OPS_HOSTING_ENABLED`, same as the review queue: these hang on the
+// founder gate and not the hosting switch. With Act 2 dark the RUNNER stops (it
+// reads the switch), so the states go stale and derive to UNKNOWN — and being able
+// to SEE that is exactly why this surface must not disappear along with it.
+// ════════════════════════════════════════════════════════════════════════════
+
+/**
+ * GET /api/ops-console/checks — every app's state, worst first, plus Goblin's own.
+ *
+ * One call: the fleet, the platform subjects, the cadence in force and the
+ * heartbeat's own budget position. A phone on mobile data should not need four
+ * round-trips to answer "what is not fine".
+ *
+ * `available:false` renders UNKNOWN, never "everything is fine" — and the body
+ * separates `registryAvailable` from `checksAvailable` so the founder learns WHICH
+ * migration is missing rather than being told something is wrong.
+ *
+ * Read-only, and it triggers no measurement. What it reports is what the runner
+ * already measured; if the runner has measured nothing, the honest answer is
+ * UNKNOWN and this route gives it.
+ */
+opsConsole.get('/checks', async (c) => {
+  const report = await tri('checks', () => fleetHealthReport());
+  if (!report) {
+    // The probe itself failed. `null` all the way through rather than a
+    // reassuring empty fleet — the console's standing rule.
+    return c.json({ available: false, registryAvailable: null, checksAvailable: null, rows: [], platform: [], timestamp: new Date().toISOString() });
+  }
+  return c.json({ ...report, lastTick: lastCheckTick(), timestamp: new Date().toISOString() });
+});
+
+/**
+ * POST /api/ops-console/checks/run — measure now, and answer with what was measured.
+ *
+ * Exists for ONE reason: the induced-failure step of the founder window (U5.6). At
+ * the five-minute cadence, breaking an app and watching the state flip means
+ * waiting up to ten minutes twice over; this makes each cycle a tap. It runs the
+ * SAME `runCheckTick` the scheduler runs — not a special path — so what the
+ * founder observes is the shipped behaviour and not a demo of it.
+ *
+ * POST because it makes real outbound requests and writes rows. It is otherwise
+ * harmless: it cannot publish, suspend, delete or change any app, and the worst a
+ * repeated tap can do is spend a few of the heartbeat's own budgeted requests.
+ *
+ * No confirm token, unlike /e2e/start — that one writes to production R2, KV and
+ * Postgres. This one only measures and appends telemetry, and a speed bump on the
+ * one action the founder has to repeat during a timed test would be friction with
+ * nothing behind it.
+ *
+ * `force` skips the due-check so a tap always measures. Without it, a tap inside
+ * the cadence window would answer "nothing due" — correct, and useless to somebody
+ * standing in front of a broken app waiting for the card to move.
+ */
+opsConsole.post('/checks/run', async (c) => {
+  const founder = c.get('opsFounder');
+  const force = c.req.query('force') !== 'false';
+  logger.warn({ userId: founder.userId, force }, 'ops_check_tick_manual');
+
+  const report = await runCheckTick(force ? { lastMeasured: async () => ({ available: true, last: new Map() }) } : {});
+
+  // 200 whether or not anything was measured: the REQUEST worked and the report is
+  // the answer. A tick that found nothing due, or could not write, is data the
+  // founder needs to read — a thrown status would hide it.
+  return c.json(report);
 });
 
 // ════════════════════════════════════════════════════════════════════════════
