@@ -1,13 +1,16 @@
 # AKT 2 · PHASE 4 — FORMULARE (DATA-1F). DER PHASENBERICHT
 
 **Datum: 2026-08-14 · Branch `claude/act2-phase4-formulare-zxfmo4` · Basis `50b3257` (origin/master)**
-**Status: GEBAUT UND GETESTET. IM BETRIEB UNBEWIESEN.**
+**Status: GEBAUT, GETESTET, GEMERGT (`4e5004d`, 2026-08-14) — DER FORMULARPFAD IST IM BETRIEB UNBEWIESEN.**
 
-Der Satz oben ist die wichtigste Zeile dieses Dokuments. Es existiert keine D1-Datenbank, keine echte
+Der Satz oben ist die wichtigste Zeile dieses Dokuments. **Gemergt heißt ausgerollt, nicht bewiesen.**
+Beide Seiten tragen den Merge-Commit (API 02:30:06 UTC, Web 02:30:38 UTC, an `/api/health` bzw.
+`/api/version` abgelesen) — und es existiert trotzdem keine D1-Datenbank, keine echte
 Einsendung, keine verschickte Benachrichtigung und kein verifiziertes Turnstile-Token. Jede Zahl hier
 kommt aus einem Testlauf, einer Live-Dokumentationsseite oder einer ausgeschriebenen Herleitung —
-**keine aus einer Produktionsbeobachtung.** Der Beweis ist das Gründer-Fenster
-(`docs/AKT2_PHASE4_FOUNDER_WINDOW.md`), und es ist noch nicht gelaufen.
+**keine aus einer Produktionsbeobachtung.** Der Beweis ist das **gemeinsame** Gründer-Fenster
+(`docs/AKT2_PHASE3_UND_4_FOUNDER_WINDOW.md` — Phase 3 und 4 in einer Sitzung, weil Phase 4 durch
+Phase 3's Scan veröffentlicht), und es ist noch nicht gelaufen.
 
 ---
 
@@ -65,7 +68,7 @@ Datenbanken** — und die wird ehrlich abgelehnt statt entdeckt.
 | **Datenschutzseite aktualisiert** | **ERFÜLLT.** Neuer Abschnitt **1a**, DE und EN, plus D1 in der Cloudflare-Zeile der Unterauftragsverarbeiter. Details in §6. |
 | **Ledger-Zeilen im Commit ihrer Einheit** | **TEILWEISE — und das ist eine Abweichung, keine Auslegung.** M-F2 und M-F3 stehen im Commit ihrer Mechanismen. **M-F1 (D1) nicht:** der Mechanismus ist `5acdf9e`, die Zeile kam in `439d0ee`. Die Ledger-Zeile sagt das selbst. |
 | **Volle Suite + tsc** | **ERFÜLLT.** API **2144/2144** in 167 Dateien. Web **493/493** in 41 Dateien. `tsc --noEmit` sauber in beiden. |
-| **`anmeldeformular` unberührt und weiter erreichbar** | **HALB.** *Unberührt* ist belegt und stark: `git diff origin/master -- apps/api/src/services/ops-router/` ist **leer** — `worker.js` und die generierte Datei sind nicht angefasst, der Auslieferungspfad ist außerhalb des Blastradius. Die App hat keine Datenbank, also 404t der Ingest für sie wie für jede andere. *Weiter erreichbar* ist eine **Beobachtung, die ich nicht gemacht habe**: aus dieser Sitzung gibt es keinen Abruf dieser Adresse. Fenster-Schritt 7. |
+| **`anmeldeformular` unberührt und weiter erreichbar** | **ERFÜLLT — beide Hälften, seit 2026-08-14.** *Unberührt:* `git diff origin/master -- apps/api/src/services/ops-router/` ist **leer** — `worker.js` und die generierte Datei sind nicht angefasst, der Auslieferungspfad liegt außerhalb des Blastradius. Die App hat keine Datenbank, also 404t der Ingest für sie wie für jede andere. *Weiter erreichbar:* **gemessen, zweimal.** Vor dem Merge und erneut nach dem Merge und nach dem Deploy beider Seiten: **HTTP 200, `text/html; charset=utf-8`, 10 544 Bytes, `<title>Schachkurs Anmeldung`** — byte-gleich groß in beiden Abrufen. *(Diese Zeile stand bis zum Merge als HALB im Bericht, weil ich die Beobachtung nicht gemacht hatte. Jetzt ist sie gemacht.)* |
 
 ## 5. Wie das Substrat aussieht, nachdem diese Phase gemerged ist
 
@@ -200,7 +203,7 @@ Die Liste, die man liest, bevor man irgendetwas hiervon nach außen sagt.
    steht). Fenster-Schritt 0.1.
 2. **`CF_TURNSTILE_SITE_KEY` und `CF_TURNSTILE_SECRET_KEY`** nach Namen nachsehen. Schritt 0.2.
 3. **Keine Migration.** `0103` bleibt unvergeben.
-4. **Das Fenster fahren** — `docs/AKT2_PHASE4_FOUNDER_WINDOW.md`: veröffentlichen, dreimal absenden,
+4. **Das Fenster fahren** — `docs/AKT2_PHASE3_UND_4_FOUNDER_WINDOW.md` (Teil A: Scan und Prüfliste, Teil B: Formulare): veröffentlichen, dreimal absenden,
    E-Mail und Posteingang bestätigen, die Grenze und die Absage testen, löschen, Waisen-Prüfung,
    `anmeldeformular` ansehen, und bestätigen, dass ein normales Konto nichts davon sieht.
 5. **Zwei Entscheidungen** aus `docs/ACT2_PHASE4_DECISIONS.md`: **G-P4-1** (die elfte Formular-App

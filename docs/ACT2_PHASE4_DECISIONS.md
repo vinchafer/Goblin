@@ -12,9 +12,9 @@ wenn die Antwort aus einer bestehenden Gründer-Entscheidung, einem dokumentiert
 offensichtlich risikoärmeren Option folgt — und das Prinzip dabei benennen. Eskalieren nur, was
 wirklich an Geld, Rechtsrisiko, Nutzerdaten oder ungeklärter Produktphilosophie hängt.
 
-**Alle fünf sind entschieden. Nichts hält an. Zwei tragen eine Gründer-Aktion, die aus der
-Entscheidung folgt, nicht die Entscheidung selbst ist** — sie stehen unten unter „Was der Gründer
-noch entscheiden muss".
+**Alle fünf sind entschieden. Nichts hält an.** Zwei trugen eine Gründer-Aktion, die aus der
+Entscheidung folgte, nicht die Entscheidung selbst war — **beide sind am 2026-08-14 vom Gründer
+entschieden worden** und stehen unten.
 
 ---
 
@@ -205,11 +205,15 @@ den ehrlichen Satz „deine Nachricht ist NICHT angekommen" statt eines stillen 
 
 ---
 
-## Was der Gründer noch entscheiden muss
+## Die zwei Folgefragen — GRÜNDER-ENTSCHEIDUNG 2026-08-14
 
-Beides folgt **aus** den Entscheidungen oben; keins hält Phase 4 auf.
+Beide folgten **aus** den Entscheidungen oben und hielten Phase 4 nicht auf. Beide sind jetzt
+beantwortet; festgehalten im Merge-Commit von PR #92 (`4e5004d`) und hier.
 
-| # | Frage | Warum sie beim Gründer liegt |
+| # | Frage | **Entscheidung** |
 |---|---|---|
-| **G-P4-1** | **Was passiert bei der elften Formular-App?** Die Free-Decke ist zehn. Darüber: Workers Paid, **$5/Monat**, und M-H1s „$0.00 committed" ist Geschichte. | Geld. Eine feste Kostenzeile aufzumachen ist nie eine Implementierungsentscheidung. Heute ist es folgenlos (eine bekannte echte App), und die Decke wird ehrlich abgelehnt statt verschwiegen — die Frage kann also warten, bis sie jemand stellt. |
-| **G-P4-2** | **Die 500/Monat bestätigen oder ändern.** | Produkt. Die Zahl ist eine begründete Planungszahl, keine gemessene; die Begründung steht oben und in `ops-caps.ts`. Eine Zeile im Code, kein Deploy von irgendetwas anderem. |
+| **G-P4-1** | **Was passiert bei der elften Formular-App?** Die Free-Decke ist zehn. Darüber: Workers Paid, **$5/Monat**, und M-H1s „$0.00 committed" wäre Geschichte. | **ANGENOMMEN als dokumentierte, heute nicht aktivierte Decke.** $5/Monat bei der elften Formular-App ist eine akzeptable Obergrenze — sie wird **nicht** vorsorglich aktiviert. Damit bleibt M-H1s „$0.00/Monat committed" bis auf Weiteres wahr, und die Decke bleibt genau das, was sie im Code schon ist: eine Ablehnung mit einem Satz, den ein Mensch lesen kann, statt eine Überraschung. **Der Auslöser ist die elfte App, nicht ein Datum** — niemand muss das beobachten, es meldet sich selbst. |
+| **G-P4-2** | **Die 500/Monat bestätigen oder ändern.** | **BESTÄTIGT.** 500/Monat bleibt als Planungszahl stehen. Sie ist damit weiterhin ausdrücklich **keine gemessene Zahl** — die Herleitung steht oben und in `ops-caps.ts`, und sie verteidigt das Postfach des Eigentümers, nicht die Cloudflare-Rechnung. Erste echte Messung: das gemeinsame Gründer-Fenster, Teil B. |
+
+**Damit ist an Phase 4 keine Entscheidung mehr offen.** Was offen bleibt, ist ausschließlich die
+**Beobachtung**: das Fenster ist nicht gelaufen (Carry-forward **P1**).
