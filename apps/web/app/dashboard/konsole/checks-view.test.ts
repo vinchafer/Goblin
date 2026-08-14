@@ -7,6 +7,9 @@
 //     a real outage stays unnoticed.
 
 import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   STATE_SEVERITY,
   anythingNotFine,
@@ -126,5 +129,33 @@ describe('measuredStamp', () => {
   it('formats a real timestamp', () => {
     expect(measuredStamp('2026-08-14T12:00:00.000Z', 'de')).toBeTruthy();
     expect(measuredStamp('2026-08-14T12:00:00.000Z', 'en')).toBeTruthy();
+  });
+});
+
+describe('THE gate, swept over the console source — no pill without its time', () => {
+  const CLIENT = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), 'console-client.tsx'), 'utf8');
+
+  it('every check-state pill in the console is paired with a measurement-time line', () => {
+    // Counted rather than eyeballed. Three places render a derived state — the
+    // shared `CheckState`, the fleet row and the platform row — and each must
+    // carry its own `lastMeasured` line. A fourth pill added without one breaks
+    // this count, which is the only way the pairing stays true after this session.
+    const pills = CLIENT.match(/oc-state \$\{stateClass\(/g) ?? [];
+    const stamps = CLIENT.match(/lastMeasured/g) ?? [];
+    expect(pills.length).toBeGreaterThan(0);
+    expect(stamps.length, 'a state pill was added without a measurement-time line').toBeGreaterThanOrEqual(pills.length);
+  });
+
+  it('the shared CheckState component renders both, so it cannot be used pill-only', () => {
+    // It takes the whole subject and always prints the timestamp — there is no
+    // "just the pill" variant to reach for.
+    expect(CLIENT).toContain('function CheckState({');
+    expect(CLIENT).toContain('{labels.lastMeasured}: {stamp ?? labels.never}');
+  });
+
+  it('the "never measured" case has a word, not a dash', () => {
+    // A dash reads as "nothing to report". `never` reads as what it is.
+    expect(CLIENT).toContain('?? s.checks.never');
+    expect(CLIENT).not.toMatch(/measuredStamp\([^)]*\) \?\? '—'/);
   });
 });
