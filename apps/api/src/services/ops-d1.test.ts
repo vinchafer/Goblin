@@ -276,3 +276,50 @@ describe('teardownAppDatabase proves the database is gone', () => {
     expect(deleteD1Database).not.toHaveBeenCalled();
   });
 });
+
+// ── the export (U4.4) ───────────────────────────────────────────────────────
+
+describe('submissionsToCsv', () => {
+  const sub = (over: Partial<import('./ops-d1').StoredSubmission> = {}) => ({
+    id: 's1', formId: 'kontakt', createdAt: '2026-08-14T09:00:00Z',
+    fields: { name: 'Anna' }, fieldCount: 1, bytes: 10, readAt: null, shapeVersion: 1,
+    ...over,
+  });
+
+  it('carries the union of every field name that ever appeared — an old answer is not dropped', () => {
+    const csv = mod.submissionsToCsv([
+      sub({ fields: { name: 'Anna', telefon: '123' } }),
+      sub({ id: 's2', fields: { name: 'Berta', email: 'b@example.com' } }),
+    ]);
+    const [header, first, second] = csv.split('\r\n');
+    expect(header).toContain('"name"');
+    expect(header).toContain('"telefon"');
+    expect(header).toContain('"email"');
+    // A submission missing a column gets an empty cell, not a shifted row.
+    expect(first?.split(',')).toHaveLength(6);
+    expect(second?.split(',')).toHaveLength(6);
+  });
+
+  it('NEUTRALISES spreadsheet formulas — this file is built from what strangers typed', () => {
+    const csv = mod.submissionsToCsv([sub({ fields: { name: '=HYPERLINK("http://boese","klick")' } })]);
+    // The apostrophe is what stops Excel and Numbers executing it. Handing an owner
+    // a spreadsheet that runs what a visitor wrote is an attack via their own tool.
+    expect(csv).toContain(`"'=HYPERLINK`);
+    expect(csv).not.toContain('\n=HYPERLINK');
+  });
+
+  it('guards every dangerous leading character, not just =', () => {
+    for (const raw of ['+1', '-1+1', '@SUM(A1)']) {
+      expect(mod.submissionsToCsv([sub({ fields: { a: raw } })])).toContain(`"'${raw}"`);
+    }
+  });
+
+  it('escapes quotes rather than breaking the row', () => {
+    expect(mod.submissionsToCsv([sub({ fields: { a: 'sie sagte "hallo"' } })])).toContain('"sie sagte ""hallo"""');
+  });
+
+  it('an empty export is a header and nothing else — a valid file, not a broken one', () => {
+    const csv = mod.submissionsToCsv([]);
+    expect(csv).toBe('"eingegangen_am","formular","gelesen_am"');
+  });
+});

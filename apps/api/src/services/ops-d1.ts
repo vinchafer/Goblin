@@ -513,6 +513,41 @@ export async function submissionCount(
   return Number(res.value.rows[0]?.n ?? 0) || 0;
 }
 
+// ── export ──────────────────────────────────────────────────────────────────
+
+/**
+ * Submissions as CSV — the owner's data, in the format that opens in the thing
+ * they already have.
+ *
+ * ── Two decisions worth stating ──────────────────────────────────────────────
+ * 1. The COLUMNS are the union of every field name that ever appeared, in
+ *    first-seen order, and a submission missing one gets an empty cell. Forms
+ *    change over time; a export that showed only the newest shape would silently
+ *    drop the older answers, which is a data loss dressed as a tidy file.
+ * 2. A value beginning with `=`, `+`, `-` or `@` is prefixed with an apostrophe.
+ *    Excel and Numbers treat those as FORMULAS, and this file is built out of text
+ *    that strangers typed into somebody's contact form. Handing an owner a
+ *    spreadsheet that executes what a visitor wrote is not an export, it is an
+ *    attack delivered by their own tool.
+ */
+export function submissionsToCsv(submissions: StoredSubmission[]): string {
+  const columns: string[] = [];
+  for (const s of submissions) {
+    for (const key of Object.keys(s.fields)) if (!columns.includes(key)) columns.push(key);
+  }
+
+  const cell = (raw: string): string => {
+    const guarded = /^[=+\-@]/.test(raw) ? `'${raw}` : raw;
+    return `"${guarded.replace(/"/g, '""')}"`;
+  };
+
+  const header = ['eingegangen_am', 'formular', 'gelesen_am', ...columns].map(cell).join(',');
+  const rows = submissions.map((s) =>
+    [s.createdAt, s.formId, s.readAt ?? '', ...columns.map((c) => s.fields[c] ?? '')].map(cell).join(','),
+  );
+  return [header, ...rows].join('\r\n');
+}
+
 // ── teardown (X1's rule, one plane further) ─────────────────────────────────
 
 export interface D1TeardownResult {

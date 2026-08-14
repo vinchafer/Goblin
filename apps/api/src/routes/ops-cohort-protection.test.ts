@@ -76,6 +76,15 @@ const ROUTES: Array<{ method: string; path: string; body?: unknown }> = [
   // non-allowlisted account gets the answer "there is no such route" and renders
   // the Vercel sheet it has always rendered.
   { method: 'GET', path: '/eligibility' },
+  // PHASE 4 · U4.8. The inbox is the owner's own data, so it lives on the BUILDER's
+  // gate rather than in the founder console — which means every one of these routes
+  // is a new way for the cohort to reach Act 2, and every one is enumerated here.
+  { method: 'GET', path: '/apps/app-1/submissions' },
+  { method: 'GET', path: '/apps/app-1/submissions.csv' },
+  { method: 'POST', path: '/apps/app-1/submissions/sub-1/read' },
+  { method: 'DELETE', path: '/apps/app-1/submissions/sub-1' },
+  { method: 'DELETE', path: '/apps/app-1/submissions?confirm=ALLES-LOESCHEN' },
+  { method: 'POST', path: '/apps/app-1/notifications', body: { enabled: false } },
 ];
 
 function call(route: { method: string; path: string; body?: unknown }, headers: Record<string, string> = {}) {

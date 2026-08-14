@@ -30,6 +30,19 @@ import { provisionRouter, routerStatus } from '../services/ops-router-deploy';
 import { checkNameAvailable, publishHostedApp, renameHostedApp } from '../services/ops-publish';
 import { runOpsE2E, E2E_CONFIRM } from '../services/ops-e2e';
 import { findOpsAppById, listUserOpsApps } from '../services/ops-apps-store';
+import {
+  acceptedThisMonth,
+  allSubmissionsForExport,
+  deleteAllSubmissions,
+  deleteSubmission,
+  listSubmissions,
+  markSubmissionRead,
+  notificationsEnabled,
+  setNotifications,
+  submissionsToCsv,
+  usageMonth,
+} from '../services/ops-d1';
+import { monthlySubmissionBudget } from '../services/ops-caps';
 import { appUrl } from '../services/ops-app-names';
 import { getSupabaseAdmin } from '../lib/supabase';
 import logger from '../lib/logger';
@@ -39,6 +52,15 @@ type Variables = OpsGateVariables;
 const ops = new Hono<{ Variables: Variables }>();
 
 ops.use('*', opsGate);
+
+/**
+ * The confirm token for "delete every submission of this app".
+ *
+ * German, because the person typing it is the person whose data it is, and
+ * shouted, because the answer to "did you mean to do that" should be something a
+ * hand cannot produce by accident.
+ */
+export const DELETE_ALL_CONFIRM = 'ALLES-LOESCHEN';
 
 type CheckStatus = 'ok' | 'fail' | 'skip';
 
@@ -186,6 +208,10 @@ ops.get('/apps', async (c) => {
       status: a.status,
       projectId: a.projectId,
       lastPublishedAt: a.lastPublishedAt,
+      // PHASE 4 — does this app have an inbox? A boolean, not the database id:
+      // the id is a substrate fact the builder has no use for and no business
+      // holding, and this surface has never emitted one.
+      hasForms: a.d1DatabaseId !== null,
     })),
   });
 });
@@ -302,6 +328,164 @@ ops.post('/apps/:appId/rename', async (c) => {
   const result = await renameHostedApp(app, body.name ?? '');
   if (!result.ok) return c.json({ error: result.code, message: result.message }, result.code === 'route_failed' || result.code === 'registry_unavailable' ? 502 : 409);
   return c.json(result);
+});
+
+// ── U4.4 · the owner's inbox ────────────────────────────────────────────────
+//
+// THE OWNER'S DATA, ON THE OWNER'S SURFACE. Deliberately here — behind `opsGate`,
+// which is the builder's own gate — and NOT in the founder console. The console is
+// where an operator acts on somebody else's app; this is somebody reading their own
+// messages, and putting it there would mean the only way to see your own contact
+// form was for the founder to look for you.
+//
+// Ownership is checked on EVERY route below, and the answer for somebody else's app
+// is 404 rather than 403 — the same rule the rest of this file follows, for the same
+// reason: a 403 confirms the app exists.
+
+/**
+ * The app, if it belongs to this user AND has a database. `null` otherwise.
+ *
+ * The two conditions are collapsed on purpose: an app with no form has no inbox,
+ * and telling its owner "no submissions yet" would be a promise that one might
+ * arrive. The caller answers 404 for both.
+ */
+async function ownedInboxApp(userId: string, appId: string) {
+  const app = await findOpsAppById(appId);
+  if (!app || app.userId !== userId || !app.d1DatabaseId) return null;
+  return app as typeof app & { d1DatabaseId: string };
+}
+
+const NO_INBOX = { error: 'not_found', message: 'Diese App gibt es nicht, oder sie hat kein Formular.' } as const;
+
+/**
+ * GET /api/ops/apps/:appId/submissions — newest first.
+ *
+ * `available: false` is NOT an empty list. A database that cannot be read means
+ * nobody can say whether anything arrived, and an inbox rendering that as "noch
+ * keine Einsendungen" is the silent-empty-card defect this codebase has met before.
+ */
+ops.get('/apps/:appId/submissions', async (c) => {
+  const principal = c.get('opsPrincipal');
+  const app = await ownedInboxApp(principal.userId, c.req.param('appId'));
+  if (!app) return c.json(NO_INBOX, 404);
+
+  const limit = Number(c.req.query('limit'));
+  const offset = Number(c.req.query('offset'));
+  const page = await listSubmissions(app.d1DatabaseId, {
+    ...(Number.isFinite(limit) ? { limit } : {}),
+    ...(Number.isFinite(offset) ? { offset } : {}),
+  });
+
+  if (!page) {
+    return c.json({
+      available: false,
+      message: 'Der Posteingang liess sich gerade nicht lesen. Das heißt NICHT, dass nichts da ist — wir konnten nur nicht nachsehen.',
+    });
+  }
+  return c.json({
+    available: true,
+    total: page.total,
+    monthlyCap: monthlySubmissionBudget(app.capsProfile),
+    acceptedThisMonth: await acceptedThisMonth(app.d1DatabaseId, usageMonth()),
+    notifications: await notificationsEnabled(app.d1DatabaseId),
+    submissions: page.submissions,
+  });
+});
+
+/** POST …/submissions/:id/read — mark one read. Idempotent; already-read is not an error. */
+ops.post('/apps/:appId/submissions/:submissionId/read', async (c) => {
+  const principal = c.get('opsPrincipal');
+  const app = await ownedInboxApp(principal.userId, c.req.param('appId'));
+  if (!app) return c.json(NO_INBOX, 404);
+  const done = await markSubmissionRead(app.d1DatabaseId, c.req.param('submissionId'));
+  return done
+    ? c.json({ ok: true })
+    : c.json({ error: 'not_saved', message: 'Das liess sich gerade nicht speichern. Bitte versuch es gleich noch einmal.' }, 503);
+});
+
+/**
+ * GET …/submissions.csv — the export.
+ *
+ * A GET because it is a download, and it is the owner's own data behind their own
+ * session. Bounded at 5.000 rows, and it SAYS SO in a header rather than quietly
+ * handing over a truncated file that looks complete.
+ */
+ops.get('/apps/:appId/submissions.csv', async (c) => {
+  const principal = c.get('opsPrincipal');
+  const app = await ownedInboxApp(principal.userId, c.req.param('appId'));
+  if (!app) return c.json(NO_INBOX, 404);
+
+  const all = await allSubmissionsForExport(app.d1DatabaseId);
+  if (!all) {
+    return c.json(
+      { error: 'unavailable', message: 'Der Export liess sich gerade nicht erstellen. Bitte versuch es gleich noch einmal.' },
+      503,
+    );
+  }
+  return new Response(submissionsToCsv(all.submissions), {
+    status: 200,
+    headers: {
+      'content-type': 'text/csv; charset=utf-8',
+      'content-disposition': `attachment; filename="einsendungen-${app.appName}.csv"`,
+      'cache-control': 'no-store',
+      // Truthful about its own completeness, in a place a script can read.
+      'x-goblin-export-truncated': all.truncated ? 'true' : 'false',
+      'x-goblin-export-rows': String(all.submissions.length),
+    },
+  });
+});
+
+/** DELETE …/submissions/:id — one message, gone. */
+ops.delete('/apps/:appId/submissions/:submissionId', async (c) => {
+  const principal = c.get('opsPrincipal');
+  const app = await ownedInboxApp(principal.userId, c.req.param('appId'));
+  if (!app) return c.json(NO_INBOX, 404);
+  const done = await deleteSubmission(app.d1DatabaseId, c.req.param('submissionId'));
+  return done
+    ? c.json({ ok: true })
+    : c.json({ error: 'not_deleted', message: 'Das liess sich gerade nicht löschen. Bitte versuch es gleich noch einmal.' }, 503);
+});
+
+/**
+ * DELETE …/submissions?confirm=ALLES-LOESCHEN — every message, gone.
+ *
+ * The confirm token is in the URL and it is German, because the person typing it is
+ * the person whose data it is. It is not a second dialog dressed as an API: the UI
+ * asks first, and this is the guard that means a stray request — a prefetch, a
+ * retry, a mis-tapped link — cannot empty somebody's inbox.
+ *
+ * `usage_months` is deliberately not cleared (see ops-d1.ts): the monthly allowance
+ * counts what was accepted, not what is still stored.
+ */
+ops.delete('/apps/:appId/submissions', async (c) => {
+  const principal = c.get('opsPrincipal');
+  const app = await ownedInboxApp(principal.userId, c.req.param('appId'));
+  if (!app) return c.json(NO_INBOX, 404);
+  if (c.req.query('confirm') !== DELETE_ALL_CONFIRM) {
+    return c.json(
+      { error: 'confirm_required', message: `Das löscht alle Einsendungen dieser App. Zum Bestätigen: ?confirm=${DELETE_ALL_CONFIRM}` },
+      400,
+    );
+  }
+  const result = await deleteAllSubmissions(app.d1DatabaseId);
+  if (!result.ok) {
+    return c.json({ error: 'not_deleted', message: 'Es liess sich gerade nichts löschen. Bitte versuch es gleich noch einmal.' }, 503);
+  }
+  logger.warn({ appId: app.appId, deleted: result.deleted }, 'ops_submissions_deleted_all');
+  return c.json({ ok: true, deleted: result.deleted });
+});
+
+/** POST …/notifications — the owner's own switch, per app. */
+ops.post('/apps/:appId/notifications', async (c) => {
+  const principal = c.get('opsPrincipal');
+  const app = await ownedInboxApp(principal.userId, c.req.param('appId'));
+  if (!app) return c.json(NO_INBOX, 404);
+  const body = await c.req.json<{ enabled?: boolean }>().catch(() => ({}) as { enabled?: boolean });
+  const enabled = body.enabled !== false;
+  const done = await setNotifications(app.d1DatabaseId, enabled);
+  return done
+    ? c.json({ ok: true, notifications: enabled })
+    : c.json({ error: 'not_saved', message: 'Die Einstellung liess sich gerade nicht speichern. Bitte versuch es gleich noch einmal.' }, 503);
 });
 
 /**
