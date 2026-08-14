@@ -354,3 +354,20 @@ import('./services/support-email.js')
 import('./services/catalog.js')
   .then(({ scheduleBootSync }) => scheduleBootSync())
   .catch((e) => console.warn('[catalog] boot sync import failed:', e));
+
+// AKT 2 · PHASE 5 · U5.1 — the Keeper heartbeat.
+//
+// Started here rather than on a Cloudflare cron trigger, and that is the phase's
+// central substrate decision: on Workers FREE the account ceiling is FIVE cron
+// triggers (OPS_SPIKE_0 §2 — the Phase-5 prompt's "250" is the PAID number), so a
+// trigger per Living App breaks at five apps. This uses ZERO of the five. See
+// services/ops-check-budget.ts and docs/ACT2_PHASE5_DECISIONS.md §P5-a.
+//
+// The runner gates itself on OPS_HOSTING_ENABLED and OPS_CHECKS_ENABLED, reads the
+// gate at every tick (never at import), and no-ops entirely while migration 0103 is
+// unapplied. So this line is inert on a pre-migration database and inert for the
+// whole Act-1 cohort — it starts a loop that decides, every minute, that there is
+// nothing to do.
+import('./services/ops-check-runner.js')
+  .then(({ startCheckRunner }) => startCheckRunner())
+  .catch((e) => console.warn('[ops-checks] runner import failed:', e));
