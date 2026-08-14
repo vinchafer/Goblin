@@ -21,6 +21,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { claimOpsApp, findOpsAppByProject } from './ops-apps-store';
 import { publishHostedApp, type PublishDeps } from './ops-publish';
 import type { OpsApp } from './ops-apps-store';
+import { wireForms } from './ops-form-wiring';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const PROJECT_UUID = '3f1a2b4c-5d6e-4f70-8a91-b2c3d4e5f607';
@@ -145,6 +146,13 @@ describe('the publish path with projectId: null — the E2E run, end to end at t
       markOpsAppFailed: async () => true,
       renameOpsApp: async () => true,
       appsDomain: () => 'justgoblin.app',
+      // PHASE 4. The REAL wiring, not a stub: these fixtures carry no form, so it is a
+      // no-op — and that is exactly the property worth holding. A stub here would let
+      // the Phase-4 branch drift out from under every Phase-2/3 test in this file.
+      wireForms,
+      provisionAppDatabase: vi.fn(async () => { throw new Error('no form here — must never be reached'); }),
+      setOpsAppD1Database: vi.fn(async () => true),
+      teardownAppDatabase: vi.fn(async () => ({ attempted: false, gone: null })),
       ...overrides,
     } as unknown as PublishDeps;
   }

@@ -244,7 +244,18 @@ ops.post('/apps/publish', async (c) => {
     if (result.code === 'review_unqueued') {
       return c.json({ error: result.code, stage: result.stage, message: result.message }, 503);
     }
-    const status = result.code === 'scan_blocked' ? 422 : result.code === 'name_taken' || result.code === 'name_released' || result.code === 'invalid_name' ? 409 : 502;
+    // PHASE 4: the two form failures are 503, not 502. Both mean "Goblin cannot
+    // host a form right now" — a state of ours that will pass — rather than "the
+    // substrate answered wrongly". The builder's next action is to try again, and
+    // the status should say so.
+    const status =
+      result.code === 'scan_blocked'
+        ? 422
+        : result.code === 'name_taken' || result.code === 'name_released' || result.code === 'invalid_name'
+          ? 409
+          : result.code === 'form_unwirable' || result.code === 'd1_unavailable'
+            ? 503
+            : 502;
     return c.json({ error: result.code, stage: result.stage, message: result.message, ...(result.url ? { url: result.url } : {}) }, status);
   }
   return c.json(result);

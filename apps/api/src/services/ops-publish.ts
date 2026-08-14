@@ -4,9 +4,11 @@
  * ── The order, and why it is not negotiable ──────────────────────────────────
  *   1. name        — claim it or refuse honestly
  *   2. artifact    — load what we are about to serve
+ *   2b. FORMS      — (Phase 4) wire any form the app declares, BEFORE the scan
  *   3. SCAN        — before a single byte reaches R2 (U2.3 / AUP promise)
  *   4. registry    — the row exists BEFORE the upload, so an interrupted publish
  *                    leaves something findable instead of an orphan prefix
+ *   4b. DATABASE   — (Phase 4) the app's own D1, if it has a form, before the upload
  *   5. upload      — R2 apps/{app_id}/
  *   6. route       — KV route:{name}
  *   7. VERIFY      — the public URL, through the router, byte-checked
@@ -15,6 +17,12 @@
  * Steps 3 and 7 are the two that make this different from "upload and hope".
  * Nothing is uploaded before the scan; nothing is called live before the verifier
  * says the public internet agrees.
+ *
+ * PHASE 4 slots its two steps AROUND step 3 and step 5 rather than after them, and
+ * both placements are load-bearing. The wiring goes before the scan so the injected
+ * bytes are scanned like every other byte — no exception for the platform's own
+ * snippet. The database goes before the upload so an app whose form cannot be
+ * hosted never goes live showing one.
  *
  * ── What this deliberately does NOT do ───────────────────────────────────────
  * It does not build. The artifact is the project's stored files, so a framework
@@ -39,6 +47,7 @@ import {
   markOpsAppFailed,
   markOpsAppPublished,
   renameOpsApp,
+  setOpsAppD1Database,
   type OpsApp,
 } from './ops-apps-store';
 import {
@@ -50,6 +59,8 @@ import {
   type NameCheck,
 } from './ops-app-names';
 import { verifyHostedPublish, type HostedVerification, type UploadedFile } from './ops-hosted-verify';
+import { wireForms, type WiringResult } from './ops-form-wiring';
+import { provisionAppDatabase, teardownAppDatabase } from './ops-d1';
 import { dailyRequestBudget } from './ops-caps';
 import { SCANNABLE_EXT } from './safety/scan-rules';
 import logger from '../lib/logger';
@@ -75,6 +86,16 @@ export interface PublishSuccess {
    * having passed both.
    */
   scan: { verdict: 'pass'; scannedFiles: number; hits: number; classifier: string };
+  /**
+   * PHASE 4 · U4.7 — which forms were wired, and what was deliberately left alone.
+   *
+   * Reported rather than assumed, because "my form is not connected" is something
+   * a builder must be able to learn from the publish result and not from an empty
+   * inbox three weeks later. `skipped` carries the forms with their own `action`
+   * (Goblin does not overrule an author who said where their form posts) and any
+   * this module could not read cleanly.
+   */
+  forms: { wired: Array<{ path: string; formId: string }>; skipped: Array<{ path: string; why: string }> };
 }
 
 export interface PublishFailure {
@@ -84,7 +105,11 @@ export interface PublishFailure {
   code:
     | 'invalid_name' | 'name_taken' | 'name_released' | 'no_entry' | 'empty_artifact'
     | 'scan_blocked' | 'scan_review' | 'review_unqueued'
-    | 'registry_unavailable' | 'upload_failed' | 'route_failed' | 'not_verified';
+    | 'registry_unavailable' | 'upload_failed' | 'route_failed' | 'not_verified'
+    /** PHASE 4 — the app has a form and Goblin cannot host one right now. */
+    | 'form_unwirable'
+    /** PHASE 4 — the app has a form and its database could not be created or recorded. */
+    | 'd1_unavailable';
   /** German, user-facing, in Max-language. Never a stack trace, never a rule id. */
   message: string;
   /** Present when a scan blocked — the rule ids belong in the log and the appeal. */
@@ -115,6 +140,12 @@ export interface PublishDeps {
   markOpsAppFailed: typeof markOpsAppFailed;
   renameOpsApp: typeof renameOpsApp;
   appsDomain: () => string;
+  // PHASE 4 — injectable like everything else here: the wiring is pure, and the two
+  // D1 calls touch a real Cloudflare account that a test must never reach.
+  wireForms: typeof wireForms;
+  provisionAppDatabase: typeof provisionAppDatabase;
+  setOpsAppD1Database: typeof setOpsAppD1Database;
+  teardownAppDatabase: typeof teardownAppDatabase;
 }
 
 export const defaultPublishDeps: PublishDeps = {
@@ -134,6 +165,10 @@ export const defaultPublishDeps: PublishDeps = {
   markOpsAppFailed,
   renameOpsApp,
   appsDomain: opsAppsDomain,
+  wireForms,
+  provisionAppDatabase,
+  setOpsAppD1Database,
+  teardownAppDatabase,
 };
 
 function ext(path: string): string {
@@ -210,7 +245,6 @@ export interface LoadedArtifact {
 export async function loadArtifact(projectId: string, deps: PublishDeps = defaultPublishDeps): Promise<LoadedArtifact> {
   const paths = await deps.listFiles(projectId);
   const files: UploadedFile[] = [];
-  const scanFiles: HostedScanFile[] = [];
   let totalBytes = 0;
 
   for (const path of paths) {
@@ -218,14 +252,27 @@ export async function loadArtifact(projectId: string, deps: PublishDeps = defaul
     if (!got) continue;
     files.push({ path, bytes: got.bytes });
     totalBytes += got.bytes.length;
-    scanFiles.push({
-      path,
-      bytes: got.bytes.length,
-      ...(SCANNABLE_EXT.has(ext(path)) ? { content: got.bytes.toString('utf8') } : {}),
-    });
   }
 
-  return { files, scanFiles, totalBytes };
+  return { files, scanFiles: describeForScan(files), totalBytes };
+}
+
+/**
+ * The scan's view of an artifact, derived from the BYTES rather than accumulated
+ * alongside them.
+ *
+ * Phase 4 rewrites some of those bytes (form wiring) between loading and scanning,
+ * and a scan description built while loading would then describe the file as it was
+ * BEFORE the rewrite — quietly breaking the U2.3 promise that what is scanned is
+ * what is uploaded. Deriving it makes that impossible to get wrong: there is one
+ * function, and it is called on whatever the final byte array is.
+ */
+function describeForScan(files: UploadedFile[]): HostedScanFile[] {
+  return files.map((f) => ({
+    path: f.path,
+    bytes: f.bytes.length,
+    ...(SCANNABLE_EXT.has(ext(f.path)) ? { content: f.bytes.toString('utf8') } : {}),
+  }));
 }
 
 // ── Publish ─────────────────────────────────────────────────────────────────
@@ -312,6 +359,29 @@ export async function publishHostedApp(input: PublishInput, deps: PublishDeps = 
     );
   }
 
+  // 2b. FORM WIRING (Phase 4 · U4.7) — BEFORE the scan, deliberately.
+  //
+  //     Phase 2's order says nothing reaches R2 that the scan has not read. The
+  //     injected bytes are bytes like any others, so they are injected here and
+  //     scanned in step 3 with everything else: WHAT IS SCANNED IS WHAT IS
+  //     UPLOADED, with no exception carved out for the platform's own snippet.
+  //
+  //     A refusal here refuses the PUBLISH. An app whose form cannot work must not
+  //     go live showing one — that is the phantom affordance this unit exists to
+  //     prevent, and the builder's already-live app (on a republish) stays exactly
+  //     as it is because nothing has been written yet.
+  const wiring = deps.wireForms(artifact.files);
+  if ('ok' in wiring && wiring.ok === false) {
+    logger.warn({ userId: input.userId, projectId: input.projectId, code: wiring.code }, 'hosted_publish_form_unwirable');
+    return fail('artifact', 'form_unwirable', wiring.message);
+  }
+  const wired = wiring as WiringResult;
+  if (wired.wired.length > 0) {
+    artifact.files = wired.files;
+    artifact.scanFiles = describeForScan(wired.files);
+    artifact.totalBytes = wired.files.reduce((sum, f) => sum + f.bytes.length, 0);
+  }
+
   // 3. SCAN — before anything is uploaded. A block means nothing went anywhere,
   //    and so does a REVIEW: the two differ in who decides next, never in what
   //    reached R2. Both return before step 4, which is the property the KV/R2
@@ -384,6 +454,42 @@ export async function publishHostedApp(input: PublishInput, deps: PublishDeps = 
   }
   const appId = app.appId;
 
+  // 4b. THE APP'S OWN DATABASE (Phase 4 · U4.1), before the upload.
+  //
+  //     Order matters for the same reason step 4 does: if the database cannot be
+  //     created, nothing may be uploaded and nothing may be routed. A published app
+  //     with a visible form and no place to put a submission is a promise Goblin
+  //     cannot keep, made to people who never agreed to anything with us.
+  //
+  //     Provisioned ONCE per app. A republish of a form app reuses the database it
+  //     already has — otherwise every republish would abandon a database full of the
+  //     owner's submissions, which is the orphan class X1 is about.
+  if (wired.wired.length > 0 && !app.d1DatabaseId) {
+    const provisioned = await deps.provisionAppDatabase(appId);
+    if (!provisioned.ok) {
+      await deps.markOpsAppFailed(appId);
+      logger.warn({ appId, code: provisioned.code }, 'hosted_publish_d1_failed');
+      return fail('registry', 'd1_unavailable', provisioned.message, { appId, name, url });
+    }
+    // The id has to reach the registry, or the database is an orphan the moment
+    // anything else goes wrong: the sweep would only find it by name and the
+    // teardown would never see it at all. A registry that will not take it is a
+    // failed publish, and the database is torn back down rather than left standing.
+    const recorded = await deps.setOpsAppD1Database(appId, provisioned.databaseId);
+    if (!recorded) {
+      await deps.teardownAppDatabase(provisioned.databaseId);
+      await deps.markOpsAppFailed(appId);
+      logger.error({ appId }, 'hosted_publish_d1_unrecorded — database torn back down');
+      return fail(
+        'registry',
+        'd1_unavailable',
+        'Die Datenablage für die Formulare dieser App konnte nicht vermerkt werden. '
+        + 'Die App wurde deshalb NICHT veröffentlicht. Bitte versuch es gleich noch einmal.',
+        { appId, name, url },
+      );
+    }
+  }
+
   // 5. UPLOAD.
   const upload = await deps.putAppFiles(
     appId,
@@ -441,6 +547,7 @@ export async function publishHostedApp(input: PublishInput, deps: PublishDeps = 
       // "both stages cleared it" when stage 2 was switched off or skipped.
       classifier: scan.stage2 ? scan.stage2.reason : 'not_run',
     },
+    forms: { wired: wired.wired, skipped: wired.skipped },
   };
 }
 
