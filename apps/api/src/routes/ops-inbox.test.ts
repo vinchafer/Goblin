@@ -225,3 +225,87 @@ describe('GET /apps reports whether an app has an inbox at all', () => {
     expect(text).not.toContain('db-1');
   });
 });
+
+// ── the configuration report the founder verifies from (2026-08-14) ────────
+//
+// Requested before the merge: the health surface must report the three Phase-4
+// variables BY NAME, and the endpoint BY SHAPE — never a value. This block is the
+// evidence that it does, and that it cannot accidentally start doing otherwise.
+
+describe('GET /health — the forms configuration report', () => {
+  const health = async () => (await ops.request('/health', { headers: auth })).json() as Promise<Record<string, any>>;
+
+  beforeEach(() => {
+    delete process.env.OPS_FORMS_ENDPOINT;
+    delete process.env.NEXT_PUBLIC_API_URL;
+    delete process.env.CF_TURNSTILE_SITE_KEY;
+    delete process.env.CF_TURNSTILE_SECRET_KEY;
+  });
+
+  it('reports all three by NAME, as booleans', async () => {
+    process.env.OPS_FORMS_ENDPOINT = 'https://api.justgoblin.com';
+    process.env.CF_TURNSTILE_SITE_KEY = '0xsite';
+    process.env.CF_TURNSTILE_SECRET_KEY = '0xsecret';
+    const body = await health();
+    expect(body.forms.present).toMatchObject({
+      OPS_FORMS_ENDPOINT: true,
+      CF_TURNSTILE_SITE_KEY: true,
+      CF_TURNSTILE_SECRET_KEY: true,
+    });
+    expect(body.forms.verdict).toBe('ready');
+    expect(body.forms.missing).toEqual([]);
+  });
+
+  it('NEVER emits a value, a prefix, a length or a hostname', async () => {
+    process.env.OPS_FORMS_ENDPOINT = 'https://api.justgoblin.com';
+    process.env.CF_TURNSTILE_SITE_KEY = '0xSITEKEYVALUE';
+    process.env.CF_TURNSTILE_SECRET_KEY = '0xSECRETKEYVALUE';
+    const text = JSON.stringify((await health()).forms);
+    expect(text).not.toContain('0xSITEKEYVALUE');
+    expect(text).not.toContain('0xSECRETKEYVALUE');
+    // The host is a value too. The shape is reported; the origin is not.
+    expect(text).not.toContain('api.justgoblin.com');
+    expect(text).not.toMatch(/"length"|"prefix"/);
+  });
+
+  it('reports the endpoint by SHAPE — bare origin, scheme, normalisation', async () => {
+    process.env.OPS_FORMS_ENDPOINT = 'https://api.justgoblin.com/';
+    const body = await health();
+    expect(body.forms.endpoint).toEqual({
+      source: 'OPS_FORMS_ENDPOINT', scheme: 'https', bareOrigin: true, trailingSlashRemoved: true,
+    });
+  });
+
+  it('a MALFORMED endpoint is its own verdict, with the problem named', async () => {
+    process.env.OPS_FORMS_ENDPOINT = 'https://api.justgoblin.com/api';
+    process.env.CF_TURNSTILE_SITE_KEY = '0xsite';
+    process.env.CF_TURNSTILE_SECRET_KEY = '0xsecret';
+    const body = await health();
+    expect(body.forms.verdict).toBe('malformed');
+    expect(body.forms.endpoint).toMatchObject({ bareOrigin: false, problem: 'has_path' });
+  });
+
+  it('HALF-configured is `incomplete`, never `not_configured` — the dangerous middle has its own name', async () => {
+    process.env.CF_TURNSTILE_SITE_KEY = '0xsite';
+    const body = await health();
+    expect(body.forms.verdict).toBe('incomplete');
+    expect(body.forms.missing).toEqual(['CF_TURNSTILE_SECRET_KEY', 'OPS_FORMS_ENDPOINT']);
+  });
+
+  it('nothing set at all is `not_configured` — a correct state, not a fault', async () => {
+    expect((await health()).forms.verdict).toBe('not_configured');
+  });
+
+  it('does NOT change the overall status — an instance without forms stays green', async () => {
+    const withoutForms = await health();
+    process.env.CF_TURNSTILE_SITE_KEY = '0xsite';
+    process.env.CF_TURNSTILE_SECRET_KEY = '0xsecret';
+    process.env.OPS_FORMS_ENDPOINT = 'https://api.justgoblin.com';
+    const withForms = await health();
+    expect(withForms.status).toBe(withoutForms.status);
+  });
+
+  it('says out loud that it cannot speak for the D1 token scope', async () => {
+    expect((await health()).forms.note).toContain('D1:Edit');
+  });
+});

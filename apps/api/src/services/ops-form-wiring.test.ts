@@ -8,7 +8,7 @@
  * take over a working part of somebody's app.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { wireForms, formSnippet, type WiringResult } from './ops-form-wiring';
 
 const OPTS = { endpoint: 'https://api.justgoblin.com', siteKey: '0x4AAAsitekey' };
@@ -175,5 +175,94 @@ describe('the injected snippet', () => {
   it('is appended when there is no body tag — a fragment is still a page a browser runs', () => {
     const r = wire([file('index.html', '<form><input name="a"></form>')]);
     expect(text(r, 'index.html')).toContain('turnstile/v0/api.js');
+  });
+});
+
+// ── the endpoint's SHAPE (founder verification, 2026-08-14) ────────────────
+//
+// `/f/{label}/{formId}` is appended to whatever this resolves to, so an origin
+// with a path on it produces a form that posts to a URL nobody serves — and it
+// fails identically to a working form until a visitor loses their message. These
+// tests are the reason the health surface can report a shape verdict at all.
+
+describe('readFormsEndpoint — a bare origin, and nothing else', () => {
+  const read = async () => (await import('./ops-form-wiring')).readFormsEndpoint();
+
+  beforeEach(() => {
+    delete process.env.OPS_FORMS_ENDPOINT;
+    delete process.env.NEXT_PUBLIC_API_URL;
+  });
+
+  it('accepts a bare https origin', async () => {
+    process.env.OPS_FORMS_ENDPOINT = 'https://api.justgoblin.com';
+    expect(await read()).toEqual({
+      ok: true, origin: 'https://api.justgoblin.com', source: 'OPS_FORMS_ENDPOINT',
+      normalizedTrailingSlash: false, scheme: 'https',
+    });
+  });
+
+  it('normalises ONE trailing slash and SAYS it did', async () => {
+    process.env.OPS_FORMS_ENDPOINT = 'https://api.justgoblin.com/';
+    const r = await read();
+    expect(r).toMatchObject({ ok: true, origin: 'https://api.justgoblin.com', normalizedTrailingSlash: true });
+  });
+
+  it('REFUSES a path — that is a different URL from the one anybody meant', async () => {
+    process.env.OPS_FORMS_ENDPOINT = 'https://api.justgoblin.com/api';
+    expect(await read()).toEqual({ ok: false, source: 'OPS_FORMS_ENDPOINT', problem: 'has_path' });
+  });
+
+  it('refuses a query string and a value that is not a URL at all', async () => {
+    process.env.OPS_FORMS_ENDPOINT = 'https://api.justgoblin.com?x=1';
+    expect(await read()).toMatchObject({ problem: 'has_query' });
+    process.env.OPS_FORMS_ENDPOINT = 'api.justgoblin.com';
+    expect(await read()).toMatchObject({ problem: 'not_absolute' });
+  });
+
+  it('refuses http off localhost — a browser blocks that POST as mixed content anyway', async () => {
+    process.env.OPS_FORMS_ENDPOINT = 'http://api.justgoblin.com';
+    expect(await read()).toMatchObject({ problem: 'insecure_scheme' });
+    process.env.OPS_FORMS_ENDPOINT = 'http://localhost:3001';
+    expect(await read()).toMatchObject({ ok: true, scheme: 'http' });
+  });
+
+  it('a quoted paste still reads — the same hardening every other env value got', async () => {
+    process.env.OPS_FORMS_ENDPOINT = '"https://api.justgoblin.com"';
+    expect(await read()).toMatchObject({ ok: true, origin: 'https://api.justgoblin.com' });
+  });
+
+  it('falls back to NEXT_PUBLIC_API_URL and names which one answered', async () => {
+    process.env.NEXT_PUBLIC_API_URL = 'https://api.justgoblin.com';
+    expect(await read()).toMatchObject({ ok: true, source: 'NEXT_PUBLIC_API_URL' });
+  });
+
+  it('unset is `unset`, not malformed — the two need different founder actions', async () => {
+    expect(await read()).toEqual({ ok: false, source: 'none', problem: 'unset' });
+  });
+});
+
+describe('a MALFORMED endpoint refuses the publish differently from a missing one', () => {
+  beforeEach(() => {
+    delete process.env.OPS_FORMS_ENDPOINT;
+    delete process.env.NEXT_PUBLIC_API_URL;
+    process.env.CF_TURNSTILE_SITE_KEY = '0xkey';
+  });
+
+  const files = [file('index.html', PAGE('<form><input name="a"></form>'))];
+
+  it('a path on the endpoint is `bad_endpoint`, and the message says it goes nowhere', async () => {
+    process.env.OPS_FORMS_ENDPOINT = 'https://api.justgoblin.com/api';
+    const { wireForms: real } = await import('./ops-form-wiring');
+    const r = real(files);
+    expect(r).toMatchObject({ ok: false, code: 'bad_endpoint' });
+    expect((r as { message: string }).message).toContain('ins Leere');
+    expect((r as { detail?: string }).detail).toBe('OPS_FORMS_ENDPOINT: has_path');
+    // The detail names the variable and the problem — never the value.
+    expect((r as { detail?: string }).detail).not.toContain('justgoblin.com');
+  });
+
+  it('nothing set at all stays `no_endpoint`', async () => {
+    const { wireForms: real } = await import('./ops-form-wiring');
+    expect(real(files)).toMatchObject({ ok: false, code: 'no_endpoint' });
   });
 });

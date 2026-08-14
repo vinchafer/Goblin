@@ -66,7 +66,19 @@ export interface WiringResult {
   skipped: Array<{ path: string; why: 'has_action' | 'already_wired' | 'unparseable' }>;
 }
 
-export type WiringRefusal = { ok: false; code: 'no_site_key' | 'no_endpoint'; message: string };
+export type WiringRefusal = {
+  ok: false;
+  /**
+   * `bad_endpoint` is separate from `no_endpoint` because the founder's next action
+   * differs completely: one is "set a variable", the other is "you set it, and it
+   * has a path on the end". Collapsing them would send somebody looking for a
+   * missing variable that is right there.
+   */
+  code: 'no_site_key' | 'no_endpoint' | 'bad_endpoint';
+  message: string;
+  /** Technical, for the log and the founder. Never the value. */
+  detail?: string;
+};
 
 const HTML_EXT = /\.html?$/i;
 
@@ -85,9 +97,90 @@ const FORM_ID_SHAPE = /^[a-z0-9][a-z0-9_-]{0,63}$/;
  * relative URL would post to the app's own hostname, where nothing is listening —
  * a form that silently swallows every message.
  */
+export type FormsEndpointSource = 'OPS_FORMS_ENDPOINT' | 'NEXT_PUBLIC_API_URL' | 'none';
+
+/**
+ * What the endpoint variable says, as a SHAPE — never as a value.
+ *
+ * ── Why this is a three-way read and not a string ────────────────────────────
+ * `/f/{label}/{formId}` is appended to whatever this returns. So the difference
+ * between an origin and an origin-with-a-path is the difference between a form
+ * that posts to Goblin and a form that posts to a URL nobody serves — and the
+ * second one fails identically to the first right up until a visitor loses their
+ * message. Three shapes get three different answers:
+ *
+ *   • bare origin                  → fine
+ *   • one trailing slash           → NORMALISED, and reported as normalised.
+ *     Stripping it is unambiguous (`https://x/` and `https://x` address the same
+ *     origin), so refusing would be pedantry — but staying silent about it would
+ *     hide a paste that was one character off from being wrong in a way that
+ *     matters.
+ *   • a path, a query, a fragment  → MALFORMED. Refused, loudly, because
+ *     `https://api.example.com/v1` + `/f/…` is a different URL from the one the
+ *     founder meant and there is no honest way to guess which they wanted.
+ *
+ * ── Why http is refused except on localhost ──────────────────────────────────
+ * The page carrying the form is served over https from `*.justgoblin.app`. A
+ * browser blocks a mixed-content POST outright, so an http endpoint is a form that
+ * cannot work — it just fails in the browser instead of in our code. localhost is
+ * exempted because that is the dev loop and nothing there is mixed content.
+ *
+ * NOTHING IN THIS TYPE CARRIES THE VALUE. `source` names which variable answered,
+ * and the booleans describe the shape. The host never appears, so this can be
+ * rendered on a health surface without becoming the one place a hostname leaks.
+ */
+export type FormsEndpointRead =
+  | {
+      ok: true;
+      /** Not for reporting — for composing the URL. The health surface must not echo it. */
+      origin: string;
+      source: FormsEndpointSource;
+      /** Did the pasted value carry a trailing slash we removed? */
+      normalizedTrailingSlash: boolean;
+      scheme: 'https' | 'http';
+    }
+  | {
+      ok: false;
+      source: FormsEndpointSource;
+      problem: 'unset' | 'unparseable' | 'not_absolute' | 'insecure_scheme' | 'has_path' | 'has_query';
+    };
+
+export function readFormsEndpoint(): FormsEndpointRead {
+  const explicit = envString('OPS_FORMS_ENDPOINT');
+  const source: FormsEndpointSource = explicit
+    ? 'OPS_FORMS_ENDPOINT'
+    : envString('NEXT_PUBLIC_API_URL')
+      ? 'NEXT_PUBLIC_API_URL'
+      : 'none';
+  const raw = explicit || envString('NEXT_PUBLIC_API_URL');
+  if (!raw) return { ok: false, source: 'none', problem: 'unset' };
+
+  const trimmed = raw.replace(/\/+$/, '');
+  const normalizedTrailingSlash = trimmed !== raw;
+
+  if (!/^https?:\/\//i.test(trimmed)) return { ok: false, source, problem: 'not_absolute' };
+
+  let url: URL;
+  try {
+    url = new URL(trimmed);
+  } catch {
+    return { ok: false, source, problem: 'unparseable' };
+  }
+
+  const scheme = url.protocol === 'https:' ? 'https' : 'http';
+  const localhost = url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+  if (scheme === 'http' && !localhost) return { ok: false, source, problem: 'insecure_scheme' };
+  if (url.search) return { ok: false, source, problem: 'has_query' };
+  // `new URL('https://x').pathname` is '/', which is the bare-origin case.
+  if (url.pathname !== '/' && url.pathname !== '') return { ok: false, source, problem: 'has_path' };
+
+  return { ok: true, origin: url.origin, source, normalizedTrailingSlash, scheme };
+}
+
+/** The origin the snippet posts to, or `''` when there is not a usable one. */
 export function formsEndpoint(): string {
-  const raw = envString('OPS_FORMS_ENDPOINT') || envString('NEXT_PUBLIC_API_URL');
-  return raw.replace(/\/$/, '');
+  const read = readFormsEndpoint();
+  return read.ok ? read.origin : '';
 }
 
 /**
@@ -186,7 +279,8 @@ export function wireForms(
   files: Array<{ path: string; bytes: Buffer }>,
   opts: { endpoint?: string; siteKey?: string } = {},
 ): WiringResult | WiringRefusal {
-  const endpoint = opts.endpoint ?? formsEndpoint();
+  const read = opts.endpoint === undefined ? readFormsEndpoint() : null;
+  const endpoint = opts.endpoint ?? (read?.ok ? read.origin : '');
   const siteKey = opts.siteKey ?? turnstileSiteKey();
 
   // Nothing to do — and therefore nothing to refuse. An app with no form must not
@@ -205,13 +299,21 @@ export function wireForms(
     };
   }
   if (!endpoint) {
+    // A configured-but-malformed endpoint is its own answer. Publishing with a
+    // path on the end would produce a form that posts to a URL nobody serves —
+    // which fails exactly like a working form until somebody loses a message.
+    const malformed = read && !read.ok && read.problem !== 'unset';
     return {
       ok: false,
-      code: 'no_endpoint',
-      message:
-        'Diese App enthält ein Formular, und Goblin weiß gerade nicht, wohin die Einsendungen gehen sollen. '
-        + 'Wir veröffentlichen sie deshalb NICHT — ein sichtbares Formular, das nichts entgegennimmt, '
-        + 'wäre eine Zusage, die wir nicht halten.',
+      code: malformed ? 'bad_endpoint' : 'no_endpoint',
+      message: malformed
+        ? 'Diese App enthält ein Formular, und die Adresse, an die Einsendungen gehen sollen, ist nicht '
+          + 'in Ordnung. Wir veröffentlichen sie deshalb NICHT — ein Formular, das ins Leere schickt, '
+          + 'wäre schlimmer als eines, das noch nicht online ist.'
+        : 'Diese App enthält ein Formular, und Goblin weiß gerade nicht, wohin die Einsendungen gehen sollen. '
+          + 'Wir veröffentlichen sie deshalb NICHT — ein sichtbares Formular, das nichts entgegennimmt, '
+          + 'wäre eine Zusage, die wir nicht halten.',
+      ...(read && !read.ok ? { detail: `${read.source}: ${read.problem}` } : {}),
     };
   }
 

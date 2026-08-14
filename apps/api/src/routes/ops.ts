@@ -43,6 +43,8 @@ import {
   usageMonth,
 } from '../services/ops-d1';
 import { monthlySubmissionBudget } from '../services/ops-caps';
+import { readFormsEndpoint } from '../services/ops-form-wiring';
+import { envString } from '../lib/env-value';
 import { appUrl } from '../services/ops-app-names';
 import { getSupabaseAdmin } from '../lib/supabase';
 import logger from '../lib/logger';
@@ -144,10 +146,90 @@ ops.get('/health', async (c) => {
     hostingEnabled: opsHostingEnabled(), // always true here — the gate admitted us
     appsDomain: opsAppsDomain(), // public hostname, not a secret
     checks,
+    forms: formsConfigReport(),
     tookMs: Date.now() - started,
     timestamp: new Date().toISOString(),
   });
 });
+
+/**
+ * PHASE 4 — the three variables Phase 4 introduced, reported BY NAME and BY SHAPE.
+ *
+ * ── Why this is beside `checks` and not inside it ────────────────────────────
+ * `status` above is `ok` only when EVERY check is `ok`, and a `skip` already
+ * degrades it. An API instance with no forms configured is a CORRECT instance —
+ * that is the whole reason `CF_TURNSTILE_*` were kept out of `CF_ENV_VARS`
+ * (cf-deploy.ts) — so folding this into `checks` would turn a green Phase-1 health
+ * report degraded over a configuration nobody is using. It is a configuration
+ * REPORT, not a reachability check, and it deliberately does not touch `status`.
+ *
+ * ── What it will never contain ───────────────────────────────────────────────
+ * A value, a prefix, a length, or a hostname. `present` is booleans by name. The
+ * endpoint is described by its SHAPE — which variable answered, the scheme,
+ * whether it is a bare origin, whether a trailing slash had to be removed — and
+ * `readFormsEndpoint()` is typed so the origin itself has to be reached for
+ * explicitly, which nothing here does.
+ *
+ * ── The verdict ─────────────────────────────────────────────────────────────
+ *   ready         — all three present, endpoint a usable origin. Forms will work.
+ *   not_configured— nothing form-related is set. A correct state; not a fault.
+ *   incomplete    — SOME of it is set. This is the dangerous middle: it looks
+ *                   configured and a form publish will refuse. Named separately
+ *                   so "half done" never reads as "off".
+ *   malformed     — the endpoint is set and is not an origin. The form publish
+ *                   refuses rather than shipping a form that posts into nothing.
+ */
+function formsConfigReport() {
+  const present = {
+    OPS_FORMS_ENDPOINT: envString('OPS_FORMS_ENDPOINT').length > 0,
+    NEXT_PUBLIC_API_URL: envString('NEXT_PUBLIC_API_URL').length > 0,
+    CF_TURNSTILE_SITE_KEY: envString('CF_TURNSTILE_SITE_KEY').length > 0,
+    CF_TURNSTILE_SECRET_KEY: envString('CF_TURNSTILE_SECRET_KEY').length > 0,
+  };
+  const endpointRead = readFormsEndpoint();
+  const endpoint = endpointRead.ok
+    ? {
+        source: endpointRead.source,
+        scheme: endpointRead.scheme,
+        bareOrigin: true,
+        trailingSlashRemoved: endpointRead.normalizedTrailingSlash,
+      }
+    : { source: endpointRead.source, bareOrigin: false, problem: endpointRead.problem };
+
+  const anySet = Object.values(present).some(Boolean);
+  const allSet = present.CF_TURNSTILE_SITE_KEY && present.CF_TURNSTILE_SECRET_KEY && endpointRead.ok;
+
+  const verdict = !anySet
+    ? 'not_configured'
+    : !endpointRead.ok && endpointRead.problem !== 'unset'
+      ? 'malformed'
+      : allSet
+        ? 'ready'
+        : 'incomplete';
+
+  return {
+    verdict,
+    /** Booleans by name. Never a value, never a length, never a prefix. */
+    present,
+    /** Shape only — no host, no path, no value. */
+    endpoint,
+    /** Which names are missing for forms to work at all. */
+    missing: [
+      ...(present.CF_TURNSTILE_SITE_KEY ? [] : ['CF_TURNSTILE_SITE_KEY']),
+      ...(present.CF_TURNSTILE_SECRET_KEY ? [] : ['CF_TURNSTILE_SECRET_KEY']),
+      ...(endpointRead.ok ? [] : ['OPS_FORMS_ENDPOINT']),
+    ],
+    /**
+     * Stated rather than implied: this block does NOT feed `status`, and it says
+     * nothing about whether the Cloudflare API token carries D1:Edit — that scope
+     * cannot be read back from a token, and the first form publish is where it
+     * shows up (honestly, as `d1_unavailable`).
+     */
+    note:
+      'Presence by name and shape only — no values. Does not affect `status`. '
+      + 'Says nothing about whether CF_API_TOKEN carries D1:Edit; that surfaces at the first form publish.',
+  };
+}
 
 /**
  * POST /api/ops/selftest — U1.5's round-trip proof, executed BY THE DEPLOYED API.
