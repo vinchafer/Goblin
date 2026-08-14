@@ -85,6 +85,10 @@ const ROUTES: Array<{ method: string; path: string; body?: unknown }> = [
   { method: 'DELETE', path: '/apps/app-1/submissions/sub-1' },
   { method: 'DELETE', path: '/apps/app-1/submissions?confirm=ALLES-LOESCHEN' },
   { method: 'POST', path: '/apps/app-1/notifications', body: { enabled: false } },
+  // PHASE 5 · U5.7. The status card is the owner's own view of their own app, so
+  // it sits on the BUILDER's gate like the inbox — and is therefore one more way
+  // the cohort could reach Act 2, enumerated here like every other.
+  { method: 'GET', path: '/apps/app-1/status' },
 ];
 
 function call(route: { method: string; path: string; body?: unknown }, headers: Record<string, string> = {}) {
@@ -304,5 +308,147 @@ describe('the router serves only 404s while nothing is published', () => {
   it('still sends the apex to the marketing site — that is the one thing that answers', async () => {
     const res = await worker.fetch(new Request('https://justgoblin.app/'), emptyPlane());
     expect(res.status).toBe(302);
+  });
+});
+
+// ── PHASE 5 · U5.7 — the heartbeat itself ───────────────────────────────────
+//
+// The routes above prove the cohort cannot SEE the state. This section proves the
+// heartbeat does not ACT while Act 2 is dark, and that turning it dark does not
+// disarm the operator — the same "the kill switch must never disarm the kill
+// switch" sentence, now with a background job in the picture.
+//
+// A background loop is a new shape of exposure that a route test cannot cover: it
+// runs on a timer with nobody's session behind it, so no gate is consulted at
+// request time and the only thing standing between it and a cohort user's app is
+// the switch it reads itself.
+
+describe('PHASE 5 · U5.7 — the heartbeat obeys both dimensions', () => {
+  it('makes NO outbound request and writes NOTHING while the kill switch is off', async () => {
+    process.env.OPS_HOSTING_ENABLED = 'false';
+    const { runCheckTick } = await import('../services/ops-check-runner');
+
+    const fetchMock = vi.fn(async () => new Response('', { status: 200 }));
+    const record = vi.fn(async () => true);
+    const listApps = vi.fn(async () => ({ available: true, apps: [] }));
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      const report = await runCheckTick({ record, listApps, appsDomain: 'justgoblin.app' });
+      expect(report.ran).toBe(false);
+      expect(report.skipped).toBe('disabled');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+    // It did not even ASK which apps exist — the switch is read before anything.
+    expect(listApps).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(record).not.toHaveBeenCalled();
+  });
+
+  it('treats every not-"true" kill-switch value as OFF, like every other Act-2 gate', async () => {
+    const { checksEnabled } = await import('../services/ops-check-runner');
+    for (const value of ['', ' ', 'false', 'FALSE', '0', '1', 'yes', 'on', 'enabled', 'ture']) {
+      process.env.OPS_HOSTING_ENABLED = value;
+      expect(checksEnabled(), `OPS_HOSTING_ENABLED=${JSON.stringify(value)} must be OFF`).toBe(false);
+    }
+    delete process.env.OPS_HOSTING_ENABLED;
+    expect(checksEnabled()).toBe(false);
+  });
+
+  it('has its OWN switch that can stop it while the rest of Act 2 stays up', async () => {
+    const { checksEnabled } = await import('../services/ops-check-runner');
+    process.env.OPS_HOSTING_ENABLED = 'true';
+    try {
+      // Default ON — a merge that shipped a heartbeat which silently does not beat
+      // is the one failure this phase is least allowed to have.
+      delete process.env.OPS_CHECKS_ENABLED;
+      expect(checksEnabled()).toBe(true);
+
+      process.env.OPS_CHECKS_ENABLED = 'false';
+      expect(checksEnabled()).toBe(false);
+    } finally {
+      delete process.env.OPS_CHECKS_ENABLED;
+    }
+  });
+
+  it('reads the switch at every tick, never once at import — a Railway change takes effect', async () => {
+    const { checksEnabled } = await import('../services/ops-check-runner');
+    process.env.OPS_HOSTING_ENABLED = 'true';
+    expect(checksEnabled()).toBe(true);
+    process.env.OPS_HOSTING_ENABLED = 'false';
+    expect(checksEnabled()).toBe(false);
+    process.env.OPS_HOSTING_ENABLED = 'true';
+    expect(checksEnabled()).toBe(true);
+  });
+
+  it('checks ONLY apps the registry lists — it can never wander onto a cohort project', async () => {
+    // The exposure a background job has and a route does not: it picks its own
+    // targets. It picks them from `ops_apps`, and the only way into `ops_apps` is
+    // a publish from an allowlisted account. There is no code path from a Vercel
+    // project, a Goblin project id, or a hostname to a check.
+    process.env.OPS_HOSTING_ENABLED = 'true';
+    const { runCheckTick } = await import('../services/ops-check-runner');
+
+    const urls: string[] = [];
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      urls.push(String(input));
+      return new Response('', { status: 200 });
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      await runCheckTick({
+        appsDomain: 'justgoblin.app',
+        webUrl: null,
+        apiUrl: null,
+        cert: async () => ({ outcome: 'unknown' as const }),
+        domain: async () => ({ outcome: 'unknown' as const }),
+        listApps: async () => ({ available: true, apps: [] }),
+        lastMeasured: async () => ({ available: true, last: new Map<string, string>() }),
+        record: async () => true,
+        prune: async () => ({ ok: true as const, cutoff: '2026-08-06T00:00:00.000Z' }),
+      });
+    } finally {
+      vi.unstubAllGlobals();
+    }
+    // An empty registry means an empty fan-out. No default target, no fallback.
+    expect(urls).toEqual([]);
+  });
+});
+
+describe('PHASE 5 · U5.7 — the kill switch must never disarm the kill switch', () => {
+  it('the founder console stays reachable when Act 2 is dark, so UNKNOWN can be SEEN', async () => {
+    // The load-bearing sentence, one phase further on. With the switch off the
+    // runner stops, states go stale and everything derives to UNKNOWN — and being
+    // able to see that is exactly why this surface must not vanish with it. A
+    // console that disappeared alongside the thing it reports on would leave the
+    // founder unable to tell "off" from "broken".
+    process.env.OPS_HOSTING_ENABLED = 'false';
+    process.env.OPS_FOUNDER_ACCOUNTS = BETA;
+    try {
+      const { opsConsole } = await import('./ops-console');
+      getUser.mockResolvedValue({ data: { user: { id: 'u-beta', email: BETA } }, error: null });
+      for (const path of ['/checks', '/status']) {
+        const res = await opsConsole.request(path, { headers: { Authorization: 'Bearer valid-founder-token' } });
+        expect(res.status, `${path} was refused with the switch off`).not.toBe(404);
+      }
+    } finally {
+      delete process.env.OPS_FOUNDER_ACCOUNTS;
+    }
+  });
+
+  it('the console is still invisible to a non-founder while Act 2 is dark', async () => {
+    // Reachability for the founder must not become reachability for anyone else:
+    // the two dimensions stay independent with the switch in either position.
+    process.env.OPS_HOSTING_ENABLED = 'false';
+    process.env.OPS_FOUNDER_ACCOUNTS = BETA;
+    try {
+      const { opsConsole } = await import('./ops-console');
+      getUser.mockResolvedValue({ data: { user: { id: 'u-cohort', email: COHORT } }, error: null });
+      const res = await opsConsole.request('/checks', { headers: { Authorization: 'Bearer valid-cohort-token' } });
+      expect(res.status).toBe(404);
+      expect(await res.text()).toBe('404 Not Found');
+    } finally {
+      delete process.env.OPS_FOUNDER_ACCOUNTS;
+    }
   });
 });

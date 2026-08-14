@@ -45,6 +45,15 @@ import {
 } from '@/lib/publish-outcome';
 import { PublishOutcomeView } from './publish-outcome-view';
 import { findingOf, findingClass, verdictOf, verdictClass, type OrphanReportBody } from './orphan-view';
+import {
+  measuredStamp,
+  stateClass,
+  worstFirst,
+  type ChecksBody,
+  type CheckState,
+  type CheckStateReason,
+  type SubjectStateView,
+} from './checks-view';
 
 // ── shapes the API hands us ─────────────────────────────────────────────────
 
@@ -205,6 +214,56 @@ function State({ value, labels, unknownLabel }: { value: Tri; labels: { yes: str
   // The whole point: null is its own visual class and its own word.
   if (value === null || value === undefined) return <span className="oc-state unknown">{unknownLabel}</span>;
   return <span className={`oc-state ${value ? 'ok' : 'bad'}`}>{value ? labels.yes : labels.no}</span>;
+}
+
+/**
+ * PHASE 5 · U5.4 — a derived state and its measurement time, together.
+ *
+ * The prop signature is the guarantee, exactly as it is in the owner's card: this
+ * component cannot render a state word without also rendering when it was
+ * measured, because it takes the whole `SubjectStateView` and always prints
+ * `measuredAt`. There is no "just the pill" variant to reach for.
+ *
+ * The pill carries a WORD only — F4's lesson from the orphan card: a sentence
+ * inside `.oc-state` does not wrap and pushes a card past 390px. The sentence
+ * goes underneath.
+ */
+function CheckState({
+  subject,
+  labels,
+  lang,
+}: {
+  subject: SubjectStateView;
+  labels: {
+    healthy: string;
+    degraded: string;
+    down: string;
+    unknown: string;
+    lastMeasured: string;
+    never: string;
+    reasons: Record<CheckStateReason, string>;
+  };
+  lang: Lang;
+}) {
+  const word =
+    subject.state === 'healthy'
+      ? labels.healthy
+      : subject.state === 'degraded'
+        ? labels.degraded
+        : subject.state === 'down'
+          ? labels.down
+          : labels.unknown;
+  const stamp = measuredStamp(subject.measuredAt, lang);
+  return (
+    <>
+      <span className={`oc-state ${stateClass(subject.state)}`}>{word}</span>
+      {/* Always rendered, in every branch. `never` is the honest word for the one
+          case with no timestamp, and it is not a dash. */}
+      <p className="oc-note">
+        {labels.lastMeasured}: {stamp ?? labels.never} — {labels.reasons[subject.reason]}
+      </p>
+    </>
+  );
 }
 
 function Row({ k, children }: { k: string; children: React.ReactNode }) {
@@ -662,6 +721,52 @@ export function OpsConsole({ initialStatus }: { initialStatus: StatusPayload }) 
     setOrphanError(res.error);
   }, [call]);
 
+  // ── PHASE 5 · U5.4 — the fleet's state ────────────────────────────────────
+  //
+  // Loaded on mount, unlike the orphan sweep: this read is one indexed query over
+  // a bounded slice of the platform's own telemetry, not an enumeration of every
+  // route and prefix in the Cloudflare account. It is also the card the founder
+  // opens the console FOR — "what is not fine" should not need a tap.
+
+  const [checks, setChecks] = useState<ChecksBody | null>(null);
+  const [checksBusy, setChecksBusy] = useState(false);
+  const [checksError, setChecksError] = useState<HonestError | null>(null);
+  const [tickBusy, setTickBusy] = useState(false);
+
+  const loadChecks = useCallback(async () => {
+    setChecksBusy(true);
+    setChecksError(null);
+    const res = await call<ChecksBody>('/api/ops-console/checks');
+    setChecksBusy(false);
+    if (res.ok) {
+      setChecks(res.data);
+      return;
+    }
+    // The previous report is dropped rather than left beside a failure — a stale
+    // green read as current is the exact thing this phase is against.
+    setChecks(null);
+    setChecksError(res.error);
+  }, [call]);
+
+  useEffect(() => {
+    void loadChecks();
+  }, [loadChecks]);
+
+  /** Force one cycle now — the founder window's induced-failure step (U5.6). */
+  const runTick = useCallback(async () => {
+    setTickBusy(true);
+    setChecksError(null);
+    const res = await call('/api/ops-console/checks/run', { method: 'POST' });
+    setTickBusy(false);
+    if (!res.ok) {
+      setChecksError(res.error);
+      return;
+    }
+    // Re-read rather than trusting the tick's own summary: what the card shows
+    // must come from the stored rows, which is what every other reader sees.
+    await loadChecks();
+  }, [call, loadChecks]);
+
   // ── E2E ───────────────────────────────────────────────────────────────────
 
   const [job, setJob] = useState<E2EJobView | null>(null);
@@ -1091,6 +1196,192 @@ export function OpsConsole({ initialStatus }: { initialStatus: StatusPayload }) 
         })}
 
         {appError ? <ErrorBlock error={appError} title={s.error.title} detailLabel={s.error.detail} copyLabel={s.error.copyDetail} /> : null}
+      </section>
+
+      {/* ── ZUSTAND DER APPS (PHASE 5 · U5.4) ───────────────────────────────
+          Placed directly after the app list and BEFORE the orphan sweep: this is
+          the card that answers "what is not fine right now", and an operator
+          reading top to bottom on a phone should meet it before the housekeeping.
+
+          It measures nothing by itself. Everything here is what the runner has
+          already written; the one button that measures says so in its own note. */}
+      <section className="gobl-panel oc-card">
+        <h2>{s.checks.heading}</h2>
+        <p className="oc-lead">{s.checks.lead}</p>
+
+        <div className="oc-actions">
+          <button type="button" className="gobl-btn secondary" disabled={checksBusy} onClick={() => void loadChecks()}>
+            {checksBusy ? s.checks.refreshing : s.checks.refresh}
+          </button>
+          <button type="button" className="gobl-btn secondary" disabled={tickBusy} onClick={() => void runTick()}>
+            {tickBusy ? s.checks.running : s.checks.runNow}
+          </button>
+        </div>
+        <p className="oc-why">{s.checks.runNote}</p>
+
+        {!checks && !checksError ? <p className="oc-why">{s.checks.notRun}</p> : null}
+
+        {checks ? (
+          (() => {
+            const labels = {
+              healthy: s.checks.healthy,
+              degraded: s.checks.degraded,
+              down: s.checks.down,
+              unknown: s.checks.unknown,
+              lastMeasured: s.checks.lastMeasured,
+              never: s.checks.never,
+              reasons: {
+                never_checked: s.checks.reasonNeverChecked,
+                stale: s.checks.reasonStale,
+                inconclusive: s.checks.reasonInconclusive,
+                all_ok: s.checks.healthy,
+                mixed: s.checks.reasonMixed,
+                sustained_failure: s.checks.reasonSustained,
+              } as Record<CheckStateReason, string>,
+            };
+            const subjectLabel: Record<string, string> = {
+              web: s.checks.subjectWeb,
+              api: s.checks.subjectApi,
+              cert: s.checks.subjectCert,
+              domain: s.checks.subjectDomain,
+            };
+            // The API already sorts; re-sorting here means the ordering survives a
+            // response from an older API that did not.
+            const rows = worstFirst(checks.rows);
+            const tick = checks.lastTick ?? null;
+
+            return (
+              <>
+                {/* Each unreadable source gets its OWN sentence and its own name.
+                    "Something is unavailable" would leave the founder guessing
+                    which migration to apply. */}
+                {checks.registryAvailable === false ? (
+                  <div className="oc-row">
+                    <span className="k">{s.checks.registryUnavailable}</span>
+                    <span className="v">
+                      <span className="oc-state unknown">{s.checks.unknown}</span>
+                    </span>
+                  </div>
+                ) : null}
+                {checks.registryAvailable === false ? <p className="oc-why">{s.checks.registryUnavailableNote}</p> : null}
+
+                {checks.checksAvailable === false ? (
+                  <div className="oc-row">
+                    <span className="k">{s.checks.storeUnavailable}</span>
+                    <span className="v">
+                      <span className="oc-state unknown">{s.checks.unknown}</span>
+                    </span>
+                  </div>
+                ) : null}
+                {checks.checksAvailable === false ? <p className="oc-why">{s.checks.storeUnavailableNote}</p> : null}
+                {checks.truncated ? <p className="oc-why">{s.checks.truncated}</p> : null}
+
+                {/* The heartbeat's own position: how often it looks, what that
+                    costs, and whether it has outgrown its budget (G-P5-1). */}
+                {typeof checks.cadenceMinutes === 'number' ? (
+                  <Row k={s.checks.cadence}>
+                    <span className="oc-state ok">{s.checks.cadenceValue.replace('{n}', String(checks.cadenceMinutes))}</span>
+                  </Row>
+                ) : null}
+                {typeof checks.requestsPerDay === 'number' ? (
+                  <Row k={s.checks.budget}>
+                    <span className={`oc-state ${checks.overBudget ? 'bad' : 'ok'}`}>
+                      {checks.overBudget ? s.checks.overBudget : s.checks.budgetValue.replace('{n}', String(checks.requestsPerDay))}
+                    </span>
+                  </Row>
+                ) : null}
+                <p className="oc-why">{checks.overBudget ? s.checks.overBudgetNote : s.checks.cadenceNote}</p>
+
+                {/* What this PROCESS last did — deliberately separate from what the
+                    DATABASE knows. After a redeploy the first is empty and the
+                    second is full, and conflating them would read as an outage. */}
+                <Row k={s.checks.lastTick}>
+                  <span className={`oc-state ${tick ? (tick.recorded ? 'ok' : 'bad') : 'unknown'}`}>
+                    {tick ? (measuredStamp(tick.at, lang) ?? s.checks.never) : s.checks.unknown}
+                  </span>
+                </Row>
+                {!tick ? <p className="oc-why">{s.checks.lastTickNever}</p> : null}
+                {tick && tick.skipped === 'disabled' ? <p className="oc-why">{s.checks.tickSkippedDisabled}</p> : null}
+                {tick && tick.skipped === 'store_unavailable' ? <p className="oc-why">{s.checks.tickSkippedStore}</p> : null}
+                {tick && tick.skipped === 'nothing_due' ? <p className="oc-why">{s.checks.tickSkippedNothing}</p> : null}
+                {tick && tick.ran && !tick.recorded ? <p className="oc-why">{s.checks.tickNotRecorded}</p> : null}
+                {tick && tick.ran ? (
+                  <p className="oc-note">
+                    {s.checks.measuredCounts}: {tick.measured.ok} / {tick.measured.warn} / {tick.measured.fail} / {tick.measured.unknown}
+                  </p>
+                ) : null}
+
+                {/* ── The fleet, worst first ── */}
+                {rows.length === 0 ? <p className="oc-why">{s.checks.noApps}</p> : null}
+                {rows.map((r) => (
+                  <div className="oc-app" key={r.appId}>
+                    <div className="top">
+                      <span className="nm">{r.appName}</span>
+                      <span className={`oc-state ${stateClass(r.entry.state)}`}>
+                        {r.entry.state === 'healthy'
+                          ? s.checks.healthy
+                          : r.entry.state === 'degraded'
+                            ? s.checks.degraded
+                            : r.entry.state === 'down'
+                              ? s.checks.down
+                              : s.checks.unknown}
+                      </span>
+                    </div>
+                    <p className="oc-note">
+                      {s.checks.lastMeasured}: {measuredStamp(r.entry.measuredAt, lang) ?? s.checks.never} —{' '}
+                      {labels.reasons[r.entry.reason]}
+                    </p>
+                    {/* A suspended app is UNKNOWN because it is deliberately not
+                        checked. Without this sentence that reads as a finding. */}
+                    {r.registryStatus !== 'active' ? (
+                      <p className="oc-why">
+                        {s.checks.registryStatus}: {r.registryStatus} — {s.checks.suspendedNote}
+                      </p>
+                    ) : null}
+                    {r.formStore ? (
+                      <div className="oc-row">
+                        <span className="k">{s.checks.formStore}</span>
+                        <span className="v">
+                          <CheckState subject={r.formStore} labels={labels} lang={lang} />
+                        </span>
+                      </div>
+                    ) : null}
+                  </div>
+                ))}
+
+                {/* ── Goblin's own surfaces, through the same instrument (U5.5) ── */}
+                <h3 className="oc-note" style={{ marginTop: 14 }}>
+                  {s.checks.platformHeading}
+                </h3>
+                <p className="oc-lead">{s.checks.platformLead}</p>
+                {checks.platform.map((p) => (
+                  <div className="oc-app" key={p.subjectKey}>
+                    <div className="top">
+                      <span className="nm">{subjectLabel[p.subjectKey] ?? p.subjectKey}</span>
+                      <span className={`oc-state ${stateClass(p.state)}`}>
+                        {p.state === 'healthy'
+                          ? s.checks.healthy
+                          : p.state === 'degraded'
+                            ? s.checks.degraded
+                            : p.state === 'down'
+                              ? s.checks.down
+                              : s.checks.unknown}
+                      </span>
+                    </div>
+                    <p className="oc-note">
+                      {s.checks.lastMeasured}: {measuredStamp(p.measuredAt, lang) ?? s.checks.never} — {labels.reasons[p.reason]}
+                    </p>
+                    {p.subjectKey === 'api' ? <p className="oc-why">{s.checks.apiNote}</p> : null}
+                  </div>
+                ))}
+              </>
+            );
+          })()
+        ) : null}
+
+        {checksError ? (
+          <ErrorBlock error={checksError} title={s.error.title} detailLabel={s.error.detail} copyLabel={s.error.copyDetail} />
+        ) : null}
       </section>
 
       {/* ── WAISEN-PRÜFUNG (X1-S) ──────────────────────────────────────────

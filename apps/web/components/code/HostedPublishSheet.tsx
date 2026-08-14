@@ -39,6 +39,7 @@ import { Icon } from "@/components/ui/icon";
 import { apiGet, apiPost } from "@/lib/api";
 import { classifyPublishOutcome, type PublishResponseBody } from "@/lib/publish-outcome";
 import { HostedInboxSheet } from "./HostedInboxSheet";
+import { HostedStatusCard } from "./HostedStatusCard";
 import { useLang, t } from "@/lib/use-lang";
 
 interface Props {
@@ -98,9 +99,21 @@ interface OwnApp {
   hasForms?: boolean;
 }
 
+/**
+ * PHASE 5 · U5.3 — the published app for this project, form or no form.
+ *
+ * Deliberately a SECOND piece of state next to `inboxApp` rather than a widened
+ * one: the inbox appears only for an app with a form (no phantom affordance for a
+ * feature it does not have), while the status card appears for EVERY published
+ * app — being watched is not a per-feature thing, and an app whose card vanished
+ * because it has no form would be an app the owner assumes is unwatched.
+ */
+type PublishedApp = OwnApp;
+
 export function HostedPublishSheet({ projectId, appsDomain, onUseVercel, onClose, onPublished }: Props) {
   const lang = useLang();
   const [inboxApp, setInboxApp] = useState<OwnApp | null>(null);
+  const [publishedApp, setPublishedApp] = useState<PublishedApp | null>(null);
   const [showInbox, setShowInbox] = useState(false);
   const [name, setName] = useState("");
   const [answer, setAnswer] = useState<NameAnswer | null>(null);
@@ -137,18 +150,22 @@ export function HostedPublishSheet({ projectId, appsDomain, onUseVercel, onClose
     return () => clearTimeout(timer);
   }, [normalized, appsDomain]);
 
-  // PHASE 4. One read on mount. A failure resolves to "no inbox" rather than
-  // surfacing: this sheet's job is publishing, and an inbox lookup that could not
-  // answer must never be the reason somebody cannot go live.
+  // PHASE 4 (inbox) and PHASE 5 (status card). One read on mount, feeding both. A
+  // failure resolves to "neither" rather than surfacing: this sheet's job is
+  // publishing, and a lookup that could not answer must never be the reason
+  // somebody cannot go live.
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       try {
         const r = await apiGet<{ apps?: OwnApp[] }>("/api/ops/apps");
-        const mine = (r?.apps ?? []).find((a) => a.projectId === projectId && a.hasForms === true);
-        if (!cancelled) setInboxApp(mine ?? null);
+        const mine = (r?.apps ?? []).find((a) => a.projectId === projectId);
+        if (cancelled) return;
+        setPublishedApp(mine ?? null);
+        // The inbox needs the stricter condition; the status card does not.
+        setInboxApp(mine?.hasForms === true ? mine : null);
       } catch {
-        if (!cancelled) setInboxApp(null);
+        if (!cancelled) { setPublishedApp(null); setInboxApp(null); }
       }
     })();
     return () => { cancelled = true; };
@@ -327,6 +344,11 @@ export function HostedPublishSheet({ projectId, appsDomain, onUseVercel, onClose
             {outcome.message}
           </div>
         )}
+
+        {/* ── PHASE 5 · U5.3 · the status card, for every published app ──
+            Above the inbox on purpose: "is it up" is the question an owner opens
+            this sheet with, and the answer to it frames everything below. */}
+        {publishedApp && <HostedStatusCard appId={publishedApp.appId} />}
 
         {/* ── PHASE 4 · the inbox, only when this app actually has one ── */}
         {inboxApp && (

@@ -29,7 +29,10 @@ import { runOpsSelftest, SELFTEST_APP_ID } from '../services/ops-selftest';
 import { provisionRouter, routerStatus } from '../services/ops-router-deploy';
 import { checkNameAvailable, publishHostedApp, renameHostedApp } from '../services/ops-publish';
 import { runOpsE2E, E2E_CONFIRM } from '../services/ops-e2e';
-import { findOpsAppById, listUserOpsApps } from '../services/ops-apps-store';
+import { findOpsAppById, listAllOpsApps, listUserOpsApps } from '../services/ops-apps-store';
+// PHASE 5 · U5.3 — the same assembler the founder console uses, so the owner's
+// card and the operator's list cannot disagree about the same rows.
+import { appHealthReport } from '../services/ops-check-report';
 import {
   acceptedThisMonth,
   allSubmissionsForExport,
@@ -495,6 +498,42 @@ ops.post('/apps/:appId/notifications', async (c) => {
   return done
     ? c.json({ ok: true, notifications: enabled })
     : c.json({ error: 'not_saved', message: 'Die Einstellung liess sich gerade nicht speichern. Bitte versuch es gleich noch einmal.' }, 503);
+});
+
+// ── U5.3 · the owner's status ───────────────────────────────────────────────
+
+/**
+ * GET /api/ops/apps/:appId/status — is my app up, and when did you last look?
+ *
+ * The owner's own surface, behind `opsGate` and an ownership check, answering 404
+ * for somebody else's app exactly like every route above it.
+ *
+ * ── Read-only, and it does NOT trigger a check ───────────────────────────────
+ * Opening the card measures nothing. It reports what the runner has already
+ * measured, and if the runner has measured nothing, it says UNKNOWN. A card that
+ * probed on open would show a fresh green for an app that had been dark for hours
+ * — the freshest possible answer to the wrong question, and precisely the
+ * cosmetics this phase exists to avoid.
+ *
+ * `available: false` means the check store could not be read. It is deliberately
+ * NOT collapsed into "no checks yet": the card renders the two differently,
+ * because "we could not look" and "we have not looked yet" lead somewhere
+ * different for both the owner and the founder.
+ */
+ops.get('/apps/:appId/status', async (c) => {
+  const principal = c.get('opsPrincipal');
+  const app = await findOpsAppById(c.req.param('appId'));
+  if (!app || app.userId !== principal.userId) {
+    return c.json({ error: 'not_found', message: 'Diese App gibt es nicht.' }, 404);
+  }
+  // The cadence only affects the freshness threshold and the copy, never the state.
+  // One registry read rather than a second count query; a failure here degrades to
+  // "assume a small fleet", which shortens the threshold — the strict direction.
+  const fleet = await listAllOpsApps();
+  const report = await appHealthReport(app, {
+    activeAppCount: fleet.apps.filter((a) => a.status === 'active').length || 1,
+  });
+  return c.json(report);
 });
 
 /**

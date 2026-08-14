@@ -553,6 +553,74 @@ and the only variable content is what a visitor typed, HTML-escaped. Registered 
   | Status: **STRUCTURAL** (authored and unit-tested; **no production send through this path has been
   observed** — the founder window is the first).
 
+### M-K1 — The Keeper heartbeat: scheduled availability checks (AKT 2 · Phase 5 · U5.1)
+
+**ZERO MODEL TOKENS, BY DEFINITION.** K0 is deterministic: an HTTP request, a TLS handshake, an RDAP
+lookup and a `SELECT 1`. There is no prompt, no completion, no `completion_costs` row, and no branch
+that could grow one. This is registered as the ledger's cheapest mechanism precisely so the claim is
+on the record: **if a future edit needs an inference call to answer "is this app up", that is a design
+smell to escalate, not a feature to add.** The one place a model belongs in the Keeper ladder is K1's
+*one-sentence German explanation* of an incident (M-K2, Phase 6) — never the verdict.
+
+- **Cost class: PLATFORM COGS.** Not a user quota, not metered, never charged against
+  `goblinWeightedUsage()`. Same reasoning as M-H1 and founder decision **E1**: watching a Living App
+  is Goblin's hosting product, and the owner did not ask for each individual check.
+- **Committed fixed cost: $0.00/month.** M-H1's "no committed spend" survives Phase 5 intact. No new
+  subscription, no new service, no new deploy target.
+- **Trigger:** one in-process tick in the Railway API, waking every 60 s and measuring whatever is
+  due. **ZERO Cloudflare cron triggers are used** — see the correction below, which is the reason.
+- **THE CRON CEILING, CORRECTED AGAINST THE REPO.** The Phase-5 prompt states the Cron Triggers
+  ceiling as 250 per account. `OPS_SPIKE_0_DECISION_TABLE.md` §2 (retrieved 2026-07-25 from
+  `developers.cloudflare.com/workers/platform/limits/`) records **5 (Free) / 250 (Paid)**, and Goblin
+  runs Workers **FREE**. Spike finding **F2** — "one cron per app does not scale" — therefore breaks
+  at **five** apps, not 250. The fan-out design F2 demands was already the plan; the corrected number
+  is why this row spends none of the five rather than one.
+
+**THE REQUEST-VOLUME FORMULA** (the only cost dimension this mechanism has):
+
+```
+router requests/day = active apps × (1440 / cadence minutes) × API instances
+```
+
+Only the per-app `entry` check goes through the router and against the fleet's Workers budget. The
+form-store check goes to the Cloudflare D1 API, the platform checks go to Vercel and Railway, and the
+certificate probe is a bare TLS handshake — none of those invoke the router Worker.
+
+- **The budget, and the cadence derived from it:** the heartbeat is allowed **5.000 requests/day**,
+  which is **5 %** of the Workers Free account-wide ceiling of **100.000 requests/day** (`cf-deploy.ts:16`,
+  M-H1 — *and inheriting M-H1's provenance caveat: that 100.000 figure comes from the founder's
+  lean-substrate decision record and was not re-fetched from live Cloudflare docs in this session
+  either*). The cadence is **derived from the fleet size** rather than fixed, so the share cannot
+  drift: `cadence = clamp(roundUpTo5(apps × 1440 / 5000), 5 … 60)` minutes.
+- **Arithmetic at the beta's own radius:** 10 active apps → 5-minute cadence → **2.880 router
+  requests/day = 2,9 %** of the fleet ceiling. At the widest point of every cadence band the figure
+  stays at or under 4.992/day (`ops-check-budget.test.ts` asserts each band).
+- **Why a share at all — the spike measured this from the other side.** `OPS_SPIKE_0` §2.2, profile
+  B: **8.640 of a typical app's 10.640 monthly requests — 81,2 % — are Goblin's own heartbeat.** At
+  low traffic, which is most Living Apps, the monitoring IS the load. Cadence is a genuine cost lever
+  and is treated as one.
+- **The ceiling has a named owner, not a silent overrun.** At **209 active apps** the derived cadence
+  has already hit the 60-minute floor and the budget is exceeded (5.016/day). The runner keeps
+  watching and **reports `overBudget`**; the console renders it. Resolving it is founder decision
+  **G-P5-1** (raise the share · Workers Paid at $5/month, which also resolves P6 and G-P4-1 · or
+  stretch the cadence and change what is promised).
+- **Storage, the other bounded cost:** `ops_app_checks` rows, pruned to **8 days inside the tick**
+  (P5-e). At full beta occupancy — 10 apps, all form-enabled — that is **6.362 rows/day ≈ 51.000
+  rows** standing, a few MB in Supabase. The prune runs in the tick because a cleanup with its own
+  trigger is a cleanup that eventually stops running.
+- **HONEST LIMIT — the instance multiplier is real and is not measured.** The runner is in-process,
+  so N Railway instances run N fan-outs: N× the requests above and duplicate rows per subject. Same
+  class as **P3** (the in-process form rate limiter). Nothing in this codebase can observe the
+  instance count today, so the formula states the factor rather than pretending to a number. Carried
+  forward, due the day the API runs more than one instance.
+- **Knobs:** `OPS_CHECKS_ENABLED` (its own kill switch, default ON, ANDed with `OPS_HOSTING_ENABLED`)
+  · `HEARTBEAT_DAILY_REQUEST_BUDGET` (5.000) · `MIN/MAX_CADENCE_MINUTES` (5/60) ·
+  `CHECK_RETENTION_DAYS` (8) · `SUBJECT_MIN_INTERVAL_MS` (cert hourly, domain twice daily).
+  | Status: **FORMULA** (mechanism authored and unit-tested; **no production tick has run, no row has
+  been written, and no Cloudflare dashboard figure has been observed** — migration 0103 is unapplied
+  and the founder window has not run. Every number in this row is derived from the shipped constants,
+  not measured.)
+
 ### M6 — Reserved (not yet built; add rows before shipping)
 Extended thinking · new third-party connectors beyond GitHub/Vercel/Brave. *FEEL-3a agent loop → **M10**;
 FEEL-3b publish/self-heal folded into M10; web search → **M11** above.*

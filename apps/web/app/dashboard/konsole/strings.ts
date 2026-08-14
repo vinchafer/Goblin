@@ -338,6 +338,83 @@ const de = {
       'Zwei Ursachen sehen von hier aus gleich aus, und die Antwort unterscheidet sie mit Absicht nicht: entweder steht dieses Konto für diese Route nicht auf der Liste (OPS_FOUNDER_ACCOUNTS bzw. OPS_BETA_ACCOUNTS), oder der Hosting-Schalter steht auf aus (OPS_HOSTING_ENABLED). Welche von beiden es war, steht im Server-Log — hier steht es bewusst nicht.',
     noDetail: 'Die API hat kein Detail mitgeschickt.',
   },
+
+  // ── PHASE 5 · U5.4 — der Zustand der Flotte ────────────────────────────────
+  // Die Karte beantwortet eine Frage: was ist gerade NICHT in Ordnung. Deshalb
+  // steht Schlimmstes zuerst, und deshalb hat jeder Zustand seinen Messzeitpunkt
+  // daneben — ein Zustand ohne Zeitstempel ist eine Behauptung ohne Datum.
+  checks: {
+    heading: 'Zustand der Apps',
+    lead: 'Was der Heartbeat zuletzt gemessen hat — schlimmstes zuerst. Diese Karte misst selbst nichts; sie zeigt, was schon gemessen wurde.',
+    refresh: 'Neu laden',
+    refreshing: 'lädt …',
+    runNow: 'Jetzt prüfen',
+    running: 'prüft …',
+    runNote:
+      'Führt einen Prüf-Durchlauf sofort aus, statt auf den Takt zu warten — gedacht für den Induzierten-Ausfall-Schritt. Er misst und schreibt Telemetrie; er veröffentlicht nichts, sperrt nichts und ändert an keiner App etwas.',
+    notRun: 'Noch nicht geladen.',
+
+    // Die vier Zustände. UNBEKANNT steht bewusst über „eingeschränkt": ein blindes
+    // Instrument ist der Weg, auf dem ein echter Ausfall unbemerkt bleibt.
+    healthy: 'erreichbar',
+    degraded: 'eingeschränkt',
+    down: 'nicht erreichbar',
+    unknown: 'UNBEKANNT',
+
+    reasonNeverChecked: 'noch nie geprüft',
+    reasonStale: 'seit der letzten Messung ist keine Prüfung mehr durchgekommen',
+    reasonInconclusive: 'die letzte Prüfung kam zu keinem Ergebnis — das lag an uns',
+    reasonMixed: 'eine Prüfung ist fehlgeschlagen',
+    reasonSustained: 'zwei Prüfungen hintereinander sind fehlgeschlagen',
+
+    lastMeasured: 'Zuletzt geprüft',
+    never: 'nie',
+    formStore: 'Formular-Speicher',
+    registryStatus: 'Registry-Status',
+    suspendedNote:
+      'Gesperrte Apps werden nicht geprüft — sie sollen ja mit der Sperrseite antworten. UNBEKANNT ist hier korrekt und kein Befund.',
+
+    platformHeading: 'Goblin selbst',
+    platformLead:
+      'Dieselben Prüfungen, dasselbe Instrument, dieselbe Ableitung wie bei jeder Nutzer-App. Zertifikat und Domain gelten für die ganze Zone — einmal gemessen, für alle Apps gültig.',
+    subjectWeb: 'Web-App',
+    subjectApi: 'API (öffentlich)',
+    subjectCert: 'Zertifikat',
+    subjectDomain: 'Domain-Registrierung',
+    apiNote:
+      'Die API prüft sich über ihre öffentliche Adresse: das belegt DNS, Proxy und Prozess — und nichts über ihre inneren Abhängigkeiten. Der Läufer sitzt im selben Prozess, also ist diese Zeile schwächer, als sie aussieht.',
+    daysLeft: 'Tage übrig',
+
+    cadence: 'Takt',
+    cadenceValue: 'alle {n} Minuten',
+    cadenceNote:
+      'Der Takt wird aus der Flottengröße abgeleitet, damit der Heartbeat nie mehr als 5 % des Tagesbudgets von 100.000 Requests verbraucht.',
+    budget: 'Heartbeat-Budget',
+    budgetValue: '{n} Requests/Tag',
+    overBudget: 'ÜBER BUDGET',
+    overBudgetNote:
+      'Der Takt liegt bereits auf der 60-Minuten-Decke und die Flotte ist trotzdem zu groß für 5 % des Tagesbudgets. Das ist Gründer-Entscheidung G-P5-1: Anteil erhöhen, Workers Paid ($5/Monat, löst auch P6/G-P4-1), oder den Takt strecken und die Zusage mitverschieben.',
+
+    storeUnavailable: 'Prüfergebnisse nicht lesbar',
+    storeUnavailableNote:
+      'Migration 0103 fehlt, oder die Abfrage ist fehlgeschlagen. Alles unten steht deshalb auf UNBEKANNT — das heißt NICHT „alles in Ordnung“.',
+    registryUnavailable: 'Registry nicht lesbar',
+    registryUnavailableNote:
+      'Ohne 0099 gibt es keine App-Liste, über die der Heartbeat laufen könnte. Es ist keine leere Flotte — es ist eine ungestellte Frage.',
+    truncated:
+      'Die Prüfzeilen wurden bei der Obergrenze abgeschnitten. Für einige Apps liegen deshalb ältere oder gar keine Messungen vor — sie stehen hier als UNBEKANNT und nicht als „in Ordnung“.',
+
+    lastTick: 'Letzter Durchlauf in diesem Prozess',
+    lastTickNever:
+      'Dieser Prozess hat noch keinen Durchlauf abgeschlossen. Nach einem Redeploy ist das normal — die Messungen selbst stehen in der Datenbank, nicht im Arbeitsspeicher.',
+    tickSkippedDisabled: 'übersprungen — Heartbeat ist aus (OPS_HOSTING_ENABLED oder OPS_CHECKS_ENABLED)',
+    tickSkippedStore: 'übersprungen — Registry oder Prüftabelle nicht lesbar',
+    tickSkippedNothing: 'nichts fällig',
+    tickNotRecorded:
+      'Der Durchlauf hat gemessen und konnte NICHTS speichern. Die Anfragen sind ausgegeben, die Ergebnisse sind weg — die Karten stehen deshalb auf UNBEKANNT, obwohl die Apps in Ordnung sein können.',
+    measuredCounts: 'Gemessen',
+    noApps: 'Es sind keine Apps registriert, die geprüft werden könnten.',
+  },
 };
 
 const en: typeof de = {
@@ -635,6 +712,77 @@ const en: typeof de = {
     refusedWhy:
       'Two causes look the same from out here, and the answer separates them deliberately: either this account is missing from the list for that route (OPS_FOUNDER_ACCOUNTS / OPS_BETA_ACCOUNTS), or the hosting switch sits at off (OPS_HOSTING_ENABLED). Which of the two it was appears in the server log, on purpose only there.',
     noDetail: 'The API sent no detail along.',
+  },
+
+  checks: {
+    heading: 'App status',
+    lead: 'What the heartbeat measured last — worst first. This card measures nothing itself; it shows what has already been measured.',
+    refresh: 'Reload',
+    refreshing: 'loading …',
+    runNow: 'Check now',
+    running: 'checking …',
+    runNote:
+      'Runs a check cycle immediately instead of waiting for the cadence — meant for the induced-failure step. It measures and writes telemetry; it publishes nothing, suspends nothing and changes no app.',
+    notRun: 'Not loaded yet.',
+
+    healthy: 'reachable',
+    degraded: 'impaired',
+    down: 'not reachable',
+    unknown: 'UNKNOWN',
+
+    reasonNeverChecked: 'never checked',
+    reasonStale: 'no check has come through since the last measurement',
+    reasonInconclusive: 'the last check reached no verdict — that was on us',
+    reasonMixed: 'one check failed',
+    reasonSustained: 'two checks in a row failed',
+
+    lastMeasured: 'Last checked',
+    never: 'never',
+    formStore: 'Form storage',
+    registryStatus: 'Registry status',
+    suspendedNote:
+      'Suspended apps are not checked — they are supposed to answer with the suspension page. UNKNOWN is correct here and is not a finding.',
+
+    platformHeading: 'Goblin itself',
+    platformLead:
+      'The same checks, the same instrument and the same derivation as any user app. Certificate and domain apply to the whole zone — measured once, valid for every app.',
+    subjectWeb: 'Web app',
+    subjectApi: 'API (public)',
+    subjectCert: 'Certificate',
+    subjectDomain: 'Domain registration',
+    apiNote:
+      'The API checks itself through its public address: that proves DNS, proxy and process — and nothing about its internal dependencies. The runner lives in that same process, so this line is weaker than it looks.',
+    daysLeft: 'days left',
+
+    cadence: 'Cadence',
+    cadenceValue: 'every {n} minutes',
+    cadenceNote:
+      'The cadence is derived from the fleet size so the heartbeat never spends more than 5% of the 100,000-requests/day ceiling.',
+    budget: 'Heartbeat budget',
+    budgetValue: '{n} requests/day',
+    overBudget: 'OVER BUDGET',
+    overBudgetNote:
+      'The cadence already sits at the 60-minute floor and the fleet is still too large for 5% of the daily budget. That is founder decision G-P5-1: raise the share, go Workers Paid ($5/month, which also resolves P6/G-P4-1), or stretch the cadence and move the promise with it.',
+
+    storeUnavailable: 'Check results unreadable',
+    storeUnavailableNote:
+      'Migration 0103 is missing, or the query failed. Everything below therefore reads UNKNOWN — which does NOT mean “all fine”.',
+    registryUnavailable: 'Registry unreadable',
+    registryUnavailableNote:
+      'Without 0099 there is no app list for the heartbeat to iterate. This is not an empty fleet — it is a question that was never asked.',
+    truncated:
+      'The check rows were cut off at the ceiling. Some apps therefore have older measurements or none at all — they appear as UNKNOWN here, not as “fine”.',
+
+    lastTick: 'Last cycle in this process',
+    lastTickNever:
+      'This process has not completed a cycle yet. After a redeploy that is normal — the measurements themselves live in the database, not in memory.',
+    tickSkippedDisabled: 'skipped — the heartbeat is off (OPS_HOSTING_ENABLED or OPS_CHECKS_ENABLED)',
+    tickSkippedStore: 'skipped — registry or check table unreadable',
+    tickSkippedNothing: 'nothing due',
+    tickNotRecorded:
+      'The cycle measured and could store NOTHING. The requests are spent and the results are gone — the cards therefore read UNKNOWN even though the apps may be fine.',
+    measuredCounts: 'Measured',
+    noApps: 'No apps are registered that could be checked.',
   },
 };
 

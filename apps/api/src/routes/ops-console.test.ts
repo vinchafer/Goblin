@@ -123,7 +123,10 @@ describe('1 — the whole mount is invisible to everyone but the founder', () =>
   // PHASE 3 — the review routes join the same invisibility gate. Listed here
   // rather than in their own describe so a future route cannot be added to the
   // mount without also being added to the cohort-exclusion proof.
-  const paths = ['/status', '/apps', '/projects', '/e2e/status/anything', '/reviews', '/reviews/r1/preview'];
+  // PHASE 5 — `/checks` joins the same invisibility gate, listed here for the same
+  // reason the review routes were: a new route cannot be added to the mount
+  // without also being added to the cohort-exclusion proof.
+  const paths = ['/status', '/apps', '/projects', '/e2e/status/anything', '/reviews', '/reviews/r1/preview', '/checks'];
 
   it('404s every route for an anonymous request', async () => {
     for (const p of paths) {
@@ -827,5 +830,122 @@ describe('5 — the decision trail', () => {
   it('does not weaken the audit write path — the trail is a READ, nothing else', async () => {
     await get('/reviews');
     expect(writeOpsAudit).not.toHaveBeenCalled();
+  });
+});
+
+// ════════════════════════════════════════════════════════════════════════════
+// PHASE 5 · U5.4 / U5.5 — the fleet's state
+//
+// The property under test is the one the whole phase turns on: a payload that
+// cannot be read must arrive at the client as UNKNOWN and never as "fine". The UI
+// can only be honest if the body is.
+// ════════════════════════════════════════════════════════════════════════════
+
+describe('9 — GET /checks (U5.4)', () => {
+  it('reports the fleet with every state carrying its measurement time', async () => {
+    listAllOpsApps.mockResolvedValue({
+      available: true,
+      apps: [
+        {
+          appId: 'a1',
+          userId: 'u1',
+          projectId: 'p1',
+          appName: 'meine-app',
+          status: 'active',
+          capsProfile: 'free-static',
+          r2Prefix: 'apps/a1/',
+          routeKey: 'route:meine-app',
+          workerScriptName: null,
+          d1DatabaseId: null,
+          lastPublishedAt: null,
+          createdAt: '2026-08-01T00:00:00.000Z',
+        },
+      ],
+    });
+    const body = await (await get('/checks')).json();
+    expect(Array.isArray(body.rows)).toBe(true);
+    for (const row of body.rows) {
+      // Either a timestamp, or unknown BECAUSE nothing was ever measured. There
+      // is no third shape, in the payload or in the UI.
+      if (row.entry.measuredAt === null) {
+        expect(row.entry.state).toBe('unknown');
+        expect(row.entry.reason).toBe('never_checked');
+      }
+    }
+  });
+
+  it('lists every platform subject even when none has been measured (U5.5)', async () => {
+    const body = await (await get('/checks')).json();
+    expect(body.platform.map((p: { subjectKey: string }) => p.subjectKey)).toEqual(['web', 'api', 'cert', 'domain']);
+    for (const p of body.platform) expect(p.state).toBe('unknown');
+  });
+
+  it('separates "registry unreadable" from "checks unreadable" so the founder knows what to fix', async () => {
+    listAllOpsApps.mockResolvedValue({ available: false, apps: [] });
+    const body = await (await get('/checks')).json();
+    expect(body.available).toBe(false);
+    expect(body.registryAvailable).toBe(false);
+    // And emphatically not an empty, reassuring fleet.
+    expect(body.rows).toEqual([]);
+  });
+
+  it('carries the heartbeat’s own budget position', async () => {
+    const body = await (await get('/checks')).json();
+    expect(typeof body.cadenceMinutes).toBe('number');
+    expect(typeof body.requestsPerDay).toBe('number');
+    expect(typeof body.overBudget).toBe('boolean');
+  });
+
+  it('is a READ — it triggers no measurement and writes no audit row', async () => {
+    await get('/checks');
+    expect(writeOpsAudit).not.toHaveBeenCalled();
+    expect(publishHostedApp).not.toHaveBeenCalled();
+  });
+});
+
+describe('10 — POST /checks/run (the induced-failure step)', () => {
+  it('404s for a non-founder, like every other route on this mount', async () => {
+    getUser.mockResolvedValue({ data: { user: { id: 'u2', email: COHORT } }, error: null });
+    const res = await opsConsole.request('/checks/run', { method: 'POST', headers: { Authorization: 'Bearer t' } });
+    expect(res.status).toBe(404);
+    expect(await res.text()).toBe('404 Not Found');
+  });
+
+  it('answers 200 with the tick report even when nothing was measured', async () => {
+    // The request worked and the report IS the answer. A thrown status would hide
+    // the very fields the founder needs to read during a timed test.
+    const res = await post('/checks/run');
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body).toHaveProperty('ran');
+    expect(body).toHaveProperty('measured');
+  });
+
+  it('does nothing at all while the Act-2 kill switch is off', async () => {
+    // OPS_HOSTING_ENABLED is deleted in beforeEach, so the runner's own gate holds
+    // even though this route hangs on the founder gate rather than the switch.
+    const body = await (await post('/checks/run')).json();
+    expect(body.ran).toBe(false);
+    expect(body.skipped).toBe('disabled');
+  });
+
+  it('cannot publish, suspend or delete anything, even with the switch on', async () => {
+    process.env.OPS_HOSTING_ENABLED = 'true';
+    // The probes make REAL outbound requests, which is the point of the mechanism
+    // and not something a unit test may do. Stubbed at the global so the shipped
+    // code path runs unchanged and only the socket is replaced.
+    const fetchMock = vi.fn(async () => new Response('', { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    try {
+      await post('/checks/run');
+    } finally {
+      vi.unstubAllGlobals();
+    }
+    expect(publishHostedApp).not.toHaveBeenCalled();
+    expect(writeOpsAudit).not.toHaveBeenCalled();
+    // And every request it DID make was a plain GET — never a write to anything.
+    for (const call of fetchMock.mock.calls as unknown as Array<[string, RequestInit | undefined]>) {
+      expect(call[1]?.method ?? 'GET').toBe('GET');
+    }
   });
 });
