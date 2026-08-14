@@ -96,9 +96,19 @@ Rangfolge; sie werden nicht wiederverwendet.
 
 ## Offene Entscheidungen für Phase 4 im Besonderen
 
-Diese sind **nicht** Carry-forward im engeren Sinn — sie sind Vorbedingungen der nächsten Phase.
-Vollständig ausgeführt in der Bereitschaftsnotiz (`GOBLIN_OPS_MASTER_PLAN_16_PHASES.md`, Phase 4)
-und im Preflight; hier nur als Zeiger, damit dieses Register vollständig ist:
+> **GESCHLOSSEN 2026-08-14 — alle fünf entschieden, ausgeführt in
+> `docs/ACT2_PHASE4_DECISIONS.md`.** Die Liste darunter bleibt als Historie stehen, weil sie der
+> Grund ist, aus dem die Entscheidungen entstanden sind. Was ein Leser ab hier wissen muss:
+> **D1 ja**, pro App, auf dem Workers-**FREE**-Plan (die Prämisse „D1 heißt Workers Paid" war gegen
+> Live-Dokumentation falsch — M-H1s „$0.00 committed" übersteht die Phase) · **über der Grenze wird
+> abgelehnt**, ehrlich an den Besucher und mit Mail an den Eigentümer · **500/Monat** als markierte
+> Planungszahl, gründer-verstellbar · **Einsendungen gehen mit der App**, und ein nicht bestätigter
+> Abbau **blockiert** das Löschen (X1s Vertrag, eine Ebene weiter) · **Turnstile verifiziert die
+> API**, nicht der Router — `worker.js` ist unverändert und das Geheimnis verlässt Railway nie.
+> Offen beim Gründer bleiben nur die zwei Folgefragen **G-P4-1** (die elfte Formular-App kostet $5/Monat)
+> und **G-P4-2** (bleibt es bei 500?).
+
+Historisch, Stand vor dem 2026-08-14:
 
 - **D1 überhaupt** — eine App-Datenbank pro App eröffnet die Substrat-Entscheidung D2 neu. Das ist
   ein Substratwechsel, kein Inkrement, und gehört in eine Entscheidungstabelle vor die erste Zeile
@@ -110,3 +120,23 @@ und im Preflight; hier nur als Zeiger, damit dieses Register vollständig ist:
 - **Die Zahl 500/Monat** (PROPOSED, nicht entschieden).
 - **Wohin Einsendungen gehen, wenn der Besitzer sein Projekt löscht** — dieselbe Kaskadenfrage, für
   die `0099` bereits eine Warnung trägt.
+
+---
+
+## P · FORMULARE (Phase 4, neu am 2026-08-14)
+
+Alles hier ist **gebaut und im Betrieb unbewiesen**. Nichts davon ist ein Defekt; es sind die Kanten,
+die diese Phase bewusst stehen lässt, damit sie niemand später für Zusagen hält.
+
+| # | Was offen ist | Wo | Wann fällig |
+|---|---|---|---|
+| **P1** | **Phase 4 ist nie in Produktion gelaufen.** Keine D1-Datenbank existiert, keine echte Einsendung ist gespeichert, keine Benachrichtigung ist verschickt, kein Turnstile-Token ist verifiziert worden. Jede Zahl in `AKT2_PHASE4_REPORT.md` ist ein Testlauf oder eine Herleitung. **Und darunter liegt eine ältere Unschärfe: das Gründer-Fenster von Phase 3 ist auch nicht gelaufen** — Stufe 2, Prüfliste und Publish-Sheet v2 sind deployed und unbewiesen, und Phase 4 veröffentlicht durch genau diesen Pfad. | `docs/AKT2_PHASE4_FOUNDER_WINDOW.md` | **Als Erstes.** Bis dahin ist „Formulare funktionieren" eine begründete Erwartung, keine Beobachtung. |
+| **P2** | **Dem `CF_API_TOKEN` könnte die D1-Berechtigung fehlen.** Nicht nachgeprüft — es gibt in dieser Sitzung keine Cloudflare-Zugangsdaten. Der Token trägt heute Workers, KV, R2, Zone, DNS und Workers Routes; **D1:Edit** ist neu und wurde nie gebraucht. Fehlt sie, schlägt die **erste** Formular-Veröffentlichung mit `d1_unavailable` fehl — ehrlich, aber überraschend. | Cloudflare-Dashboard → API-Token · Symptom in Fenster-Schritt 3 | **Im Fenster, Schritt 3.** Ein Klick, wenn es auftritt. |
+| **P3** | **Die Rate-Begrenzung und die Mail-Bremse laufen IM PROZESS.** Beide Zähler leben im Speicher einer Railway-Instanz. Bei mehreren Instanzen ist die tatsächliche Grenze (Instanzen × Zahl), und ein Neustart vergisst das Fenster. Sie sind eine Bremse gegen eine Schleife aus einer Quelle, **kein verteilter Rate-Limiter** — Turnstile ist die Schicht, die einen Spammer wirklich etwas kostet, und die Monatsgrenze (in D1, exakt) ist die Zahl, die das Volumen wirklich bindet. | `RATE_MAX_PER_SOURCE` in `ops-forms.ts` · `NOTIFY_BURST_THRESHOLD` in `ops-form-notify.ts` · Ledger **M-F3** | Wenn die API mehr als eine Instanz fährt **und** Missbrauch real wird. Präzise Zählung bräuchte geteilten Zustand — dieselbe Klasse Problem wie **C1**. |
+| **P4** | **Die Formularerkennung liest HTML mit regulären Ausdrücken.** Ein `<form>`, das sich nicht sauber bis zum `</form>` lesen lässt, wird **gemeldet und nicht angefasst** (`skipped: unparseable`); ein Formular, das erst zur Laufzeit von JavaScript gebaut wird, ist unsichtbar und bleibt es. Beides steht im Publish-Ergebnis (`forms.wired` / `forms.skipped`), damit ein Bauer es von uns erfährt und nicht von einem leeren Posteingang. | `apps/api/src/services/ops-form-wiring.ts` (Kopf) | Wenn eine echte generierte App durchfällt. Ein echter HTML-Parser ist eine Abhängigkeit und eine Entscheidung, kein Nachmittag. |
+| **P5** | **Nichts scannt, was ein Besucher einsendet.** Das ist **A7**, jetzt eingetreten: Phase 3 liest das Artefakt beim Veröffentlichen, und was danach jemand in ein Formular schreibt, wird von **keinem** Mechanismus gelesen — kein Klassifizierer, keine Regelliste, kein Modell. Die Benachrichtigungs-Mail sagt das dem Eigentümer bei **jeder** Zustellung; die Datenschutzseite sagt es auch. | `ops-form-notify.ts` (Fußzeile jeder Mail) · Datenschutzseite §1a | Dauerhaft, als **Sprachregel**: keine Aussage nach außen darf suggerieren, der Scan decke Einsendungen ab. |
+| **P6** | **Die Free-Decke ist zehn Datenbanken = zehn Formular-Apps.** Ehrlich abgelehnt statt entdeckt (die elfte bekommt einen deutschen Satz, der die Decke benennt, und dieselbe App **ohne** Formular geht weiter live). Darüber: Workers Paid, $5/Monat — **G-P4-1**, eine Gründer-Entscheidung mit Preis. | `D1_FREE_PLAN_DATABASE_LIMIT` in `ops-d1.ts` · Ledger **M-F1** | Wenn die Allowlist wächst. Heute folgenlos. |
+| **P7** | **Der Projekt-Lösch-Dialog nennt die Einsendungen nicht.** Er nennt seit X1 die App und ihre Adresse; die **Zahl** der Einsendungen, die mitgelöscht werden, steht nicht dabei. Der Posteingang warnt („Exportiere sie vorher") und die Datenschutzseite benennt die Kette — der Dialog selbst ist die Stelle, an der es am spätesten noch nützt. | `apps/web` Lösch-Dialog · `ops-project-teardown.ts` liefert die App bereits | Kleine, echte Verbesserung. Kandidat für die nächste Kehrarbeit. |
+| **P8** | **Es gibt keine automatische Aufbewahrungsfrist.** Einsendungen bleiben, bis jemand sie löscht — der Eigentümer von Hand, oder das Löschen der App. Das ist bewusst so (eine Frist über fremde Daten zu setzen ist eine Entscheidung, die niemand getroffen hat) und es steht auf der Datenschutzseite. Es heißt aber: **die älteste Einsendung einer beliebten App liegt unbegrenzt lange da.** | Datenschutzseite §1a · `ops-d1.ts` | Gründer-Entscheidung, sinnvollerweise mit **D1** (Rechtsseiten-Prüfung). |
+| **P9** | **`D5` ist gewachsen.** Der öffentliche Missbrauchs-Meldeweg fehlt weiterhin — und ab jetzt nehmen Apps **fremde Daten** entgegen, was genau der Auslöser ist, den D5 selbst benennt („wenn Apps fremde Daten entgegennehmen (Phase 4) oder wenn die Allowlist fällt — je nachdem, was zuerst kommt"). **Der erste Zweig ist eingetreten.** | Zeile **D5** oben | **Jetzt fällig**, nicht mehr „wenn". |
+| **P10** | **`C5` bleibt schlafend, aber aus einem neuen Grund.** Die Zeile sagt „heute schlafend, weil es kein D1 gibt". D1 gibt es jetzt — die Zusage „Export = deine SQLite-Datei" ist trotzdem uneingelöst: Phase 4 exportiert **CSV** für den Eigentümer und verspricht nirgends eine Datenbankdatei. Die Blueprint-Erzählung ist damit **weiter offen**, nur nicht mehr aus Mangel an Substrat. | Zeile **C5** oben · `submissionsToCsv` in `ops-d1.ts` | Wenn die Erzählung nach außen getragen werden soll. Dann: entweder bauen oder anders sagen. |

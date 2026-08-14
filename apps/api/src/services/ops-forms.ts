@@ -358,7 +358,7 @@ export async function ingestSubmission(
   // 8. Store it. Only a CONFIRMED insert is ever reported as accepted.
   const stored = await deps.insert(app.d1DatabaseId, { formId: input.formId, fields: normalized.fields, now });
   if (!stored.ok || !stored.id) {
-    logger.error({ appId: app.appId, fields: Object.keys(normalized.fields).length }, 'ops_form_storage_failed');
+    logger.error({ appId: app.appId, fieldCount: Object.keys(normalized.fields).length }, 'ops_form_storage_failed');
     return refused('storage_failed', 503, app);
   }
 
