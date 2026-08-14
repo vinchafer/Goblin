@@ -110,6 +110,7 @@ import { waitlist } from './routes/waitlist';
 import { ops } from './routes/ops';
 import { mountAdminSurface } from './routes/admin-surface';
 import { opsConsole } from './routes/ops-console';
+import { opsForms } from './routes/ops-forms';
 import { events } from './routes/events';
 import { feedback } from './routes/feedback';
 import { startCron } from './lib/cron';
@@ -142,9 +143,27 @@ function isAllowedOrigin(origin: string): boolean {
   return CORS_PATTERNS.some(re => re.test(origin));
 }
 
+/**
+ * AKT 2 · PHASE 4 — the form ingest owns its own CORS, and must be let past both
+ * of the handlers below.
+ *
+ * `/f/*` is called from `{name}.justgoblin.app`, which is deliberately NOT in
+ * `CORS_EXACT`: that list is the set of origins allowed to call Goblin's
+ * AUTHENTICATED API with credentials, and every published Living App is a page
+ * Goblin did not write. Adding a wildcard for the apps domain there would hand
+ * every builder's app — and anyone who ever gets one published — a credentialed
+ * caller's seat at `/api/*`.
+ *
+ * So the ingest route answers its own preflight and sets its own single, exact
+ * `Access-Control-Allow-Origin` (routes/ops-forms.ts), with no credentials. These
+ * two middlewares step aside for that one path and only that one.
+ */
+const isFormIngestPath = (path: string) => path === '/f' || path.startsWith('/f/');
+
 // Explicit OPTIONS preflight handler — runs before cors middleware
 app.use('*', async (c, next) => {
   if (c.req.method !== 'OPTIONS') return next();
+  if (isFormIngestPath(c.req.path)) return next();
   const origin = c.req.header('origin') || '';
   const allowed = isAllowedOrigin(origin) || !origin || process.env.NODE_ENV === 'development';
   return new Response(null, {
@@ -159,7 +178,7 @@ app.use('*', async (c, next) => {
   });
 });
 
-app.use('*', cors({
+const corsMiddleware = cors({
   origin: (origin) => {
     // No Origin = curl / server-to-server — all routes require Authorization anyway
     if (!origin) return '*';
@@ -171,7 +190,12 @@ app.use('*', cors({
   allowHeaders: ['Content-Type', 'Authorization'],
   allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   maxAge: 86400,
-}));
+});
+
+app.use('*', async (c, next) => {
+  if (isFormIngestPath(c.req.path)) return next();
+  return corsMiddleware(c, next);
+});
 
 // Global rate limit: 60 req/min per IP/user — applied to all /api/* routes.
 // EXCEPT the Supabase auth-email hook: it is server-to-server from a single
@@ -283,6 +307,13 @@ mountAdminSurface(app);
 // job includes REPORTING that the flag is off — which it could not do from behind
 // a gate that the flag closes.
 app.route('/api/ops-console', opsConsole);
+// AKT 2 · PHASE 4 · U4.3 — the form ingest. The ONLY public, unauthenticated write
+// in Act 2, and deliberately NOT under /api/ops: a visitor filling in somebody's
+// contact form has no Goblin account, so it cannot live behind a gate built around
+// one. Its own layered refusals and its own switch (OPS_FORMS_ENABLED) do that job
+// — see routes/ops-forms.ts. Mounted at /f because the path is baked into the HTML
+// of every published app and short is kind.
+app.route('/f', opsForms);
 
 // 9R — rankings aggregator every 6h (production only)
 startCron();

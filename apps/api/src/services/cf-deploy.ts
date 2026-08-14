@@ -389,11 +389,25 @@ export const CF_ENV_VARS = [
 
 export type CfEnvVar = (typeof CF_ENV_VARS)[number];
 
-/** Env vars whose VALUES are secret and must be scrubbed from any outbound string. */
-const SECRET_ENV_VARS: readonly CfEnvVar[] = [
+/**
+ * Env vars whose VALUES are secret and must be scrubbed from any outbound string.
+ *
+ * Typed `readonly string[]` rather than `readonly CfEnvVar[]`, because
+ * `CF_TURNSTILE_SECRET_KEY` (Phase 4) is deliberately NOT in `CF_ENV_VARS`: that
+ * list is what `/api/ops/health` treats as "every required variable", so a name
+ * added there is reported MISSING when unset — and an instance with no Turnstile
+ * configured is a correct configuration for every surface except the form ingest,
+ * which refuses on its own terms. Same reasoning, same precedent as
+ * CF_R2_JURISDICTION and OPS_SITE_URL.
+ *
+ * Being outside CF_ENV_VARS must not mean being outside the redaction, which is
+ * the whole point of widening the type instead of moving the variable.
+ */
+const SECRET_ENV_VARS: readonly string[] = [
   'CF_API_TOKEN',
   'CF_R2_ACCESS_KEY_ID',
   'CF_R2_SECRET_ACCESS_KEY',
+  'CF_TURNSTILE_SECRET_KEY',
 ];
 
 const CF_API_BASE = 'https://api.cloudflare.com/client/v4';
@@ -479,7 +493,9 @@ function missingFor(surface: keyof typeof REQUIRED): CfEnvVar[] {
 export function redactSecrets(message: string): string {
   let out = message;
   for (const name of SECRET_ENV_VARS) {
-    const value = env(name);
+    // envString, not env(): SECRET_ENV_VARS is wider than CfEnvVar on purpose (see
+    // its comment), and the unwrapper is the same one either way.
+    const value = envString(name);
     if (value.length >= 8) out = out.split(value).join(`[redacted:${name}]`);
   }
   return out;
