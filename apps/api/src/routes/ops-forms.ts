@@ -43,6 +43,9 @@ import {
   MAX_BODY_BYTES,
   type IngestRefusalCode,
 } from '../services/ops-forms';
+import { notifyOwnerOfSubmission, notifyOwnerOverCap } from '../services/ops-form-notify';
+import { monthlySubmissionBudget } from '../services/ops-caps';
+import { usageMonth } from '../services/ops-d1';
 import { opsAppsDomain } from '../services/cf-deploy';
 import logger from '../lib/logger';
 
@@ -220,8 +223,31 @@ opsForms.post('/:appName/:formId', async (c) => {
   if (!result.ok) {
     // Counts and codes. The submission is not here and must never be.
     logger.info({ code: result.code, appId: result.app?.appId ?? null }, 'ops_form_refused');
+
+    // P4-b's other half (U4.5): a refused visitor is only half the story. The
+    // owner has to learn that people have stopped getting through — a refusal
+    // nobody hears about is, from where they are standing, the same silent failure
+    // as a dropped submission. Awaited rather than fired-and-forgotten because the
+    // visitor's message already says "the owner has been told", and that sentence
+    // has to be true before it is sent.
+    if (result.code === 'over_cap' && result.app) {
+      await notifyOwnerOverCap(result.app, {
+        cap: monthlySubmissionBudget(result.app.capsProfile),
+        month: usageMonth(),
+      }).catch(() => ({ sent: false }));
+    }
     return say(result.code, result.status);
   }
+
+  // The submission is stored. The visitor's answer does not wait on an e-mail:
+  // whether the owner's mail server is reachable is not the visitor's problem, and
+  // a row that is safely in the inbox must not be reported as a failure because
+  // Resend was slow. Failures are logged inside the notifier.
+  await notifyOwnerOfSubmission(result.app, {
+    formId: result.formId,
+    createdAt: new Date().toISOString(),
+    fields: result.fields,
+  }).catch(() => ({ sent: false }));
 
   return say('ok', 200);
 });
