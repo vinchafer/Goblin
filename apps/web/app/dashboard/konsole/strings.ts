@@ -53,6 +53,16 @@ const de = {
     notApplied: 'nicht angewendet',
     auditMissingNote:
       'Ohne 0100 funktionieren Sperren weiterhin, aber jede Aktion meldet „audit: unavailable" statt eine Beweiszeile zu schreiben.',
+    forms: 'Formulare',
+    formsReady: 'eingerichtet',
+    formsNotConfigured: 'nicht eingerichtet',
+    formsIncomplete: 'HALB EINGERICHTET',
+    formsMalformed: 'ADRESSE NICHT IN ORDNUNG',
+    formsMissing: 'Fehlt noch',
+    formsEndpointProblem:
+      'Die Adresse für Einsendungen ist gesetzt, aber keine reine Herkunft (Schema + Host, ohne Pfad). Eine App mit Formular wird damit NICHT veröffentlicht',
+    formsTrailingSlash:
+      'Die Adresse hatte einen Schrägstrich am Ende. Der wurde entfernt — kein Fehler, aber gut zu wissen, falls dort noch mehr steht als gedacht.',
     registryMissingNote:
       'Ohne 0099 verweigert der Veröffentlichungs-Pfad die Arbeit — absichtlich: hochgeladene Dateien ohne Registry-Zeile wären ein Waisenkind.',
     appsDomain: 'App-Domain',
@@ -365,6 +375,16 @@ const en: typeof de = {
     notApplied: 'not applied',
     auditMissingNote:
       'Without 0100 suspensions still work, but every action reports "audit: unavailable" instead of writing an evidence row.',
+    forms: 'Forms',
+    formsReady: 'configured',
+    formsNotConfigured: 'not configured',
+    formsIncomplete: 'HALF CONFIGURED',
+    formsMalformed: 'ENDPOINT NOT VALID',
+    formsMissing: 'Still missing',
+    formsEndpointProblem:
+      'The submissions endpoint is set but is not a bare origin (scheme + host, no path). An app with a form will NOT be published',
+    formsTrailingSlash:
+      'The endpoint had a trailing slash. It was removed — not an error, but worth knowing in case more is on the end than intended.',
     registryMissingNote:
       'Without 0099 the publish path refuses to work — deliberately: uploaded files with no registry row would be an orphan.',
     appsDomain: 'Apps domain',

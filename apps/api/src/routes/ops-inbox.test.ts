@@ -308,4 +308,14 @@ describe('GET /health — the forms configuration report', () => {
   it('says out loud that it cannot speak for the D1 token scope', async () => {
     expect((await health()).forms.note).toContain('D1:Edit');
   });
+
+  it('the console and the health probe compute the SAME report — one function, two surfaces', async () => {
+    process.env.OPS_FORMS_ENDPOINT = 'https://api.justgoblin.com';
+    process.env.CF_TURNSTILE_SITE_KEY = '0xsite';
+    process.env.CF_TURNSTILE_SECRET_KEY = '0xsecret';
+    const { formsConfigReport } = await import('../services/ops-forms-config');
+    // The console renders whatever this returns; the probe embeds whatever this
+    // returns. Two implementations is how one surface says yes and the other no.
+    expect((await health()).forms).toEqual(formsConfigReport());
+  });
 });

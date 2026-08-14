@@ -63,6 +63,22 @@ interface StatusPayload {
     notes: string[];
   } | null;
   migrations: { registry: Tri; audit: Tri };
+  /**
+   * PHASE 4 — is this instance set up to accept form submissions?
+   *
+   * OPTIONAL in the type, deliberately: an API deployed before Phase 4 does not
+   * send it, and the card renders UNKNOWN rather than a confident "not
+   * configured" about a question that deployment cannot answer.
+   *
+   * There is no value in here and there must never be — presence by name, and the
+   * endpoint by shape.
+   */
+  forms?: {
+    verdict: 'ready' | 'not_configured' | 'incomplete' | 'malformed';
+    present: Record<string, boolean>;
+    endpoint: { source: string; bareOrigin: boolean; scheme?: string; trailingSlashRemoved?: boolean; problem?: string };
+    missing: string[];
+  };
   appsDomain: string;
   e2e: { confirm: string; running: string | null };
   timestamp: string;
@@ -787,6 +803,35 @@ export function OpsConsole({ initialStatus }: { initialStatus: StatusPayload }) 
 
         <p className="oc-note">{s.status.wildcardTrap}</p>
         {!hostingOn ? <p className="oc-note">{s.status.hostingOffNote}</p> : null}
+        {/* PHASE 4 — the founder's pre-flight for forms, in one row. */}
+        <div className="oc-row">
+          <span className="k">{s.status.forms}</span>
+          <span className="v">
+            {!status.forms ? (
+              <span className="oc-state unknown">{U}</span>
+            ) : (
+              <span className={`oc-state ${status.forms.verdict === 'ready' ? 'ok' : status.forms.verdict === 'not_configured' ? 'unknown' : 'bad'}`}>
+                {status.forms.verdict === 'ready'
+                  ? s.status.formsReady
+                  : status.forms.verdict === 'not_configured'
+                    ? s.status.formsNotConfigured
+                    : status.forms.verdict === 'malformed'
+                      ? s.status.formsMalformed
+                      : s.status.formsIncomplete}
+              </span>
+            )}
+          </span>
+        </div>
+        {status.forms && status.forms.missing.length > 0 ? (
+          // The NAMES, which is the whole point — never a value.
+          <p className="oc-note">{s.status.formsMissing}: {status.forms.missing.join(', ')}</p>
+        ) : null}
+        {status.forms && !status.forms.endpoint.bareOrigin && status.forms.endpoint.problem !== 'unset' ? (
+          <p className="oc-note">{s.status.formsEndpointProblem} ({status.forms.endpoint.source}: {status.forms.endpoint.problem})</p>
+        ) : null}
+        {status.forms?.endpoint.trailingSlashRemoved ? (
+          <p className="oc-note">{s.status.formsTrailingSlash}</p>
+        ) : null}
         {status.migrations.registry === false ? <p className="oc-note">{s.status.registryMissingNote}</p> : null}
         {status.migrations.audit === false ? <p className="oc-note">{s.status.auditMissingNote}</p> : null}
         {status.router?.notes?.length ? (
