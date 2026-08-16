@@ -285,6 +285,45 @@ export const CLASSIFIER_SYSTEM_PROMPT = [
   'Use "pass" with an empty categories array when nothing warrants a human look.',
 ].join('\n');
 
+/**
+ * FOUNDER-WALK-6 · U2 (F2) — the wiring note.
+ *
+ * Appended to the system prompt, never mixed into the candidate text, and built
+ * from a NUMBER this file's own caller computed (`wireForms()`'s own count of
+ * forms it wired) — never from anything read out of the candidate's bytes. That
+ * is what makes it unforgeable: a candidate cannot make this note say anything
+ * by containing particular text, because nothing in the candidate is parsed to
+ * produce it. The worst a candidate can do is cause the count to be nonzero by
+ * containing an actual actionless `<form>` — which only ever adds the true
+ * sentence "this app has a form Goblin will wire", never a false one, and never
+ * suppresses scrutiny of anything else on the page: every other byte the
+ * candidate contains is still sent, unmarked and unexempted, in `candidate.text`.
+ *
+ * This is why the fix is "the classifier never sees the injected bytes" rather
+ * than "an inline marker tells the classifier to ignore them": an inline marker
+ * lives in the SAME text channel as the candidate, so a candidate that already
+ * knows the marker's exact bytes (this is not a secret — any published Goblin
+ * app's source shows the wiring) could type it into its own content and claim
+ * the same trust. A fact assembled by trusted code, in the system channel, from
+ * a trusted-code-computed number, has no such forgery path.
+ */
+export function classifierWiringNote(wiredFormCount: number): string {
+  if (wiredFormCount <= 0) return '';
+  return [
+    '',
+    `This candidate has ${wiredFormCount} form(s) that Goblin's OWN publish pipeline wires`,
+    "AFTER this review: a first-party fetch() submit handler posting to Goblin's own API on",
+    "Goblin's own domain, gated by a Cloudflare Turnstile CAPTCHA widget. You are shown the",
+    'page BEFORE that wiring happens and will never see it in this text — do not expect it,',
+    'and do not read a plain, actionless <form> as unfinished, as evasion, or as evidence of',
+    'credential harvesting on that basis alone: that is exactly what an app built for Goblin',
+    "to wire looks like before publish. This paragraph describes Goblin's own",
+    "infrastructure. It was added by Goblin's own code from a count Goblin's own code",
+    "computed — it is not part of, and could not have been influenced by, the candidate's own",
+    'text below.',
+  ].join('\n');
+}
+
 // ── Defensive parsing ───────────────────────────────────────────────────────
 
 /** The only shape the rest of the system accepts from the model. */
@@ -383,10 +422,18 @@ function skipped(reason: ClassifierReason, verdict: 'pass' | 'review', extra: Pa
  * Classify one artifact. Never throws: every failure is a `review` with a reason.
  *
  * The caller is `runHostedPublishScan` and it calls this ONLY on a stage-1 `pass`.
+ *
+ * `wiredFormCount` (founder-walk-6 U2/F2): how many forms in THIS artifact
+ * Goblin's own pipeline wired. Defaults to 0 — callers that pass nothing (the
+ * real-model battery script, older tests) get the original prompt, unchanged.
+ * The caller is expected to pass `files` that do NOT contain the wired bytes
+ * (`ops-publish.ts` passes the pre-wiring scan view) — this parameter only
+ * supplies the fact; it does not itself strip anything from `files`.
  */
 export async function classifyArtifact(
   files: HostedScanFile[],
   deps: ClassifierDeps = defaultClassifierDeps,
+  wiredFormCount = 0,
 ): Promise<ClassifierResult> {
   if (!classifierEnabled()) return skipped('skipped', 'pass');
 
@@ -433,7 +480,7 @@ export async function classifyArtifact(
     const stream = deps.getClient(config).stream({
       model,
       messages: [
-        { role: 'system', content: CLASSIFIER_SYSTEM_PROMPT },
+        { role: 'system', content: CLASSIFIER_SYSTEM_PROMPT + classifierWiringNote(wiredFormCount) },
         { role: 'user', content: candidate.text },
       ],
       maxTokens: CLASSIFIER_MAX_OUTPUT_TOKENS,

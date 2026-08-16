@@ -1,0 +1,140 @@
+{
+  "generatedAt": "2026-08-16T09:54:47.634Z",
+  "runs": 5,
+  "model": "deepseek-ai/DeepSeek-V3.2",
+  "totalBefore": 0,
+  "totalAfter": 0,
+  "totalRuns": 10,
+  "cases": [
+    {
+      "case": "chess-course-signup (2026-08-15: held phishing/high)",
+      "wiredFormCount": 1,
+      "stage1": "pass",
+      "before": {
+        "runs": [
+          {
+            "verdict": "pass",
+            "reason": "clean",
+            "categories": []
+          },
+          {
+            "verdict": "pass",
+            "reason": "clean",
+            "categories": []
+          },
+          {
+            "verdict": "pass",
+            "reason": "clean",
+            "categories": []
+          },
+          {
+            "verdict": "pass",
+            "reason": "clean",
+            "categories": []
+          },
+          {
+            "verdict": "pass",
+            "reason": "clean",
+            "categories": []
+          }
+        ],
+        "held": 0
+      },
+      "after": {
+        "runs": [
+          {
+            "verdict": "pass",
+            "reason": "clean",
+            "categories": []
+          },
+          {
+            "verdict": "pass",
+            "reason": "clean",
+            "categories": []
+          },
+          {
+            "verdict": "pass",
+            "reason": "clean",
+            "categories": []
+          },
+          {
+            "verdict": "pass",
+            "reason": "clean",
+            "categories": []
+          },
+          {
+            "verdict": "pass",
+            "reason": "clean",
+            "categories": []
+          }
+        ],
+        "held": 0
+      }
+    },
+    {
+      "case": "guitar-teacher-contact (2026-08-15: held circumvention)",
+      "wiredFormCount": 1,
+      "stage1": "pass",
+      "before": {
+        "runs": [
+          {
+            "verdict": "pass",
+            "reason": "clean",
+            "categories": []
+          },
+          {
+            "verdict": "pass",
+            "reason": "clean",
+            "categories": []
+          },
+          {
+            "verdict": "pass",
+            "reason": "clean",
+            "categories": []
+          },
+          {
+            "verdict": "pass",
+            "reason": "clean",
+            "categories": []
+          },
+          {
+            "verdict": "pass",
+            "reason": "clean",
+            "categories": []
+          }
+        ],
+        "held": 0
+      },
+      "after": {
+        "runs": [
+          {
+            "verdict": "pass",
+            "reason": "clean",
+            "categories": []
+          },
+          {
+            "verdict": "pass",
+            "reason": "clean",
+            "categories": []
+          },
+          {
+            "verdict": "pass",
+            "reason": "clean",
+            "categories": []
+          },
+          {
+            "verdict": "pass",
+            "reason": "clean",
+            "categories": []
+          },
+          {
+            "verdict": "pass",
+            "reason": "clean",
+            "categories": []
+          }
+        ],
+        "held": 0
+      }
+    }
+  ]
+}

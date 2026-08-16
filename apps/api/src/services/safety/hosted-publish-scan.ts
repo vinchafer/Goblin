@@ -344,6 +344,21 @@ export interface HostedScanContext {
    * be a button that cannot work.
    */
   operatorApproved?: boolean;
+  /**
+   * FOUNDER-WALK-6 · U2 (F2) — what stage 2 reads INSTEAD of `files`, when the two
+   * differ. Stage 1 always scans `files` unchanged — the real, final bytes about
+   * to be uploaded, preserving "what is scanned is what is uploaded" for the free,
+   * deterministic layer. Stage 2 is different: it is the layer that misread
+   * Goblin's own injected form-wiring snippet (a CAPTCHA + fetch submit handler,
+   * added by `ops-form-wiring.ts` before either stage runs) as evidence of
+   * phishing/circumvention on two real, harmless pages in the 2026-08-15 walk. So
+   * the caller (`ops-publish.ts`) passes the artifact's PRE-wiring text here when
+   * it differs, and stage 2 is classified against THAT — it never sees bytes
+   * Goblin itself injected, only what the builder actually authored.
+   */
+  classifierFiles?: HostedScanFile[];
+  /** How many forms `classifierFiles` omits the wiring of — see `classifierWiringNote`. */
+  wiredFormCount?: number;
 }
 
 /** Injectable so the battery and the publish tests can drive stage 2 deterministically. */
@@ -406,7 +421,7 @@ export async function runHostedPublishScan(
     };
   }
 
-  const s2 = await deps.classify(files);
+  const s2 = await deps.classify(ctx.classifierFiles ?? files, undefined, ctx.wiredFormCount ?? 0);
 
   if (s2.verdict === 'review') {
     // `complete` distinguishes "we read it and wondered" from "we could not read
