@@ -13,10 +13,10 @@
 //  - DISPLAY list  → the hand-maintained static catalog in config/providers.ts,
 //    shown greyed to not-connected users. DISPLAY ONLY, never a routing source.
 //
-// The dead `GET /v1/models` proxy sync (10.8-1) was retired here in 10.9-A1: it
-// targeted an endpoint that does not exist in this architecture and silently
-// no-op'd into the static fallback. `syncFromLiteLLM` is kept as a retired no-op
-// so its callers keep compiling; the real refresh path is the per-user
+// The dead `GET /v1/models` proxy sync (10.8-1) was retired in 10.9-A1: it
+// targeted an endpoint that does not exist in this architecture. Its no-op
+// shim `syncFromLiteLLM` had zero remaining callers and was removed entirely
+// in the litellm dead-code cleanup; the real refresh path is the per-user
 // provider-discovery refresh (10.9-2).
 
 import { getSupabaseAdmin } from '../lib/supabase';
@@ -91,37 +91,6 @@ function humanizeName(id: string): string {
     .map((w) => (/^\d/.test(w) ? w : w.charAt(0).toUpperCase() + w.slice(1)))
     .join(' ')
     .replace(/\b(\d)\.(\d)\b/g, '$1.$2');
-}
-
-export interface SyncResult {
-  ok: boolean;
-  // 'litellm' dropped: no code path produces it (see docs/LITELLM_DEPENDENCY_AUDIT.md).
-  // The DB CHECK constraints on models.discovered_via / catalog_sync_log.source still
-  // permit 'litellm' for historical rows — this is a TypeScript-only narrowing.
-  source: 'skipped' | 'error' | 'provider-discovery';
-  discovered: number;
-  upserted: number;
-  disabled: number;
-  reason?: string;
-}
-
-/**
- * RETIRED in 10.9-A1 (OPTION B). The LiteLLM `GET /v1/models` proxy sync this
- * used to perform targeted an endpoint that does not exist in this architecture
- * (see the file header + sprint-10-9/PHASE_0_GATE.md). It is now a no-op so the
- * boot hook and the admin endpoint keep compiling. The real refresh of what each
- * key unlocks is the per-user provider-discovery refresh (10.9-2,
- * `refreshAllUserDiscovery`). DO NOT re-introduce a /v1/models fetch here.
- */
-export async function syncFromLiteLLM(_opts: { force?: boolean } = {}): Promise<SyncResult> {
-  return {
-    ok: true,
-    source: 'skipped',
-    discovered: 0,
-    upserted: 0,
-    disabled: 0,
-    reason: 'retired in 10.9-A1 — no LiteLLM proxy in this architecture; catalog source is per-user provider-discovery',
-  };
 }
 
 // ── Catalog read path (models table is a cache, not source-of-truth) ─────────
