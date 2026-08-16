@@ -92,3 +92,44 @@ describe('verifyDeployment — the deploy truth gate (FW6-U4)', () => {
     expect(v.reason).toContain('antwortet nicht');
   });
 });
+
+describe('verifyDeployment — expectedEntryContent (founder-walk-6 U1 / F4)', () => {
+  // The property under test: a caller that already knows the exact bytes it wants
+  // checked (because it just uploaded them) must have those bytes trusted OVER a
+  // second, independent read of `downloadFile` — never averaged, never OR'd, never
+  // silently ignored. The mock at the top of this file makes `downloadFile` return
+  // STORED_HTML for every test in this file; here that mock is deliberately WRONG,
+  // to prove the option, not the storage read, decides the outcome.
+  const WIRED_HTML = STORED_HTML.replace('</body>', '<script>/* injected */</script></body>');
+
+  it('serving content that matches expectedEntryContent passes, even though it differs from storage', async () => {
+    routes = {
+      [BASE]: { status: 200, body: WIRED_HTML },
+      [`${BASE}/styles.css`]: { status: 200, body: 'body{}' },
+      [`${BASE}/app.js`]: { status: 200, body: 'console.log(1)' },
+    };
+    const v = await verifyDeployment(BASE, 'proj-1', FILES, undefined, { ...FAST, expectedEntryContent: WIRED_HTML });
+    expect(v.ok).toBe(true);
+  });
+
+  it('serving the STORED (stale) content instead FAILS when expectedEntryContent says otherwise', async () => {
+    routes = {
+      [BASE]: { status: 200, body: STORED_HTML }, // what storage's downloadFile mock would also return
+      [`${BASE}/styles.css`]: { status: 200, body: 'body{}' },
+      [`${BASE}/app.js`]: { status: 200, body: 'console.log(1)' },
+    };
+    const v = await verifyDeployment(BASE, 'proj-1', FILES, undefined, { ...FAST, expectedEntryContent: WIRED_HTML });
+    expect(v.ok).toBe(false);
+    expect(v.reason).toContain('entspricht noch nicht dem gespeicherten Stand');
+  });
+
+  it('omitting expectedEntryContent falls back to the storage read, unchanged for existing callers', async () => {
+    routes = {
+      [BASE]: { status: 200, body: STORED_HTML },
+      [`${BASE}/styles.css`]: { status: 200, body: 'body{}' },
+      [`${BASE}/app.js`]: { status: 200, body: 'console.log(1)' },
+    };
+    const v = await verifyDeployment(BASE, 'proj-1', FILES, undefined, FAST);
+    expect(v.ok).toBe(true);
+  });
+});

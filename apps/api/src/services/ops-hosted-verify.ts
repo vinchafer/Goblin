@@ -15,7 +15,7 @@
  * content type or a stale cached object all answer 200 perfectly happily.
  */
 
-import { verifyDeployment } from './deploy-verification';
+import { verifyDeployment, pickEntryFile } from './deploy-verification';
 import logger from '../lib/logger';
 
 /** How many assets get the byte comparison. Publishes stay fast; the entry is always checked. */
@@ -81,11 +81,24 @@ export async function verifyHostedPublish(
 ): Promise<HostedVerification> {
   const paths = uploaded.map((f) => f.path);
 
-  // 1. The existing truth gate, unchanged: entry 200 + matches storage + every
+  // U1 (founder-walk-6, F4): compare the served entry against the bytes THIS
+  // publish actually put in R2 — `uploaded` — never against a second, independent
+  // read of project storage. A pipeline step between "load the artifact" and
+  // "upload" (form-wiring, Phase 4) legitimately rewrites the entry IN MEMORY
+  // without ever writing that rewrite back to storage; re-reading storage after
+  // that point compares against bytes that were never uploaded, which is why
+  // every publish of a form-bearing app failed this gate, first publish included.
+  const entryPath = pickEntryFile(paths);
+  const expectedEntryContent = entryPath
+    ? uploaded.find((f) => f.path === entryPath)?.bytes.toString('utf8')
+    : undefined;
+
+  // 1. The existing truth gate: entry 200 + matches what we uploaded + every
   //    referenced asset answers 200.
   const base = await verifyDeployment(url, projectId, paths, undefined, {
     attempts: opts.attempts ?? 5,
     retryDelayMs: opts.retryDelayMs ?? 4_000,
+    expectedEntryContent,
   });
 
   if (!base.ok) {

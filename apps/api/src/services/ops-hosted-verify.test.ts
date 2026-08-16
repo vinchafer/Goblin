@@ -9,7 +9,12 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 const verifyDeployment = vi.fn();
-vi.mock('./deploy-verification', () => ({ verifyDeployment: (...a: unknown[]) => verifyDeployment(...a) }));
+vi.mock('./deploy-verification', async (importOriginal) => {
+  // pickEntryFile is real and pure — only verifyDeployment (the network-touching
+  // half) is faked here.
+  const actual = await importOriginal<typeof import('./deploy-verification')>();
+  return { ...actual, verifyDeployment: (...a: unknown[]) => verifyDeployment(...a) };
+});
 
 const { verifyHostedPublish, pickAssetsToCheck } = await import('./ops-hosted-verify');
 
@@ -106,5 +111,19 @@ describe('verifyHostedPublish', () => {
     const opts = verifyDeployment.mock.calls[0]![4] as { attempts: number; retryDelayMs: number };
     expect(opts.attempts).toBe(5);
     expect(opts.retryDelayMs).toBe(4_000);
+  });
+
+  it('founder-walk-6 U1/F4: passes the UPLOADED entry bytes through as expectedEntryContent, never storage', async () => {
+    // A pipeline step (form-wiring) can rewrite the entry in memory after storage
+    // was read; `uploaded` here is what that step produced, and it must be exactly
+    // what the downstream truth gate compares against — not re-derived, not read
+    // again from anywhere else.
+    const wired = '<h1>a</h1><script>/* goblin-injected */</script>';
+    await verifyHostedPublish('https://meinladen.justgoblin.app', 'proj-1', [
+      file('index.html', wired),
+      file('app.js', 'x'),
+    ]);
+    const opts = verifyDeployment.mock.calls[0]![4] as { expectedEntryContent?: string };
+    expect(opts.expectedEntryContent).toBe(wired);
   });
 });
