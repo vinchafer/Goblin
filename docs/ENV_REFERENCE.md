@@ -97,7 +97,7 @@ be loud immediately rather than half-broken later.
 ### Optional, grouped
 
 The long tail — Layer-2 hosted models (`GOBLIN_HOSTED_API`, `DEEPINFRA_API_KEY`,
-`GOBLIN_HOSTED_MODEL_*`), LiteLLM (`LITELLM_*`), agent concurrency and runtime knobs
+`GOBLIN_HOSTED_MODEL_*`), agent concurrency and runtime knobs
 (`AGENT_*`, plus `CHAT_MAX_RUNTIME_MS` — the chat twin of `AGENT_MAX_RUNTIME_MS`, which
 bounds a turn whose reader disconnected), rate-limit caps (`SEARCH_DAILY_CAP`, `PUBLISHES_PER_HOUR`,
 `ATTACHMENT_BYTES_PER_DAY`), eval runner (`EVAL_*`), digests
@@ -107,6 +107,11 @@ documented inline, with defaults and links, in **`apps/api/.env.example`**. Each
 one is off or defaulted when unset; none of them can stop the process from
 starting. Treat that file as this section's detail view rather than duplicating
 it here, because a duplicated list is a list that goes stale.
+
+`LITELLM_BASE_URL` and `LITELLM_MASTER_KEY` are **RETIRED**: routing is
+direct-to-provider (OPTION B — Anthropic SDK + OpenAI SDK, per-user
+provider-discovery), and the Railway litellm service was decommissioned
+2026-08-16. Both must remain unset. See `docs/LITELLM_DEPENDENCY_AUDIT.md`.
 
 ---
 
