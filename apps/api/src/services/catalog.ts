@@ -95,7 +95,10 @@ function humanizeName(id: string): string {
 
 export interface SyncResult {
   ok: boolean;
-  source: 'litellm' | 'skipped' | 'error' | 'provider-discovery';
+  // 'litellm' dropped: no code path produces it (see docs/LITELLM_DEPENDENCY_AUDIT.md).
+  // The DB CHECK constraints on models.discovered_via / catalog_sync_log.source still
+  // permit 'litellm' for historical rows — this is a TypeScript-only narrowing.
+  source: 'skipped' | 'error' | 'provider-discovery';
   discovered: number;
   upserted: number;
   disabled: number;
