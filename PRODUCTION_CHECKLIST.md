@@ -49,7 +49,7 @@ Last updated: 2026-05-01
 | Item | Status | Notes |
 |------|--------|-------|
 | Health check: GET /health | ✅ Done | Returns `{ status, timestamp, version }` |
-| Deep health check: GET /health/deep | ✅ Done | Checks Supabase, Storage, LiteLLM |
+| Deep health check: GET /health/deep | ✅ Done | Checks Supabase, Storage; LiteLLM check retired (env var absent, Railway service decommissioned 2026-08-16 — see `docs/LITELLM_DEPENDENCY_AUDIT.md`) |
 | Error page (500) | ✅ Done | `app/error.tsx` |
 | 404 page | ✅ Done | `app/not-found.tsx` |
 | Sentry frontend | ⚠️ Pending | Install `@sentry/nextjs`, add `sentry.client.config.ts` |

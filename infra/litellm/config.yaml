@@ -1,3 +1,8 @@
+# DECOMMISSIONED 2026-08-16. The Railway service this config
+# targeted was removed. Retained for history. Not loaded by
+# apps/api. Whether this config was ever live on that service is
+# unresolved — see Honest Limitation #2 of
+# docs/LITELLM_DEPENDENCY_AUDIT.md.
 model_list:
   # Free Pool — Goblin's own keys, registered as virtual models
   - model_name: free/llama-70b

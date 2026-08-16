@@ -80,3 +80,9 @@ fallback), and routing is direct.
   break local chat if the API loads it: every completion would 400/throw).
 - Decommission the empty `litellm-production-6ba8.up.railway.app`
   Railway service — it is unhealthy and serves nothing.
+
+---
+
+**SUPERSEDED 2026-08-16** for the questions of proxy reachability and
+error handling: see `docs/LITELLM_DEPENDENCY_AUDIT.md`. The findings
+above were accurate when recorded on their stated date (2026-06-04).

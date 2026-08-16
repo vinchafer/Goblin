@@ -10,7 +10,7 @@ Goblin is a cloud IDE for makers — chat with AI to build full-stack apps, push
 |-------|------|
 | Frontend | Next.js 15 (App Router), Tailwind CSS v4, TypeScript |
 | Backend | Hono (Node.js), Supabase (Postgres + Auth + Storage) |
-| AI | LiteLLM proxy, BYOK (Anthropic/OpenAI/Gemini/Groq/+8 more), Free-API pool |
+| AI | Direct provider routing (Anthropic SDK + OpenAI SDK, per-user provider-discovery — see `docs/LITELLM_DEPENDENCY_AUDIT.md`), BYOK (Anthropic/OpenAI/Gemini/Groq/+8 more), Free-API pool |
 | Payments | Stripe (subscriptions, usage-based limits) |
 | Deploy | Vercel (via API), GitHub (OAuth + repo push) |
 | Monitoring | Sentry, PostHog, structured logging (pino) |
@@ -27,7 +27,8 @@ pnpm install
 # 3. Environment
 cp .env.example .env
 # Fill in NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
-# ENCRYPTION_KEY (32 chars), STRIPE_* keys, LITELLM_BASE_URL
+# ENCRYPTION_KEY (32 chars), STRIPE_* keys — see apps/api/.env.example for
+# the full list (LITELLM_BASE_URL is retired, do not set it)
 
 # 4. Supabase setup
 # Run supabase/migrations/*.sql in order via Supabase SQL editor
