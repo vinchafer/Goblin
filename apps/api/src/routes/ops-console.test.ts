@@ -43,11 +43,18 @@ const listPendingReviews = vi.fn();
 const listRecentReviewDecisions = vi.fn();
 const findReviewItem = vi.fn();
 const decideReview = vi.fn();
+// FOUNDER-WALK-6 · U3 (F3) — the retry path's three collaborators.
+const listNeedsAttentionReviews = vi.fn();
+const markPublishFailed = vi.fn();
+const markPublishRecovered = vi.fn();
 vi.mock('../services/ops-review-queue', () => ({
   listPendingReviews: (...a: unknown[]) => listPendingReviews(...a),
   listRecentReviewDecisions: (...a: unknown[]) => listRecentReviewDecisions(...a),
   findReviewItem: (...a: unknown[]) => findReviewItem(...a),
   decideReview: (...a: unknown[]) => decideReview(...a),
+  listNeedsAttentionReviews: (...a: unknown[]) => listNeedsAttentionReviews(...a),
+  markPublishFailed: (...a: unknown[]) => markPublishFailed(...a),
+  markPublishRecovered: (...a: unknown[]) => markPublishRecovered(...a),
 }));
 
 const loadCandidatePreview = vi.fn();
@@ -644,6 +651,7 @@ const REVIEW_ITEM = {
   decidedBy: null,
   decidedAt: null,
   decisionReason: null,
+  publishFailureMessage: null,
   createdAt: '2026-08-13T00:00:00.000Z',
 };
 
@@ -660,8 +668,11 @@ describe('4 — the review queue', () => {
     process.env.OPS_FOUNDER_ACCOUNTS = FOUNDER;
     listPendingReviews.mockResolvedValue({ available: true, items: [REVIEW_ITEM] });
     listRecentReviewDecisions.mockResolvedValue({ available: true, items: [] });
+    listNeedsAttentionReviews.mockResolvedValue({ available: true, items: [] });
     findReviewItem.mockResolvedValue(REVIEW_ITEM);
     decideReview.mockResolvedValue({ ...REVIEW_ITEM, status: 'approved' });
+    markPublishFailed.mockResolvedValue({ ...REVIEW_ITEM, status: 'approved_publish_failed' });
+    markPublishRecovered.mockResolvedValue({ ...REVIEW_ITEM, status: 'approved' });
     writeOpsAudit.mockResolvedValue('written');
     publishHostedApp.mockResolvedValue({ ok: true, stage: 'live', appId: 'a1', name: 'meinladen', url: 'https://meinladen.justgoblin.app', files: 2, bytes: 900, republished: false, verification: { ok: true }, scan: { verdict: 'pass', scannedFiles: 2, hits: 0, classifier: 'not_run' } });
   });
@@ -674,6 +685,16 @@ describe('4 — the review queue', () => {
       stage1: { verdict: 'pass' }, stage2: { verdict: 'review', reason: 'flagged' },
       categories: ['deception'],
     });
+  });
+
+  it('FOUNDER-WALK-6 U3/F3: also reports what needs a human to look AGAIN', async () => {
+    listNeedsAttentionReviews.mockResolvedValue({
+      available: true,
+      items: [{ ...REVIEW_ITEM, id: 'rv-2', status: 'approved_publish_failed', publishFailureMessage: 'Dieser Name ist vergeben.' }],
+    });
+    const body = await (await get('/reviews')).json();
+    expect(body.needsAttentionAvailable).toBe(true);
+    expect(body.needsAttention[0]).toMatchObject({ id: 'rv-2', publishFailureMessage: 'Dieser Name ist vergeben.' });
   });
 
   it('reports an unreadable queue as UNAVAILABLE, never as "nothing waiting"', async () => {
@@ -730,6 +751,19 @@ describe('4 — the review queue', () => {
     expect(decideReview).toHaveBeenCalledWith('rv-1', 'approved', FOUNDER, null);
   });
 
+  it('FOUNDER-WALK-6 U3/F3: a failed publish is PERSISTED, not just returned once', async () => {
+    publishHostedApp.mockResolvedValue({ ok: false, stage: 'name', code: 'name_taken', message: 'Dieser Name ist vergeben.' });
+    await postJson('/reviews/rv-1/approve', {});
+    // Without this, the row stayed 'approved' forever and the failure was only
+    // ever visible in this one HTTP response — the exact bug being fixed.
+    expect(markPublishFailed).toHaveBeenCalledWith('rv-1', 'Dieser Name ist vergeben.');
+  });
+
+  it('a SUCCESSFUL publish does not touch markPublishFailed at all', async () => {
+    await postJson('/reviews/rv-1/approve', {});
+    expect(markPublishFailed).not.toHaveBeenCalled();
+  });
+
   it('409s an item somebody else already decided, and publishes nothing', async () => {
     findReviewItem.mockResolvedValue({ ...REVIEW_ITEM, status: 'blocked' });
     expect((await postJson('/reviews/rv-1/approve', {})).status).toBe(409);
@@ -781,6 +815,79 @@ describe('4 — the review queue', () => {
   });
 });
 
+// ── 4b — FOUNDER-WALK-6 · U3 (F3): retry-publish for a stranded approval ────
+
+describe('4b — retry-publish', () => {
+  const STRANDED = { ...REVIEW_ITEM, status: 'approved_publish_failed' as const, decidedBy: FOUNDER, publishFailureMessage: 'Dieser Name ist vergeben.' };
+
+  beforeEach(() => {
+    process.env.OPS_FOUNDER_ACCOUNTS = FOUNDER;
+    findReviewItem.mockResolvedValue(STRANDED);
+    writeOpsAudit.mockResolvedValue('written');
+    markPublishRecovered.mockResolvedValue({ ...STRANDED, status: 'approved', publishFailureMessage: null });
+    markPublishFailed.mockResolvedValue({ ...STRANDED });
+  });
+
+  it('re-publishes WITHOUT re-deciding — decideReview is never called', async () => {
+    publishHostedApp.mockResolvedValue({ ok: true, stage: 'live', appId: 'a1', name: 'meinladen', url: 'https://meinladen.justgoblin.app', files: 2, bytes: 900, republished: true, verification: { ok: true }, scan: { verdict: 'pass', scannedFiles: 2, hits: 0, classifier: 'not_run' } });
+    const body = await (await postJson('/reviews/rv-1/retry-publish', {})).json();
+    expect(decideReview).not.toHaveBeenCalled();
+    expect(publishHostedApp).toHaveBeenCalledWith(expect.objectContaining({ operatorApproved: true, name: 'meinladen' }));
+    expect(body).toMatchObject({ decision: 'retry', published: true });
+  });
+
+  it('a successful retry clears the stranded state and writes an audit line', async () => {
+    publishHostedApp.mockResolvedValue({ ok: true, stage: 'live', appId: 'a1', name: 'meinladen', url: 'https://meinladen.justgoblin.app', files: 2, bytes: 900, republished: true, verification: { ok: true }, scan: { verdict: 'pass', scannedFiles: 2, hits: 0, classifier: 'not_run' } });
+    await postJson('/reviews/rv-1/retry-publish', {});
+    expect(markPublishRecovered).toHaveBeenCalledWith('rv-1');
+    expect(markPublishFailed).not.toHaveBeenCalled();
+    expect(writeOpsAudit).toHaveBeenCalledWith(expect.objectContaining({ action: 'review_publish_retry_ok', actor: FOUNDER }));
+  });
+
+  it('a retry that fails again stays stranded, with the fresh reason', async () => {
+    publishHostedApp.mockResolvedValue({ ok: false, stage: 'upload', code: 'upload_failed', message: 'Die Dateien konnten nicht vollständig hochgeladen werden.' });
+    const body = await (await postJson('/reviews/rv-1/retry-publish', {})).json();
+    expect(markPublishFailed).toHaveBeenCalledWith('rv-1', 'Die Dateien konnten nicht vollständig hochgeladen werden.');
+    expect(markPublishRecovered).not.toHaveBeenCalled();
+    expect(writeOpsAudit).toHaveBeenCalledWith(expect.objectContaining({ action: 'review_publish_retry_failed', reason: 'Die Dateien konnten nicht vollständig hochgeladen werden.' }));
+    expect(body).toMatchObject({ decision: 'retry', published: false });
+  });
+
+  it('409s a retry on an item that is not stranded — pending has its own route', async () => {
+    findReviewItem.mockResolvedValue({ ...REVIEW_ITEM, status: 'pending' });
+    const res = await postJson('/reviews/rv-1/retry-publish', {});
+    expect(res.status).toBe(409);
+    expect(publishHostedApp).not.toHaveBeenCalled();
+  });
+
+  it('409s a retry on an already-approved (live) item — nothing to retry', async () => {
+    findReviewItem.mockResolvedValue({ ...REVIEW_ITEM, status: 'approved' });
+    const res = await postJson('/reviews/rv-1/retry-publish', {});
+    expect(res.status).toBe(409);
+    expect(publishHostedApp).not.toHaveBeenCalled();
+  });
+
+  it('409s a retry on a blocked item — a block is final', async () => {
+    findReviewItem.mockResolvedValue({ ...REVIEW_ITEM, status: 'blocked' });
+    const res = await postJson('/reviews/rv-1/retry-publish', {});
+    expect(res.status).toBe(409);
+    expect(publishHostedApp).not.toHaveBeenCalled();
+  });
+
+  it('404s an unknown item', async () => {
+    findReviewItem.mockResolvedValue(null);
+    expect((await postJson('/reviews/nope/retry-publish', {})).status).toBe(404);
+  });
+
+  it('404s for a cohort user', async () => {
+    getUser.mockResolvedValue({ data: { user: { id: 'u2', email: COHORT } }, error: null });
+    const headers = { Authorization: 'Bearer t', 'content-type': 'application/json' };
+    const res = await opsConsole.request('/reviews/rv-1/retry-publish', { method: 'POST', headers, body: '{}' });
+    expect(res.status).toBe(404);
+    expect(publishHostedApp).not.toHaveBeenCalled();
+  });
+});
+
 // ── 5 — C8: the decision trail is readable without SQL ──────────────────────
 
 describe('5 — the decision trail', () => {
@@ -797,6 +904,7 @@ describe('5 — the decision trail', () => {
     process.env.OPS_FOUNDER_ACCOUNTS = FOUNDER;
     listPendingReviews.mockResolvedValue({ available: true, items: [] });
     listRecentReviewDecisions.mockResolvedValue({ available: true, items: [DECIDED] });
+    listNeedsAttentionReviews.mockResolvedValue({ available: true, items: [] });
   });
 
   it('returns who decided what, when and why — in the SAME call as the queue', async () => {

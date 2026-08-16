@@ -40,6 +40,10 @@ type Sb = ReturnType<typeof getSupabaseAdmin>;
 export type OpsAuditAction =
   | 'suspend' | 'unsuspend' | 'teardown' | 'orphan_purge'
   | 'review_approve' | 'review_block'
+  // FOUNDER-WALK-6 · U3 (F3) — a retry of the publish that followed an approve,
+  // never a re-decision: the original review_approve row is untouched, this is
+  // a second, separate line for what happened when the operator tried again.
+  | 'review_publish_retry_ok' | 'review_publish_retry_failed'
   // X1: the same physical teardown, but triggered by the BUILDER deleting their
   // project rather than by an operator taking an app down. A separate action string
   // because the two read completely differently in an appeal — "we removed your app"

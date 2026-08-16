@@ -40,7 +40,15 @@ import { routerStatus } from '../services/ops-router-deploy';
 import { listAllOpsApps, opsAppsTableAvailable } from '../services/ops-apps-store';
 import { opsAuditTableAvailable, writeOpsAudit } from '../services/ops-audit';
 import { formsConfigReport } from '../services/ops-forms-config';
-import { decideReview, findReviewItem, listPendingReviews, listRecentReviewDecisions } from '../services/ops-review-queue';
+import {
+  decideReview,
+  findReviewItem,
+  listNeedsAttentionReviews,
+  listPendingReviews,
+  listRecentReviewDecisions,
+  markPublishFailed,
+  markPublishRecovered,
+} from '../services/ops-review-queue';
 import { loadCandidatePreview } from '../services/ops-review-preview';
 import { publishHostedApp } from '../services/ops-publish';
 import { appUrl } from '../services/ops-app-names';
@@ -454,7 +462,16 @@ opsConsole.get('/reviews', async (c) => {
   // PHASE 3 · C8 — pending AND recently decided, in ONE call. A phone on mobile
   // data should not need two round-trips to answer "what is waiting, and what did
   // I just do about it".
-  const [{ available, items }, decided] = await Promise.all([listPendingReviews(), listRecentReviewDecisions()]);
+  //
+  // FOUNDER-WALK-6 · U3 (F3) — a THIRD list, `needsAttention`: approvals whose
+  // publish did not reach live. Its own list, not folded into `decided`, because
+  // `decided` is time-limited (the most recent N) and this must not be able to
+  // age out of view the way the original bug let it disappear entirely.
+  const [{ available, items }, decided, needsAttention] = await Promise.all([
+    listPendingReviews(),
+    listRecentReviewDecisions(),
+    listNeedsAttentionReviews(),
+  ]);
   return c.json({
     available,
     // The decision trail: who decided what, when, and why — without SQL.
@@ -467,6 +484,18 @@ opsConsole.get('/reviews', async (c) => {
       decidedBy: i.decidedBy,
       decidedAt: i.decidedAt,
       decisionReason: i.decisionReason,
+      createdAt: i.createdAt,
+    })),
+    // Approved, but not live — needs a retry or an operator's next decision.
+    needsAttentionAvailable: needsAttention.available,
+    needsAttention: needsAttention.items.map((i) => ({
+      id: i.id,
+      requestedName: i.requestedName,
+      userId: i.userId,
+      projectId: i.projectId,
+      decidedBy: i.decidedBy,
+      decidedAt: i.decidedAt,
+      publishFailureMessage: i.publishFailureMessage,
       createdAt: i.createdAt,
     })),
     items: items.map((i) => ({
@@ -567,6 +596,15 @@ opsConsole.post('/reviews/:id/approve', async (c) => {
     operatorApproved: true,
   });
 
+  // FOUNDER-WALK-6 · U3 (F3) — a failure here used to be reported ONLY in this
+  // one HTTP response and then forgotten: the row stayed 'approved' forever,
+  // invisible to `listPendingReviews` and indistinguishable from a successful
+  // approval in the decision trail. Persist it, so the next operator to open
+  // the console — not just this one, right now — can see and retry it.
+  if (!result.ok) {
+    await markPublishFailed(item.id, result.message);
+  }
+
   return c.json({
     decision: 'approved',
     actor: founder.email,
@@ -574,6 +612,68 @@ opsConsole.post('/reviews/:id/approve', async (c) => {
     published: result.ok,
     // The publish result verbatim, success or failure. An approval that did not
     // reach a live URL must not be reported as if it had.
+    publish: result.ok
+      ? { url: result.url, appId: result.appId, files: result.files, scan: result.scan }
+      : { stage: result.stage, code: result.code, message: result.message },
+  });
+});
+
+/**
+ * POST /api/ops-console/reviews/:id/retry-publish — the publish that followed
+ * an approval failed; try again WITHOUT re-running the approval decision.
+ *
+ * Only reachable from `approved_publish_failed` — never from `pending` (that is
+ * what `/approve` is for) and never from `blocked` (a block is final; there is
+ * nothing to retry). `decided_by`/`decided_at`/`decision_reason` are the
+ * original human decision and this route never touches them, only the status
+ * and, via `publishHostedApp`, the actual publish attempt.
+ */
+opsConsole.post('/reviews/:id/retry-publish', async (c) => {
+  const founder = c.get('opsFounder');
+  const id = c.req.param('id');
+
+  const item = await findReviewItem(id);
+  if (!item) return c.json({ error: 'unknown_review', message: 'Dieser Eintrag ist nicht (mehr) in der Prüfliste.' }, 404);
+  if (item.status !== 'approved_publish_failed') {
+    return c.json(
+      { error: 'not_retryable', message: `Dieser Eintrag steht auf „${item.status}" — hier gibt es nichts zu wiederholen.` },
+      409,
+    );
+  }
+
+  const result = await publishHostedApp({
+    userId: item.userId,
+    projectId: item.projectId,
+    name: item.requestedName,
+    operatorApproved: true,
+  });
+
+  if (result.ok) {
+    await markPublishRecovered(item.id);
+  } else {
+    await markPublishFailed(item.id, result.message);
+  }
+
+  const audit = await writeOpsAudit({
+    appId: item.id,
+    appName: item.requestedName,
+    userId: item.userId,
+    action: result.ok ? 'review_publish_retry_ok' : 'review_publish_retry_failed',
+    actor: founder.email,
+    reason: result.ok ? null : result.message,
+    meta: {
+      subject: 'review_queue_item',
+      review_id: item.id,
+      stage2_reason: item.stage2Reason,
+      categories: item.categories,
+    },
+  });
+
+  return c.json({
+    decision: 'retry',
+    actor: founder.email,
+    audit,
+    published: result.ok,
     publish: result.ok
       ? { url: result.url, appId: result.appId, files: result.files, scan: result.scan }
       : { stage: result.stage, code: result.code, message: result.message },
