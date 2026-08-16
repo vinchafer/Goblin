@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CodeTabClassic } from "./code-tab-classic";
 import { CodeWorkspace } from "@/components/code/CodeWorkspace";
 import { useApp } from "@/contexts/app-context";
@@ -29,6 +29,22 @@ export function CodeTab({ projectId, projectName = "project", pendingCode }: Cod
   const { setPendingCodePayload } = useApp();
   const [theme] = useEditorTheme();
   const [avail, setAvail] = useState<Availability>("probing");
+
+  // FOUNDER-WALK-6 · U5 (F1): `pendingCodePayload` is a single global
+  // context value with no project scope of its own, set by a "send to code"
+  // event dispatched from the chat panel that is always showing THIS
+  // project (there is exactly one dispatcher, ChatTab, and it is only ever
+  // mounted alongside the project it sends to) — so a payload still sitting
+  // unconsumed the moment `projectId` changes can only be stale, never
+  // meant for the project being switched to. Clear it right then, before
+  // this project's CodeWorkspace ever sees it as `pendingCode`.
+  const prevProjectIdRef = useRef(projectId);
+  useEffect(() => {
+    if (prevProjectIdRef.current !== projectId) {
+      prevProjectIdRef.current = projectId;
+      setPendingCodePayload(null);
+    }
+  }, [projectId, setPendingCodePayload]);
 
   useEffect(() => {
     let cancelled = false;
