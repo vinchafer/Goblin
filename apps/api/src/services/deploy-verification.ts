@@ -49,7 +49,7 @@ export async function verifyDeployment(
   projectId: string,
   projectFiles: string[],
   onProgress?: (msg: string) => void | Promise<void>,
-  opts?: { attempts?: number; retryDelayMs?: number; builtOutput?: boolean },
+  opts?: { attempts?: number; retryDelayMs?: number; builtOutput?: boolean; expectedEntryContent?: string },
 ): Promise<DeployVerification> {
   const attempts = opts?.attempts ?? ATTEMPTS;
   const retryDelayMs = opts?.retryDelayMs ?? RETRY_DELAY_MS;
@@ -64,10 +64,26 @@ export async function verifyDeployment(
   // HTML AND every asset the SERVED page references answers 200 (the built JS/CSS bundles).
   const builtOutput = opts?.builtOutput ?? false;
 
-  // Expected entry content for the byte-truth comparison. Best-effort: if the
-  // read fails we still check reachability + assets. Not read at all for a built deploy.
+  // Expected entry content for the byte-truth comparison.
+  //
+  // U1 (founder-walk-6, F4): a caller that already knows the exact bytes it is
+  // checking against — because it just uploaded them — passes them directly via
+  // `expectedEntryContent`, and this function trusts THAT instead of re-reading
+  // storage. A second, independent storage read is exactly how the hosted-apps
+  // path went stale: a pipeline step (form-wiring) rewrote the artifact in memory
+  // AFTER storage was read and BEFORE upload, without ever writing the rewrite
+  // back — so storage and the uploaded bytes silently diverged, and every publish
+  // of a form-bearing app failed this gate. Trusting the caller's own bytes makes
+  // the two impossible to desync, by construction, the same way `describeForScan`
+  // (ops-publish.ts) derives the scan view from final bytes rather than
+  // accumulating a second copy alongside them.
+  //
+  // Callers that do not know this (the Vercel/framework path) are unaffected:
+  // omitting the option preserves the original storage-read behaviour exactly.
   let expectedEntry: string | null = null;
-  if (entryPath && !builtOutput) {
+  if (opts?.expectedEntryContent !== undefined) {
+    expectedEntry = opts.expectedEntryContent;
+  } else if (entryPath && !builtOutput) {
     try {
       expectedEntry = await downloadFile(projectId, entryPath);
     } catch { /* verify without content compare */ }
