@@ -10,8 +10,11 @@ import {
   decideReview,
   enqueueReview,
   findReviewItem,
+  listNeedsAttentionReviews,
   listPendingReviews,
   listRecentReviewDecisions,
+  markPublishFailed,
+  markPublishRecovered,
   opsReviewQueueAvailable,
 } from './ops-review-queue';
 
@@ -187,5 +190,76 @@ describe('the decision trail', () => {
   it('treats a failed read as unavailable, not as an empty trail', async () => {
     const { sb } = fakeSb([PRESENT, { data: null, error: { code: '57014', message: 'timeout' } }]);
     await expect(listRecentReviewDecisions(sb)).resolves.toEqual({ available: false, items: [] });
+  });
+});
+
+// ── FOUNDER-WALK-6 · U3 (F3) — an approval whose publish then failed ───────
+
+describe('markPublishFailed / markPublishRecovered / listNeedsAttentionReviews', () => {
+  const FAILED_ROW = { ...ROW, status: 'approved_publish_failed', decided_by: 'founder@example.com', publish_failure_message: 'Dieser Name ist vergeben.' };
+  const RECOVERED_ROW = { ...ROW, status: 'approved', decided_by: 'founder@example.com', publish_failure_message: null };
+
+  it('markPublishFailed moves an approved row to the failed status, guarded on status=approved', async () => {
+    const { sb, calls } = fakeSb([PRESENT, { data: FAILED_ROW, error: null }]);
+    const item = await markPublishFailed('r1', 'Dieser Name ist vergeben.', sb);
+    expect(item).toMatchObject({ status: 'approved_publish_failed', publishFailureMessage: 'Dieser Name ist vergeben.' });
+    expect(calls.join('|')).toContain('eq(status,approved)');
+  });
+
+  it('markPublishFailed on a database WITHOUT 0104 still moves the status — the message is lost, not the fix', async () => {
+    const { sb } = fakeSb([
+      PRESENT, // table available
+      { data: null, error: { code: '42703', message: 'column ops_review_queue.publish_failure_message does not exist' } }, // column missing
+      { data: { ...ROW, status: 'approved_publish_failed' }, error: null }, // fallback without the column
+    ]);
+    const item = await markPublishFailed('r1', 'Dieser Name ist vergeben.', sb);
+    expect(item).toMatchObject({ status: 'approved_publish_failed', publishFailureMessage: null });
+  });
+
+  it('markPublishFailed answers null when the table itself is absent', async () => {
+    const { sb } = fakeSb([ABSENT]);
+    await expect(markPublishFailed('r1', 'x', sb)).resolves.toBeNull();
+  });
+
+  it('markPublishRecovered returns a retried row to approved and clears the message', async () => {
+    const { sb, calls } = fakeSb([PRESENT, { data: RECOVERED_ROW, error: null }]);
+    const item = await markPublishRecovered('r1', sb);
+    expect(item).toMatchObject({ status: 'approved', publishFailureMessage: null });
+    expect(calls.join('|')).toContain('eq(status,approved_publish_failed)');
+  });
+
+  it('markPublishRecovered on a database WITHOUT 0104 still moves the status back', async () => {
+    const { sb } = fakeSb([
+      PRESENT,
+      { data: null, error: { code: '42703', message: 'column ops_review_queue.publish_failure_message does not exist' } },
+      { data: { ...ROW, status: 'approved' }, error: null },
+    ]);
+    const item = await markPublishRecovered('r1', sb);
+    expect(item).toMatchObject({ status: 'approved' });
+  });
+
+  it('listNeedsAttentionReviews lists only the stranded rows', async () => {
+    const { sb, calls } = fakeSb([PRESENT, { data: [FAILED_ROW], error: null }]);
+    const r = await listNeedsAttentionReviews(sb);
+    expect(r.available).toBe(true);
+    expect(r.items).toHaveLength(1);
+    expect(r.items[0]).toMatchObject({ publishFailureMessage: 'Dieser Name ist vergeben.' });
+    expect(calls.join('|')).toContain('eq(status,approved_publish_failed)');
+  });
+
+  it('listNeedsAttentionReviews degrades to the base columns pre-0104, never throws', async () => {
+    const { sb } = fakeSb([
+      PRESENT,
+      { data: null, error: { code: '42703', message: 'column ops_review_queue.publish_failure_message does not exist' } },
+      { data: [ROW], error: null },
+    ]);
+    const r = await listNeedsAttentionReviews(sb);
+    expect(r.available).toBe(true);
+    expect(r.items[0]?.publishFailureMessage).toBeNull();
+  });
+
+  it('listNeedsAttentionReviews reports UNAVAILABLE, not empty, when the table is absent', async () => {
+    const { sb } = fakeSb([ABSENT]);
+    await expect(listNeedsAttentionReviews(sb)).resolves.toEqual({ available: false, items: [] });
   });
 });

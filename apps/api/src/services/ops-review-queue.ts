@@ -20,11 +20,22 @@
 
 import { getSupabaseAdmin } from '../lib/supabase';
 import logger from '../lib/logger';
+import { isMissingSchema } from '../lib/schema-shape';
 import type { AupCategory, ClassifierReason } from './safety/abuse-classifier';
 
 type Sb = ReturnType<typeof getSupabaseAdmin>;
 
-export type ReviewStatus = 'pending' | 'approved' | 'blocked';
+/**
+ * FOUNDER-WALK-6 · U3 (F3) — `approved_publish_failed` is a fourth, TERMINAL
+ * status: a human said yes (that fact is never revisited), the publish
+ * attempt that followed did not reach live, and the row stays visible —
+ * see `listNeedsAttentionReviews` — until a retry succeeds or an operator
+ * decides otherwise. It is reached ONLY from `approved` (`markPublishFailed`)
+ * and leaves ONLY back to `approved` (`markPublishRecovered`, on a successful
+ * retry) — never to `pending`, which would misrepresent that no decision was
+ * made.
+ */
+export type ReviewStatus = 'pending' | 'approved' | 'blocked' | 'approved_publish_failed';
 
 /** One held publish, as the API reads it. */
 export interface ReviewItem {
@@ -46,6 +57,8 @@ export interface ReviewItem {
   decidedBy: string | null;
   decidedAt: string | null;
   decisionReason: string | null;
+  /** Set only when status is `approved_publish_failed` — the last publish attempt's German reason. */
+  publishFailureMessage: string | null;
   createdAt: string;
 }
 
@@ -53,6 +66,24 @@ const COLUMNS =
   'id, user_id, project_id, requested_name, status, stage1_verdict, stage1_rule_ids, ' +
   'stage2_verdict, stage2_reason, categories, stage2_confidence, scanned_files, scanned_bytes, ' +
   'tokens_input, tokens_output, decided_by, decided_at, decision_reason, created_at';
+
+/**
+ * FOUNDER-WALK-6 · U3 (F3) — 0104's column, selected ONLY by the functions that
+ * need it. Kept off the base `COLUMNS` deliberately: every pre-existing reader
+ * (list/find/decide/enqueue) must keep working, unchanged, on a database where
+ * 0104 has not been applied yet — exactly the same reasoning `users-soft-delete.ts`
+ * states for `deleted_at`. Only the NEW functions below try this column, and
+ * fall back to the base list (message lost, status change kept) if it is absent.
+ */
+const COLUMNS_WITH_FAILURE = `${COLUMNS}, publish_failure_message`;
+
+/** Narrow, like `isMissingDeletedAt`: a generic schema-shape check would also
+ *  swallow the TABLE being absent, which `opsReviewQueueAvailable` already
+ *  gates separately and retrying would just fail again. */
+function isMissingPublishFailureColumn(message: string | null | undefined): boolean {
+  if (!message) return false;
+  return isMissingSchema(message) && /publish_failure_message/i.test(message);
+}
 
 /**
  * True if migration 0102 has been applied. Probed per call, never cached — a cached
@@ -89,6 +120,11 @@ function toItem(row: Record<string, unknown>): ReviewItem {
     decidedBy: row.decided_by ? String(row.decided_by) : null,
     decidedAt: row.decided_at ? String(row.decided_at) : null,
     decisionReason: row.decision_reason ? String(row.decision_reason) : null,
+    // Present only when the caller selected COLUMNS_WITH_FAILURE and 0104 is
+    // applied; `undefined` (not selected) and `null` (selected, empty) both
+    // read the same way here, which is exactly right — a caller that never
+    // asked for this column has nothing wrong to report either.
+    publishFailureMessage: row.publish_failure_message ? String(row.publish_failure_message) : null,
     createdAt: String(row.created_at),
   };
 }
@@ -270,4 +306,105 @@ export async function decideReview(
     return null;
   }
   return data ? toItem(data as unknown as Record<string, unknown>) : null;
+}
+
+// ── FOUNDER-WALK-6 · U3 (F3) — an approval whose publish then failed ───────
+
+/**
+ * The publish that followed an approval did not reach live. Moves the row to
+ * the fourth, terminal status — never back to 'pending' (see `ReviewStatus`'s
+ * doc comment for why) — and records the reason so it survives past the one
+ * HTTP response that used to be the only place it was ever said.
+ *
+ * Guarded on `status = 'approved'`: this can only fire once, immediately after
+ * the approve handler's own publish attempt. A retry's failure goes through
+ * this same function too (it re-guards on 'approved', which `markPublishRecovered`
+ * never sets on a further failure — see `retryReviewPublish`'s caller).
+ */
+export async function markPublishFailed(id: string, message: string, sb: Sb = getSupabaseAdmin()): Promise<ReviewItem | null> {
+  if (!(await opsReviewQueueAvailable(sb))) return null;
+
+  const attempt = (withMessage: boolean) =>
+    sb
+      .from('ops_review_queue')
+      .update(
+        withMessage
+          ? { status: 'approved_publish_failed', publish_failure_message: message }
+          : { status: 'approved_publish_failed' },
+      )
+      .eq('id', id)
+      .eq('status', 'approved')
+      .select(withMessage ? COLUMNS_WITH_FAILURE : COLUMNS)
+      .maybeSingle();
+
+  let { data, error } = await attempt(true);
+  if (error && isMissingPublishFailureColumn(error.message)) {
+    logger.warn({ id }, 'ops_review_queue_publish_failure_message_absent (pre-0104) — status recorded, message dropped');
+    ({ data, error } = await attempt(false));
+  }
+  if (error) {
+    logger.warn({ id, reason: error.message }, 'ops_review_queue_mark_publish_failed_failed');
+    return null;
+  }
+  return data ? toItem(data as unknown as Record<string, unknown>) : null;
+}
+
+/**
+ * A retry (`retryReviewPublish`'s caller, the console route) reached live.
+ * Back to plain 'approved' — the state a first-try success would have left —
+ * and the stale failure message is cleared so a second reader never sees it.
+ */
+export async function markPublishRecovered(id: string, sb: Sb = getSupabaseAdmin()): Promise<ReviewItem | null> {
+  if (!(await opsReviewQueueAvailable(sb))) return null;
+
+  const attempt = (withMessage: boolean) =>
+    sb
+      .from('ops_review_queue')
+      .update(withMessage ? { status: 'approved', publish_failure_message: null } : { status: 'approved' })
+      .eq('id', id)
+      .eq('status', 'approved_publish_failed')
+      .select(withMessage ? COLUMNS_WITH_FAILURE : COLUMNS)
+      .maybeSingle();
+
+  let { data, error } = await attempt(true);
+  if (error && isMissingPublishFailureColumn(error.message)) {
+    ({ data, error } = await attempt(false));
+  }
+  if (error) {
+    logger.warn({ id, reason: error.message }, 'ops_review_queue_mark_publish_recovered_failed');
+    return null;
+  }
+  return data ? toItem(data as unknown as Record<string, unknown>) : null;
+}
+
+/**
+ * What needs a human to look AGAIN: an approval whose publish did not reach
+ * live. Same shape and the same `available` reasoning as `listPendingReviews`
+ * — deliberately its own list rather than folded into the time-limited
+ * "recently decided" feed, so an old failure cannot age out of view the way
+ * this whole unit exists to prevent.
+ */
+export async function listNeedsAttentionReviews(
+  sb: Sb = getSupabaseAdmin(),
+  limit = 50,
+): Promise<{ available: boolean; items: ReviewItem[] }> {
+  if (!(await opsReviewQueueAvailable(sb))) return { available: false, items: [] };
+
+  const attempt = (withMessage: boolean) =>
+    sb
+      .from('ops_review_queue')
+      .select(withMessage ? COLUMNS_WITH_FAILURE : COLUMNS)
+      .eq('status', 'approved_publish_failed')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+
+  let { data, error } = await attempt(true);
+  if (error && isMissingPublishFailureColumn(error.message)) {
+    ({ data, error } = await attempt(false));
+  }
+  if (error) {
+    logger.warn({ reason: error.message }, 'ops_review_queue_needs_attention_list_failed');
+    return { available: false, items: [] };
+  }
+  return { available: true, items: (data ?? []).map((r) => toItem(r as unknown as Record<string, unknown>)) };
 }
