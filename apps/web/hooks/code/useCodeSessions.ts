@@ -35,6 +35,17 @@ export function useCodeSessions(projectId: string) {
   activeRef.current = activeSessionId;
   // Sprint 9 P1: consume a `?session=<id>` deep-link from the dashboard exactly once.
   const deepLinkConsumedRef = useRef(false);
+  // FOUNDER-WALK-6 · U5 (F1): the project this hook's state actually describes.
+  // `refresh` used to overwrite `sessions` only on a successful response and
+  // never cleared it first, so on a project switch (this hook's INSTANCE is
+  // reused — no remount — because the page that hosts the Code tab does a soft
+  // client navigation after project creation) `sessions`/`loading` kept
+  // describing the PREVIOUS project until the new fetch resolved. A picker
+  // reading `sessions` in that window offered a session from the wrong
+  // project, and injecting into it wrote real files into that session — which
+  // is why the assistant then answered as if the old project's code were
+  // already present in the new one.
+  const projectRef = useRef(projectId);
 
   const authFetch = useCallback(async (path: string, init?: RequestInit) => {
     const t = await getToken();
@@ -46,6 +57,21 @@ export function useCodeSessions(projectId: string) {
   }, []);
 
   const refresh = useCallback(async () => {
+    // Reset SYNCHRONOUSLY, before the request — not after it resolves — so a
+    // caller (the session picker, the auto-create effect, an inject) can never
+    // observe the previous project's `sessions`/`activeSessionId` while this
+    // project's list is in flight. Only on an ACTUAL project change: `refresh()`
+    // is also called after creating/renaming a session for the SAME project,
+    // and flashing the list to empty on every one of those would be its own
+    // regression.
+    if (projectRef.current !== projectId) {
+      projectRef.current = projectId;
+      setSessions([]);
+      setActiveSessionId(null);
+      setLoading(true);
+      setAvailable(true);
+      deepLinkConsumedRef.current = false;
+    }
     try {
       const res = await authFetch(`/api/code-sessions?projectId=${encodeURIComponent(projectId)}`);
       if (!res.ok) {
