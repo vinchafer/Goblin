@@ -370,6 +370,16 @@ export async function publishHostedApp(input: PublishInput, deps: PublishDeps = 
   //     go live showing one — that is the phantom affordance this unit exists to
   //     prevent, and the builder's already-live app (on a republish) stays exactly
   //     as it is because nothing has been written yet.
+  //
+  //     PRESERVED for stage 2 ONLY (founder-walk-6 U2/F2): the pre-wiring scan
+  //     view. "What is scanned is what is uploaded" stays true for stage 1 (the
+  //     free, deterministic layer scans the real, final `artifact.scanFiles`
+  //     below) — but stage 2 is a probabilistic reader, and reading Goblin's own
+  //     injected CAPTCHA + fetch-submit snippet as if a builder wrote it is
+  //     exactly what held a harmless signup form and a harmless contact page on
+  //     the 2026-08-15 walk. Stage 2 gets `preWiringScanFiles` instead — see
+  //     `HostedScanContext.classifierFiles`.
+  const preWiringScanFiles = artifact.scanFiles;
   const wiring = deps.wireForms(artifact.files);
   if ('ok' in wiring && wiring.ok === false) {
     logger.warn({ userId: input.userId, projectId: input.projectId, code: wiring.code }, 'hosted_publish_form_unwirable');
@@ -393,6 +403,11 @@ export async function publishHostedApp(input: PublishInput, deps: PublishDeps = 
     projectId: input.projectId,
     appsDomain: domain,
     ...(input.operatorApproved ? { operatorApproved: true } : {}),
+    // Only set when wiring actually changed something — an app with no form
+    // scans identically for both stages, and the note has no reason to exist.
+    ...(wired.wired.length > 0
+      ? { classifierFiles: preWiringScanFiles, wiredFormCount: wired.wired.length }
+      : {}),
   });
   if (scan.verdict === 'block') {
     logger.warn({ userId: input.userId, projectId: input.projectId, ruleIds: scan.ruleIds }, 'hosted_publish_blocked');

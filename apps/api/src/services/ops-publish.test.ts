@@ -660,6 +660,42 @@ describe('publish — an app that declares a form', () => {
     expect(d.provisionAppDatabase).not.toHaveBeenCalled();
   });
 
+  it('FOUNDER-WALK-6 U2/F2: stage 2 never sees the injected CAPTCHA/fetch bytes, only the wired count', async () => {
+    // What made a harmless signup form and a harmless contact page read as
+    // phishing/circumvention on the 2026-08-15 walk: stage 2 was shown Goblin's
+    // OWN injected wiring with nothing telling it Goblin put it there. The scan
+    // dep's SECOND argument (ctx) is what `deps.scan` (runHostedPublishScan)
+    // reads to build stage 2's view — assert it carries the pre-wiring text and
+    // the count, never the wired bytes.
+    const scan = vi.fn(async () => passOutcome());
+    const d = formDeps({ scan: scan as unknown as PublishDeps['scan'] });
+    await publishHostedApp(input, d);
+
+    const ctx = ((scan.mock.calls as unknown as unknown[][])[0]?.[1] ?? {}) as {
+      classifierFiles?: Array<{ path: string; content?: string }>;
+      wiredFormCount?: number;
+    };
+    expect(ctx.wiredFormCount).toBe(1);
+    const classifierHtml = ctx.classifierFiles?.find((f) => f.path === 'index.html')?.content ?? '';
+    expect(classifierHtml).not.toContain('cf-turnstile');
+    expect(classifierHtml).not.toContain('data-goblin-form');
+    expect(classifierHtml).toBe(FORM_PAGE);
+
+    // Stage 1's argument (the FIRST one) is unaffected: it still gets the real,
+    // uploaded bytes — this fix narrows stage 2's view only.
+    const stage1Files = ((scan.mock.calls as unknown as unknown[][])[0]?.[0] ?? []) as Array<{ path: string; content?: string }>;
+    expect(stage1Files.find((f) => f.path === 'index.html')?.content).toContain('cf-turnstile');
+  });
+
+  it('an app with no form never sets classifierFiles/wiredFormCount — nothing to correct for', async () => {
+    const scan = vi.fn(async () => passOutcome());
+    const d = deps({ scan: scan as unknown as PublishDeps['scan'] }); // no form in this fixture
+    await publishHostedApp(input, d);
+    const ctx = ((scan.mock.calls as unknown as unknown[][])[0]?.[1] ?? {}) as Record<string, unknown>;
+    expect(ctx.classifierFiles).toBeUndefined();
+    expect(ctx.wiredFormCount).toBeUndefined();
+  });
+
   it('reports a form it deliberately left alone, so the builder is not left guessing', async () => {
     const d = formDeps();
     const r = await publishHostedApp(
