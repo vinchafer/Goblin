@@ -49,6 +49,33 @@ describe('the hosted path is the visible default', () => {
   });
 });
 
+// ── FOUNDER-WALK-6 · U4 (F5) — the beta badge ───────────────────────────────
+//
+// The founder saw this sheet's hosted default and briefly believed his whole
+// cohort saw the same thing. It does not — this sheet is allowlist-gated —
+// and nothing here said so. The fix is the smallest honest marker: a static
+// badge, since by the time this component mounts eligibility is already an
+// established fact (SessionPane dynamic-imports it only after a confirmed
+// `hosted:true`), so no new prop or API call is needed to show it.
+describe('the beta badge', () => {
+  it('says the hosted default is beta and account-gated', () => {
+    expect(html).toContain('Beta — nur für ausgewählte Konten sichtbar');
+  });
+
+  it('appears between the hosted intro and the name field — where the founder was looking', () => {
+    const badge = html.indexOf('Beta — nur für ausgewählte Konten sichtbar');
+    const intro = html.indexOf('Goblin hostet deine App selbst');
+    const nameField = html.indexOf('data-testid="hosted-name"');
+    expect(intro).toBeGreaterThan(-1);
+    expect(badge).toBeGreaterThan(intro);
+    expect(badge).toBeLessThan(nameField);
+  });
+
+  it('has an English counterpart', () => {
+    expect(SOURCE).toContain('Beta — visible to selected accounts only');
+  });
+});
+
 describe('the Vercel path stays intact beside it', () => {
   it('offers it by name, marked as the advanced route', () => {
     expect(html).toContain('Eigenes Vercel verbinden (für Fortgeschrittene)');
@@ -68,6 +95,7 @@ describe('German + English', () => {
     ['This name is free.', 'the available answer'],
     ['This name is taken.', 'the unavailable answer'],
     ['Enter a name first.', 'the disabled reason'],
+    ['Beta — visible to selected accounts only', 'the beta badge'],
   ])('has an English counterpart for %s (%s)', (english) => {
     expect(SOURCE).toContain(english);
   });

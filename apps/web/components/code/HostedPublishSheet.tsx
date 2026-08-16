@@ -245,11 +245,32 @@ export function HostedPublishSheet({ projectId, appsDomain, onUseVercel, onClose
         <p style={{ margin: "0 0 4px", fontSize: 14, lineHeight: 1.55, color: "var(--ed-fg-1)", fontFamily: "var(--font-sans)", fontWeight: 600 }}>
           {t(lang, `Live auf {name}.${appsDomain} — nichts zu verbinden`, `Live at {name}.${appsDomain} — nothing to connect`)}
         </p>
-        <p style={{ margin: "0 0 14px", fontSize: 12.5, lineHeight: 1.5, color: "var(--ed-fg-3)", fontFamily: "var(--font-sans)" }}>
+        <p style={{ margin: "0 0 10px", fontSize: 12.5, lineHeight: 1.5, color: "var(--ed-fg-3)", fontFamily: "var(--font-sans)" }}>
           {t(lang,
             "Goblin hostet deine App selbst. Kein Konto bei einem anderen Anbieter, kein Token. Vor dem Veröffentlichen läuft eine automatische Prüfung.",
             "Goblin hosts your app itself. No account with another provider, no token. An automated check runs before publishing.")}
         </p>
+
+        {/* FOUNDER-WALK-6 · U4 (F5) — this sheet only ever mounts for an
+            account `GET /api/ops/eligibility` already confirmed is on the
+            hosted-publish allowlist (see SessionPane's dynamic import of this
+            component); a non-allowlisted user never fetches this code at all.
+            So this is a static, honest fact for the one audience who CAN see
+            it — it costs no new prop and cannot leak to anyone who can't. Its
+            job is narrow: stop the "my whole cohort must see this too" belief
+            a founder-walk actually produced, not to explain the gate. */}
+        <div style={{ margin: "0 0 14px" }}>
+          <span
+            style={{
+              display: "inline-block", padding: "3px 8px", borderRadius: 999,
+              fontSize: 10.5, fontWeight: 700, letterSpacing: 0.3, textTransform: "uppercase",
+              color: "var(--ed-accent)", background: "color-mix(in srgb, var(--ed-accent) 14%, transparent)",
+              fontFamily: "var(--font-sans)",
+            }}
+          >
+            {t(lang, "Beta — nur für ausgewählte Konten sichtbar", "Beta — visible to selected accounts only")}
+          </span>
+        </div>
 
         <label htmlFor="hosted-name" style={{ display: "block", fontSize: 12.5, color: "var(--ed-fg-2)", fontFamily: "var(--font-sans)", marginBottom: 6 }}>
           {t(lang, "Adresse", "Address")}
