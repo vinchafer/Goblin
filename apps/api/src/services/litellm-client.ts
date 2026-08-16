@@ -126,25 +126,3 @@ export async function* litellmStream(
     reader.cancel().catch(() => {});
   }
 }
-
-/** Validate a provider key via LiteLLM (or skip if not configured). */
-export async function validateKeyViaLiteLLM(provider: string, key: string): Promise<boolean> {
-  const base = getLiteLLMBase();
-  if (!base) return true; // Can't validate without LiteLLM, trust the key
-
-  try {
-    const res = await fetch(`${base}/chat/completions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
-      body: JSON.stringify({
-        model: `${provider}/test`,
-        messages: [{ role: 'user', content: 'hi' }],
-        max_tokens: 1,
-      }),
-      signal: AbortSignal.timeout(5000),
-    });
-    return res.status !== 401 && res.status !== 403;
-  } catch {
-    return true; // Network error → assume valid
-  }
-}
