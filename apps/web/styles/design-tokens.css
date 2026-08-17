@@ -94,6 +94,16 @@
   --info:          #355B7A;
   --info-soft:     #DCE6F0;
 
+  /* DARK-CONTRAST: the INK for text sitting ON a semantic FILL (a solid danger/success
+     badge or banner, not a tint). Those call sites hard-coded `#fff`, which was fine
+     while the semantic colours were dark-only — but the dark theme needs its own
+     LIGHTER --danger/--success to be readable AS TEXT, and white on a light fill is the
+     same defect pointing the other way (#54's lesson: a surface that flips needs
+     flip-aware text). One token per role, flipped once, instead of a literal at every
+     call site. */
+  --on-danger:     #FFFFFF;
+  --on-success:    #FFFFFF;
+
   /* ─── Typography ───────────────────────────────────────────────── */
   /* Manrope + Instrument Serif loaded globally in app/layout.tsx as the
      named next/font variables below. --font-mono is owned by next/font
@@ -179,8 +189,47 @@
 
   --ink-1:        #FBF7EC;
   --ink-2:        #D8CBA8;
-  --ink-3:        #968768;
+  /* DARK-CONTRAST (tester feedback, 2026-08-17): #968768 measured 3.95:1 on the card
+     surface (--surface-1 #133224) and 3.54:1 on --surface-3 — under WCAG AA body (4.5)
+     on every dark surface the app actually paints. --ink-3 is the SECONDARY/meta ink
+     (--meta, --text-meta, --sidebar-meta all alias it), so that one number was most of
+     the tester's "frequently suboptimal contrast": timestamps, captions, hints, sidebar
+     labels. Lightened to clear AA on --surface-0..3 while staying visibly secondary
+     against --ink-2 (#D8CBA8, 8.63:1). Light mode is untouched. */
+  --ink-3:        #AFA085;   /* was #968768 · 5.43:1 on --surface-1, 4.87:1 on --surface-3 */
+  /* Genuinely-disabled text stays low-contrast on purpose — WCAG 1.4.3 exempts inactive
+     controls, and making disabled look enabled is its own dishonesty. */
   --ink-disabled: #5A523D;
+
+  /* ─── DARK-CONTRAST: the semantic colours had NO dark override ────────────────
+     --success / --warning / --danger / --info were defined once, for light surfaces,
+     and never flipped. On the dark greens they measured 2.4–2.7:1 (danger, success)
+     and 1.9:1 (info) — dark ink on a dark ground, which is exactly the screenshot the
+     tester sent. These are the flipped twins, taken from the ramp/editor-dark palette
+     the design system already uses for dark surfaces rather than invented fresh.
+     Fixing them HERE heals every consumer at once: --danger alone is read as a text
+     colour in 47 places, --success in 11, plus every badge and status dot. */
+  --success:  #87C098;   /* was #3D7A4F (2.71:1) → 6.64:1 on --surface-1 · = the editor dark "Gesichert" */
+  --warning:  #E8C97F;   /* was #C7901A (4.92:1) → 8.67:1 · = --gold-300, the editor dark "Entwurf" */
+  --danger:   #E89080;   /* was #B0432A (2.44:1) → 5.79:1 */
+  --info:     #9CB8D0;   /* was #355B7A (1.94:1) → 6.74:1 */
+
+  /* The `-soft` tints were LIGHT literals (pale cream/blue) with no dark override, so a
+     badge or banner using one painted a near-white block into dark mode — and any ink on
+     it landed at 1.1–1.3:1, the worst readings in the whole audit. As translucent tints
+     of the same hue they now darken with whatever surface they sit on, and --ink-1 clears
+     9:1 on all of them. (The `.gobl-dash` scope defines its OWN --danger-soft as an rgba
+     tint already, so only this global one needed flipping.) */
+  --success-soft:  rgba(61, 122, 79, 0.22);
+  --warning-soft:  rgba(199, 144, 26, 0.18);
+  --info-soft:     rgba(53, 91, 122, 0.24);
+  --danger-soft:   rgba(176, 67, 42, 0.20);
+
+  /* …and the inks that sit ON those fills flip with them: the deep green reads 6.3:1 on
+     the dark danger fill and 7.2:1 on the dark success fill, where white would have
+     dropped to 2.4:1 / 2.1:1. */
+  --on-danger:     var(--ink-deep);   /* #0F2B1E */
+  --on-success:    var(--ink-deep);
 }
 
 /* ─── Reduced motion ──────────────────────────────────────────────── */

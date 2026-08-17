@@ -221,4 +221,29 @@
   --line-strong:    rgba(247, 247, 236, 0.22);
   --shadow-card:    0 1px 0 rgba(0,0,0,.30), 0 14px 32px -22px rgba(0,0,0,.55);
   --shadow-pop:     0 1px 0 rgba(0,0,0,.40), 0 24px 60px -28px rgba(0,0,0,.70);
+
+  /* ─── DARK-CONTRAST (tester feedback, 2026-08-17) ──────────────────────────────
+     P1.1 flipped this scope's SURFACES but left its status/meta INKS as light-only
+     literals — and `.gobl-dash` wraps the whole /dashboard layout, so these shadow the
+     global tokens for nearly every authenticated screen. Measured on the dark surfaces
+     they paint: --ok 2.17:1, --danger 2.20:1, --gold-deep 2.19:1, --warn 4.11:1,
+     --ink-4 3.83:1 — all under AA body, all rendering as dark ink on dark ground.
+     The four status inks now defer to the flipped global semantics (one source of
+     truth); --ink-4 gets the same treatment as --ink-3 above.
+
+     --danger is written as a LITERAL, not `var(--danger)`: a custom property that
+     references ITSELF in the same scope is a cycle and resolves to invalid — the exact
+     trap documented at the top of this file (`--bone: var(--bone)`, which is how the
+     primary button once rendered dark-green on dark-green). It is the same value as the
+     global dark --danger and must be changed with it. */
+  --ok:        var(--success);   /* was #2f6a47 (2.17:1) → 6.64:1 on --d-surface-elev */
+  --warn:      var(--warning);   /* was #b88128 (4.11:1) → 8.67:1 */
+  --danger:    #E89080;          /* was #a04230 (2.20:1) → 5.79:1 · mirrors global dark --danger */
+  --gold-deep: var(--gold-300);  /* was #7A5A12 (2.19:1) → 8.67:1 · the `.gobl-tag.gold` ink */
+  --ink-4:     #9AAFA4;          /* was #7a8a80 (3.83:1) → 5.99:1 */
+
+  /* The tints these inks sit on (--ok-soft, --danger-soft, --accent-soft) were already
+     rgba, so they darken with the surface on their own and need no dark override —
+     unlike the global --success-soft/--warning-soft/--info-soft, which were opaque light
+     literals and are flipped in design-tokens.css. */
 }

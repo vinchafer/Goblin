@@ -153,7 +153,7 @@ export function DiffModal({ filePath, currentContent, proposedContent, diff, onA
                         ) : (
                           <>
                             <button data-testid={`hunk-reject-${h.index}`} onClick={() => decide(h.index, "reject")} aria-label={`${T.discard} ${h.index + 1}`} className="touch-compact" style={{ width: 38, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid color-mix(in srgb, var(--danger) 30%, transparent)", background: "var(--surface-0)", color: "var(--danger)", cursor: "pointer" }}><Cross s={15} /></button>
-                            <button data-testid={`hunk-accept-${h.index}`} onClick={() => decide(h.index, "accept")} aria-label={`${T.apply} ${h.index + 1}`} className="touch-compact" style={{ width: 38, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--success)", background: "var(--success)", color: "#fff", cursor: "pointer" }}><Check s={15} /></button>
+                            <button data-testid={`hunk-accept-${h.index}`} onClick={() => decide(h.index, "accept")} aria-label={`${T.apply} ${h.index + 1}`} className="touch-compact" style={{ width: 38, height: 32, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid var(--success)", background: "var(--success)", color: "var(--on-success)", cursor: "pointer" }}><Check s={15} /></button>
                           </>
                         )}
                       </span>
