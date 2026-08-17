@@ -463,10 +463,14 @@ chatSessions.post('/:id/stream', async (c) => {
         //
         // The abort is a signal to the UPSTREAM to stop producing, so the honest response
         // here is to let the generator wind down and honour whatever it has already handed
-        // over — including a trailing `done`, which model-router emits ONLY after the
-        // provider stream completed normally, so it can never be a truncated answer dressed
-        // up as a whole one. Dropping the deltas but keeping such a `done` would be worse
+        // over — including a trailing `done`, which is emitted ONLY after a provider stream
+        // ended on its own terms. Dropping the deltas but keeping the `done` would be worse
         // than either: it would persist a half answer AS the finished one.
+        //
+        // TRUNC-1 refines that last point rather than breaking it: a `done` can now carry
+        // `truncated: true`, which means "this answer exists and is CUT OFF". It is still
+        // never a half answer dressed up as a whole one — the flag is what stops it being
+        // one, and the client renders the cut-off state from it.
         //
         // The bound on that goodwill is `ABORT_DRAIN_GRACE_MS`: a generator that ignores its
         // signal gets a few seconds, then the loop leaves regardless.

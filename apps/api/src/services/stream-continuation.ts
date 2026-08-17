@@ -266,9 +266,37 @@ export async function* streamWithAutoContinuation(
       }
 
       if (frame.type === 'error') {
-        // Flush anything held back before the stream ends, so a continuation that failed
-        // mid-round still leaves the user with every byte the model did produce.
+        // Flush anything held back before the stream ends, so a failed round still leaves
+        // the user with every byte the model did produce.
         yield* flushJoint();
+
+        // A CONTINUATION round that fails is not the same event as a first round that
+        // fails, and treating it the same loses the user's answer. The routes persist on
+        // `done` and abandon the turn on `error` — so forwarding the error here would
+        // throw away text the user already watched stream in, which is the opposite of
+        // what continuation is for. (The concrete case: the per-round fair-use gate trips
+        // between rounds, because round 1 is what pushed the user over.)
+        //
+        // What is true at this point: there IS an answer, and it is cut off. That is
+        // exactly `done` + `truncated`, so the partial persists and the UI says it is
+        // unfinished — and the continue button, when tapped, surfaces the real reason
+        // from a fresh request rather than this stale one.
+        if (isContinuation && produced) {
+          logger.warn(
+            { rounds, userId: opts.params.userId, reason: frame.message ?? null },
+            'continuation round failed — keeping the partial answer and reporting it as truncated',
+          );
+          yield JSON.stringify({
+            ...(lastDone ?? { type: 'done' }),
+            type: 'done',
+            input_tokens: inputTokens,
+            output_tokens: outputTokens,
+            continuation_rounds: rounds,
+            truncated: true,
+          });
+          return;
+        }
+
         yield token;
         return;
       }

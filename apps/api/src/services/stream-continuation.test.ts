@@ -262,22 +262,57 @@ describe('streamWithAutoContinuation', () => {
     expect(doneFrame(frames)).toMatchObject({ truncated: true, continuation_rounds: 0 });
   });
 
-  it('forwards a provider error and keeps every byte produced before it', async () => {
-    const failing = (async function* (opts: SourceOpts) {
-      if (opts.params.chatHistory!.length === 0) {
-        yield JSON.stringify({ type: 'delta', content: 'Angefangen' });
-        yield JSON.stringify({ type: 'done', truncated: true, input_tokens: 1, output_tokens: 2 });
-        return;
-      }
+  it('forwards a FIRST-round error verbatim and claims no completion', async () => {
+    const failing = (async function* () {
       yield JSON.stringify({ type: 'error', message: 'Rate limit reached. Please retry in a moment.' });
     }) as unknown as StreamFn;
 
     const frames = await collect({ streamFn: failing });
 
-    expect(text(frames)).toBe('Angefangen');
     expect(frames.at(-1)).toMatchObject({ type: 'error' });
-    // No `done` — the turn did not complete, and nothing claims that it did.
+    // No `done` — nothing was produced and nothing pretends otherwise.
     expect(doneFrame(frames)).toBeUndefined();
+  });
+
+  it('a CONTINUATION round that fails keeps the partial answer instead of discarding it', async () => {
+    // The concrete case: the per-round fair-use gate trips between rounds, because
+    // round 1 is what pushed the user over. The routes persist on `done` and abandon the
+    // turn on `error`, so forwarding the error would throw away text the user already
+    // watched stream in — the opposite of what continuation is for.
+    const failing = (async function* (opts: SourceOpts) {
+      if (opts.params.chatHistory!.length === 0) {
+        yield JSON.stringify({ type: 'delta', content: 'Der erste Teil der Antwort.' });
+        yield JSON.stringify({ type: 'done', truncated: true, input_tokens: 10, output_tokens: 20 });
+        return;
+      }
+      yield JSON.stringify({ type: 'error', code: 'allowance_reached', message: 'Dein Kontingent ist aufgebraucht.' });
+    }) as unknown as StreamFn;
+
+    const frames = await collect({ streamFn: failing });
+
+    expect(text(frames)).toBe('Der erste Teil der Antwort.'); // every byte kept
+    // …and reported for what it is: an answer that exists and is cut off.
+    expect(doneFrame(frames)).toMatchObject({ truncated: true, continuation_rounds: 1 });
+    expect(frames.some(f => f.type === 'error')).toBe(false);
+  });
+
+  it('a continuation that fails before producing anything still yields the earlier text', async () => {
+    // Same shape, but the error arrives with the joint buffer holding nothing — the
+    // first round's text must still be on screen and in the transcript.
+    const failing = (async function* (opts: SourceOpts) {
+      if (opts.params.chatHistory!.length === 0) {
+        yield JSON.stringify({ type: 'delta', content: 'nur der Anfang' });
+        yield JSON.stringify({ type: 'done', truncated: true });
+        return;
+      }
+      yield JSON.stringify({ type: 'meta', model: 'goblin/efficient' });
+      yield JSON.stringify({ type: 'error', message: 'provider down' });
+    }) as unknown as StreamFn;
+
+    const frames = await collect({ streamFn: failing });
+
+    expect(text(frames)).toBe('nur der Anfang');
+    expect(doneFrame(frames)).toMatchObject({ truncated: true });
   });
 
   it('does not claim a completion when the upstream ends without a done frame', async () => {
