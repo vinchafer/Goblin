@@ -7,6 +7,7 @@ import {
   parseGoblinTier,
   GOBLIN_DEFAULT_TIER,
   GOBLIN_MAX_TOKENS_PER_REQUEST,
+  isTruncationFinishReason,
   type GoblinHostedConfig,
   type GoblinTierId,
 } from './goblin-hosted';
@@ -523,6 +524,11 @@ export async function* streamCompletion({
 
   let inputTokens = 0;
   let outputTokens = 0;
+  // TRUNC-1: did the provider cut this generation off at the output-token ceiling?
+  // Set from the provider's OWN finish reason (`length` / `max_tokens`), never guessed
+  // from the text. It rides out on the `done` frame so the layer above can continue the
+  // answer instead of letting a half answer look finished.
+  let truncated = false;
   // P1.8 speed measurement (migration 0080) — pure instrumentation, no effect on
   // token counts, cost, or control flow. requestStart is stamped when the provider
   // stream begins; firstTokenAt on the first streamed delta. ttft/duration are
@@ -597,6 +603,8 @@ export async function* streamCompletion({
         } else if (delta.type === 'usage') {
           inputTokens = delta.input_tokens ?? 0;
           outputTokens = delta.output_tokens ?? 0;
+        } else if (delta.type === 'finish') {
+          truncated = isTruncationFinishReason(delta.finish_reason);
         }
       }
       // Done — emit token info
@@ -628,7 +636,7 @@ export async function* streamCompletion({
         });
       }
       recordOutcome(route.provider, true);
-      yield JSON.stringify({ type: 'done', input_tokens: inputTokens, output_tokens: outputTokens, token_display: tokenDisplay, source_tier: route.layer, model_used: route.model });
+      yield JSON.stringify({ type: 'done', input_tokens: inputTokens, output_tokens: outputTokens, token_display: tokenDisplay, source_tier: route.layer, model_used: route.model, truncated });
       return;
     } catch (err) {
       recordOutcome(route.provider, false, { slug: route.modelSlug, modelNotFound: isModelNotFound(err) });
@@ -671,6 +679,8 @@ export async function* streamCompletion({
         } else if (part.type === 'usage') {
           inputTokens = part.inputTokens ?? 0;
           outputTokens = part.outputTokens ?? 0;
+        } else if (part.type === 'finish') {
+          truncated = isTruncationFinishReason(part.finishReason);
         }
       }
     } else if (route.provider === 'anthropic') {
@@ -684,8 +694,10 @@ export async function* streamCompletion({
           yield JSON.stringify({ type: 'delta', content: event.delta.text });
         } else if (event.type === 'message_start') {
           inputTokens = event.message.usage.input_tokens;
-        } else if (event.type === 'message_delta' && event.usage) {
-          outputTokens = event.usage.output_tokens;
+        } else if (event.type === 'message_delta') {
+          if (event.usage) outputTokens = event.usage.output_tokens;
+          // TRUNC-1: Anthropic reports the ceiling cut-off as stop_reason `max_tokens`.
+          if (isTruncationFinishReason(event.delta?.stop_reason)) truncated = true;
         }
       }
     } else {
@@ -699,6 +711,8 @@ export async function* streamCompletion({
           if (!firstTokenAt) firstTokenAt = Date.now(); // P1.8 ttft
           yield JSON.stringify({ type: 'delta', content: text });
         }
+        const finishReason = chunk.choices[0]?.finish_reason;
+        if (finishReason) truncated = isTruncationFinishReason(finishReason);
         if (chunk.usage) {
           inputTokens = chunk.usage.prompt_tokens ?? 0;
           outputTokens = chunk.usage.completion_tokens ?? 0;
@@ -738,7 +752,7 @@ export async function* streamCompletion({
     // Goblin-hosted maps to provider 'openai'; don't let its health bleed into the
     // real OpenAI BYOK breaker.
     if (route.layer !== 'goblin_hosted') recordOutcome(route.provider, true);
-    yield JSON.stringify({ type: 'done', input_tokens: inputTokens, output_tokens: outputTokens, token_display: tokenDisplay, source_tier: route.layer, model_used: route.model });
+    yield JSON.stringify({ type: 'done', input_tokens: inputTokens, output_tokens: outputTokens, token_display: tokenDisplay, source_tier: route.layer, model_used: route.model, truncated });
   } catch (err: unknown) {
     if (route.layer !== 'goblin_hosted') recordOutcome(route.provider, false, { slug: route.modelSlug, modelNotFound: isModelNotFound(err) });
     if (agentRun) {

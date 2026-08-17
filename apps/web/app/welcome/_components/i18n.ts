@@ -276,7 +276,7 @@ export const STR: Record<Lang, {
       flow: { prompt: 'Prompt', l1: 'Ebene 1 · Standard', l2: 'Ebene 2 · optional', l3: 'Ebene 3 · optional' },
       flowCap: 'Der Standard funktioniert sofort — kein Key, keine Konfiguration.',
       // D1(a) copy — DRAFT (Gate 3): GitHub + Vercel are built in.
-      shipNote: 'Und wenn du live gehen willst: GitHub und Vercel sind eingebaut — ein Klick vom Chat zum gespeicherten Stand zur Live-Vorschau.',
+      shipNote: 'Und wenn du live gehen willst: GitHub und Vercel sind eingebaut — ein Klick vom Chat zum gespeicherten Stand zur veröffentlichten Seite.',
       continue: 'Weiter — Modelle ansehen', skip: 'Überspringen',
       footChange: 'STANDARD FUNKTIONIERT SOFORT — KEIN KEY',
       footNext: 'WEITER — MODELLE →',
@@ -446,7 +446,7 @@ export const STR: Record<Lang, {
         },
         {
           title: 'You go live',
-          body: 'Preview, tweak, go live. On any device, from anywhere.',
+          body: 'Look it over, tweak, go live. On any device, from anywhere.',
         },
       ],
       // D2 copy — DRAFT (Gate 3): warm "why this is for you" closing beat.
@@ -537,7 +537,7 @@ export const STR: Record<Lang, {
       flow: { prompt: 'Prompt', l1: 'Layer 1 · default', l2: 'Layer 2 · optional', l3: 'Layer 3 · optional' },
       flowCap: 'The default works out of the box — no key, no setup.',
       // D1(a) copy — DRAFT (Gate 3): GitHub + Vercel are built in.
-      shipNote: 'And when you want to go live: GitHub and Vercel are built in — one click from chat to a saved version to live preview.',
+      shipNote: 'And when you want to go live: GitHub and Vercel are built in — one click from chat to a saved version to a published page.',
       continue: 'Continue — see the models', skip: 'Skip',
       footChange: 'THE DEFAULT WORKS OUT OF THE BOX — NO KEY',
       footNext: 'NEXT — MODELS →',

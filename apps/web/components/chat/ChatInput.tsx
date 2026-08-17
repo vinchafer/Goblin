@@ -269,7 +269,7 @@ function ModelHub({
             <ModelRow
               key={m.slug}
               m={m}
-              badge={<span style={{ fontSize: 'var(--t-eyebrow-fs)', background: 'var(--success)', color: '#fff', padding: '1px 6px', borderRadius: 3, fontWeight: 600, fontFamily: 'var(--font-sans)', letterSpacing: '0.04em' }}>KEY</span>}
+              badge={<span style={{ fontSize: 'var(--t-eyebrow-fs)', background: 'var(--success)', color: 'var(--on-success)', padding: '1px 6px', borderRadius: 3, fontWeight: 600, fontFamily: 'var(--font-sans)', letterSpacing: '0.04em' }}>KEY</span>}
             />
           ))}
         </Section>

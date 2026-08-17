@@ -12,7 +12,6 @@ interface KeyboardShortcutsConfig {
   onCommandPalette: () => void;
   onTabChat: () => void;
   onTabCode: () => void;
-  onTabPreview: () => void;
   onToggleSidebar: () => void;
   onSettings: () => void;
   onNewProject: () => void;
@@ -53,7 +52,6 @@ export function useKeyboardShortcuts(config: KeyboardShortcutsConfig) {
       // Tab shortcuts
       if (mod && e.key === '1') { e.preventDefault(); config.onTabChat(); return; }
       if (mod && e.key === '2') { e.preventDefault(); config.onTabCode(); return; }
-      if (mod && e.key === '3') { e.preventDefault(); config.onTabPreview(); return; }
 
       // Sidebar
       if (mod && e.key === 'b') { e.preventDefault(); config.onToggleSidebar(); return; }

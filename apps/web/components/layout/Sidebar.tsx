@@ -96,9 +96,9 @@ function resolveProjectHref(id: string): string {
   if (tab == null) {
     try { tab = localStorage.getItem(`goblin:lastWsTab:${id}`); } catch { /* ignore */ }
   }
-  return tab === 'code' || tab === 'preview'
-    ? `${hub}/work?tab=${tab}`
-    : hub;
+  // A stored `preview` no longer resolves to a tab (the surface was removed), so it
+  // falls through to the project hub rather than deep-linking into nothing.
+  return tab === 'code' ? `${hub}/work?tab=code` : hub;
 }
 
 export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClose }: SidebarProps) {

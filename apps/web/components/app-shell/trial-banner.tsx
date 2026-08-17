@@ -48,7 +48,7 @@ export function TrialBanner() {
       <button
         onClick={() => router.push('/dashboard/upgrade')}
         style={{
-          padding: '5px 14px', background: 'var(--danger)', color: '#fff',
+          padding: '5px 14px', background: 'var(--danger)', color: 'var(--on-danger)',
           border: 'none', borderRadius: 7, fontSize: 'var(--t-caption-fs)', fontWeight: 600,
           cursor: 'pointer', fontFamily: 'var(--font-sans)',
         }}

@@ -33,7 +33,7 @@ export function OfflineBanner() {
     return (
       <div style={{
         position: 'fixed', top: 0, left: 0, right: 0,
-        background: 'var(--success)', color: '#fff',
+        background: 'var(--success)', color: 'var(--on-success)',
         padding: '8px 16px', textAlign: 'center',
         // SAFEAREA-U1: fixed top:0 banner sits under the status bar in a
         // standalone PWA — pad the top by the inset (0 in a normal browser).
@@ -49,7 +49,7 @@ export function OfflineBanner() {
   return (
     <div style={{
       position: 'fixed', top: 0, left: 0, right: 0,
-      background: 'var(--danger)', color: '#fff',
+      background: 'var(--danger)', color: 'var(--on-danger)',
       padding: '8px 16px',
       // SAFEAREA-U1: fixed top:0 banner sits under the status bar in a
       // standalone PWA — pad the top by the inset (0 in a normal browser).

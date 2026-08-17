@@ -34,7 +34,6 @@ export function useCodeTab(projectId: string, pendingCode?: { content: string; f
       if (!mod) return;
       if (e.key === '1') { e.preventDefault(); setActiveTab('chat'); }
       else if (e.key === '2') { e.preventDefault(); setActiveTab('code'); }
-      else if (e.key === '3') { e.preventDefault(); setActiveTab('preview'); }
       else if (e.key === 'Escape') {
         if (injectionsHook.diffData) injectionsHook.setDiffData(null);
         if (githubHook.pushModalOpen) githubHook.setPushModalOpen(false);

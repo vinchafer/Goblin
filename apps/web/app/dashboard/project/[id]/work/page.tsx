@@ -6,8 +6,8 @@ export const dynamic = 'force-dynamic';
 
 interface WorkspacePageProps {
   params: Promise<{ id: string }>;
-  // The route accepts ?tab=chat|code|preview so /dashboard/project/[id]
-  // (overview) can deep-link people into the right workspace tab.
+  // The route accepts ?tab=chat|code so /dashboard/project/[id] (overview) can
+  // deep-link people into the right workspace tab.
   searchParams: Promise<{ tab?: string }>;
 }
 
@@ -20,10 +20,10 @@ export default async function ProjectWorkspacePage({ params, searchParams }: Wor
 
   const { data: project } = await supabase
     .from('projects')
-    .select('id, name, preview_url')
+    .select('id, name')
     .eq('id', id)
     .eq('user_id', user.id)
-    .single() as { data: { id: string; name: string; preview_url: string | null } | null };
+    .single() as { data: { id: string; name: string } | null };
 
   if (!project) notFound();
 
@@ -34,7 +34,7 @@ export default async function ProjectWorkspacePage({ params, searchParams }: Wor
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-      <ProjectWorkspace projectId={id} projectName={project.name} previewUrl={project.preview_url} />
+      <ProjectWorkspace projectId={id} projectName={project.name} />
     </div>
   );
 }

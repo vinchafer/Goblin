@@ -132,7 +132,7 @@ function valueBullets(lang: Lang) {
   return [
     { title: t(lang, 'Bau von deinem Handy aus', 'Build from your phone'), body: t(lang, 'Echte Coding-Sessions auf iPad, iPhone, überall. Kein abgespeckter Chat.', 'Real coding sessions on iPad, iPhone, anywhere. Not a watered-down chat.') },
     { title: t(lang, 'Bring deine eigenen Schlüssel mit', 'Bring your own keys'), body: t(lang, 'Anthropic, OpenAI, Groq, Mistral — verschlüsselt gespeichert, nie an uns gesendet.', 'Anthropic, OpenAI, Groq, Mistral — encrypted at rest, never sent to us.') },
-    { title: t(lang, 'Zu GitHub + Vercel bringen', 'Ship to GitHub + Vercel'), body: t(lang, 'Ein Klick vom Chat zur gesicherten Version zur Live-Vorschau.', 'One click from chat to a saved version to live preview.') },
+    { title: t(lang, 'Zu GitHub + Vercel bringen', 'Ship to GitHub + Vercel'), body: t(lang, 'Ein Klick vom Chat zur gesicherten Version zur veröffentlichten Seite.', 'One click from chat to a saved version to a published page.') },
   ];
 }
 

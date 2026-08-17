@@ -10,14 +10,16 @@
 //   <DemoApp view="chat"    viewport="desktop" />
 //   <DemoApp view="code"    viewport="desktop" />  → Option β: real shell + real
 //                                                     CodeEditor leaf (Navbar.tsx)
-//   <DemoApp view="preview" viewport="desktop" />  → real preview chrome + static page
+//   <DemoApp view="preview" viewport="desktop" />  → DEMO-ONLY preview chrome + static
+//                                                     page (the product preview tab was
+//                                                     removed; see DemoPreviewChrome)
 
 import { useEffect } from "react";
 import { Check } from "lucide-react";
 import { DemoProviders } from "./DemoProviders";
 import { DashboardShell } from "@/components/app-shell/dashboard-shell";
 import { StandaloneChat } from "@/components/chat/standalone-chat";
-import { PreviewTab } from "@/components/preview/preview-tab";
+import { DemoPreviewChrome } from "./DemoPreviewChrome";
 import { CodeEditor } from "@/components/editor/code-editor";
 import { useApp } from "@/contexts/app-context";
 import {
@@ -42,17 +44,20 @@ export function DemoApp({ view, viewport }: { view: DemoView; viewport: DemoView
 }
 
 function DemoInner({ view, viewport }: { view: DemoView; viewport: DemoViewport }) {
-  const { setActiveTab, setChatProjectId, setPreviewUrl } = useApp();
+  const { setActiveTab, setChatProjectId } = useApp();
 
-  // Seed the shell's UI state so the header tabs read as a real, in-project
-  // workspace: a project is "active" (Code tab live), a preview exists (Preview
-  // tab live), and the correct tab is highlighted for this view. All handlers
-  // are inert in demo, so this is purely presentational.
+  // Seed the shell's UI state so the header tabs read as a real, in-project workspace:
+  // a project is "active" (Code tab live) and the correct tab is highlighted. All
+  // handlers are inert in demo, so this is purely presentational.
+  //
+  // The PRODUCT preview tab was removed (founder decision, tester-feedback wave), so the
+  // `preview` view has no tab to highlight — it seeds `code` and renders the demo-only
+  // preview chrome in the content area instead. The pitch frame keeps working; the app
+  // shell above it no longer advertises a feature the product does not have.
   useEffect(() => {
     setChatProjectId(DEMO_PROJECT.id);
-    setPreviewUrl(DEMO_PREVIEW_DISPLAY_URL);
-    setActiveTab(view);
-  }, [view, setActiveTab, setChatProjectId, setPreviewUrl]);
+    setActiveTab(view === "preview" ? "code" : view);
+  }, [view, setActiveTab, setChatProjectId]);
 
   return (
     <div data-demo-viewport={viewport} style={{ height: "100dvh", overflow: "hidden" }}>
@@ -66,8 +71,7 @@ function DemoInner({ view, viewport }: { view: DemoView; viewport: DemoViewport 
         )}
         {view === "code" && <DemoCodeView />}
         {view === "preview" && (
-          <PreviewTab
-            projectId={DEMO_PROJECT.id}
+          <DemoPreviewChrome
             previewUrl={DEMO_PREVIEW_URL}
             displayUrl={DEMO_PREVIEW_DISPLAY_URL}
           />

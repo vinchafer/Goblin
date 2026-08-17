@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { createClient } from '@supabase/supabase-js';
-import { streamWithReducedContextRetry } from '../services/token-limit-retry';
+import { streamWithAutoContinuation, buildContinuationPrompt, stitch } from '../services/stream-continuation';
 import { buildGoblinChatSystemPrompt, REDUCED_CONTEXT_NOTE } from '../prompts/goblin-chat-system';
 import { listFilesWithMeta } from '../services/file-storage';
 import { loadProjectContextFiles, isSoftDeletedPath } from '../services/project-context';
@@ -56,13 +56,17 @@ chat.get('/:projectId/history', async (c) => {
 // allowance; BYOK has no Goblin-imposed limit, matching the UI promise.
 chat.post('/stream', chatStreamRateLimit, async (c) => {
   const userId = c.get('userId');
-  const { projectId, message, modelSlug, clientMessageId, websearch } = await c.req.json();
+  const { projectId, message, modelSlug, clientMessageId, websearch, continueTruncated } = await c.req.json();
+  // TRUNC-1: the one-tap "Fortsetzen" after a cut-off answer. Writes no user message,
+  // hands the model its own partial answer back, and APPENDS the result to it — the
+  // opposite of the regenerate the tester got when he asked for the rest.
+  const isContinuation = continueTruncated === true;
   // F-43: the "Websuche" toggle. When ON, this send is routed through the real
   // search service (search-augmented generation) instead of a tool-less
   // completion — the toggle actually searches, or honestly reports it couldn't.
   const wantsWebSearch = websearch === true;
 
-  if (!projectId || !message) {
+  if (!projectId || (!message && !isContinuation)) {
     return c.json({ error: 'Missing parameters' }, 400);
   }
   // Optional idempotency key (P0.5). Validated as a UUID so it can't smuggle
@@ -93,8 +97,8 @@ chat.post('/stream', chatStreamRateLimit, async (c) => {
   // do NOT insert it again — the model must never receive one send twice.
   // Tolerant of a pre-migration DB (0075): a missing column errors the SELECT,
   // which we treat as "no duplicate found".
-  let alreadyPersisted = false;
-  if (clientMsgId) {
+  let alreadyPersisted = isContinuation; // a continuation writes no user message at all
+  if (clientMsgId && !isContinuation) {
     try {
       const { data: dup, error: dupErr } = await supabase
         .from('chat_messages')
@@ -138,12 +142,26 @@ chat.post('/stream', chatStreamRateLimit, async (c) => {
   // `message` itself, and including it here would duplicate the last user turn.
   const { data: chatHistoryRows, error: historyErr } = await supabase
     .from('chat_messages')
-    .select('role, content')
+    .select('id, role, content')
     .eq('project_id', projectId)
     .order('created_at', { ascending: true })
     .limit(50);
   if (historyErr) console.error('[chat] failed to load history:', historyErr.message);
-  const chatHistory = (chatHistoryRows ?? []).slice(0, -1);
+
+  // TRUNC-1: on a continuation the last row is the cut-off ASSISTANT message. It STAYS in
+  // history — that is what makes the next tokens continue it — and its id is where the
+  // continuation is appended.
+  const rows = (chatHistoryRows ?? []) as Array<{ id?: string; role?: string; content?: string }>;
+  const tailRow = rows[rows.length - 1];
+  const partialAssistant = isContinuation && tailRow?.role === 'assistant' ? tailRow : null;
+  if (isContinuation && !partialAssistant) {
+    return c.json({ error: 'Es gibt keine abgeschnittene Antwort, die ich fortsetzen könnte.' }, 409);
+  }
+  const chatHistory = (isContinuation ? rows : rows.slice(0, -1))
+    .map((m) => ({ role: m.role as string, content: m.content as string }));
+  const turnMessage = partialAssistant
+    ? buildContinuationPrompt(partialAssistant.content ?? '')
+    : (message as string);
 
   // F1.1 — Goblin identity + real project context. Best-effort lookups.
   let systemPrompt: string;
@@ -236,11 +254,13 @@ chat.post('/stream', chatStreamRateLimit, async (c) => {
     }
 
     try {
-      for await (const jsonToken of streamWithReducedContextRetry({
+      // TRUNC-1: auto-continuation wraps the reduced-context retry (see
+      // services/stream-continuation.ts) so a ceiling cut-off is resumed, not restarted.
+      for await (const jsonToken of streamWithAutoContinuation({
         params: {
           userId,
           projectId,
-          message,
+          message: turnMessage,
           chatHistory: chatHistory || [],
           modelPreference: modelSlug,
           supabase,
@@ -285,21 +305,37 @@ chat.post('/stream', chatStreamRateLimit, async (c) => {
 
         // Done event
         if (parsed.type === 'done') {
-          // Save assistant message
-          const { data: assistantMessage } = await supabase
-            .from('chat_messages')
-            .insert({
-              project_id: projectId,
-              role: 'assistant',
-              content: scrubString(fullResponse),
-              model_used: currentModel,
-              source_tier: currentSourceTier,
-            })
-            .select()
-            .single();
+          // TRUNC-1: a continuation APPENDS to the cut-off message (stitched at the joint)
+          // instead of writing a second one — the transcript keeps ONE answer.
+          const persistedContent = scrubString(
+            partialAssistant ? stitch(partialAssistant.content ?? '', fullResponse) : fullResponse,
+          );
+          const { data: assistantMessage } = partialAssistant
+            ? await supabase
+                .from('chat_messages')
+                .update({ content: persistedContent })
+                .eq('id', partialAssistant.id)
+                .select()
+                .single()
+            : await supabase
+                .from('chat_messages')
+                .insert({
+                  project_id: projectId,
+                  role: 'assistant',
+                  content: persistedContent,
+                  model_used: currentModel,
+                  source_tier: currentSourceTier,
+                })
+                .select()
+                .single();
 
-          // U3: merge this completed turn into the project's rolling memory.
-          scheduleProjectStateUpdate({ supabase, userId, projectId, userMessage: message, assistantMessage: fullResponse });
+          // U3: merge this completed turn into the project's rolling memory. On a
+          // continuation the user said nothing new — the answer is what grew.
+          scheduleProjectStateUpdate({
+            supabase, userId, projectId,
+            userMessage: partialAssistant ? '' : message,
+            assistantMessage: persistedContent,
+          });
 
           await stream.writeSSE({
             data: JSON.stringify({
@@ -307,6 +343,14 @@ chat.post('/stream', chatStreamRateLimit, async (c) => {
               messageId: assistantMessage?.id,
               model_used: currentModel,
               source_tier: currentSourceTier,
+              // TRUNC-1: this route builds its own `done`, so the truncation verdict has
+              // to be carried across explicitly — dropping it would put the phantom
+              // "looks complete" back exactly where the tester found it.
+              truncated: parsed.truncated === true,
+              continuation_rounds: parsed.continuation_rounds ?? 0,
+              // The server trimmed the overlap at the joint; hand the client the stored
+              // truth so screen and transcript agree.
+              ...(partialAssistant ? { full_content: persistedContent } : {}),
             }),
           });
           return;
@@ -314,19 +358,35 @@ chat.post('/stream', chatStreamRateLimit, async (c) => {
       }
 
       // Fallback done if generator ends without explicit 'done'
+      // TRUNC-1: this path must respect the continuation contract too — appending, not
+      // inserting a second assistant message next to the one being continued.
+      const fallbackContent = scrubString(
+        partialAssistant ? stitch(partialAssistant.content ?? '', fullResponse) : fullResponse,
+      );
       // U3: same rolling-memory update on the fallback completion path.
-      scheduleProjectStateUpdate({ supabase, userId, projectId, userMessage: message, assistantMessage: fullResponse });
-      const { data: assistantMessage } = await supabase
-        .from('chat_messages')
-        .insert({
-          project_id: projectId,
-          role: 'assistant',
-          content: scrubString(fullResponse),
-          model_used: currentModel,
-          source_tier: currentSourceTier,
-        })
-        .select()
-        .single();
+      scheduleProjectStateUpdate({
+        supabase, userId, projectId,
+        userMessage: partialAssistant ? '' : message,
+        assistantMessage: fallbackContent,
+      });
+      const { data: assistantMessage } = partialAssistant
+        ? await supabase
+            .from('chat_messages')
+            .update({ content: fallbackContent })
+            .eq('id', partialAssistant.id)
+            .select()
+            .single()
+        : await supabase
+            .from('chat_messages')
+            .insert({
+              project_id: projectId,
+              role: 'assistant',
+              content: fallbackContent,
+              model_used: currentModel,
+              source_tier: currentSourceTier,
+            })
+            .select()
+            .single();
 
       await stream.writeSSE({
         data: JSON.stringify({
@@ -334,6 +394,7 @@ chat.post('/stream', chatStreamRateLimit, async (c) => {
           messageId: assistantMessage?.id,
           model_used: currentModel,
           source_tier: currentSourceTier,
+          ...(partialAssistant ? { full_content: fallbackContent } : {}),
         }),
       });
     } catch (err: unknown) {

@@ -283,10 +283,22 @@ export interface GoblinChatParams {
 }
 
 export interface GoblinChatChunk {
-  type: 'delta' | 'usage';
+  type: 'delta' | 'usage' | 'finish';
   content?: string;
   inputTokens?: number;
   outputTokens?: number;
+  /** TRUNC-1: the provider's own verdict on WHY the generation ended, forwarded
+   *  verbatim (`stop`, `length`, `tool_calls`, …). `length` means the answer hit the
+   *  output-token ceiling and is CUT OFF mid-sentence — the router turns that into an
+   *  auto-continuation instead of presenting half an answer as a whole one. */
+  finishReason?: string | null;
+}
+
+/** TRUNC-1: does this provider finish reason mean "cut off at the output ceiling"?
+ *  OpenAI-compatible providers say `length`; Anthropic says `max_tokens`. Anything
+ *  else (stop / tool_calls / null) is a normal end. */
+export function isTruncationFinishReason(reason: string | null | undefined): boolean {
+  return reason === 'length' || reason === 'max_tokens';
 }
 
 export interface GoblinChatClient {
@@ -320,6 +332,11 @@ export function realGoblinClient(config: GoblinHostedConfig): GoblinChatClient {
         for await (const chunk of stream) {
           const text = chunk.choices[0]?.delta?.content ?? '';
           if (text) yield { type: 'delta', content: text };
+          // TRUNC-1: the finish reason rides the SAME chunk stream (it lands on the
+          // last content chunk, before the usage-only chunk). Forwarding it is what
+          // lets the router tell "the model was done" from "the model ran out of room".
+          const finishReason = chunk.choices[0]?.finish_reason;
+          if (finishReason) yield { type: 'finish', finishReason };
           if (chunk.usage) {
             yield {
               type: 'usage',

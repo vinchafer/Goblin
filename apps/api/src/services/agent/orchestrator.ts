@@ -18,6 +18,7 @@ import { trackCompletion } from '../../lib/track-completion';
 import { runWeightedUnits, agentMaxIterations, agentMaxUnits, MAX_RUNTIME_ABORT_REASON, forgeHeartbeatDelayMs } from './config';
 import { parseFallbackToolCall, buildRepairInstruction } from './protocol';
 import { getAgentModel } from './model-turn';
+import { recoverTruncatedTurn } from './truncation-recovery';
 import type { GoblinTierId } from '../goblin-hosted';
 import type {
   AgentModel,
@@ -305,6 +306,41 @@ export async function runAgent(input: RunAgentInput): Promise<RunResult> {
     tokensOut += turn.usage.outputTokens;
     units = runWeightedUnits(input.modelSlug, tokensIn, tokensOut);
     await bill(turn.usage);
+
+    // TRUNC-2 — the provider cut this turn off at the output ceiling. That is NOT a
+    // finished thought, and the two ways it used to be read were both silent lies: a
+    // half-written `write_file` became a missing-argument error (and a full rewrite from
+    // the top), and cut-off prose with no tool call landed as `outcome = 'finished'`.
+    // Continue the turn instead — bounded, billed, and honest when the bound runs out.
+    if (turn.truncated) {
+      const recovery = await recoverTruncatedTurn({
+        model,
+        // History BEFORE this turn: the truncated assistant message is not appended yet.
+        messages,
+        turn,
+        tools: input.tools,
+        signal: stop,
+        onRound: async (usage) => {
+          tokensIn += usage.inputTokens;
+          tokensOut += usage.outputTokens;
+          units = runWeightedUnits(input.modelSlug, tokensIn, tokensOut);
+          await bill(usage);
+        },
+      }).catch(() => ({ kind: 'exhausted' as const, rounds: 0, reason: 'cap' as const }));
+
+      if (recovery.kind === 'recovered') {
+        turn = { ...turn, content: recovery.content, toolCalls: recovery.toolCalls, truncated: false };
+      } else {
+        outcome = 'error';
+        failureReason =
+          'Diese Aufgabe ist größer als das, was das Modell in einem Zug ausgeben kann. Ich habe ' +
+          'die Ausgabe mehrfach fortgesetzt und es trotzdem nicht zu Ende gebracht — deshalb ' +
+          'stoppe ich, statt dir eine halbe Datei als fertig zu melden. Deine bisherigen Entwürfe ' +
+          'sind gesichert. Gib mir die Aufgabe gern in kleineren Teilen (z.B. eine Datei oder einen ' +
+          'Abschnitt nach dem anderen), dann bekomme ich sie vollständig hin.';
+        break;
+      }
+    }
 
     if (turn.content.trim()) {
       modelText = turn.content;

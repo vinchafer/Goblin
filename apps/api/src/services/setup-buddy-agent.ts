@@ -191,7 +191,10 @@ async function* ruleBasedFallback(
       type: 'recommendation',
       category: 'deploy_target',
       recommended: { id: 'vercel', label: 'Vercel', reason: 'Zero-config deploys, free tier, instant.', deeplink: '/dashboard/settings/integrations' },
-      alternatives: [{ id: 'preview_only', label: 'Just preview in Goblin' }, { id: 'skip', label: 'Skip for now' }],
+      // The `preview_only` ID is historical and stays as-is — live onboarding rows carry
+      // it. Only the LABEL changed: it used to promise "Just preview in Goblin", and the
+      // in-app preview was removed (founder decision, tester-feedback wave).
+      alternatives: [{ id: 'preview_only', label: 'Keep it in Goblin for now' }, { id: 'skip', label: 'Skip for now' }],
     }));
   } else {
     response = "You're all set! Time to build.\n\n";

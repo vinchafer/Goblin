@@ -72,7 +72,7 @@ export function PaymentFailingBanner() {
         onClick={openPortal}
         disabled={busy}
         style={{
-          padding: '5px 14px', background: 'var(--danger)', color: '#fff',
+          padding: '5px 14px', background: 'var(--danger)', color: 'var(--on-danger)',
           border: 'none', borderRadius: 7, fontSize: 'var(--t-caption-fs)', fontWeight: 600,
           cursor: busy ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-sans)', opacity: busy ? 0.6 : 1,
         }}

@@ -242,7 +242,6 @@ export function useCommandPalette({
     ...(p ? [
       { id: 'cur-code', label: 'Open Code', category: 'This Project', icon: 'code' as const, action: () => router.push(`/dashboard/project/${p}/work?tab=code`), keywords: 'editor code session' },
       { id: 'cur-chat', label: 'Open Chat', category: 'This Project', icon: 'chat' as const, action: () => router.push(`/dashboard/project/${p}/work?tab=chat`), keywords: 'chat talk' },
-      { id: 'cur-preview', label: 'Open Preview', category: 'This Project', icon: 'web' as const, action: () => router.push(`/dashboard/project/${p}/work?tab=preview`), keywords: 'preview live' },
       { id: 'cur-files', label: 'File Explorer', category: 'This Project', icon: 'document' as const, action: () => router.push(`/dashboard/project/${p}/files`), keywords: 'files explorer dateien tree' },
       { id: 'cur-secrets', label: 'Secrets / Env Vars', category: 'This Project', icon: 'security' as const, action: () => router.push(`/dashboard/project/${p}/secrets`), keywords: 'secrets env environment variables' },
       { id: 'cur-hub', label: 'Project Hub', category: 'This Project', icon: 'project' as const, action: () => router.push(`/dashboard/project/${p}`), keywords: 'overview hub layout' },

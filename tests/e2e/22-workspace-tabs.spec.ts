@@ -1,6 +1,6 @@
 import { test } from '@playwright/test';
 
-// 9C — Workspace Tab-Switcher (Chat / Code / Preview)
+// 9C — Workspace Tab-Switcher (Chat / Code)
 //
 // SKIPPED in 9C E2E pass: tabs already exist in Header.tsx (desktop) and
 // BottomTabBar.tsx (mobile) — no production code change in 9C-5. The

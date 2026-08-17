@@ -3,7 +3,7 @@ import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { authMiddleware } from '../middleware/auth.js';
 import { getSupabaseAdmin } from '../lib/supabase.js';
-import { streamWithReducedContextRetry } from '../services/token-limit-retry.js';
+import { streamWithAutoContinuation, buildContinuationPrompt, stitch } from '../services/stream-continuation.js';
 import { buildGoblinChatSystemPrompt, REDUCED_CONTEXT_NOTE } from '../prompts/goblin-chat-system.js';
 import { listFilesWithMeta } from '../services/file-storage.js';
 import { loadProjectContextFiles, isSoftDeletedPath, type ContextFile } from '../services/project-context.js';
@@ -164,13 +164,21 @@ chatSessions.get('/:id/turn-status', async (c) => {
 chatSessions.post('/:id/stream', async (c) => {
   const userId = c.get('userId');
   const sessionId = c.req.param('id');
-  const { message, modelSlug, clientMessageId, websearch } = await c.req.json() as {
+  const { message, modelSlug, clientMessageId, websearch, continueTruncated } = await c.req.json() as {
     message: string; modelSlug?: string; clientMessageId?: string; websearch?: boolean;
+    continueTruncated?: boolean;
   };
   // F-43: the "Websuche" toggle — route this send through the real search service.
   const wantsWebSearch = websearch === true;
 
-  if (!message?.trim()) return c.json({ error: 'Missing message' }, 400);
+  // TRUNC-1: the one-tap "Fortsetzen" after an answer the round cap could not finish.
+  // This is NOT a new user message: nothing is persisted as user text, the model is
+  // handed its own cut-off answer as the last assistant turn, and the result is APPENDED
+  // to that same message. A regenerate — the behaviour the tester actually got when he
+  // asked for a completion — would restart the answer and lose what he already had.
+  const isContinuation = continueTruncated === true;
+
+  if (!isContinuation && !message?.trim()) return c.json({ error: 'Missing message' }, 400);
   // Optional idempotency key (P0.5) — UUID-validated so it can't smuggle
   // arbitrary strings into the DB filter.
   const clientMsgId =
@@ -194,8 +202,8 @@ chatSessions.post('/:id/stream', async (c) => {
   // saw carries the same clientMessageId — never insert (and never let the model
   // see) the same message twice. Tolerant of a pre-migration DB (0075): a
   // missing column errors the SELECT → treated as "no duplicate".
-  let alreadyPersisted = false;
-  if (clientMsgId) {
+  let alreadyPersisted = isContinuation; // a continuation writes no user message at all
+  if (clientMsgId && !isContinuation) {
     try {
       const { data: dup, error: dupErr } = await supabase
         .from('standalone_messages')
@@ -242,7 +250,11 @@ chatSessions.post('/:id/stream', async (c) => {
     .eq('session_id', sessionId)
     .eq('role', 'user');
 
-  if ((count ?? 0) <= 1) {
+  if (isContinuation) {
+    await supabase.from('chat_sessions')
+      .update({ updated_at: new Date().toISOString() })
+      .eq('id', sessionId);
+  } else if ((count ?? 0) <= 1) {
     const title = truncateTitle(message, 60);
     await supabase.from('chat_sessions')
       .update({ title, updated_at: new Date().toISOString() })
@@ -256,15 +268,28 @@ chatSessions.post('/:id/stream', async (c) => {
   // Get conversation history
   const { data: history, error: historyErr } = await supabase
     .from('standalone_messages')
-    .select('role, content')
+    .select('id, role, content')
     .eq('session_id', sessionId)
     .order('created_at', { ascending: true })
     .limit(50);
   if (historyErr) console.error('[chat-sessions] failed to load history:', historyErr.message);
 
-  const chatHistory = (history ?? [])
-    .slice(0, -1) // exclude the message we just inserted
-    .map(m => ({ role: m.role, content: m.content }));
+  // TRUNC-1: on a continuation the last row is the cut-off ASSISTANT message. It stays in
+  // history (that is what makes the next tokens a continuation of it) and its id is where
+  // the continuation gets appended.
+  const rows = history ?? [];
+  const tail = rows[rows.length - 1] as { id?: string; role?: string; content?: string } | undefined;
+  const partialAssistant = isContinuation && tail?.role === 'assistant' ? tail : null;
+  if (isContinuation && !partialAssistant) {
+    return c.json({ error: 'Es gibt keine abgeschnittene Antwort, die ich fortsetzen könnte.' }, 409);
+  }
+
+  const chatHistory = (isContinuation ? rows : rows.slice(0, -1)) // exclude the message we just inserted
+    .map(m => ({ role: m.role as string, content: m.content as string }));
+  // The prompt the model actually receives this turn.
+  const turnMessage = partialAssistant
+    ? buildContinuationPrompt(partialAssistant.content ?? '')
+    : message;
 
   // F1.1 — Goblin identity + real project context (name, file list, last
   // deploy). All lookups best-effort: a storage hiccup must never block chat.
@@ -411,12 +436,14 @@ chatSessions.post('/:id/stream', async (c) => {
     }
 
     try {
-      for await (const jsonToken of streamWithReducedContextRetry({
+      // TRUNC-1: auto-continuation wraps the reduced-context retry — a ceiling cut-off is
+      // resumed and stitched server-side, so a long answer arrives whole in ONE turn.
+      for await (const jsonToken of streamWithAutoContinuation({
         params: {
           userId,
           projectId,
           chatSessionId: sessionId,
-          message,
+          message: turnMessage,
           chatHistory,
           modelPreference: modelSlug,
           supabase,
@@ -436,10 +463,14 @@ chatSessions.post('/:id/stream', async (c) => {
         //
         // The abort is a signal to the UPSTREAM to stop producing, so the honest response
         // here is to let the generator wind down and honour whatever it has already handed
-        // over — including a trailing `done`, which model-router emits ONLY after the
-        // provider stream completed normally, so it can never be a truncated answer dressed
-        // up as a whole one. Dropping the deltas but keeping such a `done` would be worse
+        // over — including a trailing `done`, which is emitted ONLY after a provider stream
+        // ended on its own terms. Dropping the deltas but keeping the `done` would be worse
         // than either: it would persist a half answer AS the finished one.
+        //
+        // TRUNC-1 refines that last point rather than breaking it: a `done` can now carry
+        // `truncated: true`, which means "this answer exists and is CUT OFF". It is still
+        // never a half answer dressed up as a whole one — the flag is what stops it being
+        // one, and the client renders the cut-off state from it.
         //
         // The bound on that goodwill is `ABORT_DRAIN_GRACE_MS`: a generator that ignores its
         // signal gets a few seconds, then the loop leaves regardless.
@@ -463,17 +494,30 @@ chatSessions.post('/:id/stream', async (c) => {
 
         if (parsed.type === 'done' || parsed.type === 'fallback_notice' || parsed.type === 'error') {
           if (parsed.type === 'done' && fullResponse) {
-            const hasCode = fullResponse.includes('```');
-            const { data: savedMsg, error: asstErr } = await supabase
-              .from('standalone_messages')
-              .insert({
-                session_id: sessionId,
-                role: 'assistant',
-                content: fullResponse,
-                has_code: hasCode,
-              })
-              .select('id')
-              .single();
+            // TRUNC-1: a continuation APPENDS to the cut-off message (stitched at the
+            // joint) instead of writing a second one — the transcript keeps ONE answer,
+            // which is what "fortsetzen" means and what a regenerate destroys.
+            const persistedContent = partialAssistant
+              ? stitch(partialAssistant.content ?? '', fullResponse)
+              : fullResponse;
+            const hasCode = persistedContent.includes('```');
+            const { data: savedMsg, error: asstErr } = partialAssistant
+              ? await supabase
+                  .from('standalone_messages')
+                  .update({ content: persistedContent, has_code: hasCode })
+                  .eq('id', partialAssistant.id)
+                  .select('id')
+                  .single()
+              : await supabase
+                  .from('standalone_messages')
+                  .insert({
+                    session_id: sessionId,
+                    role: 'assistant',
+                    content: persistedContent,
+                    has_code: hasCode,
+                  })
+                  .select('id')
+                  .single();
             if (asstErr) console.error('[chat-sessions] failed to persist assistant message:', asstErr.message);
             // U1: the verdict the client reads. `completed` is claimed only from HERE —
             // the one line in this file that puts an answer in the transcript — and a
@@ -490,9 +534,14 @@ chatSessions.post('/:id/stream', async (c) => {
               .update({ model_slug: currentModel, updated_at: new Date().toISOString() })
               .eq('id', sessionId);
 
-            // U3: merge this completed turn into the project's rolling memory.
+            // U3: merge this completed turn into the project's rolling memory. On a
+            // continuation the user said nothing new — the answer is what grew.
             if (projectId) {
-              scheduleProjectStateUpdate({ supabase, userId, projectId, userMessage: message, assistantMessage: fullResponse });
+              scheduleProjectStateUpdate({
+                supabase, userId, projectId,
+                userMessage: partialAssistant ? '' : message,
+                assistantMessage: persistedContent,
+              });
             }
 
             await send({
@@ -500,6 +549,10 @@ chatSessions.post('/:id/stream', async (c) => {
               messageId: savedMsg?.id,
               model_used: currentModel,
               source_tier: currentSourceTier,
+              // TRUNC-1: the server trimmed the re-emitted overlap at the joint, so the
+              // stitched text can differ from "what was on screen + the raw deltas".
+              // Hand the client the stored truth so the transcript and the screen agree.
+              ...(partialAssistant ? { full_content: persistedContent } : {}),
             });
           } else {
             await send(parsed);
