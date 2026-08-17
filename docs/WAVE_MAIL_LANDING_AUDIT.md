@@ -321,7 +321,10 @@ needed is gone, and why the whole-page German sweep in
 | API vitest | **2375 / 2375** | job log, local run 2026-08-17 |
 | Web vitest | **540 / 540** | local run |
 | E2E `@public`, desktop + mobile (sandbox) | **168 / 170** | 2 failures, both `40-account-deletion.spec.ts › invalid token`. **Resolved at job-log level:** the same suite is green in CI, which starts a real API — PR run `32028465458` reports `198 passed, 2 flaky, 0 failed`. The two reds are a sandbox artefact (no API backend), **not** a standing known-red. |
-| E2E in CI (public + auth, live API) | **198 passed · 0 failed · 2 flaky** | job `95382861256`, read from the log. The 2 flaky are unrelated and pre-existing: `19-mobile-create-project` and `26-settings-structure` on `auth-mobile`, both passing on retry. |
+| E2E in CI (public + auth, live API) — PR head `0f350bd` | **198 passed · 0 failed · 2 flaky** | run `32028465458`, job `95382861256`, read from the log |
+| E2E in CI — **merge commit `84dbd588` on master** | **199 passed · 0 failed · 1 flaky** (200 tests) | run `32082245098`, job `95547346368`. Same tree, one fewer flaky retry. The flaky is unrelated and pre-existing: `19-mobile-create-project` on `auth-mobile`, green on retry. |
+| CI on master `84dbd588` | API **2375 / 2375** (175 files) · typecheck shared+web · web build · web vitest · bundle < 400KB | runs `32082245096` / `32082245187`, jobs `95547346290` / `95547346226` / `95547346268` |
+| Money-suite guard on master | **armed, green** | The guard fails loudly in CI unless all four Stripe secrets are present; `ci.yml:77-80` injects them and `ALLOW_MONEY_TEST_SKIP` appears nowhere in the workflow. The API job passed with `CI=true`, so the money suites RAN — they were not silently skipped. |
 | Landing i18n suite (rewritten twice — see §2.3) | **6 / 6** | local run |
 | Auth-mail suites (hook + chain + new deliverability) | **69 / 69** | local run |
 | Money-suite guard, `CI=true` armed | **1 / 1** | local run |
