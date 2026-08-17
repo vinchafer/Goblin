@@ -16,6 +16,30 @@
  *    response to a real request, so "a reset was requested" is truthful; we
  *    never say the password HAS changed.
  *  - No tracking pixel, no redirect wrapper, no open/click beacon.
+ *
+ * ── DELIVERABILITY PASS (2026-08-17, after a real invitee's confirmation mail
+ *    landed in JUNK) ─────────────────────────────────────────────────────────
+ * Four content-side changes, each one a signal a filter can score without
+ * knowing anything about our reputation:
+ *
+ *  1. A PLAIN-TEXT alternative part (`renderAuthEmail().text`). HTML-only mail is
+ *     the single strongest purely-structural spam signal we were still sending;
+ *     every mainstream filter scores it (SpamAssassin: MIME_HTML_ONLY).
+ *  2. ONE raw link, not two. The mail carries both languages, and each half used
+ *     to repeat the button URL as a visible fallback anchor — four anchors on the
+ *     same URL plus three footer links. The fallback URL is now printed once,
+ *     shared by both languages, and the bare-domain footer link is gone: five
+ *     anchors over three distinct URLs, with the same text around them.
+ *  3. Brand-first subjects. "Bestätige deine E-Mail-Adresse" from an unknown
+ *     domain is indistinguishable from a phishing subject; "Goblin — E-Mail
+ *     bestätigen · Confirm your email" names the sender before the ask and fits
+ *     a phone's subject column.
+ *  4. The copy says "Link", not "Button", so the HTML and the text part can share
+ *     one sentence and neither describes something the reader cannot see.
+ *
+ * What this file CANNOT fix, stated so nobody reads the above as a delivery
+ * guarantee: domain reputation, SPF/DKIM/DMARC alignment and sending volume all
+ * live in DNS and in Resend, not here. See docs/WAVE_MAIL_LANDING_AUDIT.md.
  */
 
 export type AuthEmailType = 'recovery' | 'signup' | 'email_change' | 'magiclink' | 'invite';
@@ -65,18 +89,18 @@ function copyFor(type: AuthEmailType, email: string): Pair {
       return {
         de: {
           subject: 'Passwort zurücksetzen',
-          preheader: `Passwort-Reset für ${email} — bestätige über den Button.`,
+          preheader: `Passwort-Reset für ${email} — bestätige über den Link.`,
           heading: 'Neues Passwort setzen',
-          context: `Du erhältst diese E-Mail, weil für dein Goblin-Konto (${e}) ein Passwort-Reset angefordert wurde. Über den Button unten kommst du zu einer Seite, auf der du ein neues Passwort vergibst. Der Link ist nur begrenzt gültig und lässt sich nur einmal verwenden.`,
+          context: `Du erhältst diese E-Mail, weil für dein Goblin-Konto (${e}) ein Passwort-Reset angefordert wurde. Über den Link unten kommst du zu einer Seite, auf der du ein neues Passwort vergibst. Der Link ist nur begrenzt gültig und lässt sich nur einmal verwenden.`,
           cta: 'Neues Passwort setzen →',
           ignore: 'Wenn du das nicht angefordert hast, ignoriere diese E-Mail. Dein Passwort bleibt dann unverändert, und niemand erhält Zugriff auf dein Konto.',
           fallback: 'Wenn der Button nicht funktioniert, kopiere diese Adresse in deinen Browser:',
         },
         en: {
           subject: 'Reset your password',
-          preheader: `Password reset for ${email} — confirm with the button.`,
+          preheader: `Password reset for ${email} — confirm with the link.`,
           heading: 'Set a new password',
-          context: `You are receiving this email because a password reset was requested for your Goblin account (${e}). The button below takes you to a page where you choose a new password. The link is valid for a limited time and can only be used once.`,
+          context: `You are receiving this email because a password reset was requested for your Goblin account (${e}). The link below takes you to a page where you choose a new password. The link is valid for a limited time and can only be used once.`,
           cta: 'Set a new password →',
           ignore: 'If you did not request this, ignore this email. Your password stays unchanged and nobody gains access to your account.',
           fallback: 'If the button does not work, copy this address into your browser:',
@@ -85,19 +109,19 @@ function copyFor(type: AuthEmailType, email: string): Pair {
     case 'signup':
       return {
         de: {
-          subject: 'Bestätige deine E-Mail-Adresse',
+          subject: 'E-Mail bestätigen',
           preheader: `Bestätige ${email}, um dein Goblin-Konto zu aktivieren.`,
           heading: 'E-Mail-Adresse bestätigen',
-          context: `Du erhältst diese E-Mail, weil mit dieser Adresse (${e}) ein Goblin-Konto angelegt wurde. Bestätige über den Button, dass die Adresse dir gehört — danach kannst du dich anmelden. Der Link ist nur begrenzt gültig und lässt sich nur einmal verwenden.`,
+          context: `Du erhältst diese E-Mail, weil mit dieser Adresse (${e}) ein Goblin-Konto angelegt wurde. Bestätige über den Link unten, dass die Adresse dir gehört — danach kannst du dich anmelden. Der Link ist nur begrenzt gültig und lässt sich nur einmal verwenden.`,
           cta: 'E-Mail bestätigen →',
           ignore: 'Wenn du kein Konto angelegt hast, ignoriere diese E-Mail. Ohne Bestätigung wird das Konto nicht aktiv.',
           fallback: 'Wenn der Button nicht funktioniert, kopiere diese Adresse in deinen Browser:',
         },
         en: {
-          subject: 'Confirm your email address',
+          subject: 'Confirm your email',
           preheader: `Confirm ${email} to activate your Goblin account.`,
           heading: 'Confirm your email address',
-          context: `You are receiving this email because a Goblin account was created with this address (${e}). Confirm with the button below that the address is yours — then you can sign in. The link is valid for a limited time and can only be used once.`,
+          context: `You are receiving this email because a Goblin account was created with this address (${e}). Confirm with the link below that the address is yours — then you can sign in. The link is valid for a limited time and can only be used once.`,
           cta: 'Confirm email →',
           ignore: 'If you did not create an account, ignore this email. Without confirmation the account does not become active.',
           fallback: 'If the button does not work, copy this address into your browser:',
@@ -106,19 +130,19 @@ function copyFor(type: AuthEmailType, email: string): Pair {
     case 'email_change':
       return {
         de: {
-          subject: 'Neue E-Mail-Adresse bestätigen',
+          subject: 'Neue Adresse bestätigen',
           preheader: `Bestätige ${email} als neue Adresse deines Goblin-Kontos.`,
           heading: 'Adressänderung bestätigen',
-          context: `Du erhältst diese E-Mail, weil für dein Goblin-Konto eine Änderung der E-Mail-Adresse auf ${e} angefordert wurde. Bestätige über den Button, dass die neue Adresse dir gehört. Der Link ist nur begrenzt gültig und lässt sich nur einmal verwenden.`,
+          context: `Du erhältst diese E-Mail, weil für dein Goblin-Konto eine Änderung der E-Mail-Adresse auf ${e} angefordert wurde. Bestätige über den Link unten, dass die neue Adresse dir gehört. Der Link ist nur begrenzt gültig und lässt sich nur einmal verwenden.`,
           cta: 'Neue Adresse bestätigen →',
           ignore: 'Wenn du das nicht angefordert hast, ignoriere diese E-Mail. Die Adresse deines Kontos bleibt dann unverändert.',
           fallback: 'Wenn der Button nicht funktioniert, kopiere diese Adresse in deinen Browser:',
         },
         en: {
-          subject: 'Confirm your new email address',
+          subject: 'Confirm your new address',
           preheader: `Confirm ${email} as the new address of your Goblin account.`,
           heading: 'Confirm the address change',
-          context: `You are receiving this email because a change of email address to ${e} was requested for your Goblin account. Confirm with the button below that the new address is yours. The link is valid for a limited time and can only be used once.`,
+          context: `You are receiving this email because a change of email address to ${e} was requested for your Goblin account. Confirm with the link below that the new address is yours. The link is valid for a limited time and can only be used once.`,
           cta: 'Confirm new address →',
           ignore: 'If you did not request this, ignore this email. Your account address stays unchanged.',
           fallback: 'If the button does not work, copy this address into your browser:',
@@ -127,19 +151,19 @@ function copyFor(type: AuthEmailType, email: string): Pair {
     case 'invite':
       return {
         de: {
-          subject: 'Du wurdest zu Goblin eingeladen',
-          preheader: `Einladung für ${email} — Konto über den Button einrichten.`,
+          subject: 'Deine Einladung',
+          preheader: `Einladung für ${email} — Konto über den Link einrichten.`,
           heading: 'Einladung annehmen',
-          context: `Du erhältst diese E-Mail, weil diese Adresse (${e}) zu Goblin eingeladen wurde. Über den Button richtest du dein Konto ein. Der Link ist nur begrenzt gültig und lässt sich nur einmal verwenden.`,
+          context: `Du erhältst diese E-Mail, weil diese Adresse (${e}) zu Goblin eingeladen wurde. Über den Link unten richtest du dein Konto ein. Der Link ist nur begrenzt gültig und lässt sich nur einmal verwenden.`,
           cta: 'Einladung annehmen →',
           ignore: 'Wenn du damit nichts anfangen kannst, ignoriere diese E-Mail. Es wird kein Konto für dich aktiv.',
           fallback: 'Wenn der Button nicht funktioniert, kopiere diese Adresse in deinen Browser:',
         },
         en: {
-          subject: 'You have been invited to Goblin',
+          subject: 'Your invitation',
           preheader: `Invitation for ${email} — set up your account with the button.`,
           heading: 'Accept your invitation',
-          context: `You are receiving this email because this address (${e}) was invited to Goblin. The button below sets up your account. The link is valid for a limited time and can only be used once.`,
+          context: `You are receiving this email because this address (${e}) was invited to Goblin. The link below sets up your account. The link is valid for a limited time and can only be used once.`,
           cta: 'Accept invitation →',
           ignore: 'If this means nothing to you, ignore this email. No account becomes active for you.',
           fallback: 'If the button does not work, copy this address into your browser:',
@@ -149,21 +173,21 @@ function copyFor(type: AuthEmailType, email: string): Pair {
     default:
       return {
         de: {
-          subject: 'Dein Anmeldelink für Goblin',
+          subject: 'Dein Anmeldelink',
           preheader: `Anmeldelink für ${email} — nur einmal verwendbar.`,
           heading: 'Bei Goblin anmelden',
-          context: `Du erhältst diese E-Mail, weil für dein Goblin-Konto (${e}) ein Anmeldelink angefordert wurde. Über den Button meldest du dich an. Der Link ist nur begrenzt gültig und lässt sich nur einmal verwenden.`,
+          context: `Du erhältst diese E-Mail, weil für dein Goblin-Konto (${e}) ein Anmeldelink angefordert wurde. Über den Link unten meldest du dich an. Der Link ist nur begrenzt gültig und lässt sich nur einmal verwenden.`,
           cta: 'Anmelden →',
-          ignore: 'Wenn du das nicht angefordert hast, ignoriere diese E-Mail. Ohne den Button wird niemand angemeldet.',
+          ignore: 'Wenn du das nicht angefordert hast, ignoriere diese E-Mail. Ohne diesen Link wird niemand angemeldet.',
           fallback: 'Wenn der Button nicht funktioniert, kopiere diese Adresse in deinen Browser:',
         },
         en: {
-          subject: 'Your sign-in link for Goblin',
+          subject: 'Your sign-in link',
           preheader: `Sign-in link for ${email} — single use.`,
           heading: 'Sign in to Goblin',
-          context: `You are receiving this email because a sign-in link was requested for your Goblin account (${e}). The button below signs you in. The link is valid for a limited time and can only be used once.`,
+          context: `You are receiving this email because a sign-in link was requested for your Goblin account (${e}). The link below signs you in. The link is valid for a limited time and can only be used once.`,
           cta: 'Sign in →',
-          ignore: 'If you did not request this, ignore this email. Without the button nobody gets signed in.',
+          ignore: 'If you did not request this, ignore this email. Without this link nobody gets signed in.',
           fallback: 'If the button does not work, copy this address into your browser:',
         },
       };
@@ -181,15 +205,83 @@ function block(c: Copy, actionUrl: string, isSecondary: boolean): string {
             <a href="${url}" style="display:inline-block;padding:14px 26px;font-size:15px;font-weight:600;color:${BRAND_GOLD};text-decoration:none;border-radius:10px">${c.cta}</a>
           </td></tr>
         </table>
-        <p style="margin:0 0 6px;font-size:13px;line-height:1.6;color:${META}">${c.fallback}</p>
-        <p style="margin:0 0 18px;font-size:12px;line-height:1.6;word-break:break-all"><a href="${url}" style="color:${BRAND_GREEN}">${url}</a></p>
         <p style="margin:0;font-size:13px;line-height:1.65;color:${META}">${c.ignore}</p>
+      </td></tr>`;
+}
+
+/**
+ * The raw URL, printed ONCE for both languages. It used to appear inside each
+ * language block, which meant the same address was an anchor four times in a
+ * mail of ~230 words — the link density a filter reads as a link farm, and the
+ * repetition a reader reads as clutter.
+ */
+function sharedLinkBlock(de: Copy, en: Copy, actionUrl: string): string {
+  const url = esc(actionUrl);
+  return `
+      <tr><td style="padding:26px 0 0">
+        <div style="height:1px;background:${RULE};margin:0 0 18px"></div>
+        <p style="margin:0 0 4px;font-size:13px;line-height:1.6;color:${META}">${de.fallback}</p>
+        <p style="margin:0 0 10px;font-size:13px;line-height:1.6;color:${META}">${en.fallback}</p>
+        <p style="margin:0;font-size:12px;line-height:1.6;word-break:break-all"><a href="${url}" style="color:${BRAND_GREEN}">${url}</a></p>
       </td></tr>`;
 }
 
 export interface RenderedAuthEmail {
   subject: string;
   html: string;
+  /** The plain-text alternative part — see the deliverability note up top. */
+  text: string;
+}
+
+/**
+ * The plain-text alternative. Hand-written rather than stripped from the HTML:
+ * a tag-stripped body reads like debris, and a filter comparing the two parts
+ * scores a mismatch. Same sentences, same single URL, same footer facts.
+ */
+function renderText(
+  de: Copy,
+  en: Copy,
+  opts: { email: string; actionUrl: string },
+  origin: string,
+): string {
+  // The copy carries the address already HTML-escaped (it is rendered into an
+  // HTML body); the text part must show the address as the user typed it.
+  const plain = (s: string) => s
+    .replace(/&#39;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&gt;/g, '>')
+    .replace(/&lt;/g, '<')
+    .replace(/&amp;/g, '&');
+
+  return [
+    'GOBLIN',
+    '',
+    de.heading.toUpperCase(),
+    plain(de.context),
+    '',
+    plain(de.ignore),
+    '',
+    '—',
+    '',
+    en.heading.toUpperCase(),
+    plain(en.context),
+    '',
+    plain(en.ignore),
+    '',
+    '—',
+    '',
+    'Link:',
+    opts.actionUrl,
+    '',
+    '—',
+    '',
+    `Diese E-Mail wurde an ${opts.email} gesendet, weil diese Adresse zu einem Goblin-Konto gehört oder für eines verwendet wurde. Wir versenden an diese Adresse keine Werbung.`,
+    `This email was sent to ${opts.email} because the address belongs to, or was used for, a Goblin account. We do not send marketing to this address.`,
+    '',
+    `Impressum / Imprint: ${origin}/imprint`,
+    `Datenschutz / Privacy: ${origin}/privacy`,
+    '',
+  ].join('\n');
 }
 
 /**
@@ -225,6 +317,7 @@ export function renderAuthEmail(
             ${block(de, opts.actionUrl, false)}
             <tr><td style="padding:26px 0 0"><div style="height:1px;background:${RULE}"></div></td></tr>
             ${block(en, opts.actionUrl, true)}
+            ${sharedLinkBlock(de, en, opts.actionUrl)}
           </table>
         </td></tr>
         <tr><td style="padding:20px 28px 26px;border-top:1px solid ${RULE}">
@@ -233,8 +326,6 @@ export function renderAuthEmail(
             This email was sent to ${esc(opts.email)} because the address belongs to, or was used for, a Goblin account. We do not send marketing to this address.
           </p>
           <p style="margin:0;font-size:12px;line-height:1.6;color:${META}">
-            <a href="${origin}" style="color:${BRAND_GREEN};text-decoration:none">justgoblin.com</a>
-            &nbsp;·&nbsp;
             <a href="${origin}/imprint" style="color:${BRAND_GREEN};text-decoration:none">Impressum / Imprint</a>
             &nbsp;·&nbsp;
             <a href="${origin}/privacy" style="color:${BRAND_GREEN};text-decoration:none">Datenschutz / Privacy</a>
@@ -246,7 +337,14 @@ export function renderAuthEmail(
 </body>
 </html>`;
 
-  return { subject: `${de.subject} · ${en.subject}`, html };
+  // Brand first: the recipient must be able to tell WHO is asking before they
+  // read WHAT is being asked. An unbranded "Confirm your email address" from an
+  // unknown domain is the exact shape of a phishing subject.
+  return {
+    subject: `Goblin — ${de.subject} · ${en.subject}`,
+    html,
+    text: renderText(de, en, opts, siteOrigin()),
+  };
 }
 
 /**

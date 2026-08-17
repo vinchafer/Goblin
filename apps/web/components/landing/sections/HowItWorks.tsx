@@ -17,9 +17,15 @@ const STEPS = [
     body: 'AI output lands directly in your editor. No clipboard, no tab juggling.',
   },
   {
+    // TESTER-FEEDBACK (2026-08-17): the landing promised direct deploy, then the
+    // app asked for a Vercel key and the tester was blindsided. He is right that
+    // the fix belongs here, not in the product — connecting your own Vercel is
+    // the FEATURE (the app is yours and stays yours), so it is named up front.
+    // Verified: apps/api/src/services/vercel-service.ts deploys with a per-user
+    // BYOK token, connected via POST /api/integrations/vercel.
     num: '04',
     title: 'Push to GitHub and go live',
-    body: 'One click publishes. Your code, your repo, your deployment.',
+    body: 'One click publishes to your own Vercel account — you connect it once, and it stays yours.',
   },
 ];
 

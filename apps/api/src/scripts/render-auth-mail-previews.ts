@@ -35,12 +35,16 @@ for (const type of TYPES) {
     tokenHash: 'PREVIEW-TOKEN-HASH-not-a-real-token',
     type,
   });
-  const { subject, html } = renderAuthEmail(type, { email: RECIPIENT, actionUrl });
+  const { subject, html, text } = renderAuthEmail(type, { email: RECIPIENT, actionUrl });
   const file = `${type}.html`;
+  const textFile = `${type}.txt`;
   writeFileSync(join(OUT_DIR, file), html, 'utf8');
-  index.push(`| \`${type}\` | ${subject} | [${file}](./${file}) |`);
+  // The plain-text alternative part goes out with every one of these mails, so a
+  // preview that showed only the HTML would be a preview of half the message.
+  writeFileSync(join(OUT_DIR, textFile), text, 'utf8');
+  index.push(`| \`${type}\` | ${subject} | [${file}](./${file}) | [${textFile}](./${textFile}) |`);
   // eslint-disable-next-line no-console
-  console.log(`${type.padEnd(14)} subject="${subject}"  ${html.length} bytes -> ${file}`);
+  console.log(`${type.padEnd(14)} subject="${subject}"  html ${html.length} B / text ${text.length} B -> ${file}, ${textFile}`);
 }
 
 writeFileSync(
@@ -56,8 +60,10 @@ writeFileSync(
     'Jede Mail trägt Deutsch **und** Englisch in einer Nachricht — eine Datei pro Typ',
     'ist also die vollständige zweisprachige Vorschau.',
     '',
-    '| Typ | Betreff | Datei |',
-    '|---|---|---|',
+    'Jede Mail geht als **multipart/alternative** raus — HTML *und* Textteil.',
+    '',
+    '| Typ | Betreff | HTML | Text |',
+    '|---|---|---|---|',
     ...index,
     '',
     'Neu erzeugen:',

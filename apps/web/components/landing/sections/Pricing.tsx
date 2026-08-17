@@ -1,5 +1,5 @@
 import { SectionHead } from '@/components/landing/ui/SectionHead';
-import { buildsPerMonth } from '@/lib/plan-builds';
+import { buildsPerMonth, buildsDefinition } from '@/lib/plan-builds';
 import { storageLabelCloud } from '@/lib/plan-storage';
 
 const CHECK_PATH = 'M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z';
@@ -108,6 +108,12 @@ export function Pricing() {
             </article>
           ))}
         </div>
+
+        {/* TESTER-FEEDBACK (2026-08-17): "Pricing speaks of builds and I cannot
+            tell what a build is." The definition comes from the metering source
+            (lib/plan-builds.ts documents which one) and lives in exactly one
+            place, so pricing and the ledger cannot drift apart in words either. */}
+        <p className="pricing-note pricing-builds-def">{buildsDefinition('en')}</p>
 
         <p className="pricing-note">
           BYOK users bring their own API keys · Goblin charges $0 extra for inference · Secure checkout via Stripe

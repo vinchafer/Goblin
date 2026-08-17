@@ -148,7 +148,7 @@ describe('renderAuthEmail', () => {
       email: 'vinc.hafner3@gmail.com',
       actionUrl: 'https://justgoblin.com/auth/confirm?token_hash=h&type=recovery',
     });
-    expect(subject).toBe('Passwort zurücksetzen · Reset your password');
+    expect(subject).toBe('Goblin — Passwort zurücksetzen · Reset your password');
     // German first, English below — the DE heading precedes the EN one.
     expect(html.indexOf('Neues Passwort setzen')).toBeLessThan(html.indexOf('Set a new password'));
     // Sender context naming the account, in both languages.
@@ -169,7 +169,7 @@ describe('renderAuthEmail', () => {
       email: 'a@b.de',
       actionUrl: 'https://justgoblin.com/auth/confirm?token_hash=h&type=signup',
     });
-    expect(subject).toBe('Bestätige deine E-Mail-Adresse · Confirm your email address');
+    expect(subject).toBe('Goblin — E-Mail bestätigen · Confirm your email');
     expect(html).toContain('ein Goblin-Konto angelegt wurde');
     expect(html).toContain('a Goblin account was created with this address');
   });

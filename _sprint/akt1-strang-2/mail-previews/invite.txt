@@ -1,0 +1,26 @@
+GOBLIN
+
+EINLADUNG ANNEHMEN
+Du erhältst diese E-Mail, weil diese Adresse (vinc.hafner3@gmail.com) zu Goblin eingeladen wurde. Über den Link unten richtest du dein Konto ein. Der Link ist nur begrenzt gültig und lässt sich nur einmal verwenden.
+
+Wenn du damit nichts anfangen kannst, ignoriere diese E-Mail. Es wird kein Konto für dich aktiv.
+
+—
+
+ACCEPT YOUR INVITATION
+You are receiving this email because this address (vinc.hafner3@gmail.com) was invited to Goblin. The link below sets up your account. The link is valid for a limited time and can only be used once.
+
+If this means nothing to you, ignore this email. No account becomes active for you.
+
+—
+
+Link:
+https://www.justgoblin.com/auth/confirm?token_hash=PREVIEW-TOKEN-HASH-not-a-real-token&type=invite
+
+—
+
+Diese E-Mail wurde an vinc.hafner3@gmail.com gesendet, weil diese Adresse zu einem Goblin-Konto gehört oder für eines verwendet wurde. Wir versenden an diese Adresse keine Werbung.
+This email was sent to vinc.hafner3@gmail.com because the address belongs to, or was used for, a Goblin account. We do not send marketing to this address.
+
+Impressum / Imprint: https://justgoblin.com/imprint
+Datenschutz / Privacy: https://justgoblin.com/privacy

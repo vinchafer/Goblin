@@ -88,6 +88,7 @@ be loud immediately rather than half-broken later.
 | `SUPABASE_AUTH_HOOK_SECRET` | **yes** | Supabase-generated | `POST /api/auth/email-hook` answers **500** and refuses every call (`auth-email-hook.ts:126-133`). Unset is the deliberate kill switch: Supabase keeps sending its own templates. ✔ Production currently answers **401** to an unsigned call, which proves it *is* set. |
 | `RESEND_API_KEY` | **yes** | `re_…` | Auth mail and support mail are never sent. The hook returns 500 rather than a 200 that would leave a user waiting for mail that never comes. |
 | `NEXT_PUBLIC_APP_URL` | no | bare origin | Mail links and `redirect_to` handling lose their base. Must match the web value. |
+| `AUTH_REPLY_TO` | no | bare address | Auth mail goes out with **no** `Reply-To`, so a reply lands at `noreply@justgoblin.com`. Set it only to a mailbox someone actually reads — a Reply-To that bounces is worse than none (`auth-email-hook.ts`, `docs/WAVE_MAIL_LANDING_AUDIT.md` §1.1). |
 | `STORAGE_ENDPOINT`, `STORAGE_KEY`, `STORAGE_SECRET`, `STORAGE_BUCKET` | key/secret **yes** | S3-compatible | Project file storage silently falls back to the in-memory backend — fine in CI, data loss in production. |
 | `ADMIN_API_KEY` | **yes** | opaque | `/api/admin/*` rejects the web proxy. Must match Vercel's value. |
 | `CRON_SECRET` | **yes** | opaque | Internal server-to-server calls (build status updates) are rejected. |

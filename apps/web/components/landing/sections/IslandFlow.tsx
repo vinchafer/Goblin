@@ -1,6 +1,13 @@
 import { SectionHead } from '@/components/landing/ui/SectionHead';
 import type { ReactNode } from 'react';
 
+// TESTER-FEEDBACK (2026-08-17): step 08 was "Preview — See your live site the
+// moment it ships". Preview is being removed from the product, and a landing
+// page must not promise a surface that is on its way out — so the step is gone
+// and the flow is seven steps, not eight. The live URL is still the endpoint of
+// the story; it arrives in step 07 as a notification, which is what actually
+// happens.
+
 type Step = { num: string; title: string; body: string; icon: ReactNode };
 
 const STEPS: Step[] = [
@@ -63,8 +70,8 @@ const STEPS: Step[] = [
   },
   {
     num: '06',
-    title: 'Deploy to Vercel',
-    body: 'Live in seconds',
+    title: 'Deploy to your own Vercel',
+    body: 'Connect it once — the app is yours',
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
         <polygon points="12 2 22 20 2 20 12 2" />
@@ -79,18 +86,6 @@ const STEPS: Step[] = [
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
         <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
         <path d="M13.73 21a2 2 0 0 1-3.46 0" />
-      </svg>
-    ),
-  },
-  {
-    num: '08',
-    title: 'Preview',
-    body: 'See your live site the moment it ships',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" aria-hidden="true">
-        <circle cx="12" cy="12" r="10" />
-        <line x1="2" y1="12" x2="22" y2="12" />
-        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
       </svg>
     ),
   },
@@ -109,7 +104,7 @@ export function IslandFlow() {
               From phone to <span className="serif-italic">production.</span>
             </>
           }
-          lead="Eight steps from input to a live URL. Whatever device, wherever you are."
+          lead="Seven steps from input to a live URL. Whatever device, wherever you are."
         />
 
         <div className="island-steps">

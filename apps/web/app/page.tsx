@@ -3,6 +3,7 @@ import { GoblinMarkSprite } from '@/components/landing/brand/GoblinMarkSprite';
 import { Nav } from '@/components/landing/sections/Nav';
 import { Hero } from '@/components/landing/sections/Hero';
 import { InstallAppBlock } from '@/components/landing/sections/InstallAppBlock';
+import { AiLocationNote } from '@/components/landing/sections/AiLocationNote';
 import { TrustedBy } from '@/components/landing/sections/TrustedBy';
 import { Problem } from '@/components/landing/sections/Problem';
 import { HowItWorks } from '@/components/landing/sections/HowItWorks';
@@ -67,6 +68,7 @@ export default function Home() {
         <main id="main">
           <Hero />
           <InstallAppBlock lang="en" />
+          <AiLocationNote />
           <TrustedBy />
           <Problem />
           <HowItWorks />

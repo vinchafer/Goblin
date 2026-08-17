@@ -15,6 +15,14 @@ export interface SendEmailInput {
   to: string;
   subject: string;
   html: string;
+  /**
+   * Plain-text alternative part. When set, the mail goes out as multipart/
+   * alternative instead of HTML-only — an HTML-only body is one of the few
+   * content signals a spam filter can score with certainty, and every mainstream
+   * filter (SpamAssassin MIME_HTML_ONLY among them) does. Optional so existing
+   * callers are unaffected; auth mail supplies it.
+   */
+  text?: string;
   from?: string;
   replyTo?: string;
 }
@@ -36,6 +44,7 @@ export async function sendEmail(input: SendEmailInput): Promise<{ ok: boolean; e
       to: input.to,
       subject: input.subject,
       html: input.html,
+      ...(input.text ? { text: input.text } : {}),
       ...(input.replyTo ? { replyTo: input.replyTo } : {}),
     });
     if (result.error) {

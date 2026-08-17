@@ -1,0 +1,26 @@
+GOBLIN
+
+E-MAIL-ADRESSE BESTÄTIGEN
+Du erhältst diese E-Mail, weil mit dieser Adresse (vinc.hafner3@gmail.com) ein Goblin-Konto angelegt wurde. Bestätige über den Link unten, dass die Adresse dir gehört — danach kannst du dich anmelden. Der Link ist nur begrenzt gültig und lässt sich nur einmal verwenden.
+
+Wenn du kein Konto angelegt hast, ignoriere diese E-Mail. Ohne Bestätigung wird das Konto nicht aktiv.
+
+—
+
+CONFIRM YOUR EMAIL ADDRESS
+You are receiving this email because a Goblin account was created with this address (vinc.hafner3@gmail.com). Confirm with the link below that the address is yours — then you can sign in. The link is valid for a limited time and can only be used once.
+
+If you did not create an account, ignore this email. Without confirmation the account does not become active.
+
+—
+
+Link:
+https://www.justgoblin.com/auth/confirm?token_hash=PREVIEW-TOKEN-HASH-not-a-real-token&type=signup
+
+—
+
+Diese E-Mail wurde an vinc.hafner3@gmail.com gesendet, weil diese Adresse zu einem Goblin-Konto gehört oder für eines verwendet wurde. Wir versenden an diese Adresse keine Werbung.
+This email was sent to vinc.hafner3@gmail.com because the address belongs to, or was used for, a Goblin account. We do not send marketing to this address.
+
+Impressum / Imprint: https://justgoblin.com/imprint
+Datenschutz / Privacy: https://justgoblin.com/privacy

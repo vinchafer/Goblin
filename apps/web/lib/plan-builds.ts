@@ -43,6 +43,30 @@ export const PLAN_BUILDS: Record<'trial' | 'build' | 'pro' | 'power', number> = 
  * Komplexität" qualifier keep the number honest so a heavy-usage builder who lands
  * below the round figure was told up front, not surprised.
  */
+/**
+ * What a "build" IS, in plain words — one sentence, one home.
+ *
+ * TESTER-FEEDBACK (2026-08-17): the pricing cards said "≈ 116 Builds / month"
+ * and nothing on the page said what a build is. The definition below is taken
+ * from the metering source, not invented:
+ *
+ *   • apps/api/src/lib/goblin-cap.ts, over COST_UNITS_PER_BUILD:
+ *     "A 'build' = one agent run / generation turn."
+ *   • docs/GOBLIN_CONSUMPTION_LEDGER.md M4: there is no flat per-build
+ *     deduction — a build's real spend flows through token accounting, and the
+ *     150k divisor is a reconciliation/display constant. So the honest shape of
+ *     the claim is a translated allowance, not a counter ticking down.
+ *
+ * That second half is why the sentence says "roughly how many" instead of a
+ * quota: nothing in the product counts your builds down, and copy that implied
+ * it would be a promise the ledger does not keep.
+ */
+export function buildsDefinition(lang: 'de' | 'en'): string {
+  return lang === 'en'
+    ? 'One build = one agent run that creates or updates your app. Your plan holds a monthly allowance; the figure above is roughly how many builds it covers — big builds draw more of it, small ones less.'
+    : 'Ein Build = ein Agent-Lauf, der deine App erstellt oder ändert. Dein Plan hat ein Monatsguthaben; die Zahl oben ist ungefähr, wie viele Builds es abdeckt — grosse Builds brauchen mehr davon, kleine weniger.';
+}
+
 export function buildsPerMonth(plan: keyof typeof PLAN_BUILDS, lang: 'de' | 'en'): string {
   const n = PLAN_BUILDS[plan].toLocaleString(lang === 'en' ? 'en-US' : 'de-DE');
   return lang === 'en'
