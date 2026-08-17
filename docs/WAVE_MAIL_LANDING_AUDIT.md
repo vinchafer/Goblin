@@ -196,8 +196,8 @@ findings are rows 6, 12, 16 and 21 — the rest were found by this sweep.
 | 11 | Problem 04 | "Focused builder UI" | subjective positioning | none |
 | 12 | HowItWorks 04 | "One click publishes. Your code, your repo, your deployment." | **differently** — the app asks for a Vercel token; this is where the tester was blindsided | **changed** to name the user's own Vercel and the one-time connect |
 | 13 | SendToCode | heading/lead: "One tap. Code lands in your editor." | yes | none |
-| 14 | SendToCode mock | chat + code panels shown in **English** | **no** — `CodeBlock.tsx` and `model-switcher.tsx` are hardcoded German for every user | **changed** to each component's real labels + an English caption |
-| 15 | SendToCode mock | "Draft · 2 files" pill | **no** — no such pill; the real header is a file filter field | **removed**, replaced with the filter field |
+| 14 | §03 mock | hand-built chat + code panels | **no** — a drawing made beside the product, wrong after two correction passes | **deleted**; replaced with the pitch repo's iPhone mockup (§2.3) |
+| 15 | §03 mock | "Draft · 2 files" pill | **no** — no such pill exists anywhere in the app | **gone with the mock**; the replacement is audited element-by-element in §2.4 |
 | 16 | IslandFlow 08 | "Preview — see your live site the moment it ships" | **being removed from the product** | **deleted**; the flow is now seven steps, lead updated |
 | 17 | IslandFlow 06 | "Deploy to Vercel — Live in seconds" | **differently** — your own Vercel, connected once | **changed** |
 | 18 | IslandFlow 07 | "Live notification — pushed to your phone" | yes — web push (VAPID) is wired | none |
@@ -237,24 +237,80 @@ down — which is why the new line says "roughly how many builds it covers" and 
 complexity as the variable, rather than implying a quota. Copy that said "you get 116
 builds" would have been the defect.
 
-## 2.3 The one decision that belongs to the founder
+## 2.3 The coding section — replaced, not polished (third pass)
 
-Making the coding section honest required **reversing** a rule from AKT 1 ·
-FEHLERSTRANG-1 · U4, which had translated the product mock into English to clear an
-i18n leak — on the stated premise that "the product itself is bilingual (useLang)".
-That premise is false for the chat surface: `CodeBlock.tsx` imports no i18n at all.
+The first two passes patched a **hand-built** mock of the chat + code panels: pass 1
+fixed an i18n leak, pass 2 fixed the product labels. The founder's verdict on the
+deployed result was that it still looked nothing like the app, and that polishing was
+not the fix. He is right, and the reason is structural: that mock was a drawing of the
+product made *next to* the product. Each pass corrected a detail while the whole
+stayed invented — which is how a "Draft · 2 files" pill nobody had ever shipped
+survived two reviews.
 
-The rule is now split rather than dropped: **landing prose and chrome stay English**
-(PR #81 intact), **the product screenshot shows the product's own labels**, and an
-English caption tells the reader what they are looking at. The whole-page German
-sweep in `tests/e2e/33-landing-i18n.spec.ts` still runs — it now excludes
-`.stc-illust` and asserts the caption instead.
+**Founder decision: drop it and port the pitch repo's iPhone mockup.**
+Source: `vinchafer/justgoblin-pitch` @ `92e6931` —
+`components/mock/MockIPhonePostLogin.tsx` + `ScaledMock.tsx` +
+`prodShell.module.css`. That mock was built read-only **from** `apps/web` (pitch
+Sprint 11 §C.2) and is maintained against it (`scripts/sync-mockups.sh`,
+`docs/MOCKUP_UPDATE_PROMPT.md`), which is exactly the property the hand-built one
+lacked.
 
-Two alternatives the founder may prefer, both one commit away:
+Ported to `apps/web/components/landing/sections/PhoneMock.tsx`: the fixed 390×823
+replica, the ResizeObserver scaler, and the production token block — adapted to the
+landing's responsive rules (fluid frame, 340 / 300 / 268px caps) and rendering the
+app's **English** strings, which is accurate here because this surface really does
+localize.
 
-- **Cut the section.** Recommended over keeping it false, not over the fix above.
-- **Englishize the product's chat controls**, then revert the mock to English. This
-  is app code and belongs to the parallel session, not here.
+### 2.4 Affordance audit — every visible element, traced
+
+Hard rule for this pass: anything that cannot be traced to real app code comes out.
+Each row was checked against the code as it stands **today**, not as it stood when the
+pitch mock was built.
+
+| # | Element in the mock | Exists in app? | Kept / removed |
+|---|---|---|---|
+| 1 | Hamburger, 40×40, 24px 3-line icon | `layout/Header.tsx:116-133` | kept |
+| 2 | Gold Goblin mark, 26px | `layout/Header.tsx:146` | kept |
+| 3 | Mode tile "Chat" + chevron, r9 on `rgba(0,0,0,.18)` | `layout/Header.tsx:49, 183-202` | kept |
+| 4 | Header plus, 30×30 outline circle | `layout/Header.tsx:314-330` | kept |
+| 5 | Avatar "M", 30×30 | `header/AvatarMenu.tsx:105, 145-161` | kept — **corrected**: 30px on `--gold-700`/`#2a1f0f`; the pitch had 32px on `--brand-gold` |
+| 6 | Eyebrow tick + "Good morning, Marie" | `dashboard/page.tsx:134, 320-322` | kept |
+| 7 | H1 "Tell Goblin what you want *to build.*" | `dashboard/page.tsx:331` | kept |
+| 8 | Composer placeholder (Stripe/Next.js) | `dashboard/page.tsx:342` | kept |
+| 9 | Composer plus, 28px circle | `chat/ChatInput.tsx:952-966` | kept |
+| 10 | Model pill "Goblin Swift" + chevron, max-w 160 | `chat/ChatInput.tsx:989-1013` | kept |
+| 11 | Hint "⇧↵ new line" | `chat/ChatInput.tsx:1022` | kept |
+| 12 | Mic button | `chat/ChatInput.tsx:371-378` (VoiceButton) | kept |
+| 13 | Send button, 32×32 r8, idle fill | `chat/ChatInput.tsx:1046-1072` | kept |
+| 14 | Four quick-prompt chips | `dashboard/page.tsx:83-86` (QUICK_PROMPTS_EN) | kept — **corrected**: all four, the pitch showed three |
+| 15 | "Your projects" + "3 ACTIVE" | `dashboard/page.tsx:374-376, 119` | kept |
+| 16 | Project rows: 8px dot · name · relative time | `dashboard/page.tsx:512-534` | kept |
+| 17 | Dot colour | `dashboard/page.tsx:523` — takes `statusLabel().color` | kept — **corrected**: status colours, not per-project colours |
+| 18 | Relative times "2 MIN AGO" / "3 DAYS AGO" / "1 MONTH AGO" | `dashboard/page.tsx:94-103` (timeAgo, en) | kept |
+| 19 | "+ New project" row | `dashboard/page.tsx:536-551` | kept |
+| 20 | "What's new" heading | `dashboard/page.tsx:560` | kept |
+| 21 | **"Alle Updates →"** | **does not exist** — the real link is "Help & FAQ →" to `/help`, and `dashboard/page.tsx:561-564` carries the comment saying it must not promise a changelog | **removed**, replaced with the real label |
+| 22 | Update rows: NEU/UPDATE tag · title · desc · date | `dashboard/page.tsx:32-70` (UPDATES, en branch) | kept, verbatim |
+| 23 | `--radius-lg` on hero + panels | `design-tokens.css:123` = **20px** | kept — **corrected**: the pitch's token copy still said 14px |
+| 24 | Any link, button handler or hover state | — | **removed**: the port is inert. A clickable-looking control that does nothing is a phantom affordance, and this is a picture |
+| 25 | Notch, bezel, device frame | — | kept as **frame**, not product UI — it depicts the phone, not Goblin |
+
+Four drifts (rows 5, 14, 17, 21) plus one token error (row 23) were corrected during
+the port rather than carried over. Nothing in the mock is untraceable.
+
+**The heading changed too, and that is copy the founder did not explicitly order.**
+The old heading — "One tap. Code lands in your editor." — described the old picture.
+The ported mock shows the phone dashboard, so keeping it would have recreated this
+section's original defect: words promising one thing over a picture showing another.
+It now reads "This is Goblin *on your phone*". The Send-to-Code claim is not lost —
+it keeps Problem P·03, HowItWorks step 03 and IslandFlow step 03, where the words
+stand alone. Revert-in-one-commit if the founder wants the old headline back.
+
+**What the ported mock does NOT show, deliberately:** the chat code-block. That is
+the one surface whose labels are hardcoded German (`CodeBlock.tsx:83,102`), and it is
+no longer depicted anywhere on the landing — which is why the caption the earlier pass
+needed is gone, and why the whole-page German sweep in
+`tests/e2e/33-landing-i18n.spec.ts` runs again **without exclusions**.
 
 ---
 
@@ -264,15 +320,15 @@ Two alternatives the founder may prefer, both one commit away:
 |---|---|---|
 | API vitest | **2375 / 2375** | job log, local run 2026-08-17 |
 | Web vitest | **540 / 540** | local run |
-| E2E `@public`, desktop + mobile | **166 / 168** | 2 failures, both `40-account-deletion.spec.ts › invalid token`, which needs a live API this sandbox does not run; its sibling client-only assertion passes, and no file in this diff touches `/cancel-deletion` |
-| Landing i18n suite (rewritten) | **5 / 5** | local run |
+| E2E `@public`, desktop + mobile | **168 / 170** | 2 failures, both `40-account-deletion.spec.ts › invalid token`, which needs a live API this sandbox does not run; its sibling client-only assertion passes, and no file in this diff touches `/cancel-deletion` |
+| Landing i18n suite (rewritten twice — see §2.3) | **6 / 6** | local run |
 | Auth-mail suites (hook + chain + new deliverability) | **69 / 69** | local run |
 | Money-suite guard, `CI=true` armed | **1 / 1** | local run |
 | `assert-safe-area.mjs` | **80 / 80** | local run |
 | `assert-safe-area-bottom.mjs` | **34 / 34** | local run |
 | `tsc --noEmit` (api, web) | clean, clean | local run |
 | `next build` | success | local run |
-| Renders | **20** — 5 sections × {375, desktop} × {light, dark} | `evidence/landing-honesty-2026-08-17/` |
+| Renders | **24** — 6 targets × {375, desktop} × {light, dark}, including the ported phone alone | `evidence/landing-honesty-2026-08-17/` |
 | DNS re-verification | 8 lookups × 2 independent resolvers (Google DoH + Cloudflare DoH), identical answers | §1.1 |
 
 ## Honest Limitations
@@ -310,10 +366,20 @@ Two alternatives the founder may prefer, both one commit away:
 8. **The E2E run is 166/168, not 168/168.** See the gates table for the reasoning
    that the two reds are environmental. That reasoning is an argument, not a re-run
    on `master`.
-9. **The landing was not localized.** It remains an English page. The German copy the
+9. **The ported mock is a still, and its data is invented sample data.** Project
+   names, the greeting name and the timestamps are demo content — as they are in the
+   pitch. What §2.4 audits is every *affordance*: the controls, labels and chrome.
+   Nobody has diffed the port against a live screenshot of the running app, because
+   this session cannot log in; the audit is against the source code the app renders
+   from, which is the same standard the pitch mock is maintained to.
+
+9b. **The pitch repo was read at one commit.** `92e6931`, shallow clone. If the pitch
+   has since corrected something in that mock, this port does not have it.
+
+10. **The landing was not localized.** It remains an English page. The German copy the
    founder authored is still preserved in `de` keys that do not render.
-10. **Nothing was verified in production.** Branch work; no deploy, no live check.
-11. **Consumption ledger: no line needed.** No new token path, no new external
+11. **Nothing was verified in production.** Branch work; no deploy, no live check.
+12. **Consumption ledger: no line needed.** No new token path, no new external
     service, no model call. Law 5 checked, not skipped.
 
 ## Founder actions
@@ -325,9 +391,10 @@ Two alternatives the founder may prefer, both one commit away:
 2. **Run the mail test protocol (§1.5)** after this branch is deployed — 20 minutes
    from the phone. Write the results into the table. If step 3 shows an
    authentication FAIL, reopen this wave.
-3. **Review the new coding section on a real device**, light and dark. It now shows
-   German product labels on an English page with an English caption explaining why —
-   see §2.3 for the decision and the two alternatives.
+3. **Review the new §03 section on a real device**, light and dark. It is the ported
+   iPhone mockup, and its heading changed with it ("This is Goblin on your phone") —
+   see §2.3 for why the old headline could not stay over the new picture, and §2.4 for
+   the element-by-element audit.
 4. **Decide on `AUTH_REPLY_TO`**: point it at a mailbox that is read, or say so and
    the knob comes out.
 5. **Settle the FAQ's "encrypted at rest in the EU"** (Honest Limitation #3) — the

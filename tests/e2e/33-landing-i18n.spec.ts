@@ -63,78 +63,75 @@ test.describe('@public U4 landing i18n', () => {
   });
 
   /**
-   * ── REVISED 2026-08-17 (TESTER-FEEDBACK wave) ──────────────────────────────
+   * ── REVISED TWICE ON 2026-08-17 ────────────────────────────────────────────
    *
-   * This test used to assert the opposite: that the Send-to-Code mock renders
-   * in ENGLISH. That assertion was written on a premise that turned out to be
-   * false — U4's note reads "the product itself is bilingual (useLang), so an
-   * English visitor really does see these controls in English." Re-checked
-   * against the components:
+   * First revision (earlier today) split the rule: landing prose English, the
+   * hand-built product mock in the product's own German labels. That mock is
+   * now GONE — the founder replaced the whole section with the pitch repo's
+   * iPhone mockup (components/landing/sections/PhoneMock.tsx), a replica of the
+   * mobile DASHBOARD rather than the chat surface.
    *
-   *   • components/workspace/CodeBlock.tsx imports no i18n. "Kopieren" (:83)
-   *     and "An Code senden" (:102) are hardcoded German for every user.
-   *   • components/app-shell/model-switcher.tsx:329 hardcodes 'INKLUSIVE'.
-   *   • components/code/FileCardList.tsx DOES use useLang/t — "NEW",
-   *     "CHANGED", "12 lines", "Filter files…" are real for an English user.
-   *
-   * So the English mock was a dressed-up screenshot: it showed a product that
-   * does not exist. An expert tester's verdict on this section was "it looks
-   * completely different from the real app."
-   *
-   * The rule is therefore split, and this suite now pins BOTH halves:
-   *   • Landing PROSE and CHROME stay English (PR #81) — the install block,
-   *     headings, leads, captions, everything the site says in its own voice.
-   *   • The product MOCK shows the product's own labels, because a picture of
-   *     a screen is a depiction, not prose — and a caption in the site's voice
-   *     tells the English reader what they are looking at.
+   * That makes the split unnecessary, and the rule goes back to being simple:
+   * every string on the landing is English, mock included. The difference is
+   * not a change of principle but of fact — the dashboard is genuinely
+   * localized (app/dashboard/page.tsx and chat/ChatInput.tsx run every string
+   * through t()/useLang), so an English visitor really does see the English
+   * labels the mock renders. The chat code-block, which does not localize, is
+   * no longer depicted anywhere on this page.
    */
-  test('the Send-to-Code mock shows the product labels the product really renders', async ({ page }) => {
+  test('the phone mock renders the app strings an English user really sees', async ({ page }) => {
     await page.addInitScript(() => localStorage.setItem('goblin:preferred-lang', 'de'));
     await page.goto('/');
-    // Target the mock illustration itself (.stc-illust), not the surrounding
-    // section — the section's English heading would otherwise satisfy a
-    // hasText filter while the mock inside it went unchecked.
-    const mock = page.locator('.stc-illust');
+    const mock = page.locator('.pm-frame');
     await expect(mock).toBeVisible();
 
-    // German where the product is German-only.
-    await expect(mock).toContainText('An Code senden');
-    await expect(mock).toContainText('Kopieren');
-    await expect(mock).toContainText('INKLUSIVE');
-    // English where the product genuinely localizes.
-    await expect(mock).toContainText('Filter files…');
-    await expect(mock).toContainText('CHANGED');
-    await expect(mock).toContainText('NEW');
-    await expect(mock).toContainText('lines');
+    // Chrome + hero, from layout/Header.tsx and app/dashboard/page.tsx (en).
+    await expect(mock).toContainText('Chat');
+    await expect(mock).toContainText('Tell Goblin what you want');
+    await expect(mock).toContainText('A landing page with Stripe checkout in Next.js');
+    await expect(mock).toContainText('⇧↵ new line');
+    await expect(mock).toContainText('Goblin Swift');
 
-    // The invented affordances are gone: the real code tab has a filter field,
-    // not a "Draft · N files" pill.
-    await expect(mock).not.toContainText('Draft · 2 files');
-    await expect(mock).not.toContainText('Entwurf');
+    // Lists, from the same file.
+    await expect(mock).toContainText('Your projects');
+    await expect(mock).toContainText('+ New project');
+    await expect(mock).toContainText("What's new");
 
-    // ... and the mixture is explained in the site's own voice, in English.
-    await expect(page.locator('.stc-caption')).toContainText('still in German');
+    // The label the pitch mock had drifted on: the real one names /help and does
+    // NOT promise a changelog (dashboard/page.tsx:561-564).
+    await expect(mock).toContainText('Help & FAQ');
+    await expect(mock).not.toContainText('All updates');
+    await expect(mock).not.toContainText('Alle Updates');
   });
 
-  test('no German survives in the landing prose (the mock is the one exception)', async ({ page }) => {
+  test('the replaced hand-built mock is gone, invented affordances with it', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('.pm-frame')).toBeVisible();
+
+    // The section that was corrected twice and wrong twice.
+    await expect(page.locator('.stc-illust')).toHaveCount(0);
+    const body = await page.locator('body').innerText();
+    // "Draft · 2 files" never existed in the product; neither did a landing
+    // promise of a preview surface that is being removed.
+    expect(body).not.toContain('Draft · 2 files');
+    expect(body).not.toMatch(/\bPreview\b/);
+  });
+
+  test('no German survives anywhere on the rendered landing', async ({ page }) => {
     await page.addInitScript(() => localStorage.setItem('goblin:preferred-lang', 'de'));
     await page.goto('/');
     await expect(page.getByTestId('install-app-block')).toBeVisible();
+    await expect(page.locator('.pm-frame')).toBeVisible();
 
-    // Everything the SITE says must be English. The product screenshot is
-    // excluded by removing it from the DOM before reading the text, so the
-    // sweep still fails on a future section that forgets the landing is
-    // English — which is the leak this test was written for.
-    const body = await page.evaluate(() => {
-      const clone = document.body.cloneNode(true) as HTMLElement;
-      clone.querySelectorAll('.stc-illust').forEach((el) => el.remove());
-      return clone.innerText;
-    });
+    // Whole-page again, no exclusions: umlauts/ß plus the words the historical
+    // leaks contributed. A future section that forgets the landing is English
+    // is caught here rather than by a founder on prod.
+    const body = await page.locator('body').innerText();
     const german = body
       .split('\n')
       .map(line => line.trim())
       .filter(line => line && /[äöüßÄÖÜ]|\b(Entwurf|Dateien|Zeilen|GEÄNDERT|INKLUSIVE|Kopieren|Bildschirm|installieren|hinzufügen)\b/.test(line));
 
-    expect(german, `German strings in the English landing prose:\n${german.join('\n')}`).toEqual([]);
+    expect(german, `German strings on the English landing:\n${german.join('\n')}`).toEqual([]);
   });
 });

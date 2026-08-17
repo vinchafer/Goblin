@@ -12,14 +12,15 @@ import { chromium } from '@playwright/test';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
-const BASE = process.env.SHOT_BASE_URL || 'http://localhost:3112';
+const BASE = process.env.SHOT_BASE_URL || 'http://localhost:3113';
 const OUT = process.env.SHOT_OUT || join(process.cwd(), 'evidence/landing-honesty-2026-08-17');
 
 // Each entry: a selector that must exist, and the file stem for its shot.
 const TARGETS = [
   { name: 'install-ai-location', sel: '.ai-location' },
   { name: 'how-it-works', sel: '#how' },
-  { name: 'send-to-code', sel: '.stc' },
+  { name: 'product-phone', sel: '.stc' },
+  { name: 'phone-frame', sel: '.pm-frame' },
   { name: 'island-flow', sel: '.island' },
   { name: 'pricing', sel: '#pricing' },
 ];
