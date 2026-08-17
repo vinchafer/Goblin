@@ -52,38 +52,60 @@ function Chevron() {
   );
 }
 
-// I18N-LEAK FIX (AKT 1 · FEHLERSTRANG-1 · U4): the mock chat/code cards below
-// mirror the real product surface, and their labels were hardcoded GERMAN on a
-// fully English marketing page — nine of the founder-reported leaks came from
-// here and from InstallAppBlock. The product itself is bilingual (useLang), so
-// an English visitor really does see these controls in English; rendering the
-// mock in English is accurate, not a dressed-up screenshot.
+// ── TESTER-FEEDBACK (2026-08-17): "this section looks completely different from
+//    the real app" ────────────────────────────────────────────────────────────
 //
-// Same convention as AgentFlow.tsx: the landing RENDERS `.en`, and the German
-// the founder authored is preserved in `.de` so it is ready the day the landing
-// is localized. Localizing the whole landing is separate, larger work.
+// He was right, and the cause was a well-meant fix. AKT 1 · FEHLERSTRANG-1 · U4
+// translated this mock into English to clear an i18n leak, on the stated
+// reasoning that "the product itself is bilingual (useLang), so an English
+// visitor really does see these controls in English."
+//
+// That reasoning does not hold for the chat surface. Re-checked line by line:
+//
+//   • components/workspace/CodeBlock.tsx — imports no i18n at all. "Kopieren"
+//     (:83) and "An Code senden" (:102) are hardcoded German for EVERY user.
+//   • components/app-shell/model-switcher.tsx:329 — the tier chip reads
+//     'INKLUSIVE', likewise hardcoded.
+//   • components/code/FileCardList.tsx — DOES use useLang/t: an English visitor
+//     genuinely sees "NEW" / "CHANGED" / "12 lines" / "Filter files…".
+//
+// So the labels below are now split by what the real components actually
+// render: German where the product is German-only, English where the product
+// really does switch. That mixture is not a compromise — it is what a visitor
+// sees when they sign up, which is the entire point of showing them a mock.
+//
+// Also removed: the "Draft · 2 files" pill on the code panel. No such pill
+// exists — the real code tab's sticky header is a file FILTER field
+// (FileCardList.tsx:127-131). It was a phantom affordance in a picture, which
+// is the same lie as a phantom affordance in the app.
+//
+// The German the founder authored for a future localized landing is preserved
+// in `de` (same convention as AgentFlow.tsx); it does not render today.
 const MOCK = {
   en: {
-    tier: '· INCLUDED',
-    userMsg: 'Add a dark-mode toggle to the navbar',
-    aiLead: 'Here is your updated component:',
-    copy: 'Copy',
-    sendToCode: 'Send to Code',
-    draftPill: 'Draft · 2 files',
+    // Product-German, shown to every user regardless of language preference.
+    tier: '· INKLUSIVE',
+    copy: 'Kopieren',
+    sendToCode: 'An Code senden',
+    // Genuinely localized in the product.
+    filter: 'Filter files…',
     lines: (n: number) => `${n} lines`,
     changed: 'CHANGED',
     isNew: 'NEW',
+    // What the visitor types and what the model answers — not UI chrome.
+    userMsg: 'Add a dark-mode toggle to the navbar',
+    aiLead: 'Here is your updated component:',
   },
   de: {
     tier: '· INKLUSIVE',
-    userMsg: 'Füg der Navbar einen Dark-Mode-Umschalter hinzu',
-    aiLead: 'Hier ist deine aktualisierte Komponente:',
     copy: 'Kopieren',
     sendToCode: 'An Code senden',
-    draftPill: 'Entwurf · 2 Dateien',
+    filter: 'Dateien filtern…',
     lines: (n: number) => `${n} Zeilen`,
     changed: 'GEÄNDERT',
     isNew: 'NEU',
+    userMsg: 'Füg der Navbar einen Dark-Mode-Umschalter hinzu',
+    aiLead: 'Hier ist deine aktualisierte Komponente:',
   },
 } as const;
 
@@ -184,7 +206,9 @@ export function SendToCode() {
             <div className="stc-card-code">
               <div className="stc-code-head">
                 <span className="tab">Code</span>
-                <span className="draft-pill">{M.draftPill}</span>
+                {/* The real code tab's sticky header is a filter field, not a
+                    status pill — FileCardList.tsx:127-131. */}
+                <span className="stc-filter" aria-hidden="true">{M.filter}</span>
               </div>
               <div className="stc-code-body">
                 <div className="file-card">
@@ -211,6 +235,14 @@ export function SendToCode() {
             </div>
           )}
         </div>
+
+        {/* The same class of defect as the Vercel surprise, caught before it can
+            happen: an English landing showing German controls needs one honest
+            sentence, or the first login is a second surprise. */}
+        <p className="stc-caption">
+          Drawn from the real screens. Some of Goblin&apos;s controls are still in German —
+          that is what you will see when you sign in.
+        </p>
       </div>
     </section>
   );

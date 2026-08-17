@@ -62,37 +62,79 @@ test.describe('@public U4 landing i18n', () => {
     }
   });
 
-  test('the Send-to-Code mock is English too (the second leak the sweep found)', async ({ page }) => {
+  /**
+   * ── REVISED 2026-08-17 (TESTER-FEEDBACK wave) ──────────────────────────────
+   *
+   * This test used to assert the opposite: that the Send-to-Code mock renders
+   * in ENGLISH. That assertion was written on a premise that turned out to be
+   * false — U4's note reads "the product itself is bilingual (useLang), so an
+   * English visitor really does see these controls in English." Re-checked
+   * against the components:
+   *
+   *   • components/workspace/CodeBlock.tsx imports no i18n. "Kopieren" (:83)
+   *     and "An Code senden" (:102) are hardcoded German for every user.
+   *   • components/app-shell/model-switcher.tsx:329 hardcodes 'INKLUSIVE'.
+   *   • components/code/FileCardList.tsx DOES use useLang/t — "NEW",
+   *     "CHANGED", "12 lines", "Filter files…" are real for an English user.
+   *
+   * So the English mock was a dressed-up screenshot: it showed a product that
+   * does not exist. An expert tester's verdict on this section was "it looks
+   * completely different from the real app."
+   *
+   * The rule is therefore split, and this suite now pins BOTH halves:
+   *   • Landing PROSE and CHROME stay English (PR #81) — the install block,
+   *     headings, leads, captions, everything the site says in its own voice.
+   *   • The product MOCK shows the product's own labels, because a picture of
+   *     a screen is a depiction, not prose — and a caption in the site's voice
+   *     tells the English reader what they are looking at.
+   */
+  test('the Send-to-Code mock shows the product labels the product really renders', async ({ page }) => {
     await page.addInitScript(() => localStorage.setItem('goblin:preferred-lang', 'de'));
     await page.goto('/');
     // Target the mock illustration itself (.stc-illust), not the surrounding
     // section — the section's English heading would otherwise satisfy a
-    // hasText filter while the German mock inside it went unchecked.
+    // hasText filter while the mock inside it went unchecked.
     const mock = page.locator('.stc-illust');
     await expect(mock).toBeVisible();
 
-    await expect(mock).toContainText('Send to Code');
-    await expect(mock).toContainText('Draft · 2 files');
-    await expect(mock).not.toContainText('An Code senden');
+    // German where the product is German-only.
+    await expect(mock).toContainText('An Code senden');
+    await expect(mock).toContainText('Kopieren');
+    await expect(mock).toContainText('INKLUSIVE');
+    // English where the product genuinely localizes.
+    await expect(mock).toContainText('Filter files…');
+    await expect(mock).toContainText('CHANGED');
+    await expect(mock).toContainText('NEW');
+    await expect(mock).toContainText('lines');
+
+    // The invented affordances are gone: the real code tab has a filter field,
+    // not a "Draft · N files" pill.
+    await expect(mock).not.toContainText('Draft · 2 files');
     await expect(mock).not.toContainText('Entwurf');
-    await expect(mock).not.toContainText('INKLUSIVE');
-    await expect(mock).not.toContainText('Kopieren');
+
+    // ... and the mixture is explained in the site's own voice, in English.
+    await expect(page.locator('.stc-caption')).toContainText('still in German');
   });
 
-  test('no German survives anywhere on the rendered landing', async ({ page }) => {
+  test('no German survives in the landing prose (the mock is the one exception)', async ({ page }) => {
     await page.addInitScript(() => localStorage.setItem('goblin:preferred-lang', 'de'));
     await page.goto('/');
     await expect(page.getByTestId('install-app-block')).toBeVisible();
 
-    // Umlauts/ß plus the specific words the two leaks contributed. A whole-page
-    // assertion, so a future section that forgets the landing is English is
-    // caught here rather than by a founder on prod.
-    const body = await page.locator('body').innerText();
+    // Everything the SITE says must be English. The product screenshot is
+    // excluded by removing it from the DOM before reading the text, so the
+    // sweep still fails on a future section that forgets the landing is
+    // English — which is the leak this test was written for.
+    const body = await page.evaluate(() => {
+      const clone = document.body.cloneNode(true) as HTMLElement;
+      clone.querySelectorAll('.stc-illust').forEach((el) => el.remove());
+      return clone.innerText;
+    });
     const german = body
       .split('\n')
       .map(line => line.trim())
       .filter(line => line && /[äöüßÄÖÜ]|\b(Entwurf|Dateien|Zeilen|GEÄNDERT|INKLUSIVE|Kopieren|Bildschirm|installieren|hinzufügen)\b/.test(line));
 
-    expect(german, `German strings on the English landing:\n${german.join('\n')}`).toEqual([]);
+    expect(german, `German strings in the English landing prose:\n${german.join('\n')}`).toEqual([]);
   });
 });
