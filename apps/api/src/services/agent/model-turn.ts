@@ -90,8 +90,10 @@ export function nativeGoblinModel(tierId: GoblinTierId): AgentModel {
           {
             model,
             messages: toOpenAIMessages(messages),
-            tools: toOpenAITools(tools),
-            tool_choice: 'auto',
+            // TRUNC-2: a truncation-recovery turn asks for raw text and passes NO tools.
+            // `tools: []` is rejected by OpenAI-compatible endpoints, so the fields are
+            // omitted entirely rather than sent empty.
+            ...(tools.length > 0 ? { tools: toOpenAITools(tools), tool_choice: 'auto' as const } : {}),
             max_tokens: GOBLIN_MAX_TOKENS_PER_REQUEST,
             // A-1 (TTFT): DeepInfra prompt caching is automatic and prefix-based, so
             // the byte-stable static prefix built by buildAgentSystemPrompt (identity →
