@@ -110,6 +110,19 @@ export function mapActionType(action: string): AuthEmailType | null {
   }
 }
 
+/**
+ * Reply-To for auth mail, from `AUTH_REPLY_TO`. Unset by default and therefore a
+ * no-op until the founder points it at a mailbox someone actually reads: a
+ * Reply-To that bounces is worse than none, and promising a reachable human we
+ * do not staff would be the same lie in a header instead of in a sentence.
+ * (Deliverability note: replies to a From address are a positive engagement
+ * signal at the large providers; an unreachable one is not.)
+ */
+export function authReplyTo(env: NodeJS.ProcessEnv = process.env): string | undefined {
+  const raw = (env.AUTH_REPLY_TO ?? '').trim().replace(/^["']|["']$/g, '');
+  return raw || undefined;
+}
+
 /** `justgoblin.com` and `www.justgoblin.com` are the same site to us. */
 function sameSite(a: URL, b: URL): boolean {
   if (a.origin === b.origin) return true;
@@ -202,8 +215,9 @@ authEmailHook.post('/', async (c) => {
     next: nextPathFrom(payload.email_data?.redirect_to, origin),
   });
 
-  const { subject, html } = renderAuthEmail(type, { email: to, actionUrl });
-  const result = await sendEmail({ to, subject, html });
+  const { subject, html, text } = renderAuthEmail(type, { email: to, actionUrl });
+  const replyTo = authReplyTo();
+  const result = await sendEmail({ to, subject, html, text, ...(replyTo ? { replyTo } : {}) });
 
   if (!result.ok) {
     // Surface the failure to Supabase so the USER sees an error instead of
