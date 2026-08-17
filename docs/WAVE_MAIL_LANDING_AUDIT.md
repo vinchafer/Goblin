@@ -320,7 +320,8 @@ needed is gone, and why the whole-page German sweep in
 |---|---|---|
 | API vitest | **2375 / 2375** | job log, local run 2026-08-17 |
 | Web vitest | **540 / 540** | local run |
-| E2E `@public`, desktop + mobile | **168 / 170** | 2 failures, both `40-account-deletion.spec.ts › invalid token`, which needs a live API this sandbox does not run; its sibling client-only assertion passes, and no file in this diff touches `/cancel-deletion` |
+| E2E `@public`, desktop + mobile (sandbox) | **168 / 170** | 2 failures, both `40-account-deletion.spec.ts › invalid token`. **Resolved at job-log level:** the same suite is green in CI, which starts a real API — PR run `32028465458` reports `198 passed, 2 flaky, 0 failed`. The two reds are a sandbox artefact (no API backend), **not** a standing known-red. |
+| E2E in CI (public + auth, live API) | **198 passed · 0 failed · 2 flaky** | job `95382861256`, read from the log. The 2 flaky are unrelated and pre-existing: `19-mobile-create-project` and `26-settings-structure` on `auth-mobile`, both passing on retry. |
 | Landing i18n suite (rewritten twice — see §2.3) | **6 / 6** | local run |
 | Auth-mail suites (hook + chain + new deliverability) | **69 / 69** | local run |
 | Money-suite guard, `CI=true` armed | **1 / 1** | local run |
@@ -363,9 +364,10 @@ needed is gone, and why the whole-page German sweep in
    build. `env(safe-area-inset-*)` is zero in this environment — the screenshots prove
    layout, type and theme, not notch behaviour. **Nobody has opened the changed
    landing on a physical phone.**
-8. **The E2E run is 166/168, not 168/168.** See the gates table for the reasoning
-   that the two reds are environmental. That reasoning is an argument, not a re-run
-   on `master`.
+8. ~~**The E2E run is 166/168, not 168/168.**~~ **CLOSED 2026-08-17 at merge.** The
+   sandbox reds were an argument when this was written; CI settled it. The PR run
+   (`32028465458`, job `95382861256`) starts a real API and reports **198 passed, 0
+   failed**, account-deletion included. Sandbox artefact, not a known-red.
 9. **The ported mock is a still, and its data is invented sample data.** Project
    names, the greeting name and the timestamps are demo content — as they are in the
    pitch. What §2.4 audits is every *affordance*: the controls, labels and chrome.
@@ -381,6 +383,22 @@ needed is gone, and why the whole-page German sweep in
 11. **Nothing was verified in production.** Branch work; no deploy, no live check.
 12. **Consumption ledger: no line needed.** No new token path, no new external
     service, no model call. Law 5 checked, not skipped.
+
+## Carry-forward — found here, deliberately not fixed here
+
+Both are registered in `docs/ACT2_CARRY_FORWARD.md` §L (L1, L2).
+
+1. **`CodeBlock.tsx` has no i18n.** "Kopieren" and "An Code senden" are hardcoded
+   German for every user, as is `INKLUSIVE` in `model-switcher.tsx:329`. This wave
+   only stopped *depicting* that surface on the landing — the defect is hidden, not
+   fixed: an English-speaking user still meets German buttons after signing in. App
+   code, owned by the parallel session.
+
+2. **The pitch mock is now stale.** The five drifts corrected during the port
+   (§2.4 rows 5, 14, 17, 21, 23) were fixed in Goblin's copy only;
+   `vinchafer/justgoblin-pitch` still carries all of them, and its §04 still shows
+   them. Note the direction has reversed: Goblin now holds the corrected version, so
+   a future `sync-mockups.sh` pass must not overwrite it from the pitch.
 
 ## Founder actions
 
