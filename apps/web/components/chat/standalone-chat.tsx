@@ -29,6 +29,7 @@ import {
   shouldAskServerOnReturn, type TranscriptMessage, type TurnStatus,
 } from "@/lib/chat-recovery";
 import { noticeToneStyle, noticeToneFromText, recoveryTone, type NoticeTone } from "@/lib/notice-tone";
+import { truncatedNotice, continueLabel, continuingLabel, continueFailedNotice } from "@/lib/truncation-copy";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -45,6 +46,13 @@ interface StandaloneMessage {
   // "wartet auf Verbindung — erneut senden" state.
   clientMessageId?: string;
   sendFailed?: boolean;
+  /**
+   * TRUNC-1: the server ran out of continuation rounds and this answer really is cut
+   * off mid-output. Set ONLY from the server's `done.truncated` — never guessed from
+   * the text — and it makes the message render as unfinished, with a continue that
+   * continues.
+   */
+  truncated?: boolean;
   // FOUNDER-WALK-5 · U1 — WHY this message is retryable, so the affordance stops claiming
   // "wartet auf Verbindung" over a turn the server already discarded. Absent → the
   // connection-failure default.
@@ -63,6 +71,12 @@ interface StreamChunk {
   input_tokens?: number;
   output_tokens?: number;
   token_display?: string;
+  /** TRUNC-1: the answer is still cut off after the server's continuation rounds. */
+  truncated?: boolean;
+  /** TRUNC-1: how many extra provider requests the server spent stitching this answer. */
+  continuation_rounds?: number;
+  /** TRUNC-1: after a manual continue, the server's stitched text (overlap removed). */
+  full_content?: string;
 }
 
 interface StandaloneChatProps {
@@ -324,6 +338,9 @@ function DropItem({ onClick, disabled, icon, label, sub }: {
 
 export function StandaloneChat({ sessionId, initialMessages = [], projectId = null, projectName = null }: StandaloneChatProps) {
   const router = useRouter();
+  // TRUNC-1: the cut-off banner and its continue button are user-facing copy, so they
+  // follow the account's language like every other string on this surface.
+  const lang = useLang();
   const [messages, setMessages] = useState<(StandaloneMessage & { id: string })[]>(
     initialMessages.map(m => ({ ...m, model_used: undefined, source_tier: undefined }))
   );
@@ -740,12 +757,19 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
             }
           } else if (d.type === "done") {
             if (streamingMsgRef.current) {
+              // TRUNC-1: `full_content` is the server's stitched truth after a manual
+              // continue (it removed the overlap the model re-emitted, which the raw
+              // deltas still carry). When present it wins — screen must equal transcript.
+              const finalContent = d.full_content ?? streamingContentRef.current;
               const final: typeof messages[0] = {
                 ...streamingMsgRef.current,
                 id: d.messageId || streamingMsgRef.current.id,
-                content: streamingContentRef.current,
-                has_code: hasCodeBlock(streamingContentRef.current),
+                content: finalContent,
+                has_code: hasCodeBlock(finalContent),
                 model_used: d.model_used || streamingMsgRef.current.model_used,
+                // The server's verdict, carried verbatim. `false` clears it, so a
+                // successful continue stops labelling the message unfinished.
+                truncated: d.truncated === true,
               };
               setMessages([...baseMessagesRef.current, final]);
               streamingMsgRef.current = null;
@@ -806,6 +830,96 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
       streamingMsgRef.current = null;
       lastStreamActivityRef.current = null;
       setIsStreaming(false);
+    }
+  };
+
+  /**
+   * TRUNC-1 — the one-tap continue on a cut-off answer.
+   *
+   * This is NOT a resend and NOT a regenerate. No user message is created; the server
+   * takes the cut-off assistant message, hands it back to the model as its own last turn
+   * with a resume instruction, and APPENDS what comes back to that same message. The
+   * tester's four wasted turns are what happens without it: asking in prose for "the
+   * rest" got him the first third again, every time.
+   */
+  const handleContinue = async (msg: StandaloneMessage) => {
+    if (isStreaming) return;
+
+    const base = messages.filter(m => m.id !== msg.id);
+    baseMessagesRef.current = base;
+    // The partial answer is the streaming buffer: continuation deltas extend it in place.
+    streamingContentRef.current = msg.content;
+    const resuming: StandaloneMessage = { ...msg, truncated: false };
+    streamingMsgRef.current = resuming;
+    setMessages([...base, resuming]);
+    setIsStreaming(true);
+    showNotice(null);
+
+    const epoch = turnGuard.current.begin();
+    lastStreamActivityRef.current = Date.now();
+
+    try {
+      const { data: { session } } = await (await import("@/lib/supabase/client")).createClient().auth.getSession();
+      const token = session?.access_token;
+      if (!token) throw new Error("Not authenticated");
+
+      abortRef.current = new AbortController();
+      await apiStream(
+        `/api/chat-sessions/${sessionId}/stream`,
+        { continueTruncated: true, modelSlug: selectedModel.slug },
+        (raw: unknown) => {
+          const d = raw as StreamChunk;
+          if (!turnGuard.current.mayStream(epoch)) return;
+          lastStreamActivityRef.current = Date.now();
+
+          if (d.type === "delta") {
+            streamingContentRef.current += d.content ?? "";
+            if (streamingMsgRef.current) {
+              streamingMsgRef.current = { ...streamingMsgRef.current, content: streamingContentRef.current };
+              setMessages([...baseMessagesRef.current, streamingMsgRef.current]);
+            }
+          } else if (d.type === "done") {
+            if (streamingMsgRef.current) {
+              const finalContent = d.full_content ?? streamingContentRef.current;
+              const final: StandaloneMessage = {
+                ...streamingMsgRef.current,
+                id: d.messageId || streamingMsgRef.current.id,
+                content: finalContent,
+                has_code: hasCodeBlock(finalContent),
+                // Still cut off? Say so again. A continue that only got part-way is not
+                // allowed to quietly relabel the answer as finished.
+                truncated: d.truncated === true,
+              };
+              setMessages([...baseMessagesRef.current, final]);
+              streamingMsgRef.current = null;
+            }
+            lastStreamActivityRef.current = null;
+            setIsStreaming(false);
+          } else if (d.type === "error") {
+            // The answer keeps its truncated state — nothing about it improved.
+            setMessages([...baseMessagesRef.current, { ...msg, truncated: true }]);
+            streamingMsgRef.current = null;
+            lastStreamActivityRef.current = null;
+            setIsStreaming(false);
+            showNotice(friendlyError(d.message, continueFailedNotice(lang)), 'warn');
+          }
+        },
+        abortRef.current.signal
+      );
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") {
+        streamingMsgRef.current = null;
+        lastStreamActivityRef.current = null;
+        setIsStreaming(false);
+        return;
+      }
+      if (!turnGuard.current.mayFinish(epoch)) { streamingMsgRef.current = null; return; }
+      // Restore the message exactly as it was, still flagged cut off.
+      setMessages([...baseMessagesRef.current, { ...msg, truncated: true }]);
+      streamingMsgRef.current = null;
+      lastStreamActivityRef.current = null;
+      setIsStreaming(false);
+      showNotice(continueFailedNotice(lang), 'warn');
     }
   };
 
@@ -901,6 +1015,35 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
           : messages.map(m => (
             <div key={m.id}>
               <Message msg={m} isStreaming={isStreaming} />
+              {m.truncated && (
+                // TRUNC-1 — the honest cut-off state. The server auto-continues up to its
+                // round cap; past that the answer really is unfinished, and it says so
+                // rather than sitting there looking whole. The button CONTINUES.
+                <div
+                  data-testid="truncated-notice"
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    gap: 12, marginTop: 6, padding: "8px 12px",
+                    borderRadius: 10,
+                    ...noticeToneStyle('warn'),
+                    fontSize: 13, fontFamily: "var(--font-sans)",
+                  }}
+                >
+                  <span>{truncatedNotice(lang)}</span>
+                  <button
+                    onClick={() => handleContinue(m)}
+                    disabled={isStreaming}
+                    style={{
+                      flexShrink: 0,
+                      background: "none", border: "1px solid var(--border)", borderRadius: 8,
+                      padding: "4px 12px", fontSize: 13, color: "var(--brand-fg)",
+                      cursor: isStreaming ? "default" : "pointer", fontFamily: "var(--font-sans)",
+                    }}
+                  >
+                    {isStreaming ? continuingLabel(lang) : continueLabel(lang)}
+                  </button>
+                </div>
+              )}
               {m.sendFailed && m.clientMessageId && (
                 // P0.5 — the failed send stays visible and retryable; the retry
                 // reuses the same clientMessageId so it can never double-submit.

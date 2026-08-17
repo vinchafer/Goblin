@@ -68,6 +68,20 @@ export interface ModelTurn {
   usage: { inputTokens: number; outputTokens: number };
   /** Opaque assistant message to append to history for the next turn (native tools carry ids). */
   assistantMessage?: unknown;
+  /**
+   * TRUNC-2: the provider cut this turn off at the output-token ceiling
+   * (`finish_reason: length`). The turn is INCOMPLETE — its text stops mid-sentence
+   * and any tool call it started is half-written. The orchestrator must never treat
+   * such a turn as a finished thought.
+   */
+  truncated?: boolean;
+  /**
+   * TRUNC-2: when a truncated turn cut a tool call apart, the raw (unparseable)
+   * argument JSON as far as the provider delivered it. `write_file` is the case that
+   * matters: the `path` is complete long before the `content` runs out, so the
+   * continuation can finish the file instead of rewriting it from the top.
+   */
+  partialToolCall?: { id: string; name: string; rawArguments: string };
 }
 
 /** A conversational message in the running loop. */

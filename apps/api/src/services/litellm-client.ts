@@ -33,10 +33,12 @@ interface ChatMessage {
 }
 
 interface StreamDelta {
-  type: 'delta' | 'usage';
+  type: 'delta' | 'usage' | 'finish';
   content?: string;
   input_tokens?: number;
   output_tokens?: number;
+  /** TRUNC-1: provider finish reason (`length` = cut off at the output ceiling). */
+  finish_reason?: string | null;
 }
 
 /**
@@ -111,6 +113,10 @@ export async function* litellmStream(
           const chunk = JSON.parse(data);
           const text = chunk.choices?.[0]?.delta?.content ?? '';
           if (text) yield { type: 'delta', content: text };
+          // TRUNC-1: forward the provider's finish reason so the router can detect a
+          // ceiling cut-off (`length`) instead of reading it as a clean end.
+          const finishReason = chunk.choices?.[0]?.finish_reason;
+          if (finishReason) yield { type: 'finish', finish_reason: finishReason };
           if (chunk.usage) {
             yield {
               type: 'usage',

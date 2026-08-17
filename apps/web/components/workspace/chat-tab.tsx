@@ -12,6 +12,8 @@ import type { ChatMessage } from "@goblin/shared/src/schemas";
 import type { SelectedModel } from "@/components/chat/ChatInput";
 import { StcPreviewSheet, type StcFile } from "@/components/code/StcPreviewSheet";
 import { PageLoading } from "@/components/ui/PageLoading";
+import { useLang } from "@/lib/use-lang";
+import { truncatedNotice, continueLabel, continuingLabel, continueFailedNotice } from "@/lib/truncation-copy";
 
 const EXAMPLE_PROMPTS = [
   'Build a simple landing page with a hero section and CTA button.',
@@ -36,6 +38,10 @@ interface StreamMessage {
   output_tokens?: number;
   token_display?: string;
   message?: string;
+  /** TRUNC-1: the answer is still cut off after the server's continuation rounds. */
+  truncated?: boolean;
+  /** TRUNC-1: after a manual continue, the server's stitched text (overlap removed). */
+  full_content?: string;
 }
 
 const PAGE_SIZE = 20;
@@ -53,6 +59,11 @@ export function ChatTab({ projectId }: ChatTabProps) {
   const [hasAvailableModel, setHasAvailableModel] = useState<boolean | null>(null);
   // 10.8-5: preview files before dispatching them to the Code tab.
   const [stcPreview, setStcPreview] = useState<StcFile[] | null>(null);
+  // TRUNC-1: the last answer was cut off at the model's output ceiling and the server's
+  // continuation rounds ran out. Set ONLY from the server's `done.truncated`, so this is
+  // a reported fact, not a guess about the text.
+  const [isTruncated, setIsTruncated] = useState(false);
+  const lang = useLang();
 
   const { selectedModel, setSelectedModel } = useChatModel();
 
@@ -155,6 +166,7 @@ export function ChatTab({ projectId }: ChatTabProps) {
     setIsStreaming(true);
     setError(null);
     setTokenInfo(null);
+    setIsTruncated(false);
 
     streamingContentRef.current = '';
     baseMessagesRef.current = withUser;
@@ -199,12 +211,17 @@ export function ChatTab({ projectId }: ChatTabProps) {
               const final: ChatMessage = {
                 ...streamingMessageRef.current,
                 id: d.messageId || streamingMessageRef.current.id,
+                // TRUNC-1: after a manual continue the server's stitched text is the
+                // truth (it removed the overlap the raw deltas still carry).
+                content: d.full_content ?? streamingMessageRef.current.content,
                 model_used: d.model_used || streamingMessageRef.current.model_used,
                 source_tier: (d.source_tier || streamingMessageRef.current.source_tier) as ChatMessage['source_tier'],
               };
               setMessages([...baseMessagesRef.current, final]);
               streamingMessageRef.current = null;
             }
+            // The server's verdict, carried verbatim — `false` clears a previous cut-off.
+            setIsTruncated(d.truncated === true);
             if (d.input_tokens != null && d.output_tokens != null) {
               setTokenInfo({
                 input: d.input_tokens, output: d.output_tokens,
@@ -227,6 +244,69 @@ export function ChatTab({ projectId }: ChatTabProps) {
       setIsStreaming(false);
       setMessages(baseMessagesRef.current);
       streamingMessageRef.current = null;
+    }
+  };
+
+  /**
+   * TRUNC-1 — continue a cut-off answer. No new user message, no regenerate: the server
+   * hands the model its own partial answer back and APPENDS what comes next to it.
+   */
+  const handleContinue = async () => {
+    if (isStreaming) return;
+    const last = messages[messages.length - 1];
+    if (!last || last.role !== 'assistant') return;
+
+    const base = messages.slice(0, -1);
+    baseMessagesRef.current = base;
+    streamingContentRef.current = last.content;
+    streamingMessageRef.current = last;
+    setIsStreaming(true);
+    setError(null);
+    setIsTruncated(false);
+
+    try {
+      abortControllerRef.current = new AbortController();
+      await apiStream(
+        '/api/chat/stream',
+        { projectId, continueTruncated: true, modelSlug: selectedModel.slug },
+        (raw: unknown) => {
+          const d = raw as StreamMessage;
+          if (d.type === 'delta') {
+            streamingContentRef.current += d.content ?? '';
+            if (streamingMessageRef.current) {
+              streamingMessageRef.current = { ...streamingMessageRef.current, content: streamingContentRef.current };
+              setMessages([...baseMessagesRef.current, streamingMessageRef.current]);
+            }
+          } else if (d.type === 'done') {
+            if (streamingMessageRef.current) {
+              const final: ChatMessage = {
+                ...streamingMessageRef.current,
+                id: d.messageId || streamingMessageRef.current.id,
+                content: d.full_content ?? streamingContentRef.current,
+              };
+              setMessages([...baseMessagesRef.current, final]);
+              streamingMessageRef.current = null;
+            }
+            // Still cut off? Say so again rather than quietly calling it finished.
+            setIsTruncated(d.truncated === true);
+            setIsStreaming(false);
+          } else if (d.type === 'error') {
+            // Nothing about the answer improved — restore it, cut-off state intact.
+            setMessages([...baseMessagesRef.current, last]);
+            streamingMessageRef.current = null;
+            setIsTruncated(true);
+            setIsStreaming(false);
+            setError(d.message || continueFailedNotice(lang));
+          }
+        },
+        abortControllerRef.current.signal
+      );
+    } catch {
+      setMessages([...baseMessagesRef.current, last]);
+      streamingMessageRef.current = null;
+      setIsTruncated(true);
+      setIsStreaming(false);
+      setError(continueFailedNotice(lang));
     }
   };
 
@@ -346,6 +426,34 @@ export function ChatTab({ projectId }: ChatTabProps) {
           onSuggestion={prompt => handleSubmit(prompt, selectedModel)}
           onDismissError={() => setError(null)}
         />
+      )}
+
+      {isTruncated && (
+        // TRUNC-1 — the honest cut-off state. Server-side auto-continuation is bounded;
+        // once the bound is spent the answer really is unfinished and says so. The button
+        // CONTINUES the same answer — it does not re-ask the question.
+        <div
+          data-testid="truncated-notice"
+          style={{
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            gap: 12, flexShrink: 0, padding: '10px 16px',
+            background: 'var(--warning-soft)', borderTop: '1px solid var(--border)',
+            fontSize: 13, color: 'var(--text)', fontFamily: 'var(--font-sans)',
+          }}
+        >
+          <span>{truncatedNotice(lang)}</span>
+          <button
+            onClick={handleContinue}
+            disabled={isStreaming}
+            style={{
+              flexShrink: 0, background: 'none', border: '1px solid var(--border)',
+              borderRadius: 8, padding: '4px 12px', fontSize: 13, color: 'var(--brand-fg)',
+              cursor: isStreaming ? 'default' : 'pointer', fontFamily: 'var(--font-sans)',
+            }}
+          >
+            {isStreaming ? continuingLabel(lang) : continueLabel(lang)}
+          </button>
+        </div>
       )}
 
       <ChatInput

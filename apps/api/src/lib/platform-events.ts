@@ -16,6 +16,10 @@ export type PlatformEventType =
   // — internal accounting (0078) —
   | 'platform_cogs'
   | 'context_retry'
+  // TRUNC-1: a generation hit the provider output ceiling and was auto-continued.
+  // `meta.rounds` = extra provider requests spent, `meta.exhausted` = the cap ran out
+  // and the user was told the answer is cut off. Feeds ledger row M17.
+  | 'continuation_rounds'
   // — canonical funnel (first-per-user timestamp defines each stage) —
   //   signup is derived from users.created_at, not emitted here.
   | 'onboarding_completed'

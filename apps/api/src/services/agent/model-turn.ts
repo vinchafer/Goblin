@@ -15,6 +15,7 @@ import {
   getGoblinHostedConfig,
   mapProviderError,
   GOBLIN_MAX_TOKENS_PER_REQUEST,
+  isTruncationFinishReason,
   type GoblinTierId,
 } from '../goblin-hosted';
 import type { AgentModel, AgentMessage, ModelTurn, ToolSpec, ToolCall } from './types';
@@ -44,10 +45,17 @@ function toOpenAITools(tools: ToolSpec[]): ChatCompletionTool[] {
 }
 
 /** Normalize native tool_calls off a response message. Malformed argument JSON → skipped
- *  (the orchestrator then treats the turn as having no usable call and repairs/aborts). */
-function normalizeToolCalls(message: OpenAI.Chat.Completions.ChatCompletionMessage): ToolCall[] {
+ *  (the orchestrator then treats the turn as having no usable call and repairs/aborts).
+ *  TRUNC-2: an unparseable call is ALSO reported back as `partial` — on a truncated turn
+ *  that is not a malformed model output, it is a call the provider chopped in half, and
+ *  the half we did get carries the file path the continuation needs. */
+function normalizeToolCalls(message: OpenAI.Chat.Completions.ChatCompletionMessage): {
+  calls: ToolCall[];
+  partial?: { id: string; name: string; rawArguments: string };
+} {
   const calls = message.tool_calls ?? [];
   const out: ToolCall[] = [];
+  let partial: { id: string; name: string; rawArguments: string } | undefined;
   for (const c of calls) {
     if (c.type !== 'function') continue;
     let args: Record<string, unknown> = {};
@@ -56,10 +64,11 @@ function normalizeToolCalls(message: OpenAI.Chat.Completions.ChatCompletionMessa
     } catch {
       // Leave args empty; a required-arg tool will report a structured error downstream.
       args = {};
+      partial ??= { id: c.id, name: c.function.name, rawArguments: c.function.arguments ?? '' };
     }
     out.push({ id: c.id, name: c.function.name, args });
   }
-  return out;
+  return { calls: out, partial };
 }
 
 /**
@@ -101,14 +110,21 @@ export function nativeGoblinModel(tierId: GoblinTierId): AgentModel {
       }
       const choice = resp.choices[0];
       const message = choice?.message;
+      const normalized = message ? normalizeToolCalls(message) : { calls: [] };
+      // TRUNC-2: `finish_reason` is the provider's own verdict. Read it — a `length`
+      // finish means this turn ran out of room mid-output, which is NOT the same thing
+      // as the model having finished its thought.
+      const truncated = isTruncationFinishReason(choice?.finish_reason);
       return {
         content: message?.content ?? '',
-        toolCalls: message ? normalizeToolCalls(message) : [],
+        toolCalls: normalized.calls,
         usage: {
           inputTokens: resp.usage?.prompt_tokens ?? 0,
           outputTokens: resp.usage?.completion_tokens ?? 0,
         },
         assistantMessage: message,
+        truncated,
+        ...(truncated && normalized.partial ? { partialToolCall: normalized.partial } : {}),
       };
     },
   };
