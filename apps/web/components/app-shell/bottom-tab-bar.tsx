@@ -18,25 +18,16 @@ function CodeIcon() {
   );
 }
 
-function PreviewIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10"/>
-      <line x1="2" y1="12" x2="22" y2="12"/>
-      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-    </svg>
-  );
-}
-
 export function BottomTabBar({ hasProject = false }: { hasProject?: boolean }) {
-  const { activeTab, setActiveTab, injectionCount, previewUrl } = useApp();
+  const { activeTab, setActiveTab, injectionCount } = useApp();
 
-  // Honest staircase mirrors layout/Header.tsx: Chat always works;
-  // Code needs a project; Preview needs a deployed app.
+  // Honest staircase mirrors layout/Header.tsx: Chat always works; Code needs a project.
+  // (The Preview tab was removed in the tester-feedback wave — founder decision: preview
+  // is not part of the product. It never worked from here and a dead control is worse
+  // than a missing one.)
   const tabs = [
     { id: 'chat' as const, label: 'Chat', Icon: ChatIcon, disabled: false, hint: '' },
     { id: 'code' as const, label: 'Code', Icon: CodeIcon, disabled: !hasProject, hint: 'Starte ein Projekt, um Code zu schreiben' },
-    { id: 'preview' as const, label: 'Preview', Icon: PreviewIcon, disabled: !previewUrl, hint: 'Deploye das Projekt, um eine Preview zu sehen' },
   ];
 
   return (

@@ -12,7 +12,7 @@ const STEPS = {
   de: [
     {
       title: 'Hier leben deine Projekte',
-      body: 'Erstelle neue Projekte über die Seitenleiste. Jedes Projekt hat eigenen Chat, Code und eine Vorschau.',
+      body: 'Erstelle neue Projekte über die Seitenleiste. Jedes Projekt hat eigenen Chat und eigenen Code.',
       icon: '📁',
     },
     {
@@ -29,7 +29,7 @@ const STEPS = {
   en: [
     {
       title: 'Your projects live here',
-      body: 'Create new projects from the sidebar. Each project has its own chat, code, and preview.',
+      body: 'Create new projects from the sidebar. Each project has its own chat and its own code.',
       icon: '📁',
     },
     {

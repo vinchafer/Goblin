@@ -31,19 +31,18 @@ import type { Project } from "@goblin/shared/src/schemas";
 interface DashboardShellProps {
   projects: Project[];
   children: React.ReactNode;
-  previewUrl?: string | null;
   isFirstLogin?: boolean;
   userName?: string;
 }
 
-export function DashboardShell({ projects, children, previewUrl, isFirstLogin, userName }: DashboardShellProps) {
+export function DashboardShell({ projects, children, isFirstLogin, userName }: DashboardShellProps) {
   const demoMode = useDemoMode();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showTour, setShowTour] = useState(false);
   const [cmdPaletteOpen, setCmdPaletteOpen] = useState(false);
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [githubMsg, setGithubMsg] = useState<{ ok: boolean; text: string } | null>(null);
-  const { activeTab, setActiveTab, injectionCount, showNewProjectModal, setShowNewProjectModal, newProjectIdea, setNewProjectIdea, newProjectModel, setNewProjectModel, previewUrl: contextPreviewUrl, setShowSettingsSheet, showSettingsSheet, settingsInitialItem, setSettingsInitialItem, chatProjectId } = useApp();
+  const { activeTab, setActiveTab, injectionCount, showNewProjectModal, setShowNewProjectModal, newProjectIdea, setNewProjectIdea, newProjectModel, setNewProjectModel, setShowSettingsSheet, showSettingsSheet, settingsInitialItem, setSettingsInitialItem, chatProjectId } = useApp();
   const pathname = usePathname();
   const router = useRouter();
   const [isDesktop, setIsDesktop] = useState(false);
@@ -93,7 +92,7 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
   // Project context comes from the URL (/project/[id]/…) first. A project chat,
   // however, lives on the standalone /chat/[id] route with no /project/ segment;
   // there StandaloneChat publishes its owning project via chatProjectId so the
-  // header Code·Preview tabs stay live (A.1 / NAVFIX-1). Project-less standalone
+  // header Code tab stays live (A.1 / NAVFIX-1). Project-less standalone
   // chats publish null → tabs stay disabled, unchanged.
   const urlProjectId = (() => {
     const match = pathname.match(/\/project\/([^/]+)/);
@@ -120,7 +119,6 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
     onCommandPalette: () => setCmdPaletteOpen(true),
     onTabChat: () => setActiveTab('chat'),
     onTabCode: () => setActiveTab('code'),
-    onTabPreview: () => setActiveTab('preview'),
     onToggleSidebar: () => setMobileOpen(s => !s),
     onSettings: () => setShowSettingsSheet(true),
     onNewProject: () => setShowNewProjectModal(true),
@@ -239,7 +237,7 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--surface-page)', overflow: 'hidden' }}>
       <Header
-        activeTab={activeTab as 'chat' | 'code' | 'preview'}
+        activeTab={activeTab as 'chat' | 'code'}
         onTabChange={tab => {
           // Inside /work, switch tabs in place. On the project overview,
           // tab clicks navigate into the workspace with the right tab.
@@ -257,7 +255,6 @@ export function DashboardShell({ projects, children, previewUrl, isFirstLogin, u
         showTabs
         hasProject={!!activeProjectId}
         injectionCount={injectionCount}
-        previewUrl={contextPreviewUrl ?? undefined}
       />
       <TrialBanner />
       <PaymentFailingBanner />

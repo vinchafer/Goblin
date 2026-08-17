@@ -23,7 +23,6 @@ const SHORTCUTS = [
     items: [
       { keys: ['⌘', '1'], label: 'Chat' },
       { keys: ['⌘', '2'], label: 'Code' },
-      { keys: ['⌘', '3'], label: 'Preview' },
     ],
   },
   {

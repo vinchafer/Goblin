@@ -11,15 +11,14 @@ import { useLang } from '@/lib/use-lang';
 
 interface HeaderProps {
   projectName?: string;
-  activeTab?: 'chat' | 'code' | 'preview';
-  onTabChange?: (tab: 'chat' | 'code' | 'preview') => void;
+  activeTab?: 'chat' | 'code';
+  onTabChange?: (tab: 'chat' | 'code') => void;
   showTabs?: boolean;
   /** Whether the user is inside a project context. Code tab is inactive
       without a project (chat works everywhere; code needs a place to live). */
   hasProject?: boolean;
   injectionCount?: number;
   onMenuToggle?: () => void;
-  previewUrl?: string | null;
 }
 
 function ChatIcon({ size = 14 }: { size?: number }) {
@@ -36,19 +35,12 @@ function CodeIcon({ size = 14 }: { size?: number }) {
     </svg>
   );
 }
-function PreviewIcon({ size = 14 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
-      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-    </svg>
-  );
-}
-
+// The Preview tab was removed in the tester-feedback wave (founder decision: preview is
+// not part of the product). It is deliberately NOT replaced by a "coming soon" entry —
+// a promise is a phantom affordance too.
 const TAB_DEFS = [
   { id: 'chat' as const, label: 'Chat', Icon: ChatIcon },
   { id: 'code' as const, label: 'Code', Icon: CodeIcon },
-  { id: 'preview' as const, label: 'Preview', Icon: PreviewIcon },
 ];
 
 export function Header({
@@ -59,7 +51,6 @@ export function Header({
   hasProject = false,
   injectionCount = 0,
   onMenuToggle,
-  previewUrl,
 }: HeaderProps) {
   const router = useRouter();
   const lang = useLang();
@@ -212,10 +203,9 @@ export function Header({
                 boxShadow: 'var(--shadow-popover)',
               }}>
                 {TAB_DEFS.map(({ id, label, Icon }) => {
-                  const disabled = (id === 'code' && !hasProject) || (id === 'preview' && !previewUrl);
+                  const disabled = id === 'code' && !hasProject;
                   const active = activeTab === id;
-                  const hint = id === 'code' && !hasProject ? 'Wird verfügbar, sobald Goblin ein Projekt startet'
-                    : id === 'preview' && !previewUrl ? 'Wird verfügbar nach dem ersten Build' : undefined;
+                  const hint = disabled ? 'Wird verfügbar, sobald Goblin ein Projekt startet' : undefined;
                   return (
                     <button
                       key={id}
@@ -259,17 +249,9 @@ export function Header({
         >
           {TAB_DEFS.map(({ id, label, Icon }) => {
             const active = activeTab === id;
-            // Honest staircase: Chat always works; Code needs a project;
-            // Preview needs a deployed app.
-            const disabled =
-              (id === 'code' && !hasProject) ||
-              (id === 'preview' && !previewUrl);
-            const hint =
-              id === 'code' && !hasProject
-                ? 'Starte ein Projekt, um Code zu schreiben'
-                : id === 'preview' && !previewUrl
-                ? 'Deploye das Projekt, um eine Preview zu sehen'
-                : undefined;
+            // Honest staircase: Chat always works; Code needs a project.
+            const disabled = id === 'code' && !hasProject;
+            const hint = disabled ? 'Starte ein Projekt, um Code zu schreiben' : undefined;
             return (
               <button
                 key={id}
