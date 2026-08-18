@@ -14,7 +14,11 @@ import type { ReactNode } from "react";
 import { GoblinLogo } from "@/components/brand/GoblinLogo";
 import { useLang, t } from "@/lib/use-lang";
 
-export type SurfaceState = "empty" | "draft" | "saved" | "deployed";
+// FOUNDER-WALK-7 · U4 (D-D): "unknown" is the state this strip was missing. A
+// session whose files could not be read used to arrive here as "empty" and be
+// labelled "Noch keine Dateien" — a claim about the session that nothing had
+// established. The two are now different words because they are different facts.
+export type SurfaceState = "unknown" | "empty" | "draft" | "saved" | "deployed";
 
 interface Props {
   state: SurfaceState;
@@ -53,6 +57,10 @@ export function StatusStrip({ state, draftCount, workingSeconds, liveUrl, lastDe
             <span data-testid="status-strip-working" style={{ display: "inline-flex", alignItems: "center", gap: 8, color: "var(--ed-fg-1)", fontWeight: 600 }}>
               <GoblinLogo state="working" size={15} variant="gold" />
               {t(lang, "Goblin arbeitet", "Goblin is working")}… {workingSeconds}s
+            </span>
+          ) : state === "unknown" ? (
+            <span data-testid="status-strip-unknown" style={{ color: "var(--ed-fg-2)" }}>
+              {t(lang, "Dateien konnten nicht geladen werden", "Files could not be loaded")}
             </span>
           ) : state === "empty" ? (
             <span style={{ color: "var(--ed-fg-3)" }}>{t(lang, "Noch keine Dateien", "No files yet")}</span>

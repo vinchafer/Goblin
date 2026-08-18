@@ -267,7 +267,14 @@ codeSessions.get('/:sessionId', async (c) => {
 
   // 11A-0: mirror the project's real files into the session before serving, so the
   // editor + agent see the actual code (not an empty workspace).
-  await hydrateSessionFiles(sb, sessionId, session.project_id, userId);
+  //
+  // FOUNDER-WALK-7 · U4 (D-D): unlike the agent paths, a failed mirror must NOT
+  // refuse here — the session's own files are still real and the editor should show
+  // them. What it must not do is let the client present a possibly-incomplete set as
+  // the whole truth. `filesComplete: false` is that distinction, and it is the only
+  // thing the client needs to stop saying "Noch keine Dateien" about a set nobody
+  // could finish assembling.
+  const hydrated = await hydrateSessionFiles(sb, sessionId, session.project_id, userId);
 
   const [{ data: messages }, { data: files }, { data: proj }] = await Promise.all([
     sb.from('code_session_messages').select('id, role, content, model_used, state, created_at')
@@ -282,6 +289,9 @@ codeSessions.get('/:sessionId', async (c) => {
     session,
     messages: messages ?? [],
     files: files ?? [],
+    // U4 (D-D): false means "this list may be missing project files we could not
+    // read", never "the project is empty".
+    filesComplete: hydrated.ok,
     deployUrl: p?.preview_url ?? null,
     deployedAt: p?.last_deployed_at ?? null,
   });
