@@ -65,3 +65,17 @@ export function useTheme() {
   if (!ctx) throw new Error('useTheme must be used within ThemeProvider');
   return ctx;
 }
+
+/**
+ * FOUNDER-WALK-7 · U8 (D-G) — the resolved theme, for components that must not
+ * crash outside the provider.
+ *
+ * `useTheme` throws without a provider, which is right for a settings control and
+ * wrong for a code block: a chat code block is rendered in several trees (dashboard,
+ * standalone chat, and any future embed), and a missing provider must degrade to the
+ * light rendering — the one every surface had until now — not take the message down.
+ */
+export function useResolvedTheme(): { resolvedTheme: ResolvedTheme } {
+  const ctx = useContext(ThemeContext);
+  return { resolvedTheme: ctx?.resolvedTheme ?? 'light' };
+}
