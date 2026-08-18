@@ -19,14 +19,16 @@
  * Every visible element was re-verified against the app as it stands TODAY, not
  * as it stood in Sprint 11. The full element → file:line → kept/removed table is
  * in docs/WAVE_MAIL_LANDING_AUDIT.md §2.4. Four things had drifted and are fixed
- * here, not carried over:
+ * here, not carried over. (Line refs re-verified against master 33ad3a8 on
+ * 2026-08-17: PR #104 edited Header.tsx, so every Header ref below moved. The
+ * affordances did not — they were re-found by content, then re-pinned.)
  *
  *   1. "Alle Updates →" is gone. The real section link reads "Help & FAQ →" and
- *      points at /help — dashboard/page.tsx:563 carries the comment explaining
+ *      points at /help — dashboard/page.tsx:561-564 carries the comment explaining
  *      that it must not promise a changelog it does not reach.
  *   2. The avatar is 30px on --gold-700 with #2a1f0f ink (AvatarMenu.tsx:145-155),
  *      not 32px on --brand-gold.
- *   3. --radius-lg is 20px (design-tokens.css:123), not the 14px the pitch's
+ *   3. --radius-lg is 20px (design-tokens.css:133), not the 14px the pitch's
  *      token copy still carried.
  *   4. Project-row dots take the STATUS colour (dashboard/page.tsx:513, via
  *      statusLabel), not a per-project colour.
@@ -143,19 +145,19 @@ function GoblinMarkGold({ size = 26 }: { size?: number }) {
 function MockHeader() {
   return (
     <header className="pm-header">
-      {/* Hamburger — Header.tsx:116-133, 40×40, 24px icon. */}
+      {/* Hamburger — Header.tsx:106-124, 40×40, 24px icon. */}
       <span className="pm-hamburger">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
           <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
         </svg>
       </span>
 
-      {/* Brand mark — Header.tsx:135-146. Mobile hides the wordmark. */}
+      {/* Brand mark — Header.tsx:126-137. Mobile hides the wordmark. */}
       <span className="pm-mark"><GoblinMarkGold size={26} /></span>
 
       <span className="pm-spacer" />
 
-      {/* Mode tile — Header.tsx:183-202. Chat is the mode the dashboard opens in. */}
+      {/* Mode tile — Header.tsx:171-193. Chat is the mode the dashboard opens in. */}
       <span className="pm-mode">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
@@ -166,7 +168,7 @@ function MockHeader() {
         </svg>
       </span>
 
-      {/* Plus — Header.tsx:314-330, 30×30 outline circle. */}
+      {/* Plus — Header.tsx:295-315, 30×30 outline circle. */}
       <span className="pm-plus">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
           <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
