@@ -168,6 +168,13 @@ Zwei Befunde, die in dieser Welle **gefunden, aber bewusst nicht gefixt** wurden
 liegt in App-Code, den eine Parallel-Session besaß, der andere in einem fremden Repo.
 Beide sind vom Gründer als Carry-forward bestätigt.
 
+**Gegen `33ad3a8` nachgeprüft (2026-08-17 abends), also NACH PR #104** — der Welle der
+Parallel-Session (Abbruch-Fortsetzung, Preview-Entfernung, Dark-Kontrast). Beide Zeilen
+stehen unverändert: **L1** weil PR #104 `CodeBlock.tsx` gar nicht angefasst hat (immer noch
+kein i18n-Import, immer noch `Kopieren` :83 und `An Code senden` :102), **L2** weil das
+Pitch-Repo ein anderes Repo ist und von PR #104 nicht berührt wurde. Eine Zeile, die man
+nicht nachprüft, ist eine Zeile, die man rät.
+
 | # | Was offen ist | Wo | Wann fällig |
 |---|---|---|---|
 | **L1** | **`CodeBlock.tsx` hat keine i18n — „Kopieren" und „An Code senden" sind für JEDEN Nutzer hartkodiertes Deutsch.** Die Datei importiert weder `useLang` noch `t`. Das ist mehr als ein Schönheitsfehler: eine frühere Welle (AKT 1 · FEHLERSTRANG-1 · U4) hat den Landing-Mock ins Englische übersetzt mit der ausdrücklichen Begründung „the product itself is bilingual (useLang)" — diese Begründung war für die Chat-Oberfläche **falsch**, und der daraus entstandene Mock war das, was der Tester als „sieht völlig anders aus als die echte App" gemeldet hat. Dieselbe Klasse: `model-switcher.tsx:329` hartkodiert `INKLUSIVE`. Die Landing zeigt diese Oberfläche seit PR #103 **nicht mehr**, der Defekt ist damit **verdeckt, nicht behoben**: ein englischsprachiger Nutzer sieht nach der Anmeldung weiterhin deutsche Buttons. | `apps/web/components/workspace/CodeBlock.tsx:64,83,87,88,102` · `apps/web/components/app-shell/model-switcher.tsx:266,312,329` | Sobald eine Welle die App-Oberfläche anfasst (App-Code, gehörte in dieser Welle der Parallel-Session). Vorher: **jede** Aussage „das Produkt ist zweisprachig" ist für die Chat-Oberfläche unbelegt und darf keine Entscheidung tragen. |

@@ -22,6 +22,29 @@ premises did not survive contact with reality, and both change the verdict:
 
 ---
 
+## 0b · Re-check against what merged after this report (2026-08-17, evening)
+
+This report was written against `master` @ `e822c37` and merged as PR #103
+(`84dbd58`). PR #104 (`33ad3a8`) landed after it — the parallel session's wave:
+truncation recovery, **preview removal**, dark-contrast audit. Every claim below
+was re-read against `33ad3a8` before the carry-forward was filed, because a report
+that outlives its own refutation is the failure class this strand keeps paying
+for. What changed:
+
+| Claim in this report | Status against `33ad3a8` |
+|---|---|
+| Claim-table row 16: the landing's preview promise is deleted while removal is "in flight" | **Now settled, row updated.** `components/preview/` is deleted and `preview-removed.test.tsx` guards it. Landing and product agree; nothing to re-cut. |
+| §2.4 audit: `layout/Header.tsx` line refs (rows 1-4) | **Drifted, corrected.** PR #104 edited `Header.tsx`; every cited line moved up by 5-19. The affordances themselves are unchanged — re-found by content, not by line. |
+| §2.4 row 23: `design-tokens.css:123` | **Drifted, corrected** to `:133`. The value is still 20px. |
+| §2.4: `chat/ChatInput.tsx` and `header/AvatarMenu.tsx` refs | **Unchanged** — re-verified, all still exact. |
+| §2.4: `app/dashboard/page.tsx` refs (rows 6-8, 14-22) | **Unchanged** — PR #104 did not touch the dashboard. |
+| The ported mock's hardcoded production palette | **Not superseded.** PR #104's token work is entirely in the DARK blocks; every light value `PhoneMock` pins (`--ink-1/2/3`, `--gold-700`, `--gold-deep`, `--d-surface*`, `--accent-soft/-rule`, `--brand-header`) is byte-identical on `33ad3a8`. |
+| §2.3 / §2.4: the chat code-block is the one German-only surface, and is no longer depicted | **Still true.** `CodeBlock.tsx` is untouched by PR #104 — still no i18n import, still `Kopieren` (:83) and `An Code senden` (:102). Carried forward as **L1**. |
+| Gates table | **Historical, unchanged** — those numbers belong to this wave's own runs and are stamped as such. Master's own E2E on `33ad3a8` (run `32082525114`) is green, so the landing suites this wave added still pass after PR #104. |
+| §1 (the whole mail chain) | **Untouched by PR #104** — no DNS, no Resend, no auth-mail code in that wave. Every verdict stands as written. |
+
+---
+
 # UNIT 1 — Mail deliverability, chain by chain
 
 ## 1.1 Verdict table
@@ -198,7 +221,7 @@ findings are rows 6, 12, 16 and 21 — the rest were found by this sweep.
 | 13 | SendToCode | heading/lead: "One tap. Code lands in your editor." | yes | none |
 | 14 | §03 mock | hand-built chat + code panels | **no** — a drawing made beside the product, wrong after two correction passes | **deleted**; replaced with the pitch repo's iPhone mockup (§2.3) |
 | 15 | §03 mock | "Draft · 2 files" pill | **no** — no such pill exists anywhere in the app | **gone with the mock**; the replacement is audited element-by-element in §2.4 |
-| 16 | IslandFlow 08 | "Preview — see your live site the moment it ships" | **being removed from the product** | **deleted**; the flow is now seven steps, lead updated |
+| 16 | IslandFlow 08 | "Preview — see your live site the moment it ships" | **no — removed from the product on 2026-08-17** (PR #104, `33ad3a8`: `components/preview/` deleted, `preview-removed.test.tsx` guards it) | **deleted**; the flow is now seven steps, lead updated. Landing and product now agree — at the time of writing the removal was still in flight. |
 | 17 | IslandFlow 06 | "Deploy to Vercel — Live in seconds" | **differently** — your own Vercel, connected once | **changed** |
 | 18 | IslandFlow 07 | "Live notification — pushed to your phone" | yes — web push (VAPID) is wired | none |
 | 19 | AgentFlow | four steps: plan / writes files / checks & self-heals / goes live | yes — verified against `orchestrator.ts` + `tools.ts` in an earlier wave, re-checked here | none |
@@ -269,10 +292,10 @@ pitch mock was built.
 
 | # | Element in the mock | Exists in app? | Kept / removed |
 |---|---|---|---|
-| 1 | Hamburger, 40×40, 24px 3-line icon | `layout/Header.tsx:116-133` | kept |
-| 2 | Gold Goblin mark, 26px | `layout/Header.tsx:146` | kept |
-| 3 | Mode tile "Chat" + chevron, r9 on `rgba(0,0,0,.18)` | `layout/Header.tsx:49, 183-202` | kept |
-| 4 | Header plus, 30×30 outline circle | `layout/Header.tsx:314-330` | kept |
+| 1 | Hamburger, 40×40, 24px 3-line icon | `layout/Header.tsx:107-124` | kept |
+| 2 | Gold Goblin mark, 26px | `layout/Header.tsx:137` | kept |
+| 3 | Mode tile "Chat" + chevron, r9 on `rgba(0,0,0,.18)` | `layout/Header.tsx:42, 175-193` | kept |
+| 4 | Header plus, 30×30 outline circle | `layout/Header.tsx:295-315` | kept |
 | 5 | Avatar "M", 30×30 | `header/AvatarMenu.tsx:105, 145-161` | kept — **corrected**: 30px on `--gold-700`/`#2a1f0f`; the pitch had 32px on `--brand-gold` |
 | 6 | Eyebrow tick + "Good morning, Marie" | `dashboard/page.tsx:134, 320-322` | kept |
 | 7 | H1 "Tell Goblin what you want *to build.*" | `dashboard/page.tsx:331` | kept |
@@ -291,7 +314,7 @@ pitch mock was built.
 | 20 | "What's new" heading | `dashboard/page.tsx:560` | kept |
 | 21 | **"Alle Updates →"** | **does not exist** — the real link is "Help & FAQ →" to `/help`, and `dashboard/page.tsx:561-564` carries the comment saying it must not promise a changelog | **removed**, replaced with the real label |
 | 22 | Update rows: NEU/UPDATE tag · title · desc · date | `dashboard/page.tsx:32-70` (UPDATES, en branch) | kept, verbatim |
-| 23 | `--radius-lg` on hero + panels | `design-tokens.css:123` = **20px** | kept — **corrected**: the pitch's token copy still said 14px |
+| 23 | `--radius-lg` on hero + panels | `design-tokens.css:133` = **20px** | kept — **corrected**: the pitch's token copy still said 14px |
 | 24 | Any link, button handler or hover state | — | **removed**: the port is inert. A clickable-looking control that does nothing is a phantom affordance, and this is a picture |
 | 25 | Notch, bezel, device frame | — | kept as **frame**, not product UI — it depicts the phone, not Goblin |
 
