@@ -48,7 +48,7 @@ const PRE_PAINT_SCRIPT = `(function(){
 export const metadata = {
   title: 'Goblin — The cloud workshop for builders',
   description:
-    "The AI is built in — no keys, no setup, no token counter. Tell it what you want, it ships. The cloud workshop for builders who don't wait for a laptop.",
+    "Everything runs on our servers — the models too. No keys, no setup, no token counter. Tell it what you want, it ships. The cloud workshop for builders who don't wait for a laptop.",
 };
 
 export default function Home() {

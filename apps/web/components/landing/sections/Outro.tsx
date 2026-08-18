@@ -11,10 +11,22 @@ export function Outro() {
           <br />
           <span className="serif-italic">Code anything.</span>
         </p>
+        {/* LANDING-MESSAGING v2 · L-5 — "tools built for $3,000 laptops" restated
+            the same false trail as the old "Hardware wall": it reads as a claim
+            about inference hardware, when the wall it means is the set-up
+            developer machine. Naming the real precondition also lets the closing
+            line land the execution model one last time: Goblin assumes a browser.
+
+            LANGUAGE NOTE: static English landing. Founder-authored German, ready
+            for localization: "Von einer Person in der Schweiz gebaut, für alle,
+            die an dieselben Wände gelaufen sind: Abos mit San-Francisco-Preisen
+            und Werkzeuge, die einen fertig eingerichteten Entwicklerrechner
+            voraussetzen. Goblin setzt einen Browser voraus. Für den Rest des
+            Planeten." */}
         <p className="outro-why">
           Built by one person in Switzerland, for everyone who hit the same walls:
-          subscriptions priced for San Francisco, tools built for $3,000 laptops. Goblin is
-          for the rest of the planet.{' '}
+          subscriptions priced for San Francisco, and tools that assume a set-up developer
+          machine. Goblin assumes a browser. It is for the rest of the planet.{' '}
           <a href="/manifesto" className="outro-why-link">Read the manifesto</a>
         </p>
         <Button href="/register" variant="primary" size="large">

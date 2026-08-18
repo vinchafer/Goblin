@@ -1,19 +1,38 @@
 import { SectionHead } from '@/components/landing/ui/SectionHead';
 
+// LANDING-MESSAGING v2 · L-4 / D-4.
+//
+// P·02 was "Hardware wall" ("Frontier models need 48 GB+ VRAM"). Everything in
+// Goblin runs on Goblin's servers, so raw compute was never the wall a reader
+// hits — but stating it as one laid a false trail that the rest of the page then
+// had to fight: a technical reader who reads "hardware wall" starts asking what
+// his phone has to be powerful enough for. The real wall is a SET-UP developer
+// machine, and that is the one Goblin actually removes.
+//
+// P·01 named a third-party plan and a concrete limit ("Claude Pro locks you out
+// after two hours"). Those limits change per plan and over time, so the sentence
+// asserts a state this page cannot verify and would silently rot. The pain is
+// real and is kept; the unverifiable specifics are gone.
+//
+// LANGUAGE NOTE: static English landing (see app/page.tsx). Founder-authored
+// German for the changed card, ready for localization:
+//   P·02 — "Laptop-Zwang": "Bevor du eine Zeile schreibst, brauchst du einen
+//   eingerichteten Entwicklerrechner. Laufzeit, Toolchain, Keys, alles."
+
 const CHECK_PATH = 'M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z';
 
 const CARDS = [
   {
     num: 'P · 01',
     title: 'Token panic',
-    body: 'Claude Pro locks you out after two hours. You count tokens instead of shipping.',
+    body: 'Frontier subscriptions cut you off mid-session. You count tokens instead of shipping.',
     fix: 'Bundled, not metered',
   },
   {
     num: 'P · 02',
-    title: 'Hardware wall',
-    body: "Frontier models need 48 GB+ VRAM. Your laptop can't run them locally.",
-    fix: 'Build from any device',
+    title: 'Laptop lock-in',
+    body: 'Before you write a line, you need a set-up developer machine. Runtime, toolchain, keys, the lot.',
+    fix: 'A browser is the whole requirement',
   },
   {
     num: 'P · 03',

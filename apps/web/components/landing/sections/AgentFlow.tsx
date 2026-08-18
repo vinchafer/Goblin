@@ -15,7 +15,21 @@ import { SectionHead } from '@/components/landing/ui/SectionHead';
 // apps/api/src/services/agent/orchestrator.ts + tools.ts):
 //   Plan             → the `plan` tool
 //   Writes the files → the `write_file` / `save_draft` tools
-//   Checks & heals   → bounded self-heal (MAX_HEAL_CYCLES) + publish-gate repair
+//   Checks its own work → bounded correction loop (MAX_HEAL_CYCLES = 2) + publish-gate
+//                        repair, and an honest report when the budget is spent
+//
+// LANDING-MESSAGING v2 · D-5. Two changes to step 03, one per question the
+// decision asked:
+//   (a) "self-heal" is the Ops-Master-Plan's K3 term, reserved until Hire-1. It
+//       was being spent here on the build agent's retry loop. Renamed; the term
+//       goes back to Keeper K3.
+//   (b) The old body ("fixes what failed before it hands anything back") asserted
+//       SUCCESS. The loop is bounded at MAX_HEAL_CYCLES = 2 and exhaustion is a
+//       real outcome the run surfaces honestly (orchestrator.ts:501-509,
+//       components/code/AgentRunView.tsx:238). A landing that promises the fix
+//       always lands would be contradicted by the product's own honest failure
+//       message. The claim now matches the bound: it corrects what it can and
+//       says so when it cannot.
 //   Goes live        → the `publish` tool, gated on explicit go-ahead
 //                      (publishGranted), confirming the attested live URL
 const STEPS = [
@@ -31,8 +45,8 @@ const STEPS = [
   },
   {
     num: '03',
-    en: { title: 'Checks & self-heals', body: 'It checks its own work and fixes what failed before it hands anything back.' },
-    de: { title: 'Prüft & heilt', body: 'Es prüft die eigene Arbeit und korrigiert Fehler, bevor es etwas zurückgibt.' },
+    en: { title: 'Checks its own work', body: 'It verifies what it built, corrects what it can, and tells you plainly when something is still broken.' },
+    de: { title: 'Prüft die eigene Arbeit', body: 'Es prüft, was es gebaut hat, korrigiert, was es kann — und sagt klar, wenn etwas kaputt bleibt.' },
   },
   {
     num: '04',
