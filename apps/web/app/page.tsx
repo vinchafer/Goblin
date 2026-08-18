@@ -2,8 +2,8 @@ import { Manrope, JetBrains_Mono, Instrument_Serif } from 'next/font/google';
 import { GoblinMarkSprite } from '@/components/landing/brand/GoblinMarkSprite';
 import { Nav } from '@/components/landing/sections/Nav';
 import { Hero } from '@/components/landing/sections/Hero';
+import { Runtime } from '@/components/landing/sections/Runtime';
 import { InstallAppBlock } from '@/components/landing/sections/InstallAppBlock';
-import { AiLocationNote } from '@/components/landing/sections/AiLocationNote';
 import { TrustedBy } from '@/components/landing/sections/TrustedBy';
 import { Problem } from '@/components/landing/sections/Problem';
 import { HowItWorks } from '@/components/landing/sections/HowItWorks';
@@ -67,9 +67,14 @@ export default function Home() {
         <Nav />
         <main id="main">
           <Hero />
+          {/* LANDING-MESSAGING v2 §4.1 — the execution model is stated once, in
+              full, at the position where the question forms: directly under the
+              hero and BEFORE the install card, so "install" is read as "adds an
+              icon" rather than "downloads a model". Absorbs the old
+              AiLocationNote, which said the right thing too quietly and too
+              late. */}
+          <Runtime />
           <InstallAppBlock lang="en" />
-          <AiLocationNote />
-          <TrustedBy />
           <Problem />
           <HowItWorks />
           <SendToCode />
@@ -77,6 +82,15 @@ export default function Home() {
           <IslandFlow />
           <Proof />
           <Pricing />
+          {/* LANDING-MESSAGING v2 §4.2 / D-2 — the provider strip used to sit in
+              the upper third, directly under the answer to "where does the AI
+              run". Seven vendor names are visually louder than body copy, so the
+              strongest signal on the upper page said "you bring keys" and
+              contradicted the hero. Moved verbatim to here: BYOK is an advanced
+              add-on, and it now reads directly after Pricing's own BYOK line
+              ("BYOK users bring their own API keys · Goblin charges $0 extra for
+              inference"). Layer 1 first and loud, Layer 3 later and quiet. */}
+          <TrustedBy />
           <Faq />
           <Outro />
         </main>
