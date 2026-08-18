@@ -87,7 +87,7 @@ async function hydrateSessionFiles(
   sessionId: string,
   projectId: string,
   userId: string,
-): Promise<void> {
+): Promise<{ ok: boolean }> {
   try {
     const [{ data: existing }, storagePaths] = await Promise.all([
       sb.from('code_session_files').select('path').eq('session_id', sessionId),
@@ -95,7 +95,7 @@ async function hydrateSessionFiles(
     ]);
     const have = new Set((existing ?? []).map((r) => r.path as string));
     const missing = storagePaths.filter((p) => p && !have.has(p)).slice(0, 50);
-    if (missing.length === 0) return;
+    if (missing.length === 0) return { ok: true };
 
     // WAVE-H · H6 (B2 batching): read the missing files with BOUNDED concurrency instead of
     // one-at-a-time. This runs at the start of every agent run; a sequential await-in-loop
@@ -117,10 +117,21 @@ async function hydrateSessionFiles(
       change_state: 'saved', updated_at: new Date().toISOString(),
     }));
     if (rows.length) {
-      await sb.from('code_session_files').upsert(rows, { onConflict: 'session_id,path' });
+      const { error } = await sb.from('code_session_files').upsert(rows, { onConflict: 'session_id,path' });
+      if (error) {
+        logger.warn({ err: error.message, sessionId }, 'session_hydrate_failed');
+        return { ok: false };
+      }
     }
+    return { ok: true };
   } catch (err) {
     logger.warn({ err: err instanceof Error ? err.message : String(err), sessionId }, 'session_hydrate_failed');
+    // FOUNDER-WALK-7 · U3 (D-C): this used to swallow the failure and return void,
+    // so "the project's files could not be mirrored into this session" and "this
+    // project has no files" were the same thing to every caller. The agent then ran
+    // against an empty workspace and told the founder "keine Dateien" about a
+    // project that had a built landing page in it. The outcome travels now.
+    return { ok: false };
   }
 }
 
@@ -473,7 +484,20 @@ codeSessions.post('/:sessionId/messages', async (c) => {
   // 11A-0: ensure the project's real files are in the session before we build the
   // model's file context — otherwise it edits a phantom empty workspace and invents
   // new files instead of changing the existing ones.
-  await hydrateSessionFiles(sb, sessionId, session.project_id, userId);
+  //
+  // U3 (D-C): the classic single-turn path has exactly the same exposure as the
+  // agent path above — "could not read the project" and "the project is empty" used
+  // to be the same input to the prompt builder. Refuse rather than answer blind.
+  const hydratedClassic = await hydrateSessionFiles(sb, sessionId, session.project_id, userId);
+  if (!hydratedClassic.ok) {
+    return c.json(
+      {
+        error: 'project_files_unreadable',
+        message: 'Die Dateien dieses Projekts konnten gerade nicht gelesen werden. Goblin antwortet nicht, solange er nicht sieht, was schon gebaut ist.',
+      },
+      503,
+    );
+  }
 
   // Persist the user turn.
   await sb.from('code_session_messages').insert({
@@ -724,7 +748,22 @@ codeSessions.post('/:sessionId/agent', async (c) => {
   }
 
   // Mirror the project's real files into the session so the tools see actual code.
-  await hydrateSessionFiles(sb, sessionId, session.project_id, userId);
+  //
+  // FOUNDER-WALK-7 · U3 (D-C): a failed mirror used to be logged and ignored, and
+  // the run started anyway — against a workspace that looked empty because nobody
+  // could read it, not because it was. Every answer from that point on is built on
+  // nothing. Refuse instead, in the user's language, and say what is unknown rather
+  // than asserting the project is empty. 503: this is a state of ours that passes.
+  const hydrated = await hydrateSessionFiles(sb, sessionId, session.project_id, userId);
+  if (!hydrated.ok) {
+    return c.json(
+      {
+        error: 'project_files_unreadable',
+        message: 'Die Dateien dieses Projekts konnten gerade nicht gelesen werden. Goblin startet den Lauf nicht, solange er nicht sieht, was schon gebaut ist.',
+      },
+      503,
+    );
+  }
 
   // Persist the user turn (same thread the classic path writes to).
   await sb.from('code_session_messages').insert({
