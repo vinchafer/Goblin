@@ -46,7 +46,8 @@ hinterlegt). Das ist kein Defekt dieser Welle, aber es steht in FINDINGS.
 | U7a | D-F1 · Fehler-Ehrlichkeit | `289583f` | Web **5/7 fallen** → 7/7 grün · API **4/4 fallen** → 4/4 grün |
 | U7b | D-F2 · Diagnostizierbarkeit | `7e5e8ff` | **1/1 fällt** → 1/1 grün |
 | U8 | D-G · Code-Lesbarkeit | `6980730` | **13/22 fallen** → 22/22 grün |
-| U9 | Sweep, Probes, Ledger | (dieser) | Sweep 27/27 · Probes 4/4 |
+| U9 | Sweep, Probes, Ledger | `a2de815` | Sweep 27/27 · Probes 4/4 |
+| U5b | D-B · die Garantie meldet sich | (Founder-Einwand) | **3/4 fallen** → 4/4 grün |
 
 **Ehrliche Einordnung der Falsifikationszahlen.** Nicht jede Zahl oben ist gleich viel wert:
 
@@ -150,6 +151,12 @@ Grundlage dafür, keine Empfehlung.
    anderer Pfad, `lib/chat-recovery.ts`). Welcher Refresh den Turn entfernte, weiss ich
    nicht. U5 erfüllt den Vertrag („die Nachricht bleibt stehen"), ohne die Ursache zu
    kennen. Das ist eine Symptomabsicherung, und sie ist als solche benannt.
+   **U5b (Founder-Einwand vor dem Merge):** die Garantie war *still* — sie hätte D-B
+   dauerhaft undiagnostizierbar gemacht, weil der Moment, in dem sie greift, der
+   einzige ist, der die Ursache je klären kann. Sie schreibt jetzt eine
+   `console.warn`-Zeile mit `survivedRefreshes`; ab zwei überlebten Refreshes ist es
+   D-B und nicht mehr ein Rennen mit dem Insert. Der Einwand war berechtigt: ich hatte
+   einen Fix gebaut, der seine eigene Evidenz verbirgt.
 4. **D-F2 ist nicht behoben, weil nicht diagnostiziert.** Die Hauptvermutung
    (`empty_artifact`, weil im Chat gebauter Code bis zum „Sichern" nur Entwurf ist) ist
    plausibel und unbelegt. Ich habe nichts auf Verdacht gepatcht. U7b sorgt dafür, dass der
@@ -217,7 +224,9 @@ Grundlage dafür, keine Empfehlung.
 
 ### A. Der gerenderte Walk (ersetzt kein Gate, schliesst es)
 
-Nach dem Merge, auf Produktion, mit **offener Browser-Konsole**:
+Nach dem Merge, auf Produktion, mit **offener Browser-Konsole**. Zwei Zeilen sind es,
+auf die es dabei ankommt — `[goblin] code-tab user turn not acknowledged…` (D-B) und
+`[goblin] hosted publish failed…` (D-F2):
 
 1. Neues Projekt, im Chat bauen lassen (derselbe Prompt wie am 18.8.).
 2. **„An Code senden"** → erwartet: Code-Tab, *diese* Session offen, Datei sichtbar, **in
@@ -226,6 +235,10 @@ Nach dem Merge, auf Produktion, mit **offener Browser-Konsole**:
    sichtbar**, und die Ursache liegt im Entwurfs-Insert (Supabase-Logs, `code_session_initial_file_failed`).
    Erscheint eine leere Session **ohne** Hinweis: meine Hypothese war falsch, bitte melden.
 3. Im Code-Tab „stell mir das live" schreiben → erwartet: die Blase **bleibt** stehen.
+   In der Konsole: erscheint `[goblin] code-tab user turn not acknowledged` mit
+   `survivedRefreshes: 1`, war es ein Rennen mit dem Insert. Mit **2 oder mehr**
+   (`likelyDefect: true`) ist D-B reproduziert — dann bitte die Zeile schicken, sie
+   ist die Evidenz, die der Welle gefehlt hat. Gar keine Zeile heisst: sauber.
 4. Projekt verlassen, zurück, Editor öffnen → erwartet: Dateien beim **ersten** Mal da.
 5. Im Code-Tab links in der Seitenleiste auf **dasselbe** Projekt klicken → erwartet:
    Projektübersicht. Zusätzlich: der neue Knopf „‹ Projekt" oben links im Code-Tab.

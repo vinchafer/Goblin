@@ -62,11 +62,18 @@ const BASE_DELAY_MS = 400;
 export function mergePendingTurns(
   serverMessages: SessionMessage[],
   pending: { current: SessionMessage[] },
+  onUnacknowledged?: (kept: SessionMessage[]) => void,
 ): SessionMessage[] {
   const acknowledged = new Set(
     serverMessages.filter((m) => m.role === 'user').map((m) => m.content),
   );
   pending.current = pending.current.filter((m) => !acknowledged.has(m.content));
+  // U5b (D-B): the guarantee firing IS the defect happening. A refresh that came
+  // back without a turn the user sent is the event D-B is made of — reporting it
+  // is not optional bookkeeping, it is the only way the unresolved root cause ever
+  // becomes resolvable. The callback (rather than a console call in here) keeps this
+  // function pure and lets the hook decide what a survival means.
+  if (pending.current.length) onUnacknowledged?.(pending.current);
   return pending.current.length ? [...serverMessages, ...pending.current] : serverMessages;
 }
 
@@ -100,6 +107,42 @@ export function useCodeSessionDetail(sessionId: string | null) {
    * id we know.
    */
   const pendingTurns = useRef<SessionMessage[]>([]);
+
+  /**
+   * U5b (D-B) — how many refreshes each pending turn has now survived.
+   *
+   * One survival is usually benign: a refresh can legitimately race the server's own
+   * insert of the turn. Two or more is D-B — the server had every chance to return it
+   * and did not. The counter is what lets a reader tell those apart, and without it
+   * the guarantee would be silent: the founder would see his message stay put (good)
+   * and nobody would ever learn why it needed to be held (the whole open question).
+   */
+  const turnSurvivals = useRef<Map<string, number>>(new Map());
+
+  const reportUnacknowledged = useCallback((kept: SessionMessage[]) => {
+    const live = new Set(kept.map((m) => m.id));
+    for (const id of turnSurvivals.current.keys()) {
+      if (!live.has(id)) turnSurvivals.current.delete(id);
+    }
+    for (const turn of kept) {
+      const survived = (turnSurvivals.current.get(turn.id) ?? 0) + 1;
+      turnSurvivals.current.set(turn.id, survived);
+      // Console, never the UI: the user already sees their message: that is the fix.
+      // This is for the founder walk and the bug report. The preview is the user's
+      // own text in the user's own browser — enough to correlate a log line with a
+      // bubble on screen, not the whole payload.
+      console.warn('[goblin] code-tab user turn not acknowledged by the server', {
+        sessionId,
+        turnId: turn.id,
+        survivedRefreshes: survived,
+        sentAt: turn.created_at,
+        chars: turn.content.length,
+        preview: turn.content.slice(0, 40),
+        // One survival can be a race with the server's insert. Two or more is D-B.
+        likelyDefect: survived >= 2,
+      });
+    }
+  }, [sessionId]);
 
   const authFetch = useCallback(async (path: string, init?: RequestInit) => {
     const t = await getToken();
@@ -140,7 +183,7 @@ export function useCodeSessionDetail(sessionId: string | null) {
       // old server had no partial-hydrate state to report.
       setLoadError(data.filesComplete === false ? { kind: 'incomplete' } : null);
       setFiles(f);
-      setMessages(mergePendingTurns(data.messages ?? [], pendingTurns));
+      setMessages(mergePendingTurns(data.messages ?? [], pendingTurns, reportUnacknowledged));
       // C.3 (NAVFIX-6): foreground the work in play. Hydration mirrors the whole
       // project's saved files into every session, so a fresh Send-to-Code task (a
       // single draft) used to "sink" behind an arbitrary saved file (f[0]). Prefer
@@ -158,7 +201,7 @@ export function useCodeSessionDetail(sessionId: string | null) {
       // U4 (D-D): a network failure / missing token is likewise not an empty project.
       setLoadError({ kind: 'unreachable' });
     } finally { setLoading(false); }
-  }, [authFetch, sessionId]);
+  }, [authFetch, sessionId, reportUnacknowledged]);
 
   useEffect(() => { refresh(); }, [refresh]);
 

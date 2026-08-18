@@ -182,6 +182,18 @@ Vertrags — der Nutzer-Turn wird lokal dauerhaft, sofort, und überlebt jeden
 fehlgeschlagenen oder unvollständigen Refresh. Das schließt die Symptomklasse
 unabhängig davon, welcher Refresh sie ausgelöst hat.
 
+**Nachtrag U5b (Founder-Einwand vor dem Merge von PR #107):** eine stille Garantie
+macht D-B *undiagnostizierbar*. Der Einwand ist richtig und die schärfere Fassung
+des ursprünglichen Problems: der einzige Moment, der diese offene Ursache je klären
+kann, ist genau der Moment, in dem die Garantie greift — ein Refresh, der ohne einen
+gesendeten Turn zurückkommt. Geht der still vorbei, versteckt der Fix seine eigene
+Evidenz. `mergePendingTurns` meldet das Ereignis jetzt zurück, und der Hook schreibt
+eine `console.warn`-Zeile mit `sessionId`, `survivedRefreshes`, `sentAt` und einem
+40-Zeichen-Preview. **Ein** überlebter Refresh kann ein Rennen mit dem serverseitigen
+Insert sein; **zwei oder mehr** ist D-B — deshalb der Zähler und das Feld
+`likelyDefect`, statt einer Zeile, die bei jedem Refresh feuert und die man nach drei
+Tagen ignoriert.
+
 ---
 
 ## 4. D-C — Der Agent meldet „keine Dateien" für ein Projekt mit Dateien

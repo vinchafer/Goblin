@@ -103,3 +103,81 @@ describe('useCodeSessionDetail — a sent turn survives the round trip (D-B)', (
     expect(result.current.messages.map(m => m.content)).toContain(PROMPT);
   });
 });
+
+/**
+ * U5b (D-B) — the guarantee must not be silent.
+ *
+ * Founder, on merging PR #107: "does the U5 symptom guarantee leave a log line when
+ * it fires? If not, a silent guarantee makes D-B undiagnosable."
+ *
+ * He is right, and it is the sharper version of the original problem. U5 keeps the
+ * message on screen, which is what the user needs — but D-B's root cause is recorded
+ * as UNRESOLVED, and the only moment that could ever resolve it is exactly the moment
+ * the guarantee fires: a refresh that came back without a turn the user sent. If that
+ * moment passes in silence, the fix hides its own evidence.
+ *
+ * FALSIFICATION: `mergePendingTurns` took no callback and the hook logged nothing.
+ * 3/4 fail without this commit. The fourth ("stays silent when the server DID
+ * acknowledge") is green before and after on purpose: it is the guard against the
+ * lazy version of this fix, which would warn on every refresh and teach the founder
+ * to ignore the line.
+ */
+describe('U5b — a firing guarantee reports itself', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('mergePendingTurns calls back with the turns it had to keep', () => {
+    const pending = { current: [serverMessage('local-1', 'user', PROMPT)] };
+    const kept: SessionMessage[][] = [];
+    mergePendingTurns([serverMessage('s1', 'assistant', 'ok')], pending, (k) => kept.push(k));
+
+    expect(kept).toHaveLength(1);
+    expect(kept[0]!.map(m => m.content)).toEqual([PROMPT]);
+  });
+
+  it('stays silent when the server DID acknowledge — no noise on the happy path', () => {
+    const pending = { current: [serverMessage('local-1', 'user', PROMPT)] };
+    const kept: SessionMessage[][] = [];
+    mergePendingTurns([serverMessage('s1', 'user', PROMPT)], pending, (k) => kept.push(k));
+
+    expect(kept).toHaveLength(0);
+  });
+
+  it('the hook warns, and names the session, the age and how many refreshes it survived', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.stubGlobal('fetch', vi.fn(async () => ok({ files: [], messages: [], filesComplete: true })));
+
+    const { result } = renderHook(() => useCodeSessionDetail('sess-1'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    act(() => result.current.addPendingUserTurn(PROMPT));
+    await act(async () => { await result.current.refresh(); });
+
+    const call = warn.mock.calls.find(([msg]) => String(msg).includes('not acknowledged'));
+    expect(call, 'the guarantee fired without leaving a log line').toBeDefined();
+    const payload = call![1] as Record<string, unknown>;
+    expect(payload.sessionId).toBe('sess-1');
+    expect(payload.survivedRefreshes).toBe(1);
+    expect(payload.preview).toBe(PROMPT);
+    // One survival can be a race with the server's own insert; it is not yet D-B.
+    expect(payload.likelyDefect).toBe(false);
+    warn.mockRestore();
+  });
+
+  it('a turn surviving a SECOND refresh is marked as the defect, not a race', async () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.stubGlobal('fetch', vi.fn(async () => ok({ files: [], messages: [], filesComplete: true })));
+
+    const { result } = renderHook(() => useCodeSessionDetail('sess-1'));
+    await waitFor(() => expect(result.current.loading).toBe(false));
+
+    act(() => result.current.addPendingUserTurn(PROMPT));
+    await act(async () => { await result.current.refresh(); });
+    await act(async () => { await result.current.refresh(); });
+
+    const calls = warn.mock.calls.filter(([msg]) => String(msg).includes('not acknowledged'));
+    const last = calls[calls.length - 1]![1] as Record<string, unknown>;
+    expect(last.survivedRefreshes).toBe(2);
+    expect(last.likelyDefect).toBe(true);
+    warn.mockRestore();
+  });
+});
