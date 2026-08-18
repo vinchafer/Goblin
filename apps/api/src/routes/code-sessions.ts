@@ -208,14 +208,41 @@ codeSessions.post('/', async (c) => {
   }
 
   // Optional: land initial code (e.g. from Send-to-Code) as a draft.
+  //
+  // FOUNDER-WALK-7 · U2 (D-A): this insert's result used to be discarded, and the
+  // response then ANNOUNCED `draftCount: initialContent ? 1 : 0` — a count derived
+  // from the request, not from what actually happened. A failed insert (unique on
+  // (session_id, path), RLS, a blip between two separate Supabase calls) therefore
+  // produced a 201, a session tab with the right title, a draft dot, and an empty
+  // pane — with nothing anywhere able to notice. That is the whole of D-A: the
+  // product asserted a state it had not verified, so "Send to Code" could fail
+  // silently and the user could only conclude the session "won't open".
+  //
+  // Now the write is checked and the response reports what is TRUE. `initialFile`
+  // is explicit rather than inferred from the count, so the client can tell
+  // "nothing was sent" apart from "something was sent and did not land" — the two
+  // cases that used to render identically.
+  let initialFile: { requested: boolean; landed: boolean; path: string | null } = {
+    requested: false, landed: false, path: null,
+  };
   if (initialContent && initialContent.trim()) {
     const path = (initialFilename && initialFilename.trim()) || 'index.html';
-    await sb.from('code_session_files').insert({
+    const { error: fileError } = await sb.from('code_session_files').insert({
       session_id: session.id, user_id: userId, path, content: initialContent, change_state: 'draft',
     });
+    if (fileError) {
+      logger.warn(
+        { err: fileError.message, sessionId: session.id, projectId, path },
+        'code_session_initial_file_failed',
+      );
+    }
+    initialFile = { requested: true, landed: !fileError, path };
   }
 
-  return c.json({ session: { ...session, draftCount: initialContent ? 1 : 0 } }, 201);
+  return c.json({
+    session: { ...session, draftCount: initialFile.landed ? 1 : 0 },
+    initialFile,
+  }, 201);
 });
 
 // ─── GET /api/code-sessions/:sessionId — detail + thread + files ─────────────────

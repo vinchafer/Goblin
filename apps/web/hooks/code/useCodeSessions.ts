@@ -19,6 +19,26 @@ interface CreateOpts {
 }
 
 /**
+ * FOUNDER-WALK-7 · U2 (D-A): what the server actually did with a Send-to-Code
+ * payload — reported, not inferred.
+ *
+ * `requested` false means no payload was sent (an ordinary new session).
+ * `requested` true + `landed` false is the case that used to be invisible: the
+ * session row exists, the tab renders with the right title, and the draft never
+ * arrived. The caller owes the user an honest state for exactly that case.
+ */
+export interface InitialFileOutcome {
+  requested: boolean;
+  landed: boolean;
+  path: string | null;
+}
+
+export interface CreateSessionResult extends CodeSession {
+  /** Present when the server answered a create that carried an initial payload. */
+  initialFile?: InitialFileOutcome;
+}
+
+/**
  * Multi-session state for the Code Tab.
  *
  * Degrades gracefully: if the `/code-sessions` API is unavailable (endpoint not
@@ -106,17 +126,24 @@ export function useCodeSessions(projectId: string) {
 
   useEffect(() => { refresh(); }, [refresh]);
 
-  const createSession = useCallback(async (opts: CreateOpts = {}): Promise<CodeSession | null> => {
+  const createSession = useCallback(async (opts: CreateOpts = {}): Promise<CreateSessionResult | null> => {
     try {
       const res = await authFetch('/api/code-sessions', {
         method: 'POST',
         body: JSON.stringify({ projectId, ...opts }),
       });
       if (!res.ok) { if (res.status === 404 || res.status >= 500) setAvailable(false); return null; }
-      const { session } = await res.json();
+      const { session, initialFile } = await res.json() as {
+        session: CodeSession; initialFile?: InitialFileOutcome;
+      };
       setSessions(prev => [session, ...prev]);
       setActiveSessionId(session.id);
-      return session;
+      // U2 (D-A): the outcome rides alongside the session rather than inside it, so
+      // the list state stays a plain CodeSession[] and only the caller that asked
+      // for an injection has to reason about whether it landed. A server that
+      // predates this field leaves `initialFile` undefined — the caller then knows
+      // it cannot tell, which is still better than being told a comfortable "1".
+      return initialFile ? { ...session, initialFile } : session;
     } catch { setAvailable(false); return null; }
   }, [authFetch, projectId]);
 
