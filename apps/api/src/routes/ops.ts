@@ -245,6 +245,29 @@ ops.get('/apps/name-check', async (c) => {
 });
 
 /**
+ * The HTTP status for a publish failure code.
+ *
+ * FOUNDER-WALK-7 · U7 (D-F2) — `empty_artifact` moved from 502 to 422.
+ *
+ * Nothing upstream misbehaves when a project has no files to publish. That is a
+ * state of the BUILDER's project, and one they can act on — the same shape as a
+ * deterministic refusal, which already answers 422. Filing it as a bad gateway put
+ * it in the "the substrate answered wrongly" bucket, and (until D-F1 was fixed in
+ * this same wave) that bucket was exactly where the web client threw the server's
+ * German away and substituted "Server kurz nicht erreichbar – bitte gleich nochmal
+ * versuchen." Publishing nothing must fail as a precondition, with its own sentence.
+ *
+ * Extracted so the mapping is testable on its own: it is a claim about what each
+ * failure MEANS, and it had no test at all.
+ */
+export function publishFailureStatus(code: string): 409 | 422 | 502 | 503 {
+  if (code === 'scan_blocked' || code === 'empty_artifact') return 422;
+  if (code === 'name_taken' || code === 'name_released' || code === 'invalid_name') return 409;
+  if (code === 'form_unwirable' || code === 'd1_unavailable') return 503;
+  return 502;
+}
+
+/**
  * POST /api/ops/apps/publish — scan, upload, route, verify, and only then "live".
  *
  * Idempotent: a project has at most one Living App, so republishing reuses the app
@@ -286,14 +309,7 @@ ops.post('/apps/publish', async (c) => {
     // host a form right now" — a state of ours that will pass — rather than "the
     // substrate answered wrongly". The builder's next action is to try again, and
     // the status should say so.
-    const status =
-      result.code === 'scan_blocked'
-        ? 422
-        : result.code === 'name_taken' || result.code === 'name_released' || result.code === 'invalid_name'
-          ? 409
-          : result.code === 'form_unwirable' || result.code === 'd1_unavailable'
-            ? 503
-            : 502;
+    const status = publishFailureStatus(result.code);
     return c.json({ error: result.code, stage: result.stage, message: result.message, ...(result.url ? { url: result.url } : {}) }, status);
   }
   return c.json(result);

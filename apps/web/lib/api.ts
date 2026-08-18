@@ -80,12 +80,50 @@ export async function fetchWithRetryOn429(
 
 // WS-C: friendlier German messages for the statuses users actually hit, instead
 // of a raw "API error 429". Server-provided messages still win.
+//
+// ════════════════════════════════════════════════════════════════════════════════
+// FOUNDER-WALK-7 · U7 (D-F1) — THE ORDER OF THESE LINES IS THE BUG.
+//
+// The founder tapped "Live stellen" four times and read, each time:
+//     "Server kurz nicht erreichbar – bitte gleich nochmal versuchen."
+// The server had not said that. The server had said something specific, in German,
+// about his project — e.g. "In diesem Projekt liegen noch keine Dateien, die
+// veröffentlicht werden könnten." (ops-publish.ts). It never reached him, because
+// the `status >= 500` line stood ABOVE the line that reads `serverMessage`, and
+// `POST /api/ops/apps/publish` maps almost every failure to 502 or 503
+// (ops.ts — empty_artifact, not_verified, upload_failed, route_failed → 502;
+// d1_unavailable, form_unwirable, review_unqueued → 503).
+//
+// So the client replaced a true, actionable answer with an invented CAUSE ("the
+// server is briefly unreachable") and an invented TIMELINE ("try again shortly").
+// Both were unverified, and the timeline was actively harmful: it told him to
+// repeat an action that could not succeed by repetition. That is what four
+// identical attempts look like from the inside.
+//
+// The rule now: the server's own sentence wins whenever there is one, at ANY
+// status. A generated line is only ever the fallback for a response that carried
+// no message — and it states the fact (a status) rather than diagnosing it.
+// ════════════════════════════════════════════════════════════════════════════════
 function friendlyError(status: number, serverMessage?: string): string {
-  // 429 / 5xx rarely carry a useful body — always use the friendly line.
+  // Framework placeholders (`res.statusText` when the body had no message) are not
+  // the server saying anything — they are the absence of a message with a name.
+  const raw = typeof serverMessage === 'string' ? serverMessage.trim() : ''
+  const PLACEHOLDERS = new Set([
+    'Too Many Requests', 'Internal Server Error', 'Bad Gateway',
+    'Service Unavailable', 'Gateway Timeout', 'Not Found', 'Forbidden', 'Unauthorized',
+  ])
+  if (raw && !PLACEHOLDERS.has(raw)) return raw
+
+  // No message came back. Say what is KNOWN — the status — and nothing else. A 429
+  // is the one case where the status alone is a complete, true statement about what
+  // happened, so it keeps its plain-language rendering.
   if (status === 429) return 'Zu viele Anfragen – bitte einen Moment warten und neu laden.'
-  if (status >= 500) return 'Server kurz nicht erreichbar – bitte gleich nochmal versuchen.'
-  if (serverMessage && serverMessage !== 'Too Many Requests') return serverMessage
-  if (status === 401 || status === 403) return 'Sitzung abgelaufen – bitte neu anmelden.'
+  if (status === 401) return 'Sitzung abgelaufen – bitte neu anmelden.'
+  // 403 used to share the 401 line. It does not share its meaning: a 403 is "not
+  // allowed", which may have nothing to do with the session — and telling someone to
+  // sign in again over a permission they do not have is a diagnosis, not a fact.
+  if (status === 403) return 'Für diese Aktion fehlt die Berechtigung.'
+  if (status >= 500) return `Die Anfrage ist fehlgeschlagen (HTTP ${status}). Der Server hat keine Begründung mitgeschickt.`
   return `API-Fehler ${status}`
 }
 
