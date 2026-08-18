@@ -41,6 +41,23 @@ export function SessionTabs({ sessions, activeId, onSwitch, onCreate, onDelete, 
 
       {/* Desktop strip */}
       <div className="gb-sessiontabs-desktop" style={{ alignItems: "center", gap: 4, padding: "6px 8px", overflowX: "auto" }}>
+        {/* FOUNDER-WALK-7 · U6 (D-E, part 2): the way out, on desktop too.
+            `onBackToProject` existed and was rendered ONLY in the mobile branch
+            below (a "belt-and-suspenders escape … on mobile", per the prop's own
+            comment). On desktop there was no exit from the Code tab at all — the
+            founder had to switch to the Chat tab to reach the project overview.
+            Same callback, same destination; it was simply never rendered here. */}
+        {onBackToProject && (
+          <button
+            onClick={onBackToProject}
+            aria-label="Zurück zum Projekt"
+            title="Zurück zum Projekt"
+            data-testid="sessiontabs-back-desktop"
+            style={{ flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 5, background: "transparent", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-2)", borderRadius: 8, padding: "6px 10px", fontSize: 12.5, cursor: "pointer", fontFamily: "var(--font-sans)", marginRight: 4 }}
+          >
+            <Icon name="back" size={14} /> Projekt
+          </button>
+        )}
         {sessions.map(s => {
           const isActive = s.id === activeId;
           return (

@@ -275,31 +275,48 @@ und den fehlenden Retry.
 **Symptom:** „dann links auf projekt geklickt in menu leiste - passiert nichts. ich
 musste oben im tab auf chat, das ich auf die projektübersicht komme."
 
-**(1) Sidebar-Klick reagiert nicht.**
-`apps/web/components/app-shell/projects-list.tsx:76-79`:
+**(1) Sidebar-Klick reagiert nicht. — Ursache gefunden, exakt.**
 
-```tsx
-onClick={() => { setActiveProject(project); router.push(`/dashboard/project/${project.id}`); }}
+> **Korrektur (während U6 nachgetragen).** Dieser Abschnitt stand zunächst als
+> `UNGEKLÄRT` hier, mit `components/app-shell/projects-list.tsx` als vermuteter
+> Fundstelle. Beides war falsch, und die Korrektur gehört sichtbar in dieses
+> Dokument statt still in den Fix.
+>
+> `ProjectsList` in `app-shell/projects-list.tsx` wird **nirgends importiert** —
+> toter Code, nicht die Seitenleiste des Founders. Die echte ist
+> `components/layout/Sidebar.tsx`. (Der tote Pfad steht als eigener FINDINGS-Eintrag.)
+
+Die reale Fundstelle ist `apps/web/components/layout/Sidebar.tsx:92-101`, die
+F-W2-a-„Smart-Resume":
+
+```ts
+function resolveProjectHref(id: string): string {
+  const hub = `/dashboard/project/${id}`;
+  let tab = sessionStorage.getItem(`goblin:wsTab:${id}`);      // ← 'code'
+  …
+  return tab === 'code' ? `${hub}/work?tab=code` : hub;
+}
 ```
 
-Der Founder stand auf `/dashboard/project/<id>/work?tab=code` und klickte **dasselbe**
-Projekt. Der Push geht auf `/dashboard/project/<id>` — eine andere Route, die
-Navigation ist also nicht „schon dort". Was passiert: Next.js navigiert, die
-Projekt-Übersicht mountet — und `ProjectWorkspace` schreibt beim Verlassen noch
-`sessionStorage['goblin:wsTab:<id>'] = 'code'` (`project-workspace.tsx:51-56`).
-Ich konnte **nicht** verifizieren, dass der Push tatsächlich abgebrochen wird; das
-verlangt einen Browser. Was ich belegen kann, ist ein realer Kandidat mit
-Repo-Vorgeschichte: `useCodeSessions.ts:145-150` dokumentiert, dass eine
-Render-Schleife im Code-Tab „silently aborting every in-app navigation out of the Code
-tab (the K3/K4/K7 'trapped' cluster)" verursacht hat. Die Klasse ist in diesem Tab
-belegt aufgetreten.
+Und `ProjectWorkspace` schreibt genau diesen Schlüssel, **während** man im Code-Tab
+steht (`project-workspace.tsx:51-56`):
 
-**Status: UNGEKLÄRT für die genaue Ursache des Nicht-Reagierens.** U6 liefert deshalb
-keine geratene Reparatur, sondern die verifizierbare Verbesserung: der Sidebar-Eintrag
-navigiert **zielgenau** (in den Workspace-Tab, in dem der Nutzer war, statt auf die
-Hub-Route, die er nicht gemeint hat) und ist ein echtes `<Link>`-Ziel statt eines
-reinen JS-Pushes — ein Klick, der die Route ohnehin erreicht, kann dann nicht mehr an
-JS scheitern.
+```ts
+sessionStorage.setItem(`goblin:wsTab:${projectId}`, activeTab);   // 'code'
+```
+
+**Root cause (D-E 1):** Der Founder stand auf
+`/dashboard/project/<id>/work?tab=code` und klickte **dieses** Projekt. Smart-Resume
+las `wsTab = 'code'` und löste auf `/dashboard/project/<id>/work?tab=code` auf —
+**die Route, auf der er bereits stand**. `router.push` auf die aktuelle Route ist ein
+No-Op. Es war kein toter Handler; die Wiederaufnahme funktionierte einwandfrei, und
+ihr Ergebnis war nichts.
+
+Das erklärt auch die zweite Hälfte seines Satzes: er wollte zur **Projektübersicht**
+und kam nicht hin, weil die Zeile ihn dorthin zurückschickte, wo er schon war.
+
+Der Fix ist entsprechend klein: löst Resume auf die aktuelle Route auf, geht die
+Zeile stattdessen auf den Hub. Resume bleibt überall sonst unverändert.
 
 **(2) Kein Weg zurück zur Projektübersicht.**
 Belegt und eindeutig: `SessionTabs` rendert `onBackToProject`
@@ -445,7 +462,7 @@ Der Editor im Code-Tab ist **nicht** betroffen — er ist CodeMirror mit eigenem
 | D-B | **UNGEKLÄRT** — kein optimistischer Turn belegt, Auslöser nicht | `SessionPane.tsx:331-358` |
 | D-C | **Ja** | `agent/tools.ts:329-334, 357-364` |
 | D-D | **Ja** (Klasse belegt; konkreter Status im Lauf nicht) | `useCodeSessionDetail.ts:46-48` |
-| D-E | (1) **UNGEKLÄRT**, (2) **Ja** | `projects-list.tsx:76`, `SessionTabs.tsx:43-106` |
+| D-E | (1) **Ja, exakt** (Korrektur in U6), (2) **Ja** | `Sidebar.tsx:92-101` + `project-workspace.tsx:51-56`, `SessionTabs.tsx:43-106` |
 | D-F1 | **Ja, exakt** | `lib/api.ts:86` + `ops.ts:288-296` |
 | D-F2 | **Nein** — Hauptvermutung `empty_artifact`, unbelegt | `ops-publish.ts:352` |
 | D-G | **Ja, gemessen** | `highlighter.ts:4`, `goblin-light.json` |
