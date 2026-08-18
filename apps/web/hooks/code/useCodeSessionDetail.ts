@@ -48,6 +48,28 @@ export type DetailLoadError =
 const RETRIES = 3;
 const BASE_DELAY_MS = 400;
 
+/**
+ * U5 (D-B): fold the client's un-acknowledged turns into a freshly loaded thread.
+ *
+ * A pending turn is retired the moment the server's thread contains a user message
+ * with the same text — that IS the server's copy of it, arriving with a real id.
+ * Anything still pending is appended, so a turn the user sent can never vanish from
+ * the screen because a request did not come back with it.
+ *
+ * Exported for the test: this rule is the whole unit, and it should be pinned
+ * directly rather than only through the hook's timing.
+ */
+export function mergePendingTurns(
+  serverMessages: SessionMessage[],
+  pending: { current: SessionMessage[] },
+): SessionMessage[] {
+  const acknowledged = new Set(
+    serverMessages.filter((m) => m.role === 'user').map((m) => m.content),
+  );
+  pending.current = pending.current.filter((m) => !acknowledged.has(m.content));
+  return pending.current.length ? [...serverMessages, ...pending.current] : serverMessages;
+}
+
 /** Loads + mutates one session's thread + files (the work surface). */
 export function useCodeSessionDetail(sessionId: string | null) {
   const [files, setFiles] = useState<SessionFile[]>([]);
@@ -60,6 +82,24 @@ export function useCodeSessionDetail(sessionId: string | null) {
   const [deployUrl, setDeployUrl] = useState<string | null>(null);
   const [deployedAt, setDeployedAt] = useState<string | null>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /**
+   * FOUNDER-WALK-7 · U5 (D-B) — turns this client has sent and not yet seen back.
+   *
+   * The founder: "dann im chat im coding tab geschrieben, stell mir das live -
+   * meine nachricht war gleich nicht mehr sichtbar." The Code-tab thread rendered
+   * `messages` and nothing else: there was no optimistic turn anywhere in
+   * SessionPane, useCodeAgent or SessionPromptInput. So whether your own sentence
+   * was on screen depended entirely on a network round trip — and every path that
+   * replaced `messages` could take it away again.
+   *
+   * These survive here, in the hook that owns the list, so that no refresh (failed,
+   * partial, or merely racing the server's own insert) can drop a turn the user
+   * actually sent. A pending turn retires only when the server's copy of it comes
+   * back — matched on role + content, which is what identifies it before it has an
+   * id we know.
+   */
+  const pendingTurns = useRef<SessionMessage[]>([]);
 
   const authFetch = useCallback(async (path: string, init?: RequestInit) => {
     const t = await getToken();
@@ -100,7 +140,7 @@ export function useCodeSessionDetail(sessionId: string | null) {
       // old server had no partial-hydrate state to report.
       setLoadError(data.filesComplete === false ? { kind: 'incomplete' } : null);
       setFiles(f);
-      setMessages(data.messages ?? []);
+      setMessages(mergePendingTurns(data.messages ?? [], pendingTurns));
       // C.3 (NAVFIX-6): foreground the work in play. Hydration mirrors the whole
       // project's saved files into every session, so a fresh Send-to-Code task (a
       // single draft) used to "sink" behind an arbitrary saved file (f[0]). Prefer
@@ -123,6 +163,29 @@ export function useCodeSessionDetail(sessionId: string | null) {
   useEffect(() => { refresh(); }, [refresh]);
 
   const activeFile = files.find(f => f.path === activePath) ?? null;
+
+  /**
+   * U5 (D-B): put the user's turn on screen the instant they send it, and keep it
+   * there until the server's own copy comes back.
+   *
+   * The bubble is not marked "wird gesendet" or similar: that would be a claim
+   * about delivery this client cannot make either. It is simply the user's sentence,
+   * where they put it. If the run fails, the error surfaces on its own (SessionPane
+   * renders agent/agentRun errors) — what must not happen is the sentence itself
+   * disappearing, which reads as "the app ate my message".
+   */
+  const addPendingUserTurn = useCallback((content: string) => {
+    const turn: SessionMessage = {
+      id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      role: 'user',
+      content,
+      model_used: null,
+      state: 'complete',
+      created_at: new Date().toISOString(),
+    };
+    pendingTurns.current = [...pendingTurns.current, turn];
+    setMessages(prev => [...prev, turn]);
+  }, []);
 
   /** Persist a draft file (PATCH). Used by hand-edit (debounced) + agent results. */
   const persistFile = useCallback(async (path: string, content: string, changeState: 'draft' | 'saved' = 'draft') => {
@@ -228,7 +291,7 @@ export function useCodeSessionDetail(sessionId: string | null) {
     files, messages, activePath, setActivePath, activeFile,
     loading, loadError, saving, dirty, aggregateState, draftCount,
     deployUrl, deployedAt,
-    refresh, editActive, persistFile, applyDraftPaths,
+    refresh, editActive, persistFile, applyDraftPaths, addPendingUserTurn,
     saveSession, deploySession, discardDraft, setFiles, setMessages,
   };
 }

@@ -332,9 +332,19 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
   const doRedo = useCallback(() => { const v = editorViewRef.current; if (v) { redo(v); v.focus(); refreshHistory(); } }, [refreshHistory]);
 
   const handleSubmit = (prompt: string) => {
+    // FOUNDER-WALK-7 · U5 (D-B): the user's turn goes on screen NOW and stays there
+    // across every refresh until the server's copy of it comes back. Before this,
+    // nothing in the Code tab added the turn locally — its visibility was a
+    // side-effect of a network round trip, and the founder watched his own
+    // "stell mir das live" disappear.
+    //
+    // Read BEFORE the optimistic append: the auto-title rule below asks whether this
+    // is the session's first turn, and the append would make it never be.
+    const isFirstTurn = detail.messages.length === 0;
+    detail.addPendingUserTurn(prompt);
     // A.3: the first prompt names a still-placeholder session like the task,
     // so the tabs/picker read meaningfully (no more duplicate "Session 2").
-    if (detail.messages.length === 0 && isPlaceholderTitle(session.name)) {
+    if (isFirstTurn && isPlaceholderTitle(session.name)) {
       const title = titleFromPrompt(prompt);
       if (title) onAutoTitle?.(title);
     }
