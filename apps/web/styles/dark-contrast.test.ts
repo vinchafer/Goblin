@@ -24,7 +24,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { contrastRatio, compositeOver, parseColor, AA_BODY, AA_LARGE, AA_NON_TEXT } from '../lib/contrast';
+import { contrastRatio, compositeOver, parseColor, AA_BODY, AA_LARGE, AA_NON_TEXT, type Rgba } from '../lib/contrast';
 
 // ─── resolving the dark cascade out of the real stylesheets ────────────────────
 
@@ -226,7 +226,7 @@ describe('dark theme — WCAG contrast', () => {
  * still be the white those call sites hard-coded, or the fix would have quietly darkened
  * text on the light-mode banners.
  */
-const LIGHT: Record<string, string> = {
+const LIGHT_TOKENS: Record<string, string> = {
   ...declarations(design, (s) => s === ':root'),
   ...declarations(dashboard, (s) => s === '.gobl-dash'),
 };
@@ -234,7 +234,7 @@ const LIGHT: Record<string, string> = {
 describe('light theme is unaffected by the dark fixes', () => {
   function lightResolve(token: string, depth = 0): string | null {
     if (depth > 12) return null;
-    const raw = LIGHT[token];
+    const raw = LIGHT_TOKENS[token];
     if (raw === undefined) return null;
     const ref = /^var\((--[\w-]+)(?:\s*,\s*([^)]+))?\)$/.exec(raw);
     if (!ref) return raw;
@@ -265,5 +265,92 @@ describe('light theme is unaffected by the dark fixes', () => {
     expect(lightResolve('--ink-3')).toBe('#5F5640');
     expect(lightResolve('--on-danger')).toBe('#FFFFFF'); // = the `#fff` the call sites had
     expect(lightResolve('--on-success')).toBe('#FFFFFF');
+  });
+});
+
+/**
+ * ── THE GAP THIS AUDIT HAD, AND THE PAIRS THAT CLOSE IT ───────────────────────
+ *
+ * Found 2026-08-18 while auditing a mock against the app: the composer's idle mic
+ * paints `var(--text-2)` and sits on the dashboard hero card. In the LIGHT
+ * cascade that resolves to #3F3A2C on a #0F2B1E card — **1.17:1**, invisible.
+ * The recording state (`--rust`) measured 2.33:1, also under the non-text floor.
+ *
+ * Why 40 measured pairs missed it — and this is a property of the enumeration,
+ * not an oversight in it:
+ *
+ *   • The matrix above resolves the DARK cascade. In dark mode this pair is
+ *     already fine, because `[data-theme="dark"]` re-points `--ink-2` to #D8CBA8
+ *     and `--text-2` follows it. There was nothing to find there.
+ *   • The light section above pairs inks only against `--surface-page`. Every
+ *     light pair assumes a LIGHT surface.
+ *
+ * So the axis was THEME, and the missing axis is SURFACE: a dark island inside
+ * the light page — the hero card, the app header, the code chrome — is painted by
+ * light-cascade tokens and was never enumerated. Any control placed on one
+ * inherits inks chosen for sand.
+ *
+ * These pairs are that missing axis. They fail on the pre-fix tokens.
+ */
+describe('dark islands in the light cascade', () => {
+  /** The light cascade plus the surface-scoped re-point that fixes these rows. */
+  const ONCARD: Record<string, string> = {
+    ...LIGHT_TOKENS,
+    ...declarations(design, (s) => s === '.gobl-composer-row-oncard'),
+  };
+
+  function resolveIn(map: Record<string, string>, token: string, depth = 0): string | null {
+    if (depth > 12) return null;
+    const raw = map[token];
+    if (raw === undefined) return null;
+    const ref = /^var\((--[\w-]+)(?:\s*,\s*([^)]+))?\)$/.exec(raw);
+    if (!ref) return raw;
+    return resolveIn(map, ref[1]!, depth + 1) ?? (ref[2] ? ref[2].trim() : null);
+  }
+
+  /** Same idiom as `surfaceColor` above: a composite becomes a literal. */
+  const hexOf = (c: Rgba) =>
+    `#${[c[0], c[1], c[2]].map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')}`;
+
+  /** The composer input area: a 5% bone wash over the hero card. */
+  const heroCard = resolveIn(LIGHT_TOKENS, '--ink-deep')!;
+  const composer = hexOf(compositeOver(parseColor('rgba(244,236,216,0.05)')!, parseColor(heroCard)!));
+
+  const ISLAND_PAIRS: Array<[label: string, ink: string, surface: string, min: number]> = [
+    // The three states of the mic that started this (ChatInput.tsx VoiceButton).
+    ['idle mic (--text-2) on the hero composer', '--text-2', composer, AA_NON_TEXT],
+    ['recording mic (--rust) on the hero composer', '--rust', composer, AA_NON_TEXT],
+    // The dictation label beside it is TEXT, so it owes AA body, not 3:1.
+    ['dictation label (--meta) on the hero composer', '--meta', composer, AA_BODY],
+    // The card itself, for anything placed directly on it.
+    ['--text-2 on the hero card', '--text-2', heroCard, AA_NON_TEXT],
+    ['--meta on the hero card', '--meta', heroCard, AA_BODY],
+  ];
+
+  it.each(ISLAND_PAIRS.map((p) => [p[0], p] as const))('%s clears its threshold', (_l, [, ink, surface, min]) => {
+    const resolved = resolveIn(ONCARD, ink);
+    expect(resolved).not.toBeNull();
+    const r = contrastRatio(resolved!, surface);
+    expect(r).not.toBeNull();
+    expect(r!).toBeGreaterThanOrEqual(min);
+  });
+
+  it('the app header is a dark island too, and its inks were always right', () => {
+    const header = resolveIn(LIGHT_TOKENS, '--brand-header')!;
+    for (const ink of ['--ink-on-dark-1', '--ink-on-dark-2']) {
+      const r = contrastRatio(resolveIn(LIGHT_TOKENS, ink)!, header);
+      expect(r).not.toBeNull();
+      expect(r!).toBeGreaterThanOrEqual(AA_BODY);
+    }
+  });
+
+  it('the unscoped light tokens are what FAIL here — the scope is doing the work', () => {
+    // Pins the defect itself: without the re-point, the idle mic is invisible.
+    // If someone deletes .gobl-composer-row-oncard, the pairs above go red and
+    // this one goes red too, naming why.
+    const bare = contrastRatio(resolveIn(LIGHT_TOKENS, '--text-2')!, composer)!;
+    expect(bare).toBeLessThan(AA_NON_TEXT);
+    const fixed = contrastRatio(resolveIn(ONCARD, '--text-2')!, composer)!;
+    expect(fixed).toBeGreaterThanOrEqual(AA_NON_TEXT);
   });
 });

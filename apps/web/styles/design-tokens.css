@@ -83,6 +83,12 @@
   --ink-on-dark-2:        #D8CBA8;
   --ink-on-dark-3:        #968768;
   --ink-on-dark-disabled: #5A523D;
+  /* The on-dark ramp had inks but no STATUS colour, so a control on a dark
+     island in the light cascade had nothing legible to signal danger with. This
+     is not a new colour: it is the exact value the dark-contrast wave (PR #104)
+     measured for dark surfaces (`[data-theme="dark"] --danger`), named so the
+     LIGHT cascade can reach it too. 5.53:1 on the hero composer. */
+  --danger-on-dark:       #E89080;
 
   /* ─── Semantic colours ─────────────────────────────────────────── */
   --success:       #3D7A4F;
@@ -254,6 +260,35 @@
   0%, 100% { opacity: 0.42; transform: scale(1); }
   50%      { opacity: 0.85; transform: scale(1.025); }
 }
+/* ─── Dark islands in the LIGHT cascade ────────────────────────────────────
+ *
+ * A dark card inside a light page is the one place where the ink tokens are
+ * wrong by default: the page resolves `--text-2` to #3F3A2C (correct on sand,
+ * 1.17:1 on the hero composer — invisible). Dark THEME does not have this
+ * problem, because its own block already re-points `--ink-2` to #D8CBA8. That
+ * asymmetry is exactly why the dark-contrast audit (PR #104) could measure 40
+ * pairs and still miss this: it enumerates the dark cascade, and this defect
+ * only exists in the light one.
+ *
+ * The fix is a surface-scoped re-point rather than a per-component colour, so
+ * anything dropped into that row inherits legible inks instead of needing to
+ * remember. Values are identical to what dark mode already resolves to, so the
+ * block is a no-op there rather than a second source of truth.
+ *
+ * Scoped to the composer ROW, not the whole hero: the model popover is a
+ * descendant of the hero that paints a LIGHT surface (`--panel`), and a blanket
+ * override would invert it — the same defect, one level down.
+ *
+ * Measured in styles/dark-contrast.test.ts § "dark islands in the light cascade".
+ */
+.gobl-composer-row-oncard {
+  --text-2: var(--ink-on-dark-2);   /* idle mic: 1.17:1 → 8.26:1 */
+  --meta:   var(--ink-on-dark-2);   /* dictation label: 1.83:1 → 8.26:1.
+                                       NOT --ink-on-dark-3, which measures
+                                       3.78:1 here — under AA body for text. */
+  --rust:   var(--danger-on-dark);  /* recording mic: 2.33:1 → 5.53:1 */
+}
+
 .goblin-mark--thinking { animation: goblin-thinking 0.6s ease-in-out infinite; }
 .goblin-mark--working  { animation: goblin-working  1.8s ease-in-out infinite; }
 .goblin-mark--breath   { animation: goblin-breath   2.2s ease-in-out infinite;

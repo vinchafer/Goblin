@@ -942,12 +942,22 @@ export function ChatInput({ onSubmit, disabled = false, selectedModel, onModelCh
             }}
           />
 
-          {/* Bottom row: plus + model pill (left) + hint + send (right) */}
-          <div style={{
-            display: 'flex', alignItems: 'center',
-            padding: '4px 8px 8px',
-            gap: 6,
-          }}>
+          {/* Bottom row: plus + model pill (left) + hint + send (right).
+              `gobl-composer-row-oncard` in the hero arrangement: this row sits on
+              the dark hero card while the PAGE is light, so the light ink tokens
+              land dark-on-dark. The class re-points them to the on-dark ramp at
+              the token layer (styles/design-tokens.css) — the plus, pill and hint
+              already carried their own hero literals, but the mic read
+              `var(--text-2)` and rendered at 1.17:1. Scoped to the row, not the
+              hero, so the light-surfaced model popover above is untouched. */}
+          <div
+            className={hero ? 'gobl-composer-row-oncard' : undefined}
+            style={{
+              display: 'flex', alignItems: 'center',
+              padding: '4px 8px 8px',
+              gap: 6,
+            }}
+          >
             <button
               ref={plusBtnRef}
               onClick={() => { if (!disabled) setPlusOpen(o => !o); }}
