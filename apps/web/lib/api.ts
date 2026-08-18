@@ -127,12 +127,42 @@ function friendlyError(status: number, serverMessage?: string): string {
   return `API-Fehler ${status}`
 }
 
+/**
+ * FOUNDER-WALK-7 · U7b (D-F2) — the error a surface can diagnose from.
+ *
+ * D-F2 could not be root-caused after the walk because nothing on the client kept
+ * WHICH failure came back: the sheet caught an `Error` whose message had already
+ * been flattened to a sentence, and the machine-readable `error` code — the one
+ * field that separates `empty_artifact` from `not_verified` from `d1_unavailable` —
+ * was never anywhere a person could read it afterwards.
+ *
+ * `message` stays the honest German the user sees. `status` and `code` ride along
+ * for the console and for a bug report, and go nowhere near the UI.
+ */
+export class ApiError extends Error {
+  readonly status: number
+  readonly code?: string
+  constructor(status: number, message: string, code?: string) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+    this.code = code
+  }
+}
+
+/** Build the thrown error from a non-OK response body. */
+function apiErrorFrom(status: number, body: { message?: unknown; error?: unknown }): ApiError {
+  const message = friendlyError(status, typeof body.message === 'string' ? body.message : undefined)
+  const code = typeof body.error === 'string' ? body.error : undefined
+  return new ApiError(status, message, code)
+}
+
 export async function apiGet<T>(path: string): Promise<T> {
   const headers = await getAuthHeaders()
   const res = await fetch(`${API_URL}${path}`, { headers })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: res.statusText }))
-    throw new Error(friendlyError(res.status, err.message))
+    throw apiErrorFrom(res.status, err)
   }
   return res.json()
 }
@@ -146,7 +176,7 @@ export async function apiPost<T>(path: string, body?: unknown): Promise<T> {
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: res.statusText }))
-    throw new Error(friendlyError(res.status, err.message))
+    throw apiErrorFrom(res.status, err)
   }
   return res.json()
 }
@@ -160,7 +190,7 @@ export async function apiPut<T>(path: string, body?: unknown): Promise<T> {
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: res.statusText }))
-    throw new Error(friendlyError(res.status, err.message))
+    throw apiErrorFrom(res.status, err)
   }
   return res.json()
 }
@@ -174,7 +204,7 @@ export async function apiPatch<T>(path: string, body?: unknown): Promise<T> {
   })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: res.statusText }))
-    throw new Error(friendlyError(res.status, err.message))
+    throw apiErrorFrom(res.status, err)
   }
   return res.json()
 }
@@ -184,7 +214,7 @@ export async function apiDelete(path: string): Promise<void> {
   const res = await fetch(`${API_URL}${path}`, { method: 'DELETE', headers })
   if (!res.ok) {
     const err = await res.json().catch(() => ({ message: res.statusText }))
-    throw new Error(friendlyError(res.status, err.message))
+    throw apiErrorFrom(res.status, err)
   }
 }
 

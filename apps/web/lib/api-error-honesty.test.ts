@@ -103,3 +103,22 @@ describe('friendlyError — the server\'s own sentence reaches the user (D-F1)',
     expect(msg).toBe(german);
   });
 });
+
+describe('ApiError — the failure stays diagnosable after the sentence is chosen (D-F2)', () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it('carries the machine-readable code and status alongside the human message', async () => {
+    const { apiPost, ApiError } = await import('./api');
+    vi.stubGlobal('fetch', vi.fn(async () =>
+      fail(422, { error: 'empty_artifact', message: 'In diesem Projekt liegen noch keine Dateien, die veröffentlicht werden könnten.' })));
+
+    // D-F2 could not be root-caused after the founder's walk because the client kept
+    // nothing but a flattened sentence. `code` is what separates empty_artifact from
+    // not_verified from d1_unavailable in a console log or a bug report.
+    await expect(apiPost('/api/ops/apps/publish', {})).rejects.toMatchObject({
+      status: 422,
+      code: 'empty_artifact',
+    });
+    await expect(apiPost('/api/ops/apps/publish', {})).rejects.toBeInstanceOf(ApiError);
+  });
+});
