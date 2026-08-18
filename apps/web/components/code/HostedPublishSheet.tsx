@@ -211,7 +211,6 @@ export function HostedPublishSheet({ projectId, appsDomain, onUseVercel, onClose
       // capture it and a bug report can quote it) and never to the user; the user
       // gets the server's own German, which since D-F1 actually reaches this line.
       const err = e as ApiError;
-      // eslint-disable-next-line no-console
       console.error("[goblin] hosted publish failed", {
         projectId, name: normalized, status: err?.status, code: err?.code, message: err?.message,
       });

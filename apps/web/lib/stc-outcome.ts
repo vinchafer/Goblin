@@ -10,6 +10,7 @@
 // component only renders it.
 
 import type { CreateSessionResult } from '@/hooks/code/useCodeSessions';
+import { t, type Lang } from '@/lib/use-lang';
 
 export type StcOutcome =
   /** The payload is in the session. Nothing to say. */
@@ -57,17 +58,32 @@ export function stcNeedsNotice(outcome: StcOutcome): boolean {
  * line is the only actionable truth available here — the chat still holds the code,
  * because this surface never took ownership of it.
  */
-export function stcNoticeText(outcome: StcOutcome): { headline: string; detail: string } | null {
+export function stcNoticeText(outcome: StcOutcome, lang: Lang = 'de'): { headline: string; detail: string } | null {
+  // The same second line for both failures: it is the one actionable truth this
+  // surface can state, and it is true either way.
+  const detail = t(
+    lang,
+    'Dein Chat hat den Code weiterhin. Du kannst ihn dort erneut an den Code-Tab senden.',
+    'Your chat still has the code. You can send it to the Code tab again from there.',
+  );
   if (outcome.kind === 'no-session') {
     return {
-      headline: 'Der Code aus dem Chat konnte hier nicht abgelegt werden — die Session wurde nicht angelegt.',
-      detail: 'Dein Chat hat den Code weiterhin. Du kannst ihn dort erneut an den Code-Tab senden.',
+      headline: t(
+        lang,
+        'Der Code aus dem Chat konnte hier nicht abgelegt werden — die Session wurde nicht angelegt.',
+        'The code from your chat could not be placed here — the session was not created.',
+      ),
+      detail,
     };
   }
   if (outcome.kind === 'no-file') {
     return {
-      headline: 'Die Session wurde angelegt, aber der Code aus dem Chat ist nicht darin angekommen.',
-      detail: 'Dein Chat hat den Code weiterhin. Du kannst ihn dort erneut an den Code-Tab senden.',
+      headline: t(
+        lang,
+        'Die Session wurde angelegt, aber der Code aus dem Chat ist nicht darin angekommen.',
+        'The session was created, but the code from your chat did not arrive in it.',
+      ),
+      detail,
     };
   }
   return null;

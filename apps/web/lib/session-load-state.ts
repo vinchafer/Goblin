@@ -14,6 +14,7 @@
 // been there all along.
 
 import type { DetailLoadError } from '@/hooks/code/useCodeSessionDetail';
+import { t, type Lang } from '@/lib/use-lang';
 
 export interface SessionLoadNotice {
   headline: string;
@@ -29,23 +30,35 @@ export interface SessionLoadNotice {
  * it is what the founder can quote into a bug report; it is not dressed up as an
  * explanation.
  */
-export function sessionLoadNotice(error: DetailLoadError | null): SessionLoadNotice | null {
+export function sessionLoadNotice(error: DetailLoadError | null, lang: Lang = 'de'): SessionLoadNotice | null {
   if (!error) return null;
   if (error.kind === 'incomplete') {
     return {
-      headline: 'Nicht alle Projektdateien konnten geladen werden.',
-      detail: 'Was hier steht, ist echt — vollständig ist es womöglich nicht. Lade die Seite neu, bevor du auf dieser Grundlage weiterbaust.',
+      headline: t(lang,
+        'Nicht alle Projektdateien konnten geladen werden.',
+        'Not all project files could be loaded.'),
+      detail: t(lang,
+        'Was hier steht, ist echt — vollständig ist es womöglich nicht. Lade die Seite neu, bevor du auf dieser Grundlage weiterbaust.',
+        'What is shown is real — it may not be everything. Reload before you build on it.'),
     };
   }
+  const headline = t(lang,
+    'Diese Session konnte nicht geladen werden.',
+    'This session could not be loaded.');
+  // The second sentence is the one that matters: it refuses to answer a question
+  // nobody answered. "No files" was the old, wrong answer to it.
+  const open = t(lang,
+    'Ob hier Dateien liegen, ist damit offen — nicht beantwortet.',
+    'Whether there are files here is therefore open — not answered.');
   if (error.kind === 'unreachable') {
     return {
-      headline: 'Diese Session konnte nicht geladen werden.',
-      detail: 'Die Anfrage kam nicht durch. Ob hier Dateien liegen, ist damit offen — nicht beantwortet.',
+      headline,
+      detail: `${t(lang, 'Die Anfrage kam nicht durch.', 'The request did not get through.')} ${open}`,
     };
   }
   return {
-    headline: 'Diese Session konnte nicht geladen werden.',
-    detail: `Die Antwort war HTTP ${error.status}. Ob hier Dateien liegen, ist damit offen — nicht beantwortet.`,
+    headline,
+    detail: `${t(lang, `Die Antwort war HTTP ${error.status}.`, `The response was HTTP ${error.status}.`)} ${open}`,
   };
 }
 

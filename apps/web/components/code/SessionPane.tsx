@@ -1035,7 +1035,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
                   This spot used to invite the user to "stell links eine Aufgabe"
                   about a session that was full of code nobody could fetch. */}
               {(() => {
-                const notice = sessionLoadNotice(detail.loadError);
+                const notice = sessionLoadNotice(detail.loadError, lang);
                 if (notice) return (
                   <div data-testid="session-load-error" style={{ textAlign: "center", maxWidth: 320, fontFamily: "var(--font-sans)", fontSize: 14, lineHeight: 1.6 }}>
                     <div style={{ color: "var(--ed-fg-1)" }}>{notice.headline}</div>
@@ -1044,7 +1044,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
                       onClick={() => { void detail.refresh(); }}
                       style={{ marginTop: 14, background: "transparent", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-1)", borderRadius: 9, padding: "8px 15px", fontSize: 13, cursor: "pointer", fontFamily: "var(--font-sans)" }}
                     >
-                      Erneut laden
+                      {t(lang, "Erneut laden", "Reload")}
                     </button>
                   </div>
                 );

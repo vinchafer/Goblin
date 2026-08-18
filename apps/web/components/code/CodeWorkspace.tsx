@@ -13,6 +13,7 @@ import { getStoredIntent, DEFAULT_INTENT, type Intent } from "@/lib/intent";
 import { titleFromPath, titleFromPrompt } from "@/lib/session-title";
 import { classifyStcOutcome, stcNeedsNotice, stcNoticeText, type StcOutcome } from "@/lib/stc-outcome";
 import { PageLoading } from "@/components/ui/PageLoading";
+import { useLang, t } from "@/lib/use-lang";
 
 interface Props {
   projectId: string;
@@ -28,6 +29,7 @@ interface Props {
  */
 export function CodeWorkspace({ projectId, pendingCode, onPendingConsumed }: Props) {
   const s = useCodeSessions(projectId);
+  const lang = useLang();
   const router = useRouter();
   const [theme, , toggleTheme] = useEditorTheme();
   const [picker, setPicker] = useState<{ content: string; filename?: string } | null>(null);
@@ -252,7 +254,7 @@ export function CodeWorkspace({ projectId, pendingCode, onPendingConsumed }: Pro
           senden" is not offered here because this surface no longer holds the
           payload — saying where it still is (the chat) is the honest instruction. */}
       {stcFailure && (() => {
-        const text = stcNoticeText(stcFailure);
+        const text = stcNoticeText(stcFailure, lang);
         if (!text) return null;
         const path = "path" in stcFailure ? stcFailure.path : null;
         return (
@@ -275,7 +277,7 @@ export function CodeWorkspace({ projectId, pendingCode, onPendingConsumed }: Pro
             </div>
             <button
               onClick={() => setStcFailure(null)}
-              aria-label="Hinweis schliessen"
+              aria-label={t(lang, "Hinweis schliessen", "Dismiss notice")}
               style={{ flexShrink: 0, background: "transparent", border: "none", color: "var(--ed-fg-3)", cursor: "pointer", display: "inline-flex", padding: 2 }}
             >
               <Icon name="close" size={14} />
