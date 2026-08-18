@@ -87,7 +87,7 @@ async function hydrateSessionFiles(
   sessionId: string,
   projectId: string,
   userId: string,
-): Promise<void> {
+): Promise<{ ok: boolean }> {
   try {
     const [{ data: existing }, storagePaths] = await Promise.all([
       sb.from('code_session_files').select('path').eq('session_id', sessionId),
@@ -95,7 +95,7 @@ async function hydrateSessionFiles(
     ]);
     const have = new Set((existing ?? []).map((r) => r.path as string));
     const missing = storagePaths.filter((p) => p && !have.has(p)).slice(0, 50);
-    if (missing.length === 0) return;
+    if (missing.length === 0) return { ok: true };
 
     // WAVE-H · H6 (B2 batching): read the missing files with BOUNDED concurrency instead of
     // one-at-a-time. This runs at the start of every agent run; a sequential await-in-loop
@@ -117,10 +117,21 @@ async function hydrateSessionFiles(
       change_state: 'saved', updated_at: new Date().toISOString(),
     }));
     if (rows.length) {
-      await sb.from('code_session_files').upsert(rows, { onConflict: 'session_id,path' });
+      const { error } = await sb.from('code_session_files').upsert(rows, { onConflict: 'session_id,path' });
+      if (error) {
+        logger.warn({ err: error.message, sessionId }, 'session_hydrate_failed');
+        return { ok: false };
+      }
     }
+    return { ok: true };
   } catch (err) {
     logger.warn({ err: err instanceof Error ? err.message : String(err), sessionId }, 'session_hydrate_failed');
+    // FOUNDER-WALK-7 · U3 (D-C): this used to swallow the failure and return void,
+    // so "the project's files could not be mirrored into this session" and "this
+    // project has no files" were the same thing to every caller. The agent then ran
+    // against an empty workspace and told the founder "keine Dateien" about a
+    // project that had a built landing page in it. The outcome travels now.
+    return { ok: false };
   }
 }
 
@@ -208,14 +219,41 @@ codeSessions.post('/', async (c) => {
   }
 
   // Optional: land initial code (e.g. from Send-to-Code) as a draft.
+  //
+  // FOUNDER-WALK-7 · U2 (D-A): this insert's result used to be discarded, and the
+  // response then ANNOUNCED `draftCount: initialContent ? 1 : 0` — a count derived
+  // from the request, not from what actually happened. A failed insert (unique on
+  // (session_id, path), RLS, a blip between two separate Supabase calls) therefore
+  // produced a 201, a session tab with the right title, a draft dot, and an empty
+  // pane — with nothing anywhere able to notice. That is the whole of D-A: the
+  // product asserted a state it had not verified, so "Send to Code" could fail
+  // silently and the user could only conclude the session "won't open".
+  //
+  // Now the write is checked and the response reports what is TRUE. `initialFile`
+  // is explicit rather than inferred from the count, so the client can tell
+  // "nothing was sent" apart from "something was sent and did not land" — the two
+  // cases that used to render identically.
+  let initialFile: { requested: boolean; landed: boolean; path: string | null } = {
+    requested: false, landed: false, path: null,
+  };
   if (initialContent && initialContent.trim()) {
     const path = (initialFilename && initialFilename.trim()) || 'index.html';
-    await sb.from('code_session_files').insert({
+    const { error: fileError } = await sb.from('code_session_files').insert({
       session_id: session.id, user_id: userId, path, content: initialContent, change_state: 'draft',
     });
+    if (fileError) {
+      logger.warn(
+        { err: fileError.message, sessionId: session.id, projectId, path },
+        'code_session_initial_file_failed',
+      );
+    }
+    initialFile = { requested: true, landed: !fileError, path };
   }
 
-  return c.json({ session: { ...session, draftCount: initialContent ? 1 : 0 } }, 201);
+  return c.json({
+    session: { ...session, draftCount: initialFile.landed ? 1 : 0 },
+    initialFile,
+  }, 201);
 });
 
 // ─── GET /api/code-sessions/:sessionId — detail + thread + files ─────────────────
@@ -229,7 +267,14 @@ codeSessions.get('/:sessionId', async (c) => {
 
   // 11A-0: mirror the project's real files into the session before serving, so the
   // editor + agent see the actual code (not an empty workspace).
-  await hydrateSessionFiles(sb, sessionId, session.project_id, userId);
+  //
+  // FOUNDER-WALK-7 · U4 (D-D): unlike the agent paths, a failed mirror must NOT
+  // refuse here — the session's own files are still real and the editor should show
+  // them. What it must not do is let the client present a possibly-incomplete set as
+  // the whole truth. `filesComplete: false` is that distinction, and it is the only
+  // thing the client needs to stop saying "Noch keine Dateien" about a set nobody
+  // could finish assembling.
+  const hydrated = await hydrateSessionFiles(sb, sessionId, session.project_id, userId);
 
   const [{ data: messages }, { data: files }, { data: proj }] = await Promise.all([
     sb.from('code_session_messages').select('id, role, content, model_used, state, created_at')
@@ -244,6 +289,9 @@ codeSessions.get('/:sessionId', async (c) => {
     session,
     messages: messages ?? [],
     files: files ?? [],
+    // U4 (D-D): false means "this list may be missing project files we could not
+    // read", never "the project is empty".
+    filesComplete: hydrated.ok,
     deployUrl: p?.preview_url ?? null,
     deployedAt: p?.last_deployed_at ?? null,
   });
@@ -446,7 +494,20 @@ codeSessions.post('/:sessionId/messages', async (c) => {
   // 11A-0: ensure the project's real files are in the session before we build the
   // model's file context — otherwise it edits a phantom empty workspace and invents
   // new files instead of changing the existing ones.
-  await hydrateSessionFiles(sb, sessionId, session.project_id, userId);
+  //
+  // U3 (D-C): the classic single-turn path has exactly the same exposure as the
+  // agent path above — "could not read the project" and "the project is empty" used
+  // to be the same input to the prompt builder. Refuse rather than answer blind.
+  const hydratedClassic = await hydrateSessionFiles(sb, sessionId, session.project_id, userId);
+  if (!hydratedClassic.ok) {
+    return c.json(
+      {
+        error: 'project_files_unreadable',
+        message: 'Die Dateien dieses Projekts konnten gerade nicht gelesen werden. Goblin antwortet nicht, solange er nicht sieht, was schon gebaut ist.',
+      },
+      503,
+    );
+  }
 
   // Persist the user turn.
   await sb.from('code_session_messages').insert({
@@ -697,7 +758,22 @@ codeSessions.post('/:sessionId/agent', async (c) => {
   }
 
   // Mirror the project's real files into the session so the tools see actual code.
-  await hydrateSessionFiles(sb, sessionId, session.project_id, userId);
+  //
+  // FOUNDER-WALK-7 · U3 (D-C): a failed mirror used to be logged and ignored, and
+  // the run started anyway — against a workspace that looked empty because nobody
+  // could read it, not because it was. Every answer from that point on is built on
+  // nothing. Refuse instead, in the user's language, and say what is unknown rather
+  // than asserting the project is empty. 503: this is a state of ours that passes.
+  const hydrated = await hydrateSessionFiles(sb, sessionId, session.project_id, userId);
+  if (!hydrated.ok) {
+    return c.json(
+      {
+        error: 'project_files_unreadable',
+        message: 'Die Dateien dieses Projekts konnten gerade nicht gelesen werden. Goblin startet den Lauf nicht, solange er nicht sieht, was schon gebaut ist.',
+      },
+      503,
+    );
+  }
 
   // Persist the user turn (same thread the classic path writes to).
   await sb.from('code_session_messages').insert({

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Copy, Check, ChevronDown, ChevronRight, FileCode2, FolderInput, Download, FileText, ArrowUpRight } from 'lucide-react';
 import { highlight } from '@/lib/syntax/highlighter';
+import { useResolvedTheme } from '@/lib/theme';
 import { useLang } from '@/lib/use-lang';
 import { useExistingFiles } from '@/contexts/existing-files-context';
 import { useCardSendToCode } from '@/contexts/send-to-code-context';
@@ -60,15 +61,20 @@ export function CodeBlock({ code, lang, filename, asCard }: CodeBlockProps) {
     </div>
   ) : null;
 
+  // FOUNDER-WALK-7 · U8 (D-G): highlight in the theme the reader is actually in.
+  // `resolvedTheme` is in the dependency list, so toggling light/dark re-highlights
+  // rather than leaving the previous theme's inline colours on a swapped surface —
+  // which is precisely the state that made function names invisible (1.00:1).
+  const { resolvedTheme } = useResolvedTheme();
   useEffect(() => {
     // Only pay for highlighting when the code is actually visible.
     if (!expanded) return;
     let active = true;
-    highlight(code, lang || 'text')
+    highlight(code, lang || 'text', resolvedTheme)
       .then(out => { if (active) setHtml(out); })
       .catch(() => { if (active) setHtml(null); });
     return () => { active = false; };
-  }, [code, lang, expanded]);
+  }, [code, lang, expanded, resolvedTheme]);
 
   const handleCopy = async (e?: React.MouseEvent) => {
     e?.stopPropagation();

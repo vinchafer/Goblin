@@ -61,6 +61,7 @@ import { isAgentModel } from "@/lib/agent-eligible";
 import type { EditorTheme } from "@/hooks/code/useEditorTheme";
 import type { CodeSession } from "@/hooks/code/useCodeSessions";
 import { layoutPreset, type Intent } from "@/lib/intent";
+import { sessionLoadNotice, surfaceStateFor } from "@/lib/session-load-state";
 import { isPlaceholderTitle, titleFromPrompt } from "@/lib/session-title";
 
 const CodeEditor = dynamic(
@@ -331,9 +332,19 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
   const doRedo = useCallback(() => { const v = editorViewRef.current; if (v) { redo(v); v.focus(); refreshHistory(); } }, [refreshHistory]);
 
   const handleSubmit = (prompt: string) => {
+    // FOUNDER-WALK-7 · U5 (D-B): the user's turn goes on screen NOW and stays there
+    // across every refresh until the server's copy of it comes back. Before this,
+    // nothing in the Code tab added the turn locally — its visibility was a
+    // side-effect of a network round trip, and the founder watched his own
+    // "stell mir das live" disappear.
+    //
+    // Read BEFORE the optimistic append: the auto-title rule below asks whether this
+    // is the session's first turn, and the append would make it never be.
+    const isFirstTurn = detail.messages.length === 0;
+    detail.addPendingUserTurn(prompt);
     // A.3: the first prompt names a still-placeholder session like the task,
     // so the tabs/picker read meaningfully (no more duplicate "Session 2").
-    if (detail.messages.length === 0 && isPlaceholderTitle(session.name)) {
+    if (isFirstTurn && isPlaceholderTitle(session.name)) {
       const title = titleFromPrompt(prompt);
       if (title) onAutoTitle?.(title);
     }
@@ -871,7 +882,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
             onClearAnchor={() => setCommandAnchor(null)}
           />
           <StatusStrip
-            state={liveBlock ? "draft" : state}
+            state={liveBlock ? "draft" : surfaceStateFor(detail.loadError, state)}
             draftCount={detail.draftCount}
             workingSeconds={busy ? (workingSeconds ?? 0) : null}
             liveUrl={detail.deployedAt ? (liveUrl ?? detail.deployUrl ?? null) : null}
@@ -1020,9 +1031,29 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
             />
           ) : !liveBlock ? (
             <div style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}>
-              <div style={{ textAlign: "center", maxWidth: 280, color: "var(--ed-fg-3)", fontFamily: "var(--font-sans)", fontSize: 14, lineHeight: 1.6 }}>
-                Noch nichts zu zeigen. Stell links eine Aufgabe — der Code erscheint hier als Entwurf.
-              </div>
+              {/* FOUNDER-WALK-7 · U4 (D-D): a load that did not resolve says so.
+                  This spot used to invite the user to "stell links eine Aufgabe"
+                  about a session that was full of code nobody could fetch. */}
+              {(() => {
+                const notice = sessionLoadNotice(detail.loadError, lang);
+                if (notice) return (
+                  <div data-testid="session-load-error" style={{ textAlign: "center", maxWidth: 320, fontFamily: "var(--font-sans)", fontSize: 14, lineHeight: 1.6 }}>
+                    <div style={{ color: "var(--ed-fg-1)" }}>{notice.headline}</div>
+                    <div style={{ marginTop: 6, fontSize: 13, color: "var(--ed-fg-2)" }}>{notice.detail}</div>
+                    <button
+                      onClick={() => { void detail.refresh(); }}
+                      style={{ marginTop: 14, background: "transparent", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-1)", borderRadius: 9, padding: "8px 15px", fontSize: 13, cursor: "pointer", fontFamily: "var(--font-sans)" }}
+                    >
+                      {t(lang, "Erneut laden", "Reload")}
+                    </button>
+                  </div>
+                );
+                return (
+                  <div style={{ textAlign: "center", maxWidth: 280, color: "var(--ed-fg-3)", fontFamily: "var(--font-sans)", fontSize: 14, lineHeight: 1.6 }}>
+                    Noch nichts zu zeigen. Stell links eine Aufgabe — der Code erscheint hier als Entwurf.
+                  </div>
+                );
+              })()}
             </div>
           ) : null}
 

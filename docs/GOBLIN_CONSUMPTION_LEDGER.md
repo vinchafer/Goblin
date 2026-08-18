@@ -636,6 +636,36 @@ certificate probe is a bare TLS handshake — none of those invoke the router Wo
 - **Measurement:** each continued answer emits a **`continuation_rounds`** `platform_events` row (`meta.rounds`, `meta.exhausted`) plus a structured log line. Frequency is the unknown in this row: the formula is exact per continued answer, but **what share of turns truncate has not been measured in production** — that is what the event is there to answer.
 - **CFO dependency:** raises **A19 (user-allowance consumption)** for long-form/code turns only. No new external service, no new platform-COGS class. Reconcile after ~1 week of `continuation_rounds` events: `share of turns continued × mean rounds` → the real multiplier on M1/M2. | Status: **FORMULA** (constants VERIFIED in `stream-continuation.ts` + `goblin-hosted.ts:179`; stitching and cap behaviour unit-tested in `stream-continuation.test.ts` — **truncation FREQUENCY in production is unmeasured**, no `continuation_rounds` row has been written yet).
 
+### M18 — Builder-Flow-Reparaturwelle (FOUNDER-WALK-7, 2026-08-18)
+
+**Richtung: netto nach unten, mit einer kleinen, gedeckelten Gegenbewegung.** Keine neue
+Verbrauchsklasse, kein neuer externer Dienst, keine neue Formel — deshalb eine Zeile und
+kein eigenes Modell.
+
+- **U3 (D-C) — Ersparnis, unbeziffert.** `POST /:sessionId/agent` und der klassische
+  `/messages`-Pfad brechen jetzt mit 503 ab, wenn `hydrateSessionFiles` fehlschlägt
+  (`apps/api/src/routes/code-sessions.ts`). Vorher startete der Lauf trotzdem — gegen einen
+  leer *wirkenden* Workspace — und verbrauchte volle Modell-Tokens für eine Antwort, die auf
+  nichts gebaut war (genau der Lauf, den der Founder als „keine Dateien · 114ms" sah, mit
+  allem, was danach kam). Jeder so verhinderte Lauf spart einen kompletten Agent-Turn
+  (M10-Klasse). **Häufigkeit unbekannt**: `session_hydrate_failed` wird geloggt, aber nie
+  gezählt — die Ersparnis ist deshalb als Richtung belegt und als Zahl offen.
+- **U4 (D-D) — Zusatzlast, hart gedeckelt.** `useCodeSessionDetail` wiederholt ein 429 auf
+  `GET /api/code-sessions/:id` bis zu **3 Mal** (Retry-After beachtet, sonst 400ms · 2^n).
+  Worst case: **3 zusätzliche GETs pro fehlgeschlagenem Detail-Load**, gegen die eigene API.
+  Kein Modellaufruf, kein Drittanbieter, keine Tokens. Dieselbe Mechanik, die
+  `fetchWithRetryOn429` (P1.10) für andere Aufrufe schon fährt.
+- **U8 (D-G) — Bundle, nicht Verbrauch.** Ein zweites Shiki-Theme (`goblin-dark.json`, ~1 KB
+  JSON) wird mitregistriert. Keine Laufzeitkosten ausser dem Parsen, kein Netzaufruf.
+- **U2 / U5 / U6 / U7:** verbrauchsneutral. U2 fügt ein Feld zur POST-Antwort hinzu, U5 hält
+  einen Turn clientseitig, U6 ändert ein Navigationsziel, U7 ändert Fehlertexte, ein
+  HTTP-Status-Mapping und ein `console.error`.
+- **CFO-Abhängigkeit:** keine. Kein neuer Posten, keine Änderung an A19/A20.
+- **Nachmessen:** wenn `session_hydrate_failed` je gezählt wird, ist das die Zahl, die U3s
+  Ersparnis beziffert. Bis dahin bleibt sie ehrlich unbeziffert.
+
+Status: **DIREKT** (Codepfade verifiziert; Häufigkeiten unmessbar ohne Produktionszähler).
+
 ### M6 — Reserved (not yet built; add rows before shipping)
 Extended thinking · new third-party connectors beyond GitHub/Vercel/Brave. *FEEL-3a agent loop → **M10**;
 FEEL-3b publish/self-heal folded into M10; web search → **M11** above.*

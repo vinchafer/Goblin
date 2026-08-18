@@ -36,7 +36,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Icon } from "@/components/ui/icon";
-import { apiGet, apiPost } from "@/lib/api";
+import { apiGet, apiPost, type ApiError } from "@/lib/api";
 import { classifyPublishOutcome, type PublishResponseBody } from "@/lib/publish-outcome";
 import { HostedInboxSheet } from "./HostedInboxSheet";
 import { HostedStatusCard } from "./HostedStatusCard";
@@ -205,7 +205,16 @@ export function HostedPublishSheet({ projectId, appsDomain, onUseVercel, onClose
       }
       setOutcome({ kind: "error", message: t(lang, "Die Antwort war unvollständig.", "The response was incomplete.") });
     } catch (e) {
-      const msg = (e as Error)?.message ?? "";
+      // FOUNDER-WALK-7 · U7b (D-F2): the walk could not be root-caused afterwards
+      // because nothing kept WHICH failure came back — only the flattened sentence.
+      // The machine-readable code goes to the console (where a founder walk can
+      // capture it and a bug report can quote it) and never to the user; the user
+      // gets the server's own German, which since D-F1 actually reaches this line.
+      const err = e as ApiError;
+      console.error("[goblin] hosted publish failed", {
+        projectId, name: normalized, status: err?.status, code: err?.code, message: err?.message,
+      });
+      const msg = err?.message ?? "";
       setOutcome({ kind: "error", message: msg || t(lang, "Veröffentlichen fehlgeschlagen.", "Publishing failed.") });
     }
   }, [normalized, projectId, lang, onPublished]);

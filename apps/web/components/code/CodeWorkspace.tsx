@@ -11,7 +11,9 @@ import { useEditorTheme } from "@/hooks/code/useEditorTheme";
 import { API_URL, getToken } from "@/hooks/code/getToken";
 import { getStoredIntent, DEFAULT_INTENT, type Intent } from "@/lib/intent";
 import { titleFromPath, titleFromPrompt } from "@/lib/session-title";
+import { classifyStcOutcome, stcNeedsNotice, stcNoticeText, type StcOutcome } from "@/lib/stc-outcome";
 import { PageLoading } from "@/components/ui/PageLoading";
+import { useLang, t } from "@/lib/use-lang";
 
 interface Props {
   projectId: string;
@@ -27,6 +29,7 @@ interface Props {
  */
 export function CodeWorkspace({ projectId, pendingCode, onPendingConsumed }: Props) {
   const s = useCodeSessions(projectId);
+  const lang = useLang();
   const router = useRouter();
   const [theme, , toggleTheme] = useEditorTheme();
   const [picker, setPicker] = useState<{ content: string; filename?: string } | null>(null);
@@ -149,6 +152,13 @@ export function CodeWorkspace({ projectId, pendingCode, onPendingConsumed }: Pro
     onPendingConsumed?.();
   }, [onPendingConsumed]);
 
+  // FOUNDER-WALK-7 · U2 (D-A): a Send-to-Code payload that was routed here and did
+  // NOT arrive. Until now the two outcomes rendered identically — a session tab and
+  // an empty pane — so the only signal the user got was that nothing happened, ten
+  // clicks in a row. This state is the difference between "nothing here yet" and
+  // "your code did not arrive", and it is set only from what the server reported.
+  const [stcFailure, setStcFailure] = useState<StcOutcome | null>(null);
+
   // Route an incoming Send-to-Code payload (C.1/C.2). The payload always maps to a
   // CLEAR, content-titled session of its OWN — never a silent inject into a stale
   // one. 0/1 existing session → create a fresh titled session; 2+ → the picker
@@ -169,6 +179,11 @@ export function CodeWorkspace({ projectId, pendingCode, onPendingConsumed }: Pro
       if (files && files.length > 1 && firstFile) {
         const ns = await s.createSession({ initialContent: firstFile.content, initialFilename: firstFile.path, name: stcTitle ?? titleFromPath(firstFile.path) ?? "Aus dem Chat" });
         const sid = ns?.id;
+        // U2 (D-A): classify what actually happened before doing anything else. A
+        // failed create used to fall through silently and leave an empty tab.
+        const outcome = classifyStcOutcome(ns, firstFile.path);
+        if (stcNeedsNotice(outcome)) setStcFailure(outcome);
+        if (!sid) { consumeIncoming(); return; }
         if (sid) {
           const t = await getToken();
           for (const f of restFiles) {
@@ -190,7 +205,12 @@ export function CodeWorkspace({ projectId, pendingCode, onPendingConsumed }: Pro
         setPicker({ content: incoming.content ?? "", filename: incoming.filename });
       } else {
         // 0 or 1 existing session: the new task gets its own clear titled session.
-        await s.createSession({ initialContent: incoming.content, initialFilename: incoming.filename, name: stcTitle ?? titleFromPath(incoming.filename) ?? "Aus dem Chat" });
+        const ns = await s.createSession({ initialContent: incoming.content, initialFilename: incoming.filename, name: stcTitle ?? titleFromPath(incoming.filename) ?? "Aus dem Chat" });
+        // U2 (D-A): the load-bearing check. Everything up to here could succeed and
+        // the draft still not exist; the response now says which happened, and both
+        // failures get a visible, honest state instead of an empty pane.
+        const outcome = classifyStcOutcome(ns, incoming.filename ?? null);
+        if (stcNeedsNotice(outcome)) setStcFailure(outcome);
       }
       consumeIncoming();
     })();
@@ -227,6 +247,44 @@ export function CodeWorkspace({ projectId, pendingCode, onPendingConsumed }: Pro
         onToggleTheme={toggleTheme}
         onBackToProject={() => router.push(`/dashboard/project/${projectId}`)}
       />
+
+      {/* FOUNDER-WALK-7 · U2 (D-A) — the state that was missing.
+          It names WHAT did not happen and nothing else: no cause it did not
+          establish, no promise that a retry will work, no stack trace. "Nochmal
+          senden" is not offered here because this surface no longer holds the
+          payload — saying where it still is (the chat) is the honest instruction. */}
+      {stcFailure && (() => {
+        const text = stcNoticeText(stcFailure, lang);
+        if (!text) return null;
+        const path = "path" in stcFailure ? stcFailure.path : null;
+        return (
+          <div
+            role="status"
+            data-testid="stc-failure"
+            style={{
+              flexShrink: 0, display: "flex", alignItems: "flex-start", gap: 10,
+              padding: "11px 14px", background: "var(--ed-chrome-2)",
+              borderBottom: "1px solid var(--ed-rule)", fontFamily: "var(--font-sans)",
+            }}
+          >
+            <Icon name="error" size={15} />
+            <div style={{ flex: 1, minWidth: 0, fontSize: 13, lineHeight: 1.55, color: "var(--ed-fg-1)" }}>
+              {text.headline}
+              {path && (
+                <> <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: 12.5 }}>{path}</span></>
+              )}
+              <div style={{ marginTop: 3, fontSize: 12.5, color: "var(--ed-fg-2)" }}>{text.detail}</div>
+            </div>
+            <button
+              onClick={() => setStcFailure(null)}
+              aria-label={t(lang, "Hinweis schliessen", "Dismiss notice")}
+              style={{ flexShrink: 0, background: "transparent", border: "none", color: "var(--ed-fg-3)", cursor: "pointer", display: "inline-flex", padding: 2 }}
+            >
+              <Icon name="close" size={14} />
+            </button>
+          </div>
+        );
+      })()}
 
       {active ? (
         <SessionPane

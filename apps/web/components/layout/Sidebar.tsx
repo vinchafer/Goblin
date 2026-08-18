@@ -89,7 +89,7 @@ const STORAGE_KEY = 'goblin:sidebar:collapsed';
 // this project has build view-state, else to the hub (unchanged default). Reads
 // only the keys project-workspace already writes — no fetch, no schema. wsTab is
 // same-tab; lastWsTab is the cross-restart mirror.
-function resolveProjectHref(id: string): string {
+export function resolveProjectHref(id: string, currentPath?: string | null): string {
   const hub = `/dashboard/project/${id}`;
   let tab: string | null = null;
   try { tab = sessionStorage.getItem(`goblin:wsTab:${id}`); } catch { /* ignore */ }
@@ -98,7 +98,24 @@ function resolveProjectHref(id: string): string {
   }
   // A stored `preview` no longer resolves to a tab (the surface was removed), so it
   // falls through to the project hub rather than deep-linking into nothing.
-  return tab === 'code' ? `${hub}/work?tab=code` : hub;
+  const resumed = tab === 'code' ? `${hub}/work?tab=code` : hub;
+
+  // FOUNDER-WALK-7 · U6 (D-E): smart-resume must not resolve to the page you are
+  // standing on.
+  //
+  // The founder, in the Code tab of a project, clicked THAT project in the sidebar:
+  // "passiert nichts. ich musste oben im tab auf chat, das ich auf die
+  // projektübersicht komme." He was right that nothing happened, and it was not a
+  // dead handler. ProjectWorkspace persists `goblin:wsTab:<id> = 'code'` while you
+  // are in the Code tab (project-workspace.tsx), so resume resolved to
+  // `/work?tab=code` — the exact route he was already on — and `router.push` to the
+  // current route is a no-op. Resume was doing its job and its job was nothing.
+  //
+  // A sidebar row that cannot take you anywhere has to mean something else, and the
+  // only other thing it can honestly mean is the project's own overview. So: resume
+  // when it moves you, hub when it does not.
+  if (currentPath && resumed.split('?')[0] === currentPath) return hub;
+  return resumed;
 }
 
 export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClose }: SidebarProps) {
@@ -329,7 +346,7 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
                 return (
                   <div
                     key={p.id}
-                    onClick={() => navigate(resolveProjectHref(p.id))}
+                    onClick={() => navigate(resolveProjectHref(p.id, pathname))}
                     title={collapsed ? p.name : undefined}
                     style={{
                       // Matches RecentChatRow spec so both lists read as one
@@ -510,7 +527,7 @@ export function Sidebar({ projects = [], activeProjectId, isOpen = false, onClos
               return (
                 <div
                   key={p.id}
-                  onClick={() => navigate(resolveProjectHref(p.id))}
+                  onClick={() => navigate(resolveProjectHref(p.id, pathname))}
                   style={{
                     // Matches RecentChatRow / desktop project row spec so the
                     // project and chat lists read as one row type in the drawer.

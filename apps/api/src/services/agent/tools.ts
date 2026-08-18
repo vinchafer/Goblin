@@ -324,13 +324,34 @@ export function agentToolsFor(opts: { search: boolean; restore?: boolean; provis
 
 type Sb = ReturnType<typeof getSupabaseAdmin>;
 
-/** Current session file paths, soft-deleted (.trash) excluded (B6). */
-async function listSessionPaths(sb: Sb, sessionId: string): Promise<string[]> {
-  const { data } = await sb.from('code_session_files').select('path').eq('session_id', sessionId);
-  return (data ?? [])
-    .map((r) => r.path as string)
-    .filter((p) => p && !isSoftDeletedPath(p))
-    .sort();
+/**
+ * Current session file paths, soft-deleted (.trash) excluded (B6).
+ *
+ * FOUNDER-WALK-7 · U3 (D-C): this used to destructure only `data` and return
+ * `data ?? []`. A query that FAILED — timeout, connection limit, a transient 5xx
+ * from Supabase — therefore produced an empty array that was indistinguishable
+ * from a project that genuinely has no files. `toolListFiles` then reported it as
+ * a SUCCESSFUL step reading "keine Dateien", and the agent went on to answer
+ * questions about a project it had never actually seen.
+ *
+ * Unresolved is not empty. The error travels now, and the caller decides.
+ */
+async function listSessionPaths(
+  sb: Sb,
+  sessionId: string,
+): Promise<{ ok: true; paths: string[] } | { ok: false; reason: string }> {
+  const { data, error } = await sb.from('code_session_files').select('path').eq('session_id', sessionId);
+  if (error) return { ok: false, reason: error.message };
+  // A null `data` with no error should not happen; treating it as "resolved empty"
+  // would put the original bug back through the side door, so it is a failure too.
+  if (data == null) return { ok: false, reason: 'no rows returned' };
+  return {
+    ok: true,
+    paths: data
+      .map((r) => r.path as string)
+      .filter((p) => p && !isSoftDeletedPath(p))
+      .sort(),
+  };
 }
 
 /** Content of one path — the session draft/saved row first, then real storage. */
@@ -356,7 +377,25 @@ const UNSAFE_PATH_ERROR = {
 // ─── The tool implementations ───────────────────────────────────────────────────
 
 async function toolListFiles(sb: Sb, ctx: ToolContext): Promise<ToolResult> {
-  const paths = await listSessionPaths(sb, ctx.sessionId);
+  const listed = await listSessionPaths(sb, ctx.sessionId);
+  // U3 (D-C): a listing that could not be resolved is a FAILED step, not a
+  // successful step whose answer happens to be "keine Dateien". The founder watched
+  // the agent announce "keine Dateien · 114ms" for a project that demonstrably had
+  // files and then reason on from there — the step said ok, so nothing downstream
+  // had any reason to doubt it. The model sees the failure now and can retry or say
+  // so, instead of building an answer on an emptiness nobody established.
+  if (!listed.ok) {
+    logger.warn({ err: listed.reason, sessionId: ctx.sessionId }, 'agent_list_files_failed');
+    return {
+      ok: false,
+      summary: 'Dateiliste nicht lesbar',
+      error: {
+        code: 'listing_unavailable',
+        message: 'Die Dateiliste dieses Projekts konnte nicht gelesen werden. Das heisst NICHT, dass das Projekt leer ist — arbeite nicht mit der Annahme, es gäbe keine Dateien.',
+      },
+    };
+  }
+  const paths = listed.paths;
   return {
     ok: true,
     summary: paths.length ? `${paths.length} Datei${paths.length === 1 ? '' : 'en'}` : 'keine Dateien',
@@ -466,7 +505,11 @@ async function finalizeDraftWrite(sb: Sb, ctx: ToolContext, path: string, conten
   // of that type and the guessed path diverges from it.
   if (/\.(?:s?css|m?js)$/i.test(path)) {
     try {
-      const htmlPaths = (await listSessionPaths(sb, ctx.sessionId)).filter((p) => /\.html?$/i.test(p));
+      // U3 (D-C): an unresolved listing must not read as "no HTML in this session"
+      // — that would silently skip the reconcile and ship the un-reconciled path.
+      const listedHtml = await listSessionPaths(sb, ctx.sessionId);
+      if (!listedHtml.ok) throw new Error(`listing unavailable: ${listedHtml.reason}`);
+      const htmlPaths = listedHtml.paths.filter((p) => /\.html?$/i.test(p));
       const htmlFiles = await Promise.all(
         htmlPaths.map(async (p) => ({ path: p, content: (await readSessionFile(sb, ctx, p)) ?? '' })),
       );
@@ -508,9 +551,13 @@ async function finalizeDraftWrite(sb: Sb, ctx: ToolContext, path: string, conten
   // by writing the missing file next.
   let integrityNote: string | undefined;
   try {
-    const paths = await listSessionPaths(sb, ctx.sessionId);
+    // U3 (D-C): the integrity check is only meaningful over a listing that resolved.
+    // Running it over a silent [] would report "no missing references" about a set
+    // of files nobody managed to read.
+    const listed = await listSessionPaths(sb, ctx.sessionId);
+    if (!listed.ok) throw new Error(`listing unavailable: ${listed.reason}`);
     const files = await Promise.all(
-      paths.map(async (p) => ({ path: p, content: (await readSessionFile(sb, ctx, p)) ?? '' })),
+      listed.paths.map(async (p) => ({ path: p, content: (await readSessionFile(sb, ctx, p)) ?? '' })),
     );
     const integ = checkStcIntegrity(files);
     if (!integ.ok && integ.missing.length) integrityNote = `Fehlende Referenzen: ${integ.missing.join(', ')}`;

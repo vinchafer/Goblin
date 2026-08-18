@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Icon } from "@/components/ui/icon";
 import type { CodeSession } from "@/hooks/code/useCodeSessions";
 import type { EditorTheme } from "@/hooks/code/useEditorTheme";
+import { useLang, t } from "@/lib/use-lang";
 
 interface Props {
   sessions: CodeSession[];
@@ -25,6 +26,7 @@ function Tick() {
 /** Session tabs at the top of the Code Tab. Desktop = horizontal strip; mobile =
  *  a single chip that opens a bottom sheet (no persistent bottom-tab-bar). */
 export function SessionTabs({ sessions, activeId, onSwitch, onCreate, onDelete, theme, onToggleTheme, onBackToProject }: Props) {
+  const lang = useLang();
   const [sheetOpen, setSheetOpen] = useState(false);
   const active = sessions.find(s => s.id === activeId);
 
@@ -41,6 +43,23 @@ export function SessionTabs({ sessions, activeId, onSwitch, onCreate, onDelete, 
 
       {/* Desktop strip */}
       <div className="gb-sessiontabs-desktop" style={{ alignItems: "center", gap: 4, padding: "6px 8px", overflowX: "auto" }}>
+        {/* FOUNDER-WALK-7 · U6 (D-E, part 2): the way out, on desktop too.
+            `onBackToProject` existed and was rendered ONLY in the mobile branch
+            below (a "belt-and-suspenders escape … on mobile", per the prop's own
+            comment). On desktop there was no exit from the Code tab at all — the
+            founder had to switch to the Chat tab to reach the project overview.
+            Same callback, same destination; it was simply never rendered here. */}
+        {onBackToProject && (
+          <button
+            onClick={onBackToProject}
+            aria-label={t(lang, "Zurück zum Projekt", "Back to project")}
+            title={t(lang, "Zurück zum Projekt", "Back to project")}
+            data-testid="sessiontabs-back-desktop"
+            style={{ flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 5, background: "transparent", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-2)", borderRadius: 8, padding: "6px 10px", fontSize: 12.5, cursor: "pointer", fontFamily: "var(--font-sans)", marginRight: 4 }}
+          >
+            <Icon name="back" size={14} /> {t(lang, "Projekt", "Project")}
+          </button>
+        )}
         {sessions.map(s => {
           const isActive = s.id === activeId;
           return (
