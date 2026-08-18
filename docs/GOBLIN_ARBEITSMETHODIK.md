@@ -30,6 +30,7 @@
 5. Ledger: ändert etwas Tokens/externe Kosten? Zeile im selben Commit?
 6. Report-Vollständigkeit: Merge-SHA+Timestamp, Unit-SHAs, Evidenz-Refs, **Honest-Limitations-Sektion (Pflicht, auch "keine")**, Founder-Action-Liste, numerische Erfolgsraten.
 7. Die Steven-Frage: "Käme ein skeptischer Prüfer mit nur meiner Evidenz zu meinem Urteil?" Wenn nein → Artefakt nachliefern oder Urteil abschwächen.
+8. **Die Kompositions-Frage (nur Aussenflächen):** "Welches Modell baut ein technischer Leser aus dieser Seite — und in welcher Reihenfolge erfährt er es?" Punkt 4 prüft String für String und kann diesen Defekt strukturell nicht fangen: er entsteht erst aus Reihenfolge, Gewicht und typografischer Hierarchie. Gegenprobe ist gerastert, nicht gelesen — Screenshots der gebauten Seite pro Breakpoint, plus ein echter Erst-Leser.
 
 ## Wann eskalieren statt entscheiden (als Decision-Table vorlegen, nie selbst wählen)
 Geld & Pläne · neue kostenpflichtige Abhängigkeiten · Sicherheitsmodell · Scope-Erweiterung · Lizenzen/Recht · Produktphilosophie (widerspricht Founder-Entscheiden) · User-Sicherheit & Daten (sobald echte User da sind) · Irreversibles jenseits von git-revert.
@@ -45,7 +46,7 @@ Neu-lesen statt erinnern (Dateien driften nicht, Zusammenfassungen schon) · ein
 - Prod ist self-auth-fähig (Cookie-Injection-Rezept) — für echte Prod-Walks nutzen.
 
 ## Anti-Pattern-Katalog (je einmal gefangen — nie wieder einführen)
-False-Green · Phantom-Affordanz · erfundene Dateiinhalte/Historie · erfundene Zeitangaben · "Fertig" vor Verifikation · stille Modell-/Provider-Substitution in Gates · stilles Weglassen von Anhängen/Kontext · unsichtbare Features dem User verrechnen · unbatchte destruktive Storage-Ops · byte-basierte UTF-8-Truncation · Webhook-200 erst nach Business-Logik · rohe Stack-Traces an User · Desktop-IDE auf Handy geschrumpft.
+"Wahre Teile, falsches Ganzes" (Kompositions-Fehlschluss: jeder String wahr, das Ganze irreführend — ein wahrer Satz an der falschen Position, in der Auszeichnung, die die Seite selbst als Zierde etabliert hat, neben einem lauteren Gegensignal, wirkt wie ein fehlender Satz; gefangen 2026-08-18 auf der Landing Page) · False-Green · Phantom-Affordanz · erfundene Dateiinhalte/Historie · erfundene Zeitangaben · "Fertig" vor Verifikation · stille Modell-/Provider-Substitution in Gates · stilles Weglassen von Anhängen/Kontext · unsichtbare Features dem User verrechnen · unbatchte destruktive Storage-Ops · byte-basierte UTF-8-Truncation · Webhook-200 erst nach Business-Logik · rohe Stack-Traces an User · Desktop-IDE auf Handy geschrumpft.
 
 ## Dokument-Disziplin
 Zahlen leben an genau einer Stelle: Preise/Margen → CFO-Dashboard; Verbrauch → Ledger; Layer/Positionierung → Arch/Thesis; Design-Tokens → Design-System. Andere Dokumente verweisen, restaten nie. Specs gehören ins Repo (`docs/`), nicht nur in den Chat — was nur im Chat lebt, geht verloren.
