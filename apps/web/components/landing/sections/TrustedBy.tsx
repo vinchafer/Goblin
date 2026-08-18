@@ -1,12 +1,15 @@
+import { copy } from '@/components/landing/copy';
+import type { Lang } from '@/lib/locale';
+
 const PROVIDERS = ['Anthropic', 'OpenAI', 'Google', 'Groq', 'xAI', 'Mistral', 'DeepSeek'];
 
-export function TrustedBy() {
+export function TrustedBy({ lang }: { lang: Lang }) {
   return (
     <section className="trusted">
       <div className="trusted-inner">
         <div className="trusted-label">
           <span className="rule" aria-hidden="true" />
-          Power users — bring your own frontier
+          {copy(lang).trusted.label}
           <span className="rule" aria-hidden="true" />
         </div>
         <div className="trusted-row">

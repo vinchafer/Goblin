@@ -620,7 +620,20 @@
   border-top: 1px solid var(--line);
   text-align: center;
 }
+/* Two spans and a dash, laid out as a wrapping flex row rather than one text
+   run. A mono, uppercase, letter-spaced run breaks wherever it happens to run
+   out of room, which at 375px orphaned the last word ("… GOBLIN SWIFT &" /
+   "FORGE"); German ("IN JEDEM PLAN ENTHALTEN — GOBLIN SWIFT & FORGE") is longer
+   and broke worse. Here each part is unbreakable and the gap between them is
+   the only wrap point, so the line either fits or splits at the dash — one tidy
+   line on desktop, two on a phone, in both languages and with no per-locale
+   font-size tuning. */
 .landing-root .runtime-models-eyebrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0 8px;
   font-family: var(--lp2-font-mono), monospace;
   font-size: 10.5px;
   font-weight: 600;
@@ -629,6 +642,10 @@
   color: var(--ink-3);
   margin-bottom: 10px;
 }
+.landing-root .runtime-models-eyebrow .part { white-space: nowrap; }
+/* The dash is a separator, not a hyphen: it must never start a line on its own,
+   so it rides along with the part before it. */
+.landing-root .runtime-models-eyebrow .dash { opacity: 0.6; }
 .landing-root .runtime-models p {
   font-family: var(--lp2-font-sans), sans-serif;
   font-size: 14.5px;
@@ -653,6 +670,9 @@
 @media (max-width: 480px) {
   .landing-root .runtime-note,
   .landing-root .runtime-models { text-align: left; }
+  /* Left-aligned at this width, so the eyebrow's parts align with the prose
+     under them instead of sitting centred above it. */
+  .landing-root .runtime-models-eyebrow { justify-content: flex-start; }
 }
 
 /* =========================================================

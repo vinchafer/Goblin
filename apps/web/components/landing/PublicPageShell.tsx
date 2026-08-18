@@ -79,9 +79,9 @@ export function PublicPageShell({ children }: { children: ReactNode }) {
             that exist only on the landing. Left relative they would be dead
             clicks here, which is the phantom-affordance the anti-pattern catalog
             forbids; prefixed they navigate home and land on the section. */}
-        <Nav anchorBase="/" />
+        <Nav anchorBase="/" lang="en" />
         <main id="main">{children}</main>
-        <Footer />
+        <Footer lang="en" />
       </div>
     </>
   );

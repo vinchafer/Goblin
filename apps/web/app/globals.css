@@ -239,9 +239,15 @@ body {
   transition: opacity 0.15s ease;
 }
 .lang-toggle__opt:hover { opacity: 0.8; }
-/* The active side is the one thing this control has to say clearly. */
+/* U6: on the landing the options are real links (/ and /de), so they also need
+   the anchor resets the button got for free. */
+a.lang-toggle__opt { text-decoration: none; display: inline-block; }
+/* The active side is the one thing this control has to say clearly. A button
+   says it with aria-pressed; a link says it with aria-current. */
 .lang-toggle__opt[aria-pressed='true'],
-.lang-toggle__opt[aria-pressed='true']:hover { opacity: 1; }
+.lang-toggle__opt[aria-pressed='true']:hover,
+.lang-toggle__opt[aria-current='page'],
+.lang-toggle__opt[aria-current='page']:hover { opacity: 1; }
 .lang-toggle__opt:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
 
 /* ─── Mobile ─────────────────────────────────────────────── */

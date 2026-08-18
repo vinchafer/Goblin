@@ -1,10 +1,11 @@
 import { SectionHead } from '@/components/landing/ui/SectionHead';
 import { PhoneMock } from '@/components/landing/sections/PhoneMock';
+import { copy } from '@/components/landing/copy';
+import type { Lang } from '@/lib/locale';
 
 /**
  * §03 — the product section.
  *
- * ── THIRD PASS, AND THE LAST ONE THAT PATCHES ───────────────────────────────
  * This section carried a hand-built CSS mock of the chat + code panels. It was
  * corrected twice (i18n leak, then product-label fidelity) and was still wrong
  * both times, because the thing being corrected was an invention: a drawing of
@@ -16,60 +17,46 @@ import { PhoneMock } from '@/components/landing/sections/PhoneMock';
  * with the iPhone mockup from the pitch repo (vinchafer/justgoblin-pitch @
  * 92e6931, `components/mock/MockIPhonePostLogin.tsx`), which was itself built
  * read-only FROM `apps/web` — derived from the product, not imagined beside it.
- * See components/landing/sections/PhoneMock.tsx for the port and the four
- * drifts corrected during it, and docs/WAVE_MAIL_LANDING_AUDIT.md §2.4 for the
- * element → file:line → kept/removed audit of every visible affordance.
- *
- * ── WHY THE HEADING CHANGED TOO ─────────────────────────────────────────────
- * The old heading ("One tap. Code lands in your editor.") described the old
- * picture. The ported mock shows the phone dashboard — the composer, the
- * projects, what's new — so leaving that heading above it would have recreated
- * exactly the defect this section is being fixed for: words promising one thing
- * while the picture shows another. The Send-to-Code claim is not dropped from
- * the site; it keeps its own places (Problem P·03, HowItWorks step 03,
- * IslandFlow step 03) where the words stand alone and no picture contradicts
- * them. Flagged for the founder at PR review — this is copy, and revertible.
+ * See components/landing/sections/PhoneMock.tsx for the port, and
+ * docs/WAVE_MAIL_LANDING_AUDIT.md §2.4 for the element → file:line audit.
  *
  * Every sentence below is a claim about what the screenshot shows, and each one
  * is traceable to the same code the mock is: the composer and its model pill
  * (chat/ChatInput.tsx), the projects list and "What's new"
  * (app/dashboard/page.tsx).
+ *
+ * U6: the third paragraph claims the mock is "the real screen, drawn from the
+ * app's own code". On /de that claim only holds if the mock speaks German too —
+ * so PhoneMock takes the language and quotes the app's German branch verbatim.
  */
-export function SendToCode() {
+export function SendToCode({ lang }: { lang: Lang }) {
+  const c = copy(lang).product;
   return (
     <section className="stc">
       <div className="container">
         <SectionHead
           num="03"
           total="05"
-          label="The product"
+          label={c.label}
           heading={
             <>
-              This is Goblin <span className="serif-italic">on your phone.</span>
+              {c.head.a} <span className="serif-italic">{c.head.i}</span>
             </>
           }
-          lead="Not a companion app, not a remote desktop. The whole workshop, on the screen you already have with you."
+          lead={c.lead}
         />
 
         <div className="stc-phone">
-          <PhoneMock />
+          <PhoneMock lang={lang} />
 
           <div className="stc-phone-copy">
-            <p>
-              <strong>You start by saying what you want.</strong> The composer is the
-              same one the desktop uses — pick a model, attach a file, or just type.
-              No prompt engineering, no setup screen first.
-            </p>
-            <p>
-              <strong>Your projects live here.</strong> Every one of them opens into
-              chat, code and publishing from this list — the phone is not a viewer for
-              work you did somewhere else.
-            </p>
-            <p>
-              <strong>This is the real screen</strong>, drawn from the app&apos;s own
-              code rather than staged for the page. What you see is what loads after
-              you sign in.
-            </p>
+            {c.paras.map((p) => (
+              <p key={p.strong}>
+                <strong>{p.strong}</strong>
+                {p.rest.startsWith(',') ? '' : ' '}
+                {p.rest}
+              </p>
+            ))}
           </div>
         </div>
       </div>
