@@ -1,0 +1,174 @@
+[
+  {
+    "slide": "01-type-post",
+    "template": "type-post.html",
+    "file": "content/social/posts/ehrlichkeit/01-type-post-feed-1080x1350.png",
+    "format": "feed",
+    "renderedAt": "2160x2700",
+    "width": 1080,
+    "height": 1350,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#F4ECD8",
+    "centre": "#F4ECD8",
+    "bottomRight": "#F4ECD8",
+    "usedFonts": [
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "Wir sagen nie „fertig“, bevor wir es gep"
+      }
+    ],
+    "bytes": 65625,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 129.6,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 1892,
+          "widthFallback": 1871.78,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 96,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "Wir sagen nie „fertig“, bevor wir es geprüft …",
+        "className": "headline",
+        "fg": "#0F2B1E",
+        "bg": "#F4ECD8",
+        "fontSize": 129.6,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 12.88,
+        "threshold": 3,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1350
+      },
+      "boxes": 1,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  },
+  {
+    "slide": "01-type-post",
+    "template": "type-post.html",
+    "file": "content/social/posts/ehrlichkeit/01-type-post-story-1080x1920.png",
+    "format": "story",
+    "renderedAt": "2160x3840",
+    "width": 1080,
+    "height": 1920,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#F4ECD8",
+    "centre": "#F4ECD8",
+    "bottomRight": "#F4ECD8",
+    "usedFonts": [
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "Wir sagen nie „fertig“, bevor wir es gep"
+      }
+    ],
+    "bytes": 68126,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 129.6,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 1892,
+          "widthFallback": 1871.78,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 96,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "Wir sagen nie „fertig“, bevor wir es geprüft …",
+        "className": "headline",
+        "fg": "#0F2B1E",
+        "bg": "#F4ECD8",
+        "fontSize": 129.6,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 12.88,
+        "threshold": 3,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1920
+      },
+      "boxes": 1,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  }
+]
