@@ -129,7 +129,20 @@ with checks(migration, what, applied, note) as (values
   ('0101', 'users.deleted_at',
      exists (select 1 from information_schema.columns
               where table_schema='public' and table_name='users' and column_name='deleted_at'),
-     'LOUD if missing — /admin/users 500s; /admin/stats + Insight degrade to unfiltered')
+     'LOUD if missing — /admin/users 500s; /admin/stats + Insight degrade to unfiltered'),
+
+  -- ── The named internal plan (Founder-Ops) ───────────────────────────────────
+  -- Two rows on purpose: 0105 ships the plan (PART 1, schema) and the grant (PART 2,
+  -- one UPDATE) as separate acts, so "did the schema land" and "does anyone actually
+  -- have internal access" are separate questions with separate answers.
+  ('0105a', 'users_plan_check allows plan=internal',
+     exists (select 1 from pg_constraint
+              where conname = 'users_plan_check'
+                and pg_get_constraintdef(oid) ilike '%internal%'),
+     'silent if missing — an UPDATE to plan=internal is REJECTED by the constraint; the code path is simply unreachable and every account derives as before'),
+  ('0105b', 'PART 2 applied: at least one account is on the internal plan',
+     exists (select 1 from public.users where plan = 'internal'),
+     'NOT a migration defect — this is the GRANT. *** MISSING *** here just means nobody has been given internal access yet (PART 2 of 0105 not run, or the account had not signed up yet)')
 )
 select
   migration,

@@ -8,6 +8,11 @@
  * entitlement from this single function instead of reading `users.plan` directly.
  *
  * Precedence (server-side, never the raw `plan` column):
+ *   0. plan = 'internal'                 → internal (named Founder-Ops plan, migration
+ *                                                   0105. The ONE case where the `plan`
+ *                                                   column IS the entitlement — see the
+ *                                                   branch comment for why that is safe
+ *                                                   and why it goes first)
  *   1. is_comped (not yet expired)       → comped  (full access; founder comp OR promo
  *                                                   grant. comped_until NULL = permanent
  *                                                   comp; a value in the past means an
@@ -25,15 +30,16 @@
  * Pure + deterministic → unit-testable, reusable on every read path and the gate.
  */
 
-export type PlanState = 'comped' | 'paid' | 'trial' | 'none';
+export type PlanState = 'internal' | 'comped' | 'paid' | 'trial' | 'none';
 
 export interface PlanTruth {
   state: PlanState;
-  /** Allowance/cap key for goblin-cap. comped→power (most generous), none→none. */
+  /** Allowance/cap key for goblin-cap. internal→internal, comped→power (most generous
+   *  purchasable tier), none→none. */
   allowanceKey: string;
   /** UI/label key. */
   planKey: string;
-  /** comped | paid | trial all have access; none does not. */
+  /** internal | comped | paid | trial all have access; none does not. */
   hasAccess: boolean;
   /** paid + sub set to cancel at period end → access ends on `endsAt`. */
   cancelAtPeriodEnd: boolean;
@@ -50,6 +56,12 @@ export interface PlanTruth {
 }
 
 export interface PlanTruthRow {
+  /**
+   * The raw plan column. Authoritative ONLY for 'internal' (the hand-granted
+   * Founder-Ops plan, migration 0105) and, inside the subscription branch, for which
+   * paid tier a real subscriber is on. Never trusted on its own for anything else —
+   * that is the whole point of this module.
+   */
   plan?: string | null;
   is_comped?: boolean | null;
   /**
@@ -77,6 +89,30 @@ const PAID_PLAN_KEYS = new Set(['build', 'pro', 'power']);
 
 export function derivePlanTruth(row: PlanTruthRow | null | undefined, now: Date = new Date()): PlanTruth {
   if (!row) return { state: 'none', allowanceKey: 'none', planKey: 'none', hasAccess: false, cancelAtPeriodEnd: false, endsAt: null, paymentFailing: false, paymentDeadline: null };
+
+  // Internal — the named Founder-Ops plan (migration 0105). This is the one branch that
+  // reads `plan` as the entitlement itself, and it is deliberate:
+  //
+  //   • It is the ONLY value in the CHECK constraint that Stripe never writes. The
+  //     webhook writes build|pro|power; churn writes 'none'; the default is 'none'.
+  //     'internal' can only get there by hand (0105 PART 2), so trusting it here does
+  //     NOT reopen the 0070 leak, where a DEFAULTED column ('build') meant "paying".
+  //     A default can lie about intent; a value nothing automatic can produce cannot.
+  //   • It goes FIRST so internal access is not a side effect of some other state and
+  //     cannot be silently downgraded by an expiring comp, a trial date, or a
+  //     subscription row. One column says it, one column revokes it.
+  //   • There is no e-mail check anywhere in this file (or any other). Who is internal
+  //     is a fact in the database, visible in Studio and in /api/billing/status, not a
+  //     string compiled into the server or hidden in an env var.
+  //
+  // PRE-MIGRATION TOLERANT: this reads the long-existing `plan` column and adds no new
+  // column to any SELECT, so on a database without 0105 the branch is simply
+  // unreachable (the CHECK constraint rejects the value, so no row can hold it) and
+  // every other account derives exactly as it did before. Nothing here needs 0105 to be
+  // applied in order to be safe to deploy.
+  if ((row.plan ?? '').toLowerCase() === 'internal') {
+    return { state: 'internal', allowanceKey: 'internal', planKey: 'internal', hasAccess: true, cancelAtPeriodEnd: false, endsAt: null, paymentFailing: false, paymentDeadline: null };
+  }
 
   // Comped — permanent (comped_until NULL/undefined) OR a promo grant that has not yet
   // expired. An expired promo (comped_until in the past) falls through so the user

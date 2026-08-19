@@ -671,6 +671,50 @@ Status: **DIREKT** (Codepfade verifiziert; Häufigkeiten unmessbar ohne Produkti
 ### M19 — Modell-Evaluierungs-Spike (SPIKE_MODEL_EVAL_2026-08, 2026-08-19)
 - **Einmalige Plattform-COGS, NICHT wiederkehrend und keinem Nutzer berechnet.** Der Spike `docs/SPIKE_MODEL_EVAL_2026-08.md` hat 96 Probe-Calls (4 Modelle × 8 Proben × 3 Läufe) direkt gegen DeepInfra gefahren, um die Swift-/Forge-Kandidaten zu vermessen — **gemessene Ausgabe ≈ $0.639** (finaler Lauf $0.373164 + $0.265630 verworfene Teilläufe), Obergrenze $2.00, nicht erreicht. Läuft ausserhalb jedes Nutzerpfads (eigenes Wegwerf-Harness in `scripts/spike/`, importiert **keinen** Produktionscode), erzeugt keine `completion_costs`-Zeile, berührt weder Allowance-Gate noch `FORGE_WEIGHT` noch die Plan-Caps. **Keine CFO-Abhängigkeit, kein neuer Posten, keine Änderung an A19/A20** — der gemessene in:out-Ratio des Spikes (~0.04:1) ist ein Artefakt der Probenform (nackte Einzelprompts ohne System-Prompt/Dateikontext) und **taugt ausdrücklich NICHT zur Revision der 9:1-Annahme**. Status: **DIREKT** (96 Roh-Records, Preise live aus der DeepInfra-API).
 
+### M20 — Der benannte interne Plan (`internal`, Founder-Ops, 2026-08-20)
+- **Eine neue PLATTFORM-COGS-Position, kein neuer Token-Pfad.** Migration 0105 führt einen
+  benannten Plan `internal` ein (`users.plan = 'internal'`, Zuweisung als separate,
+  kommentierte Anweisung in PART 2 der Migration — heute genau ein Konto, Founder-Ops).
+  Ein internes Konto verbraucht dieselben M1/M10-Turns wie jeder andere Nutzer über
+  denselben `goblin_hosted`-Pfad; die **Kosten pro Turn ändern sich nicht**. Neu ist
+  ausschliesslich, **wer sie trägt**: es gibt keine Stripe-Subscription hinter diesem
+  Konto, also sind seine Tokens Plattform-COGS statt Nutzer-Umsatz. Dieselbe Klasse wie
+  M16 (Promo-Grants) — nur permanent statt 30 Tage, und für ein einziges, namentlich
+  bekanntes Konto statt für eine Charge.
+- **Trigger:** jeder Chat-/Agent-Turn eines Kontos mit `plan = 'internal'`.
+- **Tokens/Formel:** unverändert M1 (Chat) bzw. M10 (Agent-Lauf). Kein eigener Prompt,
+  kein eigener Pfad, keine Ausnahme im Gate — `derivePlanTruth` liefert
+  `allowanceKey = 'internal'`, und `isOverMonthlyAllowance` / `isOverDailyGuard`
+  (`model-router.ts`) laufen für dieses Konto exakt wie für ein Power-Konto.
+- **Obergrenze (das ist der Punkt der Zeile):** `GOBLIN_MONTHLY_ALLOWANCE.internal =
+  250.000.000` Kosteneinheiten/Monat (≈ 1.667 Builds bei `COST_UNITS_PER_BUILD`),
+  `GOBLIN_DAILY_GUARD.internal = 25.000.000`/Tag (≈ 167 Builds). Beide in
+  `apps/api/src/lib/goblin-cap.ts`, in denselben Maps wie alle anderen Pläne.
+  Der interne Plan ist **nicht unbegrenzt** — genau damit diese Zeile eine Zahl haben
+  kann. Ein Konto ohne Plan bekommt weiterhin den konservativen Trial-Boden (4,9M),
+  nie „unbegrenzt".
+- **Kosten (Bandbreite, gerechnet mit dem Ledger-Mix $0,20/M):**
+  · realistische interne Nutzung (Dogfooding/Support-Repro, ~5–15M Einheiten/Monat) ≈ **$1–3/Monat**
+  · schwerer Monat (~60M, entspricht einem ausgereizten Power-Konto) ≈ **$12**
+  · **Obergrenze bei vollständig ausgeschöpftem Monatskontingent ≈ $50/Monat**
+  · **Obergrenze eines einzelnen Tages (Daily Guard) ≈ $5** — das ist der Runaway-Loop-Schutz.
+  Speicher: `STORAGE_LIMIT_BYTES.internal = 200 GB` (`storage-cap.ts`), ein B2-Posten in
+  derselben Klasse wie die Plan-Speichergrenzen, kein Token-Posten.
+- **Stellschrauben:** `GOBLIN_MONTHLY_ALLOWANCE.internal` / `GOBLIN_DAILY_GUARD.internal`
+  (`apps/api/src/lib/goblin-cap.ts`), `STORAGE_LIMIT_BYTES.internal`
+  (`apps/api/src/lib/storage-cap.ts`). Widerruf ist ein einziges UPDATE
+  (`plan = 'none'`), keine Code-Änderung, kein Deploy.
+- **CFO-Abhängigkeit:** eine kleine, gedeckelte interne COGS-Position, gleiche Behandlung
+  wie M16. **Keine** Änderung an A6 (Ausschöpfung), A8 (Effizienzklasse), A19/A20 oder an
+  irgendeinem Plan-Preis/-Cap für echte Nutzer — die bestehenden Zahlen bleiben Zeichen
+  für Zeichen stehen (durch Tests festgenagelt, `apps/api/src/lib/internal-plan.test.ts`).
+- **Nachmessen:** die tatsächliche interne Nutzung steht in `completion_costs` für dieses
+  eine Konto und lässt sich direkt gegen die $1–3/Monat-Annahme halten, sobald der Plan
+  angewendet ist. Bis dahin ist die Bandbreite oben FORMULA, nicht MEASURED.
+- **Migration 0105 authored, NICHT angewendet** — der Founder wendet an (Methodik Gesetz 4).
+
+Status: **FORMULA** (Obergrenzen aus Code-Konstanten; reale interne Nutzung noch ungemessen).
+
 ### M6 — Reserved (not yet built; add rows before shipping)
 Extended thinking · new third-party connectors beyond GitHub/Vercel/Brave. *FEEL-3a agent loop → **M10**;
 FEEL-3b publish/self-heal folded into M10; web search → **M11** above.*
