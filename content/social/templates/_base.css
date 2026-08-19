@@ -1,0 +1,216 @@
+/* ─────────────────────────────────────────────────────────────────────
+   _base.css — the only stylesheet the social templates own.
+
+   HARD RULE: not one colour literal lives in this file or in any template.
+   Every colour is a var() resolved from apps/web/styles/design-tokens.css,
+   which is the repo's declared GLOBAL SOURCE OF TRUTH (v1.1). If a template
+   needs a colour the design system does not define, that is a HALT, not a hex.
+
+   Two things this file must supply that the token file deliberately does not:
+
+   1. The next/font variable seam. design-tokens.css defines
+        --font-sans: var(--font-manrope), 'Manrope', system-ui, …
+      and next/font supplies --font-manrope inside the app. Outside the app
+      that variable is undefined, which makes the whole font-family declaration
+      invalid at computed-value time — the text would silently fall back. So the
+      seam is bound here to the self-hosted family names instead. Same tokens,
+      different provider. --font-mono is likewise owned by next/font upstream.
+
+   2. A poster step for the type scale. The design system's scale steps once, at
+      640px (mobile → desktop). A 1080px social canvas seen at ~400px in a feed
+      is a third step, and the system does not define one. Rather than restate
+      sizes, every poster size is derived from the system's own desktop step by
+      a single documented factor, --poster-scale. Change one number and the
+      whole scale moves with the system's own ratios intact.
+      → This factor is the ONE thing here the design system does not define.
+        It is listed in the wave report for ratification.
+   ───────────────────────────────────────────────────────────────────── */
+
+@import url('../../../apps/web/styles/design-tokens.css');
+@import url('../fonts/fonts.css');
+
+:root {
+  /* Seam (1) — bind the design system's font tokens to the vendored faces. */
+  --font-manrope:          'Manrope';
+  --font-instrument-serif: 'Instrument Serif';
+  --font-mono:             'JetBrains Mono', ui-monospace, monospace;
+
+  /* Seam (2) — the poster step. */
+  --poster-scale: 1.8;
+
+  --p-display-fs:  calc(var(--t-display-fs)  * var(--poster-scale));
+  --p-h1-fs:       calc(var(--t-h1-fs)       * var(--poster-scale));
+  --p-h2-fs:       calc(var(--t-h2-fs)       * var(--poster-scale));
+  --p-h3-fs:       calc(var(--t-h3-fs)       * var(--poster-scale));
+  --p-body-lg-fs:  calc(var(--t-body-lg-fs)  * var(--poster-scale));
+  --p-body-fs:     calc(var(--t-body-fs)     * var(--poster-scale));
+  --p-small-fs:    calc(var(--t-small-fs)    * var(--poster-scale));
+  --p-eyebrow-fs:  calc(var(--t-eyebrow-fs)  * var(--poster-scale));
+  --p-mono-fs:     calc(var(--t-mono-fs)     * var(--poster-scale));
+
+  /* Canvas geometry. The slide IS the viewport (100vw × 100vh), so the canvas
+     can never drift from the format the renderer asked for.
+
+     Geometry is built on --space-11, NOT --space-12. design-tokens.css ends in
+     a "RETIRED-BRAND COMPAT SHIM" that redefines --space-8, --space-10 and
+     --space-12 later in the same :root block (120px → 48px for --space-12), so
+     those three steps do not mean what the v1.1 scale says they mean. The shim
+     is marked temporary; until it goes, only the un-shimmed steps are safe to
+     build on. Filed as a finding for the wave report.
+     → un-shimmed and safe: --space-0..7, --space-9, --space-11
+
+     The zeroes are written 0px, not var(--space-0): that token is the UNITLESS
+     zero the design system uses for shorthand, and calc(96px + 0) is invalid
+     CSS — the whole padding declaration is dropped and the slide silently
+     loses its gutter. */
+  --gutter:   calc(var(--space-11) * 1.2);   /* 96px */
+  --safe-top: 0px;
+  --safe-bot: 0px;
+}
+
+/* The story canvas hands its extra height to the platform's chrome, not to the
+   content: a headline centred in 1920px sits under the profile row. */
+[data-format='story'] {
+  --safe-top: calc(var(--space-11) * 1.5);  /* 120px */
+  --safe-bot: calc(var(--space-11) * 2.4);  /* 192px */
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; padding: 0; }
+
+.slide {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: calc(var(--gutter) + var(--safe-top)) var(--gutter)
+           calc(var(--gutter) + var(--safe-bot));
+  font-family: var(--font-sans);
+  font-feature-settings: 'kern' 1, 'liga' 1;
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+
+  /* Default surface: the design system's primary dark tile (§B1.1). */
+  background: var(--ink-deep);
+  color: var(--ink-on-dark-1);
+}
+
+/* The one light surface, for posts that want warmth. Gold is forbidden as text,
+   border or icon here — see .gold-fill below, which is the only gold allowed. */
+.slide[data-surface='bone'] {
+  background: var(--bone);
+  color: var(--ink-1);
+}
+.slide[data-surface='bone'] .eyebrow,
+.slide[data-surface='bone'] .footer { color: var(--ink-3); }
+.slide[data-surface='bone'] .accent { color: var(--sage-strong); }
+.slide[data-surface='bone'] .body   { color: var(--ink-2); }
+.slide[data-surface='bone'] .rule   { background: var(--rule); }
+
+/* ─── Type primitives ───────────────────────────────────────────────── */
+
+.eyebrow {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: var(--p-eyebrow-fs);
+  line-height: var(--t-eyebrow-lh);
+  letter-spacing: var(--t-eyebrow-ls);
+  text-transform: uppercase;
+  color: var(--ink-on-dark-2);
+}
+
+.headline {
+  margin: 0;
+  font-weight: 800;
+  font-size: var(--p-display-fs);
+  line-height: var(--t-display-lh);
+  letter-spacing: var(--t-display-ls);
+  text-wrap: balance;
+}
+
+.headline--sm {
+  font-size: var(--p-h1-fs);
+  line-height: var(--t-h1-lh);
+  letter-spacing: var(--t-h1-ls);
+}
+
+/* Instrument Serif, italic only — the design system's single accent voice. */
+.accent {
+  display: block;
+  margin: 0;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 400;
+  font-size: var(--p-h1-fs);
+  line-height: var(--t-h1-lh);
+  color: var(--sage);
+  text-wrap: balance;
+}
+
+.body {
+  margin: 0;
+  font-weight: 400;
+  font-size: var(--p-body-lg-fs);
+  line-height: var(--t-body-lg-lh);
+  color: var(--ink-on-dark-2);
+  text-wrap: pretty;
+}
+
+.footer {
+  font-family: var(--font-mono);
+  font-weight: 400;
+  font-size: var(--p-mono-fs);
+  line-height: var(--t-mono-lh);
+  letter-spacing: var(--t-mono-sm-ls);
+  color: var(--ink-on-dark-2);
+}
+
+/* ─── Gold ───────────────────────────────────────────────────────────
+   Gold is a FILLED SURFACE and nothing else. Never gold text, never a gold
+   border, never a gold icon. Ink on the fill is the deep green (6.78:1). */
+.gold-fill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--brand-gold);
+  color: var(--ink-deep);
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: var(--p-mono-fs);
+  letter-spacing: var(--t-mono-sm-ls);
+  padding: var(--space-3) var(--space-6);
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+
+.rule {
+  height: var(--space-1);
+  width: calc(var(--space-11) * 1.8);
+  background: var(--rule-strong);
+  border-radius: var(--radius-pill);
+}
+
+.spacer { flex: 1 1 auto; min-height: var(--space-7); }
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-7);
+}
+
+.foot-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-6);
+}
+
+/* The mark ships as a file, never redrawn. Height only — aspect is the SVG's. */
+.mark { display: block; height: calc(var(--space-11) * 0.9); width: auto; }
+
+/* Anything the renderer finds empty is removed outright rather than left as a
+   collapsed box that silently changes the vertical rhythm. */
+[hidden] { display: none !important; }

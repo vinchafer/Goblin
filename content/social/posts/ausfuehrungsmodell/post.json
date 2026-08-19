@@ -1,0 +1,32 @@
+{
+  "title": "Ausführungsmodell — wo Goblin eigentlich rechnet",
+  "note": "Beispiel-Post. Die Aussagen stammen wörtlich aus der freigegebenen Landing-Messaging v2 (docs/LANDING_MESSAGING_FIX_v2.md) — hier wird nichts Neues behauptet.",
+  "slides": [
+    {
+      "template": "type-post",
+      "eyebrow": "Ausführungsmodell",
+      "headline": "Dein Handy ist die Fernbedienung. Nicht der Server.",
+      "accent": "„Die KI selbst läuft in Goblins Cloud.“",
+      "footer": "justgoblin.com",
+      "badge": "01 / 03",
+      "size": "sm"
+    },
+    {
+      "template": "carousel-slide",
+      "surface": "bone",
+      "index": "02 / 03",
+      "eyebrow": "So läuft es",
+      "headline": "Nichts zu installieren. Nichts herunterzuladen.",
+      "body": "Goblin auf dem Homescreen ist die Werkstatt — gerechnet wird in Goblins Cloud. Dein Gerät muss dafür nicht leistungsfähig genug sein.",
+      "footer": "justgoblin.com"
+    },
+    {
+      "template": "screenshot-frame",
+      "eyebrow": "Im Produkt",
+      "headline": "Anmelden, und weiterbauen.",
+      "image": "evidence/public-i18n/shots/login-375-de-light.png",
+      "caption": "Von jedem Gerät aus einloggen. Das Projekt liegt dort, wo du es gelassen hast.",
+      "footer": "03 / 03 · justgoblin.com"
+    }
+  ]
+}

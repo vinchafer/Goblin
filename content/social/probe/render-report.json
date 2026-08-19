@@ -1,0 +1,814 @@
+[
+  {
+    "slide": "font-probe-dark",
+    "template": "type-post.html",
+    "file": "content/social/probe/font-probe-dark-feed-1080x1350.png",
+    "format": "feed",
+    "renderedAt": "2160x2700",
+    "width": 1080,
+    "height": 1350,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#0F2B1E",
+    "centre": "#0F2B1E",
+    "bottomRight": "#0F2B1E",
+    "usedFonts": [
+      {
+        "family": "JetBrains Mono",
+        "weight": "500",
+        "style": "normal",
+        "generic": "monospace",
+        "sample": "JetBrains Mono 500 · Größe · Anmeldeseit"
+      },
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "Größe · Anmeldeseite · fünf"
+      },
+      {
+        "family": "Instrument Serif",
+        "weight": "400",
+        "style": "italic",
+        "generic": "serif",
+        "sample": "„Größe · Anmeldeseite · fünf“"
+      },
+      {
+        "family": "JetBrains Mono",
+        "weight": "400",
+        "style": "normal",
+        "generic": "monospace",
+        "sample": "Manrope 800 · Instrument Serif italic 40"
+      }
+    ],
+    "bytes": 98918,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 129.6,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "JetBrains Mono",
+          "weight": "500",
+          "style": "normal",
+          "generic": "monospace",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 2400,
+          "widthFallback": 2408.2,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 1331,
+          "widthFallback": 1311.23,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "Instrument Serif",
+          "weight": "400",
+          "style": "italic",
+          "generic": "serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 2,
+          "apiCheck": true,
+          "widthReal": 977,
+          "widthFallback": 1205.42,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "JetBrains Mono",
+          "weight": "400",
+          "style": "normal",
+          "generic": "monospace",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 2400,
+          "widthFallback": 2408.2,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "JetBrains Mono",
+        "glyphCount": 291,
+        "isCustomFont": true
+      },
+      {
+        "familyName": "Instrument Serif",
+        "glyphCount": 58,
+        "isCustomFont": true
+      },
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 50,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "JetBrains Mono 500 · Größe · Anmeldeseite · fünf",
+        "className": "eyebrow",
+        "fg": "#D8CBA8",
+        "bg": "#0F2B1E",
+        "fontSize": 21.6,
+        "fontWeight": 500,
+        "large": false,
+        "ratio": 9.41,
+        "threshold": 4.5,
+        "pass": true
+      },
+      {
+        "text": "Größe · Anmeldeseite · fünf",
+        "className": "headline",
+        "fg": "#FBF7EC",
+        "bg": "#0F2B1E",
+        "fontSize": 129.6,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 14.17,
+        "threshold": 3,
+        "pass": true
+      },
+      {
+        "text": "„Größe · Anmeldeseite · fünf“",
+        "className": "accent",
+        "fg": "#7FA98A",
+        "bg": "#0F2B1E",
+        "fontSize": 86.4,
+        "fontWeight": 400,
+        "large": true,
+        "ratio": 5.74,
+        "threshold": 3,
+        "pass": true
+      },
+      {
+        "text": "Manrope 800 · Instrument Serif italic 400 · J…",
+        "className": "footer",
+        "fg": "#D8CBA8",
+        "bg": "#0F2B1E",
+        "fontSize": 23.4,
+        "fontWeight": 400,
+        "large": false,
+        "ratio": 9.41,
+        "threshold": 4.5,
+        "pass": true
+      },
+      {
+        "text": "ÄÖÜ ß „ ‚ “ ”",
+        "className": "gold-fill",
+        "fg": "#0F2B1E",
+        "bg": "#D4A737",
+        "fontSize": 23.4,
+        "fontWeight": 500,
+        "large": false,
+        "ratio": 6.78,
+        "threshold": 4.5,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1350
+      },
+      "boxes": 5,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  },
+  {
+    "slide": "font-probe-dark",
+    "template": "type-post.html",
+    "file": "content/social/probe/font-probe-dark-story-1080x1920.png",
+    "format": "story",
+    "renderedAt": "2160x3840",
+    "width": 1080,
+    "height": 1920,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#0F2B1E",
+    "centre": "#0F2B1E",
+    "bottomRight": "#0F2B1E",
+    "usedFonts": [
+      {
+        "family": "JetBrains Mono",
+        "weight": "500",
+        "style": "normal",
+        "generic": "monospace",
+        "sample": "JetBrains Mono 500 · Größe · Anmeldeseit"
+      },
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "Größe · Anmeldeseite · fünf"
+      },
+      {
+        "family": "Instrument Serif",
+        "weight": "400",
+        "style": "italic",
+        "generic": "serif",
+        "sample": "„Größe · Anmeldeseite · fünf“"
+      },
+      {
+        "family": "JetBrains Mono",
+        "weight": "400",
+        "style": "normal",
+        "generic": "monospace",
+        "sample": "Manrope 800 · Instrument Serif italic 40"
+      }
+    ],
+    "bytes": 101384,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 129.6,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "JetBrains Mono",
+          "weight": "500",
+          "style": "normal",
+          "generic": "monospace",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 2400,
+          "widthFallback": 2408.2,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 1331,
+          "widthFallback": 1311.23,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "Instrument Serif",
+          "weight": "400",
+          "style": "italic",
+          "generic": "serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 2,
+          "apiCheck": true,
+          "widthReal": 977,
+          "widthFallback": 1205.42,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "JetBrains Mono",
+          "weight": "400",
+          "style": "normal",
+          "generic": "monospace",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 2400,
+          "widthFallback": 2408.2,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "JetBrains Mono",
+        "glyphCount": 291,
+        "isCustomFont": true
+      },
+      {
+        "familyName": "Instrument Serif",
+        "glyphCount": 58,
+        "isCustomFont": true
+      },
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 50,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "JetBrains Mono 500 · Größe · Anmeldeseite · fünf",
+        "className": "eyebrow",
+        "fg": "#D8CBA8",
+        "bg": "#0F2B1E",
+        "fontSize": 21.6,
+        "fontWeight": 500,
+        "large": false,
+        "ratio": 9.41,
+        "threshold": 4.5,
+        "pass": true
+      },
+      {
+        "text": "Größe · Anmeldeseite · fünf",
+        "className": "headline",
+        "fg": "#FBF7EC",
+        "bg": "#0F2B1E",
+        "fontSize": 129.6,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 14.17,
+        "threshold": 3,
+        "pass": true
+      },
+      {
+        "text": "„Größe · Anmeldeseite · fünf“",
+        "className": "accent",
+        "fg": "#7FA98A",
+        "bg": "#0F2B1E",
+        "fontSize": 86.4,
+        "fontWeight": 400,
+        "large": true,
+        "ratio": 5.74,
+        "threshold": 3,
+        "pass": true
+      },
+      {
+        "text": "Manrope 800 · Instrument Serif italic 400 · J…",
+        "className": "footer",
+        "fg": "#D8CBA8",
+        "bg": "#0F2B1E",
+        "fontSize": 23.4,
+        "fontWeight": 400,
+        "large": false,
+        "ratio": 9.41,
+        "threshold": 4.5,
+        "pass": true
+      },
+      {
+        "text": "ÄÖÜ ß „ ‚ “ ”",
+        "className": "gold-fill",
+        "fg": "#0F2B1E",
+        "bg": "#D4A737",
+        "fontSize": 23.4,
+        "fontWeight": 500,
+        "large": false,
+        "ratio": 6.78,
+        "threshold": 4.5,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1920
+      },
+      "boxes": 5,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  },
+  {
+    "slide": "font-probe-bone",
+    "template": "carousel-slide.html",
+    "file": "content/social/probe/font-probe-bone-feed-1080x1350.png",
+    "format": "feed",
+    "renderedAt": "2160x2700",
+    "width": 1080,
+    "height": 1350,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#F4ECD8",
+    "centre": "#0F2B1E",
+    "bottomRight": "#F4ECD8",
+    "usedFonts": [
+      {
+        "family": "JetBrains Mono",
+        "weight": "500",
+        "style": "normal",
+        "generic": "monospace",
+        "sample": "02 / 02"
+      },
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "Manrope 800 — Größe · Anmeldeseite · fün"
+      },
+      {
+        "family": "Manrope",
+        "weight": "400",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "Manrope 400 auf hellem Grund: Größe · An"
+      },
+      {
+        "family": "JetBrains Mono",
+        "weight": "400",
+        "style": "normal",
+        "generic": "monospace",
+        "sample": "JetBrains Mono 400 · Größe · Anmeldeseit"
+      }
+    ],
+    "bytes": 115359,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 86.4,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "JetBrains Mono",
+          "weight": "500",
+          "style": "normal",
+          "generic": "monospace",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 420,
+          "widthFallback": 421.44,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 2060,
+          "widthFallback": 2044.82,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "Manrope",
+          "weight": "400",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 1928,
+          "widthFallback": 1934.33,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "JetBrains Mono",
+          "weight": "400",
+          "style": "normal",
+          "generic": "monospace",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 2400,
+          "widthFallback": 2408.2,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "JetBrains Mono",
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 466,
+        "isCustomFont": true
+      },
+      {
+        "familyName": "JetBrains Mono",
+        "glyphCount": 199,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "02 / 02",
+        "className": "gold-fill",
+        "fg": "#0F2B1E",
+        "bg": "#D4A737",
+        "fontSize": 23.4,
+        "fontWeight": 500,
+        "large": false,
+        "ratio": 6.78,
+        "threshold": 4.5,
+        "pass": true
+      },
+      {
+        "text": "JetBrains Mono 500 · Größe · Anmeldeseite · fünf",
+        "className": "eyebrow",
+        "fg": "#5F5640",
+        "bg": "#F4ECD8",
+        "fontSize": 21.6,
+        "fontWeight": 500,
+        "large": false,
+        "ratio": 6.17,
+        "threshold": 4.5,
+        "pass": true
+      },
+      {
+        "text": "Manrope 800 — Größe · Anmeldeseite · fünf",
+        "className": "headline headline--sm",
+        "fg": "#0F2B1E",
+        "bg": "#F4ECD8",
+        "fontSize": 86.4,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 12.88,
+        "threshold": 3,
+        "pass": true
+      },
+      {
+        "text": "Manrope 400 auf hellem Grund: Größe · Anmelde…",
+        "className": "body",
+        "fg": "#3F3A2C",
+        "bg": "#F4ECD8",
+        "fontSize": 32.4,
+        "fontWeight": 400,
+        "large": true,
+        "ratio": 9.63,
+        "threshold": 3,
+        "pass": true
+      },
+      {
+        "text": "JetBrains Mono 400 · Größe · Anmeldeseite · fünf",
+        "className": "footer",
+        "fg": "#5F5640",
+        "bg": "#F4ECD8",
+        "fontSize": 23.4,
+        "fontWeight": 400,
+        "large": false,
+        "ratio": 6.17,
+        "threshold": 4.5,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1350
+      },
+      "boxes": 6,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  },
+  {
+    "slide": "font-probe-bone",
+    "template": "carousel-slide.html",
+    "file": "content/social/probe/font-probe-bone-story-1080x1920.png",
+    "format": "story",
+    "renderedAt": "2160x3840",
+    "width": 1080,
+    "height": 1920,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#F4ECD8",
+    "centre": "#F4ECD8",
+    "bottomRight": "#F4ECD8",
+    "usedFonts": [
+      {
+        "family": "JetBrains Mono",
+        "weight": "500",
+        "style": "normal",
+        "generic": "monospace",
+        "sample": "02 / 02"
+      },
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "Manrope 800 — Größe · Anmeldeseite · fün"
+      },
+      {
+        "family": "Manrope",
+        "weight": "400",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "Manrope 400 auf hellem Grund: Größe · An"
+      },
+      {
+        "family": "JetBrains Mono",
+        "weight": "400",
+        "style": "normal",
+        "generic": "monospace",
+        "sample": "JetBrains Mono 400 · Größe · Anmeldeseit"
+      }
+    ],
+    "bytes": 118475,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 86.4,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "JetBrains Mono",
+          "weight": "500",
+          "style": "normal",
+          "generic": "monospace",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 420,
+          "widthFallback": 421.44,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 2060,
+          "widthFallback": 2044.82,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "Manrope",
+          "weight": "400",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 1928,
+          "widthFallback": 1934.33,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "JetBrains Mono",
+          "weight": "400",
+          "style": "normal",
+          "generic": "monospace",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 2400,
+          "widthFallback": 2408.2,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "JetBrains Mono",
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 466,
+        "isCustomFont": true
+      },
+      {
+        "familyName": "JetBrains Mono",
+        "glyphCount": 199,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "02 / 02",
+        "className": "gold-fill",
+        "fg": "#0F2B1E",
+        "bg": "#D4A737",
+        "fontSize": 23.4,
+        "fontWeight": 500,
+        "large": false,
+        "ratio": 6.78,
+        "threshold": 4.5,
+        "pass": true
+      },
+      {
+        "text": "JetBrains Mono 500 · Größe · Anmeldeseite · fünf",
+        "className": "eyebrow",
+        "fg": "#5F5640",
+        "bg": "#F4ECD8",
+        "fontSize": 21.6,
+        "fontWeight": 500,
+        "large": false,
+        "ratio": 6.17,
+        "threshold": 4.5,
+        "pass": true
+      },
+      {
+        "text": "Manrope 800 — Größe · Anmeldeseite · fünf",
+        "className": "headline headline--sm",
+        "fg": "#0F2B1E",
+        "bg": "#F4ECD8",
+        "fontSize": 86.4,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 12.88,
+        "threshold": 3,
+        "pass": true
+      },
+      {
+        "text": "Manrope 400 auf hellem Grund: Größe · Anmelde…",
+        "className": "body",
+        "fg": "#3F3A2C",
+        "bg": "#F4ECD8",
+        "fontSize": 32.4,
+        "fontWeight": 400,
+        "large": true,
+        "ratio": 9.63,
+        "threshold": 3,
+        "pass": true
+      },
+      {
+        "text": "JetBrains Mono 400 · Größe · Anmeldeseite · fünf",
+        "className": "footer",
+        "fg": "#5F5640",
+        "bg": "#F4ECD8",
+        "fontSize": 23.4,
+        "fontWeight": 400,
+        "large": false,
+        "ratio": 6.17,
+        "threshold": 4.5,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1920
+      },
+      "boxes": 6,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  }
+]
