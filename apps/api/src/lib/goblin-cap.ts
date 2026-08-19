@@ -21,6 +21,9 @@
  *   • Build 17.4M (plan ≈ $11; ~70% margin floor at 100% Forge)
  *   • Pro   30.0M (plan ≈ $19)
  *   • Power 61.7M (plan ≈ $39)
+ *   • Internal 250M — NOT a sold plan. The named Founder-Ops plan (migration 0105,
+ *                  `users.plan = 'internal'`): same mechanism, same weighted bar, a
+ *                  ceiling above every paid tier. Rationale + $ figure at the entry.
  * Design guarantee: a typical user (~20% Forge) runs at ~85%+ gross margin; the
  * worst case (100% Forge to the cap) never drops below ~70% margin. Generous for
  * normal use, protected against the heavy tail.
@@ -61,6 +64,19 @@ export const GOBLIN_MONTHLY_ALLOWANCE: Record<string, number> = {
   build: 17_400_000,
   pro: 30_000_000,
   power: 61_700_000,
+  // Founder-Ops (migration 0105, `users.plan = 'internal'`). NOT sold, NOT a tier
+  // anyone can buy or be upgraded into — the grant is one hand-written UPDATE on one
+  // account. It sits in this map, in this shape, for one reason: internal access must
+  // be a PLAN WITH A NUMBER, not an exemption. There is no `if (internal) skip the cap`
+  // anywhere; the internal account walks the same weighted-allowance path as a Power
+  // customer and merely has a larger ceiling.
+  //
+  // 250M cost units ≈ 1,667 builds/month (÷ COST_UNITS_PER_BUILD) ≈ 4× Power. Chosen as
+  // "no plausible internal workload — dogfooding, support repro, demo builds, load
+  // checks — can reach it", NOT as a disguised infinity: at the internal $0.20/M mix
+  // (see header) a fully drained internal month is ≈ $50 of platform COGS, which is a
+  // number the ledger can carry. An uncapped internal plan would have no such number.
+  internal: 250_000_000,
 };
 
 /** Fallback allowance for an unknown/missing plan — the most conservative (trial,
@@ -104,6 +120,14 @@ export const GOBLIN_DAILY_GUARD: Record<string, number> = {
   build: 3_500_000,
   pro: 6_000_000,
   power: 12_000_000,
+  // Founder-Ops keeps a daily guard like every other plan — the runaway-loop firewall
+  // is exactly the protection an internal account with a large monthly ceiling needs
+  // MOST, not least. 25M units/day ≈ 167 builds/day, ≈ $5/day of platform COGS: far
+  // beyond any real internal day, and a hard stop on an agent that starts spinning.
+  // Deliberately 1/10 of the monthly allowance rather than the paid plans' ~1/5 — the
+  // monthly ceiling is 4× Power's, and one bad day should not be able to eat a tenth
+  // more of it than it has to.
+  internal: 25_000_000,
 };
 
 /** Fallback daily guard for an unknown/missing plan — the most conservative (trial;

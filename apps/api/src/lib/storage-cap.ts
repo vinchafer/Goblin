@@ -14,6 +14,8 @@
  *   build 10 GB
  *   pro   40 GB
  *   power 100 GB   (comped resolves to power via derivePlanTruth allowanceKey)
+ *   internal 200 GB — the named Founder-Ops plan (migration 0105). Not sold; see the
+ *                  entry below and goblin-cap.ts GOBLIN_MONTHLY_ALLOWANCE.internal.
  *
  * Resolve the plan with derivePlanTruth() → allowanceKey, EXACTLY like the
  * build/token cap (goblin-cap.ts monthlyAllowanceForPlan). allowanceKey already
@@ -30,7 +32,7 @@ export const BYTES_PER_GB = 1024 * 1024 * 1024;
 
 /**
  * Per-plan storage limit in BYTES, keyed by the derivePlanTruth allowanceKey
- * (none/trial/build/pro/power). comped → 'power' upstream; none → 0 (read-only).
+ * (none/trial/build/pro/power/internal). comped → 'power' upstream; none → 0 (read-only).
  */
 export const STORAGE_LIMIT_BYTES: Record<string, number> = {
   none: 0,
@@ -38,6 +40,12 @@ export const STORAGE_LIMIT_BYTES: Record<string, number> = {
   build: 10 * BYTES_PER_GB,
   pro: 40 * BYTES_PER_GB,
   power: 100 * BYTES_PER_GB,
+  // Founder-Ops (migration 0105). An explicit number for the same reason the token
+  // allowance has one: the internal plan is a plan, so it has a storage line like every
+  // other plan rather than a bypass in file-storage.ts. 200 GB = 2× Power — room for
+  // dogfooding every template and full-stack scaffold at once, and still a real ceiling
+  // that a runaway write loop on the founder's own account will hit.
+  internal: 200 * BYTES_PER_GB,
 };
 
 /**
