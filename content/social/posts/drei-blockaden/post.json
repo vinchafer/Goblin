@@ -1,0 +1,26 @@
+{
+  "title": "Drei Blockaden",
+  "note": "Bildungs-Post, 5 Slides. Der Text der Slides steht wörtlich so im freigegebenen Launch-Grid. Die Nummerierung 1/2/3 steckt im gesetzten Text, deshalb bleibt der Index-Chip der Vorlage leer — zwei konkurrierende Zählungen auf einer Slide wären Unsinn. Kein Gold, kein Footer, keine Behauptung über Goblin auf der Grafik.",
+  "slides": [
+    {
+      "template": "carousel-slide",
+      "headline": "Du zahlst 40 € im Monat für KI — und bist trotzdem blockiert."
+    },
+    {
+      "template": "carousel-slide",
+      "headline": "1 — Du rennst mitten in der Arbeit in ein Limit."
+    },
+    {
+      "template": "carousel-slide",
+      "headline": "2 — Die Tools sind für Entwickler gebaut. Nicht für dich."
+    },
+    {
+      "template": "carousel-slide",
+      "headline": "3 — Am Ende hast du Code im Chat. Aber nichts, das läuft."
+    },
+    {
+      "template": "carousel-slide",
+      "headline": "Es geht anders."
+    }
+  ]
+}

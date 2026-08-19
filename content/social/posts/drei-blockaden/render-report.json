@@ -1,0 +1,862 @@
+[
+  {
+    "slide": "01-carousel-slide",
+    "template": "carousel-slide.html",
+    "file": "content/social/posts/drei-blockaden/01-carousel-slide-feed-1080x1350.png",
+    "format": "feed",
+    "renderedAt": "2160x2700",
+    "width": 1080,
+    "height": 1350,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#0F2B1E",
+    "centre": "#FBF7EC",
+    "bottomRight": "#0F2B1E",
+    "usedFonts": [
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "Du zahlst 40 € im Monat für KI — und bis"
+      }
+    ],
+    "bytes": 50398,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 86.4,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 1928,
+          "widthFallback": 1933.5,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 116,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "Du zahlst 40 € im Monat für KI — und bist tro…",
+        "className": "headline headline--sm",
+        "fg": "#FBF7EC",
+        "bg": "#0F2B1E",
+        "fontSize": 86.4,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 14.17,
+        "threshold": 3,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1350
+      },
+      "boxes": 2,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  },
+  {
+    "slide": "01-carousel-slide",
+    "template": "carousel-slide.html",
+    "file": "content/social/posts/drei-blockaden/01-carousel-slide-story-1080x1920.png",
+    "format": "story",
+    "renderedAt": "2160x3840",
+    "width": 1080,
+    "height": 1920,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#0F2B1E",
+    "centre": "#FBF7EC",
+    "bottomRight": "#0F2B1E",
+    "usedFonts": [
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "Du zahlst 40 € im Monat für KI — und bis"
+      }
+    ],
+    "bytes": 53213,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 86.4,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 1928,
+          "widthFallback": 1933.5,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 116,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "Du zahlst 40 € im Monat für KI — und bist tro…",
+        "className": "headline headline--sm",
+        "fg": "#FBF7EC",
+        "bg": "#0F2B1E",
+        "fontSize": 86.4,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 14.17,
+        "threshold": 3,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1920
+      },
+      "boxes": 2,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  },
+  {
+    "slide": "02-carousel-slide",
+    "template": "carousel-slide.html",
+    "file": "content/social/posts/drei-blockaden/02-carousel-slide-feed-1080x1350.png",
+    "format": "feed",
+    "renderedAt": "2160x2700",
+    "width": 1080,
+    "height": 1350,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#0F2B1E",
+    "centre": "#0F2B1E",
+    "bottomRight": "#0F2B1E",
+    "usedFonts": [
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "1 — Du rennst mitten in der Arbeit in ei"
+      }
+    ],
+    "bytes": 34948,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 86.4,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 1844,
+          "widthFallback": 1850.24,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 90,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "1 — Du rennst mitten in der Arbeit in ein Limit.",
+        "className": "headline headline--sm",
+        "fg": "#FBF7EC",
+        "bg": "#0F2B1E",
+        "fontSize": 86.4,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 14.17,
+        "threshold": 3,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1350
+      },
+      "boxes": 2,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  },
+  {
+    "slide": "02-carousel-slide",
+    "template": "carousel-slide.html",
+    "file": "content/social/posts/drei-blockaden/02-carousel-slide-story-1080x1920.png",
+    "format": "story",
+    "renderedAt": "2160x3840",
+    "width": 1080,
+    "height": 1920,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#0F2B1E",
+    "centre": "#0F2B1E",
+    "bottomRight": "#0F2B1E",
+    "usedFonts": [
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "1 — Du rennst mitten in der Arbeit in ei"
+      }
+    ],
+    "bytes": 37049,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 86.4,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 1844,
+          "widthFallback": 1850.24,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 90,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "1 — Du rennst mitten in der Arbeit in ein Limit.",
+        "className": "headline headline--sm",
+        "fg": "#FBF7EC",
+        "bg": "#0F2B1E",
+        "fontSize": 86.4,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 14.17,
+        "threshold": 3,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1920
+      },
+      "boxes": 2,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  },
+  {
+    "slide": "03-carousel-slide",
+    "template": "carousel-slide.html",
+    "file": "content/social/posts/drei-blockaden/03-carousel-slide-feed-1080x1350.png",
+    "format": "feed",
+    "renderedAt": "2160x2700",
+    "width": 1080,
+    "height": 1350,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#0F2B1E",
+    "centre": "#0F2B1E",
+    "bottomRight": "#0F2B1E",
+    "usedFonts": [
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "2 — Die Tools sind für Entwickler gebaut"
+      }
+    ],
+    "bytes": 46691,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 86.4,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 1933,
+          "widthFallback": 1931.79,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 110,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "2 — Die Tools sind für Entwickler gebaut. Nic…",
+        "className": "headline headline--sm",
+        "fg": "#FBF7EC",
+        "bg": "#0F2B1E",
+        "fontSize": 86.4,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 14.17,
+        "threshold": 3,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1350
+      },
+      "boxes": 2,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  },
+  {
+    "slide": "03-carousel-slide",
+    "template": "carousel-slide.html",
+    "file": "content/social/posts/drei-blockaden/03-carousel-slide-story-1080x1920.png",
+    "format": "story",
+    "renderedAt": "2160x3840",
+    "width": 1080,
+    "height": 1920,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#0F2B1E",
+    "centre": "#596B5F",
+    "bottomRight": "#0F2B1E",
+    "usedFonts": [
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "2 — Die Tools sind für Entwickler gebaut"
+      }
+    ],
+    "bytes": 49271,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 86.4,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 1933,
+          "widthFallback": 1931.79,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 110,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "2 — Die Tools sind für Entwickler gebaut. Nic…",
+        "className": "headline headline--sm",
+        "fg": "#FBF7EC",
+        "bg": "#0F2B1E",
+        "fontSize": 86.4,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 14.17,
+        "threshold": 3,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1920
+      },
+      "boxes": 2,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  },
+  {
+    "slide": "04-carousel-slide",
+    "template": "carousel-slide.html",
+    "file": "content/social/posts/drei-blockaden/04-carousel-slide-feed-1080x1350.png",
+    "format": "feed",
+    "renderedAt": "2160x2700",
+    "width": 1080,
+    "height": 1350,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#0F2B1E",
+    "centre": "#0F2B1E",
+    "bottomRight": "#0F2B1E",
+    "usedFonts": [
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "3 — Am Ende hast du Code im Chat. Aber n"
+      }
+    ],
+    "bytes": 51496,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 86.4,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 2044,
+          "widthFallback": 2072.46,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 110,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "3 — Am Ende hast du Code im Chat. Aber nichts…",
+        "className": "headline headline--sm",
+        "fg": "#FBF7EC",
+        "bg": "#0F2B1E",
+        "fontSize": 86.4,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 14.17,
+        "threshold": 3,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1350
+      },
+      "boxes": 2,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  },
+  {
+    "slide": "04-carousel-slide",
+    "template": "carousel-slide.html",
+    "file": "content/social/posts/drei-blockaden/04-carousel-slide-story-1080x1920.png",
+    "format": "story",
+    "renderedAt": "2160x3840",
+    "width": 1080,
+    "height": 1920,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#0F2B1E",
+    "centre": "#0F2B1E",
+    "bottomRight": "#0F2B1E",
+    "usedFonts": [
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "3 — Am Ende hast du Code im Chat. Aber n"
+      }
+    ],
+    "bytes": 54073,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 86.4,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 2044,
+          "widthFallback": 2072.46,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 110,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "3 — Am Ende hast du Code im Chat. Aber nichts…",
+        "className": "headline headline--sm",
+        "fg": "#FBF7EC",
+        "bg": "#0F2B1E",
+        "fontSize": 86.4,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 14.17,
+        "threshold": 3,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1920
+      },
+      "boxes": 2,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  },
+  {
+    "slide": "05-carousel-slide",
+    "template": "carousel-slide.html",
+    "file": "content/social/posts/drei-blockaden/05-carousel-slide-feed-1080x1350.png",
+    "format": "feed",
+    "renderedAt": "2160x2700",
+    "width": 1080,
+    "height": 1350,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#0F2B1E",
+    "centre": "#0F2B1E",
+    "bottomRight": "#0F2B1E",
+    "usedFonts": [
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "Es geht anders."
+      }
+    ],
+    "bytes": 22681,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 86.4,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 756,
+          "widthFallback": 744.68,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 30,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "Es geht anders.",
+        "className": "headline headline--sm",
+        "fg": "#FBF7EC",
+        "bg": "#0F2B1E",
+        "fontSize": 86.4,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 14.17,
+        "threshold": 3,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1350
+      },
+      "boxes": 2,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  },
+  {
+    "slide": "05-carousel-slide",
+    "template": "carousel-slide.html",
+    "file": "content/social/posts/drei-blockaden/05-carousel-slide-story-1080x1920.png",
+    "format": "story",
+    "renderedAt": "2160x3840",
+    "width": 1080,
+    "height": 1920,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#0F2B1E",
+    "centre": "#0F2B1E",
+    "bottomRight": "#0F2B1E",
+    "usedFonts": [
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "Es geht anders."
+      }
+    ],
+    "bytes": 25322,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 86.4,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 756,
+          "widthFallback": 744.68,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 30,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "Es geht anders.",
+        "className": "headline headline--sm",
+        "fg": "#FBF7EC",
+        "bg": "#0F2B1E",
+        "fontSize": 86.4,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 14.17,
+        "threshold": 3,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1920
+      },
+      "boxes": 2,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  }
+]
