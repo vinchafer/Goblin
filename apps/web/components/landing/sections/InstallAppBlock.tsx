@@ -245,27 +245,14 @@ export function InstallAppBlock({ lang: langProp }: InstallAppBlockProps = {}) {
         </p>
       </div>
 
-      {/* Store-NEUTRAL line (FOUNDER-WALK-3): covers Apple/Google/Microsoft
-          implicitly, frames it as a benefit, never names a store, never sounds
-          apologetic.
-
-          LANDING-MESSAGING v2 · U7 — it used to end "Goblin kommt direkt aufs
-          Gerät" / "Goblin goes straight to your device". Read on its own that
-          is about the download detour, which is what it meant. Read next to the
-          negation it introduced a contradiction the page could not afford: one
-          line said Goblin arrives on your device, the next said nothing lands
-          on it. Both were true about different things, and the reader has no
-          way to know that — this is the same "true parts, false whole" failure
-          the whole strand exists to fix, in miniature.
-
-          The benefit is now stated as what actually arrives: the icon. */}
-      <p data-testid="install-app-note" style={note}>
-        {t(
-          lang,
-          'Kein Store, kein Umweg — das Icon liegt auf dem Home-Bildschirm.',
-          'No store, no detour — the icon sits on your home screen.',
-        )}
-      </p>
+      {/* U8 — the store line that used to sit here is gone, not reworded.
+          It had been through three passes (FOUNDER-WALK-3 store-neutrality, U7's
+          contradiction fix) and each pass made it truer without asking whether
+          it was needed. It wasn't: the card's own subline already says "On your
+          home screen or dock. No store, no detour.", and U7 moved the claim the
+          line was really carrying — that nothing is downloaded — INTO the card,
+          under the hairline, where it answers the heading. Rewriting it a fourth
+          time would have added a third way of saying one thing. */}
     </section>
   );
 }
@@ -336,14 +323,6 @@ const stepNum: React.CSSProperties = {
   fontSize: 12,
   fontWeight: 700,
   fontVariantNumeric: 'tabular-nums',
-};
-const note: React.CSSProperties = {
-  maxWidth: 560,
-  margin: '12px auto 0',
-  textAlign: 'center',
-  fontSize: 'var(--small, 13.5px)',
-  color: 'var(--ink-3)',
-  lineHeight: 1.5,
 };
 // U7: a footer row of the card, not a paragraph under it. The hairline and the
 // shared left edge are what bind it to the heading it answers; left-aligned like
