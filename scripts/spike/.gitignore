@@ -1,0 +1,3 @@
+# Raw probe outputs — large, throwaway, regenerable by re-running the harness.
+# The report (docs/SPIKE_MODEL_EVAL_2026-08.md) carries the summary.
+results.json
