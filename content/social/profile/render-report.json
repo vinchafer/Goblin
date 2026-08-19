@@ -1,0 +1,66 @@
+[
+  {
+    "variant": "avatar-green",
+    "label": "Brand Green",
+    "source": "branding/icons/app-icon.svg",
+    "field": "#1A3A2A",
+    "mark": "#D4A737",
+    "contrastMarkOnField": 5.576004121595477,
+    "full": {
+      "file": "content/social/profile/avatar-green-1000.png",
+      "width": 1000,
+      "height": 1000,
+      "channels": 3,
+      "hasAlpha": false,
+      "topLeft": "#1A3A2A",
+      "centre": "#1A3A2A",
+      "bottomRight": "#1A3A2A",
+      "compositedPixels": 0,
+      "bytes": 35583
+    },
+    "probe": {
+      "file": "content/social/profile/avatar-green-40.png",
+      "width": 40,
+      "height": 40,
+      "channels": 3,
+      "hasAlpha": false,
+      "topLeft": "#1A3A2A",
+      "centre": "#3B4D2C",
+      "bottomRight": "#1A3A2A",
+      "compositedPixels": 0,
+      "bytes": 1323
+    }
+  },
+  {
+    "variant": "avatar-inkdeep",
+    "label": "Ink Deep",
+    "source": "branding/icons/app-icon-dark.svg",
+    "field": "#0F2B1E",
+    "mark": "#D4A737",
+    "contrastMarkOnField": 6.775961659542442,
+    "full": {
+      "file": "content/social/profile/avatar-inkdeep-1000.png",
+      "width": 1000,
+      "height": 1000,
+      "channels": 3,
+      "hasAlpha": false,
+      "topLeft": "#0F2B1E",
+      "centre": "#0F2B1E",
+      "bottomRight": "#0F2B1E",
+      "compositedPixels": 0,
+      "bytes": 35660
+    },
+    "probe": {
+      "file": "content/social/profile/avatar-inkdeep-40.png",
+      "width": 40,
+      "height": 40,
+      "channels": 3,
+      "hasAlpha": false,
+      "topLeft": "#0F2B1E",
+      "centre": "#324122",
+      "bottomRight": "#0F2B1E",
+      "compositedPixels": 0,
+      "bytes": 1379
+    }
+  }
+]
