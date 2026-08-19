@@ -149,11 +149,17 @@ const nextConfig: NextConfig = {
     return [
       // LP-3: legacy /landing-v2 review URL → production / (LP-2 is now the landing)
       { source: '/landing-v2', destination: '/', permanent: true },
-      // H3: /de previously 404'd (no route, no i18n routing). The marketing landing
-      // is served language-neutral at / (client toggles DE/EN), so /de has no distinct
-      // canonical page — 301 it to the canonical landing. Runs before auth middleware,
-      // so unauthenticated visitors are not bounced to /login. /en and / are untouched.
-      { source: '/de', destination: '/', permanent: true },
+      // H3 (2026) sent /de → / permanently, because back then /de 404'd: the
+      // landing had no i18n routing and the DE·EN control only set the language
+      // for sign-in and the app. LANDING-MESSAGING v2 · U6 gave /de a real page
+      // (app/de/page.tsx), so the redirect now hides the very route it points
+      // away from and is removed.
+      //
+      // NOTE for the deploy: that redirect was `permanent` (308), and browsers
+      // and crawlers cache those hard. Anyone who hit /de before this ships may
+      // keep bouncing to / until their cache expires. Nothing in the code can
+      // clear it — the DE·EN link, the hreflang pair and a fresh crawl are what
+      // recover it. Flagged in the PR's limitations.
     ];
   },
 };

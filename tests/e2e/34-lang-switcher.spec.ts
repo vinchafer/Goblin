@@ -62,12 +62,45 @@ test.describe('@public U2 DE/EN switcher', () => {
     // A founder whose onboarding answer was German, standing on the English
     // landing: the control must show DE, because that is what /login will give
     // him. Before this wave nothing on the page said so.
+    //
+    // LANDING-MESSAGING v2 · U6 changed HOW the landing says it, not whether.
+    // Now that /de exists the landing's control is a real link (see
+    // components/i18n/LangToggle.tsx `landingHrefs`), and a link is not a
+    // toggle — aria-pressed is invalid on an anchor, so the active side is
+    // marked aria-current="page" instead. The app's control is still a button
+    // and still uses aria-pressed; both contracts are pinned, one per surface,
+    // so neither can drift into the other.
     await page.addInitScript(([k, v]) => localStorage.setItem(k, v), [PREF_KEY, 'de']);
+
     await page.goto('/');
-    const toggle = page.locator('[data-testid="lang-toggle"]').first();
-    await expect(toggle).toHaveAttribute('data-lang', 'de');
-    await expect(toggle.getByTestId('lang-toggle-de')).toHaveAttribute('aria-pressed', 'true');
-    await expect(toggle.getByTestId('lang-toggle-en')).toHaveAttribute('aria-pressed', 'false');
+    const landing = page.locator('[data-testid="lang-toggle"]').first();
+    await expect(landing).toHaveAttribute('data-lang', 'de');
+    await expect(landing.getByTestId('lang-toggle-de')).toHaveAttribute('aria-current', 'page');
+    await expect(landing.getByTestId('lang-toggle-en')).not.toHaveAttribute('aria-current', 'page');
+
+    await page.goto('/login');
+    const app = page.getByTestId('lang-toggle').first();
+    await expect(app).toHaveAttribute('data-lang', 'de');
+    await expect(app.getByTestId('lang-toggle-de')).toHaveAttribute('aria-pressed', 'true');
+    await expect(app.getByTestId('lang-toggle-en')).toHaveAttribute('aria-pressed', 'false');
+  });
+
+  test('on the landing it NAVIGATES: DE goes to /de, EN comes back to /', async ({ page }) => {
+    // U6 gave the control a page to switch to. Before /de existed it set a
+    // language the page under it could not honour — a German visitor pressed DE
+    // and watched nothing change. Clicked for real here, both directions,
+    // because the U6 gate only read the href attributes.
+    const width = page.viewportSize()!.width;
+    const scope = isMobile(width) ? 'footer.lp-footer' : 'nav.lp-nav';
+
+    await page.goto('/');
+    await page.locator(`${scope} [data-testid="lang-toggle-de"]`).click();
+    await expect(page).toHaveURL(/\/de$/);
+    await expect(page.getByRole('heading', { name: /Dein Gerät macht nichts/ })).toBeVisible();
+
+    await page.locator(`${scope} [data-testid="lang-toggle-en"]`).click();
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.getByRole('heading', { name: /Your device does nothing/ })).toBeVisible();
   });
 
   test("the founder's acceptance test: press DE on the landing → /login is German", async ({ page }) => {

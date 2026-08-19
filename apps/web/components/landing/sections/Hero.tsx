@@ -1,6 +1,18 @@
 import { Button } from '@/components/landing/ui/Button';
+import { copy } from '@/components/landing/copy';
+import type { Lang } from '@/lib/locale';
 
-export function Hero() {
+// LANDING-MESSAGING v2 · L-3 — "The AI is built in" was ambiguous: built in WHERE?
+// Next to "Installing Goblin…" and "Build on any device" a technical reader parsed
+// it as embedded IN THE DEVICE, and the sentence that resolves it came later (and
+// in the serif-italic the page otherwise uses for ornament — L-1). The lead now
+// states the execution model in plain set, before anything else can suggest
+// otherwise: servers first, then the models, then the device.
+//
+// U6: copy moved to components/landing/copy.ts, which carries both languages.
+
+export function Hero({ lang }: { lang: Lang }) {
+  const c = copy(lang).hero;
   return (
     <section className="hero">
       <div className="hero-watermark" aria-hidden="true">
@@ -15,37 +27,33 @@ export function Hero() {
           <span className="tick" aria-hidden="true" />
           <span className="num">GBLN</span>
           <span>·</span>
-          <span>v1.0 · Now in beta</span>
+          <span>{c.status}</span>
         </div>
 
         <h1 className="hero-h1">
-          Tell it what you want.
+          {c.head.a}
           <br />
-          <span className="serif-italic">It ships.</span>
+          <span className="serif-italic">{c.head.i}</span>
         </h1>
 
         <p className="hero-lead">
-          The cloud workshop for builders who don&apos;t wait for a laptop. Describe what you
-          want and the agent builds, verifies, and ships it — you watch every step and{' '}
-          <span className="serif-italic">take control whenever you like.</span> The AI is built
-          in — no keys, no setup, no token counter. Build on any device, push to GitHub, go live
-          on your own Vercel account.
+          {c.leadA} <span className="serif-italic">{c.leadI}</span> {c.leadB}
         </p>
 
         <div className="hero-cta">
           <Button href="/register" variant="primary" size="large">
-            Start building free <span className="arrow" aria-hidden="true">→</span>
+            {c.ctaPrimary} <span className="arrow" aria-hidden="true">→</span>
           </Button>
           <Button href="#how" variant="secondary" size="large">
-            See how it works
+            {c.ctaSecondary}
           </Button>
         </div>
 
         <div className="hero-foot">
           <span className="dot" aria-hidden="true" />
-          <span>7-day free trial</span>
+          <span>{c.trial}</span>
           <span className="rule" aria-hidden="true" />
-          <span>No credit card required</span>
+          <span>{c.noCard}</span>
         </div>
       </div>
     </section>

@@ -227,20 +227,32 @@ export function InstallAppBlock({ lang: langProp }: InstallAppBlockProps = {}) {
             {t(lang, 'App installieren', 'Install app')}
           </button>
         )}
+
+        {/* LANDING-MESSAGING v2 · U7 — the negation belongs TO this card.
+            It was introduced in U6 as a third centred paragraph stacked under
+            the card, which read as a footnote to a footnote: the eye grouped it
+            with the store line rather than with the thing it corrects. It now
+            sits inside the card, under a hairline, as the card's own closing
+            statement — because the claim it answers ("Install Goblin as an
+            app") is the card's HEADING, and a correction that floats free of
+            the claim is not doing the job it was added for. */}
+        <p data-testid="install-app-negation" style={negation}>
+          {t(
+            lang,
+            'Es bleibt eine Webseite — kein Modell, keine Laufzeit, nichts landet auf deinem Gerät.',
+            'It stays a website — no model, no runtime, nothing lands on your device.',
+          )}
+        </p>
       </div>
 
-      {/* FOUNDER-WALK-3 U6 — store-NEUTRAL line. The FW2 line read Apple-specific
-          ("App Store") and as if Goblin never wants any store; this covers Apple/
-          Google/Microsoft implicitly, frames it as a benefit (no store, no
-          download detour), never names a store, never sounds apologetic. --ink-3
-          meta ink, no icons. DE default + EN. */}
-      <p data-testid="install-app-note" style={note}>
-        {t(
-          lang,
-          'Kein Store, kein Download-Umweg — Goblin kommt direkt aufs Gerät.',
-          'No store, no detour — Goblin goes straight to your device.',
-        )}
-      </p>
+      {/* U8 — the store line that used to sit here is gone, not reworded.
+          It had been through three passes (FOUNDER-WALK-3 store-neutrality, U7's
+          contradiction fix) and each pass made it truer without asking whether
+          it was needed. It wasn't: the card's own subline already says "On your
+          home screen or dock. No store, no detour.", and U7 moved the claim the
+          line was really carrying — that nothing is downloaded — INTO the card,
+          under the hairline, where it answers the heading. Rewriting it a fourth
+          time would have added a third way of saying one thing. */}
     </section>
   );
 }
@@ -312,11 +324,16 @@ const stepNum: React.CSSProperties = {
   fontWeight: 700,
   fontVariantNumeric: 'tabular-nums',
 };
-const note: React.CSSProperties = {
-  maxWidth: 560,
-  margin: '12px auto 0',
-  textAlign: 'center',
-  fontSize: 'var(--small, 13.5px)',
+// U7: a footer row of the card, not a paragraph under it. The hairline and the
+// shared left edge are what bind it to the heading it answers; left-aligned like
+// the steps above it, so it reads as part of the card's own text rather than as
+// centred small print. --ink-3 is already the meta ink, so it stays quieter than
+// the steps without a second colour.
+const negation: React.CSSProperties = {
+  margin: 0,
+  paddingTop: 14,
+  borderTop: '1px solid var(--line)',
+  fontSize: 12.5,
   color: 'var(--ink-3)',
   lineHeight: 1.5,
 };

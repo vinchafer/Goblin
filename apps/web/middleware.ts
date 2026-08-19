@@ -53,6 +53,14 @@ export async function middleware(request: NextRequest) {
 
   const isPublic =
     pathname === '/' ||
+    // LANDING-MESSAGING v2 · U6 — the German landing. `/` was listed here from
+    // the start; when /de became a real page it needed the same entry, and the
+    // exact-match style is deliberate (`startsWith('/de')` would also swallow
+    // /deletion-pending and /demo-*). Without this line the marketing page for
+    // German readers answers with a redirect to /login — the same defect the
+    // /acceptable-use note below describes, on the page that is supposed to do
+    // the convincing. Caught by the U6 raster gate, not by review.
+    pathname === '/de' ||
     pathname === '/login' ||
     pathname === '/signup' ||
     pathname === '/register' ||

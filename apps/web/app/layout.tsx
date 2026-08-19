@@ -67,7 +67,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: 'Goblin — The Cloud Workshop for Builders',
-    description: "The AI is built in — no keys, no setup, no token counter. Tell it what you want, it ships. The cloud workshop for builders who don't wait for a laptop.",
+    description: "Everything runs on our servers — the models too. No keys, no setup, no token counter. Tell it what you want, it ships. The cloud workshop for builders who don't wait for a laptop.",
     url: 'https://justgoblin.com',
     siteName: 'Goblin',
     images: [
@@ -84,7 +84,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Goblin — The Cloud Workshop for Builders',
-    description: "The AI is built in — no keys, no setup, no token counter. Tell it what you want, it ships. The cloud workshop for builders who don't wait for a laptop.",
+    description: "Everything runs on our servers — the models too. No keys, no setup, no token counter. Tell it what you want, it ships. The cloud workshop for builders who don't wait for a laptop.",
     images: ['/brand/social/goblin-og-image.svg'],
   },
 }
