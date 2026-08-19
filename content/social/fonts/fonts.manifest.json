@@ -1,0 +1,442 @@
+[
+  {
+    "family": "Manrope",
+    "file": "manrope-normal-cyrillic-ext.woff2",
+    "subset": "cyrillic-ext",
+    "style": "normal",
+    "weight": "400",
+    "bytes": 2552,
+    "sha256": "de37de877dc17e4577341fa68bb5cb526b53d54cb29721e674208546a3c7849d",
+    "source": "https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggqxSuXd.woff2"
+  },
+  {
+    "family": "Manrope",
+    "file": "manrope-normal-cyrillic.woff2",
+    "subset": "cyrillic",
+    "style": "normal",
+    "weight": "400",
+    "bytes": 14500,
+    "sha256": "c268b459a9329e59fecf39a17618efd44c71735532048d60b12aab76a8c14914",
+    "source": "https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggOxSuXd.woff2"
+  },
+  {
+    "family": "Manrope",
+    "file": "manrope-normal-greek.woff2",
+    "subset": "greek",
+    "style": "normal",
+    "weight": "400",
+    "bytes": 9444,
+    "sha256": "2fb2e8cbfd52ae46179a8b6024eb162f1f9c6de3d22d6e3a30d8f395de7220be",
+    "source": "https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggSxSuXd.woff2"
+  },
+  {
+    "family": "Manrope",
+    "file": "manrope-normal-vietnamese.woff2",
+    "subset": "vietnamese",
+    "style": "normal",
+    "weight": "400",
+    "bytes": 8520,
+    "sha256": "6bbb044ab420e07edb0a3042d2eb314b85e83a0182e945a15ab3b9092668dfd5",
+    "source": "https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggixSuXd.woff2"
+  },
+  {
+    "family": "Manrope",
+    "file": "manrope-normal-latin-ext.woff2",
+    "subset": "latin-ext",
+    "style": "normal",
+    "weight": "400",
+    "bytes": 15120,
+    "sha256": "3911b66d9f2e005a4b989223405d0e5032619c668597ba467cc76a23c8fffcfb",
+    "source": "https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggmxSuXd.woff2"
+  },
+  {
+    "family": "Manrope",
+    "file": "manrope-normal-latin.woff2",
+    "subset": "latin",
+    "style": "normal",
+    "weight": "400",
+    "bytes": 24836,
+    "sha256": "a30ddcd349703aff7464c34bef3fffdff405ee50c113440d7c8693c02d210972",
+    "source": "https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggexSg.woff2"
+  },
+  {
+    "family": "Manrope",
+    "file": "manrope-normal-cyrillic-ext.woff2",
+    "subset": "cyrillic-ext",
+    "style": "normal",
+    "weight": "500",
+    "bytes": 2552,
+    "sha256": "de37de877dc17e4577341fa68bb5cb526b53d54cb29721e674208546a3c7849d",
+    "source": "https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggqxSuXd.woff2"
+  },
+  {
+    "family": "Manrope",
+    "file": "manrope-normal-cyrillic.woff2",
+    "subset": "cyrillic",
+    "style": "normal",
+    "weight": "500",
+    "bytes": 14500,
+    "sha256": "c268b459a9329e59fecf39a17618efd44c71735532048d60b12aab76a8c14914",
+    "source": "https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggOxSuXd.woff2"
+  },
+  {
+    "family": "Manrope",
+    "file": "manrope-normal-greek.woff2",
+    "subset": "greek",
+    "style": "normal",
+    "weight": "500",
+    "bytes": 9444,
+    "sha256": "2fb2e8cbfd52ae46179a8b6024eb162f1f9c6de3d22d6e3a30d8f395de7220be",
+    "source": "https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggSxSuXd.woff2"
+  },
+  {
+    "family": "Manrope",
+    "file": "manrope-normal-vietnamese.woff2",
+    "subset": "vietnamese",
+    "style": "normal",
+    "weight": "500",
+    "bytes": 8520,
+    "sha256": "6bbb044ab420e07edb0a3042d2eb314b85e83a0182e945a15ab3b9092668dfd5",
+    "source": "https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggixSuXd.woff2"
+  },
+  {
+    "family": "Manrope",
+    "file": "manrope-normal-latin-ext.woff2",
+    "subset": "latin-ext",
+    "style": "normal",
+    "weight": "500",
+    "bytes": 15120,
+    "sha256": "3911b66d9f2e005a4b989223405d0e5032619c668597ba467cc76a23c8fffcfb",
+    "source": "https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggmxSuXd.woff2"
+  },
+  {
+    "family": "Manrope",
+    "file": "manrope-normal-latin.woff2",
+    "subset": "latin",
+    "style": "normal",
+    "weight": "500",
+    "bytes": 24836,
+    "sha256": "a30ddcd349703aff7464c34bef3fffdff405ee50c113440d7c8693c02d210972",
+    "source": "https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggexSg.woff2"
+  },
+  {
+    "family": "Manrope",
+    "file": "manrope-normal-cyrillic-ext.woff2",
+    "subset": "cyrillic-ext",
+    "style": "normal",
+    "weight": "600",
+    "bytes": 2552,
+    "sha256": "de37de877dc17e4577341fa68bb5cb526b53d54cb29721e674208546a3c7849d",
+    "source": "https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggqxSuXd.woff2"
+  },
+  {
+    "family": "Manrope",
+    "file": "manrope-normal-cyrillic.woff2",
+    "subset": "cyrillic",
+    "style": "normal",
+    "weight": "600",
+    "bytes": 14500,
+    "sha256": "c268b459a9329e59fecf39a17618efd44c71735532048d60b12aab76a8c14914",
+    "source": "https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggOxSuXd.woff2"
+  },
+  {
+    "family": "Manrope",
+    "file": "manrope-normal-greek.woff2",
+    "subset": "greek",
+    "style": "normal",
+    "weight": "600",
+    "bytes": 9444,
+    "sha256": "2fb2e8cbfd52ae46179a8b6024eb162f1f9c6de3d22d6e3a30d8f395de7220be",
+    "source": "https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggSxSuXd.woff2"
+  },
+  {
+    "family": "Manrope",
+    "file": "manrope-normal-vietnamese.woff2",
+    "subset": "vietnamese",
+    "style": "normal",
+    "weight": "600",
+    "bytes": 8520,
+    "sha256": "6bbb044ab420e07edb0a3042d2eb314b85e83a0182e945a15ab3b9092668dfd5",
+    "source": "https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggixSuXd.woff2"
+  },
+  {
+    "family": "Manrope",
+    "file": "manrope-normal-latin-ext.woff2",
+    "subset": "latin-ext",
+    "style": "normal",
+    "weight": "600",
+    "bytes": 15120,
+    "sha256": "3911b66d9f2e005a4b989223405d0e5032619c668597ba467cc76a23c8fffcfb",
+    "source": "https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggmxSuXd.woff2"
+  },
+  {
+    "family": "Manrope",
+    "file": "manrope-normal-latin.woff2",
+    "subset": "latin",
+    "style": "normal",
+    "weight": "600",
+    "bytes": 24836,
+    "sha256": "a30ddcd349703aff7464c34bef3fffdff405ee50c113440d7c8693c02d210972",
+    "source": "https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggexSg.woff2"
+  },
+  {
+    "family": "Manrope",
+    "file": "manrope-normal-cyrillic-ext.woff2",
+    "subset": "cyrillic-ext",
+    "style": "normal",
+    "weight": "700",
+    "bytes": 2552,
+    "sha256": "de37de877dc17e4577341fa68bb5cb526b53d54cb29721e674208546a3c7849d",
+    "source": "https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggqxSuXd.woff2"
+  },
+  {
+    "family": "Manrope",
+    "file": "manrope-normal-cyrillic.woff2",
+    "subset": "cyrillic",
+    "style": "normal",
+    "weight": "700",
+    "bytes": 14500,
+    "sha256": "c268b459a9329e59fecf39a17618efd44c71735532048d60b12aab76a8c14914",
+    "source": "https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggOxSuXd.woff2"
+  },
+  {
+    "family": "Manrope",
+    "file": "manrope-normal-greek.woff2",
+    "subset": "greek",
+    "style": "normal",
+    "weight": "700",
+    "bytes": 9444,
+    "sha256": "2fb2e8cbfd52ae46179a8b6024eb162f1f9c6de3d22d6e3a30d8f395de7220be",
+    "source": "https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggSxSuXd.woff2"
+  },
+  {
+    "family": "Manrope",
+    "file": "manrope-normal-vietnamese.woff2",
+    "subset": "vietnamese",
+    "style": "normal",
+    "weight": "700",
+    "bytes": 8520,
+    "sha256": "6bbb044ab420e07edb0a3042d2eb314b85e83a0182e945a15ab3b9092668dfd5",
+    "source": "https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggixSuXd.woff2"
+  },
+  {
+    "family": "Manrope",
+    "file": "manrope-normal-latin-ext.woff2",
+    "subset": "latin-ext",
+    "style": "normal",
+    "weight": "700",
+    "bytes": 15120,
+    "sha256": "3911b66d9f2e005a4b989223405d0e5032619c668597ba467cc76a23c8fffcfb",
+    "source": "https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggmxSuXd.woff2"
+  },
+  {
+    "family": "Manrope",
+    "file": "manrope-normal-latin.woff2",
+    "subset": "latin",
+    "style": "normal",
+    "weight": "700",
+    "bytes": 24836,
+    "sha256": "a30ddcd349703aff7464c34bef3fffdff405ee50c113440d7c8693c02d210972",
+    "source": "https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggexSg.woff2"
+  },
+  {
+    "family": "Manrope",
+    "file": "manrope-normal-cyrillic-ext.woff2",
+    "subset": "cyrillic-ext",
+    "style": "normal",
+    "weight": "800",
+    "bytes": 2552,
+    "sha256": "de37de877dc17e4577341fa68bb5cb526b53d54cb29721e674208546a3c7849d",
+    "source": "https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggqxSuXd.woff2"
+  },
+  {
+    "family": "Manrope",
+    "file": "manrope-normal-cyrillic.woff2",
+    "subset": "cyrillic",
+    "style": "normal",
+    "weight": "800",
+    "bytes": 14500,
+    "sha256": "c268b459a9329e59fecf39a17618efd44c71735532048d60b12aab76a8c14914",
+    "source": "https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggOxSuXd.woff2"
+  },
+  {
+    "family": "Manrope",
+    "file": "manrope-normal-greek.woff2",
+    "subset": "greek",
+    "style": "normal",
+    "weight": "800",
+    "bytes": 9444,
+    "sha256": "2fb2e8cbfd52ae46179a8b6024eb162f1f9c6de3d22d6e3a30d8f395de7220be",
+    "source": "https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggSxSuXd.woff2"
+  },
+  {
+    "family": "Manrope",
+    "file": "manrope-normal-vietnamese.woff2",
+    "subset": "vietnamese",
+    "style": "normal",
+    "weight": "800",
+    "bytes": 8520,
+    "sha256": "6bbb044ab420e07edb0a3042d2eb314b85e83a0182e945a15ab3b9092668dfd5",
+    "source": "https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggixSuXd.woff2"
+  },
+  {
+    "family": "Manrope",
+    "file": "manrope-normal-latin-ext.woff2",
+    "subset": "latin-ext",
+    "style": "normal",
+    "weight": "800",
+    "bytes": 15120,
+    "sha256": "3911b66d9f2e005a4b989223405d0e5032619c668597ba467cc76a23c8fffcfb",
+    "source": "https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggmxSuXd.woff2"
+  },
+  {
+    "family": "Manrope",
+    "file": "manrope-normal-latin.woff2",
+    "subset": "latin",
+    "style": "normal",
+    "weight": "800",
+    "bytes": 24836,
+    "sha256": "a30ddcd349703aff7464c34bef3fffdff405ee50c113440d7c8693c02d210972",
+    "source": "https://fonts.gstatic.com/s/manrope/v20/xn7gYHE41ni1AdIRggexSg.woff2"
+  },
+  {
+    "family": "Instrument Serif",
+    "file": "instrument-serif-italic-latin-ext.woff2",
+    "subset": "latin-ext",
+    "style": "italic",
+    "weight": "400",
+    "bytes": 12384,
+    "sha256": "d0014821252a8a770bf7551641572f239a8ede83d75652d84fef0c3627751baf",
+    "source": "https://fonts.gstatic.com/s/instrumentserif/v5/jizHRFtNs2ka5fXjeivQ4LroWlx-6zAjgn7MsNo.woff2"
+  },
+  {
+    "family": "Instrument Serif",
+    "file": "instrument-serif-italic-latin.woff2",
+    "subset": "latin",
+    "style": "italic",
+    "weight": "400",
+    "bytes": 22128,
+    "sha256": "5a51946dfffa82972bc98745359c46761515641fda557c25116459a9f83da4a7",
+    "source": "https://fonts.gstatic.com/s/instrumentserif/v5/jizHRFtNs2ka5fXjeivQ4LroWlx-6zAjjH7M.woff2"
+  },
+  {
+    "family": "JetBrains Mono",
+    "file": "jetbrains-mono-normal-cyrillic-ext.woff2",
+    "subset": "cyrillic-ext",
+    "style": "normal",
+    "weight": "400",
+    "bytes": 1640,
+    "sha256": "62213be8a78b42f1e29d1452d91e2f8b3e745572a9dd98d3941e39fa00b37d76",
+    "source": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx3cwhsk.woff2"
+  },
+  {
+    "family": "JetBrains Mono",
+    "file": "jetbrains-mono-normal-cyrillic.woff2",
+    "subset": "cyrillic",
+    "style": "normal",
+    "weight": "400",
+    "bytes": 8872,
+    "sha256": "e17cfd15fb96909d64095015f958207063a0c07191da3512df7d560a781aebdf",
+    "source": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxTcwhsk.woff2"
+  },
+  {
+    "family": "JetBrains Mono",
+    "file": "jetbrains-mono-normal-greek.woff2",
+    "subset": "greek",
+    "style": "normal",
+    "weight": "400",
+    "bytes": 6836,
+    "sha256": "0a557721b1f8b36d3f3f84442689a71ca4a744300abcb46a1953f51bfc663b66",
+    "source": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxPcwhsk.woff2"
+  },
+  {
+    "family": "JetBrains Mono",
+    "file": "jetbrains-mono-normal-vietnamese.woff2",
+    "subset": "vietnamese",
+    "style": "normal",
+    "weight": "400",
+    "bytes": 5888,
+    "sha256": "c89b9cc0bc6262bd4f8d8494b6961601f3aefa829d08c2e3635f4d501d3a47c2",
+    "source": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx_cwhsk.woff2"
+  },
+  {
+    "family": "JetBrains Mono",
+    "file": "jetbrains-mono-normal-latin-ext.woff2",
+    "subset": "latin-ext",
+    "style": "normal",
+    "weight": "400",
+    "bytes": 11624,
+    "sha256": "db5ff4db83e580426280e9337a58dc57d3a83784a1b03ad80914651594441d52",
+    "source": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx7cwhsk.woff2"
+  },
+  {
+    "family": "JetBrains Mono",
+    "file": "jetbrains-mono-normal-latin.woff2",
+    "subset": "latin",
+    "style": "normal",
+    "weight": "400",
+    "bytes": 31432,
+    "sha256": "83c005d49d8a6a50474c73a5a36ac0468076e9c4a29da7bdb14995d80560a5be",
+    "source": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwg.woff2"
+  },
+  {
+    "family": "JetBrains Mono",
+    "file": "jetbrains-mono-normal-cyrillic-ext.woff2",
+    "subset": "cyrillic-ext",
+    "style": "normal",
+    "weight": "500",
+    "bytes": 1640,
+    "sha256": "62213be8a78b42f1e29d1452d91e2f8b3e745572a9dd98d3941e39fa00b37d76",
+    "source": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx3cwhsk.woff2"
+  },
+  {
+    "family": "JetBrains Mono",
+    "file": "jetbrains-mono-normal-cyrillic.woff2",
+    "subset": "cyrillic",
+    "style": "normal",
+    "weight": "500",
+    "bytes": 8872,
+    "sha256": "e17cfd15fb96909d64095015f958207063a0c07191da3512df7d560a781aebdf",
+    "source": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxTcwhsk.woff2"
+  },
+  {
+    "family": "JetBrains Mono",
+    "file": "jetbrains-mono-normal-greek.woff2",
+    "subset": "greek",
+    "style": "normal",
+    "weight": "500",
+    "bytes": 6836,
+    "sha256": "0a557721b1f8b36d3f3f84442689a71ca4a744300abcb46a1953f51bfc663b66",
+    "source": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxPcwhsk.woff2"
+  },
+  {
+    "family": "JetBrains Mono",
+    "file": "jetbrains-mono-normal-vietnamese.woff2",
+    "subset": "vietnamese",
+    "style": "normal",
+    "weight": "500",
+    "bytes": 5888,
+    "sha256": "c89b9cc0bc6262bd4f8d8494b6961601f3aefa829d08c2e3635f4d501d3a47c2",
+    "source": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx_cwhsk.woff2"
+  },
+  {
+    "family": "JetBrains Mono",
+    "file": "jetbrains-mono-normal-latin-ext.woff2",
+    "subset": "latin-ext",
+    "style": "normal",
+    "weight": "500",
+    "bytes": 11624,
+    "sha256": "db5ff4db83e580426280e9337a58dc57d3a83784a1b03ad80914651594441d52",
+    "source": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPx7cwhsk.woff2"
+  },
+  {
+    "family": "JetBrains Mono",
+    "file": "jetbrains-mono-normal-latin.woff2",
+    "subset": "latin",
+    "style": "normal",
+    "weight": "500",
+    "bytes": 31432,
+    "sha256": "83c005d49d8a6a50474c73a5a36ac0468076e9c4a29da7bdb14995d80560a5be",
+    "source": "https://fonts.gstatic.com/s/jetbrainsmono/v24/tDbv2o-flEEny0FZhsfKu5WU4zr3E_BX0PnT8RD8yKwBNntkaToggR7BYRbKPxDcwg.woff2"
+  }
+]

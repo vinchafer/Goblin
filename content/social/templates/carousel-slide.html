@@ -1,0 +1,33 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>carousel-slide</title>
+<!--
+  carousel-slide — a numbered slide: index chip, headline, body copy.
+  The index is the one gold element on the slide, and it is a FILL, never text
+  on the field. Slots are filled as textContent by render.mjs.
+
+  Slots: index · eyebrow · headline · body · footer
+-->
+<link rel="stylesheet" href="./_base.css">
+<body>
+  <article class="slide" data-slot-attr-surface>
+    <div class="foot-row">
+      <span class="gold-fill" data-slot="index"></span>
+      <span class="eyebrow" data-slot="eyebrow"></span>
+    </div>
+
+    <div class="spacer"></div>
+
+    <div class="stack">
+      <h2 class="headline headline--sm" data-slot="headline"></h2>
+      <p class="body" data-slot="body"></p>
+    </div>
+
+    <div class="spacer"></div>
+
+    <div class="foot-row">
+      <span class="footer" data-slot="footer"></span>
+      <img class="mark" data-slot-src="mark" alt="">
+    </div>
+  </article>
+</body>
