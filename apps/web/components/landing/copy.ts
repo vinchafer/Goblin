@@ -389,7 +389,7 @@ const DE: LandingCopy = {
       },
     ],
     installNote:
-      'Goblin zum Home-Bildschirm hinzufügen legt nur ein Icon an. Es bleibt eine Webseite: kein Modell, keine Laufzeit, nichts landet auf deinem Gerät.',
+      'Goblin zum Home-Bildschirm hinzuzufügen legt nur ein Icon an. Es bleibt eine Webseite: kein Modell, keine Laufzeit, nichts landet auf deinem Gerät.',
     modelsEyebrowA: 'In jedem Plan enthalten',
     modelsEyebrowB: 'Goblin Swift & Forge',
     modelsBody:
@@ -528,10 +528,10 @@ const DE: LandingCopy = {
     perMonth: '/ Monat',
     features: {
       bundled: 'Goblin Swift + Forge enthalten — kein Key, kein Token-Zähler',
-      projects: 'Unbegrenzt viele Projekte',
+      projects: 'Unbegrenzte Projekte',
       byok: 'Eigene Keys gehen auch — jeder grosse Anbieter, $0 Goblin-Marge',
       github: 'GitHub-Push-Integration',
-      anyDevice: 'Bau von jedem Gerät',
+      anyDevice: 'Von jedem Gerät bauen',
     },
   },
 

@@ -227,35 +227,43 @@ export function InstallAppBlock({ lang: langProp }: InstallAppBlockProps = {}) {
             {t(lang, 'App installieren', 'Install app')}
           </button>
         )}
+
+        {/* LANDING-MESSAGING v2 · U7 — the negation belongs TO this card.
+            It was introduced in U6 as a third centred paragraph stacked under
+            the card, which read as a footnote to a footnote: the eye grouped it
+            with the store line rather than with the thing it corrects. It now
+            sits inside the card, under a hairline, as the card's own closing
+            statement — because the claim it answers ("Install Goblin as an
+            app") is the card's HEADING, and a correction that floats free of
+            the claim is not doing the job it was added for. */}
+        <p data-testid="install-app-negation" style={negation}>
+          {t(
+            lang,
+            'Es bleibt eine Webseite — kein Modell, keine Laufzeit, nichts landet auf deinem Gerät.',
+            'It stays a website — no model, no runtime, nothing lands on your device.',
+          )}
+        </p>
       </div>
 
-      {/* FOUNDER-WALK-3 U6 — store-NEUTRAL line. The FW2 line read Apple-specific
-          ("App Store") and as if Goblin never wants any store; this covers Apple/
-          Google/Microsoft implicitly, frames it as a benefit (no store, no
-          download detour), never names a store, never sounds apologetic. --ink-3
-          meta ink, no icons. DE default + EN. */}
+      {/* Store-NEUTRAL line (FOUNDER-WALK-3): covers Apple/Google/Microsoft
+          implicitly, frames it as a benefit, never names a store, never sounds
+          apologetic.
+
+          LANDING-MESSAGING v2 · U7 — it used to end "Goblin kommt direkt aufs
+          Gerät" / "Goblin goes straight to your device". Read on its own that
+          is about the download detour, which is what it meant. Read next to the
+          negation it introduced a contradiction the page could not afford: one
+          line said Goblin arrives on your device, the next said nothing lands
+          on it. Both were true about different things, and the reader has no
+          way to know that — this is the same "true parts, false whole" failure
+          the whole strand exists to fix, in miniature.
+
+          The benefit is now stated as what actually arrives: the icon. */}
       <p data-testid="install-app-note" style={note}>
         {t(
           lang,
-          'Kein Store, kein Download-Umweg — Goblin kommt direkt aufs Gerät.',
-          'No store, no detour — Goblin goes straight to your device.',
-        )}
-      </p>
-
-      {/* LANDING-MESSAGING v2 · U6 — the negation, on the card itself.
-          The line above says Goblin "goes straight to your device", and this
-          whole block is headed "Install Goblin as an app". Both are true and
-          both point the wrong way for a technical reader: the tester who
-          started this whole strand quoted exactly that heading and concluded a
-          model was being downloaded to his phone. The "Where it runs" section
-          above disarms it before the card is reached; this says it again ON the
-          card, because the card is what gets screenshotted, linked and read on
-          its own. Saying it twice is cheap. The misreading was not. */}
-      <p data-testid="install-app-negation" style={negation}>
-        {t(
-          lang,
-          'Es bleibt eine Webseite — kein Modell, keine Laufzeit, nichts landet auf deinem Gerät.',
-          'It stays a website — no model, no runtime, nothing lands on your device.',
+          'Kein Store, kein Umweg — das Icon liegt auf dem Home-Bildschirm.',
+          'No store, no detour — the icon sits on your home screen.',
         )}
       </p>
     </section>
@@ -337,17 +345,18 @@ const note: React.CSSProperties = {
   color: 'var(--ink-3)',
   lineHeight: 1.5,
 };
-// Quieter than `note` (--ink-3 is already the meta ink, so the separation is
-// size and space, not another colour) — it qualifies the line above rather than
-// competing with it.
+// U7: a footer row of the card, not a paragraph under it. The hairline and the
+// shared left edge are what bind it to the heading it answers; left-aligned like
+// the steps above it, so it reads as part of the card's own text rather than as
+// centred small print. --ink-3 is already the meta ink, so it stays quieter than
+// the steps without a second colour.
 const negation: React.CSSProperties = {
-  maxWidth: 560,
-  margin: '6px auto 0',
-  textAlign: 'center',
+  margin: 0,
+  paddingTop: 14,
+  borderTop: '1px solid var(--line)',
   fontSize: 12.5,
   color: 'var(--ink-3)',
   lineHeight: 1.5,
-  opacity: 0.85,
 };
 const btn: React.CSSProperties = {
   alignSelf: 'flex-start',

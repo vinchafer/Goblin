@@ -26,9 +26,17 @@ export function storageLabel(plan: keyof typeof STORAGE_GB, lang: 'de' | 'en'): 
   return lang === 'en' ? `${STORAGE_GB[plan]} GB storage` : `${STORAGE_GB[plan]} GB Speicher`;
 }
 
-/** "10 GB Cloud-Storage" / "10 GB cloud storage" — the pricing/upgrade feature line. */
+/**
+ * "10 GB Cloud-Speicher" / "10 GB cloud storage" — the pricing/upgrade feature line.
+ *
+ * U7: the German said "Cloud-Storage", a half-translation sitting two lines from
+ * `storageLabel`'s "Speicher" in the same file. This function feeds the landing
+ * pricing AND the in-app upgrade page (app/dashboard/upgrade/page.tsx), so the
+ * fix lands on both — which is the point: a German user should not meet two
+ * words for one thing depending on which surface quoted it.
+ */
 export function storageLabelCloud(plan: keyof typeof STORAGE_GB, lang: 'de' | 'en'): string {
-  return lang === 'en' ? `${STORAGE_GB[plan]} GB cloud storage` : `${STORAGE_GB[plan]} GB Cloud-Storage`;
+  return lang === 'en' ? `${STORAGE_GB[plan]} GB cloud storage` : `${STORAGE_GB[plan]} GB Cloud-Speicher`;
 }
 
 /** Bare "10 GB" — for comparison-table cells. */

@@ -297,7 +297,7 @@ export default function UpgradePage() {
             {[
               { label: t(lang, 'Builds / Monat (ca.)', 'Builds / month (approx.)'), values: [PLAN_BUILDS.build, PLAN_BUILDS.pro, PLAN_BUILDS.power].map(n => `≈ ${n.toLocaleString(lang === 'en' ? 'en-US' : 'de-DE')}`) },
               { label: t(lang, 'Projekte', 'Projects'), values: ['∞', '∞', '∞'] },
-              { label: t(lang, 'Cloud-Storage', 'Cloud storage'), values: [storageGbLabel('build'), storageGbLabel('pro'), storageGbLabel('power')] },
+              { label: t(lang, 'Cloud-Speicher', 'Cloud storage'), values: [storageGbLabel('build'), storageGbLabel('pro'), storageGbLabel('power')] },
               { label: t(lang, 'BYOK (alle Provider, 2 Keys/Anbieter)', 'BYOK (every provider, 2 keys/provider)'), values: ['✓', '✓', '✓'] },
               { label: 'Send to Code', values: ['✓', '✓', '✓'] },
               { label: t(lang, 'GitHub-Push', 'GitHub push'), values: ['✓', '✓', '✓'] },
