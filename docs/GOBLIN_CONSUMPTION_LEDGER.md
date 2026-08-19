@@ -666,6 +666,9 @@ kein eigenes Modell.
 
 Status: **DIREKT** (Codepfade verifiziert; Häufigkeiten unmessbar ohne Produktionszähler).
 
+### M19 — Modell-Evaluierungs-Spike (SPIKE_MODEL_EVAL_2026-08, 2026-08-19)
+- **Einmalige Plattform-COGS, NICHT wiederkehrend und keinem Nutzer berechnet.** Der Spike `docs/SPIKE_MODEL_EVAL_2026-08.md` hat 96 Probe-Calls (4 Modelle × 8 Proben × 3 Läufe) direkt gegen DeepInfra gefahren, um die Swift-/Forge-Kandidaten zu vermessen — **gemessene Ausgabe ≈ $0.639** (finaler Lauf $0.373164 + $0.265630 verworfene Teilläufe), Obergrenze $2.00, nicht erreicht. Läuft ausserhalb jedes Nutzerpfads (eigenes Wegwerf-Harness in `scripts/spike/`, importiert **keinen** Produktionscode), erzeugt keine `completion_costs`-Zeile, berührt weder Allowance-Gate noch `FORGE_WEIGHT` noch die Plan-Caps. **Keine CFO-Abhängigkeit, kein neuer Posten, keine Änderung an A19/A20** — der gemessene in:out-Ratio des Spikes (~0.04:1) ist ein Artefakt der Probenform (nackte Einzelprompts ohne System-Prompt/Dateikontext) und **taugt ausdrücklich NICHT zur Revision der 9:1-Annahme**. Status: **DIREKT** (96 Roh-Records, Preise live aus der DeepInfra-API).
+
 ### M6 — Reserved (not yet built; add rows before shipping)
 Extended thinking · new third-party connectors beyond GitHub/Vercel/Brave. *FEEL-3a agent loop → **M10**;
 FEEL-3b publish/self-heal folded into M10; web search → **M11** above.*

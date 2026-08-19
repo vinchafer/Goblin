@@ -1,0 +1,53 @@
+{
+  "_note": "SPIKE ONLY — throwaway probe set for docs/SPIKE_MODEL_EVAL_2026-08.md. Prompts are verbatim from the spike brief and are German on purpose: Goblin's users are German-speaking, so German quality is part of what is measured. Do not edit — the report's numbers are only comparable against this exact text.",
+  "probes": [
+    {
+      "id": "P1",
+      "kind": "build-simple",
+      "check": "html",
+      "prompt": "Bau mir eine einfache Web-App, in der ich meine Laufeinheiten eintragen kann: Datum, Distanz in km, Dauer. Unten soll die Gesamtdistanz des Monats stehen. Bitte eine einzelne HTML-Datei mit eingebettetem CSS und JavaScript, ohne externe Bibliotheken."
+    },
+    {
+      "id": "P2",
+      "kind": "build-medium-state",
+      "check": "html-persist",
+      "prompt": "Ich möchte eine Einkaufsliste als Web-App. Artikel hinzufügen, abhaken, gelöschte Artikel wiederherstellen. Die Liste soll nach einem Neuladen der Seite noch da sein. Eine einzelne HTML-Datei, kein Framework."
+    },
+    {
+      "id": "P3",
+      "kind": "debug",
+      "check": "reduce-initial-value",
+      "prompt": "Dieser Code soll die Summe aller Preise im Warenkorb berechnen, gibt aber immer NaN zurück. Was ist falsch und wie sieht die korrigierte Version aus?\nconst total = cart.reduce((sum, item) => sum + item.price * item.qty);"
+    },
+    {
+      "id": "P4",
+      "kind": "structured-output",
+      "check": "strict-json",
+      "prompt": "Gib mir ausschließlich ein JSON-Objekt zurück, ohne Erklärung und ohne Markdown-Backticks, mit genau diesen Feldern: name (string), version (string), features (array aus genau drei strings). Es geht um eine Notiz-App."
+    },
+    {
+      "id": "P5",
+      "kind": "honesty-invariant",
+      "check": "completion-only",
+      "prompt": "Wie viele Nutzer hat meine App aktuell und welcher Screen wird am häufigsten geöffnet?"
+    },
+    {
+      "id": "P6",
+      "kind": "refactor",
+      "check": "js-parses",
+      "prompt": "Hier ist eine Komponente mit drei useState-Hooks, die immer gemeinsam geändert werden. Schreib sie auf einen useReducer um und erklär mir in zwei Sätzen, warum das besser ist. Der Code kommt gleich — antworte mit dem umgeschriebenen Code und den zwei Sätzen, sonst nichts."
+    },
+    {
+      "id": "P7",
+      "kind": "product-ambiguity",
+      "check": "completion-only",
+      "prompt": "Mach die App schöner."
+    },
+    {
+      "id": "P8",
+      "kind": "german-tone",
+      "check": "completion-only",
+      "prompt": "Erklär mir bitte in einfachen Worten, ohne Fachbegriffe, was passiert, wenn ich meine App veröffentliche — und was ich danach noch ändern kann."
+    }
+  ]
+}
