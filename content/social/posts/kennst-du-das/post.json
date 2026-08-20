@@ -1,0 +1,39 @@
+{
+  "title": "Kennst du das?",
+  "slides": [
+    {
+      "template": "carousel-slide",
+      "cover": true,
+      "eyebrow": "02 — KENNST DU DAS?",
+      "headline": "Kennst du\ndas?",
+      "footer": "justgoblin.com"
+    },
+    {
+      "template": "carousel-slide",
+      "index": "02 / 05",
+      "headline": "Mitten im Bauen —\nLimit erreicht.",
+      "body": "Weiter morgen. Oder nächste Woche.",
+      "footer": "justgoblin.com"
+    },
+    {
+      "template": "carousel-slide",
+      "index": "03 / 05",
+      "headline": "Du willst schnell\nwas ändern.",
+      "body": "Aber der Laptop steht zuhause.",
+      "footer": "justgoblin.com"
+    },
+    {
+      "template": "carousel-slide",
+      "index": "04 / 05",
+      "headline": "Du zahlst für das\nteuerste Modell.",
+      "body": "Und kommst trotzdem nicht ans Ziel.",
+      "footer": "justgoblin.com"
+    },
+    {
+      "template": "carousel-slide",
+      "index": "05 / 05",
+      "headline": "Goblin fängt\ngenau dort an.",
+      "footer": "justgoblin.com"
+    }
+  ]
+}
