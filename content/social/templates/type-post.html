@@ -7,14 +7,21 @@
   No imagery, no gold text. Slots are filled as textContent by render.mjs, so
   content is never parsed as markup.
 
-  Slots: eyebrow · headline · accent · footer · badge
+  The rule only draws when there is an eyebrow above it to divide from — see
+  data-slot-if, handled generically in render.mjs.
+
+  The mark defaults to shown (opt out with "mark": false in post.json — see
+  README) and sits beside the badge, not in place of it, so a carousel-style
+  badge and the brand mark can appear on the same footer row.
+
+  Slots: eyebrow · headline · accent · footer · badge · mark
 -->
 <link rel="stylesheet" href="./_base.css">
 <body>
   <article class="slide" data-slot-attr-surface>
     <div class="stack">
       <span class="eyebrow" data-slot="eyebrow"></span>
-      <div class="rule"></div>
+      <div class="rule" data-slot-if="eyebrow"></div>
     </div>
 
     <div class="spacer"></div>
@@ -28,7 +35,10 @@
 
     <div class="foot-row">
       <span class="footer" data-slot="footer"></span>
-      <span class="gold-fill" data-slot="badge"></span>
+      <span class="foot-row__end">
+        <span class="gold-fill" data-slot="badge"></span>
+        <img class="mark" data-slot-src="mark" alt="">
+      </span>
     </div>
   </article>
 </body>
