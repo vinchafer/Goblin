@@ -1,11 +1,11 @@
-Ein Versprechen, mit dem dieser Account startet:
+A promise this account starts with:
 
-Goblin behauptet keinen Zustand, den es nicht
-geprüft hat. Kein „erfolgreich veröffentlicht“,
-wenn nichts veröffentlicht wurde.
+Goblin never claims a state it hasn’t
+checked. No “successfully published”
+when nothing was published.
 
-Das gilt auch hier. Keine erfundenen Zahlen,
-keine erfundenen Erfolgsgeschichten, kein
-künstlicher Druck.
+The same goes here. No made-up numbers,
+no made-up success stories, no
+artificial pressure.
 
-Wenn etwas noch nicht läuft, sagen wir das.
+If something isn’t working yet, we’ll say so.
