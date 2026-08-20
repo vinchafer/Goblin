@@ -1,11 +1,11 @@
-Kennst du das?
+Sound familiar?
 
-Du bist mitten drin — und dann ist das Limit
-erreicht. Du willst schnell etwas ändern, aber
-der Laptop steht zuhause. Du zahlst jeden Monat
-für das teuerste Modell und kommst trotzdem
-nicht ans Ziel.
+You’re mid-build — and then you hit the limit.
+You want to change something fast, but your
+laptop’s at home. You’re paying every month
+for the priciest model and still not getting
+there.
 
-Goblin fängt genau dort an.
+Goblin starts right there.
 
-Link in Bio.
+Link in bio.

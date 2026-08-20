@@ -1,38 +1,38 @@
 {
-  "title": "Kennst du das?",
+  "title": "Sound familiar?",
   "slides": [
     {
       "template": "carousel-slide",
       "cover": true,
-      "eyebrow": "02 — KENNST DU DAS?",
-      "headline": "Kennst du\ndas?",
+      "eyebrow": "02 — SOUND FAMILIAR?",
+      "headline": "Sound\nfamiliar?",
       "footer": "justgoblin.com"
     },
     {
       "template": "carousel-slide",
       "index": "02 / 05",
-      "headline": "Mitten im Bauen —\nLimit erreicht.",
-      "body": "Weiter morgen. Oder nächste Woche.",
+      "headline": "Mid-build —\nhit the limit.",
+      "body": "Try again tomorrow. Or next week.",
       "footer": "justgoblin.com"
     },
     {
       "template": "carousel-slide",
       "index": "03 / 05",
-      "headline": "Du willst schnell\nwas ändern.",
-      "body": "Aber der Laptop steht zuhause.",
+      "headline": "You want to\nchange something fast.",
+      "body": "But your laptop’s at home.",
       "footer": "justgoblin.com"
     },
     {
       "template": "carousel-slide",
       "index": "04 / 05",
-      "headline": "Du zahlst für das\nteuerste Modell.",
-      "body": "Und kommst trotzdem nicht ans Ziel.",
+      "headline": "You’re paying for\nthe priciest model.",
+      "body": "And still not getting there.",
       "footer": "justgoblin.com"
     },
     {
       "template": "carousel-slide",
       "index": "05 / 05",
-      "headline": "Goblin fängt\ngenau dort an.",
+      "headline": "Goblin starts\nright there.",
       "footer": "justgoblin.com"
     }
   ]
