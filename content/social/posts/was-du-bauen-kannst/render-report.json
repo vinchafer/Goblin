@@ -18,14 +18,14 @@
         "weight": "500",
         "style": "normal",
         "generic": "monospace",
-        "sample": "03 — BEISPIELE"
+        "sample": "03 — EXAMPLES"
       },
       {
         "family": "Manrope",
         "weight": "800",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Was würdest\ndu zuerst\nbauen?"
+        "sample": "What would\nyou build\nfirst?"
       },
       {
         "family": "JetBrains Mono",
@@ -35,7 +35,7 @@
         "sample": "justgoblin.com"
       }
     ],
-    "bytes": 56453,
+    "bytes": 48011,
     "scale": {
       "displayStep": "72px",
       "posterScale": "1.8",
@@ -52,8 +52,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 840,
-          "widthFallback": 842.87,
+          "widthReal": 780,
+          "widthFallback": 782.67,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -65,8 +65,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 1500.8,
-          "widthFallback": 1468.7,
+          "widthReal": 1336.3,
+          "widthFallback": 1310.94,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -97,18 +97,18 @@
     "platformFonts": [
       {
         "familyName": "JetBrains Mono",
-        "glyphCount": 56,
+        "glyphCount": 54,
         "isCustomFont": true
       },
       {
         "familyName": "Manrope ExtraLight",
-        "glyphCount": 52,
+        "glyphCount": 48,
         "isCustomFont": true
       }
     ],
     "contrast": [
       {
-        "text": "03 — BEISPIELE",
+        "text": "03 — EXAMPLES",
         "className": "eyebrow",
         "fg": "#D8CBA8",
         "bg": "#1A3A2A",
@@ -120,7 +120,7 @@
         "pass": true
       },
       {
-        "text": "Was würdest\ndu zuerst\nbauen?",
+        "text": "What would\nyou build\nfirst?",
         "className": "headline",
         "fg": "#FBF7EC",
         "bg": "#1A3A2A",
@@ -174,14 +174,14 @@
         "weight": "500",
         "style": "normal",
         "generic": "monospace",
-        "sample": "03 — BEISPIELE"
+        "sample": "03 — EXAMPLES"
       },
       {
         "family": "Manrope",
         "weight": "800",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Was würdest\ndu zuerst\nbauen?"
+        "sample": "What would\nyou build\nfirst?"
       },
       {
         "family": "JetBrains Mono",
@@ -191,7 +191,7 @@
         "sample": "justgoblin.com"
       }
     ],
-    "bytes": 58877,
+    "bytes": 50458,
     "scale": {
       "displayStep": "72px",
       "posterScale": "1.8",
@@ -208,8 +208,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 840,
-          "widthFallback": 842.87,
+          "widthReal": 780,
+          "widthFallback": 782.67,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -221,8 +221,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 1500.8,
-          "widthFallback": 1468.7,
+          "widthReal": 1336.3,
+          "widthFallback": 1310.94,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -253,18 +253,18 @@
     "platformFonts": [
       {
         "familyName": "JetBrains Mono",
-        "glyphCount": 56,
+        "glyphCount": 54,
         "isCustomFont": true
       },
       {
         "familyName": "Manrope ExtraLight",
-        "glyphCount": 52,
+        "glyphCount": 48,
         "isCustomFont": true
       }
     ],
     "contrast": [
       {
-        "text": "03 — BEISPIELE",
+        "text": "03 — EXAMPLES",
         "className": "eyebrow",
         "fg": "#D8CBA8",
         "bg": "#1A3A2A",
@@ -276,7 +276,7 @@
         "pass": true
       },
       {
-        "text": "Was würdest\ndu zuerst\nbauen?",
+        "text": "What would\nyou build\nfirst?",
         "className": "headline",
         "fg": "#FBF7EC",
         "bg": "#1A3A2A",
@@ -322,7 +322,7 @@
     "channels": 3,
     "hasAlpha": false,
     "topLeft": "#0F2B1E",
-    "centre": "#0F2B1E",
+    "centre": "#B3B9AD",
     "bottomRight": "#0F2B1E",
     "usedFonts": [
       {
@@ -330,10 +330,10 @@
         "weight": "800",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Eine Anmeldeseite."
+        "sample": "A login page."
       }
     ],
-    "bytes": 28827,
+    "bytes": 24431,
     "scale": {
       "displayStep": "72px",
       "posterScale": "1.8",
@@ -350,8 +350,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 945.5,
-          "widthFallback": 916.99,
+          "widthReal": 630.1,
+          "widthFallback": 627.78,
           "distinctFromFallback": true,
           "pass": true
         }
@@ -368,13 +368,13 @@
     "platformFonts": [
       {
         "familyName": "Manrope ExtraLight",
-        "glyphCount": 34,
+        "glyphCount": 26,
         "isCustomFont": true
       }
     ],
     "contrast": [
       {
-        "text": "Eine Anmeldeseite.",
+        "text": "A login page.",
         "className": "headline",
         "fg": "#FBF7EC",
         "bg": "#0F2B1E",
@@ -416,10 +416,10 @@
         "weight": "800",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Eine Anmeldeseite."
+        "sample": "A login page."
       }
     ],
-    "bytes": 31186,
+    "bytes": 27041,
     "scale": {
       "displayStep": "72px",
       "posterScale": "1.8",
@@ -436,8 +436,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 945.5,
-          "widthFallback": 916.99,
+          "widthReal": 630.1,
+          "widthFallback": 627.78,
           "distinctFromFallback": true,
           "pass": true
         }
@@ -454,13 +454,13 @@
     "platformFonts": [
       {
         "familyName": "Manrope ExtraLight",
-        "glyphCount": 34,
+        "glyphCount": 26,
         "isCustomFont": true
       }
     ],
     "contrast": [
       {
-        "text": "Eine Anmeldeseite.",
+        "text": "A login page.",
         "className": "headline",
         "fg": "#FBF7EC",
         "bg": "#0F2B1E",
@@ -502,10 +502,10 @@
         "weight": "800",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Ein kleiner Shop."
+        "sample": "A small shop."
       }
     ],
-    "bytes": 24526,
+    "bytes": 23199,
     "scale": {
       "displayStep": "72px",
       "posterScale": "1.8",
@@ -522,8 +522,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 817.8,
-          "widthFallback": 811.28,
+          "widthReal": 645.5,
+          "widthFallback": 650.15,
           "distinctFromFallback": true,
           "pass": true
         }
@@ -540,13 +540,13 @@
     "platformFonts": [
       {
         "familyName": "Manrope ExtraLight",
-        "glyphCount": 32,
+        "glyphCount": 26,
         "isCustomFont": true
       }
     ],
     "contrast": [
       {
-        "text": "Ein kleiner Shop.",
+        "text": "A small shop.",
         "className": "headline",
         "fg": "#FBF7EC",
         "bg": "#0F2B1E",
@@ -588,10 +588,10 @@
         "weight": "800",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Ein kleiner Shop."
+        "sample": "A small shop."
       }
     ],
-    "bytes": 27129,
+    "bytes": 25806,
     "scale": {
       "displayStep": "72px",
       "posterScale": "1.8",
@@ -608,8 +608,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 817.8,
-          "widthFallback": 811.28,
+          "widthReal": 645.5,
+          "widthFallback": 650.15,
           "distinctFromFallback": true,
           "pass": true
         }
@@ -626,13 +626,13 @@
     "platformFonts": [
       {
         "familyName": "Manrope ExtraLight",
-        "glyphCount": 32,
+        "glyphCount": 26,
         "isCustomFont": true
       }
     ],
     "contrast": [
       {
-        "text": "Ein kleiner Shop.",
+        "text": "A small shop.",
         "className": "headline",
         "fg": "#FBF7EC",
         "bg": "#0F2B1E",
@@ -674,10 +674,10 @@
         "weight": "800",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Eine Terminbuchung."
+        "sample": "A booking page."
       }
     ],
-    "bytes": 26336,
+    "bytes": 29851,
     "scale": {
       "displayStep": "72px",
       "posterScale": "1.8",
@@ -694,8 +694,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 1041.3,
-          "widthFallback": 1014.84,
+          "widthReal": 780.8,
+          "widthFallback": 777.78,
           "distinctFromFallback": true,
           "pass": true
         }
@@ -712,13 +712,13 @@
     "platformFonts": [
       {
         "familyName": "Manrope ExtraLight",
-        "glyphCount": 36,
+        "glyphCount": 28,
         "isCustomFont": true
       }
     ],
     "contrast": [
       {
-        "text": "Eine Terminbuchung.",
+        "text": "A booking page.",
         "className": "headline",
         "fg": "#FBF7EC",
         "bg": "#0F2B1E",
@@ -760,10 +760,10 @@
         "weight": "800",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Eine Terminbuchung."
+        "sample": "A booking page."
       }
     ],
-    "bytes": 28930,
+    "bytes": 32429,
     "scale": {
       "displayStep": "72px",
       "posterScale": "1.8",
@@ -780,8 +780,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 1041.3,
-          "widthFallback": 1014.84,
+          "widthReal": 780.8,
+          "widthFallback": 777.78,
           "distinctFromFallback": true,
           "pass": true
         }
@@ -798,13 +798,13 @@
     "platformFonts": [
       {
         "familyName": "Manrope ExtraLight",
-        "glyphCount": 36,
+        "glyphCount": 28,
         "isCustomFont": true
       }
     ],
     "contrast": [
       {
-        "text": "Eine Terminbuchung.",
+        "text": "A booking page.",
         "className": "headline",
         "fg": "#FBF7EC",
         "bg": "#0F2B1E",
@@ -846,10 +846,10 @@
         "weight": "800",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Ein internes Tool."
+        "sample": "An internal tool."
       }
     ],
-    "bytes": 23093,
+    "bytes": 23091,
     "scale": {
       "displayStep": "72px",
       "posterScale": "1.8",
@@ -866,8 +866,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 846.9,
-          "widthFallback": 831.54,
+          "widthReal": 788.4,
+          "widthFallback": 761.08,
           "distinctFromFallback": true,
           "pass": true
         }
@@ -884,13 +884,13 @@
     "platformFonts": [
       {
         "familyName": "Manrope ExtraLight",
-        "glyphCount": 34,
+        "glyphCount": 32,
         "isCustomFont": true
       }
     ],
     "contrast": [
       {
-        "text": "Ein internes Tool.",
+        "text": "An internal tool.",
         "className": "headline",
         "fg": "#FBF7EC",
         "bg": "#0F2B1E",
@@ -932,10 +932,10 @@
         "weight": "800",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Ein internes Tool."
+        "sample": "An internal tool."
       }
     ],
-    "bytes": 25606,
+    "bytes": 25649,
     "scale": {
       "displayStep": "72px",
       "posterScale": "1.8",
@@ -952,8 +952,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 846.9,
-          "widthFallback": 831.54,
+          "widthReal": 788.4,
+          "widthFallback": 761.08,
           "distinctFromFallback": true,
           "pass": true
         }
@@ -970,13 +970,13 @@
     "platformFonts": [
       {
         "familyName": "Manrope ExtraLight",
-        "glyphCount": 34,
+        "glyphCount": 32,
         "isCustomFont": true
       }
     ],
     "contrast": [
       {
-        "text": "Ein internes Tool.",
+        "text": "An internal tool.",
         "className": "headline",
         "fg": "#FBF7EC",
         "bg": "#0F2B1E",
@@ -1010,7 +1010,7 @@
     "channels": 3,
     "hasAlpha": false,
     "topLeft": "#0F2B1E",
-    "centre": "#FBF7EC",
+    "centre": "#0F2B1E",
     "bottomRight": "#0F2B1E",
     "usedFonts": [
       {
@@ -1018,10 +1018,10 @@
         "weight": "800",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Eine Landingpage\nfür deine Idee."
+        "sample": "A landing page\nfor your idea."
       }
     ],
-    "bytes": 41672,
+    "bytes": 41607,
     "scale": {
       "displayStep": "72px",
       "posterScale": "1.8",
@@ -1038,8 +1038,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 1592.4,
-          "widthFallback": 1566.89,
+          "widthReal": 1386,
+          "widthFallback": 1377.93,
           "distinctFromFallback": true,
           "pass": true
         }
@@ -1056,13 +1056,13 @@
     "platformFonts": [
       {
         "familyName": "Manrope ExtraLight",
-        "glyphCount": 60,
+        "glyphCount": 54,
         "isCustomFont": true
       }
     ],
     "contrast": [
       {
-        "text": "Eine Landingpage\nfür deine Idee.",
+        "text": "A landing page\nfor your idea.",
         "className": "headline",
         "fg": "#FBF7EC",
         "bg": "#0F2B1E",
@@ -1096,7 +1096,7 @@
     "channels": 3,
     "hasAlpha": false,
     "topLeft": "#0F2B1E",
-    "centre": "#FBF7EC",
+    "centre": "#0F2B1E",
     "bottomRight": "#0F2B1E",
     "usedFonts": [
       {
@@ -1104,10 +1104,10 @@
         "weight": "800",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Eine Landingpage\nfür deine Idee."
+        "sample": "A landing page\nfor your idea."
       }
     ],
-    "bytes": 44239,
+    "bytes": 44483,
     "scale": {
       "displayStep": "72px",
       "posterScale": "1.8",
@@ -1124,8 +1124,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 1592.4,
-          "widthFallback": 1566.89,
+          "widthReal": 1386,
+          "widthFallback": 1377.93,
           "distinctFromFallback": true,
           "pass": true
         }
@@ -1142,13 +1142,13 @@
     "platformFonts": [
       {
         "familyName": "Manrope ExtraLight",
-        "glyphCount": 60,
+        "glyphCount": 54,
         "isCustomFont": true
       }
     ],
     "contrast": [
       {
-        "text": "Eine Landingpage\nfür deine Idee.",
+        "text": "A landing page\nfor your idea.",
         "className": "headline",
         "fg": "#FBF7EC",
         "bg": "#0F2B1E",

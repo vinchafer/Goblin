@@ -1,7 +1,7 @@
-Keine Vorlagen. Keine Bausteine.
+No templates. No building blocks.
 
-Du beschreibst, was du brauchst — es entsteht
-genau das.
+You describe what you need — that’s exactly
+what gets built.
 
-Was würdest du zuerst bauen? Schreib es in
-die Kommentare.
+What would you build first? Tell us in the
+comments.
