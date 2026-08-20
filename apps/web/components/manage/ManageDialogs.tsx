@@ -112,6 +112,78 @@ export function RenameDialog({
   );
 }
 
+// ── Edit project (name + description) ───────────────────────────────────────
+// FOUNDER-WALK-7 · U5: name+description had no edit path once a project existed —
+// only set-at-creation (new-project-modal.tsx). Same panel/overlay/button tokens as
+// RenameDialog above (one modal convention, not a new one), extended with a second
+// field rather than duplicating the whole dialog for one extra textarea.
+export function EditProjectDialog({
+  open, title, namePlaceholder, descriptionPlaceholder, initialName, initialDescription,
+  saveLabel, cancelLabel, onSave, onClose,
+}: {
+  open: boolean; title: string; namePlaceholder: string; descriptionPlaceholder: string;
+  initialName: string; initialDescription: string; saveLabel: string; cancelLabel: string;
+  onSave: (v: { name: string; description: string }) => void; onClose: () => void;
+}) {
+  const [name, setName] = useState(initialName);
+  const [description, setDescription] = useState(initialDescription);
+  useEffect(() => {
+    if (open) { setName(initialName); setDescription(initialDescription); }
+  }, [open, initialName, initialDescription]);
+  if (!open) return null;
+  const submit = () => { const v = name.trim(); if (v) onSave({ name: v, description: description.trim() }); };
+  return (
+    <div role="dialog" aria-modal="true" onClick={onClose} style={overlay}>
+      <div onClick={(e) => e.stopPropagation()} style={panel} data-testid="edit-project-dialog">
+        <h3 style={h3}>{title}</h3>
+        <input
+          autoFocus
+          value={name}
+          placeholder={namePlaceholder}
+          onChange={(e) => setName(e.target.value)}
+          maxLength={100}
+          onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}
+          style={{
+            width: '100%', padding: '10px 12px', border: '1px solid var(--div)',
+            borderRadius: 8, fontSize: 'var(--t-body-fs)', background: 'var(--white, #fff)',
+            color: 'var(--text)', marginBottom: 10, boxSizing: 'border-box', fontFamily: 'var(--font-sans)',
+          }}
+        />
+        <textarea
+          value={description}
+          placeholder={descriptionPlaceholder}
+          onChange={(e) => setDescription(e.target.value)}
+          maxLength={500}
+          rows={3}
+          onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}
+          style={{
+            width: '100%', padding: '10px 12px', border: '1px solid var(--div)',
+            borderRadius: 8, fontSize: 'var(--t-body-fs)', background: 'var(--white, #fff)',
+            color: 'var(--text)', marginBottom: 12, boxSizing: 'border-box', fontFamily: 'var(--font-sans)',
+            resize: 'vertical',
+          }}
+        />
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+          <button onClick={onClose} style={ghostBtn}>{cancelLabel}</button>
+          <button
+            data-testid="edit-project-save"
+            onClick={submit}
+            disabled={!name.trim()}
+            style={{
+              padding: '8px 14px', borderRadius: 8, border: 'none', fontWeight: 600,
+              cursor: name.trim() ? 'pointer' : 'not-allowed', fontFamily: 'var(--font-sans)',
+              fontSize: 'var(--t-small-fs)',
+              background: name.trim() ? 'var(--brand-green)' : 'rgba(0,0,0,0.10)', color: '#fff',
+            }}
+          >
+            {saveLabel}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Move-to-project picker ──────────────────────────────────────────────────
 export interface MoveTarget { id: string; name: string }
 export function MoveDialog({

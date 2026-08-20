@@ -264,17 +264,24 @@ projects.post('/', async (c) => {
   return c.json(data, 201);
 });
 
-// PATCH /:id — rename (name) and/or change project intent (the quiet "Layout
-// wechseln"). Tolerant of a pre-migration DB on intent: returns ok:false (not 500)
-// so the UI degrades gracefully. Ownership-scoped on every write.
+// PATCH /:id — rename (name), edit description, and/or change project intent (the
+// quiet "Layout wechseln"). Tolerant of a pre-migration DB on intent: returns ok:false
+// (not 500) so the UI degrades gracefully. Ownership-scoped on every write.
 projects.patch('/:id', async (c) => {
   const userId = c.get('userId');
   const projectId = c.req.param('id');
   const body = await c.req.json().catch(() => ({}));
 
+  // FOUNDER-WALK-7 · U5: `description` mirrors the CreateProjectSchema cap (max 500,
+  // above) — the project can never be edited into a state creation would have refused.
+  // `.nullable()` lets a save clear the description (empty field → null, not "").
   const schema = z
-    .object({ intent: z.enum(INTENTS).optional(), name: z.string().min(1).max(100).optional() })
-    .refine((v) => v.intent !== undefined || v.name !== undefined, {
+    .object({
+      intent: z.enum(INTENTS).optional(),
+      name: z.string().min(1).max(100).optional(),
+      description: z.string().max(500).nullable().optional(),
+    })
+    .refine((v) => v.intent !== undefined || v.name !== undefined || v.description !== undefined, {
       message: 'Nothing to update',
     });
   const parsed = schema.safeParse(body);
@@ -285,12 +292,15 @@ projects.patch('/:id', async (c) => {
     return c.json({ error: 'Not found' }, 404);
   }
 
-  // Rename first — `name` is a guaranteed column (used at create), so a failure
-  // here is a real error, unlike the pre-migration-tolerant `intent` write below.
-  if (parsed.data.name !== undefined) {
+  // Rename/description first — both are guaranteed columns (used at create), so a
+  // failure here is a real error, unlike the pre-migration-tolerant `intent` write below.
+  if (parsed.data.name !== undefined || parsed.data.description !== undefined) {
+    const patch: { name?: string; description?: string | null } = {};
+    if (parsed.data.name !== undefined) patch.name = parsed.data.name;
+    if (parsed.data.description !== undefined) patch.description = parsed.data.description;
     const { error: nameErr } = await supabase
       .from('projects')
-      .update({ name: parsed.data.name })
+      .update(patch)
       .eq('id', projectId)
       .eq('user_id', userId);
     if (nameErr) return c.json({ error: 'Failed to rename' }, 500);
@@ -306,7 +316,10 @@ projects.patch('/:id', async (c) => {
     if (error) return c.json({ ok: false, persisted: false, intent: parsed.data.intent });
   }
 
-  return c.json({ ok: true, persisted: true, name: parsed.data.name, intent: parsed.data.intent });
+  return c.json({
+    ok: true, persisted: true,
+    name: parsed.data.name, description: parsed.data.description, intent: parsed.data.intent,
+  });
 });
 
 // POST /bulk-delete — delete many projects in one call. Ownership-scoped: the

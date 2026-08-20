@@ -5,6 +5,7 @@ import { DeployUrlList, type DeployUrlItem } from "@/components/project/DeployUr
 import { RecentChatsCard, type RecentChatItem } from "@/components/project/RecentChatsCard";
 import { RecentSessionsCard, type RecentSessionItem } from "@/components/project/RecentSessionsCard";
 import { ProjectIntentControl } from "@/components/project/ProjectIntentControl";
+import { EditProjectButton } from "@/components/project/EditProjectButton";
 import { ProjectInstructionsCard } from "@/components/project/ProjectInstructionsCard";
 import { ProjectChatLaunch } from "@/components/project/ProjectChatLaunch";
 import { chatModelLabel } from "@/lib/chat-model-label";
@@ -186,6 +187,8 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
               </Link>
               {/* Quiet "Layout wechseln" — changes the Code-Tab default foreground. */}
               <ProjectIntentControl projectId={id} />
+              {/* FOUNDER-WALK-7 · U5 — name/description were only settable at creation. */}
+              <EditProjectButton projectId={id} initialName={project.name} initialDescription={project.description} />
             </div>
           </div>
         </header>
