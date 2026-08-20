@@ -12,7 +12,7 @@ import type { ChatMessage } from "@goblin/shared/src/schemas";
 import type { SelectedModel } from "@/components/chat/ChatInput";
 import { StcPreviewSheet, type StcFile } from "@/components/code/StcPreviewSheet";
 import { PageLoading } from "@/components/ui/PageLoading";
-import { useLang } from "@/lib/use-lang";
+import { useLang, t } from "@/lib/use-lang";
 import { truncatedNotice, continueLabel, continuingLabel, continueFailedNotice } from "@/lib/truncation-copy";
 
 const EXAMPLE_PROMPTS = [
@@ -144,8 +144,8 @@ export function ChatTab({ projectId }: ChatTabProps) {
     }));
     toast.success(
       multi
-        ? `${selected.length} Dateien an Code-Tab gesendet: ${selected.map(f => f.path).join(', ')}`
-        : `An Code-Tab gesendet (${first.path})`,
+        ? t(lang, `${selected.length} Dateien an Code-Tab gesendet: ${selected.map(f => f.path).join(', ')}`, `${selected.length} files sent to Code tab: ${selected.map(f => f.path).join(', ')}`)
+        : t(lang, `An Code-Tab gesendet (${first.path})`, `Sent to Code tab (${first.path})`),
       { duration: multi ? 2600 : 1500 }
     );
   };

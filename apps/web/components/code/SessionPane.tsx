@@ -959,7 +959,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
           {/* 10.8-7: open the file navigation panel (browse all session files). */}
           <button
             onClick={() => setFileNavOpen(true)}
-            title="Dateien" aria-label="Dateien öffnen"
+            title={t(lang, "Dateien", "Files")} aria-label={t(lang, "Dateien öffnen", "Open files")}
             style={{ display: "inline-flex", alignItems: "center", background: "transparent", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-2)", borderRadius: 8, padding: "5px 8px", cursor: "pointer", flexShrink: 0 }}
           >
             <Icon name="menu" size={14} />
@@ -1197,7 +1197,7 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
             <>
               <span className="gb-statusline" style={{ fontSize: 12, fontFamily: "var(--font-sans)", flex: 1, display: "inline-flex", alignItems: "center", gap: 7, minWidth: 0 }}>
                 {state === "empty" ? (
-                  <span style={{ color: "var(--ed-fg-3)" }}>Noch keine Dateien</span>
+                  <span style={{ color: "var(--ed-fg-3)" }}>{t(lang, "Noch keine Dateien", "No files yet")}</span>
                 ) : hasUnpublished ? (
                   <>
                     <span style={{ width: 8, height: 8, borderRadius: "50%", border: "1.5px solid var(--ed-draft)", flexShrink: 0 }} />
@@ -1313,14 +1313,14 @@ export function SessionPane({ session, theme, onModelChange, onDraftCountChange,
       {discardConfirm && (
         <>
           <div style={{ position: "absolute", inset: 0, zIndex: 80, background: "var(--surface-overlay, rgba(0,0,0,0.4))" }} onClick={() => setDiscardConfirm(null)} />
-          <div role="dialog" aria-label="Datei verwerfen" data-testid="discard-confirm" style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "var(--ed-chrome-2)", border: "1px solid var(--ed-rule)", borderRadius: 14, padding: "22px 24px", zIndex: 81, minWidth: 320, maxWidth: 380, boxShadow: "0 16px 40px rgba(15,43,30,0.28)" }}>
-            <div style={{ fontSize: 16, fontWeight: 600, color: "var(--ed-fg-1)", fontFamily: "var(--font-sans)", marginBottom: 8 }}>Datei verwerfen?</div>
+          <div role="dialog" aria-label={t(lang, "Datei verwerfen", "Discard file")} data-testid="discard-confirm" style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", background: "var(--ed-chrome-2)", border: "1px solid var(--ed-rule)", borderRadius: 14, padding: "22px 24px", zIndex: 81, minWidth: 320, maxWidth: 380, boxShadow: "0 16px 40px rgba(15,43,30,0.28)" }}>
+            <div style={{ fontSize: 16, fontWeight: 600, color: "var(--ed-fg-1)", fontFamily: "var(--font-sans)", marginBottom: 8 }}>{t(lang, "Datei verwerfen?", "Discard file?")}</div>
             <div style={{ fontSize: 13, lineHeight: 1.55, color: "var(--ed-fg-3)", fontFamily: "var(--font-sans)", marginBottom: 18 }}>
-              Nicht gespeicherte Änderungen an <span style={{ fontFamily: "JetBrains Mono, monospace", color: "var(--ed-fg-2)", wordBreak: "break-all" }}>{discardConfirm}</span> gehen verloren. Das kann nicht rückgängig gemacht werden.
+              {t(lang, "Nicht gespeicherte Änderungen an", "Unsaved changes to")} <span style={{ fontFamily: "JetBrains Mono, monospace", color: "var(--ed-fg-2)", wordBreak: "break-all" }}>{discardConfirm}</span> {t(lang, "gehen verloren. Das kann nicht rückgängig gemacht werden.", "will be lost. This cannot be undone.")}
             </div>
             <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-              <button onClick={() => setDiscardConfirm(null)} style={{ background: "transparent", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-2)", borderRadius: 9, padding: "9px 16px", fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "var(--font-sans)" }}>Abbrechen</button>
-              <button data-testid="discard-confirm-yes" onClick={confirmDiscard} style={{ background: "var(--danger, #B0432A)", border: "none", color: "#fff", borderRadius: 9, padding: "9px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-sans)", display: "inline-flex", alignItems: "center", gap: 7 }}><Icon name="close" size={14} /> Verwerfen</button>
+              <button onClick={() => setDiscardConfirm(null)} style={{ background: "transparent", border: "1px solid var(--ed-rule)", color: "var(--ed-fg-2)", borderRadius: 9, padding: "9px 16px", fontSize: 13, fontWeight: 500, cursor: "pointer", fontFamily: "var(--font-sans)" }}>{t(lang, "Abbrechen", "Cancel")}</button>
+              <button data-testid="discard-confirm-yes" onClick={confirmDiscard} style={{ background: "var(--danger, #B0432A)", border: "none", color: "#fff", borderRadius: 9, padding: "9px 18px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "var(--font-sans)", display: "inline-flex", alignItems: "center", gap: 7 }}><Icon name="close" size={14} /> {t(lang, "Verwerfen", "Discard")}</button>
             </div>
           </div>
         </>

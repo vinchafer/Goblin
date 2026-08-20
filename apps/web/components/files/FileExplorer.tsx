@@ -276,9 +276,9 @@ export function FileExplorer({ projectId, projectName, dataSource }: Props) {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ path: moveFor, toProjectId }),
       });
-      if (r.status === 409) { flash("Zielprojekt hat schon eine Datei mit diesem Namen"); return; }
-      if (!r.ok) { flash("Verschieben fehlgeschlagen"); return; }
-      flash("Datei verschoben");
+      if (r.status === 409) { flash(t(lang, "Zielprojekt hat schon eine Datei mit diesem Namen", "Target project already has a file with this name")); return; }
+      if (!r.ok) { flash(t(lang, "Verschieben fehlgeschlagen", "Move failed")); return; }
+      flash(t(lang, "Datei verschoben", "File moved"));
       if (selected === moveFor) { setSelected(null); setPreview(null); }
       setMoveFor(null);
       load();

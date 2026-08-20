@@ -49,6 +49,14 @@ export interface GoblinChatContext {
     addressName?: string | null;
     responseStyle?: 'knapp' | 'ausfuehrlich' | null;
     explainChanges?: boolean | null;
+    /**
+     * FOUNDER-WALK-7 · U3(b): the account's stored language (users.preferred_lang,
+     * 0059 — same column Settings → Sprache writes). 'de' is the default and renders
+     * NOTHING (byte-stable prefix, WAVE-A A-1) — only an explicit 'en' account adds a
+     * line, matching how every other conditional block here (WEB_SEARCH_BLOCK,
+     * PROVISION_BLOCK) stays absent for the common case.
+     */
+    preferredLang?: 'de' | 'en';
   } | null;
   /**
    * F4.3: agent runs only — true when a web-search provider is configured for this
@@ -106,6 +114,17 @@ function renderUserContext(ctx: GoblinChatContext, opts: { agent: boolean } = { 
     lines.push(
       '- Persönliche Anweisungen des Nutzers (gelten für alle Projekte, befolge sie):',
       ...ci.split('\n').map((l) => `  ${l}`),
+    );
+  }
+  // U3(b): 'de' is silent by design (the default, byte-stable prefix) — only the
+  // explicit EN account gets a line. This is an ACCOUNT setting, so it wins over the
+  // message-language guess in the Sprachregister block (IDENTITY / AGENT_IDENTITY)
+  // unless the user is plainly writing in a different language in THIS message —
+  // stated below so a German-language question from an EN-set account still gets a
+  // sane answer instead of a forced-English non-sequitur.
+  if (p.preferredLang === 'en') {
+    lines.push(
+      '- Sprache: Der Nutzer hat in den Konto-Einstellungen Englisch gewählt. Antworte auf Englisch — auch wenn seine Nachricht kurz oder sprachneutral ist ("fix this", "why?"). Schreibt er jedoch klar erkennbar in einer ANDEREN Sprache (z. B. einer ganzen deutschen Frage), antworte in dieser Sprache; die Kontoeinstellung ist die Vorgabe, keine Zwangsjacke.',
     );
   }
   if (lines.length === 0) return '';
