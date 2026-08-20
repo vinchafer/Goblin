@@ -1,10 +1,10 @@
-Hallo. Wir sind Goblin.
+Hello. We’re Goblin.
 
-Software bauen, ohne zu programmieren —
-beschreiben, bauen lassen, live gehen.
-Vom Handy aus.
+Building software without coding —
+describe it, have it built, ship it live.
+From your phone.
 
-Gebaut in der Schweiz, von einer Person und
-einem KI-Team.
+Built in Switzerland, by one person and
+an AI team.
 
-Link in Bio.
+Link in bio.
