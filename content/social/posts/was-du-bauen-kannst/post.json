@@ -1,0 +1,43 @@
+{
+  "title": "Was würdest du zuerst bauen?",
+  "slides": [
+    {
+      "template": "carousel-slide",
+      "surface": "green",
+      "cover": true,
+      "eyebrow": "03 — BEISPIELE",
+      "headline": "Was würdest\ndu zuerst\nbauen?",
+      "footer": "justgoblin.com"
+    },
+    {
+      "template": "carousel-slide",
+      "cover": true,
+      "mark": false,
+      "headline": "Eine Anmeldeseite."
+    },
+    {
+      "template": "carousel-slide",
+      "cover": true,
+      "mark": false,
+      "headline": "Ein kleiner Shop."
+    },
+    {
+      "template": "carousel-slide",
+      "cover": true,
+      "mark": false,
+      "headline": "Eine Terminbuchung."
+    },
+    {
+      "template": "carousel-slide",
+      "cover": true,
+      "mark": false,
+      "headline": "Ein internes Tool."
+    },
+    {
+      "template": "carousel-slide",
+      "cover": true,
+      "mark": false,
+      "headline": "Eine Landingpage\nfür deine Idee."
+    }
+  ]
+}
