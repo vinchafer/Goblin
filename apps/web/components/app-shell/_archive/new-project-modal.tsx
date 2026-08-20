@@ -1,3 +1,22 @@
+// ARCHIVED 2026-08-20 — Founder-Walk-7, D-10.
+//
+// Not deleted: kept for reference / possible future reuse, per founder decision.
+//
+// This was one of TWO "new project" modals in the codebase. Verified orphaned —
+// zero importers anywhere under apps/ (checked both by relative and @/-aliased
+// import path) except its sole consumer, ProjectsList (./projects-list.tsx, also
+// archived alongside it here for the same reason: ProjectsList itself has zero
+// importers anywhere in the app — referenced only in two docs files
+// (PRODUCTION_INVENTORY.md, DEMO_MODE_ARCHITECTURE.md), never mounted).
+//
+// The ACTIVE "new project" modal is components/projects/new-project-modal.tsx,
+// imported and rendered by components/app-shell/dashboard-shell.tsx (confirmed:
+// DashboardShell is mounted for every /dashboard route via app/dashboard/layout.tsx,
+// and its `showNewProjectModal` state — read/written via useApp() — is wired to the
+// "+ Neues Projekt" affordances across Sidebar.tsx, Header.tsx, and dashboard/page.tsx).
+// If this file is ever revived, reconcile it against that one first — the two had
+// diverged (different labels, different intent-picker behavior) before this archive.
+
 "use client";
 
 import { useState, useEffect, useRef } from "react";

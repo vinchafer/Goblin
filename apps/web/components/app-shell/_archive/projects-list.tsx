@@ -1,3 +1,12 @@
+// ARCHIVED 2026-08-20 — Founder-Walk-7, D-10.
+//
+// Not deleted: kept for reference / possible future reuse, per founder decision.
+//
+// Orphaned — zero importers anywhere in apps/ (only referenced in two docs files,
+// PRODUCTION_INVENTORY.md and DEMO_MODE_ARCHITECTURE.md, never actually mounted).
+// Archived together with its sole consumee ./new-project-modal.tsx (also orphaned,
+// same investigation) so the relative import between them stays intact here.
+
 "use client";
 
 import { useState } from "react";

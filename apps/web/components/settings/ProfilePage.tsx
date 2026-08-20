@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { SettingsCard } from '../ui/SettingsCard';
 import { SettingsGroup } from '../ui/SettingsGroup';
 import { SettingsRow } from '../ui/SettingsRow';
-import { useUser } from '@/lib/hooks/useUser';
+import { useUser } from '@/contexts/user-context';
 import { useSheetStack } from '../ui/SheetStack';
 import { SecurityPage } from './SecurityPage';
 import { PrivacyPage } from './PrivacyPage';
@@ -14,6 +14,7 @@ import { DecryptLogPage } from './DecryptLogPage';
 import { AvatarUploader } from '../profile/AvatarUploader';
 import { createClient } from '@/lib/supabase/client';
 import { useLang, t } from '@/lib/use-lang';
+import { LanguagePage } from './LanguagePage';
 
 const Edit14 = () => (
   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -35,7 +36,6 @@ export function ProfilePage() {
   const [name, setName] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [saving, setSaving] = useState(false);
-  const [locale, setLocale] = useState<'de' | 'en'>('de');
   const [timezone, setTimezone] = useState<string>('');
   const [loadedPrefs, setLoadedPrefs] = useState(false);
 
@@ -56,7 +56,6 @@ export function ProfilePage() {
         });
         if (r.ok) {
           const data = await r.json();
-          if (data.locale === 'de' || data.locale === 'en') setLocale(data.locale);
           setTimezone(data.timezone ?? Intl.DateTimeFormat().resolvedOptions().timeZone);
         }
       } finally {
@@ -82,7 +81,7 @@ export function ProfilePage() {
             Authorization: `Bearer ${session.access_token}`,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ locale, timezone: timezone || null }),
+          body: JSON.stringify({ timezone: timezone || null }),
         });
       }
     } finally {
@@ -109,24 +108,26 @@ export function ProfilePage() {
         </SettingsCard>
       </SettingsGroup>
 
+      {/*
+        FOUNDER-WALK-7 · U3(a) — this used to be a second "Sprache" select, independent
+        of the one in Settings → Sprache. It saved to a DIFFERENT column
+        (users.locale via PUT /api/account/preferences) that NOTHING reads — not
+        useLang(), not the onboarding i18n, not the account-lang mirror. Picking a
+        value here changed nothing the user could see, anywhere.
+        Removed rather than "fixed in place": lib/locale.ts documents ONE explicit
+        precedence (switcher choice > stored preference > detection > default) and
+        LanguagePage.tsx is already the correct, working control for it (writes
+        goblin:lang-choice + persists to users.preferred_lang, the column everything
+        else reads). A second independent control would just reopen this exact bug
+        the next time the two drift. This row opens that same, working page instead
+        of duplicating it — one source of truth, one place to fix it next time.
+      */}
       <SettingsGroup label={t(lang, 'Region', 'Region')}>
         <SettingsCard>
-          <div style={{ padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <label style={{ fontSize: 13, color: 'var(--text-meta)' }}>{t(lang, 'Sprache', 'Language')}</label>
-            <select
-              value={locale}
-              onChange={(e) => setLocale(e.target.value as 'de' | 'en')}
-              disabled={!loadedPrefs}
-              style={{
-                background: 'transparent', border: 'none', outline: 'none',
-                fontSize: 'var(--t-body-fs)', color: 'var(--text)', padding: 0, marginTop: 4,
-                fontFamily: 'var(--font-sans)', appearance: 'none',
-              }}
-            >
-              <option value="de">Deutsch</option>
-              <option value="en">English</option>
-            </select>
-          </div>
+          <SettingsRow
+            label={t(lang, 'Sprache', 'Language')}
+            onClick={() => push('language', <LanguagePage />, t(lang, 'Sprache', 'Language'))}
+          />
           <div style={{ padding: '12px 20px', display: 'flex', flexDirection: 'column', gap: 4 }}>
             <label style={{ fontSize: 13, color: 'var(--text-meta)' }}>{t(lang, 'Zeitzone', 'Timezone')}</label>
             <input

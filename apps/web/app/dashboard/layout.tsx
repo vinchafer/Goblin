@@ -5,6 +5,7 @@ import { Manrope, Instrument_Serif } from "next/font/google";
 import { createClient } from "@/lib/supabase/server";
 import { resolveOnboardingGate, ONBOARDED_COOKIE } from "@/lib/onboarding-gate";
 import { AppProvider } from "@/contexts/app-context";
+import { UserProvider } from "@/contexts/user-context";
 import { DashboardShell } from "@/components/app-shell/dashboard-shell";
 import { filterVisibleProjects } from "@/lib/project-visibility";
 import { AdvancedModeProvider } from "@/components/ui/advanced-mode-provider";
@@ -107,22 +108,29 @@ export default async function DashboardLayout({
 
   return (
     <div className={`gobl-dash ${manrope.variable} ${instrumentSerif.variable}`}>
-      <AppProvider>
-        <AdvancedModeProvider>
-          {/* U7.2: the root layout hard-codes <html lang="en"> for every route. Correct
-              for the English marketing landing, wrong for the signed-in app, which
-              renders German by default. Keep the attribute honest on THIS surface. */}
-          <AppHtmlLangSync />
-          <SoftLimitBanner />
-          <DashboardShell
-            projects={filterVisibleProjects((projects as Project[]) || [])}
-            isFirstLogin={isFirstLogin}
-            userName={user?.user_metadata?.full_name ?? user?.email}
-          >
-            {children}
-          </DashboardShell>
-        </AdvancedModeProvider>
-      </AppProvider>
+      {/* FOUNDER-WALK-7 · U4(a)(b): the ONE UserProvider instance for the whole dashboard
+          tree — Sidebar, AvatarMenu, ProfilePage, SettingsRoot and standalone-chat all
+          read the same profile state now instead of five independent copies. Outside
+          AppProvider is fine (they're unrelated contexts) but must wrap DashboardShell,
+          since Sidebar/AvatarMenu live inside it. */}
+      <UserProvider>
+        <AppProvider>
+          <AdvancedModeProvider>
+            {/* U7.2: the root layout hard-codes <html lang="en"> for every route. Correct
+                for the English marketing landing, wrong for the signed-in app, which
+                renders German by default. Keep the attribute honest on THIS surface. */}
+            <AppHtmlLangSync />
+            <SoftLimitBanner />
+            <DashboardShell
+              projects={filterVisibleProjects((projects as Project[]) || [])}
+              isFirstLogin={isFirstLogin}
+              userName={user?.user_metadata?.full_name ?? user?.email}
+            >
+              {children}
+            </DashboardShell>
+          </AdvancedModeProvider>
+        </AppProvider>
+      </UserProvider>
     </div>
   );
 }

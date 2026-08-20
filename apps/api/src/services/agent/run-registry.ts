@@ -30,6 +30,7 @@ import {
   USER_STOP_ABORT_REASON,
 } from './config';
 import { appendRunEvent, loadRunEvents, type RunEvent, type RunEventType } from './run-events';
+import { touchRunHeartbeat, isRunHeartbeatStale, finalizeAgentRun } from './run-store';
 
 /** A frame emitted into a run's log/stream: a type + an arbitrary metadata body. */
 export interface EmitFrame {
@@ -223,6 +224,10 @@ export function startRun<R>(input: StartRunInput<R>): AdmissionResult {
       type: ev.type,
       payload: ev.payload,
     });
+    // U2 (0106, phantom-session fix): every emitted frame is proof this run is still
+    // alive. Fire-and-forget, same as the durable log append above — a heartbeat write
+    // must never stall or fail the run.
+    void touchRunHeartbeat(handle.runId);
     for (const sub of handle.subscribers) {
       try { sub(ev); } catch { /* a broken sink must not break the run or other sinks */ }
     }
@@ -350,11 +355,48 @@ export async function streamRunEvents(
       // Bounded safety: even if the run died on another replica without writing a terminal
       // frame, stop polling well after the max runtime so a stream can't hang forever.
       const deadline = Date.now() + agentMaxRuntimeMs() + 30_000;
+      // U2 (0106, phantom-session fix): don't wait out the full deadline in silence. Every
+      // few polls, ask whether this run has gone quiet (no emitted frame in HEARTBEAT_STALE_MS)
+      // — a much tighter and *verified* signal than the fixed deadline above. On a pre-0106 DB
+      // this always answers false and the deadline above remains the only backstop (honest
+      // degrade, not a new failure mode).
+      const HEARTBEAT_CHECK_EVERY = 5; // ~5s at POLL_INTERVAL_MS=1s
+      let pollCount = 0;
       const poll = async (): Promise<void> => {
         if (closed || terminalSeen) return;
         if (Date.now() > deadline) { closed = true; wake?.(); return; }
         const fresh = await loadRunEvents(runId, userId, lastEnqueued);
         for (const ev of fresh) enqueue(ev);
+        if (!terminalSeen && !closed) {
+          pollCount += 1;
+          if (pollCount % HEARTBEAT_CHECK_EVERY === 0 && (await isRunHeartbeatStale(runId))) {
+            // Clean up the DB row too — this poller is not the owning process and has no
+            // step history to report, but leaving status='running' forever is exactly the
+            // orphan this fix targets (a re-entry via the project folder would otherwise
+            // fall back to the age-only heuristic in findActiveRun). Honest empty log,
+            // never a fabricated one.
+            void finalizeAgentRun(runId, { status: 'failed', outcome: 'error', steps: [], toolsUsed: [], iterations: 0 });
+            // Verified quiet, not merely timed out: say so honestly instead of leaving the
+            // client hanging on "läuft" for up to ~10.5 more minutes.
+            enqueue({
+              seq: lastEnqueued + 1,
+              type: 'error',
+              payload: {
+                message:
+                  'Ich kann nicht bestätigen, dass dieser Lauf noch läuft (vermutlich ein ' +
+                  'Server-Neustart) — ich starte ihn neu, wenn du magst.',
+                code: 'process_lost',
+              },
+            });
+            // Do NOT set closed here: enqueue() already flipped terminalSeen and woke the
+            // consumer loop, which delivers this frame and exits via the normal
+            // isTerminalType(ev.type) break below. Setting closed synchronously in this same
+            // tick would race that delivery — the loop's `while (!closed)` guard could see
+            // `closed` before it drains the queued frame, and the client would get a silent
+            // disconnect instead of the honest message above (exactly the bug this fixes).
+            return;
+          }
+        }
         if (!terminalSeen && !closed) { pollTimer = setTimeout(() => void poll(), POLL_INTERVAL_MS); pollTimer.unref?.(); }
       };
       pollTimer = setTimeout(() => void poll(), POLL_INTERVAL_MS);

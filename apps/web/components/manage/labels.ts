@@ -16,6 +16,12 @@ export function manageLabels(lang: Lang) {
     namePlaceholder: 'Name',
     renamed: 'Umbenannt',
     renameFailed: 'Umbenennen fehlgeschlagen',
+    // FOUNDER-WALK-7 · U5 — edit project (name + description)
+    editProject: 'Bearbeiten',
+    editProjectTitle: 'Projekt bearbeiten',
+    descriptionPlaceholder: 'Beschreibung (optional)',
+    saved: 'Gespeichert',
+    saveFailed: 'Speichern fehlgeschlagen',
     // delete — project
     deleteProjectTitle: 'Projekt löschen?',
     deleteProjectBody:
@@ -70,6 +76,11 @@ export function manageLabels(lang: Lang) {
     namePlaceholder: 'Name',
     renamed: 'Renamed',
     renameFailed: 'Rename failed',
+    editProject: 'Edit',
+    editProjectTitle: 'Edit project',
+    descriptionPlaceholder: 'Description (optional)',
+    saved: 'Saved',
+    saveFailed: 'Save failed',
     deleteProjectTitle: 'Delete project?',
     deleteProjectBody:
       'The project and all of its chats and builds will be permanently removed. An already-published live site will be taken down too. Removal is immediate, but the live site may take a few minutes to disappear from all regions.',

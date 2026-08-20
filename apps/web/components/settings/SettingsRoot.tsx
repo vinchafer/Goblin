@@ -22,7 +22,7 @@ import { PrivacyPage } from './PrivacyPage';
 import { ReportProblemPage } from './ReportProblemPage';
 import { HelpCenterPage } from './HelpCenterPage';
 import { ModelsPage } from './ModelsPage';
-import { useUser } from '@/lib/hooks/useUser';
+import { useUser } from '@/contexts/user-context';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useApp } from '@/contexts/app-context';
 import { useLang, t } from '@/lib/use-lang';

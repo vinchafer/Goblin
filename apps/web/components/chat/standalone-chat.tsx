@@ -9,13 +9,13 @@ import type { SelectedModel } from "@/components/chat/ChatInput";
 import type { ChatAttachment } from "@/lib/chat-attachments";
 import { EmptyChat } from "@/components/chat/EmptyChat";
 import Message from "./Message";
-import { useUser } from "@/lib/hooks/useUser";
+import { useUser } from "@/contexts/user-context";
 import { friendlyError, isConnectionError, connectionErrorMessage } from "@/lib/friendly-error";
 import { parseCodeBlocks } from "@/lib/parse-code-blocks";
 import { StcPreviewSheet, type StcFile } from "@/components/code/StcPreviewSheet";
 import { useApp } from "@/contexts/app-context";
 import { useDemoMode } from "@/lib/demo/demo-mode-context";
-import { useLang, readLang } from "@/lib/use-lang";
+import { useLang, readLang, t } from "@/lib/use-lang";
 import { useStickToBottom } from "@/hooks/useStickToBottom";
 import { ScrollToEndChip } from "@/components/chat/ScrollToEndChip";
 import { ExistingFilesContext } from "@/contexts/existing-files-context";
@@ -58,6 +58,13 @@ interface StandaloneMessage {
   // connection-failure default.
   retryHint?: string;
   retryAction?: string;
+  /**
+   * FOUNDER-WALK-7 · U1 — this is the hand-off narration for a build/publish-intent
+   * message (D1). It carries the prompt+model this run would start with so the CTA
+   * below it can open Code on tap — the landing page's "you decide what runs and
+   * when" / "one tap" promise, kept literally: no auto-navigation, chat stays chat.
+   */
+  agentHandoff?: { prompt: string; modelSlug: string };
 }
 
 interface StreamChunk {
@@ -657,19 +664,25 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
     const wantsWebSearch = opts?.websearch === true;
     if (retry && isStreaming) return; // one in-flight send at a time
 
-    // FW4 U1 (F-11) — publish/build-intent routing (the W10 fix). Founder decision
-    // D1: "explicit intent executes directly." A project-bound chat on an
-    // agent-eligible model (Swift/Forge) whose message clearly asks to build or
-    // publish must engage the server-driven AGENT (tools → files → save → publish),
-    // not a tool-less chat completion that can only hand back manual instructions.
-    // Ambiguous messages (and a bare "live" mention) fall through to normal chat, so
-    // the FW1-U4 honest mode-decline still governs the conversational path.
-    // Not for a retry (that re-sends an existing tool-less message) or a web search.
+    // FW4 U1 (F-11) — publish/build-intent DETECTION (the W10 fix). Founder decision
+    // D1: "explicit intent executes directly" still governs WHICH messages get an
+    // agent offer — a project-bound chat on an agent-eligible model (Swift/Forge)
+    // whose message clearly asks to build or publish should engage the server-driven
+    // AGENT (tools → files → save → publish), not a tool-less chat completion that can
+    // only hand back manual instructions. Ambiguous messages (and a bare "live"
+    // mention) fall through to normal chat, so the FW1-U4 honest mode-decline still
+    // governs the conversational path. Not for a retry or a web search.
+    //
+    // FOUNDER-WALK-7 · U1 (P0): D1 used to also mean an IMMEDIATE, un-asked navigation
+    // out of chat into the Code tab — one build-sounding message and the founder was
+    // yanked off the conversation with no way back short of the browser back button.
+    // That contradicts the shipped landing promise ("You decide what runs and when" /
+    // "Send to Code with one tap"): a tap is exactly one user action, this was zero.
+    // So the DETECTION stays (it is what makes the CTA below possible at all), but the
+    // EXECUTION now waits for that tap — nothing is staged to sessionStorage and no
+    // navigation happens until the user clicks the CTA rendered under `agentHandoff`
+    // (below, in the message list). Chat stays chat.
     if (!retry && !wantsWebSearch && hasProject && projectId && isAgentModel(model.slug) && shouldRouteToAgent(text)) {
-      // Honest hand-off, no silent mode switch: show the user their message + the
-      // "Ich starte dafür einen Agent-Lauf …" first step, stash the prompt as an
-      // agent seed, and route into the Code work surface where the agent run (its
-      // live step stream + attested report card) actually renders and publishes.
       const nowIso = new Date().toISOString();
       const userMsg: typeof messages[0] = {
         id: `temp-${Date.now()}`, role: "user", content: text,
@@ -678,13 +691,9 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
       const handoffMsg: typeof messages[0] = {
         id: `handoff-${Date.now()}`, role: "assistant", content: AGENT_HANDOFF_NARRATION,
         has_code: false, created_at: nowIso,
+        agentHandoff: { prompt: text, modelSlug: model.slug },
       };
       setMessages([...messages, userMsg, handoffMsg]);
-      try {
-        sessionStorage.setItem("goblin:agent-pending", JSON.stringify({ projectId, prompt: text, modelSlug: model.slug }));
-        sessionStorage.setItem(`goblin:lastChat:${projectId}`, sessionId);
-      } catch { /* sessionStorage unavailable — navigation below still carries intent */ }
-      router.push(`/dashboard/project/${projectId}/work?tab=code`);
       return;
     }
 
@@ -831,6 +840,21 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
       lastStreamActivityRef.current = null;
       setIsStreaming(false);
     }
+  };
+
+  /**
+   * FOUNDER-WALK-7 · U1 — the one tap that actually opens Code. Stages the exact
+   * payload THIS handoff message named (not whatever sessionStorage happens to hold —
+   * a later build-intent message in the same chat must not hijack an earlier card's
+   * tap) and navigates. Nothing runs before this fires.
+   */
+  const openAgentHandoff = (handoff: { prompt: string; modelSlug: string }) => {
+    if (!projectId) return;
+    try {
+      sessionStorage.setItem("goblin:agent-pending", JSON.stringify({ projectId, prompt: handoff.prompt, modelSlug: handoff.modelSlug }));
+      sessionStorage.setItem(`goblin:lastChat:${projectId}`, sessionId);
+    } catch { /* sessionStorage unavailable — navigation below still carries the project */ }
+    router.push(`/dashboard/project/${projectId}/work?tab=code`);
   };
 
   /**
@@ -1041,6 +1065,35 @@ export function StandaloneChat({ sessionId, initialMessages = [], projectId = nu
                     }}
                   >
                     {isStreaming ? continuingLabel(lang) : continueLabel(lang)}
+                  </button>
+                </div>
+              )}
+              {m.agentHandoff && (
+                // FOUNDER-WALK-7 · U1 — the explicit tap the D1 hand-off now waits for.
+                // Same visual family as the truncated-notice/retry rows above: an inline
+                // action, never an auto-navigation. Gold — this is the brand's "Send to
+                // Code" mechanic (F-12), not a generic secondary action.
+                <div
+                  data-testid="agent-handoff-cta"
+                  style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    gap: 12, marginTop: 6, padding: "8px 12px", borderRadius: 10,
+                    background: "rgba(212,167,55,0.10)", border: "1px solid rgba(212,167,55,0.35)",
+                    fontSize: 13, fontFamily: "var(--font-sans)",
+                  }}
+                >
+                  <span>{t(lang, "Bereit, wenn du es bist.", "Ready whenever you are.")}</span>
+                  <button
+                    onClick={() => openAgentHandoff(m.agentHandoff!)}
+                    style={{
+                      flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 6,
+                      background: "none", border: "1px solid rgba(212,167,55,0.6)", borderRadius: 8,
+                      padding: "4px 12px", fontSize: 13, color: "#B8912E", fontWeight: 600,
+                      cursor: "pointer", fontFamily: "var(--font-sans)", lineHeight: 1,
+                    }}
+                  >
+                    <ArrowUpRight size={14} />
+                    {t(lang, "Code öffnen", "Open Code")}
                   </button>
                 </div>
               )}
