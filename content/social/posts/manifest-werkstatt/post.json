@@ -1,0 +1,12 @@
+{
+  "title": "Die ruhige Werkstatt",
+  "note": "Haltungs-Post. Einzelne Grafik, keine Behauptung über das Produkt — nur die Positionierung. Der Text steht wörtlich so im freigegebenen Launch-Grid; „Werkstatt“ liegt im Serif-Akzent-Slot, weil das die einzige Kursiv-Stimme des Designsystems ist.",
+  "slides": [
+    {
+      "template": "type-post",
+      "surface": "bone",
+      "headline": "Die ruhige",
+      "accent": "Werkstatt."
+    }
+  ]
+}

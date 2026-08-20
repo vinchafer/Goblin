@@ -1,0 +1,12 @@
+{
+  "title": "Sechs Dinge",
+  "note": "Bildungs-Post, 6 Slides. Ein Ergebnis pro Slide, identisches Layout. Die Zählung kommt aus dem Index-Chip der Vorlage — das ist das einzige Nummerierungs-Ornament, das die Vorlage mitbringt, und der einzige Gold-Einsatz (gefüllte Fläche auf dunklem Grund). Keine Aussage über Funktionsumfang oder Zeit auf der Grafik.",
+  "slides": [
+    { "template": "carousel-slide", "index": "01 / 06", "headline": "Eine Anmeldeseite." },
+    { "template": "carousel-slide", "index": "02 / 06", "headline": "Ein kleiner Shop." },
+    { "template": "carousel-slide", "index": "03 / 06", "headline": "Eine Terminbuchung." },
+    { "template": "carousel-slide", "index": "04 / 06", "headline": "Ein Portfolio." },
+    { "template": "carousel-slide", "index": "05 / 06", "headline": "Ein internes Tool." },
+    { "template": "carousel-slide", "index": "06 / 06", "headline": "Eine Landingpage für deine Idee." }
+  ]
+}

@@ -1,0 +1,250 @@
+[
+  {
+    "slide": "01-type-post",
+    "template": "type-post.html",
+    "file": "content/social/posts/manifest-werkstatt/01-type-post-feed-1080x1350.png",
+    "format": "feed",
+    "renderedAt": "2160x2700",
+    "width": 1080,
+    "height": 1350,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#F4ECD8",
+    "centre": "#F4ECD8",
+    "bottomRight": "#F4ECD8",
+    "usedFonts": [
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "Die ruhige"
+      },
+      {
+        "family": "Instrument Serif",
+        "weight": "400",
+        "style": "italic",
+        "generic": "serif",
+        "sample": "Werkstatt."
+      }
+    ],
+    "bytes": 30112,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 129.6,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 504,
+          "widthFallback": 488.96,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "Instrument Serif",
+          "weight": "400",
+          "style": "italic",
+          "generic": "serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 2,
+          "apiCheck": true,
+          "widthReal": 356,
+          "widthFallback": 399.07,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "Instrument Serif",
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "Instrument Serif",
+        "glyphCount": 20,
+        "isCustomFont": true
+      },
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 20,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "Die ruhige",
+        "className": "headline",
+        "fg": "#0F2B1E",
+        "bg": "#F4ECD8",
+        "fontSize": 129.6,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 12.88,
+        "threshold": 3,
+        "pass": true
+      },
+      {
+        "text": "Werkstatt.",
+        "className": "accent",
+        "fg": "#5E8973",
+        "bg": "#F4ECD8",
+        "fontSize": 86.4,
+        "fontWeight": 400,
+        "large": true,
+        "ratio": 3.36,
+        "threshold": 3,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1350
+      },
+      "boxes": 2,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  },
+  {
+    "slide": "01-type-post",
+    "template": "type-post.html",
+    "file": "content/social/posts/manifest-werkstatt/01-type-post-story-1080x1920.png",
+    "format": "story",
+    "renderedAt": "2160x3840",
+    "width": 1080,
+    "height": 1920,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#F4ECD8",
+    "centre": "#F4ECD8",
+    "bottomRight": "#F4ECD8",
+    "usedFonts": [
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "Die ruhige"
+      },
+      {
+        "family": "Instrument Serif",
+        "weight": "400",
+        "style": "italic",
+        "generic": "serif",
+        "sample": "Werkstatt."
+      }
+    ],
+    "bytes": 32713,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 129.6,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 504,
+          "widthFallback": 488.96,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "Instrument Serif",
+          "weight": "400",
+          "style": "italic",
+          "generic": "serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 2,
+          "apiCheck": true,
+          "widthReal": 356,
+          "widthFallback": 399.07,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "Instrument Serif",
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "Instrument Serif",
+        "glyphCount": 20,
+        "isCustomFont": true
+      },
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 20,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "Die ruhige",
+        "className": "headline",
+        "fg": "#0F2B1E",
+        "bg": "#F4ECD8",
+        "fontSize": 129.6,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 12.88,
+        "threshold": 3,
+        "pass": true
+      },
+      {
+        "text": "Werkstatt.",
+        "className": "accent",
+        "fg": "#5E8973",
+        "bg": "#F4ECD8",
+        "fontSize": 86.4,
+        "fontWeight": 400,
+        "large": true,
+        "ratio": 3.36,
+        "threshold": 3,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1920
+      },
+      "boxes": 2,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  }
+]
