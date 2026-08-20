@@ -285,3 +285,9 @@ export async function finalizeAgentRun(runId: string, input: FinalizeRunInput): 
     logger.warn({ err: (e as Error).message, runId }, 'agent_run_finalize_failed');
   }
 }
+
+/** Test seam — reset the cached heartbeat-column probe between unit tests, same
+ *  pattern as run-events.ts's __resetRunEventsProbe(). */
+export function __resetHeartbeatProbe(): void {
+  heartbeatColumnPresent = null;
+}

@@ -6,11 +6,26 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 type UpdateResult = { error: { message: string } | null };
+type SelectResult = { data: unknown; error: { message: string; code?: string } | null };
 
 let inserted: Array<Record<string, unknown>>;
 let updated: Array<Record<string, unknown>>;
 let insertResult: { data: { id: string } | null; error: { message: string } | null };
 let updateResults: UpdateResult[];
+// U2 (0106 heartbeat tests): a queue of .select() results — findActiveRun/
+// isRunHeartbeatStale each issue ONE select per call (with the pre-0106 fallback
+// re-querying, so a fallback scenario consumes two from the queue in order).
+let selectResults: SelectResult[];
+
+function fakeSelectChain(result: SelectResult) {
+  const c = {
+    eq: () => c,
+    order: () => c,
+    limit: () => c,
+    maybeSingle: () => Promise.resolve(result),
+  };
+  return c;
+}
 
 const fakeSupabase = {
   from: (_table: string) => ({
@@ -28,13 +43,18 @@ const fakeSupabase = {
         eq: () => Promise.resolve(updateResults.shift() ?? { error: null }),
       };
     },
+    // U2 (0106): findActiveRun/isRunHeartbeatStale read via .select(...).eq()...maybeSingle().
+    select: (_columns: string) => fakeSelectChain(selectResults.shift() ?? { data: null, error: null }),
   }),
 };
 
 vi.mock('../../lib/supabase', () => ({ getSupabaseAdmin: () => fakeSupabase }));
 
 // eslint-disable-next-line import/first
-import { createAgentRun, finalizeAgentRun } from './run-store';
+import {
+  createAgentRun, finalizeAgentRun, touchRunHeartbeat, isRunHeartbeatStale, findActiveRun,
+  __resetHeartbeatProbe,
+} from './run-store';
 
 describe('run-store — A1 agent_runs persistence', () => {
   beforeEach(() => {
@@ -161,5 +181,104 @@ describe('run-store — A1 agent_runs persistence', () => {
       steps: [],
     });
     expect(updated).toHaveLength(0);
+  });
+});
+
+// FOUNDER-WALK-7 · U2 — the phantom-session fix. heartbeat_at (0106) is the signal
+// that turns "status='running' since forever" into "verified alive N seconds ago."
+// Reuses the ONE fakeSupabase above (now select()-capable) rather than a second
+// vi.mock — vi.mock calls are hoisted module-wide, so a second one for the same
+// module would just clobber the first instead of scoping to this describe block.
+describe('run-store — U2 heartbeat (0106, pre-migration tolerant)', () => {
+  beforeEach(() => {
+    inserted = [];
+    updated = [];
+    updateResults = [];
+    selectResults = [];
+    __resetHeartbeatProbe();
+  });
+
+  it('touchRunHeartbeat writes heartbeat_at and degrades silently on a missing-column error', async () => {
+    updateResults = [{ error: null }];
+    await touchRunHeartbeat('run-1');
+    expect(updated).toHaveLength(1);
+    expect(updated[0]).toHaveProperty('heartbeat_at');
+
+    updateResults = [{ error: { message: 'column "heartbeat_at" does not exist' } }];
+    await expect(touchRunHeartbeat('run-2')).resolves.toBeUndefined(); // never throws
+  });
+
+  it('touchRunHeartbeat on an empty runId is a no-op', async () => {
+    await touchRunHeartbeat('');
+    expect(updated).toHaveLength(0);
+  });
+
+  it('isRunHeartbeatStale: fresh heartbeat → not stale', async () => {
+    selectResults = [{ data: { status: 'running', heartbeat_at: new Date().toISOString() }, error: null }];
+    expect(await isRunHeartbeatStale('run-1')).toBe(false);
+  });
+
+  it('isRunHeartbeatStale: heartbeat older than 90s → stale', async () => {
+    selectResults = [{ data: { status: 'running', heartbeat_at: new Date(Date.now() - 120_000).toISOString() }, error: null }];
+    expect(await isRunHeartbeatStale('run-1')).toBe(true);
+  });
+
+  it('isRunHeartbeatStale: no heartbeat written yet → never guess stale', async () => {
+    selectResults = [{ data: { status: 'running', heartbeat_at: null }, error: null }];
+    expect(await isRunHeartbeatStale('run-1')).toBe(false);
+  });
+
+  it('isRunHeartbeatStale: already terminal → not this check\'s job', async () => {
+    selectResults = [{ data: { status: 'success', heartbeat_at: new Date(Date.now() - 999_999).toISOString() }, error: null }];
+    expect(await isRunHeartbeatStale('run-1')).toBe(false);
+  });
+
+  it('isRunHeartbeatStale: missing-column error → false, never claims staleness pre-migration', async () => {
+    selectResults = [{ data: null, error: { message: 'column agent_runs.heartbeat_at does not exist' } }];
+    expect(await isRunHeartbeatStale('run-1')).toBe(false);
+  });
+
+  it('findActiveRun: fresh heartbeat wins even on an OLD row (heartbeat, not raw age, decides)', async () => {
+    selectResults = [{
+      data: { id: 'run-1', status: 'running', created_at: new Date(Date.now() - 15 * 60_000).toISOString(), heartbeat_at: new Date().toISOString() },
+      error: null,
+    }];
+    const active = await findActiveRun('session-1', 'user-1', 10 * 60_000);
+    expect(active).toMatchObject({ runId: 'run-1', status: 'running' });
+  });
+
+  it('findActiveRun: stale heartbeat on a fresh-looking row → zombie, not offered', async () => {
+    selectResults = [{
+      data: { id: 'run-1', status: 'running', created_at: new Date().toISOString(), heartbeat_at: new Date(Date.now() - 120_000).toISOString() },
+      error: null,
+    }];
+    // staleAfterMs (age-based) would still call this "active" — heartbeat overrides it.
+    const active = await findActiveRun('session-1', 'user-1', 20 * 60_000);
+    expect(active).toBeNull();
+  });
+
+  it('findActiveRun: no heartbeat column (pre-0106) → falls back to the old age-only heuristic, honest degrade', async () => {
+    // First call (with heartbeat_at in the select) errors as a missing column; the
+    // fallback select (without it) succeeds.
+    selectResults = [
+      { data: null, error: { message: 'column agent_runs.heartbeat_at does not exist' } },
+      { data: { id: 'run-1', status: 'running', created_at: new Date().toISOString() }, error: null },
+    ];
+    const active = await findActiveRun('session-1', 'user-1', 20 * 60_000);
+    expect(active).toMatchObject({ runId: 'run-1', heartbeatAt: null });
+  });
+
+  it('findActiveRun: pre-0106 fallback still expires by raw age past staleAfterMs', async () => {
+    selectResults = [
+      { data: null, error: { message: 'column agent_runs.heartbeat_at does not exist' } },
+      { data: { id: 'run-1', status: 'running', created_at: new Date(Date.now() - 30 * 60_000).toISOString() }, error: null },
+    ];
+    const active = await findActiveRun('session-1', 'user-1', 20 * 60_000);
+    expect(active).toBeNull();
+  });
+
+  it('findActiveRun: no row → null', async () => {
+    selectResults = [{ data: null, error: null }];
+    expect(await findActiveRun('session-1', 'user-1', 60_000)).toBeNull();
   });
 });
