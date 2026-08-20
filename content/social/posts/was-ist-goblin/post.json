@@ -1,0 +1,41 @@
+{
+  "title": "Was ist Goblin?",
+  "slides": [
+    {
+      "template": "carousel-slide",
+      "surface": "green",
+      "cover": true,
+      "eyebrow": "01 — GRUNDLAGEN",
+      "headline": "Was ist\nGoblin?",
+      "footer": "justgoblin.com"
+    },
+    {
+      "template": "carousel-slide",
+      "index": "02 / 05",
+      "headline": "Du beschreibst,\nwas du brauchst.",
+      "body": "In normaler Sprache. Kein Code, kein Fachbegriff.",
+      "footer": "justgoblin.com"
+    },
+    {
+      "template": "carousel-slide",
+      "index": "03 / 05",
+      "headline": "Goblin baut es.",
+      "body": "Keine Vorlage, kein Baukasten. Genau das, was du beschrieben hast.",
+      "footer": "justgoblin.com"
+    },
+    {
+      "template": "carousel-slide",
+      "index": "04 / 05",
+      "headline": "Und stellt es\nonline.",
+      "body": "Mit eigener Adresse. Erreichbar für alle, denen du sie gibst.",
+      "footer": "justgoblin.com"
+    },
+    {
+      "template": "carousel-slide",
+      "index": "05 / 05",
+      "headline": "Alles vom Handy.\nNichts auf deinem\nRechner.",
+      "body": "Goblin läuft in der Cloud. Dein Gerät muss nichts können.",
+      "footer": "justgoblin.com"
+    }
+  ]
+}
