@@ -1,11 +1,11 @@
 {
-  "title": "Die ruhige Werkstatt",
+  "title": "The quiet workshop",
   "slides": [
     {
       "template": "type-post",
       "surface": "bone",
-      "headline": "Die ruhige",
-      "accent": "Werkstatt.",
+      "headline": "The quiet",
+      "accent": "workshop.",
       "footer": "justgoblin.com"
     }
   ]

@@ -18,14 +18,14 @@
         "weight": "800",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Die ruhige"
+        "sample": "The quiet"
       },
       {
         "family": "Instrument Serif",
         "weight": "400",
         "style": "italic",
         "generic": "serif",
-        "sample": "Werkstatt."
+        "sample": "workshop."
       },
       {
         "family": "JetBrains Mono",
@@ -35,7 +35,7 @@
         "sample": "justgoblin.com"
       }
     ],
-    "bytes": 36911,
+    "bytes": 35020,
     "scale": {
       "displayStep": "72px",
       "posterScale": "1.8",
@@ -52,8 +52,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 502.6,
-          "widthFallback": 488.96,
+          "widthReal": 466.3,
+          "widthFallback": 444.43,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -65,8 +65,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 2,
           "apiCheck": true,
-          "widthReal": 356.1,
-          "widthFallback": 399.07,
+          "widthReal": 366.9,
+          "widthFallback": 413.92,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -103,18 +103,18 @@
       },
       {
         "familyName": "Instrument Serif",
-        "glyphCount": 20,
+        "glyphCount": 18,
         "isCustomFont": true
       },
       {
         "familyName": "Manrope ExtraLight",
-        "glyphCount": 20,
+        "glyphCount": 18,
         "isCustomFont": true
       }
     ],
     "contrast": [
       {
-        "text": "Die ruhige",
+        "text": "The quiet",
         "className": "headline",
         "fg": "#0F2B1E",
         "bg": "#F4ECD8",
@@ -126,7 +126,7 @@
         "pass": true
       },
       {
-        "text": "Werkstatt.",
+        "text": "workshop.",
         "className": "accent",
         "fg": "#5E8973",
         "bg": "#F4ECD8",
@@ -180,14 +180,14 @@
         "weight": "800",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Die ruhige"
+        "sample": "The quiet"
       },
       {
         "family": "Instrument Serif",
         "weight": "400",
         "style": "italic",
         "generic": "serif",
-        "sample": "Werkstatt."
+        "sample": "workshop."
       },
       {
         "family": "JetBrains Mono",
@@ -197,7 +197,7 @@
         "sample": "justgoblin.com"
       }
     ],
-    "bytes": 39529,
+    "bytes": 37485,
     "scale": {
       "displayStep": "72px",
       "posterScale": "1.8",
@@ -214,8 +214,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 502.6,
-          "widthFallback": 488.96,
+          "widthReal": 466.3,
+          "widthFallback": 444.43,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -227,8 +227,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 2,
           "apiCheck": true,
-          "widthReal": 356.1,
-          "widthFallback": 399.07,
+          "widthReal": 366.9,
+          "widthFallback": 413.92,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -265,18 +265,18 @@
       },
       {
         "familyName": "Instrument Serif",
-        "glyphCount": 20,
+        "glyphCount": 18,
         "isCustomFont": true
       },
       {
         "familyName": "Manrope ExtraLight",
-        "glyphCount": 20,
+        "glyphCount": 18,
         "isCustomFont": true
       }
     ],
     "contrast": [
       {
-        "text": "Die ruhige",
+        "text": "The quiet",
         "className": "headline",
         "fg": "#0F2B1E",
         "bg": "#F4ECD8",
@@ -288,7 +288,7 @@
         "pass": true
       },
       {
-        "text": "Werkstatt.",
+        "text": "workshop.",
         "className": "accent",
         "fg": "#5E8973",
         "bg": "#F4ECD8",

@@ -1,9 +1,9 @@
-Die meisten Werkzeuge schreien.
-Badges, Countdowns, Zahlen, die niemanden
-interessieren.
+Most tools shout.
+Badges, countdowns, numbers nobody
+cares about.
 
-Goblin ist eine Werkstatt: aufgeräumter Tisch,
-ein nächster Schritt, nichts, was um deine
-Aufmerksamkeit kämpft.
+Goblin is a workshop: a clear desk,
+one next step, nothing fighting for
+your attention.
 
-Einfachheit ist kein Feature. Sie ist der Graben.
+Simplicity isn’t a feature. It’s the moat.
