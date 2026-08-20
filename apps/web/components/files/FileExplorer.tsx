@@ -282,8 +282,8 @@ export function FileExplorer({ projectId, projectName, dataSource }: Props) {
       if (selected === moveFor) { setSelected(null); setPreview(null); }
       setMoveFor(null);
       load();
-    } catch { flash("Verschieben fehlgeschlagen"); } finally { setMoving(false); }
-  }, [authFetch, projectId, moveFor, selected, load]);
+    } catch { flash(t(lang, "Verschieben fehlgeschlagen", "Move failed")); } finally { setMoving(false); }
+  }, [authFetch, projectId, moveFor, selected, load, lang]);
 
   const download = useCallback(async (path: string) => {
     try {
