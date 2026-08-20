@@ -4,6 +4,7 @@
   "slides": [
     {
       "template": "type-post",
+      "surface": "bone",
       "eyebrow": "Execution model",
       "headline": "Your phone is the remote control. Not the server.",
       "accent": "“The AI itself runs in Goblin’s cloud.”",
@@ -22,6 +23,7 @@
     },
     {
       "template": "screenshot-frame",
+      "surface": "bone",
       "eyebrow": "In the product",
       "headline": "Log in, and keep building.",
       "image": "evidence/public-i18n/shots/login-375-en-light.png",

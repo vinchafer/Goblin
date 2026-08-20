@@ -9,9 +9,9 @@
     "height": 1350,
     "channels": 3,
     "hasAlpha": false,
-    "topLeft": "#0F2B1E",
-    "centre": "#0F2B1E",
-    "bottomRight": "#0F2B1E",
+    "topLeft": "#F4ECD8",
+    "centre": "#F4ECD8",
+    "bottomRight": "#F4ECD8",
     "usedFonts": [
       {
         "family": "JetBrains Mono",
@@ -42,7 +42,7 @@
         "sample": "justgoblin.com"
       }
     ],
-    "bytes": 90077,
+    "bytes": 90007,
     "scale": {
       "displayStep": "72px",
       "posterScale": "1.8",
@@ -136,48 +136,48 @@
       {
         "text": "Execution model",
         "className": "eyebrow",
-        "fg": "#D8CBA8",
-        "bg": "#0F2B1E",
+        "fg": "#5F5640",
+        "bg": "#F4ECD8",
         "fontSize": 21.6,
         "fontWeight": 500,
         "large": false,
-        "ratio": 9.41,
+        "ratio": 6.17,
         "threshold": 4.5,
         "pass": true
       },
       {
         "text": "Your phone is the remote control. Not the ser…",
         "className": "headline headline--sm",
-        "fg": "#FBF7EC",
-        "bg": "#0F2B1E",
+        "fg": "#0F2B1E",
+        "bg": "#F4ECD8",
         "fontSize": 86.4,
         "fontWeight": 800,
         "large": true,
-        "ratio": 14.17,
+        "ratio": 12.88,
         "threshold": 3,
         "pass": true
       },
       {
         "text": "“The AI itself runs in Goblin’s cloud.”",
         "className": "accent",
-        "fg": "#7FA98A",
-        "bg": "#0F2B1E",
+        "fg": "#5E8973",
+        "bg": "#F4ECD8",
         "fontSize": 86.4,
         "fontWeight": 400,
         "large": true,
-        "ratio": 5.74,
+        "ratio": 3.36,
         "threshold": 3,
         "pass": true
       },
       {
         "text": "justgoblin.com",
         "className": "footer",
-        "fg": "#D8CBA8",
-        "bg": "#0F2B1E",
+        "fg": "#5F5640",
+        "bg": "#F4ECD8",
         "fontSize": 23.4,
         "fontWeight": 400,
         "large": false,
-        "ratio": 9.41,
+        "ratio": 6.17,
         "threshold": 4.5,
         "pass": true
       },
@@ -215,9 +215,9 @@
     "height": 1920,
     "channels": 3,
     "hasAlpha": false,
-    "topLeft": "#0F2B1E",
-    "centre": "#0F2B1E",
-    "bottomRight": "#0F2B1E",
+    "topLeft": "#F4ECD8",
+    "centre": "#F4ECD8",
+    "bottomRight": "#F4ECD8",
     "usedFonts": [
       {
         "family": "JetBrains Mono",
@@ -248,7 +248,7 @@
         "sample": "justgoblin.com"
       }
     ],
-    "bytes": 92213,
+    "bytes": 92196,
     "scale": {
       "displayStep": "72px",
       "posterScale": "1.8",
@@ -342,48 +342,48 @@
       {
         "text": "Execution model",
         "className": "eyebrow",
-        "fg": "#D8CBA8",
-        "bg": "#0F2B1E",
+        "fg": "#5F5640",
+        "bg": "#F4ECD8",
         "fontSize": 21.6,
         "fontWeight": 500,
         "large": false,
-        "ratio": 9.41,
+        "ratio": 6.17,
         "threshold": 4.5,
         "pass": true
       },
       {
         "text": "Your phone is the remote control. Not the ser…",
         "className": "headline headline--sm",
-        "fg": "#FBF7EC",
-        "bg": "#0F2B1E",
+        "fg": "#0F2B1E",
+        "bg": "#F4ECD8",
         "fontSize": 86.4,
         "fontWeight": 800,
         "large": true,
-        "ratio": 14.17,
+        "ratio": 12.88,
         "threshold": 3,
         "pass": true
       },
       {
         "text": "“The AI itself runs in Goblin’s cloud.”",
         "className": "accent",
-        "fg": "#7FA98A",
-        "bg": "#0F2B1E",
+        "fg": "#5E8973",
+        "bg": "#F4ECD8",
         "fontSize": 86.4,
         "fontWeight": 400,
         "large": true,
-        "ratio": 5.74,
+        "ratio": 3.36,
         "threshold": 3,
         "pass": true
       },
       {
         "text": "justgoblin.com",
         "className": "footer",
-        "fg": "#D8CBA8",
-        "bg": "#0F2B1E",
+        "fg": "#5F5640",
+        "bg": "#F4ECD8",
         "fontSize": 23.4,
         "fontWeight": 400,
         "large": false,
-        "ratio": 9.41,
+        "ratio": 6.17,
         "threshold": 4.5,
         "pass": true
       },
@@ -821,9 +821,9 @@
     "height": 1350,
     "channels": 3,
     "hasAlpha": false,
-    "topLeft": "#0F2B1E",
+    "topLeft": "#F4ECD8",
     "centre": "#FBF7EC",
-    "bottomRight": "#0F2B1E",
+    "bottomRight": "#F4ECD8",
     "usedFonts": [
       {
         "family": "JetBrains Mono",
@@ -854,7 +854,7 @@
         "sample": "03 / 03 · justgoblin.com"
       }
     ],
-    "bytes": 104881,
+    "bytes": 110640,
     "scale": {
       "displayStep": "72px",
       "posterScale": "1.8",
@@ -942,48 +942,48 @@
       {
         "text": "In the product",
         "className": "eyebrow",
-        "fg": "#D8CBA8",
-        "bg": "#0F2B1E",
+        "fg": "#5F5640",
+        "bg": "#F4ECD8",
         "fontSize": 21.6,
         "fontWeight": 500,
         "large": false,
-        "ratio": 9.41,
+        "ratio": 6.17,
         "threshold": 4.5,
         "pass": true
       },
       {
         "text": "Log in, and keep building.",
         "className": "headline headline--sm",
-        "fg": "#FBF7EC",
-        "bg": "#0F2B1E",
+        "fg": "#0F2B1E",
+        "bg": "#F4ECD8",
         "fontSize": 86.4,
         "fontWeight": 800,
         "large": true,
-        "ratio": 14.17,
+        "ratio": 12.88,
         "threshold": 3,
         "pass": true
       },
       {
         "text": "Log in from any device. Your project is right…",
         "className": "body",
-        "fg": "#D8CBA8",
-        "bg": "#0F2B1E",
+        "fg": "#3F3A2C",
+        "bg": "#F4ECD8",
         "fontSize": 32.4,
         "fontWeight": 400,
         "large": true,
-        "ratio": 9.41,
+        "ratio": 9.63,
         "threshold": 3,
         "pass": true
       },
       {
         "text": "03 / 03 · justgoblin.com",
         "className": "footer",
-        "fg": "#D8CBA8",
-        "bg": "#0F2B1E",
+        "fg": "#5F5640",
+        "bg": "#F4ECD8",
         "fontSize": 23.4,
         "fontWeight": 400,
         "large": false,
-        "ratio": 9.41,
+        "ratio": 6.17,
         "threshold": 4.5,
         "pass": true
       }
@@ -1009,9 +1009,9 @@
     "height": 1920,
     "channels": 3,
     "hasAlpha": false,
-    "topLeft": "#0F2B1E",
+    "topLeft": "#F4ECD8",
     "centre": "#FFFFFF",
-    "bottomRight": "#0F2B1E",
+    "bottomRight": "#F4ECD8",
     "usedFonts": [
       {
         "family": "JetBrains Mono",
@@ -1042,7 +1042,7 @@
         "sample": "03 / 03 · justgoblin.com"
       }
     ],
-    "bytes": 124553,
+    "bytes": 129862,
     "scale": {
       "displayStep": "72px",
       "posterScale": "1.8",
@@ -1130,48 +1130,48 @@
       {
         "text": "In the product",
         "className": "eyebrow",
-        "fg": "#D8CBA8",
-        "bg": "#0F2B1E",
+        "fg": "#5F5640",
+        "bg": "#F4ECD8",
         "fontSize": 21.6,
         "fontWeight": 500,
         "large": false,
-        "ratio": 9.41,
+        "ratio": 6.17,
         "threshold": 4.5,
         "pass": true
       },
       {
         "text": "Log in, and keep building.",
         "className": "headline headline--sm",
-        "fg": "#FBF7EC",
-        "bg": "#0F2B1E",
+        "fg": "#0F2B1E",
+        "bg": "#F4ECD8",
         "fontSize": 86.4,
         "fontWeight": 800,
         "large": true,
-        "ratio": 14.17,
+        "ratio": 12.88,
         "threshold": 3,
         "pass": true
       },
       {
         "text": "Log in from any device. Your project is right…",
         "className": "body",
-        "fg": "#D8CBA8",
-        "bg": "#0F2B1E",
+        "fg": "#3F3A2C",
+        "bg": "#F4ECD8",
         "fontSize": 32.4,
         "fontWeight": 400,
         "large": true,
-        "ratio": 9.41,
+        "ratio": 9.63,
         "threshold": 3,
         "pass": true
       },
       {
         "text": "03 / 03 · justgoblin.com",
         "className": "footer",
-        "fg": "#D8CBA8",
-        "bg": "#0F2B1E",
+        "fg": "#5F5640",
+        "bg": "#F4ECD8",
         "fontSize": 23.4,
         "fontWeight": 400,
         "large": false,
-        "ratio": 9.41,
+        "ratio": 6.17,
         "threshold": 4.5,
         "pass": true
       }
