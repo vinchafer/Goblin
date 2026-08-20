@@ -110,6 +110,12 @@ html, body { margin: 0; padding: 0; }
 .slide[data-surface='bone'] .body   { color: var(--ink-2); }
 .slide[data-surface='bone'] .rule   { background: var(--rule); }
 
+/* The second dark field, for a carousel cover that wants to read as a distinct
+   beat rather than another ink-deep card. Still a dark surface — the on-dark
+   inks (eyebrow/footer/body default to --ink-on-dark-*) carry over unchanged;
+   11.67:1 body / 7.75:1 eyebrow measured against this field. */
+.slide[data-surface='green'] { background: var(--brand-green); }
+
 /* ─── Type primitives ───────────────────────────────────────────────── */
 
 .eyebrow {
@@ -128,7 +134,13 @@ html, body { margin: 0; padding: 0; }
   font-size: var(--p-display-fs);
   line-height: var(--t-display-lh);
   letter-spacing: var(--t-display-ls);
-  text-wrap: balance;
+  /* Authored breaks (see post.json "\n" convention, README) are hard breaks —
+     `pre-line` is what makes textContent's literal newline characters render
+     as line breaks instead of collapsing to a space. `pretty` only governs
+     any residual SOFT wrap inside one authored line; it never reflows across
+     an authored break. */
+  white-space: pre-line;
+  text-wrap: pretty;
 }
 
 .headline--sm {
@@ -147,7 +159,8 @@ html, body { margin: 0; padding: 0; }
   font-size: var(--p-h1-fs);
   line-height: var(--t-h1-lh);
   color: var(--sage);
-  text-wrap: balance;
+  white-space: pre-line;
+  text-wrap: pretty;
 }
 
 .body {
@@ -206,6 +219,25 @@ html, body { margin: 0; padding: 0; }
   align-items: center;
   justify-content: space-between;
   gap: var(--space-6);
+}
+
+/* Groups two trailing elements (e.g. a badge and the mark) as one side of a
+   .foot-row, so justify-content: space-between still reads as two sides. */
+.foot-row__end {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+/* Cover treatment (post.json "cover": true, carousel-slide only) — a hook,
+   not a heading. Centred, more air top and bottom, full display type (the
+   headline--sm class is stripped in render.mjs). */
+.slide[data-cover] .stack {
+  align-items: center;
+  text-align: center;
+}
+.slide[data-cover] .spacer {
+  flex-grow: 1.6;
 }
 
 /* The mark ships as a file, never redrawn. Height only — aspect is the SVG's. */

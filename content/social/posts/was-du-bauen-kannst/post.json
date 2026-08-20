@@ -1,0 +1,43 @@
+{
+  "title": "What would you build first?",
+  "slides": [
+    {
+      "template": "carousel-slide",
+      "surface": "green",
+      "cover": true,
+      "eyebrow": "03 — EXAMPLES",
+      "headline": "What would\nyou build\nfirst?",
+      "footer": "justgoblin.com"
+    },
+    {
+      "template": "carousel-slide",
+      "cover": true,
+      "mark": false,
+      "headline": "A login page."
+    },
+    {
+      "template": "carousel-slide",
+      "cover": true,
+      "mark": false,
+      "headline": "A small shop."
+    },
+    {
+      "template": "carousel-slide",
+      "cover": true,
+      "mark": false,
+      "headline": "A booking page."
+    },
+    {
+      "template": "carousel-slide",
+      "cover": true,
+      "mark": false,
+      "headline": "An internal tool."
+    },
+    {
+      "template": "carousel-slide",
+      "cover": true,
+      "mark": false,
+      "headline": "A landing page\nfor your idea."
+    }
+  ]
+}

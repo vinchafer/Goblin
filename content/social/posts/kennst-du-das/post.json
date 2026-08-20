@@ -1,0 +1,39 @@
+{
+  "title": "Sound familiar?",
+  "slides": [
+    {
+      "template": "carousel-slide",
+      "cover": true,
+      "eyebrow": "02 — SOUND FAMILIAR?",
+      "headline": "Sound\nfamiliar?",
+      "footer": "justgoblin.com"
+    },
+    {
+      "template": "carousel-slide",
+      "index": "02 / 05",
+      "headline": "Mid-build —\nhit the limit.",
+      "body": "Try again tomorrow. Or next week.",
+      "footer": "justgoblin.com"
+    },
+    {
+      "template": "carousel-slide",
+      "index": "03 / 05",
+      "headline": "You want to\nchange something fast.",
+      "body": "But your laptop’s at home.",
+      "footer": "justgoblin.com"
+    },
+    {
+      "template": "carousel-slide",
+      "index": "04 / 05",
+      "headline": "You’re paying for\nthe priciest model.",
+      "body": "And still not getting there.",
+      "footer": "justgoblin.com"
+    },
+    {
+      "template": "carousel-slide",
+      "index": "05 / 05",
+      "headline": "Goblin starts\nright there.",
+      "footer": "justgoblin.com"
+    }
+  ]
+}

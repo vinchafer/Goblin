@@ -1,11 +1,11 @@
 {
-  "title": "Ehrlichkeit",
-  "note": "Haltungs-Post. Einzelne Grafik, Bone-Feld wie Post 2. Ein Versprechen über das eigene Verhalten — keine Aussage über Funktionsumfang, Nutzerzahlen oder Termine. Schließendes Anführungszeichen ist U+201C („fertig“), nicht das gerade \" aus der Vorlage des Grids: HARD RULE 2 verlangt deutsche typografische Anführungszeichen, und das Repo setzt sie überall so.",
+  "title": "Honesty",
   "slides": [
     {
       "template": "type-post",
       "surface": "bone",
-      "headline": "Wir sagen nie „fertig“, bevor wir es geprüft haben."
+      "headline": "We never say\n“done” before\nwe’ve checked it.",
+      "footer": "justgoblin.com"
     }
   ]
 }

@@ -1,0 +1,1174 @@
+[
+  {
+    "slide": "01-carousel-slide",
+    "template": "carousel-slide.html",
+    "file": "content/social/posts/was-du-bauen-kannst/01-carousel-slide-feed-1080x1350.png",
+    "format": "feed",
+    "renderedAt": "2160x2700",
+    "width": 1080,
+    "height": 1350,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#1A3A2A",
+    "centre": "#1A3A2A",
+    "bottomRight": "#1A3A2A",
+    "usedFonts": [
+      {
+        "family": "JetBrains Mono",
+        "weight": "500",
+        "style": "normal",
+        "generic": "monospace",
+        "sample": "03 — EXAMPLES"
+      },
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "What would\nyou build\nfirst?"
+      },
+      {
+        "family": "JetBrains Mono",
+        "weight": "400",
+        "style": "normal",
+        "generic": "monospace",
+        "sample": "justgoblin.com"
+      }
+    ],
+    "bytes": 48011,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 129.6,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "JetBrains Mono",
+          "weight": "500",
+          "style": "normal",
+          "generic": "monospace",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 780,
+          "widthFallback": 782.67,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 1336.3,
+          "widthFallback": 1310.94,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "JetBrains Mono",
+          "weight": "400",
+          "style": "normal",
+          "generic": "monospace",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 840,
+          "widthFallback": 842.87,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "JetBrains Mono",
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "JetBrains Mono",
+        "glyphCount": 54,
+        "isCustomFont": true
+      },
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 48,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "03 — EXAMPLES",
+        "className": "eyebrow",
+        "fg": "#D8CBA8",
+        "bg": "#1A3A2A",
+        "fontSize": 21.6,
+        "fontWeight": 500,
+        "large": false,
+        "ratio": 7.74,
+        "threshold": 4.5,
+        "pass": true
+      },
+      {
+        "text": "What would\nyou build\nfirst?",
+        "className": "headline",
+        "fg": "#FBF7EC",
+        "bg": "#1A3A2A",
+        "fontSize": 129.6,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 11.66,
+        "threshold": 3,
+        "pass": true
+      },
+      {
+        "text": "justgoblin.com",
+        "className": "footer",
+        "fg": "#D8CBA8",
+        "bg": "#1A3A2A",
+        "fontSize": 23.4,
+        "fontWeight": 400,
+        "large": false,
+        "ratio": 7.74,
+        "threshold": 4.5,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1350
+      },
+      "boxes": 4,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  },
+  {
+    "slide": "01-carousel-slide",
+    "template": "carousel-slide.html",
+    "file": "content/social/posts/was-du-bauen-kannst/01-carousel-slide-story-1080x1920.png",
+    "format": "story",
+    "renderedAt": "2160x3840",
+    "width": 1080,
+    "height": 1920,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#1A3A2A",
+    "centre": "#1A3A2A",
+    "bottomRight": "#1A3A2A",
+    "usedFonts": [
+      {
+        "family": "JetBrains Mono",
+        "weight": "500",
+        "style": "normal",
+        "generic": "monospace",
+        "sample": "03 — EXAMPLES"
+      },
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "What would\nyou build\nfirst?"
+      },
+      {
+        "family": "JetBrains Mono",
+        "weight": "400",
+        "style": "normal",
+        "generic": "monospace",
+        "sample": "justgoblin.com"
+      }
+    ],
+    "bytes": 50458,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 129.6,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "JetBrains Mono",
+          "weight": "500",
+          "style": "normal",
+          "generic": "monospace",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 780,
+          "widthFallback": 782.67,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 1336.3,
+          "widthFallback": 1310.94,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "JetBrains Mono",
+          "weight": "400",
+          "style": "normal",
+          "generic": "monospace",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 840,
+          "widthFallback": 842.87,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "JetBrains Mono",
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "JetBrains Mono",
+        "glyphCount": 54,
+        "isCustomFont": true
+      },
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 48,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "03 — EXAMPLES",
+        "className": "eyebrow",
+        "fg": "#D8CBA8",
+        "bg": "#1A3A2A",
+        "fontSize": 21.6,
+        "fontWeight": 500,
+        "large": false,
+        "ratio": 7.74,
+        "threshold": 4.5,
+        "pass": true
+      },
+      {
+        "text": "What would\nyou build\nfirst?",
+        "className": "headline",
+        "fg": "#FBF7EC",
+        "bg": "#1A3A2A",
+        "fontSize": 129.6,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 11.66,
+        "threshold": 3,
+        "pass": true
+      },
+      {
+        "text": "justgoblin.com",
+        "className": "footer",
+        "fg": "#D8CBA8",
+        "bg": "#1A3A2A",
+        "fontSize": 23.4,
+        "fontWeight": 400,
+        "large": false,
+        "ratio": 7.74,
+        "threshold": 4.5,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1920
+      },
+      "boxes": 4,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  },
+  {
+    "slide": "02-carousel-slide",
+    "template": "carousel-slide.html",
+    "file": "content/social/posts/was-du-bauen-kannst/02-carousel-slide-feed-1080x1350.png",
+    "format": "feed",
+    "renderedAt": "2160x2700",
+    "width": 1080,
+    "height": 1350,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#0F2B1E",
+    "centre": "#B3B9AD",
+    "bottomRight": "#0F2B1E",
+    "usedFonts": [
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "A login page."
+      }
+    ],
+    "bytes": 24431,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 129.6,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 630.1,
+          "widthFallback": 627.78,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 26,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "A login page.",
+        "className": "headline",
+        "fg": "#FBF7EC",
+        "bg": "#0F2B1E",
+        "fontSize": 129.6,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 14.17,
+        "threshold": 3,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1350
+      },
+      "boxes": 1,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  },
+  {
+    "slide": "02-carousel-slide",
+    "template": "carousel-slide.html",
+    "file": "content/social/posts/was-du-bauen-kannst/02-carousel-slide-story-1080x1920.png",
+    "format": "story",
+    "renderedAt": "2160x3840",
+    "width": 1080,
+    "height": 1920,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#0F2B1E",
+    "centre": "#0F2B1E",
+    "bottomRight": "#0F2B1E",
+    "usedFonts": [
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "A login page."
+      }
+    ],
+    "bytes": 27041,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 129.6,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 630.1,
+          "widthFallback": 627.78,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 26,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "A login page.",
+        "className": "headline",
+        "fg": "#FBF7EC",
+        "bg": "#0F2B1E",
+        "fontSize": 129.6,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 14.17,
+        "threshold": 3,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1920
+      },
+      "boxes": 1,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  },
+  {
+    "slide": "03-carousel-slide",
+    "template": "carousel-slide.html",
+    "file": "content/social/posts/was-du-bauen-kannst/03-carousel-slide-feed-1080x1350.png",
+    "format": "feed",
+    "renderedAt": "2160x2700",
+    "width": 1080,
+    "height": 1350,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#0F2B1E",
+    "centre": "#0F2B1E",
+    "bottomRight": "#0F2B1E",
+    "usedFonts": [
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "A small shop."
+      }
+    ],
+    "bytes": 23199,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 129.6,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 645.5,
+          "widthFallback": 650.15,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 26,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "A small shop.",
+        "className": "headline",
+        "fg": "#FBF7EC",
+        "bg": "#0F2B1E",
+        "fontSize": 129.6,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 14.17,
+        "threshold": 3,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1350
+      },
+      "boxes": 1,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  },
+  {
+    "slide": "03-carousel-slide",
+    "template": "carousel-slide.html",
+    "file": "content/social/posts/was-du-bauen-kannst/03-carousel-slide-story-1080x1920.png",
+    "format": "story",
+    "renderedAt": "2160x3840",
+    "width": 1080,
+    "height": 1920,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#0F2B1E",
+    "centre": "#0F2B1E",
+    "bottomRight": "#0F2B1E",
+    "usedFonts": [
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "A small shop."
+      }
+    ],
+    "bytes": 25806,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 129.6,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 645.5,
+          "widthFallback": 650.15,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 26,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "A small shop.",
+        "className": "headline",
+        "fg": "#FBF7EC",
+        "bg": "#0F2B1E",
+        "fontSize": 129.6,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 14.17,
+        "threshold": 3,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1920
+      },
+      "boxes": 1,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  },
+  {
+    "slide": "04-carousel-slide",
+    "template": "carousel-slide.html",
+    "file": "content/social/posts/was-du-bauen-kannst/04-carousel-slide-feed-1080x1350.png",
+    "format": "feed",
+    "renderedAt": "2160x2700",
+    "width": 1080,
+    "height": 1350,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#0F2B1E",
+    "centre": "#0F2B1E",
+    "bottomRight": "#0F2B1E",
+    "usedFonts": [
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "A booking page."
+      }
+    ],
+    "bytes": 29851,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 129.6,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 780.8,
+          "widthFallback": 777.78,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 28,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "A booking page.",
+        "className": "headline",
+        "fg": "#FBF7EC",
+        "bg": "#0F2B1E",
+        "fontSize": 129.6,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 14.17,
+        "threshold": 3,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1350
+      },
+      "boxes": 1,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  },
+  {
+    "slide": "04-carousel-slide",
+    "template": "carousel-slide.html",
+    "file": "content/social/posts/was-du-bauen-kannst/04-carousel-slide-story-1080x1920.png",
+    "format": "story",
+    "renderedAt": "2160x3840",
+    "width": 1080,
+    "height": 1920,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#0F2B1E",
+    "centre": "#0F2B1E",
+    "bottomRight": "#0F2B1E",
+    "usedFonts": [
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "A booking page."
+      }
+    ],
+    "bytes": 32429,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 129.6,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 780.8,
+          "widthFallback": 777.78,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 28,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "A booking page.",
+        "className": "headline",
+        "fg": "#FBF7EC",
+        "bg": "#0F2B1E",
+        "fontSize": 129.6,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 14.17,
+        "threshold": 3,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1920
+      },
+      "boxes": 1,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  },
+  {
+    "slide": "05-carousel-slide",
+    "template": "carousel-slide.html",
+    "file": "content/social/posts/was-du-bauen-kannst/05-carousel-slide-feed-1080x1350.png",
+    "format": "feed",
+    "renderedAt": "2160x2700",
+    "width": 1080,
+    "height": 1350,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#0F2B1E",
+    "centre": "#0F2B1E",
+    "bottomRight": "#0F2B1E",
+    "usedFonts": [
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "An internal tool."
+      }
+    ],
+    "bytes": 23091,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 129.6,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 788.4,
+          "widthFallback": 761.08,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 32,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "An internal tool.",
+        "className": "headline",
+        "fg": "#FBF7EC",
+        "bg": "#0F2B1E",
+        "fontSize": 129.6,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 14.17,
+        "threshold": 3,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1350
+      },
+      "boxes": 1,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  },
+  {
+    "slide": "05-carousel-slide",
+    "template": "carousel-slide.html",
+    "file": "content/social/posts/was-du-bauen-kannst/05-carousel-slide-story-1080x1920.png",
+    "format": "story",
+    "renderedAt": "2160x3840",
+    "width": 1080,
+    "height": 1920,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#0F2B1E",
+    "centre": "#0F2B1E",
+    "bottomRight": "#0F2B1E",
+    "usedFonts": [
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "An internal tool."
+      }
+    ],
+    "bytes": 25649,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 129.6,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 788.4,
+          "widthFallback": 761.08,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 32,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "An internal tool.",
+        "className": "headline",
+        "fg": "#FBF7EC",
+        "bg": "#0F2B1E",
+        "fontSize": 129.6,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 14.17,
+        "threshold": 3,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1920
+      },
+      "boxes": 1,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  },
+  {
+    "slide": "06-carousel-slide",
+    "template": "carousel-slide.html",
+    "file": "content/social/posts/was-du-bauen-kannst/06-carousel-slide-feed-1080x1350.png",
+    "format": "feed",
+    "renderedAt": "2160x2700",
+    "width": 1080,
+    "height": 1350,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#0F2B1E",
+    "centre": "#0F2B1E",
+    "bottomRight": "#0F2B1E",
+    "usedFonts": [
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "A landing page\nfor your idea."
+      }
+    ],
+    "bytes": 41607,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 129.6,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 1386,
+          "widthFallback": 1377.93,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 54,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "A landing page\nfor your idea.",
+        "className": "headline",
+        "fg": "#FBF7EC",
+        "bg": "#0F2B1E",
+        "fontSize": 129.6,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 14.17,
+        "threshold": 3,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1350
+      },
+      "boxes": 1,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  },
+  {
+    "slide": "06-carousel-slide",
+    "template": "carousel-slide.html",
+    "file": "content/social/posts/was-du-bauen-kannst/06-carousel-slide-story-1080x1920.png",
+    "format": "story",
+    "renderedAt": "2160x3840",
+    "width": 1080,
+    "height": 1920,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#0F2B1E",
+    "centre": "#0F2B1E",
+    "bottomRight": "#0F2B1E",
+    "usedFonts": [
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "A landing page\nfor your idea."
+      }
+    ],
+    "bytes": 44483,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 129.6,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 1386,
+          "widthFallback": 1377.93,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 54,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "A landing page\nfor your idea.",
+        "className": "headline",
+        "fg": "#FBF7EC",
+        "bg": "#0F2B1E",
+        "fontSize": 129.6,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 14.17,
+        "threshold": 3,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1920
+      },
+      "boxes": 1,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  }
+]

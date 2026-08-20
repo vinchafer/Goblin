@@ -1,12 +1,13 @@
 {
-  "title": "Ausführungsmodell — wo Goblin eigentlich rechnet",
-  "note": "Beispiel-Post. Die Aussagen stammen wörtlich aus der freigegebenen Landing-Messaging v2 (docs/LANDING_MESSAGING_FIX_v2.md) — hier wird nichts Neues behauptet.",
+  "title": "Execution model — where Goblin actually computes",
+  "note": "Example post. The claims are taken verbatim from the approved landing messaging v2 (docs/LANDING_MESSAGING_FIX_v2.md) — nothing new is asserted here. Translated to English; the two direct quotes (headline + accent on slide 1) match the doc's own quoted English source copy word for word.",
   "slides": [
     {
       "template": "type-post",
-      "eyebrow": "Ausführungsmodell",
-      "headline": "Dein Handy ist die Fernbedienung. Nicht der Server.",
-      "accent": "„Die KI selbst läuft in Goblins Cloud.“",
+      "surface": "bone",
+      "eyebrow": "Execution model",
+      "headline": "Your phone is the remote control. Not the server.",
+      "accent": "“The AI itself runs in Goblin’s cloud.”",
       "footer": "justgoblin.com",
       "badge": "01 / 03",
       "size": "sm"
@@ -15,17 +16,18 @@
       "template": "carousel-slide",
       "surface": "bone",
       "index": "02 / 03",
-      "eyebrow": "So läuft es",
-      "headline": "Nichts zu installieren. Nichts herunterzuladen.",
-      "body": "Goblin auf dem Homescreen ist die Werkstatt — gerechnet wird in Goblins Cloud. Dein Gerät muss dafür nicht leistungsfähig genug sein.",
+      "eyebrow": "How it works",
+      "headline": "Nothing to install. Nothing to download.",
+      "body": "Goblin on your home screen is the workshop — the computing happens in Goblin’s cloud. Your device doesn’t need to be powerful enough for it.",
       "footer": "justgoblin.com"
     },
     {
       "template": "screenshot-frame",
-      "eyebrow": "Im Produkt",
-      "headline": "Anmelden, und weiterbauen.",
-      "image": "evidence/public-i18n/shots/login-375-de-light.png",
-      "caption": "Von jedem Gerät aus einloggen. Das Projekt liegt dort, wo du es gelassen hast.",
+      "surface": "bone",
+      "eyebrow": "In the product",
+      "headline": "Log in, and keep building.",
+      "image": "evidence/public-i18n/shots/login-375-en-light.png",
+      "caption": "Log in from any device. Your project is right where you left it.",
       "footer": "03 / 03 · justgoblin.com"
     }
   ]

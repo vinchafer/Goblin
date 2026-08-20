@@ -1,0 +1,1754 @@
+[
+  {
+    "slide": "01-carousel-slide",
+    "template": "carousel-slide.html",
+    "file": "content/social/posts/kennst-du-das/01-carousel-slide-feed-1080x1350.png",
+    "format": "feed",
+    "renderedAt": "2160x2700",
+    "width": 1080,
+    "height": 1350,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#0F2B1E",
+    "centre": "#0F2B1E",
+    "bottomRight": "#0F2B1E",
+    "usedFonts": [
+      {
+        "family": "JetBrains Mono",
+        "weight": "500",
+        "style": "normal",
+        "generic": "monospace",
+        "sample": "02 — SOUND FAMILIAR?"
+      },
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "Sound\nfamiliar?"
+      },
+      {
+        "family": "JetBrains Mono",
+        "weight": "400",
+        "style": "normal",
+        "generic": "monospace",
+        "sample": "justgoblin.com"
+      }
+    ],
+    "bytes": 36701,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 129.6,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "JetBrains Mono",
+          "weight": "500",
+          "style": "normal",
+          "generic": "monospace",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 1200,
+          "widthFallback": 1204.1,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 770.1,
+          "widthFallback": 755.62,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "JetBrains Mono",
+          "weight": "400",
+          "style": "normal",
+          "generic": "monospace",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 840,
+          "widthFallback": 842.87,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "JetBrains Mono",
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "JetBrains Mono",
+        "glyphCount": 68,
+        "isCustomFont": true
+      },
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 28,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "02 — SOUND FAMILIAR?",
+        "className": "eyebrow",
+        "fg": "#D8CBA8",
+        "bg": "#0F2B1E",
+        "fontSize": 21.6,
+        "fontWeight": 500,
+        "large": false,
+        "ratio": 9.41,
+        "threshold": 4.5,
+        "pass": true
+      },
+      {
+        "text": "Sound\nfamiliar?",
+        "className": "headline",
+        "fg": "#FBF7EC",
+        "bg": "#0F2B1E",
+        "fontSize": 129.6,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 14.17,
+        "threshold": 3,
+        "pass": true
+      },
+      {
+        "text": "justgoblin.com",
+        "className": "footer",
+        "fg": "#D8CBA8",
+        "bg": "#0F2B1E",
+        "fontSize": 23.4,
+        "fontWeight": 400,
+        "large": false,
+        "ratio": 9.41,
+        "threshold": 4.5,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1350
+      },
+      "boxes": 4,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  },
+  {
+    "slide": "01-carousel-slide",
+    "template": "carousel-slide.html",
+    "file": "content/social/posts/kennst-du-das/01-carousel-slide-story-1080x1920.png",
+    "format": "story",
+    "renderedAt": "2160x3840",
+    "width": 1080,
+    "height": 1920,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#0F2B1E",
+    "centre": "#0F2B1E",
+    "bottomRight": "#0F2B1E",
+    "usedFonts": [
+      {
+        "family": "JetBrains Mono",
+        "weight": "500",
+        "style": "normal",
+        "generic": "monospace",
+        "sample": "02 — SOUND FAMILIAR?"
+      },
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "Sound\nfamiliar?"
+      },
+      {
+        "family": "JetBrains Mono",
+        "weight": "400",
+        "style": "normal",
+        "generic": "monospace",
+        "sample": "justgoblin.com"
+      }
+    ],
+    "bytes": 39143,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 129.6,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "JetBrains Mono",
+          "weight": "500",
+          "style": "normal",
+          "generic": "monospace",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 1200,
+          "widthFallback": 1204.1,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 770.1,
+          "widthFallback": 755.62,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "JetBrains Mono",
+          "weight": "400",
+          "style": "normal",
+          "generic": "monospace",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 840,
+          "widthFallback": 842.87,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "JetBrains Mono",
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "JetBrains Mono",
+        "glyphCount": 68,
+        "isCustomFont": true
+      },
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 28,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "02 — SOUND FAMILIAR?",
+        "className": "eyebrow",
+        "fg": "#D8CBA8",
+        "bg": "#0F2B1E",
+        "fontSize": 21.6,
+        "fontWeight": 500,
+        "large": false,
+        "ratio": 9.41,
+        "threshold": 4.5,
+        "pass": true
+      },
+      {
+        "text": "Sound\nfamiliar?",
+        "className": "headline",
+        "fg": "#FBF7EC",
+        "bg": "#0F2B1E",
+        "fontSize": 129.6,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 14.17,
+        "threshold": 3,
+        "pass": true
+      },
+      {
+        "text": "justgoblin.com",
+        "className": "footer",
+        "fg": "#D8CBA8",
+        "bg": "#0F2B1E",
+        "fontSize": 23.4,
+        "fontWeight": 400,
+        "large": false,
+        "ratio": 9.41,
+        "threshold": 4.5,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1920
+      },
+      "boxes": 4,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  },
+  {
+    "slide": "02-carousel-slide",
+    "template": "carousel-slide.html",
+    "file": "content/social/posts/kennst-du-das/02-carousel-slide-feed-1080x1350.png",
+    "format": "feed",
+    "renderedAt": "2160x2700",
+    "width": 1080,
+    "height": 1350,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#0F2B1E",
+    "centre": "#FBF7EC",
+    "bottomRight": "#0F2B1E",
+    "usedFonts": [
+      {
+        "family": "JetBrains Mono",
+        "weight": "500",
+        "style": "normal",
+        "generic": "monospace",
+        "sample": "02 / 05"
+      },
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "Mid-build —\nhit the limit."
+      },
+      {
+        "family": "Manrope",
+        "weight": "400",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "Try again tomorrow. Or next week."
+      },
+      {
+        "family": "JetBrains Mono",
+        "weight": "400",
+        "style": "normal",
+        "generic": "monospace",
+        "sample": "justgoblin.com"
+      }
+    ],
+    "bytes": 36869,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 86.4,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "JetBrains Mono",
+          "weight": "500",
+          "style": "normal",
+          "generic": "monospace",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 420,
+          "widthFallback": 421.44,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 1189,
+          "widthFallback": 1160.94,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "Manrope",
+          "weight": "400",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 1542.27,
+          "widthFallback": 1524.61,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "JetBrains Mono",
+          "weight": "400",
+          "style": "normal",
+          "generic": "monospace",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 840,
+          "widthFallback": 842.87,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "JetBrains Mono",
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 116,
+        "isCustomFont": true
+      },
+      {
+        "familyName": "JetBrains Mono",
+        "glyphCount": 35,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "02 / 05",
+        "className": "gold-fill",
+        "fg": "#0F2B1E",
+        "bg": "#D4A737",
+        "fontSize": 23.4,
+        "fontWeight": 500,
+        "large": false,
+        "ratio": 6.78,
+        "threshold": 4.5,
+        "pass": true
+      },
+      {
+        "text": "Mid-build —\nhit the limit.",
+        "className": "headline headline--sm",
+        "fg": "#FBF7EC",
+        "bg": "#0F2B1E",
+        "fontSize": 86.4,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 14.17,
+        "threshold": 3,
+        "pass": true
+      },
+      {
+        "text": "Try again tomorrow. Or next week.",
+        "className": "body",
+        "fg": "#D8CBA8",
+        "bg": "#0F2B1E",
+        "fontSize": 32.4,
+        "fontWeight": 400,
+        "large": true,
+        "ratio": 9.41,
+        "threshold": 3,
+        "pass": true
+      },
+      {
+        "text": "justgoblin.com",
+        "className": "footer",
+        "fg": "#D8CBA8",
+        "bg": "#0F2B1E",
+        "fontSize": 23.4,
+        "fontWeight": 400,
+        "large": false,
+        "ratio": 9.41,
+        "threshold": 4.5,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1350
+      },
+      "boxes": 5,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  },
+  {
+    "slide": "02-carousel-slide",
+    "template": "carousel-slide.html",
+    "file": "content/social/posts/kennst-du-das/02-carousel-slide-story-1080x1920.png",
+    "format": "story",
+    "renderedAt": "2160x3840",
+    "width": 1080,
+    "height": 1920,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#0F2B1E",
+    "centre": "#0F2B1E",
+    "bottomRight": "#0F2B1E",
+    "usedFonts": [
+      {
+        "family": "JetBrains Mono",
+        "weight": "500",
+        "style": "normal",
+        "generic": "monospace",
+        "sample": "02 / 05"
+      },
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "Mid-build —\nhit the limit."
+      },
+      {
+        "family": "Manrope",
+        "weight": "400",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "Try again tomorrow. Or next week."
+      },
+      {
+        "family": "JetBrains Mono",
+        "weight": "400",
+        "style": "normal",
+        "generic": "monospace",
+        "sample": "justgoblin.com"
+      }
+    ],
+    "bytes": 39289,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 86.4,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "JetBrains Mono",
+          "weight": "500",
+          "style": "normal",
+          "generic": "monospace",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 420,
+          "widthFallback": 421.44,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 1189,
+          "widthFallback": 1160.94,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "Manrope",
+          "weight": "400",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 1542.27,
+          "widthFallback": 1524.61,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "JetBrains Mono",
+          "weight": "400",
+          "style": "normal",
+          "generic": "monospace",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 840,
+          "widthFallback": 842.87,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "JetBrains Mono",
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 116,
+        "isCustomFont": true
+      },
+      {
+        "familyName": "JetBrains Mono",
+        "glyphCount": 35,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "02 / 05",
+        "className": "gold-fill",
+        "fg": "#0F2B1E",
+        "bg": "#D4A737",
+        "fontSize": 23.4,
+        "fontWeight": 500,
+        "large": false,
+        "ratio": 6.78,
+        "threshold": 4.5,
+        "pass": true
+      },
+      {
+        "text": "Mid-build —\nhit the limit.",
+        "className": "headline headline--sm",
+        "fg": "#FBF7EC",
+        "bg": "#0F2B1E",
+        "fontSize": 86.4,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 14.17,
+        "threshold": 3,
+        "pass": true
+      },
+      {
+        "text": "Try again tomorrow. Or next week.",
+        "className": "body",
+        "fg": "#D8CBA8",
+        "bg": "#0F2B1E",
+        "fontSize": 32.4,
+        "fontWeight": 400,
+        "large": true,
+        "ratio": 9.41,
+        "threshold": 3,
+        "pass": true
+      },
+      {
+        "text": "justgoblin.com",
+        "className": "footer",
+        "fg": "#D8CBA8",
+        "bg": "#0F2B1E",
+        "fontSize": 23.4,
+        "fontWeight": 400,
+        "large": false,
+        "ratio": 9.41,
+        "threshold": 4.5,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1920
+      },
+      "boxes": 5,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  },
+  {
+    "slide": "03-carousel-slide",
+    "template": "carousel-slide.html",
+    "file": "content/social/posts/kennst-du-das/03-carousel-slide-feed-1080x1350.png",
+    "format": "feed",
+    "renderedAt": "2160x2700",
+    "width": 1080,
+    "height": 1350,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#0F2B1E",
+    "centre": "#0F2B1E",
+    "bottomRight": "#0F2B1E",
+    "usedFonts": [
+      {
+        "family": "JetBrains Mono",
+        "weight": "500",
+        "style": "normal",
+        "generic": "monospace",
+        "sample": "03 / 05"
+      },
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "You want to\nchange something fast."
+      },
+      {
+        "family": "Manrope",
+        "weight": "400",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "But your laptop’s at home."
+      },
+      {
+        "family": "JetBrains Mono",
+        "weight": "400",
+        "style": "normal",
+        "generic": "monospace",
+        "sample": "justgoblin.com"
+      }
+    ],
+    "bytes": 54048,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 86.4,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "JetBrains Mono",
+          "weight": "500",
+          "style": "normal",
+          "generic": "monospace",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 420,
+          "widthFallback": 421.44,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 1756,
+          "widthFallback": 1703.81,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "Manrope",
+          "weight": "400",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 1185.67,
+          "widthFallback": 1159.96,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "JetBrains Mono",
+          "weight": "400",
+          "style": "normal",
+          "generic": "monospace",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 840,
+          "widthFallback": 842.87,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "JetBrains Mono",
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 116,
+        "isCustomFont": true
+      },
+      {
+        "familyName": "JetBrains Mono",
+        "glyphCount": 35,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "03 / 05",
+        "className": "gold-fill",
+        "fg": "#0F2B1E",
+        "bg": "#D4A737",
+        "fontSize": 23.4,
+        "fontWeight": 500,
+        "large": false,
+        "ratio": 6.78,
+        "threshold": 4.5,
+        "pass": true
+      },
+      {
+        "text": "You want to\nchange something fast.",
+        "className": "headline headline--sm",
+        "fg": "#FBF7EC",
+        "bg": "#0F2B1E",
+        "fontSize": 86.4,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 14.17,
+        "threshold": 3,
+        "pass": true
+      },
+      {
+        "text": "But your laptop’s at home.",
+        "className": "body",
+        "fg": "#D8CBA8",
+        "bg": "#0F2B1E",
+        "fontSize": 32.4,
+        "fontWeight": 400,
+        "large": true,
+        "ratio": 9.41,
+        "threshold": 3,
+        "pass": true
+      },
+      {
+        "text": "justgoblin.com",
+        "className": "footer",
+        "fg": "#D8CBA8",
+        "bg": "#0F2B1E",
+        "fontSize": 23.4,
+        "fontWeight": 400,
+        "large": false,
+        "ratio": 9.41,
+        "threshold": 4.5,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1350
+      },
+      "boxes": 5,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  },
+  {
+    "slide": "03-carousel-slide",
+    "template": "carousel-slide.html",
+    "file": "content/social/posts/kennst-du-das/03-carousel-slide-story-1080x1920.png",
+    "format": "story",
+    "renderedAt": "2160x3840",
+    "width": 1080,
+    "height": 1920,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#0F2B1E",
+    "centre": "#0F2B1E",
+    "bottomRight": "#0F2B1E",
+    "usedFonts": [
+      {
+        "family": "JetBrains Mono",
+        "weight": "500",
+        "style": "normal",
+        "generic": "monospace",
+        "sample": "03 / 05"
+      },
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "You want to\nchange something fast."
+      },
+      {
+        "family": "Manrope",
+        "weight": "400",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "But your laptop’s at home."
+      },
+      {
+        "family": "JetBrains Mono",
+        "weight": "400",
+        "style": "normal",
+        "generic": "monospace",
+        "sample": "justgoblin.com"
+      }
+    ],
+    "bytes": 56679,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 86.4,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "JetBrains Mono",
+          "weight": "500",
+          "style": "normal",
+          "generic": "monospace",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 420,
+          "widthFallback": 421.44,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 1756,
+          "widthFallback": 1703.81,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "Manrope",
+          "weight": "400",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 1185.67,
+          "widthFallback": 1159.96,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "JetBrains Mono",
+          "weight": "400",
+          "style": "normal",
+          "generic": "monospace",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 840,
+          "widthFallback": 842.87,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "JetBrains Mono",
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 116,
+        "isCustomFont": true
+      },
+      {
+        "familyName": "JetBrains Mono",
+        "glyphCount": 35,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "03 / 05",
+        "className": "gold-fill",
+        "fg": "#0F2B1E",
+        "bg": "#D4A737",
+        "fontSize": 23.4,
+        "fontWeight": 500,
+        "large": false,
+        "ratio": 6.78,
+        "threshold": 4.5,
+        "pass": true
+      },
+      {
+        "text": "You want to\nchange something fast.",
+        "className": "headline headline--sm",
+        "fg": "#FBF7EC",
+        "bg": "#0F2B1E",
+        "fontSize": 86.4,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 14.17,
+        "threshold": 3,
+        "pass": true
+      },
+      {
+        "text": "But your laptop’s at home.",
+        "className": "body",
+        "fg": "#D8CBA8",
+        "bg": "#0F2B1E",
+        "fontSize": 32.4,
+        "fontWeight": 400,
+        "large": true,
+        "ratio": 9.41,
+        "threshold": 3,
+        "pass": true
+      },
+      {
+        "text": "justgoblin.com",
+        "className": "footer",
+        "fg": "#D8CBA8",
+        "bg": "#0F2B1E",
+        "fontSize": 23.4,
+        "fontWeight": 400,
+        "large": false,
+        "ratio": 9.41,
+        "threshold": 4.5,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1920
+      },
+      "boxes": 5,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  },
+  {
+    "slide": "04-carousel-slide",
+    "template": "carousel-slide.html",
+    "file": "content/social/posts/kennst-du-das/04-carousel-slide-feed-1080x1350.png",
+    "format": "feed",
+    "renderedAt": "2160x2700",
+    "width": 1080,
+    "height": 1350,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#0F2B1E",
+    "centre": "#FBF7EC",
+    "bottomRight": "#0F2B1E",
+    "usedFonts": [
+      {
+        "family": "JetBrains Mono",
+        "weight": "500",
+        "style": "normal",
+        "generic": "monospace",
+        "sample": "04 / 05"
+      },
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "You’re paying for\nthe priciest model."
+      },
+      {
+        "family": "Manrope",
+        "weight": "400",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "And still not getting there."
+      },
+      {
+        "family": "JetBrains Mono",
+        "weight": "400",
+        "style": "normal",
+        "generic": "monospace",
+        "sample": "justgoblin.com"
+      }
+    ],
+    "bytes": 51874,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 86.4,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "JetBrains Mono",
+          "weight": "500",
+          "style": "normal",
+          "generic": "monospace",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 420,
+          "widthFallback": 421.44,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 1770.1,
+          "widthFallback": 1726.22,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "Manrope",
+          "weight": "400",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 1191.03,
+          "widthFallback": 1128.47,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "JetBrains Mono",
+          "weight": "400",
+          "style": "normal",
+          "generic": "monospace",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 840,
+          "widthFallback": 842.87,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "JetBrains Mono",
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 126,
+        "isCustomFont": true
+      },
+      {
+        "familyName": "JetBrains Mono",
+        "glyphCount": 35,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "04 / 05",
+        "className": "gold-fill",
+        "fg": "#0F2B1E",
+        "bg": "#D4A737",
+        "fontSize": 23.4,
+        "fontWeight": 500,
+        "large": false,
+        "ratio": 6.78,
+        "threshold": 4.5,
+        "pass": true
+      },
+      {
+        "text": "You’re paying for\nthe priciest model.",
+        "className": "headline headline--sm",
+        "fg": "#FBF7EC",
+        "bg": "#0F2B1E",
+        "fontSize": 86.4,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 14.17,
+        "threshold": 3,
+        "pass": true
+      },
+      {
+        "text": "And still not getting there.",
+        "className": "body",
+        "fg": "#D8CBA8",
+        "bg": "#0F2B1E",
+        "fontSize": 32.4,
+        "fontWeight": 400,
+        "large": true,
+        "ratio": 9.41,
+        "threshold": 3,
+        "pass": true
+      },
+      {
+        "text": "justgoblin.com",
+        "className": "footer",
+        "fg": "#D8CBA8",
+        "bg": "#0F2B1E",
+        "fontSize": 23.4,
+        "fontWeight": 400,
+        "large": false,
+        "ratio": 9.41,
+        "threshold": 4.5,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1350
+      },
+      "boxes": 5,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  },
+  {
+    "slide": "04-carousel-slide",
+    "template": "carousel-slide.html",
+    "file": "content/social/posts/kennst-du-das/04-carousel-slide-story-1080x1920.png",
+    "format": "story",
+    "renderedAt": "2160x3840",
+    "width": 1080,
+    "height": 1920,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#0F2B1E",
+    "centre": "#0F2B1E",
+    "bottomRight": "#0F2B1E",
+    "usedFonts": [
+      {
+        "family": "JetBrains Mono",
+        "weight": "500",
+        "style": "normal",
+        "generic": "monospace",
+        "sample": "04 / 05"
+      },
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "You’re paying for\nthe priciest model."
+      },
+      {
+        "family": "Manrope",
+        "weight": "400",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "And still not getting there."
+      },
+      {
+        "family": "JetBrains Mono",
+        "weight": "400",
+        "style": "normal",
+        "generic": "monospace",
+        "sample": "justgoblin.com"
+      }
+    ],
+    "bytes": 54018,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 86.4,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "JetBrains Mono",
+          "weight": "500",
+          "style": "normal",
+          "generic": "monospace",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 420,
+          "widthFallback": 421.44,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 1770.1,
+          "widthFallback": 1726.22,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "Manrope",
+          "weight": "400",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 1191.03,
+          "widthFallback": 1128.47,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "JetBrains Mono",
+          "weight": "400",
+          "style": "normal",
+          "generic": "monospace",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 840,
+          "widthFallback": 842.87,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "JetBrains Mono",
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 126,
+        "isCustomFont": true
+      },
+      {
+        "familyName": "JetBrains Mono",
+        "glyphCount": 35,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "04 / 05",
+        "className": "gold-fill",
+        "fg": "#0F2B1E",
+        "bg": "#D4A737",
+        "fontSize": 23.4,
+        "fontWeight": 500,
+        "large": false,
+        "ratio": 6.78,
+        "threshold": 4.5,
+        "pass": true
+      },
+      {
+        "text": "You’re paying for\nthe priciest model.",
+        "className": "headline headline--sm",
+        "fg": "#FBF7EC",
+        "bg": "#0F2B1E",
+        "fontSize": 86.4,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 14.17,
+        "threshold": 3,
+        "pass": true
+      },
+      {
+        "text": "And still not getting there.",
+        "className": "body",
+        "fg": "#D8CBA8",
+        "bg": "#0F2B1E",
+        "fontSize": 32.4,
+        "fontWeight": 400,
+        "large": true,
+        "ratio": 9.41,
+        "threshold": 3,
+        "pass": true
+      },
+      {
+        "text": "justgoblin.com",
+        "className": "footer",
+        "fg": "#D8CBA8",
+        "bg": "#0F2B1E",
+        "fontSize": 23.4,
+        "fontWeight": 400,
+        "large": false,
+        "ratio": 9.41,
+        "threshold": 4.5,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1920
+      },
+      "boxes": 5,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  },
+  {
+    "slide": "05-carousel-slide",
+    "template": "carousel-slide.html",
+    "file": "content/social/posts/kennst-du-das/05-carousel-slide-feed-1080x1350.png",
+    "format": "feed",
+    "renderedAt": "2160x2700",
+    "width": 1080,
+    "height": 1350,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#0F2B1E",
+    "centre": "#0F2B1E",
+    "bottomRight": "#0F2B1E",
+    "usedFonts": [
+      {
+        "family": "JetBrains Mono",
+        "weight": "500",
+        "style": "normal",
+        "generic": "monospace",
+        "sample": "05 / 05"
+      },
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "Goblin starts\nright there."
+      },
+      {
+        "family": "JetBrains Mono",
+        "weight": "400",
+        "style": "normal",
+        "generic": "monospace",
+        "sample": "justgoblin.com"
+      }
+    ],
+    "bytes": 35533,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 86.4,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "JetBrains Mono",
+          "weight": "500",
+          "style": "normal",
+          "generic": "monospace",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 420,
+          "widthFallback": 421.44,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 1220.7,
+          "widthFallback": 1166.8,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "JetBrains Mono",
+          "weight": "400",
+          "style": "normal",
+          "generic": "monospace",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 840,
+          "widthFallback": 842.87,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "JetBrains Mono",
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 50,
+        "isCustomFont": true
+      },
+      {
+        "familyName": "JetBrains Mono",
+        "glyphCount": 35,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "05 / 05",
+        "className": "gold-fill",
+        "fg": "#0F2B1E",
+        "bg": "#D4A737",
+        "fontSize": 23.4,
+        "fontWeight": 500,
+        "large": false,
+        "ratio": 6.78,
+        "threshold": 4.5,
+        "pass": true
+      },
+      {
+        "text": "Goblin starts\nright there.",
+        "className": "headline headline--sm",
+        "fg": "#FBF7EC",
+        "bg": "#0F2B1E",
+        "fontSize": 86.4,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 14.17,
+        "threshold": 3,
+        "pass": true
+      },
+      {
+        "text": "justgoblin.com",
+        "className": "footer",
+        "fg": "#D8CBA8",
+        "bg": "#0F2B1E",
+        "fontSize": 23.4,
+        "fontWeight": 400,
+        "large": false,
+        "ratio": 9.41,
+        "threshold": 4.5,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1350
+      },
+      "boxes": 4,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  },
+  {
+    "slide": "05-carousel-slide",
+    "template": "carousel-slide.html",
+    "file": "content/social/posts/kennst-du-das/05-carousel-slide-story-1080x1920.png",
+    "format": "story",
+    "renderedAt": "2160x3840",
+    "width": 1080,
+    "height": 1920,
+    "channels": 3,
+    "hasAlpha": false,
+    "topLeft": "#0F2B1E",
+    "centre": "#0F2B1E",
+    "bottomRight": "#0F2B1E",
+    "usedFonts": [
+      {
+        "family": "JetBrains Mono",
+        "weight": "500",
+        "style": "normal",
+        "generic": "monospace",
+        "sample": "05 / 05"
+      },
+      {
+        "family": "Manrope",
+        "weight": "800",
+        "style": "normal",
+        "generic": "sans-serif",
+        "sample": "Goblin starts\nright there."
+      },
+      {
+        "family": "JetBrains Mono",
+        "weight": "400",
+        "style": "normal",
+        "generic": "monospace",
+        "sample": "justgoblin.com"
+      }
+    ],
+    "bytes": 38035,
+    "scale": {
+      "displayStep": "72px",
+      "posterScale": "1.8",
+      "headlinePx": 86.4,
+      "gutterPx": 96
+    },
+    "fonts": {
+      "checks": [
+        {
+          "family": "JetBrains Mono",
+          "weight": "500",
+          "style": "normal",
+          "generic": "monospace",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 420,
+          "widthFallback": 421.44,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "Manrope",
+          "weight": "800",
+          "style": "normal",
+          "generic": "sans-serif",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 1220.7,
+          "widthFallback": 1166.8,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "JetBrains Mono",
+          "weight": "400",
+          "style": "normal",
+          "generic": "monospace",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 840,
+          "widthFallback": 842.87,
+          "distinctFromFallback": true,
+          "pass": true
+        }
+      ],
+      "usedFamilies": [
+        "JetBrains Mono",
+        "Manrope"
+      ],
+      "declaredFamilies": [
+        "Instrument Serif",
+        "JetBrains Mono",
+        "Manrope"
+      ]
+    },
+    "platformFonts": [
+      {
+        "familyName": "Manrope ExtraLight",
+        "glyphCount": 50,
+        "isCustomFont": true
+      },
+      {
+        "familyName": "JetBrains Mono",
+        "glyphCount": 35,
+        "isCustomFont": true
+      }
+    ],
+    "contrast": [
+      {
+        "text": "05 / 05",
+        "className": "gold-fill",
+        "fg": "#0F2B1E",
+        "bg": "#D4A737",
+        "fontSize": 23.4,
+        "fontWeight": 500,
+        "large": false,
+        "ratio": 6.78,
+        "threshold": 4.5,
+        "pass": true
+      },
+      {
+        "text": "Goblin starts\nright there.",
+        "className": "headline headline--sm",
+        "fg": "#FBF7EC",
+        "bg": "#0F2B1E",
+        "fontSize": 86.4,
+        "fontWeight": 800,
+        "large": true,
+        "ratio": 14.17,
+        "threshold": 3,
+        "pass": true
+      },
+      {
+        "text": "justgoblin.com",
+        "className": "footer",
+        "fg": "#D8CBA8",
+        "bg": "#0F2B1E",
+        "fontSize": 23.4,
+        "fontWeight": 400,
+        "large": false,
+        "ratio": 9.41,
+        "threshold": 4.5,
+        "pass": true
+      }
+    ],
+    "layout": {
+      "canvas": {
+        "w": 1080,
+        "h": 1920
+      },
+      "boxes": 4,
+      "overflow": [],
+      "overlaps": [],
+      "inkOverflow": []
+    }
+  }
+]

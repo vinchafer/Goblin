@@ -9,30 +9,30 @@
     "height": 1350,
     "channels": 3,
     "hasAlpha": false,
-    "topLeft": "#0F2B1E",
-    "centre": "#FBF7EC",
-    "bottomRight": "#0F2B1E",
+    "topLeft": "#F4ECD8",
+    "centre": "#F4ECD8",
+    "bottomRight": "#F4ECD8",
     "usedFonts": [
       {
         "family": "JetBrains Mono",
         "weight": "500",
         "style": "normal",
         "generic": "monospace",
-        "sample": "Ausführungsmodell"
+        "sample": "Execution model"
       },
       {
         "family": "Manrope",
         "weight": "800",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Dein Handy ist die Fernbedienung. Nicht "
+        "sample": "Your phone is the remote control. Not th"
       },
       {
         "family": "Instrument Serif",
         "weight": "400",
         "style": "italic",
         "generic": "serif",
-        "sample": "„Die KI selbst läuft in Goblins Cloud.“"
+        "sample": "“The AI itself runs in Goblin’s cloud.”"
       },
       {
         "family": "JetBrains Mono",
@@ -42,7 +42,7 @@
         "sample": "justgoblin.com"
       }
     ],
-    "bytes": 91623,
+    "bytes": 90007,
     "scale": {
       "displayStep": "72px",
       "posterScale": "1.8",
@@ -59,8 +59,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 1020,
-          "widthFallback": 1023.49,
+          "widthReal": 900,
+          "widthFallback": 903.08,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -72,8 +72,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 1992,
-          "widthFallback": 1950.2,
+          "widthReal": 1962.7,
+          "widthFallback": 1909.28,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -85,8 +85,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 2,
           "apiCheck": true,
-          "widthReal": 1305,
-          "widthFallback": 1580.71,
+          "widthReal": 1284.3,
+          "widthFallback": 1539.94,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -118,7 +118,7 @@
     "platformFonts": [
       {
         "familyName": "Manrope ExtraLight",
-        "glyphCount": 98,
+        "glyphCount": 94,
         "isCustomFont": true
       },
       {
@@ -128,56 +128,56 @@
       },
       {
         "familyName": "JetBrains Mono",
-        "glyphCount": 69,
+        "glyphCount": 65,
         "isCustomFont": true
       }
     ],
     "contrast": [
       {
-        "text": "Ausführungsmodell",
+        "text": "Execution model",
         "className": "eyebrow",
-        "fg": "#D8CBA8",
-        "bg": "#0F2B1E",
+        "fg": "#5F5640",
+        "bg": "#F4ECD8",
         "fontSize": 21.6,
         "fontWeight": 500,
         "large": false,
-        "ratio": 9.41,
+        "ratio": 6.17,
         "threshold": 4.5,
         "pass": true
       },
       {
-        "text": "Dein Handy ist die Fernbedienung. Nicht der S…",
+        "text": "Your phone is the remote control. Not the ser…",
         "className": "headline headline--sm",
-        "fg": "#FBF7EC",
-        "bg": "#0F2B1E",
+        "fg": "#0F2B1E",
+        "bg": "#F4ECD8",
         "fontSize": 86.4,
         "fontWeight": 800,
         "large": true,
-        "ratio": 14.17,
+        "ratio": 12.88,
         "threshold": 3,
         "pass": true
       },
       {
-        "text": "„Die KI selbst läuft in Goblins Cloud.“",
+        "text": "“The AI itself runs in Goblin’s cloud.”",
         "className": "accent",
-        "fg": "#7FA98A",
-        "bg": "#0F2B1E",
+        "fg": "#5E8973",
+        "bg": "#F4ECD8",
         "fontSize": 86.4,
         "fontWeight": 400,
         "large": true,
-        "ratio": 5.74,
+        "ratio": 3.36,
         "threshold": 3,
         "pass": true
       },
       {
         "text": "justgoblin.com",
         "className": "footer",
-        "fg": "#D8CBA8",
-        "bg": "#0F2B1E",
+        "fg": "#5F5640",
+        "bg": "#F4ECD8",
         "fontSize": 23.4,
         "fontWeight": 400,
         "large": false,
-        "ratio": 9.41,
+        "ratio": 6.17,
         "threshold": 4.5,
         "pass": true
       },
@@ -199,7 +199,7 @@
         "w": 1080,
         "h": 1350
       },
-      "boxes": 5,
+      "boxes": 6,
       "overflow": [],
       "overlaps": [],
       "inkOverflow": []
@@ -215,30 +215,30 @@
     "height": 1920,
     "channels": 3,
     "hasAlpha": false,
-    "topLeft": "#0F2B1E",
-    "centre": "#0F2B1E",
-    "bottomRight": "#0F2B1E",
+    "topLeft": "#F4ECD8",
+    "centre": "#F4ECD8",
+    "bottomRight": "#F4ECD8",
     "usedFonts": [
       {
         "family": "JetBrains Mono",
         "weight": "500",
         "style": "normal",
         "generic": "monospace",
-        "sample": "Ausführungsmodell"
+        "sample": "Execution model"
       },
       {
         "family": "Manrope",
         "weight": "800",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Dein Handy ist die Fernbedienung. Nicht "
+        "sample": "Your phone is the remote control. Not th"
       },
       {
         "family": "Instrument Serif",
         "weight": "400",
         "style": "italic",
         "generic": "serif",
-        "sample": "„Die KI selbst läuft in Goblins Cloud.“"
+        "sample": "“The AI itself runs in Goblin’s cloud.”"
       },
       {
         "family": "JetBrains Mono",
@@ -248,7 +248,7 @@
         "sample": "justgoblin.com"
       }
     ],
-    "bytes": 94354,
+    "bytes": 92196,
     "scale": {
       "displayStep": "72px",
       "posterScale": "1.8",
@@ -265,8 +265,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 1020,
-          "widthFallback": 1023.49,
+          "widthReal": 900,
+          "widthFallback": 903.08,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -278,8 +278,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 1992,
-          "widthFallback": 1950.2,
+          "widthReal": 1962.7,
+          "widthFallback": 1909.28,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -291,8 +291,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 2,
           "apiCheck": true,
-          "widthReal": 1305,
-          "widthFallback": 1580.71,
+          "widthReal": 1284.3,
+          "widthFallback": 1539.94,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -324,7 +324,7 @@
     "platformFonts": [
       {
         "familyName": "Manrope ExtraLight",
-        "glyphCount": 98,
+        "glyphCount": 94,
         "isCustomFont": true
       },
       {
@@ -334,56 +334,56 @@
       },
       {
         "familyName": "JetBrains Mono",
-        "glyphCount": 69,
+        "glyphCount": 65,
         "isCustomFont": true
       }
     ],
     "contrast": [
       {
-        "text": "Ausführungsmodell",
+        "text": "Execution model",
         "className": "eyebrow",
-        "fg": "#D8CBA8",
-        "bg": "#0F2B1E",
+        "fg": "#5F5640",
+        "bg": "#F4ECD8",
         "fontSize": 21.6,
         "fontWeight": 500,
         "large": false,
-        "ratio": 9.41,
+        "ratio": 6.17,
         "threshold": 4.5,
         "pass": true
       },
       {
-        "text": "Dein Handy ist die Fernbedienung. Nicht der S…",
+        "text": "Your phone is the remote control. Not the ser…",
         "className": "headline headline--sm",
-        "fg": "#FBF7EC",
-        "bg": "#0F2B1E",
+        "fg": "#0F2B1E",
+        "bg": "#F4ECD8",
         "fontSize": 86.4,
         "fontWeight": 800,
         "large": true,
-        "ratio": 14.17,
+        "ratio": 12.88,
         "threshold": 3,
         "pass": true
       },
       {
-        "text": "„Die KI selbst läuft in Goblins Cloud.“",
+        "text": "“The AI itself runs in Goblin’s cloud.”",
         "className": "accent",
-        "fg": "#7FA98A",
-        "bg": "#0F2B1E",
+        "fg": "#5E8973",
+        "bg": "#F4ECD8",
         "fontSize": 86.4,
         "fontWeight": 400,
         "large": true,
-        "ratio": 5.74,
+        "ratio": 3.36,
         "threshold": 3,
         "pass": true
       },
       {
         "text": "justgoblin.com",
         "className": "footer",
-        "fg": "#D8CBA8",
-        "bg": "#0F2B1E",
+        "fg": "#5F5640",
+        "bg": "#F4ECD8",
         "fontSize": 23.4,
         "fontWeight": 400,
         "large": false,
-        "ratio": 9.41,
+        "ratio": 6.17,
         "threshold": 4.5,
         "pass": true
       },
@@ -405,7 +405,7 @@
         "w": 1080,
         "h": 1920
       },
-      "boxes": 5,
+      "boxes": 6,
       "overflow": [],
       "overlaps": [],
       "inkOverflow": []
@@ -422,7 +422,7 @@
     "channels": 3,
     "hasAlpha": false,
     "topLeft": "#F4ECD8",
-    "centre": "#929988",
+    "centre": "#F4ECD8",
     "bottomRight": "#F4ECD8",
     "usedFonts": [
       {
@@ -437,14 +437,14 @@
         "weight": "800",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Nichts zu installieren. Nichts herunterz"
+        "sample": "Nothing to install. Nothing to download."
       },
       {
         "family": "Manrope",
         "weight": "400",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Goblin auf dem Homescreen ist die Werkst"
+        "sample": "Goblin on your home screen is the worksh"
       },
       {
         "family": "JetBrains Mono",
@@ -454,7 +454,7 @@
         "sample": "justgoblin.com"
       }
     ],
-    "bytes": 85350,
+    "bytes": 85380,
     "scale": {
       "displayStep": "72px",
       "posterScale": "1.8",
@@ -484,8 +484,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 1935,
-          "widthFallback": 1844.82,
+          "widthReal": 1961.7,
+          "widthFallback": 1894.09,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -497,8 +497,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 1932,
-          "widthFallback": 1898.93,
+          "widthReal": 1902.22,
+          "widthFallback": 1867.58,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -529,12 +529,12 @@
     "platformFonts": [
       {
         "familyName": "Manrope ExtraLight",
-        "glyphCount": 350,
+        "glyphCount": 354,
         "isCustomFont": true
       },
       {
         "familyName": "JetBrains Mono",
-        "glyphCount": 57,
+        "glyphCount": 59,
         "isCustomFont": true
       }
     ],
@@ -552,7 +552,7 @@
         "pass": true
       },
       {
-        "text": "So läuft es",
+        "text": "How it works",
         "className": "eyebrow",
         "fg": "#5F5640",
         "bg": "#F4ECD8",
@@ -564,7 +564,7 @@
         "pass": true
       },
       {
-        "text": "Nichts zu installieren. Nichts herunterzuladen.",
+        "text": "Nothing to install. Nothing to download.",
         "className": "headline headline--sm",
         "fg": "#0F2B1E",
         "bg": "#F4ECD8",
@@ -576,7 +576,7 @@
         "pass": true
       },
       {
-        "text": "Goblin auf dem Homescreen ist die Werkstatt —…",
+        "text": "Goblin on your home screen is the workshop — …",
         "className": "body",
         "fg": "#3F3A2C",
         "bg": "#F4ECD8",
@@ -637,14 +637,14 @@
         "weight": "800",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Nichts zu installieren. Nichts herunterz"
+        "sample": "Nothing to install. Nothing to download."
       },
       {
         "family": "Manrope",
         "weight": "400",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Goblin auf dem Homescreen ist die Werkst"
+        "sample": "Goblin on your home screen is the worksh"
       },
       {
         "family": "JetBrains Mono",
@@ -654,7 +654,7 @@
         "sample": "justgoblin.com"
       }
     ],
-    "bytes": 87241,
+    "bytes": 86792,
     "scale": {
       "displayStep": "72px",
       "posterScale": "1.8",
@@ -684,8 +684,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 1935,
-          "widthFallback": 1844.82,
+          "widthReal": 1961.7,
+          "widthFallback": 1894.09,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -697,8 +697,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 1932,
-          "widthFallback": 1898.93,
+          "widthReal": 1902.22,
+          "widthFallback": 1867.58,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -729,12 +729,12 @@
     "platformFonts": [
       {
         "familyName": "Manrope ExtraLight",
-        "glyphCount": 350,
+        "glyphCount": 354,
         "isCustomFont": true
       },
       {
         "familyName": "JetBrains Mono",
-        "glyphCount": 57,
+        "glyphCount": 59,
         "isCustomFont": true
       }
     ],
@@ -752,7 +752,7 @@
         "pass": true
       },
       {
-        "text": "So läuft es",
+        "text": "How it works",
         "className": "eyebrow",
         "fg": "#5F5640",
         "bg": "#F4ECD8",
@@ -764,7 +764,7 @@
         "pass": true
       },
       {
-        "text": "Nichts zu installieren. Nichts herunterzuladen.",
+        "text": "Nothing to install. Nothing to download.",
         "className": "headline headline--sm",
         "fg": "#0F2B1E",
         "bg": "#F4ECD8",
@@ -776,7 +776,7 @@
         "pass": true
       },
       {
-        "text": "Goblin auf dem Homescreen ist die Werkstatt —…",
+        "text": "Goblin on your home screen is the workshop — …",
         "className": "body",
         "fg": "#3F3A2C",
         "bg": "#F4ECD8",
@@ -821,30 +821,30 @@
     "height": 1350,
     "channels": 3,
     "hasAlpha": false,
-    "topLeft": "#0F2B1E",
-    "centre": "#FCFFFF",
-    "bottomRight": "#0F2B1E",
+    "topLeft": "#F4ECD8",
+    "centre": "#FBF7EC",
+    "bottomRight": "#F4ECD8",
     "usedFonts": [
       {
         "family": "JetBrains Mono",
         "weight": "500",
         "style": "normal",
         "generic": "monospace",
-        "sample": "Im Produkt"
+        "sample": "In the product"
       },
       {
         "family": "Manrope",
         "weight": "800",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Anmelden, und weiterbauen."
+        "sample": "Log in, and keep building."
       },
       {
         "family": "Manrope",
         "weight": "400",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Von jedem Gerät aus einloggen. Das Proje"
+        "sample": "Log in from any device. Your project is "
       },
       {
         "family": "JetBrains Mono",
@@ -854,7 +854,7 @@
         "sample": "03 / 03 · justgoblin.com"
       }
     ],
-    "bytes": 109936,
+    "bytes": 110640,
     "scale": {
       "displayStep": "72px",
       "posterScale": "1.8",
@@ -871,8 +871,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 600,
-          "widthFallback": 602.05,
+          "widthReal": 840,
+          "widthFallback": 842.87,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -884,8 +884,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 1416,
-          "widthFallback": 1361.28,
+          "widthReal": 1239.4,
+          "widthFallback": 1233.3,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -897,8 +897,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 1897,
-          "widthFallback": 1895.61,
+          "widthReal": 1728.15,
+          "widthFallback": 1719.43,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -929,61 +929,61 @@
     "platformFonts": [
       {
         "familyName": "Manrope ExtraLight",
-        "glyphCount": 204,
+        "glyphCount": 178,
         "isCustomFont": true
       },
       {
         "familyName": "JetBrains Mono",
-        "glyphCount": 68,
+        "glyphCount": 76,
         "isCustomFont": true
       }
     ],
     "contrast": [
       {
-        "text": "Im Produkt",
+        "text": "In the product",
         "className": "eyebrow",
-        "fg": "#D8CBA8",
-        "bg": "#0F2B1E",
+        "fg": "#5F5640",
+        "bg": "#F4ECD8",
         "fontSize": 21.6,
         "fontWeight": 500,
         "large": false,
-        "ratio": 9.41,
+        "ratio": 6.17,
         "threshold": 4.5,
         "pass": true
       },
       {
-        "text": "Anmelden, und weiterbauen.",
+        "text": "Log in, and keep building.",
         "className": "headline headline--sm",
-        "fg": "#FBF7EC",
-        "bg": "#0F2B1E",
+        "fg": "#0F2B1E",
+        "bg": "#F4ECD8",
         "fontSize": 86.4,
         "fontWeight": 800,
         "large": true,
-        "ratio": 14.17,
+        "ratio": 12.88,
         "threshold": 3,
         "pass": true
       },
       {
-        "text": "Von jedem Gerät aus einloggen. Das Projekt li…",
+        "text": "Log in from any device. Your project is right…",
         "className": "body",
-        "fg": "#D8CBA8",
-        "bg": "#0F2B1E",
+        "fg": "#3F3A2C",
+        "bg": "#F4ECD8",
         "fontSize": 32.4,
         "fontWeight": 400,
         "large": true,
-        "ratio": 9.41,
+        "ratio": 9.63,
         "threshold": 3,
         "pass": true
       },
       {
         "text": "03 / 03 · justgoblin.com",
         "className": "footer",
-        "fg": "#D8CBA8",
-        "bg": "#0F2B1E",
+        "fg": "#5F5640",
+        "bg": "#F4ECD8",
         "fontSize": 23.4,
         "fontWeight": 400,
         "large": false,
-        "ratio": 9.41,
+        "ratio": 6.17,
         "threshold": 4.5,
         "pass": true
       }
@@ -1009,30 +1009,30 @@
     "height": 1920,
     "channels": 3,
     "hasAlpha": false,
-    "topLeft": "#0F2B1E",
-    "centre": "#FBF7EC",
-    "bottomRight": "#0F2B1E",
+    "topLeft": "#F4ECD8",
+    "centre": "#FFFFFF",
+    "bottomRight": "#F4ECD8",
     "usedFonts": [
       {
         "family": "JetBrains Mono",
         "weight": "500",
         "style": "normal",
         "generic": "monospace",
-        "sample": "Im Produkt"
+        "sample": "In the product"
       },
       {
         "family": "Manrope",
         "weight": "800",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Anmelden, und weiterbauen."
+        "sample": "Log in, and keep building."
       },
       {
         "family": "Manrope",
         "weight": "400",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Von jedem Gerät aus einloggen. Das Proje"
+        "sample": "Log in from any device. Your project is "
       },
       {
         "family": "JetBrains Mono",
@@ -1042,7 +1042,7 @@
         "sample": "03 / 03 · justgoblin.com"
       }
     ],
-    "bytes": 133138,
+    "bytes": 129862,
     "scale": {
       "displayStep": "72px",
       "posterScale": "1.8",
@@ -1059,8 +1059,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 600,
-          "widthFallback": 602.05,
+          "widthReal": 840,
+          "widthFallback": 842.87,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -1072,8 +1072,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 1416,
-          "widthFallback": 1361.28,
+          "widthReal": 1239.4,
+          "widthFallback": 1233.3,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -1085,8 +1085,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 1897,
-          "widthFallback": 1895.61,
+          "widthReal": 1728.15,
+          "widthFallback": 1719.43,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -1117,61 +1117,61 @@
     "platformFonts": [
       {
         "familyName": "Manrope ExtraLight",
-        "glyphCount": 204,
+        "glyphCount": 178,
         "isCustomFont": true
       },
       {
         "familyName": "JetBrains Mono",
-        "glyphCount": 68,
+        "glyphCount": 76,
         "isCustomFont": true
       }
     ],
     "contrast": [
       {
-        "text": "Im Produkt",
+        "text": "In the product",
         "className": "eyebrow",
-        "fg": "#D8CBA8",
-        "bg": "#0F2B1E",
+        "fg": "#5F5640",
+        "bg": "#F4ECD8",
         "fontSize": 21.6,
         "fontWeight": 500,
         "large": false,
-        "ratio": 9.41,
+        "ratio": 6.17,
         "threshold": 4.5,
         "pass": true
       },
       {
-        "text": "Anmelden, und weiterbauen.",
+        "text": "Log in, and keep building.",
         "className": "headline headline--sm",
-        "fg": "#FBF7EC",
-        "bg": "#0F2B1E",
+        "fg": "#0F2B1E",
+        "bg": "#F4ECD8",
         "fontSize": 86.4,
         "fontWeight": 800,
         "large": true,
-        "ratio": 14.17,
+        "ratio": 12.88,
         "threshold": 3,
         "pass": true
       },
       {
-        "text": "Von jedem Gerät aus einloggen. Das Projekt li…",
+        "text": "Log in from any device. Your project is right…",
         "className": "body",
-        "fg": "#D8CBA8",
-        "bg": "#0F2B1E",
+        "fg": "#3F3A2C",
+        "bg": "#F4ECD8",
         "fontSize": 32.4,
         "fontWeight": 400,
         "large": true,
-        "ratio": 9.41,
+        "ratio": 9.63,
         "threshold": 3,
         "pass": true
       },
       {
         "text": "03 / 03 · justgoblin.com",
         "className": "footer",
-        "fg": "#D8CBA8",
-        "bg": "#0F2B1E",
+        "fg": "#5F5640",
+        "bg": "#F4ECD8",
         "fontSize": 23.4,
         "fontWeight": 400,
         "large": false,
-        "ratio": 9.41,
+        "ratio": 6.17,
         "threshold": 4.5,
         "pass": true
       }

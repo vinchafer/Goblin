@@ -6,6 +6,14 @@
   The index is the one gold element on the slide, and it is a FILL, never text
   on the field. Slots are filled as textContent by render.mjs.
 
+  "cover": true (post.json) marks this slide as the carousel's opening beat:
+  full display-size headline (the --sm step below is stripped), centred, more
+  air top and bottom — see .slide[data-cover] in _base.css. A cover typically
+  carries an eyebrow instead of an index chip, so the two beats read as
+  visibly different card types rather than five identical slides.
+
+  The mark defaults to shown (opt out with "mark": false in post.json).
+
   Slots: index · eyebrow · headline · body · footer
 -->
 <link rel="stylesheet" href="./_base.css">

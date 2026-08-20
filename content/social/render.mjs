@@ -137,8 +137,22 @@ function applyContent({ content, format, surface }) {
     const value = content['__src__' + key];
     if (!value) el.remove(); else el.setAttribute('src', value);
   }
+  // An element that only makes sense alongside another slot (the rule under an
+  // eyebrow) is removed when that slot is empty, even though it carries no
+  // content of its own — otherwise it is left floating with nothing to divide.
+  for (const el of document.querySelectorAll('[data-slot-if]')) {
+    const key = el.getAttribute('data-slot-if');
+    const value = content[key];
+    if (value === undefined || value === null || String(value).trim() === '') el.remove();
+  }
+  // A cover slide reads as a hook, not a numbered card: bigger type, centred,
+  // no page-index chip crowding the eyebrow.
+  if (content.cover) {
+    slide.setAttribute('data-cover', 'true');
+    if (h) h.classList.remove('headline--sm');
+  }
   // A stack or row whose children were all removed would leave a phantom gap.
-  for (const el of document.querySelectorAll('.stack, .foot-row')) {
+  for (const el of document.querySelectorAll('.stack, .foot-row, .foot-row__end')) {
     if (!el.children.length) el.remove();
   }
 }
@@ -283,7 +297,13 @@ if (arg === '--probe') {
 }
 
 const { chromium, from } = await loadChromium();
-const browser = await chromium.launch();
+// PLAYWRIGHT_CHROMIUM_EXECUTABLE overrides which browser binary is launched.
+// Only needed when a CI/sandbox image ships a Chromium revision that predates
+// the pinned playwright package's expected revision — the resolved package
+// still drives the protocol, only the binary path is redirected. Unset by
+// default, so normal installs are unaffected.
+const browser = await chromium.launch(
+  process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE } : {});
 const results = [];
 const netViolations = [];
 try {
@@ -300,7 +320,12 @@ try {
     // Resolve every image to a data: URI up front — the page must not fetch.
     const content = { ...job.content };
     const surface = content.surface ?? null;
-    content.__src__mark = dataUri(path.join(REPO, content.mark ?? defaultMark(surface)));
+    // "mark": false opts a slide out of the logo mark entirely. A string still
+    // overrides which file is used; anything else falls back to the surface's
+    // default mark (gold on dark, ink on bone — never gold on a light field).
+    if (content.mark !== false) {
+      content.__src__mark = dataUri(path.join(REPO, typeof content.mark === 'string' ? content.mark : defaultMark(surface)));
+    }
     if (content.image) {
       const p = path.isAbsolute(content.image) ? content.image
         : fs.existsSync(path.join(job.dir ?? outDir, content.image))

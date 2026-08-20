@@ -18,10 +18,17 @@
         "weight": "800",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Wir sagen nie „fertig“, bevor wir es gep"
+        "sample": "We never say\n“done” before\nwe’ve checked"
+      },
+      {
+        "family": "JetBrains Mono",
+        "weight": "400",
+        "style": "normal",
+        "generic": "monospace",
+        "sample": "justgoblin.com"
       }
     ],
-    "bytes": 65625,
+    "bytes": 73382,
     "scale": {
       "displayStep": "72px",
       "posterScale": "1.8",
@@ -38,13 +45,27 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 1892,
-          "widthFallback": 1871.78,
+          "widthReal": 2085.2,
+          "widthFallback": 2065.72,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "JetBrains Mono",
+          "weight": "400",
+          "style": "normal",
+          "generic": "monospace",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 840,
+          "widthFallback": 842.87,
           "distinctFromFallback": true,
           "pass": true
         }
       ],
       "usedFamilies": [
+        "JetBrains Mono",
         "Manrope"
       ],
       "declaredFamilies": [
@@ -56,13 +77,18 @@
     "platformFonts": [
       {
         "familyName": "Manrope ExtraLight",
-        "glyphCount": 96,
+        "glyphCount": 82,
+        "isCustomFont": true
+      },
+      {
+        "familyName": "JetBrains Mono",
+        "glyphCount": 28,
         "isCustomFont": true
       }
     ],
     "contrast": [
       {
-        "text": "Wir sagen nie „fertig“, bevor wir es geprüft …",
+        "text": "We never say\n“done” before\nwe’ve checked it.",
         "className": "headline",
         "fg": "#0F2B1E",
         "bg": "#F4ECD8",
@@ -72,6 +98,18 @@
         "ratio": 12.88,
         "threshold": 3,
         "pass": true
+      },
+      {
+        "text": "justgoblin.com",
+        "className": "footer",
+        "fg": "#5F5640",
+        "bg": "#F4ECD8",
+        "fontSize": 23.4,
+        "fontWeight": 400,
+        "large": false,
+        "ratio": 6.17,
+        "threshold": 4.5,
+        "pass": true
       }
     ],
     "layout": {
@@ -79,7 +117,7 @@
         "w": 1080,
         "h": 1350
       },
-      "boxes": 1,
+      "boxes": 3,
       "overflow": [],
       "overlaps": [],
       "inkOverflow": []
@@ -104,10 +142,17 @@
         "weight": "800",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Wir sagen nie „fertig“, bevor wir es gep"
+        "sample": "We never say\n“done” before\nwe’ve checked"
+      },
+      {
+        "family": "JetBrains Mono",
+        "weight": "400",
+        "style": "normal",
+        "generic": "monospace",
+        "sample": "justgoblin.com"
       }
     ],
-    "bytes": 68126,
+    "bytes": 76241,
     "scale": {
       "displayStep": "72px",
       "posterScale": "1.8",
@@ -124,13 +169,27 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 1892,
-          "widthFallback": 1871.78,
+          "widthReal": 2085.2,
+          "widthFallback": 2065.72,
+          "distinctFromFallback": true,
+          "pass": true
+        },
+        {
+          "family": "JetBrains Mono",
+          "weight": "400",
+          "style": "normal",
+          "generic": "monospace",
+          "loadedSubsets": 1,
+          "declaredSubsets": 6,
+          "apiCheck": true,
+          "widthReal": 840,
+          "widthFallback": 842.87,
           "distinctFromFallback": true,
           "pass": true
         }
       ],
       "usedFamilies": [
+        "JetBrains Mono",
         "Manrope"
       ],
       "declaredFamilies": [
@@ -142,13 +201,18 @@
     "platformFonts": [
       {
         "familyName": "Manrope ExtraLight",
-        "glyphCount": 96,
+        "glyphCount": 82,
+        "isCustomFont": true
+      },
+      {
+        "familyName": "JetBrains Mono",
+        "glyphCount": 28,
         "isCustomFont": true
       }
     ],
     "contrast": [
       {
-        "text": "Wir sagen nie „fertig“, bevor wir es geprüft …",
+        "text": "We never say\n“done” before\nwe’ve checked it.",
         "className": "headline",
         "fg": "#0F2B1E",
         "bg": "#F4ECD8",
@@ -158,6 +222,18 @@
         "ratio": 12.88,
         "threshold": 3,
         "pass": true
+      },
+      {
+        "text": "justgoblin.com",
+        "className": "footer",
+        "fg": "#5F5640",
+        "bg": "#F4ECD8",
+        "fontSize": 23.4,
+        "fontWeight": 400,
+        "large": false,
+        "ratio": 6.17,
+        "threshold": 4.5,
+        "pass": true
       }
     ],
     "layout": {
@@ -165,7 +241,7 @@
         "w": 1080,
         "h": 1920
       },
-      "boxes": 1,
+      "boxes": 3,
       "overflow": [],
       "overlaps": [],
       "inkOverflow": []
