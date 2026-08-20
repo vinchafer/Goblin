@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { SettingsCard } from '../ui/SettingsCard';
 import { SettingsGroup } from '../ui/SettingsGroup';
 import { SettingsRow } from '../ui/SettingsRow';
-import { useUser } from '@/lib/hooks/useUser';
+import { useUser } from '@/contexts/user-context';
 import { useSheetStack } from '../ui/SheetStack';
 import { SecurityPage } from './SecurityPage';
 import { PrivacyPage } from './PrivacyPage';

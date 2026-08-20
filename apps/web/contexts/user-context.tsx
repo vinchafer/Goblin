@@ -1,6 +1,21 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+// FOUNDER-WALK-7 · U4(a)(b) — the profile "revert" and stale-initial bugs were never a
+// save/refetch race: `useUser()` was a plain hook, instantiated independently by every
+// consumer (Sidebar, AvatarMenu, ProfilePage, SettingsRoot, standalone-chat). Settings
+// renders as a Sheet/Modal INSIDE the same tree as Sidebar/AvatarMenu (not a route
+// navigation), so all of them stay mounted at once with their own separate copy of
+// `profile`. Saving in ProfilePage only ever updated its own copy — Sidebar's and
+// AvatarMenu's initial-letter avatar kept showing the pre-save snapshot until some
+// unrelated remount happened to occur. That reads exactly like "reverted" / "the new
+// initial doesn't show up" — because until this fix, it hadn't actually re-rendered.
+//
+// Fix: the exact same load()/updateProfile() logic, now instantiated ONCE behind a
+// Context and shared. A save in ProfilePage calls the ONE load(), which updates the
+// ONE profile state every consumer reads — Sidebar and AvatarMenu update in the same
+// tick, no remount required.
+
+import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { apiGet } from '@/lib/api';
 import { isDemoActive } from '@/lib/demo/demo-flag';
@@ -17,7 +32,7 @@ export interface UserProfile {
   githubConnected: boolean;
 }
 
-interface UseUserResult extends UserProfile {
+export interface UseUserResult extends UserProfile {
   user: UserProfile;
   loading: boolean;
   updateProfile: (patch: { fullName?: string; displayName?: string }) => Promise<void>;
@@ -34,7 +49,9 @@ const EMPTY: UserProfile = {
   githubConnected: false,
 };
 
-export function useUser(): UseUserResult {
+const UserContext = createContext<UseUserResult | null>(null);
+
+export function UserProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<UserProfile>(EMPTY);
   const [loading, setLoading] = useState(true);
 
@@ -92,14 +109,29 @@ export function useUser(): UseUserResult {
 
   const updateProfile = useCallback(async (patch: { fullName?: string; displayName?: string }) => {
     const supabase = createClient();
-    await supabase.auth.updateUser({
+    // U4(a) hardening: a transient failure here (expired token, rate limit) used to be
+    // discarded silently — updateUser()'s result went unchecked, so load() below just
+    // re-read the UNCHANGED old value, indistinguishable from "didn't stick." Now a
+    // real failure is surfaced to the caller instead of masquerading as a no-op save.
+    const { error } = await supabase.auth.updateUser({
       data: {
         ...(patch.fullName !== undefined ? { full_name: patch.fullName } : {}),
         ...(patch.displayName !== undefined ? { display_name: patch.displayName } : {}),
       },
     });
+    if (error) throw error;
     await load();
   }, [load]);
 
-  return { ...profile, user: profile, loading, updateProfile, refresh: load };
+  const value: UseUserResult = { ...profile, user: profile, loading, updateProfile, refresh: load };
+
+  return <UserContext.Provider value={value}>{children}</UserContext.Provider>;
+}
+
+export function useUser(): UseUserResult {
+  const context = useContext(UserContext);
+  if (!context) {
+    throw new Error('useUser must be used within UserProvider');
+  }
+  return context;
 }

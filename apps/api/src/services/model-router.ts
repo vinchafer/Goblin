@@ -869,9 +869,15 @@ export async function* streamCompletionGuarded(
 export async function saveFallbackChain(userId: string, chain: string[], supabase: SupabaseClient): Promise<void> {
   // Store in a dedicated user preferences table or use project-level preferences
   // For now: store in Supabase user metadata via service role
-  const { createClient } = await import('@supabase/supabase-js');
   const sb = supabase ?? getSupabaseAdmin();
-  await sb.auth.admin.updateUserById(userId, { user_metadata: { fallback_chain: chain } });
+  // FOUNDER-WALK-7 · U4(a) hardening: `updateUserById`'s `user_metadata` REPLACES the
+  // whole object, it does not merge. Writing `{ fallback_chain: chain }` alone used to
+  // wipe display_name/full_name/avatar_url — any save of the Models fallback order in
+  // the same session as a profile edit silently reverted the profile. Read-modify-write
+  // the existing metadata so this write only ever touches its own key.
+  const { data } = await sb.auth.admin.getUserById(userId);
+  const existing = (data.user?.user_metadata ?? {}) as Record<string, unknown>;
+  await sb.auth.admin.updateUserById(userId, { user_metadata: { ...existing, fallback_chain: chain } });
 }
 
 export async function getFallbackChain(userId: string, supabase: SupabaseClient): Promise<string[]> {

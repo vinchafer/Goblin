@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { BottomSheet } from '../ui/BottomSheet';
 import { SettingsCard } from '../ui/SettingsCard';
 import { SettingsRow } from '../ui/SettingsRow';
-import { useUser } from '@/lib/hooks/useUser';
+import { useUser } from '@/contexts/user-context';
 import { useAuth } from '@/lib/hooks/useAuth';
 import { useDemoMode } from '@/lib/demo/demo-mode-context';
 import { useLang, t } from '@/lib/use-lang';

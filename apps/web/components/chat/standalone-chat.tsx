@@ -9,7 +9,7 @@ import type { SelectedModel } from "@/components/chat/ChatInput";
 import type { ChatAttachment } from "@/lib/chat-attachments";
 import { EmptyChat } from "@/components/chat/EmptyChat";
 import Message from "./Message";
-import { useUser } from "@/lib/hooks/useUser";
+import { useUser } from "@/contexts/user-context";
 import { friendlyError, isConnectionError, connectionErrorMessage } from "@/lib/friendly-error";
 import { parseCodeBlocks } from "@/lib/parse-code-blocks";
 import { StcPreviewSheet, type StcFile } from "@/components/code/StcPreviewSheet";

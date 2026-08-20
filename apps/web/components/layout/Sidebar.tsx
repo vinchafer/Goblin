@@ -13,7 +13,7 @@ import { RecentChatRow } from '@/components/sidebar/RecentChatRow';
 import { ProjectRowMenu } from '@/components/sidebar/ProjectRowMenu';
 import { SidebarUsage } from '@/components/sidebar/SidebarUsage';
 import { useLang, t, readLang } from '@/lib/use-lang';
-import { useUser } from '@/lib/hooks/useUser';
+import { useUser } from '@/contexts/user-context';
 
 interface ChatSession {
   id: string;
