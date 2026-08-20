@@ -1,9 +1,10 @@
-Goblin in vier Schritten.
+Goblin in four steps.
 
-Du beschreibst, was du brauchst — in normaler
-Sprache. Goblin baut es und stellt es online,
-mit eigener Adresse.
+You describe what you need — in plain
+language. Goblin builds it and puts it online,
+with its own address.
 
-Alles läuft in der Cloud. Dein Handy reicht.
+Everything runs in the cloud. Your phone
+is enough.
 
-Link in Bio.
+Link in bio.

@@ -1,40 +1,40 @@
 {
-  "title": "Was ist Goblin?",
+  "title": "What is Goblin?",
   "slides": [
     {
       "template": "carousel-slide",
       "surface": "green",
       "cover": true,
-      "eyebrow": "01 — GRUNDLAGEN",
-      "headline": "Was ist\nGoblin?",
+      "eyebrow": "01 — BASICS",
+      "headline": "What is\nGoblin?",
       "footer": "justgoblin.com"
     },
     {
       "template": "carousel-slide",
       "index": "02 / 05",
-      "headline": "Du beschreibst,\nwas du brauchst.",
-      "body": "In normaler Sprache. Kein Code, kein Fachbegriff.",
+      "headline": "You describe\nwhat you need.",
+      "body": "In plain language. No code, no jargon.",
       "footer": "justgoblin.com"
     },
     {
       "template": "carousel-slide",
       "index": "03 / 05",
-      "headline": "Goblin baut es.",
-      "body": "Keine Vorlage, kein Baukasten. Genau das, was du beschrieben hast.",
+      "headline": "Goblin builds it.",
+      "body": "No template, no builder kit. Exactly what you described.",
       "footer": "justgoblin.com"
     },
     {
       "template": "carousel-slide",
       "index": "04 / 05",
-      "headline": "Und stellt es\nonline.",
-      "body": "Mit eigener Adresse. Erreichbar für alle, denen du sie gibst.",
+      "headline": "And puts it\nonline.",
+      "body": "With its own address. Reachable by anyone you share it with.",
       "footer": "justgoblin.com"
     },
     {
       "template": "carousel-slide",
       "index": "05 / 05",
-      "headline": "Alles vom Handy.\nNichts auf deinem\nRechner.",
-      "body": "Goblin läuft in der Cloud. Dein Gerät muss nichts können.",
+      "headline": "All from your\nphone. Nothing on\nyour computer.",
+      "body": "Goblin runs in the cloud. Your device doesn’t need to do a thing.",
       "footer": "justgoblin.com"
     }
   ]

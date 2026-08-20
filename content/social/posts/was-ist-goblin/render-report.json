@@ -18,14 +18,14 @@
         "weight": "500",
         "style": "normal",
         "generic": "monospace",
-        "sample": "01 — GRUNDLAGEN"
+        "sample": "01 — BASICS"
       },
       {
         "family": "Manrope",
         "weight": "800",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Was ist\nGoblin?"
+        "sample": "What is\nGoblin?"
       },
       {
         "family": "JetBrains Mono",
@@ -35,7 +35,7 @@
         "sample": "justgoblin.com"
       }
     ],
-    "bytes": 39062,
+    "bytes": 37145,
     "scale": {
       "displayStep": "72px",
       "posterScale": "1.8",
@@ -52,8 +52,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 900,
-          "widthFallback": 903.08,
+          "widthReal": 660,
+          "widthFallback": 662.26,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -65,8 +65,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 754.4,
-          "widthFallback": 751.86,
+          "widthReal": 767.8,
+          "widthFallback": 761.04,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -97,7 +97,7 @@
     "platformFonts": [
       {
         "familyName": "JetBrains Mono",
-        "glyphCount": 58,
+        "glyphCount": 50,
         "isCustomFont": true
       },
       {
@@ -108,7 +108,7 @@
     ],
     "contrast": [
       {
-        "text": "01 — GRUNDLAGEN",
+        "text": "01 — BASICS",
         "className": "eyebrow",
         "fg": "#D8CBA8",
         "bg": "#1A3A2A",
@@ -120,7 +120,7 @@
         "pass": true
       },
       {
-        "text": "Was ist\nGoblin?",
+        "text": "What is\nGoblin?",
         "className": "headline",
         "fg": "#FBF7EC",
         "bg": "#1A3A2A",
@@ -174,14 +174,14 @@
         "weight": "500",
         "style": "normal",
         "generic": "monospace",
-        "sample": "01 — GRUNDLAGEN"
+        "sample": "01 — BASICS"
       },
       {
         "family": "Manrope",
         "weight": "800",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Was ist\nGoblin?"
+        "sample": "What is\nGoblin?"
       },
       {
         "family": "JetBrains Mono",
@@ -191,7 +191,7 @@
         "sample": "justgoblin.com"
       }
     ],
-    "bytes": 41330,
+    "bytes": 39615,
     "scale": {
       "displayStep": "72px",
       "posterScale": "1.8",
@@ -208,8 +208,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 900,
-          "widthFallback": 903.08,
+          "widthReal": 660,
+          "widthFallback": 662.26,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -221,8 +221,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 754.4,
-          "widthFallback": 751.86,
+          "widthReal": 767.8,
+          "widthFallback": 761.04,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -253,7 +253,7 @@
     "platformFonts": [
       {
         "familyName": "JetBrains Mono",
-        "glyphCount": 58,
+        "glyphCount": 50,
         "isCustomFont": true
       },
       {
@@ -264,7 +264,7 @@
     ],
     "contrast": [
       {
-        "text": "01 — GRUNDLAGEN",
+        "text": "01 — BASICS",
         "className": "eyebrow",
         "fg": "#D8CBA8",
         "bg": "#1A3A2A",
@@ -276,7 +276,7 @@
         "pass": true
       },
       {
-        "text": "Was ist\nGoblin?",
+        "text": "What is\nGoblin?",
         "className": "headline",
         "fg": "#FBF7EC",
         "bg": "#1A3A2A",
@@ -322,7 +322,7 @@
     "channels": 3,
     "hasAlpha": false,
     "topLeft": "#0F2B1E",
-    "centre": "#FBF7EC",
+    "centre": "#0F2B1E",
     "bottomRight": "#0F2B1E",
     "usedFonts": [
       {
@@ -337,14 +337,14 @@
         "weight": "800",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Du beschreibst,\nwas du brauchst."
+        "sample": "You describe\nwhat you need."
       },
       {
         "family": "Manrope",
         "weight": "400",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "In normaler Sprache. Kein Code, kein Fac"
+        "sample": "In plain language. No code, no jargon."
       },
       {
         "family": "JetBrains Mono",
@@ -354,7 +354,7 @@
         "sample": "justgoblin.com"
       }
     ],
-    "bytes": 56141,
+    "bytes": 49425,
     "scale": {
       "displayStep": "72px",
       "posterScale": "1.8",
@@ -384,8 +384,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 1631.6,
-          "widthFallback": 1594.82,
+          "widthReal": 1399.3,
+          "widthFallback": 1370.65,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -397,8 +397,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 1840.77,
-          "widthFallback": 1862.06,
+          "widthReal": 1695.87,
+          "widthFallback": 1690.14,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -429,7 +429,7 @@
     "platformFonts": [
       {
         "familyName": "Manrope ExtraLight",
-        "glyphCount": 158,
+        "glyphCount": 128,
         "isCustomFont": true
       },
       {
@@ -452,7 +452,7 @@
         "pass": true
       },
       {
-        "text": "Du beschreibst,\nwas du brauchst.",
+        "text": "You describe\nwhat you need.",
         "className": "headline headline--sm",
         "fg": "#FBF7EC",
         "bg": "#0F2B1E",
@@ -464,7 +464,7 @@
         "pass": true
       },
       {
-        "text": "In normaler Sprache. Kein Code, kein Fachbegr…",
+        "text": "In plain language. No code, no jargon.",
         "className": "body",
         "fg": "#D8CBA8",
         "bg": "#0F2B1E",
@@ -525,14 +525,14 @@
         "weight": "800",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Du beschreibst,\nwas du brauchst."
+        "sample": "You describe\nwhat you need."
       },
       {
         "family": "Manrope",
         "weight": "400",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "In normaler Sprache. Kein Code, kein Fac"
+        "sample": "In plain language. No code, no jargon."
       },
       {
         "family": "JetBrains Mono",
@@ -542,7 +542,7 @@
         "sample": "justgoblin.com"
       }
     ],
-    "bytes": 58746,
+    "bytes": 52052,
     "scale": {
       "displayStep": "72px",
       "posterScale": "1.8",
@@ -572,8 +572,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 1631.6,
-          "widthFallback": 1594.82,
+          "widthReal": 1399.3,
+          "widthFallback": 1370.65,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -585,8 +585,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 1840.77,
-          "widthFallback": 1862.06,
+          "widthReal": 1695.87,
+          "widthFallback": 1690.14,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -617,7 +617,7 @@
     "platformFonts": [
       {
         "familyName": "Manrope ExtraLight",
-        "glyphCount": 158,
+        "glyphCount": 128,
         "isCustomFont": true
       },
       {
@@ -640,7 +640,7 @@
         "pass": true
       },
       {
-        "text": "Du beschreibst,\nwas du brauchst.",
+        "text": "You describe\nwhat you need.",
         "className": "headline headline--sm",
         "fg": "#FBF7EC",
         "bg": "#0F2B1E",
@@ -652,7 +652,7 @@
         "pass": true
       },
       {
-        "text": "In normaler Sprache. Kein Code, kein Fachbegr…",
+        "text": "In plain language. No code, no jargon.",
         "className": "body",
         "fg": "#D8CBA8",
         "bg": "#0F2B1E",
@@ -713,14 +713,14 @@
         "weight": "800",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Goblin baut es."
+        "sample": "Goblin builds it."
       },
       {
         "family": "Manrope",
         "weight": "400",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Keine Vorlage, kein Baukasten. Genau das"
+        "sample": "No template, no builder kit. Exactly wha"
       },
       {
         "family": "JetBrains Mono",
@@ -730,7 +730,7 @@
         "sample": "justgoblin.com"
       }
     ],
-    "bytes": 48905,
+    "bytes": 42859,
     "scale": {
       "displayStep": "72px",
       "posterScale": "1.8",
@@ -760,8 +760,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 738.2,
-          "widthFallback": 722.27,
+          "widthReal": 770.4,
+          "widthFallback": 755.47,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -773,8 +773,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 1897.86,
-          "widthFallback": 1906.88,
+          "widthReal": 1788.62,
+          "widthFallback": 1750.83,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -805,7 +805,7 @@
     "platformFonts": [
       {
         "familyName": "Manrope ExtraLight",
-        "glyphCount": 160,
+        "glyphCount": 146,
         "isCustomFont": true
       },
       {
@@ -828,7 +828,7 @@
         "pass": true
       },
       {
-        "text": "Goblin baut es.",
+        "text": "Goblin builds it.",
         "className": "headline headline--sm",
         "fg": "#FBF7EC",
         "bg": "#0F2B1E",
@@ -840,7 +840,7 @@
         "pass": true
       },
       {
-        "text": "Keine Vorlage, kein Baukasten. Genau das, was…",
+        "text": "No template, no builder kit. Exactly what you…",
         "className": "body",
         "fg": "#D8CBA8",
         "bg": "#0F2B1E",
@@ -901,14 +901,14 @@
         "weight": "800",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Goblin baut es."
+        "sample": "Goblin builds it."
       },
       {
         "family": "Manrope",
         "weight": "400",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Keine Vorlage, kein Baukasten. Genau das"
+        "sample": "No template, no builder kit. Exactly wha"
       },
       {
         "family": "JetBrains Mono",
@@ -918,7 +918,7 @@
         "sample": "justgoblin.com"
       }
     ],
-    "bytes": 51387,
+    "bytes": 44535,
     "scale": {
       "displayStep": "72px",
       "posterScale": "1.8",
@@ -948,8 +948,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 738.2,
-          "widthFallback": 722.27,
+          "widthReal": 770.4,
+          "widthFallback": 755.47,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -961,8 +961,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 1897.86,
-          "widthFallback": 1906.88,
+          "widthReal": 1788.62,
+          "widthFallback": 1750.83,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -993,7 +993,7 @@
     "platformFonts": [
       {
         "familyName": "Manrope ExtraLight",
-        "glyphCount": 160,
+        "glyphCount": 146,
         "isCustomFont": true
       },
       {
@@ -1016,7 +1016,7 @@
         "pass": true
       },
       {
-        "text": "Goblin baut es.",
+        "text": "Goblin builds it.",
         "className": "headline headline--sm",
         "fg": "#FBF7EC",
         "bg": "#0F2B1E",
@@ -1028,7 +1028,7 @@
         "pass": true
       },
       {
-        "text": "Keine Vorlage, kein Baukasten. Genau das, was…",
+        "text": "No template, no builder kit. Exactly what you…",
         "className": "body",
         "fg": "#D8CBA8",
         "bg": "#0F2B1E",
@@ -1089,14 +1089,14 @@
         "weight": "800",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Und stellt es\nonline."
+        "sample": "And puts it\nonline."
       },
       {
         "family": "Manrope",
         "weight": "400",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Mit eigener Adresse. Erreichbar für alle"
+        "sample": "With its own address. Reachable by anyon"
       },
       {
         "family": "JetBrains Mono",
@@ -1106,7 +1106,7 @@
         "sample": "justgoblin.com"
       }
     ],
-    "bytes": 43869,
+    "bytes": 45494,
     "scale": {
       "displayStep": "72px",
       "posterScale": "1.8",
@@ -1136,8 +1136,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 972.6,
-          "widthFallback": 944.58,
+          "widthReal": 891.4,
+          "widthFallback": 872.12,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -1149,8 +1149,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 1768.92,
-          "widthFallback": 1734.08,
+          "widthReal": 1920.33,
+          "widthFallback": 1889.89,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -1181,7 +1181,7 @@
     "platformFonts": [
       {
         "familyName": "Manrope ExtraLight",
-        "glyphCount": 162,
+        "glyphCount": 154,
         "isCustomFont": true
       },
       {
@@ -1204,7 +1204,7 @@
         "pass": true
       },
       {
-        "text": "Und stellt es\nonline.",
+        "text": "And puts it\nonline.",
         "className": "headline headline--sm",
         "fg": "#FBF7EC",
         "bg": "#0F2B1E",
@@ -1216,7 +1216,7 @@
         "pass": true
       },
       {
-        "text": "Mit eigener Adresse. Erreichbar für alle, den…",
+        "text": "With its own address. Reachable by anyone you…",
         "className": "body",
         "fg": "#D8CBA8",
         "bg": "#0F2B1E",
@@ -1277,14 +1277,14 @@
         "weight": "800",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Und stellt es\nonline."
+        "sample": "And puts it\nonline."
       },
       {
         "family": "Manrope",
         "weight": "400",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Mit eigener Adresse. Erreichbar für alle"
+        "sample": "With its own address. Reachable by anyon"
       },
       {
         "family": "JetBrains Mono",
@@ -1294,7 +1294,7 @@
         "sample": "justgoblin.com"
       }
     ],
-    "bytes": 46306,
+    "bytes": 48202,
     "scale": {
       "displayStep": "72px",
       "posterScale": "1.8",
@@ -1324,8 +1324,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 972.6,
-          "widthFallback": 944.58,
+          "widthReal": 891.4,
+          "widthFallback": 872.12,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -1337,8 +1337,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 1768.92,
-          "widthFallback": 1734.08,
+          "widthReal": 1920.33,
+          "widthFallback": 1889.89,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -1369,7 +1369,7 @@
     "platformFonts": [
       {
         "familyName": "Manrope ExtraLight",
-        "glyphCount": 162,
+        "glyphCount": 154,
         "isCustomFont": true
       },
       {
@@ -1392,7 +1392,7 @@
         "pass": true
       },
       {
-        "text": "Und stellt es\nonline.",
+        "text": "And puts it\nonline.",
         "className": "headline headline--sm",
         "fg": "#FBF7EC",
         "bg": "#0F2B1E",
@@ -1404,7 +1404,7 @@
         "pass": true
       },
       {
-        "text": "Mit eigener Adresse. Erreichbar für alle, den…",
+        "text": "With its own address. Reachable by anyone you…",
         "className": "body",
         "fg": "#D8CBA8",
         "bg": "#0F2B1E",
@@ -1465,14 +1465,14 @@
         "weight": "800",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Alles vom Handy.\nNichts auf deinem\nRechn"
+        "sample": "All from your\nphone. Nothing on\nyour com"
       },
       {
         "family": "Manrope",
         "weight": "400",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Goblin läuft in der Cloud. Dein Gerät mu"
+        "sample": "Goblin runs in the cloud. Your device do"
       },
       {
         "family": "JetBrains Mono",
@@ -1482,7 +1482,7 @@
         "sample": "justgoblin.com"
       }
     ],
-    "bytes": 62662,
+    "bytes": 64294,
     "scale": {
       "displayStep": "72px",
       "posterScale": "1.8",
@@ -1512,8 +1512,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 2073.6,
-          "widthFallback": 2048.63,
+          "widthReal": 2024.3,
+          "widthFallback": 2011.04,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -1525,8 +1525,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 1794.45,
-          "widthFallback": 1778.66,
+          "widthReal": 1786.05,
+          "widthFallback": 1764.11,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -1557,7 +1557,7 @@
     "platformFonts": [
       {
         "familyName": "Manrope ExtraLight",
-        "glyphCount": 196,
+        "glyphCount": 216,
         "isCustomFont": true
       },
       {
@@ -1580,7 +1580,7 @@
         "pass": true
       },
       {
-        "text": "Alles vom Handy.\nNichts auf deinem\nRechner.",
+        "text": "All from your\nphone. Nothing on\nyour computer.",
         "className": "headline headline--sm",
         "fg": "#FBF7EC",
         "bg": "#0F2B1E",
@@ -1592,7 +1592,7 @@
         "pass": true
       },
       {
-        "text": "Goblin läuft in der Cloud. Dein Gerät muss ni…",
+        "text": "Goblin runs in the cloud. Your device doesn’t…",
         "className": "body",
         "fg": "#D8CBA8",
         "bg": "#0F2B1E",
@@ -1638,7 +1638,7 @@
     "channels": 3,
     "hasAlpha": false,
     "topLeft": "#0F2B1E",
-    "centre": "#0F2B1E",
+    "centre": "#FBF7EC",
     "bottomRight": "#0F2B1E",
     "usedFonts": [
       {
@@ -1653,14 +1653,14 @@
         "weight": "800",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Alles vom Handy.\nNichts auf deinem\nRechn"
+        "sample": "All from your\nphone. Nothing on\nyour com"
       },
       {
         "family": "Manrope",
         "weight": "400",
         "style": "normal",
         "generic": "sans-serif",
-        "sample": "Goblin läuft in der Cloud. Dein Gerät mu"
+        "sample": "Goblin runs in the cloud. Your device do"
       },
       {
         "family": "JetBrains Mono",
@@ -1670,7 +1670,7 @@
         "sample": "justgoblin.com"
       }
     ],
-    "bytes": 64601,
+    "bytes": 66403,
     "scale": {
       "displayStep": "72px",
       "posterScale": "1.8",
@@ -1700,8 +1700,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 2073.6,
-          "widthFallback": 2048.63,
+          "widthReal": 2024.3,
+          "widthFallback": 2011.04,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -1713,8 +1713,8 @@
           "loadedSubsets": 1,
           "declaredSubsets": 6,
           "apiCheck": true,
-          "widthReal": 1794.45,
-          "widthFallback": 1778.66,
+          "widthReal": 1786.05,
+          "widthFallback": 1764.11,
           "distinctFromFallback": true,
           "pass": true
         },
@@ -1745,7 +1745,7 @@
     "platformFonts": [
       {
         "familyName": "Manrope ExtraLight",
-        "glyphCount": 196,
+        "glyphCount": 216,
         "isCustomFont": true
       },
       {
@@ -1768,7 +1768,7 @@
         "pass": true
       },
       {
-        "text": "Alles vom Handy.\nNichts auf deinem\nRechner.",
+        "text": "All from your\nphone. Nothing on\nyour computer.",
         "className": "headline headline--sm",
         "fg": "#FBF7EC",
         "bg": "#0F2B1E",
@@ -1780,7 +1780,7 @@
         "pass": true
       },
       {
-        "text": "Goblin läuft in der Cloud. Dein Gerät muss ni…",
+        "text": "Goblin runs in the cloud. Your device doesn’t…",
         "className": "body",
         "fg": "#D8CBA8",
         "bg": "#0F2B1E",
